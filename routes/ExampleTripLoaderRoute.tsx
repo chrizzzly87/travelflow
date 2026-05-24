@@ -76,12 +76,12 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
     const { t } = useTranslation(['common', 'pricing']);
     const { templateId } = useParams();
     const navigate = useNavigate();
-    const location = useLocation();
+    const routeLocation = useLocation();
     const { access } = useAuth();
     const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
     const trackedTemplateRef = useRef<string | null>(null);
     const hydratedTemplateRef = useRef<string | null>(null);
-    const prefetchedState = location.state as ExampleTripPrefetchState | null;
+    const prefetchedState = routeLocation.state as ExampleTripPrefetchState | null;
     const prefetchedTrip = useMemo<ITrip | null>(() => {
         if (!templateId) return null;
         const candidate = prefetchedState?.prefetchedExampleTrip;
@@ -133,6 +133,7 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
 
         const loadTemplateResources = async () => {
             try {
+                if (cancelled) return;
                 const { getExampleTemplateSummary, loadExampleTemplateFactory } = await import('../data/exampleTripTemplates/runtimeFactory');
                 if (cancelled) return;
                 const nextFactory = await loadExampleTemplateFactory(templateId);
@@ -158,12 +159,12 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
         };
     }, [applyTemplateResources, markTemplateFactoryLoading, prefetchedTemplateCard, templateId]);
 
-    const templateCountries = useMemo(
-        () => templateCard?.countries?.map((country) => country.name).filter(Boolean)
-            || prefetchedTrip?.exampleTemplateCountries
-            || [],
-        [templateCard, prefetchedTrip]
-    );
+    const templateCountries = useMemo(() => {
+        if (!templateCard?.countries) {
+            return prefetchedTrip?.exampleTemplateCountries || [];
+        }
+        return templateCard.countries.flatMap((country) => country.name ? [country.name] : []);
+    }, [templateCard, prefetchedTrip]);
 
     useEffect(() => {
         if (!templateId) {
@@ -271,7 +272,7 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
         const upgradeTierKey = currentTierKey === 'tier_mid' ? 'tier_premium' : 'tier_mid';
         const currentTier = PLAN_CATALOG[currentTierKey];
         const upgradeTier = PLAN_CATALOG[upgradeTierKey];
-        const currentPath = `${location.pathname}${location.search}${location.hash}`;
+        const currentPath = `${routeLocation.pathname}${routeLocation.search}${routeLocation.hash}`;
 
         trackEvent('trip_limit__dialog--view', {
             source: 'example_trip',
@@ -346,7 +347,7 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
             source: 'example_trip_limit_dialog',
             returnTo: currentPath,
         }));
-    }, [access?.tierKey, confirmDialog, location.hash, location.pathname, location.search, navigate, resolveTierHighlights, t]);
+    }, [access?.tierKey, confirmDialog, routeLocation.hash, routeLocation.pathname, routeLocation.search, navigate, resolveTierHighlights, t]);
 
     const handleCopyExampleTrip = async () => {
         if (!activeTrip || !templateId) return;

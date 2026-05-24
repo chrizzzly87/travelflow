@@ -4,7 +4,7 @@ import {
   readTripManagerCountryCache,
   shouldAttemptTripManagerReverseGeocode,
   writeTripManagerCountryCache,
-} from '../../components/TripManager';
+} from '../../components/tripManagerUtils';
 import { buildLatLngPrecisionKey } from '../../shared/coordinateUtils';
 
 const COUNTRY_CACHE_KEY = 'travelflow_country_cache_v1';

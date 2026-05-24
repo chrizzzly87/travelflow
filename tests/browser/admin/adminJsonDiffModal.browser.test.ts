@@ -28,4 +28,10 @@ describe('components/admin/AdminJsonDiffModal', () => {
     await user.click(screen.getByRole('checkbox', { name: /Show full diff/i }));
     expect(screen.getByText(/Showing focused context around changed lines/i)).toBeInTheDocument();
   });
+
+  it('ensures Prism is defined on window and contains the json language definition', () => {
+    expect(window).toBeDefined();
+    expect((window as any).Prism).toBeDefined();
+    expect((window as any).Prism.languages.json).toBeDefined();
+  });
 });

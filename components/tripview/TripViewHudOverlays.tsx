@@ -115,7 +115,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                 <div className="fixed inset-0 z-[1490] flex items-end sm:items-center justify-center p-3 sm:p-4 pointer-events-none">
                     <div className="pointer-events-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
                         <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_320px]">
-                            <div className="px-5 py-5 sm:px-6 sm:py-6">
+                            <div className="p-5 sm:p-6">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="min-w-0">
                                         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
@@ -127,7 +127,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                                 : t('tripPaywall.overlay.title.direct')}
                                         </h2>
                                     </div>
-                                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700">
+                                    <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700">
                                         <WarningCircle size={20} weight="duotone" />
                                     </span>
                                 </div>
@@ -181,7 +181,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                 </div>
                             </div>
 
-                            <aside className="border-t border-slate-200 bg-slate-50/80 px-5 py-5 md:border-l md:border-t-0 sm:px-6 sm:py-6">
+                            <aside className="border-t border-slate-200 bg-slate-50/80 p-5 md:border-l md:border-t-0 sm:p-6">
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                                     {t('checkout.whatsIncluded', { ns: 'pricing' })}
                                 </p>
@@ -208,9 +208,9 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                         className="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
                     >
                         {pendingAuthModalStage === 'loading' ? (
-                            <div className="px-5 py-5 sm:px-6 sm:py-6">
+                            <div className="p-5 sm:p-6">
                                 <div className="flex items-start gap-4">
-                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-accent-50 text-accent-700">
+                                    <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-accent-50 text-accent-700">
                                         <Loader2 size={20} className="animate-spin" />
                                     </div>
                                     <div className="min-w-0">
@@ -231,7 +231,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                             </div>
                         ) : (
                             <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_240px]">
-                                <div className="px-5 py-5 sm:px-6 sm:py-6">
+                                <div className="p-5 sm:p-6">
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="min-w-0">
                                             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
@@ -241,7 +241,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                                 {t('tripView.pendingAuth.titleLocked')}
                                             </h2>
                                         </div>
-                                        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700">
+                                        <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700">
                                             <WarningCircle size={20} weight="duotone" />
                                         </span>
                                     </div>
@@ -274,7 +274,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                     </button>
                                 </div>
 
-                                <aside className="border-t border-slate-200 bg-slate-50/80 px-5 py-5 md:border-l md:border-t-0 sm:px-6 sm:py-6">
+                                <aside className="border-t border-slate-200 bg-slate-50/80 p-5 md:border-l md:border-t-0 sm:p-6">
                                     <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                                         {t('tripView.pendingAuth.benefitsTitle')}
                                     </p>
@@ -301,7 +301,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                 <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
                     <div className="w-full max-w-xl rounded-2xl border border-accent-100 bg-white/95 shadow-xl backdrop-blur-sm px-5 py-4">
                         <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-full bg-accent-100 text-accent-600 flex items-center justify-center shrink-0">
+                            <div className="size-9 rounded-full bg-accent-100 text-accent-600 flex items-center justify-center shrink-0">
                                 <Loader2 size={18} className="animate-spin" />
                             </div>
                             <div className="min-w-0">
@@ -328,7 +328,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                         className="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
                     >
                         <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_220px]">
-                            <div className="px-5 py-5 sm:px-6 sm:py-6">
+                            <div className="p-5 sm:p-6">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="min-w-0">
                                         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
@@ -338,7 +338,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                             {t('tripView.claimConflict.title')}
                                         </h2>
                                     </div>
-                                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700">
+                                    <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700">
                                         <WarningCircle size={20} weight="duotone" />
                                     </span>
                                 </div>
@@ -396,7 +396,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                 </div>
                             </div>
 
-                            <aside className="border-t border-slate-200 bg-slate-50/80 px-5 py-5 md:border-l md:border-t-0 sm:px-6 sm:py-6">
+                            <aside className="border-t border-slate-200 bg-slate-50/80 p-5 md:border-l md:border-t-0 sm:p-6">
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                                     {t('tripView.claimConflict.benefitsTitle')}
                                 </p>

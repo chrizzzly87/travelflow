@@ -96,11 +96,11 @@ export const ConnectivityStatusBanner: React.FC<ConnectivityStatusBannerProps> =
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               {connectivity.state === 'offline' ? (
-                <WifiOff className="h-4 w-4 shrink-0" />
+                <WifiOff className="size-4 shrink-0" />
               ) : connectivity.state === 'degraded' ? (
-                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <AlertTriangle className="size-4 shrink-0" />
               ) : (
-                <Spinner className="h-4 w-4 shrink-0" />
+                <Spinner className="size-4 shrink-0" />
               )}
               <p className="text-sm font-semibold">{title}</p>
             </div>
@@ -108,7 +108,7 @@ export const ConnectivityStatusBanner: React.FC<ConnectivityStatusBannerProps> =
             <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] opacity-90">
               {showOutageState && !isBrowserOffline && (
                 <span className="inline-flex items-center gap-1">
-                  <Spinner className="h-3.5 w-3.5" />
+                  <Spinner className="size-3.5" />
                   {t('connectivity.banner.retryHint')}
                 </span>
               )}
@@ -159,7 +159,7 @@ export const ConnectivityStatusBanner: React.FC<ConnectivityStatusBannerProps> =
                   pending_count: sync.pendingCount,
                 })}
               >
-                <LifeBuoy className="h-3.5 w-3.5" />
+                <LifeBuoy className="size-3.5" />
                 {t('connectivity.banner.actions.contact')}
               </Link>
             )}
@@ -175,14 +175,14 @@ export const ConnectivityStatusBanner: React.FC<ConnectivityStatusBannerProps> =
                     pending_count: sync.pendingCount,
                   });
                 }}
-                className={`inline-flex h-8 w-8 items-center justify-center rounded-md border ${bannerTone.button}`}
+                className={`inline-flex size-8 items-center justify-center rounded-md border ${bannerTone.button}`}
                 aria-label={t('connectivity.banner.actions.dismiss')}
                 {...getAnalyticsDebugAttributes('trip_connectivity__banner--dismiss', {
                   connectivity_state: connectivity.state,
                   pending_count: sync.pendingCount,
                 })}
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="size-3.5" />
               </button>
             )}
           </div>

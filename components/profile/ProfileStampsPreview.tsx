@@ -20,7 +20,7 @@ export const ProfileStampsPreview: React.FC<ProfileStampsPreviewProps> = ({
   onOpen,
 }) => {
   return (
-    <article className="border border-slate-200 bg-white px-4 py-4">
+    <article className="border border-slate-200 bg-white p-4">
       <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
         <SealCheck size={14} weight="duotone" className="text-accent-600" />
         {title}
@@ -37,7 +37,7 @@ export const ProfileStampsPreview: React.FC<ProfileStampsPreviewProps> = ({
               <img
                 src={stamp.definition.assetPath}
                 alt={stamp.definition.title}
-                className="h-12 w-12 rounded-md object-cover"
+                className="size-12 rounded-md object-cover"
                 loading="lazy"
               />
               <div className="min-w-0">

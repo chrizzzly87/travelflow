@@ -14,6 +14,11 @@ export default defineConfig({
     include: ['tests/**/*.test.ts', 'test/**/*.test.{ts,tsx}'],
     exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
     environment: 'node',
+    environmentOptions: {
+      jsdom: {
+        url: 'http://localhost/',
+      },
+    },
     setupFiles: ['tests/setup.ts', './test/setupTests.ts'],
     clearMocks: true,
     restoreMocks: true,

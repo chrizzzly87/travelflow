@@ -35,8 +35,18 @@ const DEFAULT_LABELS: DateRangePickerLabels = {
     nextMonth: 'Next month',
 };
 
-const getWeekdayLabels = (locale: string): string[] => {
+const weekdayFormatterCache = new Map<string, Intl.DateTimeFormat>();
+
+const getWeekdayFormatter = (locale: string): Intl.DateTimeFormat => {
+    const cached = weekdayFormatterCache.get(locale);
+    if (cached) return cached;
     const formatter = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' });
+    weekdayFormatterCache.set(locale, formatter);
+    return formatter;
+};
+
+const getWeekdayLabels = (locale: string): string[] => {
+    const formatter = getWeekdayFormatter(locale);
     const monday = new Date(Date.UTC(2024, 0, 1)); // 2024-01-01 is a Monday
     return Array.from({ length: 7 }, (_entry, index) => {
         const value = new Date(monday);
@@ -289,7 +299,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         const str = formatDate(date);
         const isSelected = str === startDate || str === endDate;
         if (!isSelected) return "";
-        return "relative z-10 h-9 w-9 flex items-center justify-center rounded-full bg-accent-600 text-white shadow-md transition-colors group-hover:bg-accent-700";
+        return "relative z-10 size-9 flex items-center justify-center rounded-full bg-accent-600 text-white shadow-md transition-colors group-hover:bg-accent-700";
     };
 
     const days = getDaysInMonth(viewDate.getFullYear(), viewDate.getMonth());
@@ -304,7 +314,9 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
             {/* Input Trigger */}
             <div className={`flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 transition-all ${isOpen ? 'ring-2 ring-accent-500 bg-white' : ''} ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-                 <div 
+                 <button
+                    type="button"
+                    disabled={disabled}
                     className={`flex-1 cursor-pointer ${mode === 'start' && isOpen ? 'text-accent-600' : ''}`}
                     onClick={() => { if(!disabled) { openCalendar('start'); } }}
                  >
@@ -312,13 +324,15 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                     <span className="text-sm font-medium text-gray-900 block min-h-[1.25rem]">
                         {sDate ? sDate.toLocaleDateString(locale, { month: monthLabelFormat, day: 'numeric' }) : text.selectDate}
                     </span>
-                 </div>
+                 </button>
                  
                  <div className="px-3 text-gray-300">
                     <ArrowRight size={16} />
                  </div>
                  
-                 <div 
+                 <button
+                    type="button"
+                    disabled={disabled}
                     className={`flex-1 text-right cursor-pointer ${mode === 'end' && isOpen ? 'text-accent-600' : ''}`}
                     onClick={() => { if(!disabled) { openCalendar('end'); } }}
                  >
@@ -326,7 +340,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                     <span className="text-sm font-medium text-gray-900 block min-h-[1.25rem]">
                         {eDate ? eDate.toLocaleDateString(locale, { month: monthLabelFormat, day: 'numeric' }) : text.selectDate}
                     </span>
-                 </div>
+                 </button>
             </div>
 
             {/* Portal Calendar */}
@@ -339,21 +353,21 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                     
                     {/* Header */}
                     <div className="flex items-center justify-between mb-4">
-                        <button onClick={() => changeMonth(-1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500" aria-label={text.previousMonth}>
+                        <button type="button" onClick={() => changeMonth(-1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500" aria-label={text.previousMonth}>
                             <ChevronLeft size={20} />
                         </button>
                         <span className="font-bold text-gray-800">
                             {viewDate.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}
                         </span>
-                        <button onClick={() => changeMonth(1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500" aria-label={text.nextMonth}>
+                        <button type="button" onClick={() => changeMonth(1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500" aria-label={text.nextMonth}>
                             <ChevronRight size={20} />
                         </button>
                     </div>
 
                     {/* Weekdays */}
                     <div className="grid grid-cols-7 mb-2">
-                        {weekdayLabels.map((dayLabel, index) => (
-                            <div key={`${dayLabel}-${index}`} className="text-xs text-center font-bold text-gray-400 uppercase">
+                        {weekdayLabels.map((dayLabel) => (
+                            <div key={`weekday-${dayLabel}`} className="text-xs text-center font-bold text-gray-400 uppercase">
                                 {dayLabel}
                             </div>
                         ))}
@@ -364,9 +378,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                         className="grid grid-cols-7 gap-y-1"
                         onMouseLeave={() => setHoverDate(null)}
                     >
-                        {days.map((d, i) => (
-                            <div 
-                                key={i} 
+                        {days.map((d) => (
+                            <button
+                                type="button"
+                                key={d.date.toISOString()}
                                 className={getDayClass(d.date, d.isCurrent)}
                                 onClick={() => handleDateClick(d.date)}
                                 onMouseEnter={() => setHoverDate(d.date)}
@@ -374,7 +389,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                                 <span className={getDayInnerClass(d.date)}>
                                     {d.date.getDate()}
                                 </span>
-                            </div>
+                            </button>
                         ))}
                     </div>
 

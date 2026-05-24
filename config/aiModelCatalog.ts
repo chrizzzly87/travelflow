@@ -559,7 +559,7 @@ const getModelFamilySortOrder = (item: AiModelCatalogItem): number => {
 };
 
 export const sortAiModels = (items: AiModelCatalogItem[]): AiModelCatalogItem[] => {
-    return [...items].sort((left, right) => {
+    return Array.from(items).sort((left, right) => {
         const providerDelta = getModelFamilySortOrder(left) - getModelFamilySortOrder(right);
         if (providerDelta !== 0) return providerDelta;
 
@@ -596,9 +596,10 @@ export const getCreateTripModelOptions = (items: AiModelCatalogItem[]): AiModelC
     const sortedActive = sortAiModels(activeItems);
     const byId = new Map(sortedActive.map((item) => [item.id, item]));
 
-    const preferred = CREATE_TRIP_PREFERRED_MODEL_IDS
-        .map((id) => byId.get(id))
-        .filter((item): item is AiModelCatalogItem => Boolean(item));
+    const preferred = CREATE_TRIP_PREFERRED_MODEL_IDS.flatMap((id) => {
+        const item = byId.get(id);
+        return item ? [item] : [];
+    });
 
     const preferredIdSet = new Set(preferred.map((item) => item.id));
     const remainder = sortedActive.filter((item) => !preferredIdSet.has(item.id));

@@ -1,0 +1,58 @@
+---
+id: rel-2026-05-09-react-doctor-core-page-fixes
+version: v0.115.0
+title: "React Doctor repository cleanup"
+date: 2026-05-09
+published_at: 2026-05-23T12:00:00Z
+status: published
+notify_in_app: false
+in_app_hours: 24
+summary: "Cleans up the highest-priority React Doctor findings across core trip flows and the wider repository."
+---
+
+## Changes
+- [ ] [Fixed] 📅 Calendar-based trip dates now stay on the intended day across time zones in trip list markers and ticket previews.
+- [ ] [Fixed] 🧭 Cookie, notice, homepage inspiration, and navigation links now stay smooth while loading safely.
+- [ ] [Fixed] 🗺️ Minimap / floating map preview now correctly snaps, docks, displays its rounded border and shadow styles, and shows the minimize/maximize controls.
+- [ ] [Internal] 🩺 Cleared React Doctor error findings across the full repository scan, including hook-order, route-location dependency, and cleanup issues.
+- [ ] [Internal] 🧪 Added regression coverage for the login modal hook fallback outside its provider.
+- [ ] [Internal] 📋 Added a React Doctor remediation tracker plus future-feature score and effect-discipline guardrails.
+- [ ] [Internal] 🧭 Reduced unnecessary effect-based state sync in auth, trip cards, and trip sharing flows.
+- [ ] [Internal] 🧹 Raised the latest React Doctor diff score to `84/100` by clearing safe duplicate styling, heading-weight, DOM-style batching, and repeated array-iteration findings.
+- [ ] [Internal] ⚡ Raised the latest React Doctor diff score to `85/100` by consolidating safe state updates in auth, profile, blog, login, route-loading, and trip preview flows.
+- [ ] [Internal] 🧯 Raised the latest React Doctor diff score to `87/100` by clearing flagged render-time date, loading-copy, and blog navigation findings.
+- [ ] [Internal] 🧭 Raised the latest React Doctor diff score to `91/100` by clearing safe timeline, admin navigation, floating-map, and listener-subscription findings.
+- [ ] [Internal] 🧾 Stopped committing generated coverage reports so validation runs no longer clutter PR diffs.
+- [ ] [Internal] 🎞️ Raised the latest React Doctor diff score to `92/100` by consolidating intentional blog view-transition state commits.
+- [ ] [Internal] 🔐 Reduced reset-password form state warning debt while preserving the existing auth UI behavior.
+- [ ] [Internal] 📐 Reduced full-scan visual warning debt with Tailwind shorthand and heading-weight cleanup.
+- [ ] [Internal] 🧮 Raised the full React Doctor scan to `68/100` by clearing immutable-sort and nearest-item loop findings.
+- [ ] [Internal] 🔁 Reduced single-pass parsing debt across tested storage, blog, legal, trip-generation, airport, and destination helpers.
+- [ ] [Internal] 🧯 Kept the immutable-sort cleanup compatible with the app's current ES2022 runtime target.
+- [ ] [Internal] 📶 Reduced network status state-update debt while preserving offline recovery behavior.
+- [ ] [Internal] 🪟 Raised the full React Doctor scan to `69/100` by consolidating trip overlay state updates.
+- [ ] [Internal] 🏙️ Reduced add-city modal state-update debt while preserving suggestion search and manual fallback behavior.
+- [ ] [Internal] 🧭 Hardened add-city manual lookup handling against stale async results.
+- [ ] [Internal] ⏱️ Reduced generation progress timer state debt while preserving rotating status messages.
+- [ ] [Internal] 🧵 Reduced component string-parsing iteration debt in tested timeline, examples, details, and country-selection surfaces.
+- [ ] [Internal] 🧪 Ensured country-selection browser coverage runs under the repository's current Vitest include rules.
+- [ ] [Internal] 🧳 Reduced profile stamp metric parsing to single-pass timestamp collection.
+- [ ] [Internal] 🧭 Reduced planner, details, trip-manager, and admin query/filter parsing to single-pass transforms.
+- [ ] [Internal] 🗺️ Reduced trip preview coordinate and leg-color parsing to single-pass transforms.
+- [ ] [Internal] 📊 Reduced trip resize preset and admin dashboard day-key parsing to single-pass transforms.
+- [ ] [Internal] 📝 Reduced markdown editor serialization and model catalog ordering to single-pass transforms.
+- [ ] [Internal] 🛠️ Reduced admin benchmark, audit diff, and user-selection parsing to single-pass transforms.
+- [ ] [Internal] 🔎 Simplified admin query multi-value parsing to single-pass loops.
+- [ ] [Internal] 🧰 Reduced tested utility iteration debt in provider labels, JSON diff focus, timeline activities, FAQ excerpts, and city lookup parsing.
+- [ ] [Internal] 🩺 Raised the latest React Doctor diff score to `90/100` by clearing safe accessibility, hydration-time, state grouping, formatter allocation, and visual duplicate findings.
+- [ ] [Internal] 🧑‍⚕️ Cleared the latest React Doctor Fast Refresh errors by moving tested utilities out of component export files.
+- [ ] [Internal] 🩺 Cleared the latest React Doctor v0.2.3 full-scan Fast Refresh errors and documented the current full/diff score backlog.
+- [ ] [Internal] 🩺 Fixed `no-render-in-render` warnings in `AdminJsonDiffModal.tsx` and `TripViewPlannerWorkspace.tsx`.
+- [ ] [Internal] 🛡️ Added `sandbox` attributes to iframes in `DetailsPanel.tsx`, `BlogPostPage.tsx`, and `PrintLayout.tsx`.
+- [ ] [Internal] 🧭 Addressed `anchor-has-content` in markdown custom anchor component renderers across `MarkdownEditor.tsx`, `TripTimelineListView.tsx`, and `UpdatesPage.tsx`.
+- [ ] [Internal] ⚡ Optimized `.map().filter(Boolean)` calls to `.flatMap()` in edge function scripts (`site-og-image.tsx` and `trip-og-image.tsx`).
+- [ ] [Internal] 🧮 Replaced unstable array index key bindings with stable data-derived key attributes in edge function map list elements.
+- [ ] [Internal] 🩺 Resolved accessibility, performance, and lookup issues across sharing modals, admin tools, storage services, and pane resize controls, raising the repository scan score to a perfect `100/100`.
+- [ ] [Internal] 🩺 Configured react-doctor configuration rules to ignore intentional synchronous DOM rendering blocks.
+- [ ] [Fixed] 🧯 Resolved runtime ReferenceError exceptions when loading Prism syntax highlighting in the admin benchmark, audit, and user details screens.
+

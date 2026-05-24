@@ -49,7 +49,7 @@ describe('components/ItineraryMap map controls availability', () => {
       }),
     );
 
-    expect(screen.getByText('Loading Map...')).toBeInTheDocument();
+    expect(screen.getByText('Loading map…')).toBeInTheDocument();
     expect(screen.getByLabelText('Vertical layout')).toBeInTheDocument();
     expect(screen.getByLabelText('Horizontal layout')).toBeInTheDocument();
 

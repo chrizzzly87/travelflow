@@ -22,7 +22,7 @@ export const ProfileSummaryStats: React.FC<ProfileSummaryStatsProps> = ({
       {stats.map((stat) => (
         <article
           key={stat.id}
-          className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-right"
+          className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-right"
         >
           <p
             className={stat.accent

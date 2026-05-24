@@ -19,6 +19,9 @@ import {
     ToggleRight,
 } from '@phosphor-icons/react';
 import Prism from 'prismjs';
+if (typeof window !== 'undefined') {
+    (window as any).Prism = (window as any).Prism || Prism;
+}
 import 'prismjs/components/prism-json';
 import {
     AI_MODEL_CATALOG,
@@ -433,9 +436,11 @@ const summarizeRunsLocal = (rows: BenchmarkRun[]): BenchmarkSummary => {
     const failed = rows.filter((run) => run.status === 'failed').length;
     const running = rows.filter((run) => run.status === 'running').length;
     const queued = rows.filter((run) => run.status === 'queued').length;
-    const completedLatencies = rows
-        .filter((run) => run.status === 'completed' && typeof run.latency_ms === 'number')
-        .map((run) => Number(run.latency_ms));
+    const completedLatencies = rows.flatMap((run) => (
+        run.status === 'completed' && typeof run.latency_ms === 'number'
+            ? [Number(run.latency_ms)]
+            : []
+    ));
     const averageLatencyMs = completedLatencies.length > 0
         ? Math.round(completedLatencies.reduce((sum, value) => sum + value, 0) / completedLatencies.length)
         : null;
@@ -549,7 +554,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const pendingImportedScenarioRef = useRef<ReturnType<typeof decodeBenchmarkScenarioImportPayload> | null>(null);
 
     const sortedModels = useMemo(() => sortAiModels(AI_MODEL_CATALOG), []);
-    const activeModelIdSet = useMemo(() => new Set(sortedModels.filter((model) => model.availability === 'active').map((model) => model.id)), [sortedModels]);
+    const activeModelIdSet = useMemo(
+        () => new Set(sortedModels.flatMap((model) => (model.availability === 'active' ? [model.id] : []))),
+        [sortedModels],
+    );
     const defaultPresets = useMemo(
         () => createSystemBenchmarkPresets(defaultDates.startDate, defaultDates.endDate),
         [defaultDates.endDate, defaultDates.startDate]
@@ -578,14 +586,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
     const selectedTargets = useMemo(() => {
         const seen = new Set<string>();
-        return modelTargetIds
-            .map((modelId) => AI_MODEL_CATALOG.find((model) => model.id === modelId))
-            .filter((model): model is NonNullable<typeof model> => Boolean(model && model.availability === 'active'))
-            .filter((model) => {
-                if (seen.has(model.id)) return false;
-                seen.add(model.id);
-                return true;
-            });
+        return modelTargetIds.flatMap((modelId) => {
+            const model = AI_MODEL_CATALOG.find((entry) => entry.id === modelId);
+            if (!model || model.availability !== 'active') return [];
+            if (seen.has(model.id)) return [];
+            seen.add(model.id);
+            return [model];
+        });
     }, [modelTargetIds]);
     const selectedTargetIdSet = useMemo(() => new Set(selectedTargets.map((target) => target.id)), [selectedTargets]);
     const inactiveTargetIdSet = useMemo(() => new Set(inactiveModelTargetIds), [inactiveModelTargetIds]);
@@ -661,7 +668,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     ]);
 
     const providerOptions = useMemo(() => {
-        const values = Array.from(new Set(runs.map((run) => run.provider).filter(Boolean)));
+        const values = Array.from(new Set(runs.flatMap((run) => (run.provider ? [run.provider] : []))));
         values.sort((left, right) => {
             const orderDelta = getAiProviderSortOrder(left) - getAiProviderSortOrder(right);
             if (orderDelta !== 0) return orderDelta;
@@ -1900,15 +1907,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         return parseRunError(errorModalRun.error_message);
     }, [errorModalRun]);
 
-    const highlightedErrorJson = useMemo(() => {
+    const errorJsonSource = useMemo(() => {
         if (!errorModalRun) return '';
         const parsed = parseRunError(errorModalRun.error_message);
         const payload = hydrateStringifiedJson(parsed.details ?? { error: errorModalRun.error_message || 'Unknown error' });
-        const jsonSource = JSON.stringify(payload, null, 2);
-        return Prism.highlight(jsonSource, Prism.languages.json, 'json');
+        return JSON.stringify(payload, null, 2);
     }, [errorModalRun]);
 
-    const highlightedValidationJson = useMemo(() => {
+    const validationJsonSource = useMemo(() => {
         if (!validationModalRun) return '';
         const warnings = getValidationWarnings(validationModalRun.validation_checks);
         const payload = {
@@ -1917,8 +1923,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             errors: validationModalRun.validation_errors || [],
             warnings,
         };
-        const jsonSource = JSON.stringify(payload, null, 2);
-        return Prism.highlight(jsonSource, Prism.languages.json, 'json');
+        return JSON.stringify(payload, null, 2);
     }, [validationModalRun]);
 
     const validationModalWarnings = useMemo(() => {
@@ -1937,7 +1942,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
-                            <h2 className="text-base font-bold text-slate-900">Benchmark execution context</h2>
+                            <h2 className="text-base font-semibold text-slate-900">Benchmark execution context</h2>
                             <p className="mt-1 max-w-3xl text-sm text-slate-600">
                                 Default create-trip benchmark workspace. Configure session input on the left and compare selected model targets on the right.
                                 Session identifiers and filters persist in the URL.
@@ -1971,7 +1976,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <h3 className="text-base font-bold text-slate-900">7-day telemetry quick view</h3>
+                            <h3 className="text-base font-semibold text-slate-900">7-day telemetry quick view</h3>
                             <p className="text-xs text-slate-500">
                                 Three quick ranking cards. Open the full telemetry page for detailed charts and filters.
                             </p>
@@ -2035,7 +2040,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                                <h3 className="text-lg font-bold text-slate-900">Create-trip benchmark mask</h3>
+                                <h3 className="text-lg font-semibold text-slate-900">Create-trip benchmark mask</h3>
                                 <p className="mt-1 text-xs text-slate-500">
                                     Pick a preset and edit in modal so the results table stays in view.
                                 </p>
@@ -2052,17 +2057,18 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         <div className="mt-3 space-y-3">
                             <label className="space-y-1 text-sm">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Session name</span>
-                                <input
-                                    value={sessionName}
+	                                <input
+	                                    aria-label="Session name"
+	                                    value={sessionName}
                                     onChange={(event) => setSessionName(event.target.value)}
                                     className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
                             </label>
 
-                            <label className="space-y-1 text-sm">
+                            <div className="space-y-1 text-sm">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preset</span>
                                 <Select value={selectedPresetId} onValueChange={(value) => void handlePresetSelection(value)}>
-                                    <SelectTrigger>
+                                    <SelectTrigger aria-label="Preset">
                                         <SelectValue placeholder="Choose benchmark preset" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -2076,7 +2082,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </label>
+                            </div>
 
                             <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
                                 <div className="flex flex-wrap items-center gap-2">
@@ -2110,8 +2116,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     <p className="text-[11px] text-slate-600">
                                         Paste a trip generation payload or a benchmark scenario JSON. Apply it to prefill the benchmark mask.
                                     </p>
-                                    <textarea
-                                        value={customScenarioJsonDraft}
+	                                    <textarea
+	                                        aria-label="Custom JSON import"
+	                                        value={customScenarioJsonDraft}
                                         onChange={(event) => {
                                             setCustomScenarioJsonDraft(event.target.value);
                                             setCustomScenarioMeta((current) => current || {
@@ -2185,7 +2192,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h3 className="text-lg font-bold text-slate-900">Model targets + execution</h3>
+                            <h3 className="text-lg font-semibold text-slate-900">Model targets + execution</h3>
                             <div className="flex flex-wrap items-center gap-2">
                                 <button
                                     type="button"
@@ -2237,9 +2244,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         <div className="mt-2 grid gap-2 sm:grid-cols-2">
                             <label className="space-y-1 text-xs">
                                 <span className="font-semibold uppercase tracking-wide text-slate-500">Timeout (seconds)</span>
-                                <input
-                                    type="number"
-                                    min={BENCHMARK_TIMEOUT_MIN_SECONDS}
+	                                <input
+	                                    type="number"
+	                                    aria-label="Timeout seconds"
+	                                    min={BENCHMARK_TIMEOUT_MIN_SECONDS}
                                     max={BENCHMARK_TIMEOUT_MAX_SECONDS}
                                     step={5}
                                     value={benchmarkTimeoutSeconds}
@@ -2258,9 +2266,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             </label>
 
                             <label className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
-                                <input
-                                    type="checkbox"
-                                    checked={compactBenchmarkOutput}
+	                                <input
+	                                    type="checkbox"
+	                                    aria-label="Compact output"
+	                                    checked={compactBenchmarkOutput}
                                     onChange={(event) => setCompactBenchmarkOutput(event.target.checked)}
                                 />
                                 Compact output (faster + more reliable JSON)
@@ -2389,7 +2398,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 <section ref={resultsSectionRef} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <h3 className="text-lg font-bold text-slate-900">Benchmark runs</h3>
+                            <h3 className="text-lg font-semibold text-slate-900">Benchmark runs</h3>
                             <p className="text-xs text-slate-500">
                                 Session: {session ? `${session.name || 'Unnamed'} (${session.share_token})` : 'No session loaded'}
                             </p>
@@ -2432,25 +2441,28 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </SelectContent>
                             </Select>
                             <label className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
-                                <input
-                                    type="checkbox"
-                                    checked={hideFailedRuns}
+	                                <input
+	                                    type="checkbox"
+	                                    aria-label="Hide failed"
+	                                    checked={hideFailedRuns}
                                     onChange={(event) => setHideFailedRuns(event.target.checked)}
                                 />
                                 Hide failed
                             </label>
                             <label className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
-                                <input
-                                    type="checkbox"
-                                    checked={onlyWarningRuns}
+	                                <input
+	                                    type="checkbox"
+	                                    aria-label="Only warnings"
+	                                    checked={onlyWarningRuns}
                                     onChange={(event) => setOnlyWarningRuns(event.target.checked)}
                                 />
                                 Only warnings
                             </label>
                             <label className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
-                                <input
-                                    type="checkbox"
-                                    checked={onlyUnratedRuns}
+	                                <input
+	                                    type="checkbox"
+	                                    aria-label="Only unrated"
+	                                    checked={onlyUnratedRuns}
                                     onChange={(event) => setOnlyUnratedRuns(event.target.checked)}
                                 />
                                 Only unrated
@@ -2646,8 +2658,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             </td>
                                             <td className="px-3 py-2">
                                                 <div className="w-[250px] space-y-1.5">
-                                                    <textarea
-                                                        value={commentDraft}
+	                                                    <textarea
+	                                                        aria-label={`Comment for run ${run.id}`}
+	                                                        value={commentDraft}
                                                         onChange={(event) => {
                                                             const nextValue = event.target.value;
                                                             setRunCommentDrafts((current) => ({
@@ -2719,7 +2732,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     </div>
 
                     <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <h4 className="text-sm font-bold text-slate-800">Model dashboard</h4>
+                        <h4 className="text-sm font-semibold text-slate-800">Model dashboard</h4>
                         <p className="text-[11px] text-slate-500">Averages are computed from persisted runs in the loaded session.</p>
 
                         <div className="mt-2 overflow-x-auto">
@@ -2799,8 +2812,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     )}
                 >
                     <div className="space-y-3">
-                        <input
-                            value={modelFilter}
+	                        <input
+	                            aria-label="Search provider, label, or model id"
+	                            value={modelFilter}
                             onChange={(event) => setModelFilter(event.target.value)}
                             placeholder="Search provider, label, or model id"
                             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
@@ -2823,7 +2837,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                     disabled={disabled}
                                                     onClick={() => toggleModelDraft(model.id)}
                                                     className={[
-                                                        'flex w-full items-center justify-between rounded-md border px-2 py-2 text-left text-xs',
+                                                        'flex w-full items-center justify-between rounded-md border p-2 text-left text-xs',
                                                         selected
                                                             ? 'border-accent-300 bg-accent-50 text-accent-900'
                                                             : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
@@ -2880,8 +2894,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         <div className="grid grid-cols-1 gap-3">
                             <label className="space-y-1 text-sm">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Name</span>
-                                <input
-                                    value={presetEditor.name}
+	                                <input
+	                                    aria-label="Name"
+	                                    value={presetEditor.name}
                                     onChange={(event) => setPresetEditor((current) => current ? { ...current, name: event.target.value } : current)}
                                     className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
@@ -2889,8 +2904,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                             <label className="space-y-1 text-sm">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Description</span>
-                                <input
-                                    value={presetEditor.description}
+	                                <input
+	                                    aria-label="Description"
+	                                    value={presetEditor.description}
                                     onChange={(event) => setPresetEditor((current) => current ? { ...current, description: event.target.value } : current)}
                                     className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
@@ -2898,21 +2914,22 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                             <label className="space-y-1 text-sm">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Destinations</span>
-                                <input
-                                    value={presetEditor.scenario.destinations}
+	                                <input
+	                                    aria-label="Destinations"
+	                                    value={presetEditor.scenario.destinations}
                                     onChange={(event) => updatePresetDraftScenario('destinations', event.target.value)}
                                     className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
                             </label>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 text-sm">
+                                <div className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Date mode</span>
                                     <Select
                                         value={presetEditor.scenario.dateInputMode}
                                         onValueChange={(value) => updatePresetDraftScenario('dateInputMode', value as BenchmarkMaskScenario['dateInputMode'])}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger aria-label="Date mode">
                                             <SelectValue placeholder="Date mode" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -2920,14 +2937,15 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <SelectItem value="flex">Flexible window</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </label>
+                                </div>
 
                                 {presetEditor.scenario.dateInputMode === 'flex' ? (
                                     <label className="space-y-1 text-sm">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Flex weeks</span>
-                                        <input
-                                            type="number"
-                                            min={1}
+	                                        <input
+	                                            type="number"
+	                                            aria-label="Flex weeks"
+	                                            min={1}
                                             max={12}
                                             value={presetEditor.scenario.flexWeeks}
                                             onChange={(event) => {
@@ -2941,9 +2959,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 ) : (
                                     <label className="space-y-1 text-sm">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Start date</span>
-                                        <input
-                                            type="date"
-                                            value={presetEditor.scenario.startDate || defaultDates.startDate}
+	                                        <input
+	                                            type="date"
+	                                            aria-label="Start date"
+	                                            value={presetEditor.scenario.startDate || defaultDates.startDate}
                                             onChange={(event) => updatePresetDraftScenario('startDate', event.target.value)}
                                             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                         />
@@ -2955,21 +2974,22 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 {presetEditor.scenario.dateInputMode === 'exact' ? (
                                     <label className="space-y-1 text-sm">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">End date</span>
-                                        <input
-                                            type="date"
-                                            value={presetEditor.scenario.endDate || defaultDates.endDate}
+	                                        <input
+	                                            type="date"
+	                                            aria-label="End date"
+	                                            value={presetEditor.scenario.endDate || defaultDates.endDate}
                                             onChange={(event) => updatePresetDraftScenario('endDate', event.target.value)}
                                             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                         />
                                     </label>
                                 ) : (
-                                    <label className="space-y-1 text-sm">
+                                    <div className="space-y-1 text-sm">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Flex window</span>
                                         <Select
                                             value={presetEditor.scenario.flexWindow}
                                             onValueChange={(value) => updatePresetDraftScenario('flexWindow', value as BenchmarkMaskScenario['flexWindow'])}
                                         >
-                                            <SelectTrigger>
+                                            <SelectTrigger aria-label="Flex window">
                                                 <SelectValue placeholder="Preferred time range" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -2980,16 +3000,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 <SelectItem value="shoulder">Shoulder</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                    </label>
+                                    </div>
                                 )}
 
-                                <label className="space-y-1 text-sm">
+                                <div className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Round trip</span>
                                     <Select
                                         value={presetEditor.scenario.roundTrip ? 'yes' : 'no'}
                                         onValueChange={(value) => updatePresetDraftScenario('roundTrip', value === 'yes')}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger aria-label="Round trip">
                                             <SelectValue placeholder="Round trip" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -2997,14 +3017,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <SelectItem value="no">No</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </label>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 text-sm">
+                                <div className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Budget</span>
                                     <Select value={presetEditor.scenario.budget} onValueChange={(value) => updatePresetDraftScenario('budget', value)}>
-                                        <SelectTrigger>
+                                        <SelectTrigger aria-label="Budget">
                                             <SelectValue placeholder="Budget" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -3014,11 +3034,11 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <SelectItem value="Luxury">Luxury</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </label>
-                                <label className="space-y-1 text-sm">
+                                </div>
+                                <div className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pace</span>
                                     <Select value={presetEditor.scenario.pace} onValueChange={(value) => updatePresetDraftScenario('pace', value)}>
-                                        <SelectTrigger>
+                                        <SelectTrigger aria-label="Pace">
                                             <SelectValue placeholder="Pace" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -3027,23 +3047,25 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <SelectItem value="Fast">Fast</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </label>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <label className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Specific cities</span>
-                                    <input
-                                        value={presetEditor.scenario.specificCities}
+	                                    <input
+	                                        aria-label="Specific cities"
+	                                        value={presetEditor.scenario.specificCities}
                                         onChange={(event) => updatePresetDraftScenario('specificCities', event.target.value)}
                                         className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                     />
                                 </label>
                                 <label className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stops</span>
-                                    <input
-                                        type="number"
-                                        min={1}
+	                                    <input
+	                                        type="number"
+	                                        aria-label="Stops"
+	                                        min={1}
                                         max={20}
                                         value={presetEditor.scenario.numCities ?? ''}
                                         onChange={(event) => {
@@ -3056,13 +3078,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             </div>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                                <label className="space-y-1 text-sm">
+                                <div className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Traveler setup</span>
                                     <Select
                                         value={presetEditor.scenario.travelerSetup}
                                         onValueChange={(value) => updatePresetDraftScenario('travelerSetup', value as BenchmarkMaskScenario['travelerSetup'])}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger aria-label="Traveler setup">
                                             <SelectValue placeholder="Traveler setup" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -3072,14 +3094,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <SelectItem value="family">Family</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </label>
-                                <label className="space-y-1 text-sm">
+                                </div>
+                                <div className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Trip style</span>
                                     <Select
                                         value={presetEditor.scenario.tripStyleMask}
                                         onValueChange={(value) => updatePresetDraftScenario('tripStyleMask', value as BenchmarkMaskScenario['tripStyleMask'])}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger aria-label="Trip style">
                                             <SelectValue placeholder="Trip style" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -3088,14 +3110,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <SelectItem value="food_focused">Food focused</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </label>
-                                <label className="space-y-1 text-sm">
+                                </div>
+                                <div className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Transport</span>
                                     <Select
                                         value={presetEditor.scenario.transportMask}
                                         onValueChange={(value) => updatePresetDraftScenario('transportMask', value as BenchmarkMaskScenario['transportMask'])}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger aria-label="Transport">
                                             <SelectValue placeholder="Transport" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -3105,13 +3127,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <SelectItem value="camper">Camper</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </label>
+                                </div>
                             </div>
 
                             <label className="space-y-1 text-sm">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Notes/interests</span>
-                                <textarea
-                                    rows={3}
+	                                <textarea
+	                                    aria-label="Notes/interests"
+	                                    rows={3}
                                     value={presetEditor.scenario.notes}
                                     onChange={(event) => updatePresetDraftScenario('notes', event.target.value)}
                                     className="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
@@ -3119,9 +3142,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             </label>
 
                             <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                                <input
-                                    type="checkbox"
-                                    checked={presetEditor.scenario.routeLock}
+	                                <input
+	                                    type="checkbox"
+	                                    aria-label="Route lock"
+	                                    checked={presetEditor.scenario.routeLock}
                                     onChange={(event) => updatePresetDraftScenario('routeLock', event.target.checked)}
                                 />
                                 Route lock (metadata only)
@@ -3131,13 +3155,15 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 </AppModal>
 
                 {promptModal && (
-                    <div
-                        className="fixed inset-0 z-[1990] flex items-center justify-center bg-slate-950/45 p-4"
-                        onClick={() => setPromptModal(null)}
-                    >
+                    <div className="fixed inset-0 z-[1990] flex items-center justify-center bg-slate-950/45 p-4">
+                        <button
+                            type="button"
+                            aria-label="Close generated benchmark prompt"
+                            className="absolute inset-0 cursor-default"
+                            onClick={() => setPromptModal(null)}
+                        />
                         <div
-                            className="w-full max-w-4xl rounded-xl border border-slate-300 bg-white shadow-2xl"
-                            onClick={(event) => event.stopPropagation()}
+                            className="relative z-10 w-full max-w-4xl rounded-xl border border-slate-300 bg-white shadow-2xl"
                         >
                             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                                 <div>
@@ -3169,8 +3195,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </div>
                             </div>
                             <div className="p-4">
-                                <textarea
-                                    value={promptModal.prompt}
+	                                <textarea
+	                                    aria-label="Prompt"
+	                                    value={promptModal.prompt}
                                     readOnly
                                     rows={18}
                                     className="w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-800 outline-none"
@@ -3181,13 +3208,15 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 )}
 
                 {errorModalRun && (
-                    <div
-                        className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/45 p-4"
-                        onClick={() => setErrorModalRun(null)}
-                    >
+                    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/45 p-4">
+                        <button
+                            type="button"
+                            aria-label="Close run error details"
+                            className="absolute inset-0 cursor-default"
+                            onClick={() => setErrorModalRun(null)}
+                        />
                         <div
-                            className="w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl"
-                            onClick={(event) => event.stopPropagation()}
+                            className="relative z-10 w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl"
                         >
                             <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
                                 <div>
@@ -3216,7 +3245,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     {errorModalParsed?.shortMessage || 'Detailed provider error'}
                                 </div>
                                 <pre className="max-h-[56vh] overflow-auto rounded-lg bg-[#1f2937] p-3 text-xs leading-relaxed">
-                                    <code className="language-json" dangerouslySetInnerHTML={{ __html: highlightedErrorJson }} />
+                                    <code className="language-json">{errorJsonSource}</code>
                                 </pre>
                             </div>
                         </div>
@@ -3224,13 +3253,15 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 )}
 
                 {validationModalRun && (
-                    <div
-                        className="fixed inset-0 z-[1995] flex items-center justify-center bg-slate-950/45 p-4"
-                        onClick={() => setValidationModalRun(null)}
-                    >
+                    <div className="fixed inset-0 z-[1995] flex items-center justify-center bg-slate-950/45 p-4">
+                        <button
+                            type="button"
+                            aria-label="Close validation details"
+                            className="absolute inset-0 cursor-default"
+                            onClick={() => setValidationModalRun(null)}
+                        />
                         <div
-                            className="w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl"
-                            onClick={(event) => event.stopPropagation()}
+                            className="relative z-10 w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl"
                         >
                             <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
                                 <div>
@@ -3263,7 +3294,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         : 'Validation failed'}
                                 </div>
                                 <pre className="max-h-[56vh] overflow-auto rounded-lg bg-[#1f2937] p-3 text-xs leading-relaxed">
-                                    <code className="language-json" dangerouslySetInnerHTML={{ __html: highlightedValidationJson }} />
+                                    <code className="language-json">{validationJsonSource}</code>
                                 </pre>
                             </div>
                         </div>

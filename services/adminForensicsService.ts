@@ -90,7 +90,7 @@ export const buildAdminForensicsReplayBundle = (
   }
 ): AdminForensicsReplayBundle => {
   const generatedAtIso = options?.generatedAtIso || new Date().toISOString();
-  const sortedEvents = [...events].sort((left, right) => (
+  const sortedEvents = Array.from(events).sort((left, right) => (
     left.created_at.localeCompare(right.created_at)
   ));
 

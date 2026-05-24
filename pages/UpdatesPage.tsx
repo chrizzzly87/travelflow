@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useReducer } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +27,32 @@ type DebuggerHost = Window & {
         getState: () => { open: boolean; tracking: boolean };
     };
     getSimulatedLogin?: () => boolean;
+};
+
+interface UpdatesDebugVisibility {
+    debuggerOpen: boolean;
+    simulatedLoggedIn: boolean;
+}
+
+type UpdatesDebugVisibilityAction =
+    | { type: 'sync'; value: UpdatesDebugVisibility }
+    | { type: 'debugger'; open: boolean }
+    | { type: 'simulated-login'; loggedIn: boolean };
+
+const updatesDebugVisibilityReducer = (
+    state: UpdatesDebugVisibility,
+    action: UpdatesDebugVisibilityAction,
+): UpdatesDebugVisibility => {
+    switch (action.type) {
+        case 'sync':
+            return action.value;
+        case 'debugger':
+            return { ...state, debuggerOpen: action.open };
+        case 'simulated-login':
+            return { ...state, simulatedLoggedIn: action.loggedIn };
+        default:
+            return state;
+    }
 };
 
 const formatReleaseDate = (dateLike: string) => {
@@ -71,37 +97,34 @@ export const UpdatesPage: React.FC = () => {
     const { t } = useTranslation('pages');
     const { isAdmin } = useAuth();
     const releases = useMemo(() => getPublishedReleaseNotes(), []);
-    const [isDebuggerOpen, setIsDebuggerOpen] = useState<boolean>(() => readInitialDebuggerOpen());
-    const [isSimulatedLoggedIn, setIsSimulatedLoggedIn] = useState<boolean>(() => readInitialSimulatedLogin());
-    const showInternalNews = isAdmin || isDebuggerOpen || isSimulatedLoggedIn;
+    const [debugVisibility, dispatchDebugVisibility] = useReducer(updatesDebugVisibilityReducer, undefined, () => ({
+        debuggerOpen: readInitialDebuggerOpen(),
+        simulatedLoggedIn: readInitialSimulatedLogin(),
+    }));
+    const showInternalNews = isAdmin || debugVisibility.debuggerOpen || debugVisibility.simulatedLoggedIn;
 
     useEffect(() => {
         const syncFromHost = () => {
             const host = window as DebuggerHost;
-            setIsDebuggerOpen(Boolean(host.onPageDebugger?.getState()?.open));
-            if (typeof host.getSimulatedLogin === 'function') {
-                setIsSimulatedLoggedIn(Boolean(host.getSimulatedLogin()));
-                return;
-            }
-            setIsSimulatedLoggedIn(readStoredBoolean(SIMULATED_LOGIN_STORAGE_KEY, false));
+            dispatchDebugVisibility({
+                type: 'sync',
+                value: {
+                    debuggerOpen: Boolean(host.onPageDebugger?.getState()?.open),
+                    simulatedLoggedIn: typeof host.getSimulatedLogin === 'function'
+                        ? Boolean(host.getSimulatedLogin())
+                        : readStoredBoolean(SIMULATED_LOGIN_STORAGE_KEY, false),
+                },
+            });
         };
 
         const handleDebuggerState = (event: Event) => {
             const detail = (event as CustomEvent<DebuggerStateDebugDetail>).detail;
-            if (!detail?.available) {
-                setIsDebuggerOpen(false);
-                return;
-            }
-            setIsDebuggerOpen(Boolean(detail.open));
+            dispatchDebugVisibility({ type: 'debugger', open: detail?.available ? Boolean(detail.open) : false });
         };
 
         const handleSimulatedLoginState = (event: Event) => {
             const detail = (event as CustomEvent<SimulatedLoginDebugDetail>).detail;
-            if (!detail?.available) {
-                setIsSimulatedLoggedIn(false);
-                return;
-            }
-            setIsSimulatedLoggedIn(Boolean(detail.loggedIn));
+            dispatchDebugVisibility({ type: 'simulated-login', loggedIn: detail?.available ? Boolean(detail.loggedIn) : false });
         };
 
         syncFromHost();
@@ -127,7 +150,7 @@ export const UpdatesPage: React.FC = () => {
     return (
         <MarketingLayout>
             <section className="pt-5 pb-10 text-center md:pb-12">
-                <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">{t('updates.title')}</h1>
+                <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">{t('updates.title')}</h1>
             </section>
 
             <section className="mt-2 space-y-4">
@@ -156,7 +179,7 @@ export const UpdatesPage: React.FC = () => {
                             }
                         >
                             <div className="flex flex-wrap items-start justify-between gap-3">
-                                <h2 className="text-xl font-bold tracking-tight text-slate-900">{release.title}</h2>
+                                <h2 className="text-xl font-semibold tracking-tight text-slate-900">{release.title}</h2>
                                 <div className="text-right">
                                     <span
                                         className={
@@ -179,8 +202,8 @@ export const UpdatesPage: React.FC = () => {
                                         remarkPlugins={[remarkGfm]}
                                         components={{
                                             p: ({ node, ...props }) => <p {...props} className="m-0" />,
-                                            a: ({ node, ...props }) => (
-                                                <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800" />
+                                            a: ({ node, children, ...props }) => (
+                                                <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800">{children}</a>
                                             ),
                                             code: ({ node, ...props }) => (
                                                 <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />
@@ -210,8 +233,8 @@ export const UpdatesPage: React.FC = () => {
                                                                 remarkPlugins={[remarkGfm]}
                                                                 components={{
                                                                     p: ({ node, ...props }) => <p {...props} className="m-0" />,
-                                                                    a: ({ node, ...props }) => (
-                                                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800" />
+                                                                    a: ({ node, children, ...props }) => (
+                                                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800">{children}</a>
                                                                     ),
                                                                     code: ({ node, ...props }) => (
                                                                         <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />

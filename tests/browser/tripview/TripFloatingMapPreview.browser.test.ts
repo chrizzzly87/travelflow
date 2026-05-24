@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   TripFloatingMapPreview,
-  resolveFloatingMapPresetWidths,
 } from '../../../components/tripview/TripFloatingMapPreview';
+import { resolveFloatingMapPresetWidths } from '../../../components/tripview/tripFloatingMapPreviewUtils';
 import { readFloatingMapPreviewState, writeFloatingMapPreviewState } from '../../../components/tripview/floatingMapPreviewState';
 
 const makeRect = (left: number, top: number, width: number, height: number): DOMRect => ({

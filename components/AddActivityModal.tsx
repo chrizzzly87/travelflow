@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ActivityType, ITimelineItem, ITrip } from '../types';
 import { Sparkles, Check } from 'lucide-react';
 import { ALL_ACTIVITY_TYPES, getActivityColorByTypes, normalizeActivityTypes } from '../utils';
-import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypeButtonClass, getActivityTypePaletteClass } from './ActivityTypeVisuals';
+import { ActivityTypeIcon } from './ActivityTypeVisuals';
+import { formatActivityTypeLabel, getActivityTypeButtonClass, getActivityTypePaletteClass } from './ActivityTypeVisualsUtils';
 import { AppModal } from './ui/app-modal';
 
 interface AddActivityModalProps {
@@ -72,16 +73,24 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
             tripTitle: trip?.title || "My Trip",
             preferences: notes || "",
             dayNumber: Math.floor(dayOffset),
-            cities: trip?.items.filter(i => i.type === 'city').map(c => ({ 
-                name: c.title, 
-                dayOffset: c.startDateOffset, 
-                duration: c.duration 
-            })) || [],
-            activities: trip?.items.filter(i => i.type === 'activity').map(a => ({ 
-                title: a.title, 
-                dayOffset: a.startDateOffset,
-                type: Array.isArray(a.activityType) ? a.activityType.join(', ') : a.activityType 
-            })) || []
+            cities: trip?.items.flatMap((item) => (
+                item.type === 'city'
+                    ? [{
+                        name: item.title,
+                        dayOffset: item.startDateOffset,
+                        duration: item.duration,
+                    }]
+                    : []
+            )) || [],
+            activities: trip?.items.flatMap((item) => (
+                item.type === 'activity'
+                    ? [{
+                        title: item.title,
+                        dayOffset: item.startDateOffset,
+                        type: Array.isArray(item.activityType) ? item.activityType.join(', ') : item.activityType,
+                    }]
+                    : []
+            )) || []
         };
 
         try {
@@ -121,10 +130,10 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
         if (selectedTypes.includes(type)) {
             // Prevent empty selection
             if (selectedTypes.length > 1) {
-                setSelectedTypes(selectedTypes.filter(t => t !== type));
+                setSelectedTypes((currentTypes) => currentTypes.filter(t => t !== type));
             }
         } else {
-            setSelectedTypes([...selectedTypes, type]);
+            setSelectedTypes((currentTypes) => [...currentTypes, type]);
         }
     };
 
@@ -185,6 +194,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                     id={titleInputId}
                                     ref={manualTitleInputRef}
                                     type="text" 
+                                    aria-label="Title"
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
                                     className="w-full p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
@@ -212,6 +222,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                 <label htmlFor={descriptionInputId} className="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
                                 <textarea 
                                     id={descriptionInputId}
+                                    aria-label="Description"
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
                                     className="w-full p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none h-24 resize-none"
@@ -235,6 +246,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                     <input 
                                         id={promptInputId}
                                         type="text" 
+                                        aria-label="What are you looking for?"
                                         value={prompt}
                                         onChange={e => setPrompt(e.target.value)}
                                         className="flex-1 p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
@@ -278,7 +290,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                                 );
                                             })()}
                                             <div className="flex justify-between items-start mb-2">
-                                                <h4 className="font-bold text-gray-900">{p.title}</h4>
+                                                <h4 className="font-semibold text-gray-900">{p.title}</h4>
                                                 <span className="text-xs bg-white border border-gray-200 px-2 py-1 rounded-full uppercase font-bold text-gray-500">AI</span>
                                             </div>
                                             <p className="text-sm text-gray-600 mb-3">{p.description}</p>

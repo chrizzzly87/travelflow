@@ -174,10 +174,10 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     const stripIcon = shouldShowConnectivityStrip
         ? (
             connectivityState === 'offline'
-                ? <WifiOff className="h-3.5 w-3.5 shrink-0" />
-                : <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                ? <WifiOff className="size-3.5 shrink-0" />
+                : <AlertTriangle className="size-3.5 shrink-0" />
         )
-        : (isSyncingQueue ? <Spinner className="h-3.5 w-3.5 shrink-0" /> : null);
+        : (isSyncingQueue ? <Spinner className="size-3.5 shrink-0" /> : null);
     const isSlowGeneration = (
         (generationState === 'running' || generationState === 'queued')
         && typeof generationElapsedMs === 'number'
@@ -263,9 +263,9 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                 }`}>
                     <span className="inline-flex items-center gap-2">
                         {generationState === 'failed' ? (
-                            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                            <AlertTriangle className="size-3.5 shrink-0" />
                         ) : (
-                            <Spinner className="h-3.5 w-3.5 shrink-0" />
+                            <Spinner className="size-3.5 shrink-0" />
                         )}
                         {generationState === 'failed'
                             ? (
@@ -435,9 +435,10 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                         enabled: adminOverrideEnabled,
                                     })}
                                 >
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only"
+	                                    <input
+	                                        type="checkbox"
+	                                        aria-label="Enable admin override"
+	                                        className="sr-only"
                                         checked={adminOverrideEnabled}
                                         disabled={!canEnableAdminOverride}
                                         onChange={(event) => {
@@ -451,7 +452,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                         }}
                                     />
                                     <span
-                                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                                        className={`inline-block size-5 transform rounded-full bg-white shadow transition-transform ${
                                             adminOverrideEnabled ? 'translate-x-5' : 'translate-x-1'
                                         }`}
                                     />
@@ -489,16 +490,16 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                             : 'border-sky-200 bg-sky-50 text-sky-900'
                     }`}
                 >
-                    <div className="px-4 py-4 sm:px-6">
+                    <div className="p-4 sm:px-6">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                             <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border ${
+                                    <span className={`inline-flex size-8 items-center justify-center rounded-lg border ${
                                         isTripLockedByExpiry
                                             ? 'border-rose-200 bg-white text-rose-700'
                                             : 'border-sky-200 bg-white text-sky-700'
                                     }`}>
-                                        <AlertTriangle className="h-4 w-4" />
+                                        <AlertTriangle className="size-4" />
                                     </span>
                                     <p className="min-w-0 text-sm font-semibold leading-6 text-current">
                                         {isPaywallLocked

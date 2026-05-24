@@ -7,10 +7,12 @@ import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import {
     AdminSortHeaderButton,
+} from '../components/admin/AdminDataTable';
+import {
     ADMIN_TABLE_ROW_SURFACE_CLASS,
     ADMIN_TABLE_SORTED_CELL_CLASS,
     ADMIN_TABLE_SORTED_HEADER_CLASS,
-} from '../components/admin/AdminDataTable';
+} from '../components/admin/AdminDataTableUtils';
 import {
     Table,
     TableBody,
@@ -152,7 +154,7 @@ const WorkerHealthInfoButton: React.FC<{
         aria-label={ariaLabel}
         title={tooltip}
         data-tooltip={tooltip}
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700"
+        className="inline-flex size-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700"
     >
         <Info size={12} weight="bold" />
     </button>
@@ -325,7 +327,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                             />
                         )}
                         value={summary ? <StatusBadge status={summary.overallStatus} /> : '—'}
-                        hint={summary?.statusReason || (loading ? 'Loading worker status...' : 'No worker health rows yet.')}
+                        hint={summary?.statusReason || (loading ? 'Loading worker status…' : 'No worker health rows yet.')}
                     />
                     <SummaryCard
                         label={(
@@ -417,7 +419,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                 <AdminSurfaceCard className="space-y-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <h2 className="text-lg font-bold text-slate-900">Recent checks</h2>
+                            <h2 className="text-lg font-semibold text-slate-900">Recent checks</h2>
                             <p className="text-sm text-slate-500">
                                 Newest rows first. Heartbeats show cron health, watchdog rows capture stale-queue incidents, and canaries prove the drain path end to end.
                             </p>
@@ -535,7 +537,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                                 {loading && checks.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
-                                            Loading worker health...
+                                            Loading worker health…
                                         </TableCell>
                                     </TableRow>
                                 ) : null}

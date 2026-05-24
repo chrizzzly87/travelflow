@@ -113,15 +113,8 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   isSelectable = false,
   isSelected = false,
 }) => {
-  const [mapLoaded, setMapLoaded] = React.useState(false);
-  const [mapError, setMapError] = React.useState(false);
   const [isNearViewport, setIsNearViewport] = React.useState(false);
   const cardRef = React.useRef<HTMLElement | null>(null);
-
-  React.useEffect(() => {
-    setMapLoaded(false);
-    setMapError(false);
-  }, [trip.id, locale]);
 
   React.useEffect(() => {
     const node = cardRef.current;
@@ -148,6 +141,14 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
     () => (isNearViewport ? buildMiniMapUrl(trip, locale) : null),
     [isNearViewport, trip, locale]
   );
+  const [mapStatus, setMapStatus] = React.useState<{
+    key: string;
+    loaded: boolean;
+    error: boolean;
+  }>({ key: '', loaded: false, error: false });
+  const mapStatusKey = `${trip.id}:${locale}:${mapUrl || ''}`;
+  const mapLoaded = mapStatus.key === mapStatusKey && mapStatus.loaded;
+  const mapError = mapStatus.key === mapStatusKey && mapStatus.error;
   const summaryLine = React.useMemo(() => formatTripSummaryLine(trip, locale), [trip, locale]);
   const dateRange = React.useMemo(() => formatTripDateRange(trip, locale), [trip, locale]);
   const tripSpan = React.useMemo(() => getTripSpan(trip), [trip]);
@@ -174,22 +175,20 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   ), [cityItems]);
 
   const routeLanes = React.useMemo(() => (
-    cityItems
-      .slice(0, -1)
-      .map((item, index) => {
+    cityItems.reduce<Array<{ id: string; durationDays: number; color: string }>>((lanes, item, index) => {
+        if (index >= cityItems.length - 1) return lanes;
         const nextItem = cityItems[index + 1];
-        if (!nextItem) return null;
         const gapDays = nextItem.startDateOffset - (item.startDateOffset + item.duration);
         const durationDaysEstimate = Number.isFinite(gapDays)
           ? Math.max(0.35, Math.min(4, gapDays))
           : 0.35;
-        return {
+        lanes.push({
           id: `${item.id}-${nextItem.id}`,
           durationDays: durationDaysEstimate,
           color: nextItem.color || DEFAULT_ROUTE_COLOR,
-        };
-      })
-      .filter((lane): lane is { id: string; durationDays: number; color: string } => Boolean(lane))
+        });
+        return lanes;
+      }, [])
   ), [cityItems]);
 
   return (
@@ -224,10 +223,10 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               <img
                 src={mapUrl}
                 alt={`Map preview for ${trip.title}`}
-                className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.01] ${isExpired ? 'opacity-70 grayscale-[0.28]' : ''}`}
+                className={`size-full object-cover transition-transform duration-300 group-hover:scale-[1.01] ${isExpired ? 'opacity-70 grayscale-[0.28]' : ''}`}
                 loading="lazy"
-                onLoad={() => setMapLoaded(true)}
-                onError={() => setMapError(true)}
+                onLoad={() => setMapStatus({ key: mapStatusKey, loaded: true, error: false })}
+                onError={() => setMapStatus({ key: mapStatusKey, loaded: false, error: true })}
               />
             </>
           ) : (
@@ -249,7 +248,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               checked={isSelected}
               onCheckedChange={(value) => onSelectionChange(trip, value === true)}
               aria-label={`${labels.selectTrip || 'Select trip'}: ${trip.title}`}
-              className="h-6 w-6 cursor-pointer rounded-md border border-white/90 bg-white/95 shadow-sm"
+              className="size-6 cursor-pointer rounded-md border border-white/90 bg-white/95 shadow-sm"
               {...(analyticsAttrs ? analyticsAttrs('select') : {})}
             />
           </div>
@@ -288,7 +287,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
       )}
 
       <div className="space-y-3 p-4">
-        <h3 className="line-clamp-2 text-2xl font-black leading-tight tracking-tight text-slate-900">
+        <h3 className="line-clamp-2 text-2xl font-semibold leading-tight tracking-tight text-slate-900">
           <Link
             to={tripDetailPath}
             onClick={() => onOpen(trip)}
@@ -416,7 +415,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               onClick={() => onArchive(trip)}
               aria-label={labels.archive || 'Archive'}
               title={labels.archive || 'Archive'}
-              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-rose-200 bg-rose-50 text-rose-700 transition-colors hover:bg-rose-100"
+              className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md border border-rose-200 bg-rose-50 text-rose-700 transition-colors hover:bg-rose-100"
               {...(analyticsAttrs ? analyticsAttrs('archive') : {})}
             >
               <Trash size={16} weight="duotone" />
@@ -430,7 +429,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               aria-label={isPublic ? labels.makePrivate || 'Private' : labels.makePublic || 'Public'}
               title={isPublic ? labels.makePrivate || 'Private' : labels.makePublic || 'Public'}
               className={[
-                'inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border transition-colors',
+                'inline-flex size-9 cursor-pointer items-center justify-center rounded-md border transition-colors',
                 isPublic
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                   : 'border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200',
@@ -448,7 +447,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               aria-label={trip.isFavorite ? labels.unfavorite : labels.favorite}
               title={trip.isFavorite ? labels.unfavorite : labels.favorite}
               className={[
-                'inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border transition-colors',
+                'inline-flex size-9 cursor-pointer items-center justify-center rounded-md border transition-colors',
                 trip.isFavorite
                   ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
                   : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50',
@@ -466,7 +465,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               aria-label={trip.isPinned ? labels.unpin : labels.pin}
               title={trip.isPinned ? labels.unpin : labels.pin}
               className={[
-                'inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border transition-colors',
+                'inline-flex size-9 cursor-pointer items-center justify-center rounded-md border transition-colors',
                 trip.isPinned
                   ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
                   : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50',

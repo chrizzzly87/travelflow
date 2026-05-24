@@ -29,6 +29,7 @@ interface VerticalTimelineProps {
   onToggleDetailsPanel?: () => void;
 }
 
+const EMPTY_SELECTED_CITY_IDS: string[] = [];
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const CITY_VERTICAL_CONNECTOR_EDGE_INSET_PX = 0;
 const CITY_VERTICAL_CONNECTOR_GAP_PX = 0;
@@ -46,6 +47,15 @@ const VERTICAL_DAY_RAIL_WIDTH_PX = 64;
 const VERTICAL_MONTH_RAIL_WIDTH_PX = 24;
 const VERTICAL_MONTH_RAIL_HEADER_HEIGHT_PX = 32;
 const VERTICAL_MONTH_LABEL_PADDING_PX = 10;
+
+const createIdleDragState = (): IDragState => ({
+  isDragging: false,
+  itemId: null,
+  action: null,
+  startX: 0,
+  originalOffset: 0,
+  originalDuration: 0,
+});
 
 const estimateMonthLabelWidth = (label: string): number => label.length * 7.2;
 
@@ -81,7 +91,7 @@ const buildVerticalConnectorPath = (
 
 export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   trip,
-  selectedCityIds = [],
+  selectedCityIds = EMPTY_SELECTED_CITY_IDS,
   selectedItemId,
   onSelect,
   onUpdateItems,
@@ -105,21 +115,14 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   const dragStartItemsRef = useRef<ITimelineItem[] | null>(null);
   const latestDragItemsRef = useRef<ITimelineItem[] | null>(null);
   const lastAutoScrollSelectionRef = useRef<string | null>(null);
-  
+
   // Use Refs for synchronous drag tracking
   const isDraggingRef = useRef(false);
   const dragStartPosRef = useRef(0);
 
-  const [dragState, setDragState] = useState<IDragState>({
-    isDragging: false,
-    itemId: null,
-    action: null,
-    startX: 0,
-    originalOffset: 0,
-    originalDuration: 0,
-  });
+  const dragStateRef = useRef<IDragState>(createIdleDragState());
 
-  const [hoverTravelStart, setHoverTravelStart] = useState<number | null>(null);
+  const hoverTravelStartRef = useRef<number | null>(null);
   const [containerHeight, setContainerHeight] = useState(0);
 
   const timelineBounds = React.useMemo(() => getTimelineBounds(trip.items), [trip.items]);
@@ -178,7 +181,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
     [renderedDaySlots],
   );
   const todaySlot = todayRowIndex !== null ? renderedDaySlots[todayRowIndex] : null;
-  
+
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const travelItems = trip.items.filter(i => i.type === 'travel' || i.type === 'travel-empty').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const activities = trip.items.filter(i => i.type === 'activity');
@@ -259,7 +262,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
     } else if (cities.length > 1) {
         newStart = cities[0].startDateOffset + cities[0].duration;
     }
-    createTravelItem(newStart, 0.2); 
+    createTravelItem(newStart, 0.2);
   };
 
   const createTravelItem = (startOffset: number, duration: number) => {
@@ -303,37 +306,37 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
   const handleTravelMouseMove = (e: React.MouseEvent) => {
       if (!canEdit) {
-          if (hoverTravelStart !== null) setHoverTravelStart(null);
+          hoverTravelStartRef.current = null;
           return;
       }
       if (!travelLaneRef.current) return;
       const target = e.target as HTMLElement;
       if (target.closest('.timeline-block-item')) {
-          setHoverTravelStart(null);
+          hoverTravelStartRef.current = null;
           return;
       }
 
       const rect = travelLaneRef.current.getBoundingClientRect();
       const offsetY = e.clientY - rect.top; // Vertical offset
       const rawDay = visualStartOffset + (offsetY / pixelsPerDay);
-      
+
       let start = rawDay - 0.5;
       const snapStep = 0.5;
       start = Math.round(start / snapStep) * snapStep;
       if (start < visualStartOffset) start = visualStartOffset;
-      
-      setHoverTravelStart(start);
+
+      hoverTravelStartRef.current = start;
   };
 
   const handleTravelMouseLeave = () => {
-      setHoverTravelStart(null);
+      hoverTravelStartRef.current = null;
   };
 
   const handleTravelClick = () => {
       if (!canEdit) return;
-      if (hoverTravelStart !== null) {
-          createTravelItem(hoverTravelStart, 1.0);
-          setHoverTravelStart(null);
+      if (hoverTravelStartRef.current !== null) {
+          createTravelItem(hoverTravelStartRef.current, 1.0);
+          hoverTravelStartRef.current = null;
       }
   };
 
@@ -353,14 +356,14 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
     dragStartPosRef.current = e.clientY; // Track Y
     dragStartItemsRef.current = trip.items.map(i => ({ ...i }));
 
-    setDragState({
-      isDragging: false, 
+    dragStateRef.current = {
+      isDragging: false,
       itemId: id,
       action: direction === 'left' ? 'resize-left' : 'resize-right',
       startX: e.clientY,
       originalOffset: item.startDateOffset,
       originalDuration: item.duration,
-    });
+    };
   };
 
   const handleMoveStart = (e: React.MouseEvent | React.PointerEvent, id: string) => {
@@ -373,33 +376,34 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
     dragStartPosRef.current = e.clientY; // Track Y
     dragStartItemsRef.current = trip.items.map(i => ({ ...i }));
 
-    setDragState({
-      isDragging: false, 
+    dragStateRef.current = {
+      isDragging: false,
       itemId: id,
       action: 'move',
       startX: e.clientY,
       originalOffset: item.startDateOffset,
       originalDuration: item.duration,
-    });
+    };
   };
 
   useEffect(() => {
     const handlePointerMove = (e: PointerEvent) => {
+      const dragState = dragStateRef.current;
       if (!dragState.itemId || !dragState.action) return;
 
       const deltaY = e.clientY - dragStartPosRef.current; // Vertical delta
-      const deltaDays = deltaY / pixelsPerDay; 
+      const deltaDays = deltaY / pixelsPerDay;
 
       if (!isDraggingRef.current) {
         if (Math.abs(deltaY) < 5) return;
         isDraggingRef.current = true;
-        setDragState(prev => ({ ...prev, isDragging: true }));
+        dragStateRef.current = { ...dragState, isDragging: true };
       }
 
       const baseItems = dragStartItemsRef.current || trip.items;
       const currentItemIndex = baseItems.findIndex(i => i.id === dragState.itemId);
       if (currentItemIndex === -1) return;
-      
+
       const currentItem = baseItems[currentItemIndex];
       const newItems = baseItems.map(i => ({ ...i }));
 
@@ -409,25 +413,25 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
       // New Snapping Logic: Snap the TARGET value, not just the delta
       // This ensures we always land on the grid (e.g. 0, 0.5, 1.0) regardless of initial offset errors
-      
+
       if (dragState.action === 'move') {
           const rawStart = dragState.originalOffset + deltaDays;
           let newStart = roundToStep(rawStart, snap);
-          
+
           if (newStart < 0) newStart = 0;
           if (Math.abs(currentItem.startDateOffset - newStart) < 0.000001) return; // Float safety
-          
+
           newItems[currentItemIndex] = { ...currentItem, startDateOffset: newStart };
           latestDragItemsRef.current = newItems;
           onUpdateItems(newItems, { deferCommit: true });
-      } 
+      }
       else if (dragState.action === 'resize-right') { // Bottom resize
         const rawDuration = dragState.originalDuration + deltaDays;
         const minDuration = isTravel ? 0.05 : 0.5;
         const newDuration = Math.max(minDuration, roundToStep(rawDuration, snap));
         const diff = newDuration - dragState.originalDuration;
-        
-        if (Math.abs(diff) < 0.000001) return; 
+
+        if (Math.abs(diff) < 0.000001) return;
 
         if (currentItem.type === 'city') {
             const currentEnd = dragState.originalOffset + dragState.originalDuration;
@@ -441,7 +445,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
       } else if (dragState.action === 'resize-left') { // Top resize
         const rawStart = dragState.originalOffset + deltaDays;
         let newStart = roundToStep(rawStart, snap);
-        
+
         // Calculate new duration based on locked end time
         const oldEnd = dragState.originalOffset + dragState.originalDuration;
         let newDuration = roundToStep(oldEnd - newStart, snap);
@@ -451,7 +455,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
             newStart = roundToStep(oldEnd - newDuration, snap);
         }
         if (newStart < 0) newStart = 0;
-        
+
         if (Math.abs(currentItem.startDateOffset - newStart) < 0.000001) return;
 
         const prevCity = newItems.find(i => i.type === 'city' && i.startDateOffset < currentItem.startDateOffset && i.id !== currentItem.id);
@@ -490,14 +494,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
       isDraggingRef.current = false;
       dragStartItemsRef.current = null;
       latestDragItemsRef.current = null;
-      setDragState({
-        isDragging: false,
-        itemId: null,
-        action: null,
-        startX: 0,
-        originalOffset: 0,
-        originalDuration: 0
-      });
+      dragStateRef.current = createIdleDragState();
     };
 
     window.addEventListener('pointermove', handlePointerMove);
@@ -509,7 +506,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
       window.removeEventListener('pointerup', handlePointerUp);
       window.removeEventListener('pointercancel', handlePointerUp);
     };
-  }, [dragState, trip.items, onUpdateItems, pixelsPerDay]);
+  }, [trip.items, onUpdateItems, pixelsPerDay]);
 
   // Determine Zoom Level aesthetics
   const isZoomedOut = pixelsPerDay < 50;
@@ -562,9 +559,10 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   }, [selectedItemId, selectionVisibilityKey, trip.items, pixelsPerDay, visualStartOffset]);
 
   return (
-    <div 
-      className="h-full overflow-auto bg-white relative timeline-scroll" 
+    <div
+      className="h-full overflow-auto bg-white relative timeline-scroll"
       ref={containerRef}
+      role="presentation"
       onClick={() => handleBlockSelect(null)}
     >
         <div className="relative flex min-h-full" style={{ height: `${renderedTimelineHeight + 32}px` }}>
@@ -595,7 +593,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                     </div>
                 </>
             )}
-            
+
             {/* Header (Dates) - Vertical Column */}
             <div
                 className="sticky left-0 z-20 flex h-full flex-shrink-0 border-r border-gray-200 bg-white shadow-sm"
@@ -675,7 +673,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                     }}
                                 >
                                     {isUltraZoomedOut ? (
-                                        <div className="flex h-full w-full items-center justify-center gap-1.5 text-center">
+                                        <div className="flex size-full items-center justify-center gap-1.5 text-center">
                                             <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
                                                 {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
                                             </span>
@@ -684,7 +682,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                             </span>
                                         </div>
                                     ) : isZoomedOut ? (
-                                        <div className="flex h-full w-full flex-col items-center justify-center text-center">
+                                        <div className="flex size-full flex-col items-center justify-center text-center">
                                             <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
                                                 {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
                                             </span>
@@ -715,7 +713,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
             {/* Grid Background Lines (Horizontal) */}
             <div className="absolute top-8 bottom-0 right-0 pointer-events-none z-0 flex flex-col" style={{ left: `${leftRailWidthPx}px` }}>
                 {renderedDaySlots.map((slot) => (
-                    <div 
+                    <div
                         key={slot.index}
                         className="flex-shrink-0 border-b border-dashed border-gray-100 w-full"
                         style={{ height: `${slot.size}px` }}
@@ -725,13 +723,13 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
             {/* Content Area - Columns */}
             <div className="relative z-10 flex h-full min-w-0 flex-1 flex-row">
-                
+
                 {/* Cities Column */}
                 <div className="relative flex min-h-0 w-32 flex-shrink-0 flex-col border-r border-gray-100 group/cities">
                      {/* Sticky Header */}
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Stays</span>
-                         <button 
+                         <button type="button"
                              onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddCity(); }}
                              disabled={!canEdit}
                              className={`opacity-0 group-hover/cities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-accent-100' : 'opacity-50 cursor-not-allowed'}`}
@@ -810,7 +808,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                 <div className="relative flex min-h-0 w-40 flex-shrink-0 flex-col overflow-visible border-r border-gray-100 group/travel">
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transfer</span>
-                         <button 
+                         <button type="button"
                              onClick={(e) => { e.stopPropagation(); if (!canEdit) return; handleAddTravel(); }}
                              disabled={!canEdit}
                              className={`opacity-0 group-hover/travel:opacity-100 transition-opacity ml-1 bg-stone-100 text-stone-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-stone-200' : 'opacity-50 cursor-not-allowed'}`}
@@ -896,7 +894,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
                              return (
                                  <div key={link.id} className="absolute inset-0 overflow-visible pointer-events-none">
-                                     <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none" aria-hidden="true">
+                                     <svg className="absolute inset-0 size-full overflow-visible pointer-events-none" aria-hidden="true">
                                          <path
                                              d={fromPath}
                                              fill="none"
@@ -918,17 +916,16 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                              strokeOpacity={connectorOpacity}
                                          />
                                      </svg>
-                                     <button
+                                     <button type="button"
                                          onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                          className={`absolute z-10 left-1/2 -translate-x-1/2 px-4 rounded-xl border text-[11px] font-semibold flex items-center justify-between gap-2 shadow-sm transition-colors pointer-events-auto
                                              ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 ring-2 ring-blue-600 ring-offset-1' : (isUnsetTransport ? 'bg-slate-50/70 border-slate-200 border-dashed text-slate-400' : 'bg-white border-gray-200 text-gray-600')}
                                              ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                          `}
                                          style={{ top: chipTop, height: chipHeight, width: chipWidth }}
-                                         title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
-                                         disabled={!travel && !canEdit}
-                                         type="button"
-                                     >
+	                                         title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
+	                                         disabled={!travel && !canEdit}
+	                                     >
                                          {!isUnsetTransport && <span className="text-gray-500 shrink-0">{getTransportIcon(mode)}</span>}
                                          <span className="uppercase tracking-wider truncate flex-1 text-left">{mode === 'na' ? 'N/A' : mode}</span>
                                          {durationHours !== null && (
@@ -946,7 +943,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                 <div className="relative flex min-h-0 min-w-[200px] flex-1 flex-col group/activities">
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Activities</span>
-                         <button 
+                         <button type="button"
                              onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(visualStartOffset); }}
                              disabled={!canEdit}
                              className={`opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-accent-100' : 'opacity-50 cursor-not-allowed'}`}
@@ -955,12 +952,12 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                              <Plus size={12} />
                          </button>
                      </div>
-                     
-                     {/* Add Buttons per Day (Horizontal Overlay strips?) No, tricky in vertical. 
+
+                     {/* Add Buttons per Day (Horizontal Overlay strips?) No, tricky in vertical.
                          Maybe hover overlay on the main grid?
                          For now, let's just render the blocks.
                      */}
-                     
+
                      <div className="relative min-h-0 flex-1 overflow-x-auto overflow-y-hidden p-2">
                          <div className="flex min-h-full min-w-fit flex-row items-start gap-3">
                              {activityLanes.map((lane, laneIdx) => (

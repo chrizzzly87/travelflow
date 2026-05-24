@@ -11,7 +11,7 @@ export const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimiti
         <CheckboxPrimitive.Root
             ref={ref}
             className={mergeClasses(
-                'peer relative h-4 w-4 shrink-0 cursor-pointer rounded-[4px] border border-slate-400 bg-white shadow-sm outline-none transition-colors hover:border-slate-500',
+                'peer relative size-4 shrink-0 cursor-pointer rounded-[4px] border border-slate-400 bg-white shadow-sm outline-none transition-colors hover:border-slate-500',
                 'before:absolute before:-inset-2 before:content-[\'\']',
                 'data-[state=checked]:border-accent-600 data-[state=checked]:bg-accent-600',
                 'focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2',
@@ -21,7 +21,7 @@ export const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimiti
             {...props}
         >
             <CheckboxPrimitive.Indicator className="flex items-center justify-center text-white">
-                <Check className="h-3.5 w-3.5 stroke-[3]" />
+                <Check className="size-3.5 stroke-[3]" />
             </CheckboxPrimitive.Indicator>
         </CheckboxPrimitive.Root>
     )

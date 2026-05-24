@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import {
     buildPathFromLocationParts,
     isLoginPathname,
     rememberAuthReturnPath,
 } from '../../services/authNavigationService';
+import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 export const useAuthNavigationBootstrap = (): void => {
-    const location = useLocation();
+    const location = useSafeRouteLocation();
 
     useEffect(() => {
         if (isLoginPathname(location.pathname)) return;

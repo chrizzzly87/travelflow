@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useReducer } from 'react';
 import {
     getBrowserConnectivityOverride,
     getEffectiveBrowserOnlineState,
@@ -35,15 +35,74 @@ const readCurrentConnectionSnapshot = (): NetworkConnectionSnapshot | null => {
     return readNetworkConnectionSnapshot(navigator);
 };
 
+interface NetworkStatusState {
+    isOnline: boolean;
+    connection: NetworkConnectionSnapshot | null;
+    isProbePending: boolean;
+}
+
+type NetworkStatusAction =
+    | { type: 'connectivityChanged'; isOnline: boolean; connection: NetworkConnectionSnapshot | null }
+    | { type: 'connectionChanged'; connection: NetworkConnectionSnapshot | null }
+    | { type: 'probeStarted' }
+    | { type: 'probeFinished' }
+    | { type: 'probeRecovered'; isOnline: boolean; connection: NetworkConnectionSnapshot | null };
+
+const createInitialNetworkStatusState = (): NetworkStatusState => ({
+    isOnline: readInitialOnlineState(),
+    connection: readCurrentConnectionSnapshot(),
+    isProbePending: false,
+});
+
+const networkStatusReducer = (
+    state: NetworkStatusState,
+    action: NetworkStatusAction
+): NetworkStatusState => {
+    switch (action.type) {
+        case 'connectivityChanged':
+            return {
+                ...state,
+                isOnline: action.isOnline,
+                connection: action.connection,
+            };
+        case 'connectionChanged':
+            return {
+                ...state,
+                connection: action.connection,
+            };
+        case 'probeStarted':
+            return state.isProbePending ? state : {
+                ...state,
+                isProbePending: true,
+            };
+        case 'probeFinished':
+            return state.isProbePending ? {
+                ...state,
+                isProbePending: false,
+            } : state;
+        case 'probeRecovered':
+            return {
+                ...state,
+                isOnline: action.isOnline,
+                connection: action.connection,
+                isProbePending: false,
+            };
+        default:
+            return state;
+    }
+};
+
 export const useNetworkStatus = (options: UseNetworkStatusOptions = {}): UseNetworkStatusResult => {
     const {
         probeWhileOffline = true,
         probeIntervalMs = DEFAULT_NETWORK_PROBE_INTERVAL_MS,
         probePath = DEFAULT_NETWORK_PROBE_PATH,
     } = options;
-    const [isOnline, setIsOnline] = useState(readInitialOnlineState);
-    const [connection, setConnection] = useState<NetworkConnectionSnapshot | null>(readCurrentConnectionSnapshot);
-    const [isProbePending, setIsProbePending] = useState(false);
+    const [state, dispatch] = useReducer(
+        networkStatusReducer,
+        undefined,
+        createInitialNetworkStatusState
+    );
 
     const resolveOnlineStateFromEvent = (eventType: 'online' | 'offline'): boolean => {
         const override = getBrowserConnectivityOverride();
@@ -55,25 +114,30 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}): UseNetw
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
-        const refreshConnectionSnapshot = () => {
-            setConnection(readCurrentConnectionSnapshot());
-        };
-
         const handleOnline = () => {
-            setIsOnline(resolveOnlineStateFromEvent('online'));
-            refreshConnectionSnapshot();
+            dispatch({
+                type: 'connectivityChanged',
+                isOnline: resolveOnlineStateFromEvent('online'),
+                connection: readCurrentConnectionSnapshot(),
+            });
         };
 
         const handleOffline = () => {
-            setIsOnline(resolveOnlineStateFromEvent('offline'));
-            refreshConnectionSnapshot();
+            dispatch({
+                type: 'connectivityChanged',
+                isOnline: resolveOnlineStateFromEvent('offline'),
+                connection: readCurrentConnectionSnapshot(),
+            });
         };
 
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
         const unsubscribeBrowserConnectivity = subscribeBrowserConnectivityStatus((snapshot) => {
-            setIsOnline(snapshot.isOnline);
-            refreshConnectionSnapshot();
+            dispatch({
+                type: 'connectivityChanged',
+                isOnline: snapshot.isOnline,
+                connection: readCurrentConnectionSnapshot(),
+            });
         });
 
         const networkConnection = getNavigatorConnection(navigator);
@@ -86,7 +150,10 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}): UseNetw
         }
 
         const handleConnectionChange = () => {
-            refreshConnectionSnapshot();
+            dispatch({
+                type: 'connectionChanged',
+                connection: readCurrentConnectionSnapshot(),
+            });
         };
         networkConnection.addEventListener('change', handleConnectionChange as EventListener);
 
@@ -102,8 +169,8 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}): UseNetw
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        if (!probeWhileOffline || isOnline) {
-            setIsProbePending(false);
+        if (!probeWhileOffline || state.isOnline) {
+            dispatch({ type: 'probeFinished' });
             return;
         }
 
@@ -113,15 +180,19 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}): UseNetw
         const runProbe = async () => {
             if (cancelled || isProbeInFlight) return;
             isProbeInFlight = true;
-            setIsProbePending(true);
+            dispatch({ type: 'probeStarted' });
             const isReachable = await probeNetworkReachability(probePath);
             if (cancelled) return;
-            setIsProbePending(false);
             isProbeInFlight = false;
             if (isReachable) {
                 const override = getBrowserConnectivityOverride();
-                setIsOnline(override === 'offline' ? false : true);
-                setConnection(readCurrentConnectionSnapshot());
+                dispatch({
+                    type: 'probeRecovered',
+                    isOnline: override === 'offline' ? false : true,
+                    connection: readCurrentConnectionSnapshot(),
+                });
+            } else {
+                dispatch({ type: 'probeFinished' });
             }
         };
 
@@ -134,17 +205,17 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}): UseNetw
             cancelled = true;
             window.clearInterval(timer);
         };
-    }, [isOnline, probeIntervalMs, probePath, probeWhileOffline]);
+    }, [probeIntervalMs, probePath, probeWhileOffline, state.isOnline]);
 
     const isSlowConnection = useMemo(
-        () => isSlowNetworkConnection(connection),
-        [connection]
+        () => isSlowNetworkConnection(state.connection),
+        [state.connection]
     );
 
     return {
-        isOnline,
+        isOnline: state.isOnline,
         isSlowConnection,
-        connection,
-        isProbePending,
+        connection: state.connection,
+        isProbePending: state.isProbePending,
     };
 };

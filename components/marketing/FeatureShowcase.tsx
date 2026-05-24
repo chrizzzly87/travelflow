@@ -55,7 +55,7 @@ export const FeatureShowcase: React.FC = () => {
     return (
         <section className="py-16 md:py-24">
             <div className="animate-scroll-blur-in">
-                <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+                <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
                     {t('featureShowcase.title')}
                 </h2>
                 <p className="mt-3 max-w-xl text-base text-slate-600">
@@ -73,17 +73,17 @@ export const FeatureShowcase: React.FC = () => {
 
                     return (
                         <div
-                            key={`${feature.title}-${index}`}
+                            key={feature.title}
                             className={`${slideClass} flex flex-col gap-6 md:flex-row md:items-center md:gap-12 ${
                                 !isEven ? 'md:flex-row-reverse' : ''
                             }`}
                         >
-                            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-accent-50 text-accent-600 shadow-sm ring-1 ring-accent-100 transition-transform duration-300 hover:scale-110 hover:shadow-md md:h-24 md:w-24">
+                            <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl bg-accent-50 text-accent-600 shadow-sm ring-1 ring-accent-100 transition-transform duration-300 hover:scale-110 hover:shadow-md md:size-24">
                                 <IconComponent size={40} weight="duotone" />
                             </div>
 
                             <div className="max-w-lg">
-                                <h3 className="text-xl font-bold text-slate-900">
+                                <h3 className="text-xl font-semibold text-slate-900">
                                     {feature.title}
                                 </h3>
                                 <p className="mt-2 text-base leading-relaxed text-slate-600">

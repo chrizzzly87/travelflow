@@ -43,7 +43,7 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
                     onClick={() => onConfirm('extend-prev', deleteActivities)}
                     className="group flex w-full items-center rounded-xl border border-gray-200 p-4 text-left transition-all hover:border-accent-500 hover:bg-accent-50"
                 >
-                    <div className="mr-4 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm group-hover:border-accent-200 group-hover:text-accent-600">
+                    <div className="mr-4 flex size-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm group-hover:border-accent-200 group-hover:text-accent-600">
                         <ArrowRight size={20} />
                     </div>
                     <div>
@@ -57,7 +57,7 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
                     onClick={() => onConfirm('extend-next', deleteActivities)}
                     className="group flex w-full items-center rounded-xl border border-gray-200 p-4 text-left transition-all hover:border-accent-500 hover:bg-accent-50"
                 >
-                    <div className="mr-4 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm group-hover:border-accent-200 group-hover:text-accent-600">
+                    <div className="mr-4 flex size-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm group-hover:border-accent-200 group-hover:text-accent-600">
                         <ArrowLeft size={20} />
                     </div>
                     <div>
@@ -71,7 +71,7 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
                     onClick={() => onConfirm('move-rest', deleteActivities)}
                     className="group flex w-full items-center rounded-xl border border-gray-200 p-4 text-left transition-all hover:border-accent-500 hover:bg-accent-50"
                 >
-                    <div className="mr-4 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm group-hover:border-accent-200 group-hover:text-accent-600">
+                    <div className="mr-4 flex size-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm group-hover:border-accent-200 group-hover:text-accent-600">
                         <ArrowLeftRight size={20} />
                     </div>
                     <div>

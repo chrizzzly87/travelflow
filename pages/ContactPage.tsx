@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
     CheckCircle,
@@ -18,6 +18,7 @@ import { DEFAULT_LOCALE } from '../config/locales';
 import { CONTACT_FAQ_EXCERPT_ITEMS, type FaqItemWithSection } from '../data/faqContent';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { useAuth } from '../hooks/useAuth';
+import { useSafeRouteLocation } from '../hooks/useSafeRouteLocation';
 import { getCurrentAccessContext } from '../services/authService';
 import { getLastVisitedPath } from '../services/navigationContextService';
 
@@ -175,14 +176,27 @@ const resolvePrefilledContactContext = (state: unknown): PrefilledContactContext
     };
 };
 
+const resolvePrefilledContactContextFromSearch = (search: string): PrefilledContactContext => {
+    const params = new URLSearchParams(search);
+    return resolvePrefilledContactContext({
+        reason: params.get('reason'),
+        subReason: params.get('subReason'),
+        source: params.get('source'),
+    });
+};
+
 const isLikelyQuotaStatus = (status: number): boolean => [402, 403, 409, 429, 503].includes(status);
 
 export const ContactPage: React.FC = () => {
     const { t } = useTranslation('common');
-    const location = useLocation();
-    const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    const routeLocation = useSafeRouteLocation();
+    const locale = extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE;
     const { access, profile } = useAuth();
-    const prefilledContactContext = useMemo(() => resolvePrefilledContactContext(location.state), [location.state]);
+    const prefilledContactContext = useMemo(() => {
+        const stateContext = resolvePrefilledContactContext(routeLocation.state);
+        if (stateContext.reason) return stateContext;
+        return resolvePrefilledContactContextFromSearch(routeLocation.search);
+    }, [routeLocation.search, routeLocation.state]);
 
     const [formState, setFormState] = useState<ContactFormState>({
         reason: prefilledContactContext.reason,
@@ -210,7 +224,7 @@ export const ContactPage: React.FC = () => {
     const nameTouchedRef = useRef(false);
     const emailTouchedRef = useRef(false);
 
-    const currentPath = `${location.pathname}${location.search}`;
+    const currentPath = `${routeLocation.pathname}${routeLocation.search}`;
     const lastVisitedPath = useMemo(() => getLastVisitedPath(currentPath), [currentPath]);
     const appVersion = useMemo(() => {
         const rawVersion = (import.meta.env.VITE_APP_VERSION || '').trim();
@@ -497,7 +511,7 @@ export const ContactPage: React.FC = () => {
         <MarketingLayout>
             <section className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
                 <div className="max-w-2xl">
-                    <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">
+                    <h1 className="text-4xl font-semibold tracking-tight text-slate-900 md:text-5xl">
                         {t('contact.title')}
                     </h1>
                     <p className="mt-5 max-w-xl text-sm leading-7 text-slate-600 md:text-base">
@@ -526,7 +540,7 @@ export const ContactPage: React.FC = () => {
                                     type="button"
                                     disabled
                                     aria-label={label}
-                                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-accent-50 hover:text-accent-700 disabled:cursor-not-allowed"
+                                    className="inline-flex size-10 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-accent-50 hover:text-accent-700 disabled:cursor-not-allowed"
                                 >
                                     <Icon size={18} weight="duotone" />
                                 </button>
@@ -564,6 +578,7 @@ export const ContactPage: React.FC = () => {
                                 Do not fill this field if you are human:
                                 <input
                                     name="bot-field"
+                                    aria-label="Do not fill this field if you are human"
                                     value={formState.botField}
                                     onChange={(event) => setFormState((current) => ({ ...current, botField: event.target.value }))}
                                 />
@@ -582,6 +597,7 @@ export const ContactPage: React.FC = () => {
                             >
                                 <SelectTrigger
                                     id="contact-reason-trigger"
+                                    aria-label={t('contact.form.reasonLabel')}
                                     aria-required="true"
                                     className="h-11 w-full rounded-lg border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200"
                                 >
@@ -609,7 +625,7 @@ export const ContactPage: React.FC = () => {
                                     onOpenChange={setIsSubReasonSelectOpen}
                                     onValueChange={handleSubReasonChange}
                                 >
-                                    <SelectTrigger id="contact-subreason-trigger" className="h-11 w-full rounded-lg border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200">
+                                    <SelectTrigger id="contact-subreason-trigger" aria-label={t('contact.form.subReasonLabel')} className="h-11 w-full rounded-lg border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200">
                                         <SelectValue placeholder={t('contact.form.subReasonPlaceholder')} />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -635,6 +651,7 @@ export const ContactPage: React.FC = () => {
                                     id="contact-name"
                                     name="name"
                                     type="text"
+                                    aria-label={t('contact.form.nameLabel')}
                                     value={formState.name}
                                     onChange={handleNameChange}
                                     autoComplete="name"
@@ -652,6 +669,7 @@ export const ContactPage: React.FC = () => {
                                     id="contact-email"
                                     name="email"
                                     type="email"
+                                    aria-label={t('contact.form.emailLabel')}
                                     value={formState.email}
                                     onChange={handleEmailChange}
                                     autoComplete="email"
@@ -670,6 +688,7 @@ export const ContactPage: React.FC = () => {
                             <textarea
                                 id="contact-message"
                                 name="message"
+                                aria-label={t('contact.form.messageLabel')}
                                 value={formState.message}
                                 onChange={handleMessageChange}
                                 required
@@ -759,7 +778,7 @@ export const ContactPage: React.FC = () => {
             </section>
 
             <section className="mt-14 border-t border-slate-200 pt-10 md:mt-16 md:pt-12">
-                <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+                <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
                     Frequently asked questions
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">

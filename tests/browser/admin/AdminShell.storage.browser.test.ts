@@ -4,7 +4,7 @@ import {
   getStoredSidebarCollapseState,
   isDevAdminBypassDisabled,
   persistSidebarCollapseState,
-} from '../../../components/admin/AdminShell';
+} from '../../../components/admin/adminShellUtils';
 
 describe('components/admin/AdminShell storage helpers', () => {
   beforeEach(() => {

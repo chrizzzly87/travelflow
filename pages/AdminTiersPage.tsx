@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { ArrowsClockwise, SpinnerGap } from '@phosphor-icons/react';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
 import type { PlanTierKey } from '../types';
-import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
+import { AdminShell } from '../components/admin/AdminShell';
+import type { AdminDateRange } from '../components/admin/adminShellUtils';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import {
     adminListUsers,
@@ -60,6 +61,7 @@ const EntitlementCard: React.FC<{
     if (isError) {
         return (
             <textarea
+                aria-label="Tier limits JSON editor"
                 value={draft}
                 onChange={(e) => onChange(e.target.value)}
                 className="mt-3 min-h-[220px] w-full rounded-lg border border-red-300 bg-red-50 text-red-900 px-3 py-2 font-mono text-xs"
@@ -86,9 +88,10 @@ const EntitlementCard: React.FC<{
                 {limits.map((l) => (
                     <div key={l.key} className="flex flex-col gap-1">
                         <label className="text-[11px] font-semibold uppercase text-slate-500">{l.label}</label>
-                        <input
-                            type="number"
-                            value={parsed[l.key] === null ? '' : parsed[l.key] ?? ''}
+	                        <input
+	                            type="number"
+	                            aria-label={l.label}
+	                            value={parsed[l.key] === null ? '' : parsed[l.key] ?? ''}
                             onChange={(e) => {
                                 const val = e.target.value === '' ? null : Number(e.target.value);
                                 updateField(l.key, val);
@@ -105,11 +108,12 @@ const EntitlementCard: React.FC<{
             <div className="grid grid-cols-2 gap-3">
                 {permissions.map((p) => (
                     <label key={p.key} className="flex cursor-pointer items-center gap-2">
-                        <input
-                            type="checkbox"
-                            checked={Boolean(parsed[p.key])}
+	                        <input
+	                            type="checkbox"
+	                            aria-label={p.label}
+	                            checked={Boolean(parsed[p.key])}
                             onChange={(e) => updateField(p.key, e.target.checked)}
-                            className="h-4 w-4 rounded border-slate-300 text-accent-600 focus:ring-accent-600"
+                            className="size-4 rounded border-slate-300 text-accent-600 focus:ring-accent-600"
                         />
                         <span className="text-xs font-medium text-slate-700">{p.label}</span>
                     </label>
@@ -284,7 +288,7 @@ export const AdminTiersPage: React.FC = () => {
                     <article key={`count-${tierKey}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{tierKey}</p>
                         <p className="mt-1 text-sm font-semibold text-slate-800">{PLAN_CATALOG[tierKey].publicName}</p>
-                        <p className="mt-2 text-2xl font-black text-slate-900">
+                        <p className="mt-2 text-2xl font-semibold text-slate-900">
                             <AdminCountUpNumber value={tierCounts[tierKey]} />
                         </p>
                         <p className="text-xs text-slate-500">Users in selected date range</p>
@@ -298,7 +302,7 @@ export const AdminTiersPage: React.FC = () => {
                         <div className="flex items-center justify-between gap-2">
                             <div>
                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{tierKey}</p>
-                                <h2 className="text-base font-black text-slate-900">{PLAN_CATALOG[tierKey].publicName}</h2>
+                                <h2 className="text-base font-semibold text-slate-900">{PLAN_CATALOG[tierKey].publicName}</h2>
                             </div>
                             <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">
                                 ${PLAN_CATALOG[tierKey].monthlyPriceUsd}/mo
@@ -308,7 +312,7 @@ export const AdminTiersPage: React.FC = () => {
                             {isLoadingPreview === tierKey ? (
                                 <span className="inline-flex items-center gap-1">
                                     <SpinnerGap size={12} className="animate-spin" />
-                                    Loading reapply preview...
+                                    Loading reapply preview…
                                 </span>
                             ) : (
                                 <span>
@@ -337,7 +341,7 @@ export const AdminTiersPage: React.FC = () => {
                                 {isSaving === tierKey ? (
                                     <span className="inline-flex items-center gap-1">
                                         <SpinnerGap size={13} className="animate-spin" />
-                                        Saving...
+                                        Saving…
                                     </span>
                                 ) : (
                                     'Save template'
@@ -352,7 +356,7 @@ export const AdminTiersPage: React.FC = () => {
                                 {isReapplying === tierKey ? (
                                     <span className="inline-flex items-center gap-1">
                                         <SpinnerGap size={13} className="animate-spin" />
-                                        Reapplying...
+                                        Reapplying…
                                     </span>
                                 ) : (
                                     <span className="inline-flex items-center gap-1">

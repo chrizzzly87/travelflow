@@ -2457,8 +2457,10 @@ const handleCancel = async (
     });
   }
 
-  const session = await fetchSessionById(config, authToken, targetSessionId);
-  const runs = await fetchRunsForSession(config, authToken, targetSessionId);
+  const [session, runs] = await Promise.all([
+    fetchSessionById(config, authToken, targetSessionId),
+    fetchRunsForSession(config, authToken, targetSessionId),
+  ]);
   return json(200, {
     ok: true,
     cancelled: cancelledCount,

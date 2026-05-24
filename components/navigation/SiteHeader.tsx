@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { List, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelect } from './LanguageSelect';
@@ -15,6 +15,7 @@ import { buildPathFromLocationParts } from '../../services/authNavigationService
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
 import { warmRouteAssets } from '../../services/navigationPrefetch';
 import { AppBrand } from './AppBrand';
+import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -64,17 +65,17 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [pendingLocale, setPendingLocale] = useState<AppLanguage | null>(null);
-    const location = useLocation();
+    const routeLocation = useSafeRouteLocation();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('common');
     const { isAuthenticated, isAdmin, access, isLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
 
     const activeLocale = useMemo<AppLanguage>(() => {
-        const routeLocale = extractLocaleFromPath(location.pathname);
+        const routeLocale = extractLocaleFromPath(routeLocation.pathname);
         if (routeLocale) return routeLocale;
         return normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE);
-    }, [i18n.language, i18n.resolvedLanguage, location.pathname]);
+    }, [i18n.language, i18n.resolvedLanguage, routeLocation.pathname]);
     const selectedLocale = pendingLocale ?? activeLocale;
 
     useEffect(() => {
@@ -98,19 +99,19 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
 
         setPendingLocale(nextLocale);
 
-        if (!isToolRoute(location.pathname)) {
-            void preloadLocaleNamespaces(nextLocale, getNamespacesForMarketingPath(location.pathname));
+        if (!isToolRoute(routeLocation.pathname)) {
+            void preloadLocaleNamespaces(nextLocale, getNamespacesForMarketingPath(routeLocation.pathname));
         } else {
-            void preloadLocaleNamespaces(nextLocale, getNamespacesForToolPath(location.pathname));
+            void preloadLocaleNamespaces(nextLocale, getNamespacesForToolPath(routeLocation.pathname));
         }
 
         applyDocumentLocale(nextLocale);
         void i18n.changeLanguage(nextLocale);
 
         const target = buildLocalizedLocation({
-            pathname: location.pathname,
-            search: location.search,
-            hash: location.hash,
+            pathname: routeLocation.pathname,
+            search: routeLocation.search,
+            hash: routeLocation.hash,
             targetLocale: nextLocale,
         });
         navigate(target);
@@ -130,9 +131,9 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
         openLoginModal({
             source: 'navigation_header',
             nextPath: buildPathFromLocationParts({
-                pathname: location.pathname,
-                search: location.search,
-                hash: location.hash,
+                pathname: routeLocation.pathname,
+                search: routeLocation.search,
+                hash: routeLocation.hash,
             }),
             reloadOnSuccess: true,
         });
@@ -156,8 +157,8 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
         : 'hidden sm:inline-flex rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900';
 
     const burgerClass = isGlass
-        ? 'flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-white/60 hover:text-slate-900 lg:hidden'
-        : 'flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden';
+        ? 'flex size-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-white/60 hover:text-slate-900 lg:hidden'
+        : 'flex size-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden';
 
     return (
         <>
@@ -176,11 +177,20 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                     </NavLink>
 
                     <nav className="hidden items-center gap-4 text-sm lg:flex xl:gap-6">
-                        <NavLink to={buildLocalizedMarketingPath('features', activeLocale)} onClick={() => handleNavClick('features')} className={navLinkClass} {...navDebugAttributes('features')}>{t('nav.features')}</NavLink>
-                        <NavLink to={buildLocalizedMarketingPath('inspirations', activeLocale)} onClick={() => handleNavClick('inspirations')} className={navLinkClass} {...navDebugAttributes('inspirations')}>{t('nav.inspirations')}</NavLink>
-                        <NavLink to={buildLocalizedMarketingPath('updates', activeLocale)} onClick={() => handleNavClick('updates')} className={navLinkClass} {...navDebugAttributes('updates')}>{t('nav.updates')}</NavLink>
-                        <NavLink to={buildLocalizedMarketingPath('blog', activeLocale)} onClick={() => handleNavClick('blog')} className={navLinkClass} {...navDebugAttributes('blog')}>{t('nav.blog')}</NavLink>
-                        <NavLink to={buildLocalizedMarketingPath('pricing', activeLocale)} onClick={() => handleNavClick('pricing')} className={navLinkClass} {...navDebugAttributes('pricing')}>{t('nav.pricing')}</NavLink>
+                        {(['features', 'inspirations', 'updates', 'blog', 'pricing'] as const).map((routeKey) => {
+                            const path = buildLocalizedMarketingPath(routeKey, activeLocale);
+                            return (
+                                <NavLink
+                                    key={routeKey}
+                                    to={path}
+                                    onClick={() => handleNavClick(routeKey)}
+                                    className={navLinkClass}
+                                    {...navDebugAttributes(routeKey)}
+                                >
+                                    {t(`nav.${routeKey}`)}
+                                </NavLink>
+                            );
+                        })}
                     </nav>
 
                     <div className="flex items-center gap-2">
@@ -196,7 +206,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                             <Suspense
                                 fallback={(
                                     <span
-                                        className="hidden h-9 w-9 rounded-full border border-slate-200 bg-slate-100 lg:inline-flex"
+                                        className="hidden size-9 rounded-full border border-slate-200 bg-slate-100 lg:inline-flex"
                                         aria-hidden="true"
                                     />
                                 )}
@@ -243,7 +253,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 {t('nav.createTrip')}
                             </NavLink>
                         )}
-                        <button
+                        <button type="button"
                             onClick={() => setIsMobileMenuOpen(true)}
                             className={burgerClass}
                             aria-label={t('nav.openMenu')}

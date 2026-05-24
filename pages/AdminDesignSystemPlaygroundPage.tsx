@@ -13,12 +13,14 @@ import { showAppToast } from '../components/ui/appToast';
 import { Checkbox } from '../components/ui/checkbox';
 import {
     AdminSortHeaderButton,
+} from '../components/admin/AdminDataTable';
+import {
     ADMIN_TABLE_ROW_SURFACE_CLASS,
     ADMIN_TABLE_SORTED_CELL_CLASS,
     ADMIN_TABLE_SORTED_HEADER_CLASS,
     getAdminStickyBodyCellClass,
     getAdminStickyHeaderCellClass,
-} from '../components/admin/AdminDataTable';
+} from '../components/admin/AdminDataTableUtils';
 import {
     Dialog,
     DialogContent,
@@ -267,8 +269,10 @@ const getPlaygroundGenerationPillClass = (value: PlaygroundTableRow['generation'
     return 'border-emerald-300 bg-emerald-50 text-emerald-700';
 };
 
+const formatPlaygroundTimestamp = (value: string): string => new Date(value).toLocaleString();
+
 const ComponentUsageReferences: React.FC<{ definition: ComponentGroupDefinition }> = ({ definition }) => (
-    <div className="space-y-2 rounded-xl border border-slate-200 bg-white px-3 py-3">
+    <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
         <div className={subtleHeadingClassName}>Where used</div>
         <div className="space-y-1.5 text-xs text-slate-700">
             <p>
@@ -345,7 +349,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
             if (!Number.isFinite(rightMs)) return -1;
             return leftMs - rightMs;
         };
-        const next = [...sampleAdminTableRows].sort((left, right) => {
+        const next = Array.from(sampleAdminTableRows).sort((left, right) => {
             let result = 0;
             if (sampleTableSortKey === 'trip') result = compareText(left.trip, right.trip);
             if (sampleTableSortKey === 'owner') result = compareText(left.owner, right.owner);
@@ -717,8 +721,9 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                     </div>
                     <label className="space-y-1 lg:col-span-2">
                         <span className={subtleHeadingClassName}>Textarea</span>
-                        <textarea
-                            rows={3}
+	                        <textarea
+	                            aria-label="Textarea"
+	                            rows={3}
                             defaultValue="This sample keeps the same spacing, border, and focus style used in profile/admin forms."
                             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
                         />
@@ -1128,7 +1133,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                                                 </span>
                                             </TableCell>
                                             <TableCell className={`px-4 py-3 text-sm text-slate-700 ${isSampleTableSorted('updated') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                {new Date(row.updated).toLocaleString()}
+                                                {formatPlaygroundTimestamp(row.updated)}
                                             </TableCell>
                                         </TableRow>
                                     );

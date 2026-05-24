@@ -88,8 +88,8 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
     <section className={`grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] ${className}`} data-passport-open={isPassportOpen}>
       <article className="relative flex h-full min-h-[540px] flex-col rounded-2xl border border-slate-200 bg-white px-6 pb-6 pt-16 text-center shadow-sm">
         <div className="absolute inset-x-0 top-0 -translate-y-1/2">
-          <div className={`relative mx-auto h-24 w-24 ${status.ringClassName}`}>
-            <span className="absolute inset-0 inline-flex items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-black text-accent-800 shadow-md ring-2 ring-current">
+          <div className={`relative mx-auto size-24 ${status.ringClassName}`}>
+            <span className="absolute inset-0 inline-flex items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-semibold text-accent-800 shadow-md ring-2 ring-current">
               {initials}
             </span>
             {showAvatarOrbitText && (
@@ -97,7 +97,7 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
             )}
           </div>
         </div>
-        <h2 className="mt-6 text-3xl font-black tracking-tight text-slate-900">{displayName}</h2>
+        <h2 className="mt-6 text-3xl font-semibold tracking-tight text-slate-900">{displayName}</h2>
         <p className="mt-1 text-sm font-semibold text-slate-600">
           {labels.usernamePrefix}
           {username || 'traveler'}

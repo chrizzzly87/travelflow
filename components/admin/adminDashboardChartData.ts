@@ -1,4 +1,4 @@
-import type { AdminDateRange } from './AdminShell';
+import type { AdminDateRange } from './adminShellUtils';
 import { isIsoDateInRange } from './adminDateRange';
 import type { AdminTripRecord, AdminUserRecord } from '../../services/adminService';
 import type { AdminDashboardUserLevelBreakdownItem } from './adminDashboardUserBreakdown';
@@ -28,7 +28,7 @@ const toDayKey = (isoDate: string | null | undefined): string | null => {
 const toDayLabel = (dayKey: string): string => `${dayKey.slice(8, 10)}.${dayKey.slice(5, 7)}`;
 
 const sortAndSliceRecent = <TRow extends RowWithDate>(rows: TRow[], maxDays: number): TRow[] => (
-    [...rows]
+    Array.from(rows)
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(-Math.max(1, maxDays))
 );
@@ -53,9 +53,10 @@ export const buildUserLevelCumulativeStackedChartData = (
     if (labels.length === 0) return [];
 
     const labelByKey = new Map(userLevelBreakdown.map((item) => [item.key, item.label]));
-    const dynamicDayKeys = Array.from(new Set(visibleRangeUsers
-        .map((user) => toDayKey(user.created_at))
-        .filter((dayKey): dayKey is string => typeof dayKey === 'string'))).sort((a, b) => a.localeCompare(b));
+    const dynamicDayKeys = Array.from(new Set(visibleRangeUsers.flatMap((user) => {
+        const dayKey = toDayKey(user.created_at);
+        return typeof dayKey === 'string' ? [dayKey] : [];
+    }))).sort((a, b) => a.localeCompare(b));
     const staticRangeDayCount = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : dateRange === '90d' ? 90 : null;
     const dayKeys = staticRangeDayCount
         ? Array.from({ length: staticRangeDayCount }, (_, index) => {

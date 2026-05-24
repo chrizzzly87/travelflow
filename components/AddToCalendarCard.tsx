@@ -34,41 +34,48 @@ export const AddToCalendarCard: React.FC<AddToCalendarCardProps> = ({ config, po
         <section className="my-10 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6 lg:-mx-8 lg:rounded-3xl lg:px-7 xl:-mx-10">
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0 flex items-start gap-3">
-                    <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-700 ring-1 ring-accent-200">
+                    <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-700 ring-1 ring-accent-200">
                         <CalendarBlank size={20} weight="duotone" />
                     </span>
                     <div className="min-w-0">
                         <p className="text-xs font-semibold uppercase tracking-wide text-accent-700">
                             {titleLabel}
                         </p>
-                        <h3 className="mt-1 text-lg font-bold text-slate-900">{config.title}</h3>
+                        <h3 className="mt-1 text-lg font-semibold text-slate-900">{config.title}</h3>
                         {config.description ? <p className="mt-1 text-sm text-slate-600">{config.description}</p> : null}
                         <p className="mt-1 text-xs font-medium text-slate-500">{eventCountLabel}</p>
                         <p className="mt-0.5 text-xs font-medium text-slate-500">{compatibleHint}</p>
                     </div>
                 </div>
-                <a
-                    href={icsHref || '#'}
-                    download={`${fileName}.ics`}
-                    onClick={(event) => {
-                        if (!icsHref) {
-                            event.preventDefault();
-                            return;
-                        }
-                        trackEvent('blog__calendar_card--download_ics', {
+                {icsHref ? (
+                    <a
+                        href={icsHref}
+                        download={`${fileName}.ics`}
+                        onClick={() => {
+                            trackEvent('blog__calendar_card--download_ics', {
+                                slug: postSlug,
+                                event_count: config.events.length,
+                            });
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-800 transition-colors hover:border-accent-300 hover:bg-accent-100"
+                        {...getAnalyticsDebugAttributes('blog__calendar_card--download_ics', {
                             slug: postSlug,
                             event_count: config.events.length,
-                        });
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-800 transition-colors hover:border-accent-300 hover:bg-accent-100"
-                    {...getAnalyticsDebugAttributes('blog__calendar_card--download_ics', {
-                        slug: postSlug,
-                        event_count: config.events.length,
-                    })}
-                >
-                    <DownloadSimple size={14} weight="bold" />
-                    <span>{downloadLabel}</span>
-                </a>
+                        })}
+                    >
+                        <DownloadSimple size={14} weight="bold" />
+                        <span>{downloadLabel}</span>
+                    </a>
+                ) : (
+                    <button
+                        type="button"
+                        disabled
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-800 opacity-60"
+                    >
+                        <DownloadSimple size={14} weight="bold" />
+                        <span>{downloadLabel}</span>
+                    </button>
+                )}
             </div>
         </section>
     );

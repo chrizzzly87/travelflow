@@ -255,9 +255,10 @@ export const claimTripGenerationJobs = async (
         });
         if (error) return [];
         const rows = Array.isArray(data) ? data : [];
-        return rows
-            .map((row) => parseJobSummary(row))
-            .filter((row): row is TripGenerationJobSummary => Boolean(row));
+        return rows.flatMap((row): TripGenerationJobSummary[] => {
+            const summary = parseJobSummary(row);
+            return summary ? [summary] : [];
+        });
     } catch {
         return [];
     }
@@ -299,9 +300,10 @@ export const listTripGenerationJobsByTrip = async (
 
         if (error) return [];
         const rows = Array.isArray(data) ? data : [];
-        return rows
-            .map((row) => parseJobSummary(row))
-            .filter((row): row is TripGenerationJobSummary => Boolean(row));
+        return rows.flatMap((row): TripGenerationJobSummary[] => {
+            const summary = parseJobSummary(row);
+            return summary ? [summary] : [];
+        });
     } catch {
         return [];
     }

@@ -10,9 +10,11 @@ import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, ge
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps, useMapRuntime } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
-import { ActivityTypeIcon, getActivityTypePaletteParts } from './ActivityTypeVisuals';
+import { ActivityTypeIcon } from './ActivityTypeVisuals';
+import { getActivityTypePaletteParts } from './ActivityTypeVisualsUtils';
 import { getMapSurfaceBackgroundColor, GOOGLE_BASEMAP_HIDDEN_STYLES } from '../services/mapRendererVisualStyleService';
-import { isMapboxStyleReadyForRuntimeMutations, MapboxBasemapSync } from './maps/MapboxBasemapSync';
+import { MapboxBasemapSync } from './maps/MapboxBasemapSync';
+import { isMapboxStyleReadyForRuntimeMutations } from './maps/mapboxBasemapUtils';
 import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
 import { collectTripMapFitBoundsCoordinates } from './maps/tripMapFitBoundsGeometry';
 import { createGoogleMixedSurfaceController, type GoogleMixedSurfaceController } from './maps/googleMixedSurfaceController';
@@ -249,9 +251,9 @@ type OverlayMarkerHandle = {
 };
 
 const ROUTE_CACHE = new Map<string, RouteCacheEntry>();
-export const ROUTE_FAILURE_TTL_MS = 5 * 60 * 1000;
+const ROUTE_FAILURE_TTL_MS = 5 * 60 * 1000;
 const ROUTE_STORAGE_KEY = 'tf_route_cache_v1';
-export const ROUTE_PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
+const ROUTE_PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
 const ROUTE_FAILURE_WARNING_TTL_MS = 2 * 60 * 1000;
 const RECENT_ROUTE_FAILURE_WARNINGS = new Map<string, number>();
 let routeCacheHydrated = false;
@@ -268,16 +270,16 @@ const ACTIVITY_CITY_FALLBACK_MIN_SLOTS = 4;
 const MARKER_COORDINATE_GROUP_PRECISION = 5;
 const MARKER_TIER_ROUTE_REFERENCE_ZOOM = 10;
 const MARKER_GAP_DEDUPE_PRECISION = 6;
-export const MAP_VIEWPORT_READY_MIN_DIMENSION_PX = 80;
-export const MAX_WALK_ROUTE_CHECK_KM = 60;
-export const MAX_BICYCLE_ROUTE_CHECK_KM = 160;
-export const MAX_TRANSIT_ROUTE_CHECK_KM = 1400;
-export const MAX_DRIVING_ROUTE_CHECK_KM = 3000;
-export const TRANSIT_SECOND_PASS_MAX_KM = 320;
-export const TRANSIT_DRIVING_RETRY_MAX_KM = TRANSIT_SECOND_PASS_MAX_KM;
-export const ROUTES_COMPUTE_FIELDS = GOOGLE_ROUTES_COMPUTE_FIELDS;
-export type RouteApiMode = 'DRIVING' | 'WALKING' | 'BICYCLING' | 'TRANSIT';
-export type RouteAttemptPolicy = {
+const MAP_VIEWPORT_READY_MIN_DIMENSION_PX = 80;
+const MAX_WALK_ROUTE_CHECK_KM = 60;
+const MAX_BICYCLE_ROUTE_CHECK_KM = 160;
+const MAX_TRANSIT_ROUTE_CHECK_KM = 1400;
+const MAX_DRIVING_ROUTE_CHECK_KM = 3000;
+const TRANSIT_SECOND_PASS_MAX_KM = 320;
+const TRANSIT_DRIVING_RETRY_MAX_KM = TRANSIT_SECOND_PASS_MAX_KM;
+const ROUTES_COMPUTE_FIELDS = GOOGLE_ROUTES_COMPUTE_FIELDS;
+type RouteApiMode = 'DRIVING' | 'WALKING' | 'BICYCLING' | 'TRANSIT';
+type RouteAttemptPolicy = {
     shouldAttempt: boolean;
     modes: RouteApiMode[];
     reason?: 'unsupported_mode' | 'invalid_distance' | 'distance_cap_exceeded';
@@ -312,7 +314,7 @@ const CITY_MARKER_Z_INDEX = 320;
 const CITY_MARKER_SELECTED_Z_INDEX = 340;
 const ACTIVITY_MARKER_Z_INDEX = 240;
 const ACTIVITY_MARKER_SELECTED_Z_INDEX = 260;
-export const ACTIVITY_MARKERS_MIN_ZOOM = getTripMapProviderTuning('google').markers.activityMinZoom;
+const ACTIVITY_MARKERS_MIN_ZOOM = getTripMapProviderTuning('google').markers.activityMinZoom;
 
 const resolveCityMarkerZIndex = (
     isSelected: boolean,
@@ -349,7 +351,7 @@ type MarkerRenderProfile = {
     routeStrokeScale: number;
 };
 
-export type MarkerRenderTier = 'default' | 'compact' | 'micro';
+type MarkerRenderTier = 'default' | 'compact' | 'micro';
 type CityMarkerRenderProfile = MarkerRenderProfile['city'];
 
 const DOCKED_DEFAULT_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
@@ -456,7 +458,7 @@ const MICRO_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
     routeStrokeScale: 0.64,
 };
 
-export const resolveMarkerRenderProfile = (
+const resolveMarkerRenderProfile = (
     options?: {
         mapDockMode?: 'docked' | 'floating';
         markerTier?: MarkerRenderTier;
@@ -483,7 +485,7 @@ const toWebMercatorPixel = (
     return { x, y };
 };
 
-export const estimateRoutePixelSpan = (
+const estimateRoutePixelSpan = (
     coordinates: google.maps.LatLngLiteral[],
     zoom: number | null,
 ): number => {
@@ -497,7 +499,7 @@ export const estimateRoutePixelSpan = (
     return Math.hypot(width, height);
 };
 
-export const estimateNearestMarkerGapPx = (
+const estimateNearestMarkerGapPx = (
     coordinates: google.maps.LatLngLiteral[],
     zoom: number | null,
 ): number => {
@@ -529,7 +531,7 @@ export const estimateNearestMarkerGapPx = (
     return minDistance;
 };
 
-export const resolveMarkerRenderTier = ({
+const resolveMarkerRenderTier = ({
     provider = 'google',
     viewportWidth,
     viewportHeight,
@@ -569,7 +571,7 @@ export const resolveMarkerRenderTier = ({
     return 'default';
 };
 
-export const resolveZoomEnhancedCityMarkerProfile = ({
+const resolveZoomEnhancedCityMarkerProfile = ({
     provider = 'google',
     baseProfile,
     markerTier,
@@ -640,7 +642,7 @@ export const resolveZoomEnhancedCityMarkerProfile = ({
     };
 };
 
-export const resolveCrowdedCityMarkerProfile = ({
+const resolveCrowdedCityMarkerProfile = ({
     provider = 'google',
     baseProfile,
     markerTier,
@@ -693,7 +695,7 @@ const normalizeRotationDegrees = (value?: number): number => {
     return normalized < 0 ? normalized + 360 : normalized;
 };
 
-export const mapRouteAttemptPolicyReasonToFailureReason = (
+const mapRouteAttemptPolicyReasonToFailureReason = (
     reason?: RouteAttemptPolicy['reason'],
 ): RouteFailureReason => {
     if (reason === 'unsupported_mode') return 'unsupported_mode';
@@ -702,7 +704,7 @@ export const mapRouteAttemptPolicyReasonToFailureReason = (
     return 'request_error';
 };
 
-export const classifyRouteComputationError = (error: unknown): RouteFailureReason => {
+const classifyRouteComputationError = (error: unknown): RouteFailureReason => {
     const message = error instanceof Error
         ? error.message
         : typeof error === 'string'
@@ -725,7 +727,7 @@ export const classifyRouteComputationError = (error: unknown): RouteFailureReaso
     return 'request_error';
 };
 
-export const shouldLogRouteFailureWarning = ({
+const shouldLogRouteFailureWarning = ({
     routeKey,
     mode,
     reason,
@@ -774,7 +776,7 @@ const buildTransportMarkerHtml = (
     `;
 };
 
-export const getRouteOutlineColor = (_style: MapStyle = 'standard'): string => {
+const getRouteOutlineColor = (_style: MapStyle = 'standard'): string => {
     if (_style === 'minimal') return ROUTE_MINIMAL_GAP_COLOR;
     if (_style === 'clean') return ROUTE_CLEAN_GAP_COLOR;
     if (_style === 'standard') return ROUTE_STANDARD_GAP_COLOR;
@@ -783,14 +785,14 @@ export const getRouteOutlineColor = (_style: MapStyle = 'standard'): string => {
     return '#0f172a';
 };
 
-export const getRouteOuterOutlineColor = (_style: MapStyle = 'standard'): string => {
+const getRouteOuterOutlineColor = (_style: MapStyle = 'standard'): string => {
     return ROUTE_OUTER_OUTLINE_COLOR;
 };
 
 const isDarkMapStyle = (style: MapStyle): boolean =>
     style === 'dark' || style === 'cleanDark';
 
-export const estimateGreatCircleDistanceKm = (
+const estimateGreatCircleDistanceKm = (
     start: google.maps.LatLngLiteral,
     end: google.maps.LatLngLiteral,
 ): number => {
@@ -808,7 +810,7 @@ export const estimateGreatCircleDistanceKm = (
     return EARTH_RADIUS_KM * angularDistance;
 };
 
-export const computeMaxPathDeviationMeters = (
+const computeMaxPathDeviationMeters = (
     path: google.maps.LatLngLiteral[],
     start: google.maps.LatLngLiteral,
     end: google.maps.LatLngLiteral,
@@ -846,7 +848,7 @@ export const computeMaxPathDeviationMeters = (
     return maxDeviation;
 };
 
-export const isRoutePathLikelyStraight = (
+const isRoutePathLikelyStraight = (
     path: google.maps.LatLngLiteral[],
     start: google.maps.LatLngLiteral,
     end: google.maps.LatLngLiteral,
@@ -956,7 +958,7 @@ const resolveActivityOwnerCity = (
     return cityItems[0] || null;
 };
 
-export const resolveActivityMarkerPositions = (
+const resolveActivityMarkerPositions = (
     items: ITimelineItem[],
 ): ResolvedActivityMarker[] => {
     const cityItems = items
@@ -969,28 +971,27 @@ export const resolveActivityMarkerPositions = (
             return left.title.localeCompare(right.title);
         });
 
-    const candidates = activities
-        .map((activity) => {
-            const activityCoordinates = isFiniteLatLngLiteral(activity.coordinates) ? activity.coordinates : null;
-            const ownerCity = activityCoordinates ? null : resolveActivityOwnerCity(activity, cityItems);
-            const baseCoordinates = activityCoordinates || ownerCity?.coordinates || null;
-            if (!isFiniteLatLngLiteral(baseCoordinates)) return null;
-            const primaryType = pickPrimaryActivityType(activity.activityType);
-            return {
-                id: activity.id,
-                title: activity.title,
-                type: primaryType,
-                baseCoordinates,
-                coordinateSource: activityCoordinates ? 'activity' as const : 'city' as const,
-            };
-        })
-        .filter((entry): entry is {
-            id: string;
-            title: string;
-            type: ActivityType;
-            baseCoordinates: google.maps.LatLngLiteral;
-            coordinateSource: 'activity' | 'city';
-        } => Boolean(entry));
+    const candidates: Array<{
+        id: string;
+        title: string;
+        type: ActivityType;
+        baseCoordinates: google.maps.LatLngLiteral;
+        coordinateSource: 'activity' | 'city';
+    }> = [];
+    for (const activity of activities) {
+        const activityCoordinates = isFiniteLatLngLiteral(activity.coordinates) ? activity.coordinates : null;
+        const ownerCity = activityCoordinates ? null : resolveActivityOwnerCity(activity, cityItems);
+        const baseCoordinates = activityCoordinates || ownerCity?.coordinates || null;
+        if (!isFiniteLatLngLiteral(baseCoordinates)) continue;
+        const primaryType = pickPrimaryActivityType(activity.activityType);
+        candidates.push({
+            id: activity.id,
+            title: activity.title,
+            type: primaryType,
+            baseCoordinates,
+            coordinateSource: activityCoordinates ? 'activity' : 'city',
+        });
+    }
 
     const groupedByCoordinates = new Map<string, number[]>();
     candidates.forEach((candidate, index) => {
@@ -1021,7 +1022,7 @@ export const resolveActivityMarkerPositions = (
     });
 };
 
-export const resolveSelectedMapFocusPosition = ({
+const resolveSelectedMapFocusPosition = ({
     provider = 'google',
     selectedActivityId,
     selectedCityId,
@@ -1053,7 +1054,7 @@ export const resolveSelectedMapFocusPosition = ({
     return null;
 };
 
-export const shouldSkipRouteFitForSelection = ({
+const shouldSkipRouteFitForSelection = ({
     respectSelection,
     selectionVersionAtSchedule,
     currentSelectionVersion,
@@ -1073,7 +1074,7 @@ export const shouldSkipRouteFitForSelection = ({
     return Boolean(selectedItemId || selectedActivityId || selectedCityId);
 };
 
-export const resolveSelectionViewportActions = ({
+const resolveSelectionViewportActions = ({
     isTargetVisible,
     isTargetWithinSafeZone,
     currentZoom,
@@ -1090,7 +1091,7 @@ export const resolveSelectionViewportActions = ({
     return { shouldPan, shouldZoom };
 };
 
-export const resolveMapViewportPadding = ({
+const resolveMapViewportPadding = ({
     provider = 'google',
     mapDockMode,
     mapViewportSize,
@@ -1106,7 +1107,7 @@ export const resolveMapViewportPadding = ({
     });
 };
 
-export const isCoordinateWithinSafeBounds = ({
+const isCoordinateWithinSafeBounds = ({
     bounds,
     point,
     insetRatio = 0.22,
@@ -1132,7 +1133,7 @@ export const isCoordinateWithinSafeBounds = ({
         && point.lng <= northEast.lng() - lngInset;
 };
 
-export const shouldDisplayActivityMarkers = ({
+const shouldDisplayActivityMarkers = ({
     provider = 'google',
     isEnabled,
     zoom,
@@ -1146,23 +1147,16 @@ export const shouldDisplayActivityMarkers = ({
     return Number(zoom) >= getTripMapProviderTuning(provider).markers.activityMinZoom;
 };
 
-export const isMapViewportReady = (rect: { width: number; height: number } | null | undefined): boolean => {
+const isMapViewportReady = (rect: { width: number; height: number } | null | undefined): boolean => {
     if (!rect) return false;
     return rect.width >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX && rect.height >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX;
 };
 
-export {
-    buildOverlappingMarkerPosition,
-    getMapLabelCityName,
-    offsetLatLngByMeters,
-    resolveTripMapCityLabelName,
-};
+type CityLabelAnchor = TripMapCityLabelAnchor;
+const resolveCityLabelPlacement = resolveTripMapCityLabelPlacement;
+const resolveCityLabelTheme = resolveTripMapCityLabelTheme;
 
-export type CityLabelAnchor = TripMapCityLabelAnchor;
-export const resolveCityLabelPlacement = resolveTripMapCityLabelPlacement;
-export const resolveCityLabelTheme = resolveTripMapCityLabelTheme;
-
-export const resolveCityLabelAnchor = (
+const resolveCityLabelAnchor = (
     _city: google.maps.LatLngLiteral,
     _previous?: google.maps.LatLngLiteral | null,
     _next?: google.maps.LatLngLiteral | null,
@@ -1170,7 +1164,7 @@ export const resolveCityLabelAnchor = (
     return 'above';
 };
 
-export const buildRouteAttemptPolicy = (
+const buildRouteAttemptPolicy = (
     mode: string,
     straightDistanceKm: number,
 ): RouteAttemptPolicy => {
@@ -1207,7 +1201,7 @@ export const buildRouteAttemptPolicy = (
     }
 };
 
-export const buildRoutePolylinePairOptions = (
+const buildRoutePolylinePairOptions = (
     options: google.maps.PolylineOptions,
     style: MapStyle = 'standard',
 ): {
@@ -1256,7 +1250,7 @@ export const buildRoutePolylinePairOptions = (
     return { outerOutlineOptions, outlineOptions, mainOptions };
 };
 
-export const buildMapboxRouteLayerConfigs = ({
+const buildMapboxRouteLayerConfigs = ({
     routeId,
     options,
     style,
@@ -1325,7 +1319,7 @@ export const buildMapboxRouteLayerConfigs = ({
     ].filter((layer): layer is MapboxLineLayerConfig => Boolean(layer));
 };
 
-export const filterHydratedRouteCacheEntries = (
+const filterHydratedRouteCacheEntries = (
     parsed: unknown,
     now: number,
 ): Array<[string, RouteCacheEntry]> => {
@@ -1339,7 +1333,7 @@ export const filterHydratedRouteCacheEntries = (
     });
 };
 
-export const buildPersistedRouteCachePayload = (
+const buildPersistedRouteCachePayload = (
     routeCache: Map<string, RouteCacheEntry>,
     now: number,
 ): Record<string, RouteCacheEntry> => {
@@ -1532,23 +1526,28 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         });
         return markerPositions;
     }, [items]);
+    const finiteCityCoordinates = useMemo(() => {
+        const coordinates: google.maps.LatLngLiteral[] = [];
+        for (const city of cities) {
+            if (isFiniteLatLngLiteral(city.coordinates)) {
+                coordinates.push(city.coordinates);
+            }
+        }
+        return coordinates;
+    }, [cities]);
     const routePixelSpan = useMemo(
         () => estimateRoutePixelSpan(
-            cities
-                .map((city) => city.coordinates)
-                .filter(isFiniteLatLngLiteral),
+            finiteCityCoordinates,
             mapZoomLevel,
         ),
-        [cities, mapZoomLevel],
+        [finiteCityCoordinates, mapZoomLevel],
     );
     const nearestMarkerGapPx = useMemo(
         () => estimateNearestMarkerGapPx(
-            cities
-                .map((city) => city.coordinates)
-                .filter(isFiniteLatLngLiteral),
+            finiteCityCoordinates,
             mapZoomLevel,
         ),
-        [cities, mapZoomLevel],
+        [finiteCityCoordinates, mapZoomLevel],
     );
     const markerRenderTier = useMemo(
         () => resolveMarkerRenderTier({
@@ -1796,16 +1795,20 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [mapboxBasemapAvailabilityKey]);
 
     useEffect(() => {
-        if (!mapInitialized || !googleMapRef.current) return;
-        const mapInstance = googleMapRef.current as google.maps.Map;
-        const syncZoom = () => {
-            const nextZoom = mapInstance.getZoom?.();
-            setMapZoomLevel(Number.isFinite(nextZoom) ? Number(nextZoom) : null);
-        };
-        syncZoom();
-        const listener = mapInstance.addListener?.('zoom_changed', syncZoom);
+        let listener: google.maps.MapsEventListener | null = null;
+        if (mapInitialized && googleMapRef.current) {
+            const mapInstance = googleMapRef.current as google.maps.Map;
+            const syncZoom = () => {
+                const nextZoom = mapInstance.getZoom?.();
+                setMapZoomLevel(Number.isFinite(nextZoom) ? Number(nextZoom) : null);
+            };
+            syncZoom();
+            listener = mapInstance.addListener('zoom_changed', syncZoom);
+        }
         return () => {
-            listener?.remove?.();
+            if (listener) {
+                window.google?.maps?.event?.removeListener(listener);
+            }
         };
     }, [mapInitialized]);
 
@@ -1839,10 +1842,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const citySignature = cities
             .map(city => `${city.id}|${city.title}|${city.color}|${city.coordinates?.lat},${city.coordinates?.lng}`)
             .join('||');
-        const activitySignature = items
-            .filter((item) => item.type === 'activity')
-            .map((item) => `${item.id}|${item.startDateOffset}|${item.duration}|${item.coordinates?.lat},${item.coordinates?.lng}`)
-            .join('||');
+        const activitySignature = items.reduce<string[]>((parts, item) => {
+            if (item.type === 'activity') {
+                parts.push(`${item.id}|${item.startDateOffset}|${item.duration}|${item.coordinates?.lat},${item.coordinates?.lng}`);
+            }
+            return parts;
+        }, []).join('||');
         const routeSignature = cities
             .slice(0, -1)
             .map((city, idx) => {
@@ -1857,33 +1862,68 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
     // Update Markers & Routes
     useEffect(() => {
-        if (!mapInitialized || !googleMapRef.current || !window.google?.maps) return;
+        let isEffectDisposed = false;
         const mapboxMap = isMapboxBasemapEnabled ? mapboxMapRef.current : null;
         const mapboxModule = isMapboxBasemapEnabled ? mapboxModuleRef.current : null;
-        if (isMapboxBasemapEnabled && !mapboxMap) return;
-        if (isMapboxBasemapEnabled && !mapboxModule) return;
-        if (isMapboxBasemapEnabled && (
-            !isMapboxSurfaceReady
-            || !isMapboxStyleReadyForRuntimeMutations(mapboxMap)
-        )) return;
-        if (!isMapboxBasemapEnabled && !window.google.maps.OverlayView) return;
+        const canRenderMapVisuals = Boolean(
+            mapInitialized
+            && googleMapRef.current
+            && window.google?.maps
+            && (!isMapboxBasemapEnabled || mapboxMap)
+            && (!isMapboxBasemapEnabled || mapboxModule)
+            && (!isMapboxBasemapEnabled || (
+                isMapboxSurfaceReady
+                && mapboxMap
+                && isMapboxStyleReadyForRuntimeMutations(mapboxMap)
+            ))
+            && (isMapboxBasemapEnabled || window.google.maps.OverlayView)
+        );
+
+        const clearRenderedMapVisuals = () => {
+            markersRef.current.forEach((marker) => marker.setMap(null));
+            markersRef.current = [];
+            activityMarkerMetaRef.current.forEach(({ marker }) => marker.setMap(null));
+            activityMarkerMetaRef.current = [];
+            activityMarkerPositionByIdRef.current = new Map();
+            routesRef.current.forEach((route) => route.setMap(null));
+            routesRef.current = [];
+            transportMarkerMetaRef.current.forEach(({ marker }) => marker.setMap(null));
+            transportMarkerMetaRef.current = [];
+            cityLabelOverlaysRef.current.forEach((overlay) => overlay.setMap(null));
+            cityLabelOverlaysRef.current = [];
+            cityMarkerMetaRef.current = [];
+        };
 
         // 1. Clear existing markers & routes
-        markersRef.current.forEach(m => m.setMap(null));
-        markersRef.current = [];
-        activityMarkerMetaRef.current.forEach(({ marker }) => marker.setMap(null));
-        activityMarkerMetaRef.current = [];
-        activityMarkerPositionByIdRef.current = new Map();
-        routesRef.current.forEach(r => r.setMap(null));
-        routesRef.current = [];
-        transportMarkerMetaRef.current.forEach(({ marker }) => marker.setMap(null));
-        transportMarkerMetaRef.current = [];
-        cityLabelOverlaysRef.current.forEach(o => o.setMap(null));
-        cityLabelOverlaysRef.current = [];
-        cityMarkerMetaRef.current = [];
-        let isEffectDisposed = false;
+        clearRenderedMapVisuals();
+        if (!canRenderMapVisuals) {
+            return () => {
+                isEffectDisposed = true;
+                clearRenderedMapVisuals();
+            };
+        }
         let routeVisualIndex = 0;
         const isEffectActive = () => !isEffectDisposed;
+        let markerDomListeners: Array<{
+            target: HTMLDivElement;
+            type: 'click' | 'mouseenter' | 'mouseleave';
+            listener: EventListener;
+        }> = [];
+        const registerMarkerDomListener = (
+            target: HTMLDivElement,
+            type: 'click' | 'mouseenter' | 'mouseleave',
+            listener: EventListener,
+        ) => {
+            target.addEventListener(type, listener);
+            markerDomListeners.push({ target, type, listener });
+        };
+        const removeMarkerDomListeners = (target: HTMLDivElement) => {
+            markerDomListeners = markerDomListeners.filter((entry) => {
+                if (entry.target !== target) return true;
+                entry.target.removeEventListener(entry.type, entry.listener);
+                return false;
+            });
+        };
 
         const createOverlayMarker = ({
             position,
@@ -1924,36 +1964,42 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             let currentHtml = html;
             let currentZIndex = zIndex;
             let tooltipNode: HTMLDivElement | null = null;
-            const clickHandler = (event: MouseEvent) => {
+            const clickHandler: EventListener = (event) => {
                 event.stopPropagation();
                 onClick?.();
             };
-            const showTooltipHandler = () => {
+            const showTooltipHandler: EventListener = () => {
                 if (!tooltipNode) return;
-                tooltipNode.style.opacity = '1';
-                tooltipNode.style.transform = 'translate(-50%, calc(-100% - 14px))';
+                Object.assign(tooltipNode.style, {
+                    opacity: '1',
+                    transform: 'translate(-50%, calc(-100% - 14px))',
+                });
             };
-            const hideTooltipHandler = () => {
+            const hideTooltipHandler: EventListener = () => {
                 if (!tooltipNode) return;
-                tooltipNode.style.opacity = '0';
-                tooltipNode.style.transform = 'translate(-50%, calc(-100% - 8px))';
+                Object.assign(tooltipNode.style, {
+                    opacity: '0',
+                    transform: 'translate(-50%, calc(-100% - 8px))',
+                });
             };
 
             overlay.onAdd = function onAdd() {
                 markerDiv = document.createElement('div');
-                markerDiv.style.position = 'absolute';
-                markerDiv.style.transform = centerAnchor ? 'translate(-50%, -50%)' : 'translate(-50%, -100%)';
-                markerDiv.style.pointerEvents = clickable ? 'auto' : 'none';
-                markerDiv.style.cursor = clickable ? 'pointer' : 'default';
-                markerDiv.style.zIndex = `${currentZIndex}`;
+                markerDiv.style.cssText = [
+                    'position: absolute',
+                    `transform: ${centerAnchor ? 'translate(-50%, -50%)' : 'translate(-50%, -100%)'}`,
+                    `pointer-events: ${clickable ? 'auto' : 'none'}`,
+                    `cursor: ${clickable ? 'pointer' : 'default'}`,
+                    `z-index: ${currentZIndex}`,
+                ].join('; ');
                 markerDiv.innerHTML = currentHtml;
                 if (clickable) {
-                    markerDiv.addEventListener('click', clickHandler);
+                    registerMarkerDomListener(markerDiv, 'click', clickHandler);
                 }
                 if (tooltipText) {
                     tooltipNode = markerDiv.querySelector('[data-role="activity-marker-tooltip"]');
-                    markerDiv.addEventListener('mouseenter', showTooltipHandler);
-                    markerDiv.addEventListener('mouseleave', hideTooltipHandler);
+                    registerMarkerDomListener(markerDiv, 'mouseenter', showTooltipHandler);
+                    registerMarkerDomListener(markerDiv, 'mouseleave', hideTooltipHandler);
                 }
                 const panes = this.getPanes();
                 const targetPane = clickable
@@ -1977,19 +2023,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 if (!projection) return;
                 const point = projection.fromLatLngToDivPixel(new window.google.maps.LatLng(currentPosition.lat, currentPosition.lng));
                 if (!point) return;
-                markerDiv.style.left = `${point.x}px`;
-                markerDiv.style.top = `${point.y}px`;
+                Object.assign(markerDiv.style, {
+                    left: `${point.x}px`,
+                    top: `${point.y}px`,
+                });
             };
 
             overlay.onRemove = function onRemove() {
                 if (!markerDiv) return;
-                if (clickable) {
-                    markerDiv.removeEventListener('click', clickHandler);
-                }
-                if (tooltipText) {
-                    markerDiv.removeEventListener('mouseenter', showTooltipHandler);
-                    markerDiv.removeEventListener('mouseleave', hideTooltipHandler);
-                }
+                removeMarkerDomListeners(markerDiv);
                 markerDiv.remove();
                 markerDiv = null;
                 tooltipNode = null;
@@ -2425,40 +2467,46 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         labelOffsetPx,
                     );
                     const theme = resolveCityLabelTheme(activeStyle);
-                    div.style.position = 'absolute';
-                    div.style.transform = placement.transform;
-                    div.style.textAlign = placement.textAlign;
-                    div.style.pointerEvents = 'none';
-                    div.style.display = 'flex';
-                    div.style.flexDirection = 'column';
-                    div.style.gap = '2px';
-                    div.style.whiteSpace = 'nowrap';
-                    div.style.zIndex = '120';
-                    div.style.padding = '6px 9px';
-                    div.style.borderRadius = '999px';
-                    div.style.background = theme.background;
-                    div.style.border = `1px solid ${theme.borderColor}`;
-                    div.style.boxShadow = theme.boxShadow;
-                    div.style.backdropFilter = 'blur(12px)';
+                    div.style.cssText = [
+                        'position: absolute',
+                        `transform: ${placement.transform}`,
+                        `text-align: ${placement.textAlign}`,
+                        'pointer-events: none',
+                        'display: flex',
+                        'flex-direction: column',
+                        'gap: 2px',
+                        'white-space: nowrap',
+                        'z-index: 120',
+                        'padding: 6px 9px',
+                        'border-radius: 999px',
+                        `background: ${theme.background}`,
+                        `border: 1px solid ${theme.borderColor}`,
+                        `box-shadow: ${theme.boxShadow}`,
+                        'backdrop-filter: blur(12px)',
+                    ].join('; ');
 
                     const nameEl = document.createElement('div');
                     nameEl.textContent = name;
-                    nameEl.style.fontSize = '13px';
-                    nameEl.style.fontWeight = '700';
-                    nameEl.style.color = theme.textColor;
-                    nameEl.style.textShadow = theme.textShadow;
+                    nameEl.style.cssText = [
+                        'font-size: 13px',
+                        'font-weight: 700',
+                        `color: ${theme.textColor}`,
+                        `text-shadow: ${theme.textShadow}`,
+                    ].join('; ');
 
                     div.appendChild(nameEl);
 
                     if (subLabel) {
                         const subEl = document.createElement('div');
                         subEl.textContent = subLabel;
-                        subEl.style.fontSize = '10px';
-                        subEl.style.fontWeight = '700';
-                        subEl.style.color = theme.subTextColor;
-                        subEl.style.textTransform = 'uppercase';
-                        subEl.style.letterSpacing = '0.08em';
-                        subEl.style.textShadow = theme.textShadow;
+                        subEl.style.cssText = [
+                            'font-size: 10px',
+                            'font-weight: 700',
+                            `color: ${theme.subTextColor}`,
+                            'text-transform: uppercase',
+                            'letter-spacing: 0.08em',
+                            `text-shadow: ${theme.textShadow}`,
+                        ].join('; ');
                         div.appendChild(subEl);
                     }
 
@@ -2473,8 +2521,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     if (!projection || !(overlay as any).div) return;
                     const point = projection.fromLatLngToDivPixel(new window.google.maps.LatLng(position.lat, position.lng));
                     if (point) {
-                        (overlay as any).div.style.left = `${point.x}px`;
-                        (overlay as any).div.style.top = `${point.y}px`;
+                        Object.assign((overlay as any).div.style, {
+                            left: `${point.x}px`,
+                            top: `${point.y}px`,
+                        });
                     }
                 };
 
@@ -2818,6 +2868,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }
         return () => {
             isEffectDisposed = true;
+            markerDomListeners.forEach(({ target, type, listener }) => {
+                target.removeEventListener(type, listener);
+            });
+            markerDomListeners = [];
+            clearRenderedMapVisuals();
         };
 
     }, [activeStyle, effectiveMarkerRenderProfile, isMapboxBasemapEnabled, isMapboxSurfaceReady, isPaywalled, mapInitialized, mapRenderSignature, mapboxStyleReloadNonce, routeMode, showCityNames]); 
@@ -3074,10 +3129,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     // If we don't have city coordinates yet, center the map on the selected country/location.
     // Supports one or multiple focus queries separated by "||".
     useEffect(() => {
-        const queries = (focusLocationQuery ?? '')
-            .split(/\s*\|\|\s*/)
-            .map((query) => query.trim())
-            .filter((query) => query.length > 0);
+        const queries: string[] = [];
+        for (const rawQuery of (focusLocationQuery ?? '').split(/\s*\|\|\s*/)) {
+            const query = rawQuery.trim();
+            if (query.length > 0) {
+                queries.push(query);
+            }
+        }
         if (queries.length === 0 || !mapInitialized || !googleMapRef.current || cities.length > 0) return;
         if (!window.google?.maps?.Geocoder) return;
         const focusKey = queries.join('||');
@@ -3181,7 +3239,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     className="absolute inset-0 flex items-center justify-center text-sm text-gray-500"
                     style={{ backgroundColor: mapSurfaceBackgroundColor }}
                 >
-                    Loading Map...
+                    Loading map…
                 </div>
             )}
             {loadError && (
@@ -3215,12 +3273,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     )}
                     {showLayoutControls && onLayoutChange && (
                         <>
-                            <button
+                            <button type="button"
                                 onClick={() => onLayoutChange('vertical')}
                                 className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Vertical layout"
                                 {...getAnalyticsDebugAttributes('trip_view__layout_direction--vertical', { surface: 'map_controls' })}
                             ><ArrowUpDown size={18} /></button>
-                            <button
+                            <button type="button"
                                 onClick={() => onLayoutChange('horizontal')}
                                 className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Horizontal layout"
                                 {...getAnalyticsDebugAttributes('trip_view__layout_direction--horizontal', { surface: 'map_controls' })}
@@ -3229,7 +3287,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     )}
 
                     {onToggleExpanded && (
-                        <button
+                        <button type="button"
                             onClick={onToggleExpanded}
                             className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50 transition-colors flex items-center justify-center"
                             title={isExpanded ? 'Shrink map' : 'Expand map'}
@@ -3239,7 +3297,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         </button>
                     )}
 
-                    <button
+                    <button type="button"
                         onClick={handleFit}
                         disabled={mapActionsDisabled}
                         className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50 transition-colors flex items-center justify-center disabled:text-gray-300 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-300"
@@ -3249,7 +3307,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     {/* Style Switcher */}
                     {onStyleChange && (
                       <div className="relative">
-                          <button
+                          <button type="button"
                               onClick={() => {
                                   if (mapActionsDisabled) return;
                                   setIsStyleMenuOpen(!isStyleMenuOpen);
@@ -3266,23 +3324,23 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                           ><Layers size={18} /></button>
                           {isStyleMenuOpen && !mapActionsDisabled && (
                               <div className="absolute top-0 right-full mr-2 bg-white rounded-lg shadow-xl border border-gray-100 w-40 overflow-hidden flex flex-col z-20">
-                                  <button onClick={() => { onStyleChange('minimal'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'minimal' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Minimal</button>
-                                  <button onClick={() => { onStyleChange('standard'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'standard' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Standard</button>
-                                  <button onClick={() => { onStyleChange('dark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'dark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Dark</button>
-                                  <button onClick={() => { onStyleChange('clean'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'clean' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean (light)</button>
-                                  <button onClick={() => { onStyleChange('cleanDark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'cleanDark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean (dark)</button>
-                                  <button onClick={() => { onStyleChange('satellite'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'satellite' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Satellite</button>
+                                  <button type="button" onClick={() => { onStyleChange('minimal'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'minimal' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Minimal</button>
+                                  <button type="button" onClick={() => { onStyleChange('standard'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'standard' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Standard</button>
+                                  <button type="button" onClick={() => { onStyleChange('dark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'dark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Dark</button>
+                                  <button type="button" onClick={() => { onStyleChange('clean'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'clean' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean (light)</button>
+                                  <button type="button" onClick={() => { onStyleChange('cleanDark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'cleanDark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean (dark)</button>
+                                  <button type="button" onClick={() => { onStyleChange('satellite'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'satellite' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Satellite</button>
                                   {!isPaywalled && onRouteModeChange && (
                                       <>
                                           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Routes</div>
-                                          <button onClick={() => { onRouteModeChange('simple'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'simple' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Simple</button>
-                                          <button onClick={() => { onRouteModeChange('realistic'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'realistic' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Realistic</button>
+                                          <button type="button" onClick={() => { onRouteModeChange('simple'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'simple' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Simple</button>
+                                          <button type="button" onClick={() => { onRouteModeChange('realistic'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'realistic' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Realistic</button>
                                       </>
                                   )}
                                   {!isPaywalled && onShowCityNamesChange && (
                                       <>
                                           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Labels</div>
-                                          <button
+                                          <button type="button"
                                               onClick={() => { onShowCityNamesChange(!showCityNames); setIsStyleMenuOpen(false); }}
                                               className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${showCityNames ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}
                                           >
@@ -3293,13 +3351,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                   {onMapColorModeChange && (
                                       <>
                                           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Colors</div>
-                                          <button
+                                          <button type="button"
                                               onClick={() => { onMapColorModeChange('trip'); setIsStyleMenuOpen(false); }}
                                               className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${mapColorMode === 'trip' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}
                                           >
                                               Trip colors
                                           </button>
-                                          <button
+                                          <button type="button"
                                               onClick={() => { onMapColorModeChange('brand'); setIsStyleMenuOpen(false); }}
                                               className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${mapColorMode === 'brand' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}
                                           >

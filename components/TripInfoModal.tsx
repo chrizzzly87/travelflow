@@ -72,6 +72,13 @@ const FUTURE_DESTINATION_CHECK_KEYS = [
 
 type TripInfoTabValue = 'general' | 'history' | 'export' | 'destination' | 'debug';
 
+const formatAttemptTimestamp = (value: string | null | undefined): string => {
+    if (!value) return '—';
+    const parsed = Date.parse(value);
+    if (!Number.isFinite(parsed)) return value;
+    return new Date(parsed).toLocaleString();
+};
+
 export interface TripInfoModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -672,7 +679,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                                 const showUnsyncedBadge = hasUnsyncedChanges && index === 0;
                                                 return (
                                                     <li key={item.id} className={`flex items-start gap-3 p-4 ${item.isCurrent ? 'bg-accent-50/60' : 'bg-white'}`}>
-                                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${item.meta.iconClass}`}>
+                                                        <div className={`flex size-9 shrink-0 items-center justify-center rounded-md ${item.meta.iconClass}`}>
                                                             <Icon size={16} />
                                                         </div>
                                                         <div className="min-w-0 flex-1">
@@ -745,7 +752,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
 
                     <TabsContent value="destination" className="space-y-6">
                         {travelerWarnings.length > 0 && (
-                            <section className="rounded-md bg-amber-50 px-4 py-4">
+                            <section className="rounded-md bg-amber-50 p-4">
                                 <div className="flex items-center gap-2">
                                     <ShieldAlert size={16} className="text-amber-700" />
                                     <h3 className="text-base font-semibold text-amber-950">{t('tripView.warningSummary.title')}</h3>
@@ -762,7 +769,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                             <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-700">
                                                 {warning.notes.map((note) => (
                                                     <li key={`${warning.cityName}-${note}`} className="flex items-start gap-2">
-                                                        <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                                                        <span className="mt-2 inline-block size-1.5 shrink-0 rounded-full bg-amber-500" />
                                                         <span>{note}</span>
                                                     </li>
                                                 ))}
@@ -826,8 +833,8 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                     <SummaryCard label={t('tripView.generation.tripInfo.requestId')} value={<span className="font-mono text-[12px] break-all">{latestAttempt?.requestId || '—'}</span>} />
                                     <SummaryCard label={t('tripView.generation.tripInfo.httpStatus')} value={latestAttempt?.statusCode ?? '—'} />
                                     <SummaryCard label={t('tripView.generation.tripInfo.runTime')} value={formatDurationMs(latestAttempt?.durationMs)} />
-                                    <SummaryCard label={t('tripView.generation.tripInfo.started')} value={latestAttempt?.startedAt ? new Date(latestAttempt.startedAt).toLocaleString() : '—'} />
-                                    <SummaryCard label={t('tripView.generation.tripInfo.finished')} value={latestAttempt?.finishedAt ? new Date(latestAttempt.finishedAt).toLocaleString() : '—'} />
+                                    <SummaryCard label={t('tripView.generation.tripInfo.started')} value={formatAttemptTimestamp(latestAttempt?.startedAt)} />
+                                    <SummaryCard label={t('tripView.generation.tripInfo.finished')} value={formatAttemptTimestamp(latestAttempt?.finishedAt)} />
                                     <SummaryCard label={t('tripView.generation.tripInfo.failureKind')} value={latestAttempt?.failureKind || '—'} />
                                     <SummaryCard label={t('tripView.generation.tripInfo.errorCode')} value={latestAttempt?.errorCode || '—'} />
                                     <SummaryCard label={t('tripView.generation.tripInfo.errorMessage')} value={latestAttempt?.errorMessage || '—'} wide />

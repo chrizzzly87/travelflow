@@ -204,11 +204,11 @@ const createProviderChartTooltip = (
                     <ProviderLabel provider={providerId} providerClassName="text-slate-900" logoSize={12} />
                 </p>
                 <div className="space-y-0.5">
-                    {payload.map((entry, index) => {
+                    {payload.map((entry) => {
                         const metricName = String(entry.name || 'Value');
                         const metricValue = toNumericTooltipValue(entry.value);
                         return (
-                            <p key={`${metricName}-${index}`} className="text-[11px] text-slate-700">
+                            <p key={metricName} className="text-[11px] text-slate-700">
                                 {metricName}: {formatValue(metricName, metricValue)}
                             </p>
                         );
@@ -412,7 +412,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
     );
 
     const successRateLeaders = useMemo(() => {
-        return [...successfulModels]
+        return Array.from(successfulModels)
             .sort((left, right) => right.successRate - left.successRate || right.total - left.total)
             .slice(0, rankLimit);
     }, [rankLimit, successfulModels]);
@@ -527,7 +527,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
     }, [monthlyCostHistorySeries]);
 
     const providerVolumeChartData = useMemo(() => {
-        return [...telemetryProviders]
+        return Array.from(telemetryProviders)
             .sort((left, right) => right.total - left.total)
             .slice(0, 10)
             .map((row) => ({
@@ -636,7 +636,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
     }, [selectedProviderShare]);
 
     const modelVolumeBarListData = useMemo(() => {
-        return [...telemetryModels]
+        return Array.from(telemetryModels)
             .sort((left, right) => right.total - left.total)
             .slice(0, 12)
             .map((row) => ({
@@ -1090,7 +1090,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                                     } ${isDisabled ? 'cursor-not-allowed opacity-60' : ''}`}
                                                 >
                                                     <span className="inline-flex min-w-0 items-center gap-2">
-                                                        <span className={`h-2.5 w-2.5 rounded-full ${dotClass}`} />
+                                                        <span className={`size-2.5 rounded-full ${dotClass}`} />
                                                         {entry.provider !== 'other' && (
                                                             <AiProviderLogo provider={entry.provider} size={12} />
                                                         )}

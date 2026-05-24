@@ -85,7 +85,7 @@ export const AiProviderLogo: React.FC<AiProviderLogoProps> = ({
                     alt=""
                     loading="lazy"
                     decoding="async"
-                    className="h-[72%] w-[72%] object-contain"
+                    className="size-[72%] object-contain"
                 />
             ) : (
                 <span className="font-bold uppercase tracking-tight text-slate-600">AI</span>

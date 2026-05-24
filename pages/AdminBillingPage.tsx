@@ -7,7 +7,8 @@ import { useAppDialog } from '../components/AppDialogProvider';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
-import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
+import { AdminShell } from '../components/admin/AdminShell';
+import type { AdminDateRange } from '../components/admin/adminShellUtils';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { showAppToast } from '../components/ui/appToast';
@@ -39,23 +40,27 @@ import {
     resolveAdminBillingStatusTone,
 } from '../services/adminBillingPresentation';
 
+const adminBillingDateTimeFormatter = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+});
+
+const adminBillingDateFormatter = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+});
+
 const formatDateTime = (value: string | null | undefined): string => {
     if (!value) return '—';
     const timestamp = Date.parse(value);
     if (!Number.isFinite(timestamp)) return '—';
-    return new Intl.DateTimeFormat(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(new Date(timestamp));
+    return adminBillingDateTimeFormatter.format(new Date(timestamp));
 };
 
 const formatCompactDate = (value: string | null | undefined): string => {
     if (!value) return '—';
     const timestamp = Date.parse(value);
     if (!Number.isFinite(timestamp)) return '—';
-    return new Intl.DateTimeFormat(undefined, {
-        dateStyle: 'medium',
-    }).format(new Date(timestamp));
+    return adminBillingDateFormatter.format(new Date(timestamp));
 };
 
 const humanizeEventType = (value: string | null | undefined): string => {
@@ -350,7 +355,7 @@ export const AdminBillingPage: React.FC = () => {
             ) : null}
 
             {lastReconcileSummary ? (
-                <section className="mb-4 rounded-2xl border border-accent-200 bg-accent-50/70 px-4 py-4 text-sm text-slate-800 shadow-sm">
+                <section className="mb-4 rounded-2xl border border-accent-200 bg-accent-50/70 p-4 text-sm text-slate-800 shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <p className="font-semibold text-slate-900">Latest Paddle reconciliation</p>
@@ -380,7 +385,7 @@ export const AdminBillingPage: React.FC = () => {
                             </div>
                             <p className="mt-2 text-sm text-slate-500">Current MRR-eligible subscriptions after the latest billing sync.</p>
                         </div>
-                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-accent-200 bg-accent-50 text-accent-700">
+                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-accent-200 bg-accent-50 text-accent-700">
                             <ShieldCheck size={18} weight="duotone" />
                         </span>
                     </div>
@@ -395,7 +400,7 @@ export const AdminBillingPage: React.FC = () => {
                             </div>
                             <p className="mt-2 text-sm text-slate-500">Includes subscriptions scheduled to cancel and grace-access accounts.</p>
                         </div>
-                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700">
                             <CreditCard size={18} weight="duotone" />
                         </span>
                     </div>
@@ -410,7 +415,7 @@ export const AdminBillingPage: React.FC = () => {
                             </div>
                             <p className="mt-2 text-sm text-slate-500">Events that need replay or payload inspection.</p>
                         </div>
-                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700">
+                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700">
                             <WarningCircle size={18} weight="duotone" />
                         </span>
                     </div>
@@ -425,7 +430,7 @@ export const AdminBillingPage: React.FC = () => {
                             </div>
                             <p className="mt-2 text-sm text-slate-500">Webhook records that did not resolve to a TravelFlow user.</p>
                         </div>
-                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-700">
+                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-700">
                             <LinkBreak size={18} weight="duotone" />
                         </span>
                     </div>

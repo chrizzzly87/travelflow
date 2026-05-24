@@ -117,7 +117,7 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                                     const showUnsyncedBadge = hasUnsyncedChanges && index === 0;
                                     return (
                                         <li key={item.id} className={`flex items-start gap-3 p-4 ${item.isCurrent ? 'bg-accent-50/70' : 'hover:bg-gray-50/80'}`}>
-                                            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${item.meta.iconClass}`}>
+                                            <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${item.meta.iconClass}`}>
                                                 <Icon size={15} />
                                             </div>
                                             <div className="min-w-0 flex-1">
@@ -145,7 +145,7 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                                                     onClick={() => onGo(item)}
                                                     className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50"
                                                 >
-                                                    Go
+                                                    Open trip
                                                 </button>
                                             </div>
                                         </li>

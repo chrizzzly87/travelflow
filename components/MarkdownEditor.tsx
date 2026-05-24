@@ -133,7 +133,7 @@ const markdownToHtml = (markdown: string): string => {
                 if (currentTask) {
                     const checked = currentTask[1].toLowerCase() === 'x';
                     const content = inlineMarkdownToHtml(currentTask[2]);
-                    items.push(`<li data-task-list-item="true" class="my-2 list-none ps-0"><label class="flex items-start gap-3"><input type="checkbox" ${checked ? 'checked' : ''} contenteditable="false" class="mt-0.5 h-4 w-4 shrink-0 rounded-[4px] border border-slate-500 accent-accent-600" /><span class="${MARKDOWN_TASK_TEXT_CLASS}">${content}</span></label></li>`);
+                    items.push(`<li data-task-list-item="true" class="my-2 list-none ps-0"><label class="flex items-start gap-3"><input type="checkbox" ${checked ? 'checked' : ''} contenteditable="false" class="mt-0.5 size-4 shrink-0 rounded-[4px] border border-slate-500 accent-accent-600" /><span class="${MARKDOWN_TASK_TEXT_CLASS}">${content}</span></label></li>`);
                     i += 1;
                     continue;
                 }
@@ -233,23 +233,27 @@ const serializeInlineChildren = (element: HTMLElement, skipNode?: Node): string 
 };
 
 const serializeList = (listElement: HTMLOListElement | HTMLUListElement, ordered: boolean): string => {
+    let listIndex = 0;
     const lines = Array.from(listElement.children)
-        .filter((child): child is HTMLLIElement => child instanceof HTMLLIElement)
-        .map((li, index) => {
-            const taskCheckbox = li.querySelector<HTMLInputElement>('input[type="checkbox"]');
-            const content = serializeInlineChildren(li).trim();
+        .flatMap((child) => {
+            if (!(child instanceof HTMLLIElement)) return [];
+            listIndex += 1;
+            const taskCheckbox = child.querySelector<HTMLInputElement>('input[type="checkbox"]');
+            const content = serializeInlineChildren(child).trim();
 
             if (taskCheckbox) {
-                return `- [${taskCheckbox.checked ? 'x' : ' '}] ${content}`.trimEnd();
+                const line = `- [${taskCheckbox.checked ? 'x' : ' '}] ${content}`.trimEnd();
+                return line.trim().length > 0 ? [line] : [];
             }
 
             if (ordered) {
-                return `${index + 1}. ${content}`.trimEnd();
+                const line = `${listIndex}. ${content}`.trimEnd();
+                return line.trim().length > 0 ? [line] : [];
             }
 
-            return `- ${content}`.trimEnd();
-        })
-        .filter((line) => line.trim().length > 0);
+            const line = `- ${content}`.trimEnd();
+            return line.trim().length > 0 ? [line] : [];
+        });
 
     return lines.join('\n');
 };
@@ -276,8 +280,10 @@ const serializeBlockNode = (node: Node): string => {
     if (tag === 'div') {
         if (node.hasAttribute('data-heads-up-group')) {
             return Array.from(node.children)
-                .map((child) => serializeBlockNode(child))
-                .filter((line) => line.trim().length > 0)
+                .flatMap((child) => {
+                    const line = serializeBlockNode(child);
+                    return line.trim().length > 0 ? [line] : [];
+                })
                 .join('\n');
         }
 
@@ -287,8 +293,10 @@ const serializeBlockNode = (node: Node): string => {
         }
 
         const children = Array.from(node.childNodes)
-            .map((child) => serializeBlockNode(child))
-            .filter((line) => line.trim().length > 0);
+            .flatMap((child) => {
+                const line = serializeBlockNode(child);
+                return line.trim().length > 0 ? [line] : [];
+            });
 
         if (children.length > 0) {
             return children.join('\n');
@@ -304,8 +312,10 @@ const serializeBlockNode = (node: Node): string => {
 
 const htmlToMarkdown = (root: HTMLElement): string => {
     const blockLines = Array.from(root.childNodes)
-        .map((node) => serializeBlockNode(node))
-        .filter((line) => line.trim().length > 0);
+        .flatMap((node) => {
+            const line = serializeBlockNode(node);
+            return line.trim().length > 0 ? [line] : [];
+        });
 
     if (blockLines.length === 0) {
         return normalizeMarkdownOutput(root.textContent || '');
@@ -397,7 +407,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
     const handleChecklist = () => {
         focusEditor();
-        document.execCommand('insertHTML', false, `<ul data-task-list="true"><li data-task-list-item="true"><label class="flex items-start gap-3"><input type="checkbox" contenteditable="false" class="mt-0.5 h-4 w-4 shrink-0 rounded-[4px] border border-slate-500 accent-accent-600" /><span class="${MARKDOWN_TASK_TEXT_CLASS}">New item</span></label></li></ul>`);
+        document.execCommand('insertHTML', false, `<ul data-task-list="true"><li data-task-list-item="true"><label class="flex items-start gap-3"><input type="checkbox" contenteditable="false" class="mt-0.5 size-4 shrink-0 rounded-[4px] border border-slate-500 accent-accent-600" /><span class="${MARKDOWN_TASK_TEXT_CLASS}">New item</span></label></li></ul>`);
         syncMarkdownFromEditor();
     };
 
@@ -463,8 +473,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                 <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
-                        a: ({node, ...props}) => (
-                            <a {...props} className="text-accent-600 hover:underline" target="_blank" rel="noopener noreferrer" />
+                        a: ({node, children, ...props}) => (
+                            <a {...props} className="text-accent-600 hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>
                         ),
                         blockquote: ({node, ...props}) => (
                             <blockquote {...props} className={MARKDOWN_HEADS_UP_BANNER_CLASS} />
@@ -474,13 +484,13 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                                 {...props}
                                 disabled
                                 readOnly
-                                className="me-3 mt-0.5 inline-block h-4 w-4 align-top"
+                                className="me-3 mt-0.5 inline-block size-4 align-top"
                                 style={{ pointerEvents: 'none' }}
                             />
                         ),
-                        h1: ({node, ...props}) => <h1 {...props} className={MARKDOWN_H1_CLASS} />,
-                        h2: ({node, ...props}) => <h2 {...props} className={MARKDOWN_H2_CLASS} />,
-                        h3: ({node, ...props}) => <h3 {...props} className={MARKDOWN_H3_CLASS} />,
+                        h1: ({node, children, ...props}) => <h1 {...props} className={MARKDOWN_H1_CLASS}>{children}</h1>,
+                        h2: ({node, children, ...props}) => <h2 {...props} className={MARKDOWN_H2_CLASS}>{children}</h2>,
+                        h3: ({node, children, ...props}) => <h3 {...props} className={MARKDOWN_H3_CLASS}>{children}</h3>,
                     }}
                 >
                     {normalizeHeadsUpMarkdownForDisplay(value || 'No description.')}
@@ -496,7 +506,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
                 {hasAiButton && (
                     <div className="relative" ref={aiPopoverRef}>
-                        <button
+                        <button type="button"
                             onClick={handleAiButtonClick}
                             disabled={isGenerating}
                             className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-accent-600 hover:bg-accent-50 rounded-md transition-colors disabled:opacity-50"
@@ -513,7 +523,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                                 </div>
                                 <div className="p-2 space-y-1">
                                     {(aiActions || []).map((action) => (
-                                        <button
+                                        <button type="button"
                                             key={action.id}
                                             onClick={() => {
                                                 onAiActionSelect?.(action.id);
@@ -570,9 +580,14 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             <div
                 ref={editorRef}
                 contentEditable={isEditorInteractive}
+                role="textbox"
+                aria-label="Markdown editor"
+                aria-multiline="true"
+                tabIndex={isEditorInteractive ? 0 : -1}
                 suppressContentEditableWarning
                 onInput={syncMarkdownFromEditor}
                 onBlur={syncMarkdownFromEditor}
+                onKeyUp={syncMarkdownFromEditor}
                 onClick={(event) => {
                     const target = event.target as HTMLElement;
 

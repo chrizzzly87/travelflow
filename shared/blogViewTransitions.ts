@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { flushSync } from 'react-dom';
 import { buildImageCdnUrl, buildImageSrcSet } from '../utils/imageDelivery';
 
 type BlogViewTransitionPart = 'card' | 'image' | 'title';
@@ -433,6 +434,10 @@ const clearBlogTransitionState = (): void => {
     pendingBlogTransitionTarget = null;
     pendingBlogTransitionMode = 'full';
     notifyBlogTransitionStateChange();
+};
+
+export const commitBlogTransitionState = (update: () => void): void => {
+    flushSync(update);
 };
 
 export const startBlogViewTransition = ({

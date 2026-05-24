@@ -18,10 +18,10 @@ export const ShareUnavailablePage: React.FC = () => {
     return (
         <MarketingLayout>
             <section className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-                <div className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-accent-200 bg-accent-50 text-accent-700">
+                <div className="inline-flex size-10 items-center justify-center rounded-md border border-accent-200 bg-accent-50 text-accent-700">
                     <WarningCircle size={20} weight="duotone" />
                 </div>
-                <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">{t('shareUnavailable.title')}</h1>
+                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">{t('shareUnavailable.title')}</h1>
                 <p className="mt-3 text-sm leading-6 text-slate-600">
                     {description}
                 </p>

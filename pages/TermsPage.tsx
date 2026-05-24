@@ -45,7 +45,7 @@ const buildFallbackTermsVersion = (): LegalTermsVersionRecord => {
 
 const MARKDOWN_COMPONENTS: Components = {
     h2: ({ children }) => (
-        <h3 className="mt-6 border-t border-slate-200 pt-4 text-base font-bold text-slate-900 first:mt-0 first:border-t-0 first:pt-0">{children}</h3>
+        <h3 className="mt-6 border-t border-slate-200 pt-4 text-base font-semibold text-slate-900 first:mt-0 first:border-t-0 first:pt-0">{children}</h3>
     ),
     p: ({ children }) => <p className="text-sm leading-6 text-slate-700">{children}</p>,
     ul: ({ children }) => <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">{children}</ul>,
@@ -156,7 +156,7 @@ export const TermsPage: React.FC = () => {
             <div className="space-y-6">
                 <section className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm md:p-10">
                     <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">{t('termsPage.heroEyebrow')}</p>
-                    <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">{t('termsPage.heroTitle')}</h1>
+                    <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">{t('termsPage.heroTitle')}</h1>
                     <p className="mt-4 text-sm leading-6 text-slate-700">
                         {t('termsPage.heroIntro', { appName: APP_NAME })}
                     </p>
@@ -201,7 +201,7 @@ export const TermsPage: React.FC = () => {
                 )}
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-                    <h2 className="text-xl font-black tracking-tight text-slate-900">{t('termsPage.bindingSectionTitle')}</h2>
+                    <h2 className="text-xl font-semibold tracking-tight text-slate-900">{t('termsPage.bindingSectionTitle')}</h2>
                     <div className="mt-4 space-y-3">
                         <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
                             {bindingMarkdown}
@@ -210,7 +210,7 @@ export const TermsPage: React.FC = () => {
                 </section>
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-                    <h2 className="text-xl font-black tracking-tight text-slate-900">{t('termsPage.helperSectionTitle')}</h2>
+                    <h2 className="text-xl font-semibold tracking-tight text-slate-900">{t('termsPage.helperSectionTitle')}</h2>
                     <div className="mt-4 space-y-3">
                         <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
                             {helperMarkdown}

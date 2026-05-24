@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useReducer, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
@@ -9,6 +9,37 @@ import { Spinner } from './ui/spinner';
 type BadgeState = 'offline' | 'syncing' | 'online';
 
 const ONLINE_BADGE_VISIBLE_MS = 3500;
+
+interface ConnectivityBadgeUiState {
+    detailsOpen: boolean;
+    showOnlineBadge: boolean;
+}
+
+type ConnectivityBadgeUiAction =
+    | { type: 'online-entered' }
+    | { type: 'online-timeout' }
+    | { type: 'online-left' }
+    | { type: 'details-open'; open: boolean }
+    | { type: 'details-toggle' };
+
+const connectivityBadgeUiReducer = (
+    state: ConnectivityBadgeUiState,
+    action: ConnectivityBadgeUiAction,
+): ConnectivityBadgeUiState => {
+    switch (action.type) {
+        case 'online-entered':
+            return { ...state, showOnlineBadge: true };
+        case 'online-timeout':
+        case 'online-left':
+            return { ...state, showOnlineBadge: false };
+        case 'details-open':
+            return { ...state, detailsOpen: action.open };
+        case 'details-toggle':
+            return { ...state, detailsOpen: !state.detailsOpen };
+        default:
+            return state;
+    }
+};
 
 export const GlobalConnectivityBadge: React.FC = () => {
     const { t } = useTranslation('common');
@@ -24,8 +55,10 @@ export const GlobalConnectivityBadge: React.FC = () => {
         return 'online';
     }, [connectivitySnapshot.state, isOnline, isProbePending, syncSnapshot.isSyncing, syncSnapshot.pendingCount]);
 
-    const [showOnlineBadge, setShowOnlineBadge] = useState(false);
-    const [detailsOpen, setDetailsOpen] = useState(false);
+    const [{ detailsOpen, showOnlineBadge }, dispatchUi] = useReducer(connectivityBadgeUiReducer, {
+        detailsOpen: false,
+        showOnlineBadge: false,
+    });
     const previousStateRef = useRef<BadgeState>(badgeState);
 
     useEffect(() => {
@@ -35,13 +68,13 @@ export const GlobalConnectivityBadge: React.FC = () => {
 
         if (badgeState === 'online') {
             if (previousState !== 'online') {
-                setShowOnlineBadge(true);
+                dispatchUi({ type: 'online-entered' });
                 timerId = setTimeout(() => {
-                    setShowOnlineBadge(false);
+                    dispatchUi({ type: 'online-timeout' });
                 }, ONLINE_BADGE_VISIBLE_MS);
             }
         } else {
-            setShowOnlineBadge(false);
+            dispatchUi({ type: 'online-left' });
         }
 
         return () => {
@@ -68,7 +101,7 @@ export const GlobalConnectivityBadge: React.FC = () => {
     })();
 
     const pulsingDot = (tone: 'offline' | 'online') => (
-        <span className="relative inline-flex h-3.5 w-3.5 items-center justify-center" aria-hidden="true">
+        <span className="relative inline-flex size-3.5 items-center justify-center" aria-hidden="true">
             <span
                 className={`absolute inset-0 rounded-full border ${
                     tone === 'offline' ? 'border-rose-400/80' : 'border-emerald-400/80'
@@ -79,7 +112,7 @@ export const GlobalConnectivityBadge: React.FC = () => {
                     tone === 'offline' ? 'border-rose-400/70' : 'border-emerald-400/70'
                 } animate-ping [animation-delay:900ms]`}
             />
-            <span className={`relative h-2 w-2 rounded-full ${tone === 'offline' ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+            <span className={`relative size-2 rounded-full ${tone === 'offline' ? 'bg-rose-500' : 'bg-emerald-500'}`} />
         </span>
     );
 
@@ -92,7 +125,7 @@ export const GlobalConnectivityBadge: React.FC = () => {
         : badgeState === 'syncing'
             ? {
                 shell: 'border-amber-300 bg-amber-50/95 text-amber-900',
-                icon: <Spinner className="h-3.5 w-3.5 text-amber-600" aria-hidden="true" />,
+                icon: <Spinner className="size-3.5 text-amber-600" aria-hidden="true" />,
                 label: t('connectivity.globalBadge.syncing'),
             }
             : {
@@ -105,15 +138,15 @@ export const GlobalConnectivityBadge: React.FC = () => {
         <div className="pointer-events-none fixed inset-x-0 top-3 z-[22000] flex justify-center px-3 sm:top-auto sm:bottom-4">
             <div
                 className="pointer-events-auto relative"
-                onMouseEnter={() => setDetailsOpen(true)}
-                onMouseLeave={() => setDetailsOpen(false)}
+                onMouseEnter={() => dispatchUi({ type: 'details-open', open: true })}
+                onMouseLeave={() => dispatchUi({ type: 'details-open', open: false })}
             >
                 <button
                     type="button"
                     role="status"
                     aria-live="polite"
                     aria-expanded={detailsOpen}
-                    onClick={() => setDetailsOpen((value) => !value)}
+                    onClick={() => dispatchUi({ type: 'details-toggle' })}
                     className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-lg backdrop-blur ${palette.shell}`}
                 >
                     {palette.icon}

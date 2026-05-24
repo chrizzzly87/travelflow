@@ -394,11 +394,13 @@ const findTravelBetweenCities = (
   });
 
   if (candidates.length === 0) return null;
-  return candidates.sort((a, b) => {
-    const aOffset = isFiniteNumber(a.startDateOffset) ? a.startDateOffset : 0;
-    const bOffset = isFiniteNumber(b.startDateOffset) ? b.startDateOffset : 0;
-    return Math.abs(aOffset - fromEnd) - Math.abs(bOffset - fromEnd);
-  })[0];
+  return candidates.reduce((nearest, candidate) => {
+    const nearestOffset = isFiniteNumber(nearest.startDateOffset) ? nearest.startDateOffset : 0;
+    const candidateOffset = isFiniteNumber(candidate.startDateOffset) ? candidate.startDateOffset : 0;
+    return Math.abs(candidateOffset - fromEnd) < Math.abs(nearestOffset - fromEnd)
+      ? candidate
+      : nearest;
+  });
 };
 
 const getTripDistanceKm = (trip: TripPayload): number | null => {

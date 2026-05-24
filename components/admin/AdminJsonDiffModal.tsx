@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { SpinnerGap } from '@phosphor-icons/react';
 import Prism from 'prismjs';
+if (typeof window !== 'undefined') {
+    (window as any).Prism = (window as any).Prism || Prism;
+}
 import 'prismjs/components/prism-json';
 import { AppModal } from '../ui/app-modal';
 import { Checkbox } from '../ui/checkbox';
@@ -42,10 +45,9 @@ const buildFocusedRenderEntries = (
     rows: JsonDiffRow[],
     contextRadius = 2
 ): FocusedRenderEntry[] => {
-    const changedIndices = rows
-        .map((row, index) => ({ row, index }))
-        .filter((entry) => isChangedRow(entry.row))
-        .map((entry) => entry.index);
+    const changedIndices = rows.flatMap((row, index) => (
+        isChangedRow(row) ? [index] : []
+    ));
 
     if (changedIndices.length === 0) {
         return rows.map((row, index) => ({ kind: 'row', index, row }));
@@ -80,9 +82,34 @@ const buildFocusedRenderEntries = (
     return entries;
 };
 
-const highlightJsonLine = (value: string | null): string => {
-    if (value === null) return '';
-    return Prism.highlight(value || ' ', Prism.languages.json, 'json');
+const formatJsonTokenStream = (
+    tokens: Array<string | Prism.Token>,
+    keyPrefix: string
+): React.ReactNode[] => tokens.map((token, index) => {
+    if (typeof token === 'string') {
+        return <React.Fragment key={`${keyPrefix}-text-${index}-${token.length}`}>{token}</React.Fragment>;
+    }
+
+    const aliases = Array.isArray(token.alias)
+        ? token.alias
+        : token.alias
+            ? [token.alias]
+            : [];
+    const className = ['token', token.type, ...aliases].join(' ');
+    const content = Array.isArray(token.content)
+        ? formatJsonTokenStream(token.content as Array<string | Prism.Token>, `${keyPrefix}-${index}-${token.type}`)
+        : token.content;
+
+    return (
+        <span key={`${keyPrefix}-${index}-${token.type}`} className={className}>
+            {content}
+        </span>
+    );
+});
+
+const formatJsonLine = (value: string | null, keyPrefix: string): React.ReactNode => {
+    if (value === null) return null;
+    return formatJsonTokenStream(Prism.tokenize(value || ' ', Prism.languages.json), keyPrefix);
 };
 
 const JSON_TOKEN_CLASSNAMES = [
@@ -161,7 +188,7 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
             {isLoading ? (
                 <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
                     <SpinnerGap size={14} className="animate-spin" />
-                    Loading snapshots...
+                    Loading snapshots…
                 </div>
             ) : (
                 <>
@@ -226,10 +253,9 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
                                                         {row.leftLineNumber ?? ''}
                                                     </td>
                                                     <td className={`min-w-[420px] px-2 py-0.5 font-mono ${lineCellClassName(row.leftType)} ${JSON_TOKEN_CLASSNAMES}`}>
-                                                        <code
-                                                            className="whitespace-pre"
-                                                            dangerouslySetInnerHTML={{ __html: highlightJsonLine(row.leftValue) }}
-                                                        />
+                                                        <code className="whitespace-pre">
+                                                            {formatJsonLine(row.leftValue, `before-${rowIndex}`)}
+                                                        </code>
                                                     </td>
                                                 </tr>
                                             );
@@ -272,10 +298,9 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
                                                         {row.rightLineNumber ?? ''}
                                                     </td>
                                                     <td className={`min-w-[420px] px-2 py-0.5 font-mono ${lineCellClassName(row.rightType)} ${JSON_TOKEN_CLASSNAMES}`}>
-                                                        <code
-                                                            className="whitespace-pre"
-                                                            dangerouslySetInnerHTML={{ __html: highlightJsonLine(row.rightValue) }}
-                                                        />
+                                                        <code className="whitespace-pre">
+                                                            {formatJsonLine(row.rightValue, `after-${rowIndex}`)}
+                                                        </code>
                                                     </td>
                                                 </tr>
                                             );

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AirplaneTakeoff, CaretDown, CaretRight, FolderSimple, ShieldCheck, SignOut, User } from '@phosphor-icons/react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -8,6 +8,7 @@ import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocal
 import { DEFAULT_LOCALE } from '../../config/locales';
 import { getAllTrips } from '../../services/storageService';
 import type { ITrip } from '../../types';
+import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 interface AccountMenuProps {
     email: string | null;
@@ -30,11 +31,16 @@ interface AccountMenuProps {
 type AnalyticsEventName = `${string}__${string}` | `${string}__${string}--${string}`;
 
 const sortByCreatedDesc = (trips: ITrip[]): ITrip[] =>
-    [...trips].sort((a, b) => {
+    Array.from(trips).sort((a, b) => {
         const byCreated = (Number.isFinite(b.createdAt) ? b.createdAt : 0) - (Number.isFinite(a.createdAt) ? a.createdAt : 0);
         if (byCreated !== 0) return byCreated;
         return (Number.isFinite(b.updatedAt) ? b.updatedAt : 0) - (Number.isFinite(a.updatedAt) ? a.updatedAt : 0);
     });
+
+const formatRecentTripDate = (timestamp: number): string => {
+    if (!Number.isFinite(timestamp)) return '';
+    return new Date(timestamp).toLocaleDateString();
+};
 
 const computeInitial = (
     profile: { firstName?: string; lastName?: string; displayName?: string | null; username?: string | null } | null,
@@ -143,7 +149,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
     onPrewarmTripManager,
 }) => {
     const navigate = useNavigate();
-    const location = useLocation();
+    const routeLocation = useSafeRouteLocation();
     const { logout, profile } = useAuth();
     const { t } = useTranslation('common');
     const [isOpen, setIsOpen] = useState(false);
@@ -154,7 +160,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
     ));
     const containerRef = useRef<HTMLDivElement | null>(null);
 
-    const accountLabel = useMemo(() => labelFromPath(location.pathname), [location.pathname]);
+    const accountLabel = useMemo(() => labelFromPath(routeLocation.pathname), [routeLocation.pathname]);
     const accountDisplayName = useMemo(
         () => buildAccountDisplayName(profile, email, userId),
         [email, profile, userId]
@@ -170,8 +176,8 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
             : accountLabel;
     const shouldShowLabel = showLabel ?? !compact;
     const activeLocale = useMemo(
-        () => extractLocaleFromPath(location.pathname) || DEFAULT_LOCALE,
-        [location.pathname],
+        () => extractLocaleFromPath(routeLocation.pathname) || DEFAULT_LOCALE,
+        [routeLocation.pathname],
     );
 
     useEffect(() => {
@@ -235,7 +241,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
         trackEvent('navigation__account_menu--logout');
         setIsOpen(false);
         await logout();
-        const locale = extractLocaleFromPath(location.pathname) || DEFAULT_LOCALE;
+        const locale = extractLocaleFromPath(routeLocation.pathname) || DEFAULT_LOCALE;
         navigate(buildLocalizedMarketingPath('home', locale));
     };
 
@@ -268,7 +274,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                 aria-expanded={isOpen}
                 aria-label={!shouldShowLabel ? triggerLabel : undefined}
             >
-                <span className="flex h-7 w-7 shrink-0 aspect-square items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
+                <span className="flex size-7 shrink-0 aspect-square items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
                     {computeInitial(profile, email, userId)}
                 </span>
                 {shouldShowLabel && <span className="truncate">{triggerLabel}</span>}
@@ -314,7 +320,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                                     >
                                         <span className="truncate">{trip.title}</span>
                                         <span className="text-[11px] text-slate-400">
-                                            {new Date(trip.createdAt).toLocaleDateString()}
+                                            {formatRecentTripDate(trip.createdAt)}
                                         </span>
                                     </button>
                                 ))

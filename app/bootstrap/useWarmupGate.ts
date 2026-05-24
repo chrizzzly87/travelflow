@@ -62,7 +62,9 @@ export const useWarmupGate = (options?: UseWarmupGateOptions): boolean => {
 
         return () => {
             resolved = true;
-            removeInteractionListeners();
+            window.removeEventListener('pointerdown', onFirstInteraction, true);
+            window.removeEventListener('keydown', onFirstInteraction, true);
+            window.removeEventListener('touchstart', onFirstInteraction, true);
             clearTimers();
         };
     }, [interactionOnly]);

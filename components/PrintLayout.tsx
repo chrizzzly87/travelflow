@@ -59,52 +59,78 @@ const WEEKDAY_HEADERS = [
     { id: 'sun', label: 'S' },
 ];
 
+interface CalendarDayModel {
+    day: number;
+    activeCities: Array<{ item: ITimelineItem; dayIndex: number }>;
+    isWeekend: boolean;
+}
+
+interface CalendarMonthModel {
+    id: string;
+    label: string;
+    startOffset: number;
+    days: CalendarDayModel[];
+}
+
 // Helper to generate calendar grids
 const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> = ({ trip, onScrollTo }) => {
-    const startDate = parseLocalDate(trip.startDate);
-    const tripSpan = getTripSpan(trip);
+    const startDate = React.useMemo(() => parseLocalDate(trip.startDate), [trip.startDate]);
+    const tripSpan = React.useMemo(() => getTripSpan(trip), [trip]);
     const endDate = tripSpan.endDate;
-    
-    // Determine months spanned
-    const months: Date[] = [];
-    let current = new Date(startDate);
-    current.setDate(1); // Start at beginning of month
-    
-    // Safety break
-    let loops = 0;
-    while ((current <= endDate || (current.getMonth() <= endDate.getMonth() && current.getFullYear() <= endDate.getFullYear())) && loops < 12) {
-        months.push(new Date(current));
-        current.setMonth(current.getMonth() + 1);
-        loops++;
-    }
+    const cities = React.useMemo(
+        () => Array.from(trip.items.filter(i => i.type === 'city')).sort((a,b) => a.startDateOffset - b.startDateOffset),
+        [trip.items]
+    );
+    const calendarMonths = React.useMemo<CalendarMonthModel[]>(() => {
+        const months: Date[] = [];
+        let current = new Date(startDate);
+        current.setDate(1);
 
-    const cities = trip.items.filter(i => i.type === 'city').sort((a,b) => a.startDateOffset - b.startDateOffset);
+        let loops = 0;
+        while ((current <= endDate || (current.getMonth() <= endDate.getMonth() && current.getFullYear() <= endDate.getFullYear())) && loops < 12) {
+            months.push(new Date(current));
+            current.setMonth(current.getMonth() + 1);
+            loops++;
+        }
 
-    // Find all cities overlapping with a specific date
-    const getCitiesForDate = (date: Date) => {
-        // Use Noon to avoid DST issues when calculating difference
         const tripStart = new Date(startDate);
         tripStart.setHours(12, 0, 0, 0);
-        
-        const currentCheck = new Date(date);
-        currentCheck.setHours(12, 0, 0, 0);
 
-        const diffDays = Math.round((currentCheck.getTime() - tripStart.getTime()) / (1000 * 60 * 60 * 24));
-        
-        return cities.filter(c => {
-            const start = c.startDateOffset;
-            const end = c.startDateOffset + c.duration;
-            // Check intersection: City interval [start, end) overlaps with Day interval [diffDays, diffDays+1)
-            // Intersection exists if start < dayEnd AND end > dayStart
-            return start < (diffDays + 1) && end > diffDays;
-        }).map(c => ({ item: c, dayIndex: diffDays }));
-    };
+        return months.map((monthDate) => {
+            const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
+            const firstDayOfWeek = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1).getDay();
+            const startOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+            const days = Array.from({ length: daysInMonth }, (_, index) => {
+                const day = index + 1;
+                const date = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
+                date.setHours(12, 0, 0, 0);
+                const dayIndex = Math.round((date.getTime() - tripStart.getTime()) / (1000 * 60 * 60 * 24));
+                const activeCities = cities.flatMap((city) => {
+                    const cityStart = city.startDateOffset;
+                    const cityEnd = city.startDateOffset + city.duration;
+                    return cityStart < dayIndex + 1 && cityEnd > dayIndex ? [{ item: city, dayIndex }] : [];
+                });
+                return {
+                    day,
+                    activeCities,
+                    isWeekend: date.getDay() === 0 || date.getDay() === 6,
+                };
+            });
+
+            return {
+                id: monthDate.toISOString(),
+                label: monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+                startOffset,
+                days,
+            };
+        });
+    }, [cities, endDate, startDate]);
 
     return (
         <div className="flex flex-col gap-6 pb-4 w-full">
              {/* Legend */}
              <div className="pt-2">
-                 <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3 border-b border-gray-100 pb-2">Trip Legend</h3>
+                 <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3 border-b border-gray-100 pb-2">Trip Legend</h3>
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
                      {cities.map((city, idx) => {
                          const citySpan = getTripSpanFromOffsets(trip.startDate, {
@@ -116,13 +142,13 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
 
                          return (
                              <button
-                                key={city.id} 
+                                key={city.id}
                                 type="button"
                                 className="flex items-center gap-2 text-xs cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
                                 onClick={() => onScrollTo(city.id)}
                              >
                                  <div
-                                     className="w-3 h-3 rounded-full flex-shrink-0"
+                                     className="size-3 rounded-full flex-shrink-0"
                                      style={{ backgroundColor: cityColor }}
                                  />
                                  <div className="flex-1 min-w-0">
@@ -140,18 +166,11 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
 
              {/* Months Grid */}
              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
-                {months.map(monthDate => {
-                    const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
-                    const firstDayOfWeek = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1).getDay(); // 0 = Sun, 1 = Mon
-                    // Adjust for Monday start? Let's stick to Sun (0) or Mon (1) based on locale/preference. 
-                    // Let's assume standard Calendar grid (Sun start usually, or Mon).
-                    // Let's use Monday start (1) for travel apps usually.
-                    const startOffset = (firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1); 
-
+                {calendarMonths.map((month) => {
                     return (
-                        <div key={monthDate.toISOString()} className="break-inside-avoid">
-                            <h4 className="font-bold text-gray-900 mb-3 capitalize text-sm">
-                                {monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                        <div key={month.id} className="break-inside-avoid">
+                            <h4 className="font-semibold text-gray-900 mb-3 capitalize text-sm">
+                                {month.label}
                             </h4>
                             <div className="grid grid-cols-7 gap-1 text-center">
                                 {/* Weekday Headers */}
@@ -160,17 +179,12 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                                 ))}
 
                                 {/* Empties */}
-                                {Array.from({ length: startOffset }).map((_, i) => (
+                                {Array.from({ length: month.startOffset }).map((_, i) => (
                                     <div key={`empty-${i}`} />
                                 ))}
 
                                 {/* Days */}
-                                {Array.from({ length: daysInMonth }).map((_, i) => {
-                                    const day = i + 1;
-                                    const date = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
-                                    const activeCities = getCitiesForDate(date);
-                                    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-
+                                {month.days.map(({ day, activeCities, isWeekend }) => {
                                     const dayCellClass = `
                                         aspect-square relative flex items-center justify-center isolate border border-transparent text-xs
                                         ${isWeekend ? 'bg-gray-50/50' : ''}
@@ -276,12 +290,12 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-white text-gray-900 font-sans w-full h-full overflow-y-auto no-scrollbar print:static print:h-auto print:overflow-visible">
+    <div className="fixed inset-0 z-[9999] bg-white text-gray-900 font-sans size-full overflow-y-auto no-scrollbar print:static print:h-auto print:overflow-visible">
         <div className="p-8 max-w-[1400px] mx-auto print:p-0 print:max-w-none print:w-full print:h-auto print:overflow-visible">
-            
+
             {/* Navigation Bar (Hidden on Print) */}
             <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 shadow-sm flex items-center justify-between px-8 print:hidden z-50">
-                <h1 className="font-bold text-lg text-gray-700">Trip List View</h1>
+                <h1 className="font-semibold text-lg text-gray-700">Trip List View</h1>
                 <div className="flex gap-4">
                     <button
                         type="button"
@@ -322,14 +336,16 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                     >
                         Download everything (.ics)
                     </button>
-                    <button 
-                        onClick={onClose} 
+	                    <button
+	                        type="button"
+	                        onClick={onClose}
                         className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
                     >
                         Close
                     </button>
-                    <button 
-                        onClick={() => window.print()} 
+	                    <button
+	                        type="button"
+	                        onClick={() => window.print()}
                         className="px-4 py-2 bg-accent-600 text-white hover:bg-accent-700 rounded-lg text-sm font-medium shadow-sm flex items-center gap-2"
                     >
                         <ArrowRight size={16} /> Print List
@@ -343,7 +359,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                     {/* Header */}
                     <header className="flex-shrink-0 mb-6 border-b-2 border-gray-900 pb-4 flex justify-between items-end">
                         <div>
-                            <h1 className="text-4xl font-extrabold tracking-tight mb-2">{trip.title}</h1>
+                            <h1 className="text-4xl font-semibold tracking-tight mb-2">{trip.title}</h1>
                             <div className="text-gray-500 font-medium flex gap-4">
                                 <span className="flex items-center gap-1"><Calendar size={16}/> {formatDate(tripSpan.startDate)} - {formatDate(tripSpan.endDate)}</span>
                                 <span className="flex items-center gap-1"><Clock size={16}/> {tripSpan.longLabel}</span>
@@ -359,7 +375,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
 
                     {/* Content Grid */}
                     <div className="flex-1 min-h-0 grid grid-cols-12 gap-8 w-full print:block">
-                        
+
                         {/* LEFT: Info & Calendar */}
                         <div className="col-span-7 flex flex-col min-h-0 print:w-full print:mb-8">
                              {/* Country Info */}
@@ -368,7 +384,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                     <CountryInfo info={trip.countryInfo} />
                                 </div>
                             )}
-                            
+
                             {/* Calendar View restored */}
                             <div className="flex-1 overflow-y-auto no-scrollbar print:overflow-visible print:h-auto">
                                 <CalendarView trip={trip} onScrollTo={handleScrollTo} />
@@ -391,17 +407,17 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         });
                         const cityStart = citySpan.startDate;
                         const cityEnd = citySpan.endDate;
-                        
+
                         // Find travel TO this city
-                        const arrivalTransport = trip.items.find(i => 
-                            (i.type === 'travel' || i.type === 'travel-empty') && 
+                        const arrivalTransport = trip.items.find(i =>
+                            (i.type === 'travel' || i.type === 'travel-empty') &&
                             Math.abs((i.startDateOffset + i.duration) - city.startDateOffset) < 0.2
                         );
-                        
+
                         // Find activities
-                        const cityActivities = trip.items.filter(i => 
-                            i.type === 'activity' && 
-                            i.startDateOffset >= city.startDateOffset && 
+                        const cityActivities = trip.items.filter(i =>
+                            i.type === 'activity' &&
+                            i.startDateOffset >= city.startDateOffset &&
                             i.startDateOffset < (city.startDateOffset + city.duration)
                         ).sort((a,b) => a.startDateOffset - b.startDateOffset);
 
@@ -409,8 +425,8 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         const days = [];
                         for (let i = 0; i < city.duration; i++) {
                             const dayDate = addDays(cityStart, i);
-                            const dayActs = cityActivities.filter(act => 
-                                act.startDateOffset >= (city.startDateOffset + i) && 
+                            const dayActs = cityActivities.filter(act =>
+                                act.startDateOffset >= (city.startDateOffset + i) &&
                                 act.startDateOffset < (city.startDateOffset + i + 1)
                             );
                             days.push({ date: dayDate, activities: dayActs });
@@ -419,8 +435,8 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         const cityColor = getHexFromColorClass(city.color || '');
 
                         return (
-                            <article 
-                                key={city.id} 
+                            <article
+                                key={city.id}
                                 id={`city-detail-${city.id}`}
                                 className="break-inside-avoid pb-8 border-b border-gray-100 last:border-0 scroll-mt-24"
                             >
@@ -428,11 +444,11 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                 <div className="flex items-start justify-between mb-6">
                                     <div>
                                         <div className="flex items-center gap-3 mb-1">
-                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cityColor }} />
-                                            <h2 className="text-2xl font-bold text-gray-900">{city.title}</h2>
+                                            <div className="size-3 rounded-full" style={{ backgroundColor: cityColor }} />
+                                            <h2 className="text-2xl font-semibold text-gray-900">{city.title}</h2>
                                         </div>
                                         <div className="text-gray-500 font-medium ml-6">
-                                            {formatDate(cityStart)} — {formatDate(cityEnd)} <span className="text-gray-300 mx-2">|</span> {citySpan.longLabel}
+                                            {formatDate(cityStart)} to {formatDate(cityEnd)} <span className="text-gray-300 mx-2">|</span> {citySpan.longLabel}
                                         </div>
                                     </div>
                                     <div className="text-4xl font-black text-gray-100 select-none">
@@ -480,6 +496,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                                                         frameBorder="0"
                                                                         style={{ border: 0 }}
                                                                         src={`https://maps.google.com/maps?q=${encodeURIComponent(hotel.address)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+                                                                        sandbox="allow-scripts allow-same-origin allow-popups"
                                                                         aria-hidden="true"
                                                                         title="Hotel Location"
                                                                     ></iframe>
@@ -499,7 +516,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                         {/* Editable Notes Area */}
                                         <div className="border border-gray-200 rounded-lg p-4 bg-[linear-gradient(white_29px,#eee_30px)] bg-[length:100%_30px] pt-1">
                                             <div className="text-xs text-gray-400 font-bold uppercase mb-1 flex items-center gap-1"><StickyNote size={12}/> Notes</div>
-                                            <Suspense fallback={<div className="rounded border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">Loading notes...</div>}>
+                                            <Suspense fallback={<div className="rounded border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">Loading notes…</div>}>
                                                 <LazyMarkdownEditor
                                                     value={city.description || ''}
                                                     onChange={(val) => handleUpdateNotes(city.id, val)}
@@ -513,14 +530,14 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                     <div className="md:col-span-2 space-y-6">
                                         {days.map((day, dIdx) => {
                                             const globalDayIndex = Math.round((day.date.getTime() - tripStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-                                            
+
                                             return (
                                                 <div key={dIdx} className="relative pl-6 border-l-2 border-gray-100 pb-2 last:pb-0">
-                                                    <div className="absolute -left-[5px] top-0 w-2.5 h-2.5 rounded-full bg-gray-300 ring-4 ring-white" />
-                                                    <h4 className="font-bold text-gray-900 text-sm mb-3">
+                                                    <div className="absolute -left-[5px] top-0 size-2.5 rounded-full bg-gray-300 ring-4 ring-white" />
+                                                    <h4 className="font-semibold text-gray-900 text-sm mb-3">
                                                         Day {globalDayIndex} <span className="text-gray-400 font-normal mx-1">•</span> {day.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                                                     </h4>
-                                                    
+
                                                     {day.activities.length > 0 ? (
                                                         <div className="space-y-3">
                                                             {day.activities.map(act => (
@@ -550,7 +567,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         );
                     })}
                 </div>
-                
+
                 <footer className="mt-12 pt-8 border-t border-gray-200 text-center text-xs text-gray-400 break-before-page">
                     Created with TravelFlow
                 </footer>

@@ -4,7 +4,7 @@ import {
   ADMIN_TABLE_SORTED_HEADER_CLASS,
   getAdminStickyBodyCellClass,
   getAdminStickyHeaderCellClass,
-} from '../../components/admin/AdminDataTable';
+} from '../../components/admin/AdminDataTableUtils';
 
 describe('admin data table sticky class helpers', () => {
   it('preserves sticky positioning by not forcing relative position on sticky cells', () => {

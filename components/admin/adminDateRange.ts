@@ -1,4 +1,4 @@
-import type { AdminDateRange } from './AdminShell';
+import type { AdminDateRange } from './adminShellUtils';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

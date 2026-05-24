@@ -90,8 +90,10 @@ const parseTags = (raw: string | undefined): string[] => {
     const cleaned = raw.replace(/^\[/, '').replace(/\]$/, '');
     return cleaned
         .split(',')
-        .map((t) => stripQuotes(t.trim()))
-        .filter(Boolean);
+        .flatMap((t) => {
+            const tag = stripQuotes(t.trim());
+            return tag ? [tag] : [];
+        });
 };
 
 const parseBlogFile = (sourcePath: string, raw: string): BlogPost | null => {
@@ -159,8 +161,10 @@ const parseBlogFile = (sourcePath: string, raw: string): BlogPost | null => {
 };
 
 const allBlogPosts: BlogPost[] = Object.entries(BLOG_FILES)
-    .map(([sourcePath, raw]) => parseBlogFile(sourcePath, raw))
-    .filter((entry): entry is BlogPost => !!entry)
+    .flatMap(([sourcePath, raw]) => {
+        const entry = parseBlogFile(sourcePath, raw);
+        return entry ? [entry] : [];
+    })
     .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
 
 export const getAllBlogPosts = (): BlogPost[] => allBlogPosts;

@@ -182,23 +182,26 @@ const parsePreviewCoords = (value: string | null): Array<{ lat: number; lng: num
   if (!value) return [];
   return value
     .split('|')
-    .map((pair) => {
+    .flatMap((pair) => {
       const [latRaw, lngRaw] = pair.split(',');
-      return {
+      const coord = {
         lat: Number(latRaw),
         lng: Number(lngRaw),
       };
-    })
-    .filter((coord) => Number.isFinite(coord.lat) && Number.isFinite(coord.lng));
+      return Number.isFinite(coord.lat) && Number.isFinite(coord.lng) ? [coord] : [];
+    });
 };
 
 const parsePreviewLegColors = (value: string | null): string[] => {
   if (!value) return [];
   return value
     .split(/[|,]/)
-    .map((part) => stripColorPrefix(part))
-    .map((part) => normalizeCssColorToHex(part.startsWith('#') ? part : `#${part}`) ?? normalizeCssColorToHex(part))
-    .filter((part): part is string => typeof part === 'string' && part.length === 6);
+    .flatMap((part) => {
+      const stripped = stripColorPrefix(part);
+      const normalized = normalizeCssColorToHex(stripped.startsWith('#') ? stripped : `#${stripped}`)
+        ?? normalizeCssColorToHex(stripped);
+      return typeof normalized === 'string' && normalized.length === 6 ? [normalized] : [];
+    });
 };
 
 const normalizeMapPreviewColor = (value: string | null, fallback: string): string => {
@@ -463,13 +466,15 @@ export const buildMiniMapUrl = (
   const variant = options?.variant || 'standard';
 
   const coordinates = getTripCityItems(trip)
-    .map((item) => ({
-      coordinates: item.coordinates,
-      colorHex: variant === 'standard' ? resolveTripItemColorHex(item.color) : null,
-    }))
-    .filter((item): item is { coordinates: { lat: number; lng: number }; colorHex: string | null } =>
-      Boolean(item.coordinates && Number.isFinite(item.coordinates.lat) && Number.isFinite(item.coordinates.lng))
-    );
+    .flatMap((item) => {
+      if (!item.coordinates || !Number.isFinite(item.coordinates.lat) || !Number.isFinite(item.coordinates.lng)) {
+        return [];
+      }
+      return [{
+        coordinates: item.coordinates,
+        colorHex: variant === 'standard' ? resolveTripItemColorHex(item.color) : null,
+      }];
+    });
 
   if (coordinates.length === 0) return null;
 

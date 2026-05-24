@@ -1,6 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { useLocation } from 'react-router-dom';
 import { getFreePlanEntitlements } from '../config/planCatalog';
 import { trackEvent } from '../services/analyticsService';
 import { appendAuthTraceEntry } from '../services/authTraceService';
@@ -21,6 +20,7 @@ import {
     readPersistedSupabaseSessionHint,
     type PersistedSupabaseSessionHint,
 } from '../services/authSessionPersistenceService';
+import { useSafeRouteLocation } from '../hooks/useSafeRouteLocation';
 
 type AuthServiceModule = typeof import('../services/authService');
 type ProfileServiceModule = typeof import('../services/profileService');
@@ -223,7 +223,7 @@ export const resolveAuthContextValue = (context: AuthContextValue | null): AuthC
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const location = useLocation();
+    const routeLocation = useSafeRouteLocation();
     const [session, setSession] = useState<Session | null>(null);
     const [access, setAccess] = useState<UserAccessContext | null>(null);
     const [profile, setProfile] = useState<UserProfileRecord | null>(null);
@@ -242,7 +242,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isBootstrappingRef = useRef(false);
     const profileLoadRequestIdRef = useRef(0);
     const optimisticAuthHintRef = useRef<PersistedSupabaseSessionHint | null>(
-        shouldUseOptimisticMarketingAuthHint(location.pathname)
+        shouldUseOptimisticMarketingAuthHint(routeLocation.pathname)
             ? readPersistedSupabaseSessionHint()
             : null
     );
@@ -383,16 +383,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (user.is_anonymous === true) return true;
             const metadata = user.app_metadata as Record<string, unknown> | undefined;
             const provider = typeof metadata?.provider === 'string' ? metadata.provider.trim().toLowerCase() : '';
-            const providersFromMetadata = Array.isArray(metadata?.providers)
-                ? metadata.providers
-                    .filter((entry): entry is string => typeof entry === 'string')
-                    .map((entry) => entry.trim().toLowerCase())
-                : [];
-            const providersFromIdentities = Array.isArray((user as { identities?: Array<{ provider?: string | null }> }).identities)
-                ? ((user as { identities?: Array<{ provider?: string | null }> }).identities || [])
-                    .map((identity) => (typeof identity?.provider === 'string' ? identity.provider.trim().toLowerCase() : ''))
-                    .filter(Boolean)
-                : [];
+            const providersFromMetadata: string[] = [];
+            if (Array.isArray(metadata?.providers)) {
+                for (const entry of metadata.providers) {
+                    if (typeof entry === 'string') {
+                        providersFromMetadata.push(entry.trim().toLowerCase());
+                    }
+                }
+            }
+            const providersFromIdentities: string[] = [];
+            const identities = (user as { identities?: Array<{ provider?: string | null }> }).identities;
+            if (Array.isArray(identities)) {
+                for (const identity of identities) {
+                    const identityProvider = typeof identity?.provider === 'string' ? identity.provider.trim().toLowerCase() : '';
+                    if (identityProvider) {
+                        providersFromIdentities.push(identityProvider);
+                    }
+                }
+            }
             const providers = [provider, ...providersFromMetadata, ...providersFromIdentities].filter(Boolean);
             if (metadata?.is_anonymous === true) return true;
             return providers.includes('anonymous');
@@ -675,21 +683,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             await authService.signOut();
         } finally {
-            if (shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false, location.pathname)) {
+            if (shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false, routeLocation.pathname)) {
                 setIsDevAdminBypassDisabled(true);
             }
             setAccess(null);
             setSession(null);
             resetProfileState();
         }
-    }, [location.pathname, resetProfileState]);
+    }, [routeLocation.pathname, resetProfileState]);
 
     const value = useMemo<AuthContextValue>(() => {
         const bypassEnabled = shouldEnableDevAdminBypass(
             import.meta.env.DEV,
             import.meta.env.VITE_DEV_ADMIN_BYPASS,
             isDevAdminBypassDisabled,
-            location.pathname
+            routeLocation.pathname
         );
         const useDevAdminBypass = shouldUseDevAdminBypassSession(bypassEnabled, session?.user?.id);
         // Development bypass for local admin testing.
@@ -734,7 +742,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
         }
 
-        const optimisticAuthHint = isLoading && shouldUseOptimisticMarketingAuthHint(location.pathname)
+        const optimisticAuthHint = isLoading && shouldUseOptimisticMarketingAuthHint(routeLocation.pathname)
             ? optimisticAuthHintRef.current
             : null;
         const effectiveSession = session ?? (
@@ -784,7 +792,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isDevAdminBypassDisabled,
         isLoading,
         isProfileLoading,
-        location.pathname,
+        routeLocation.pathname,
         loginWithOAuth,
         loginWithPassword,
         logout,

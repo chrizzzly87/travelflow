@@ -46,7 +46,10 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
 
     // Parse existing value into array (comma separated)
     const selectedCountries = value
-        ? value.split(',').map((item) => resolveDestinationName(item)).filter(Boolean)
+        ? value.split(',').flatMap((item) => {
+            const countryName = resolveDestinationName(item);
+            return countryName ? [countryName] : [];
+        })
         : [];
 
     const normalizedSearch = search.trim();
@@ -124,6 +127,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
                         id={searchInputId}
                         ref={searchInputRef}
                         type="text"
+                        aria-label={labels?.fieldLabel || 'Destination(s)'}
                         value={search}
                         onChange={(e) => {
                             setSearch(e.target.value);

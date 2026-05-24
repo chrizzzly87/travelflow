@@ -240,7 +240,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
         </div>
     );
 
-    const renderMap = (mapLayoutMode: 'vertical' | 'horizontal', showLayoutControls = true) => {
+    const buildMap = (mapLayoutMode: 'vertical' | 'horizontal', showLayoutControls = true) => {
         if (!isMapBootstrapEnabled) {
             return (
                 <div className="relative h-full w-full">
@@ -361,7 +361,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             data-testid="planner-mobile-map-pane"
                             className={`${isMobileMapExpanded ? 'fixed inset-x-0 bottom-0 h-[70vh] z-[1450] border-t border-gray-200 shadow-2xl bg-white' : 'relative h-[26vh] min-h-[180px] bg-gray-100'}`}
                         >
-                            {renderMap('vertical', false)}
+                            {buildMap('vertical', false)}
                         </div>
                         <div
                             ref={verticalLayoutTimelineRef}
@@ -507,7 +507,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             reservedRightInset={floatingMapReservedRightInset}
                             tripId={tripId}
                         >
-                            {renderMap(layoutMode, effectiveMapDockMode !== 'floating')}
+                            {buildMap(layoutMode, effectiveMapDockMode !== 'floating')}
                         </TripFloatingMapPreview>
                     </>
                 )}

@@ -150,7 +150,7 @@ export const showAppToast = ({
     position: 'bottom-right',
     className: `border bg-white/95 text-slate-900 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/90 ${meta.borderClass}`,
     icon: (
-      <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full ${meta.iconWrapClass}`}>
+      <span className={`inline-flex size-8 items-center justify-center rounded-full ${meta.iconWrapClass}`}>
         <Icon size={20} className={tone === 'loading' && !iconVariant ? 'animate-spin' : undefined} />
       </span>
     ),

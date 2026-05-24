@@ -172,9 +172,10 @@ const getDestinationSearchTokens = (destination: DestinationOption): string[] =>
         }
     }
 
-    return Array.from(tokens)
-        .map((token) => token.trim())
-        .filter(Boolean);
+    return Array.from(tokens).flatMap((token) => {
+        const trimmed = token.trim();
+        return trimmed ? [trimmed] : [];
+    });
 };
 
 const DESTINATION_SEARCH_KEYS = new Map(
@@ -216,10 +217,10 @@ export const getDestinationOptionByCode = (code: string): DestinationOption | un
 };
 
 export const resolveDestinationCodes = (codes: string[]): string[] => {
-    return codes
-        .map((code) => getDestinationOptionByCode(code))
-        .filter((d): d is DestinationOption => d !== undefined)
-        .map((d) => d.name);
+    return codes.flatMap((code) => {
+        const destination = getDestinationOptionByCode(code);
+        return destination ? [destination.name] : [];
+    });
 };
 
 export const resolveDestinationName = (value: string): string => {
@@ -328,7 +329,7 @@ const sortDestinationOptionsByRecommendationScore = (
     months: number[]
 ): DestinationOption[] => {
     const normalizedMonths = normalizeMonths(months);
-    return [...options].sort((left, right) => {
+    return Array.from(options).sort((left, right) => {
         const scoreDelta = getDestinationRecommendationScore(right, normalizedMonths) - getDestinationRecommendationScore(left, normalizedMonths);
         if (scoreDelta !== 0) return scoreDelta;
         return left.name.localeCompare(right.name);

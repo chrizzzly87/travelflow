@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
 import { useParams, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Clock, User, Tag, ArrowRight, Compass, Article, ArrowSquareOut } from '@phosphor-icons/react';
@@ -24,6 +23,7 @@ import { normalizeAppLanguage } from '../utils';
 import type { Components } from 'react-markdown';
 import {
     BLOG_VIEW_TRANSITION_CLASSES,
+    commitBlogTransitionState,
     createBlogTransitionNavigationState,
     getBlogTransitionStyle,
     getBlogPostViewTransitionNames,
@@ -163,13 +163,13 @@ const resolveBlogMapMarkerPositions = (
     spots: BlogMapSpot[],
     coordinatesBySpotId: Record<string, google.maps.LatLngLiteral | null | undefined>,
 ): Array<{ spot: BlogMapSpot; position: google.maps.LatLngLiteral }> => {
-    const resolved = spots
-        .map((spot) => {
-            const position = coordinatesBySpotId[spot.id];
-            if (!position) return null;
-            return { spot, position };
-        })
-        .filter((entry): entry is { spot: BlogMapSpot; position: google.maps.LatLngLiteral } => Boolean(entry));
+    const resolved: Array<{ spot: BlogMapSpot; position: google.maps.LatLngLiteral }> = [];
+    for (const spot of spots) {
+        const position = coordinatesBySpotId[spot.id];
+        if (position) {
+            resolved.push({ spot, position });
+        }
+    }
 
     const groupedByCoordinates = new Map<string, number[]>();
     resolved.forEach((entry, index) => {
@@ -228,8 +228,14 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
 }) => {
     const { isLoaded, loadError } = useGoogleMaps();
     const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
-    const [coordinatesBySpotId, setCoordinatesBySpotId] = useState<Record<string, google.maps.LatLngLiteral | null | undefined>>({});
-    const [isResolvingSpots, setIsResolvingSpots] = useState(false);
+    const [spotResolutionState, setSpotResolutionState] = useState<{
+        coordinatesBySpotId: Record<string, google.maps.LatLngLiteral | null | undefined>;
+        isResolvingSpots: boolean;
+    }>({
+        coordinatesBySpotId: {},
+        isResolvingSpots: false,
+    });
+    const { coordinatesBySpotId, isResolvingSpots } = spotResolutionState;
     const markerOverlaysRef = useRef<google.maps.OverlayView[]>([]);
 
     const mapZoom = Number.isFinite(config.mapZoom) ? Math.max(2, Math.min(18, Math.round(config.mapZoom as number))) : 13;
@@ -266,24 +272,22 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
         if (unresolvedSpots.length === 0) return;
 
         let cancelled = false;
-        setIsResolvingSpots(true);
+        setSpotResolutionState((current) => ({ ...current, isResolvingSpots: true }));
         const geocoder = new window.google.maps.Geocoder();
 
         void Promise.all(unresolvedSpots.map((spot) => geocodeSpotQuery(geocoder, spot)))
             .then((results) => {
                 if (cancelled) return;
-                setCoordinatesBySpotId((current) => {
-                    const next = { ...current };
+                setSpotResolutionState((current) => {
+                    const coordinatesBySpotId = { ...current.coordinatesBySpotId };
                     results.forEach(({ id, coordinates }) => {
-                        next[id] = coordinates;
+                        coordinatesBySpotId[id] = coordinates;
                     });
-                    return next;
+                    return {
+                        coordinatesBySpotId,
+                        isResolvingSpots: false,
+                    };
                 });
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setIsResolvingSpots(false);
-                }
             });
 
         return () => {
@@ -292,9 +296,13 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
     }, [activeCategory.spots, coordinatesBySpotId, geocodeSpotQuery, isLoaded]);
 
     useEffect(() => {
-        markerOverlaysRef.current.forEach((overlay) => overlay.setMap(null));
-        markerOverlaysRef.current = [];
-        if (!mapInstance || !window.google?.maps?.OverlayView) return;
+        const clearMarkerOverlays = () => {
+            markerOverlaysRef.current.forEach((overlay) => overlay.setMap(null));
+            markerOverlaysRef.current = [];
+        };
+
+        clearMarkerOverlays();
+        if (!mapInstance || !window.google?.maps?.OverlayView) return clearMarkerOverlays;
         const markerBorderColor = resolveCssColorVar('--tf-accent-400', BLOG_MAP_MARKER_BORDER_FALLBACK);
         const markerBackgroundColor = resolveCssColorVar('--tf-accent-50', BLOG_MAP_MARKER_BG_FALLBACK);
         const markerTextColor = resolveCssColorVar('--tf-accent-700', BLOG_MAP_MARKER_TEXT_FALLBACK);
@@ -320,43 +328,47 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
             overlay.onAdd = function onAdd() {
                 markerNode = document.createElement('button');
                 markerNode.type = 'button';
-                markerNode.style.position = 'absolute';
-                markerNode.style.transform = 'translate(-50%, -100%)';
-                markerNode.style.width = '30px';
-                markerNode.style.height = '30px';
-                markerNode.style.borderRadius = '9999px';
-                markerNode.style.border = `1.5px solid ${markerBorderColor}`;
-                markerNode.style.background = markerBackgroundColor;
-                markerNode.style.color = markerTextColor;
-                markerNode.style.display = 'flex';
-                markerNode.style.alignItems = 'center';
-                markerNode.style.justifyContent = 'center';
-                markerNode.style.cursor = 'pointer';
-                markerNode.style.userSelect = 'none';
-                markerNode.style.padding = '0';
-                markerNode.style.fontSize = '13px';
-                markerNode.style.fontWeight = '700';
-                markerNode.style.boxShadow = '0 2px 6px rgba(15,23,42,0.1)';
-                markerNode.style.zIndex = '25';
+                markerNode.style.cssText = [
+                    'position: absolute',
+                    'transform: translate(-50%, -100%)',
+                    'width: 30px',
+                    'height: 30px',
+                    'border-radius: 9999px',
+                    `border: 1.5px solid ${markerBorderColor}`,
+                    `background: ${markerBackgroundColor}`,
+                    `color: ${markerTextColor}`,
+                    'display: flex',
+                    'align-items: center',
+                    'justify-content: center',
+                    'cursor: pointer',
+                    'user-select: none',
+                    'padding: 0',
+                    'font-size: 13px',
+                    'font-weight: 700',
+                    'box-shadow: 0 2px 6px rgba(15,23,42,0.1)',
+                    'z-index: 25',
+                ].join('; ');
                 markerNode.textContent = activeCategory.icon || `${markerIndex + 1}`;
                 markerNode.setAttribute('aria-label', spot.name);
-                markerNode.addEventListener('click', handleClick);
+                markerNode.onclick = handleClick;
 
                 const indexBadge = document.createElement('span');
                 indexBadge.textContent = String(markerIndex + 1);
-                indexBadge.style.position = 'absolute';
-                indexBadge.style.bottom = '-7px';
-                indexBadge.style.right = '-6px';
-                indexBadge.style.width = '14px';
-                indexBadge.style.height = '14px';
-                indexBadge.style.borderRadius = '9999px';
-                indexBadge.style.background = markerBorderColor;
-                indexBadge.style.color = markerBadgeTextColor;
-                indexBadge.style.fontSize = '9px';
-                indexBadge.style.fontWeight = '700';
-                indexBadge.style.display = 'flex';
-                indexBadge.style.alignItems = 'center';
-                indexBadge.style.justifyContent = 'center';
+                indexBadge.style.cssText = [
+                    'position: absolute',
+                    'bottom: -7px',
+                    'right: -6px',
+                    'width: 14px',
+                    'height: 14px',
+                    'border-radius: 9999px',
+                    `background: ${markerBorderColor}`,
+                    `color: ${markerBadgeTextColor}`,
+                    'font-size: 9px',
+                    'font-weight: 700',
+                    'display: flex',
+                    'align-items: center',
+                    'justify-content: center',
+                ].join('; ');
                 markerNode.appendChild(indexBadge);
 
                 const panes = this.getPanes();
@@ -369,13 +381,15 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
                 if (!projection) return;
                 const point = projection.fromLatLngToDivPixel(new window.google.maps.LatLng(position.lat, position.lng));
                 if (!point) return;
-                markerNode.style.left = `${point.x}px`;
-                markerNode.style.top = `${point.y}px`;
+                Object.assign(markerNode.style, {
+                    left: `${point.x}px`,
+                    top: `${point.y}px`,
+                });
             };
 
             overlay.onRemove = function onRemove() {
                 if (!markerNode) return;
-                markerNode.removeEventListener('click', handleClick);
+                markerNode.onclick = null;
                 markerNode.remove();
                 markerNode = null;
             };
@@ -384,10 +398,7 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
             markerOverlaysRef.current.push(overlay);
         });
 
-        return () => {
-            markerOverlaysRef.current.forEach((overlay) => overlay.setMap(null));
-            markerOverlaysRef.current = [];
-        };
+        return clearMarkerOverlays;
     }, [activeCategory.icon, activeCategory.id, mapInstance, markerSpots, postSlug]);
 
     useEffect(() => {
@@ -414,7 +425,8 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
                 title={`${config.title} - ${activeCategory.label}`}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                className="h-full w-full border-0"
+                className="size-full border-0"
+                sandbox="allow-scripts allow-same-origin allow-popups"
                 allowFullScreen
             />
         );
@@ -423,7 +435,7 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
     const shouldRenderMapCanvas = isLoaded || !!mapInstance;
 
     return (
-        <div className="relative h-full w-full">
+        <div className="relative size-full">
             {shouldRenderMapCanvas && (
                 <GoogleMap
                     id={mapId}
@@ -434,7 +446,7 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
                     clickableIcons={false}
                     styles={BLOG_MAP_CANVAS_STYLES}
                     reuseMaps
-                    className="h-full w-full"
+                    className="size-full"
                 >
                     <BlogMapInstanceBridge mapId={mapId} onMapInstanceChange={setMapInstance} />
                 </GoogleMap>
@@ -486,7 +498,7 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
 
     return (
         <section className="my-12 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-            <h3 className="text-lg font-bold text-slate-900">
+            <h3 className="text-lg font-semibold text-slate-900">
                 {config.title}
             </h3>
             {config.description && <p className="mt-2 text-sm text-slate-600">{config.description}</p>}
@@ -551,7 +563,7 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                                                         spot: spot.id,
                                                     });
                                                 }}
-                                                className="group flex w-full items-start justify-between gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-accent-50/60"
+                                                className="group flex w-full items-start justify-between gap-3 rounded-lg p-2 text-left transition-colors hover:bg-accent-50/60"
                                                 {...getAnalyticsDebugAttributes('blog__map_card--spot', {
                                                     slug: postSlug,
                                                     category: category.id,
@@ -559,7 +571,7 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                                                 })}
                                             >
                                                 <span className="inline-flex min-w-0 items-start gap-2">
-                                                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-accent-300 bg-accent-50 text-[10px] font-bold text-accent-700">
+                                                    <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-accent-300 bg-accent-50 text-[10px] font-bold text-accent-700">
                                                         {spotIndex + 1}
                                                     </span>
                                                     <span className="min-w-0">
@@ -598,7 +610,7 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
         return (
             <h2
                 id={id}
-                className="mt-10 mb-4 text-2xl font-black tracking-tight text-slate-900 scroll-mt-24"
+                className="mt-10 mb-4 text-2xl font-semibold tracking-tight text-slate-900 scroll-mt-24"
                 style={{ fontFamily: 'var(--tf-font-heading)' }}
             >
                 {children}
@@ -606,7 +618,7 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
         );
     },
     h3: ({ children }) => (
-        <h3 className="mt-8 mb-3 text-xl font-bold text-slate-800" style={{ fontFamily: 'var(--tf-font-heading)' }}>
+        <h3 className="mt-8 mb-3 text-xl font-semibold text-slate-800" style={{ fontFamily: 'var(--tf-font-heading)' }}>
             {children}
         </h3>
     ),
@@ -626,7 +638,7 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
                     className="group my-1 inline-flex w-full items-center justify-between gap-3 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 font-semibold text-accent-900 shadow-sm transition-colors hover:border-accent-300 hover:bg-accent-100"
                 >
                     <span className="inline-flex min-w-0 items-center gap-2">
-                        <img src="/favicon-32.png" alt="" aria-hidden="true" className="h-5 w-5 rounded" loading="lazy" />
+                        <img src="/favicon-32.png" alt="" aria-hidden="true" className="size-5 rounded" loading="lazy" />
                         <span className="truncate text-sm">{`${APP_NAME}: ${displayLabel}`}</span>
                     </span>
                     <ArrowSquareOut size={14} weight="bold" className="shrink-0 text-accent-700 transition-transform group-hover:translate-x-0.5" />
@@ -673,7 +685,7 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
                             srcSetWidths={[480, 768, 1024, 1536]}
                             placeholderKey={normalizedSrc}
                             loading="lazy"
-                            className="absolute inset-0 h-full w-full object-cover"
+                            className="absolute inset-0 size-full object-cover"
                         />
                     </div>
                 </div>
@@ -709,7 +721,7 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
         );
     },
     blockquote: ({ children }) => (
-        <blockquote className="mb-4 border-l-4 border-accent-300 pl-4 italic text-slate-500">{children}</blockquote>
+        <blockquote className="mb-4 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 italic text-slate-500">{children}</blockquote>
     ),
     table: ({ children }) => (
         <div className="mb-4 overflow-x-auto">
@@ -767,9 +779,13 @@ const useActiveHeading = (headingSlugs: string[]): string | null => {
             return undefined;
         }
 
-        const headingElements = headingSlugs
-            .map((slug) => document.getElementById(slug))
-            .filter((element): element is HTMLElement => Boolean(element));
+        const headingElements: HTMLElement[] = [];
+        for (const slug of headingSlugs) {
+            const element = document.getElementById(slug);
+            if (element) {
+                headingElements.push(element);
+            }
+        }
 
         if (headingElements.length === 0) {
             setActiveId(headingSlugs[0] ?? null);
@@ -904,13 +920,13 @@ export const BlogPostPage: React.FC = () => {
             beforeTransition: () => {
                 setPendingBlogTransitionMode(useColdFallback ? 'title-only' : 'full');
                 setPendingBlogTransitionTarget(transitionTarget);
-                flushSync(() => {
+                commitBlogTransitionState(() => {
                     setIsTransitionSource(true);
                 });
             },
             type: 'blog-collapse',
             update: () => {
-                flushSync(() => {
+                commitBlogTransitionState(() => {
                     navigate(blogPath, {
                         state: createBlogTransitionNavigationState('post', transitionTarget),
                     });
@@ -1028,7 +1044,7 @@ export const BlogPostPage: React.FC = () => {
                                         loading="eager"
                                         fetchPriority="high"
                                         onError={() => setHasHeaderImageError(true)}
-                                        className="absolute inset-0 h-full w-full object-cover"
+                                        className="absolute inset-0 size-full object-cover"
                                         skipFade={!!postTransitionNames}
                                     />
                                 </div>
@@ -1047,7 +1063,7 @@ export const BlogPostPage: React.FC = () => {
                         >
                             <div id="overview" className="scroll-mt-24 h-px w-full" />
                             <h1
-                                className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl"
+                                className="text-3xl font-semibold tracking-tight text-slate-900 md:text-5xl"
                                 style={
                                     postTransitionNames
                                         ? ({
@@ -1085,7 +1101,7 @@ export const BlogPostPage: React.FC = () => {
                                 ))}
                             </div>
 
-                            <p className="mt-6 border-l-4 border-accent-200 pl-4 text-lg leading-relaxed text-slate-600">
+                            <p className="mt-6 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 text-lg leading-relaxed text-slate-600">
                                 {post.summary}
                             </p>
 
@@ -1101,7 +1117,7 @@ export const BlogPostPage: React.FC = () => {
                         <div className="space-y-8 pr-1">
                             {headings.length > 0 && (
                                 <nav>
-                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">{t('post.inThisArticle')}</h4>
+                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">{t('post.inThisArticle')}</h4>
                                     <ul className="relative border-l border-slate-200">
                                         {headings.map((heading) => {
                                             const isActive = activeHeadingId === heading.slug;
@@ -1112,21 +1128,20 @@ export const BlogPostPage: React.FC = () => {
                                                             isActive ? 'bg-accent-500' : 'bg-transparent'
                                                         }`}
                                                     />
-                                                    <a
-                                                        href={`#${heading.slug}`}
-                                                        onClick={(event) => {
-                                                            event.preventDefault();
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
                                                             document.getElementById(heading.slug)?.scrollIntoView({ behavior: 'smooth' });
                                                             window.history.pushState(null, '', `#${heading.slug}`);
                                                         }}
-                                                        className={`block py-1.5 pl-4 text-[13px] leading-snug transition-colors duration-200 ${
+                                                        className={`block w-full py-1.5 pl-4 text-left text-[13px] leading-snug transition-colors duration-200 ${
                                                             isActive
                                                                 ? 'font-semibold text-accent-700'
                                                                 : 'text-slate-500 hover:text-slate-800'
                                                         }`}
                                                     >
                                                         {heading.text}
-                                                    </a>
+                                                    </button>
                                                 </li>
                                             );
                                         })}
@@ -1136,7 +1151,7 @@ export const BlogPostPage: React.FC = () => {
 
                             {relatedPosts.length > 0 && (
                                 <div>
-                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">{t('post.related')}</h4>
+                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">{t('post.related')}</h4>
                                     <ul className="space-y-3">
                                         {relatedPosts.map((related) => (
                                             <li key={`${related.language}:${related.slug}`}>
@@ -1146,7 +1161,7 @@ export const BlogPostPage: React.FC = () => {
                                                     data-blog-related-lang={related.language}
                                                     className="group flex items-start gap-2"
                                                 >
-                                                    <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${related.coverColor}`}>
+                                                    <div className={`mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md ${related.coverColor}`}>
                                                         <Article size={12} weight="duotone" className="text-slate-400" />
                                                     </div>
                                                     <div className="min-w-0">
@@ -1165,7 +1180,7 @@ export const BlogPostPage: React.FC = () => {
                             <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-accent-50 to-white p-5">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Compass size={18} weight="duotone" className="text-accent-500" />
-                                    <h4 className="text-sm font-bold text-slate-900">{t('post.planTripTitle')}</h4>
+                                    <h4 className="text-sm font-semibold text-slate-900">{t('post.planTripTitle')}</h4>
                                 </div>
                                 <p className="text-xs leading-relaxed text-slate-500 mb-3">
                                     {t('post.planTripDescription')}
@@ -1180,7 +1195,7 @@ export const BlogPostPage: React.FC = () => {
                             </div>
 
                             <div>
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">{t('post.explore')}</h4>
+                                <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">{t('post.explore')}</h4>
                                 <div className="space-y-2">
                                     <Link to={buildLocalizedMarketingPath('blog', locale)} className="flex items-center gap-2 text-sm text-slate-600 hover:text-accent-700 transition-colors">
                                         <Article size={14} weight="duotone" className="text-slate-400" />
@@ -1200,7 +1215,7 @@ export const BlogPostPage: React.FC = () => {
                 {relatedPosts.length > 0 && (
                     <div className="mt-16 border-t border-slate-200 pt-10 lg:hidden" style={BLOG_DEFERRED_SECTION_STYLE}>
                         <h2
-                            className="text-xl font-black tracking-tight text-slate-900"
+                            className="text-xl font-semibold tracking-tight text-slate-900"
                             style={{ fontFamily: 'var(--tf-font-heading)' }}
                         >
                             {t('post.relatedArticles')}
@@ -1214,11 +1229,11 @@ export const BlogPostPage: React.FC = () => {
                                     data-blog-related-lang={related.language}
                                     className="group flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
                                 >
-                                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${related.coverColor}`}>
+                                    <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${related.coverColor}`}>
                                         <ArrowRight size={16} weight="bold" className="text-slate-400 group-hover:text-accent-600 transition-colors" />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <h3 className="text-sm font-bold text-slate-900 group-hover:text-accent-700 transition-colors line-clamp-2">
+                                        <h3 className="text-sm font-semibold text-slate-900 group-hover:text-accent-700 transition-colors line-clamp-2">
                                             {related.title}
                                         </h3>
                                         <p className="mt-1 text-xs text-slate-400">

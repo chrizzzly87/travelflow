@@ -48,9 +48,9 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
     const selectedCount = selectedValues.length;
     const allSelected = options.length > 0 && selectedCount === options.length;
     const selectedLabels = useMemo(
-        () => options
-            .filter((option) => selectedSet.has(option.value))
-            .map((option) => option.label),
+        () => options.flatMap((option) => (
+            selectedSet.has(option.value) ? [option.label] : []
+        )),
         [options, selectedSet]
     );
     const groupedOptions = useMemo(() => {
@@ -111,9 +111,9 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
     }, [isOpen, updateMenuPosition]);
 
     const emitNextValues = (nextSet: Set<string>) => {
-        const ordered = options
-            .map((option) => option.value)
-            .filter((optionValue) => nextSet.has(optionValue));
+        const ordered = options.flatMap((option) => (
+            nextSet.has(option.value) ? [option.value] : []
+        ));
         onSelectedValuesChange(ordered);
     };
 
@@ -215,11 +215,11 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                                             key={`${label}-${option.value}`}
                                             className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group"
                                         >
-                                            <div className="mr-2 flex h-4 w-4 items-center justify-center shrink-0">
+                                            <div className="mr-2 flex size-4 items-center justify-center shrink-0">
                                                 <Checkbox
                                                     checked={checked}
                                                     onCheckedChange={() => toggleOption(option.value)}
-                                                    className="h-4 w-4"
+                                                    className="size-4"
                                                     tabIndex={-1}
                                                 />
                                             </div>

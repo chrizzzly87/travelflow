@@ -57,6 +57,13 @@ interface UsernameCheckState {
     error: string | null;
 }
 
+type SubscriptionSummary = Awaited<ReturnType<typeof getCurrentSubscriptionSummary>>;
+
+interface BillingSummaryState {
+    summary: SubscriptionSummary;
+    isLoading: boolean;
+}
+
 const EMPTY_FORM: ProfileFormState = {
     firstName: '',
     lastName: '',
@@ -133,7 +140,7 @@ const formatDateLabel = (value: string, locale: string): string => {
 
 export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode = 'settings' }) => {
     const navigate = useNavigate();
-    const location = useLocation();
+    const routeLocation = useLocation();
     const { t, i18n } = useTranslation(['profile', 'pricing']);
     const {
         isLoading,
@@ -164,13 +171,17 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         error: null,
     });
     const [requiredFieldErrors, setRequiredFieldErrors] = useState<RequiredFieldErrors>(EMPTY_REQUIRED_FIELD_ERRORS);
-    const [subscriptionSummary, setSubscriptionSummary] = useState<Awaited<ReturnType<typeof getCurrentSubscriptionSummary>>>(null);
-    const [isBillingLoading, setIsBillingLoading] = useState(false);
+    const [billingSummaryState, setBillingSummaryState] = useState<BillingSummaryState>({
+        summary: null,
+        isLoading: false,
+    });
+    const subscriptionSummary = billingSummaryState.summary;
+    const isBillingLoading = billingSummaryState.isLoading;
     const [isManageBillingSubmitting, setIsManageBillingSubmitting] = useState(false);
     const [isCancelBillingSubmitting, setIsCancelBillingSubmitting] = useState(false);
     const [paddlePublicConfig, setPaddlePublicConfig] = useState<PaddlePublicConfig | null>(null);
     const billingRepairAttemptedRef = useRef(false);
-    const activeDiscountCode = useMemo(() => readBillingDiscountCodeFromSearch(location.search), [location.search]);
+    const activeDiscountCode = useMemo(() => readBillingDiscountCodeFromSearch(routeLocation.search), [routeLocation.search]);
     const accessBilling = access?.billing ?? null;
 
     const appLocale = useMemo(
@@ -227,29 +238,31 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         };
     }, []);
 
-    const loadSubscriptionSummaryWithRetry = useCallback(async (): Promise<Awaited<ReturnType<typeof getCurrentSubscriptionSummary>>> => {
-        for (let attempt = 0; attempt < 3; attempt += 1) {
+    const loadSubscriptionSummaryWithRetry = useCallback(async (): Promise<SubscriptionSummary> => {
+        const loadAttempt = async (attempt: number): Promise<SubscriptionSummary> => {
             const summary = await getCurrentSubscriptionSummary();
             if (summary) {
                 return summary;
             }
-            if (attempt < 2) {
-                await new Promise((resolve) => window.setTimeout(resolve, 250 * (attempt + 1)));
+            if (attempt >= 2) {
+                return null;
             }
-        }
-        return null;
+            await new Promise((resolve) => window.setTimeout(resolve, 250 * (attempt + 1)));
+            return loadAttempt(attempt + 1);
+        };
+
+        return loadAttempt(0);
     }, []);
 
     useEffect(() => {
         if (!isAuthenticated) {
-            setSubscriptionSummary(null);
-            setIsBillingLoading(false);
+            setBillingSummaryState({ summary: null, isLoading: false });
             billingRepairAttemptedRef.current = false;
             return;
         }
 
         let cancelled = false;
-        setIsBillingLoading(true);
+        setBillingSummaryState((current) => ({ ...current, isLoading: true }));
         void (async () => {
             let summary = await loadSubscriptionSummaryWithRetry();
             const shouldAttemptRepair = !billingRepairAttemptedRef.current && (
@@ -270,17 +283,12 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                 }
             }
             if (cancelled) return;
-            setSubscriptionSummary(summary);
+            setBillingSummaryState({ summary, isLoading: false });
         })()
             .catch((error) => {
                 if (cancelled) return;
                 console.warn('Failed to load profile billing summary.', error);
-                setSubscriptionSummary(null);
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setIsBillingLoading(false);
-                }
+                setBillingSummaryState({ summary: null, isLoading: false });
             });
 
         return () => {
@@ -551,12 +559,19 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             city ? `${joined || baseInput}-${city}` : '',
         ];
 
-        return Array.from(new Set(
-            rawCandidates
-                .map((candidate) => sanitize(candidate))
-                .filter((candidate) => candidate.length >= 3 && candidate.length <= 40 && USERNAME_CANONICAL_PATTERN.test(candidate))
-                .filter((candidate) => candidate !== current)
-        ));
+        const candidates = new Set<string>();
+        for (const rawCandidate of rawCandidates) {
+            const candidate = sanitize(rawCandidate);
+            if (
+                candidate.length >= 3
+                && candidate.length <= 40
+                && USERNAME_CANONICAL_PATTERN.test(candidate)
+                && candidate !== current
+            ) {
+                candidates.add(candidate);
+            }
+        }
+        return Array.from(candidates);
     };
 
     const fetchUsernameSuggestions = async (input: string): Promise<string[]> => {
@@ -857,7 +872,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                         <CaretRight size={12} weight="bold" aria-hidden="true" />
                         <span className="text-slate-600">{t('settings.breadcrumb.settings')}</span>
                     </nav>
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">{heading}</h1>
+                    <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">{heading}</h1>
                     <p className="max-w-3xl text-sm leading-6 text-slate-600">{description}</p>
                 </section>
 
@@ -892,17 +907,20 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value={PROFILE_GENDER_UNSPECIFIED}>{t('settings.fields.unspecified')}</SelectItem>
-                                                {PROFILE_GENDER_OPTIONS.filter((option) => option.value !== '').map((option) => (
-                                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                                {PROFILE_GENDER_OPTIONS.map((option) => (
+                                                    option.value === ''
+                                                        ? null
+                                                        : <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.firstName')}</span>
-                                        <input
-                                            ref={firstNameInputRef}
-                                            value={form.firstName}
+	                                        <input
+	                                            ref={firstNameInputRef}
+	                                            aria-label={t('settings.fields.firstName')}
+	                                            value={form.firstName}
                                             onChange={(event) => updateField('firstName', event.target.value)}
                                             aria-invalid={requiredFieldErrors.firstName}
                                             className={`h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 ${
@@ -914,9 +932,10 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.lastName')}</span>
-                                        <input
-                                            ref={lastNameInputRef}
-                                            value={form.lastName}
+	                                        <input
+	                                            ref={lastNameInputRef}
+	                                            aria-label={t('settings.fields.lastName')}
+	                                            value={form.lastName}
                                             onChange={(event) => updateField('lastName', event.target.value)}
                                             aria-invalid={requiredFieldErrors.lastName}
                                             className={`h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 ${
@@ -1020,8 +1039,9 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
 
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.bio')}</span>
-                                    <textarea
-                                        value={form.bio}
+	                                    <textarea
+	                                        aria-label={t('settings.fields.bio')}
+	                                        value={form.bio}
                                         onChange={(event) => updateField('bio', clampBio(event.target.value))}
                                         rows={3}
                                         className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
@@ -1053,9 +1073,10 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     </div>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.city')}</span>
-                                        <input
-                                            ref={cityInputRef}
-                                            value={form.city}
+	                                        <input
+	                                            ref={cityInputRef}
+	                                            aria-label={t('settings.fields.city')}
+	                                            value={form.city}
                                             onChange={(event) => updateField('city', event.target.value)}
                                             aria-invalid={requiredFieldErrors.city}
                                             className={`h-9 w-full rounded-md border px-2.5 text-xs outline-none focus:ring-2 ${
@@ -1151,7 +1172,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 )}
                             </div>
 
-                            <section id="billing-management" className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                            <section id="billing-management" className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
                                 <div className="flex flex-wrap items-start justify-between gap-4">
                                     <div className="space-y-1">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.eyebrow')}</p>
@@ -1164,7 +1185,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 </div>
 
                                 {billingLifecycleState === 'canceled_grace' && (
-                                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4">
+                                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
                                         <div className="flex flex-wrap items-start justify-between gap-4">
                                             <div className="space-y-2">
                                                 <p className="text-sm font-semibold text-amber-900">{t('settings.billing.canceledGrace.title')}</p>
@@ -1198,7 +1219,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 )}
 
                                 {billingLifecycleState === 'inactive' && hasPaidTier && (
-                                    <div className="mt-4 rounded-xl border border-accent-200 bg-accent-50/70 px-4 py-4">
+                                    <div className="mt-4 rounded-xl border border-accent-200 bg-accent-50/70 p-4">
                                         <div className="flex flex-wrap items-start justify-between gap-4">
                                             <div className="space-y-2">
                                                 <p className="text-sm font-semibold text-slate-900">{t('settings.billing.inactive.title')}</p>
@@ -1234,25 +1255,25 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 )}
 
                                 <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-white p-3">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.currentPlanLabel')}</p>
                                         <p className="mt-1 text-sm font-semibold text-slate-900">{currentTierLabel}</p>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-white p-3">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.statusLabel')}</p>
                                         <p className="mt-1 text-sm font-semibold text-slate-900">
                                             {billingStatusLabel}
                                         </p>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-white p-3">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.renewalLabel')}</p>
                                         <p className="mt-1 text-sm font-semibold text-slate-900">
                                             {billingState.currentPeriodEnd
-                                                ? new Date(billingState.currentPeriodEnd).toLocaleDateString(appLocale)
+                                                ? formatDateLabel(billingState.currentPeriodEnd, appLocale)
                                                 : '—'}
                                         </p>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-white p-3">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.subscriptionIdLabel')}</p>
                                         <p className="mt-1 truncate font-mono text-xs text-slate-700" title={billingState.providerSubscriptionId || ''}>
                                             {billingState.providerSubscriptionId || '—'}

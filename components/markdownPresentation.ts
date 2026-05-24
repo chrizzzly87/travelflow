@@ -34,8 +34,7 @@ export const isHeadsUpHeading = (heading: string): boolean => heading.trim().toL
 export const findMarkdownTaskLineNumbers = (markdown: string): number[] => (
     markdown
         .split('\n')
-        .map((line, index) => (TASK_CHECKBOX_LINE_REGEX.test(line) ? index + 1 : -1))
-        .filter((lineNumber) => lineNumber > 0)
+        .flatMap((line, index) => (TASK_CHECKBOX_LINE_REGEX.test(line) ? [index + 1] : []))
 );
 
 export const toggleMarkdownTaskByLine = (markdown: string, lineNumber: number, checked: boolean): string | null => {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
@@ -21,11 +21,14 @@ import { TranslationNoticeBanner } from '../../../components/marketing/Translati
 
 const ContactStateProbe: React.FC = () => {
   const location = useLocation();
-  return <pre data-testid="contact-state">{JSON.stringify(location.state || null)}</pre>;
+  return React.createElement('output', {
+    'data-testid': 'contact-state',
+    'data-state': JSON.stringify(location.state),
+  }, location.search);
 };
 
 describe('components/marketing/TranslationNoticeBanner', () => {
-  it('navigates to contact with prefilled reason/topic state', async () => {
+  it('links to contact with Router state and prefilled query params', async () => {
     render(
       <MemoryRouter initialEntries={['/de/features']}>
         <Routes>
@@ -35,13 +38,20 @@ describe('components/marketing/TranslationNoticeBanner', () => {
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByRole('link'));
+    const contactLink = screen.getByRole('link');
+    expect(contactLink).toHaveAttribute('href', expect.stringContaining('/de/contact?'));
+    expect(contactLink).toHaveAttribute('href', expect.stringContaining('reason=bug_report'));
+    expect(contactLink).toHaveAttribute('href', expect.stringContaining('subReason=translation_wrong_misleading'));
+    expect(contactLink).toHaveAttribute('href', expect.stringContaining('source=translation_notice_banner'));
 
-    await waitFor(() => {
-      expect(screen.getByTestId('contact-state')).toHaveTextContent('"reason":"bug_report"');
-    });
-    expect(screen.getByTestId('contact-state')).toHaveTextContent('"subReason":"translation_wrong_misleading"');
-    expect(screen.getByTestId('contact-state')).toHaveTextContent('"source":"translation_notice_banner"');
+    fireEvent.click(contactLink);
+
+    expect(screen.getByTestId('contact-state')).toHaveTextContent('reason=bug_report');
+    expect(screen.getByTestId('contact-state')).toHaveAttribute('data-state', JSON.stringify({
+      reason: 'bug_report',
+      subReason: 'translation_wrong_misleading',
+      source: 'translation_notice_banner',
+    }));
     expect(trackEventMock).toHaveBeenCalledWith('i18n_notice__contact', expect.objectContaining({
       reason: 'bug_report',
       sub_reason: 'translation_wrong_misleading',

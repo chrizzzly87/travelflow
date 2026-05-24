@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { WarningCircle, X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_LOCALE } from '../../config/locales';
@@ -9,11 +9,32 @@ import {
     readSessionStorageItem,
     writeSessionStorageItem,
 } from '../../services/browserStorageService';
+import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 const SESSION_DISMISS_KEY = 'tf_translation_notice_dismissed_session';
 const CONTACT_PREFILL_REASON = 'bug_report';
 const CONTACT_PREFILL_SUB_REASON = 'translation_wrong_misleading';
 const CONTACT_PREFILL_SOURCE = 'translation_notice_banner';
+
+const buildContactSearch = (): string => {
+    const params = new URLSearchParams({
+        reason: CONTACT_PREFILL_REASON,
+        subReason: CONTACT_PREFILL_SUB_REASON,
+        source: CONTACT_PREFILL_SOURCE,
+    });
+    return `?${params.toString()}`;
+};
+
+const buildContactTo = (activeLocale: string) => ({
+    pathname: buildLocalizedMarketingPath('contact', activeLocale),
+    search: buildContactSearch(),
+});
+
+const buildContactState = () => ({
+    reason: CONTACT_PREFILL_REASON,
+    subReason: CONTACT_PREFILL_SUB_REASON,
+    source: CONTACT_PREFILL_SOURCE,
+});
 
 const isDismissedForSession = (): boolean => {
     if (typeof window === 'undefined') return false;
@@ -26,8 +47,11 @@ const isDismissedForSession = (): boolean => {
 
 export const TranslationNoticeBanner: React.FC = () => {
     const { t } = useTranslation('common');
-    const location = useLocation();
-    const activeLocale = useMemo(() => extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE, [location.pathname]);
+    const routeLocation = useSafeRouteLocation();
+    const activeLocale = useMemo(
+        () => extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE,
+        [routeLocation.pathname]
+    );
     const [dismissed, setDismissed] = useState<boolean>(() => isDismissedForSession());
 
     if (activeLocale === DEFAULT_LOCALE || dismissed) return null;
@@ -51,12 +75,8 @@ export const TranslationNoticeBanner: React.FC = () => {
                     {t('translationNotice.message')}
                 </p>
                 <Link
-                    to={buildLocalizedMarketingPath('contact', activeLocale)}
-                    state={{
-                        reason: CONTACT_PREFILL_REASON,
-                        subReason: CONTACT_PREFILL_SUB_REASON,
-                        source: CONTACT_PREFILL_SOURCE,
-                    }}
+                    to={buildContactTo(activeLocale)}
+                    state={buildContactState()}
                     onClick={() => trackEvent('i18n_notice__contact', {
                         locale: activeLocale,
                         reason: CONTACT_PREFILL_REASON,

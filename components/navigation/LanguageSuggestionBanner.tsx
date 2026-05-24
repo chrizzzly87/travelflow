@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { X, Translate } from '@phosphor-icons/react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { extractLocaleFromPath, getNamespacesForMarketingPath, isToolRoute } from '../../config/routes';
 import { AppLanguage } from '../../types';
 import { applyDocumentLocale, DEFAULT_LOCALE, LOCALE_FLAGS, SUPPORTED_LOCALES } from '../../config/locales';
@@ -15,6 +15,7 @@ import {
 } from '../../services/browserStorageService';
 import i18n, { preloadLocaleNamespaces } from '../../i18n';
 import { FlagIcon } from '../flags/FlagIcon';
+import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 const SESSION_DISMISS_KEY = 'tf_locale_suggestion_dismissed_session';
 const SWITCH_ACK_KEY = 'tf_locale_suggestion_switched';
@@ -127,17 +128,17 @@ const isSwitchAcknowledged = (): boolean => {
 };
 
 export const LanguageSuggestionBanner: React.FC = () => {
-    const location = useLocation();
+    const routeLocation = useSafeRouteLocation();
     const navigate = useNavigate();
 
     const activeLocale = useMemo<AppLanguage>(() => {
-        return extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
-    }, [location.pathname]);
+        return extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE;
+    }, [routeLocation.pathname]);
 
     const suggestedLocale = useMemo(() => {
-        if (isToolRoute(location.pathname)) return null;
+        if (isToolRoute(routeLocation.pathname)) return null;
         return getBrowserPreferredLocale(activeLocale);
-    }, [activeLocale, location.pathname]);
+    }, [activeLocale, routeLocation.pathname]);
 
     const [dismissed, setDismissed] = useState<boolean>(() => (
         isDismissedForSession() || isSwitchAcknowledged()
@@ -172,14 +173,14 @@ export const LanguageSuggestionBanner: React.FC = () => {
             }
         }
 
-        void preloadLocaleNamespaces(suggestedLocale, getNamespacesForMarketingPath(location.pathname));
+        void preloadLocaleNamespaces(suggestedLocale, getNamespacesForMarketingPath(routeLocation.pathname));
         applyDocumentLocale(suggestedLocale);
         void i18n.changeLanguage(suggestedLocale);
 
         const target = buildLocalizedLocation({
-            pathname: location.pathname,
-            search: location.search,
-            hash: location.hash,
+            pathname: routeLocation.pathname,
+            search: routeLocation.search,
+            hash: routeLocation.hash,
             targetLocale: suggestedLocale,
         });
         trackEvent('navigation__language_suggestion--switch', {

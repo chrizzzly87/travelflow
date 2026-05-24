@@ -4,7 +4,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { OnPageDebugger, buildMapRuntimeDebugOverride } from '../../components/OnPageDebugger';
+import { OnPageDebugger } from '../../components/OnPageDebugger';
+import { buildMapRuntimeDebugOverride } from '../../components/onPageDebuggerUtils';
 import { useAuth } from '../../hooks/useAuth';
 import {
   applyMapRuntimeAdminOverride,

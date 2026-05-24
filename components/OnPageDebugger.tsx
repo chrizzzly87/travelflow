@@ -20,11 +20,6 @@ import {
     ANALYTICS_DEBUG_PAYLOAD_ATTR,
     ANALYTICS_DEBUG_SELECTOR,
 } from '../services/analyticsService';
-import {
-    readLocalStorageItem,
-    removeLocalStorageItem,
-    writeLocalStorageItem,
-} from '../services/browserStorageService';
 import { APP_NAME } from '../config/appGlobals';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn as setDbSimulatedLoggedIn } from '../services/simulatedLoginService';
 import { getQueueSnapshot, subscribeOfflineQueue, type OfflineQueueSnapshot } from '../services/offlineChangeQueue';
@@ -66,9 +61,7 @@ import {
 } from '../services/mapRuntimeService';
 import {
     MAP_RUNTIME_SUBSYSTEMS,
-    getSelectionForMapRuntimePreset,
     isMapImplementation,
-    isMapRuntimePreset,
     type MapImplementation,
     type MapRuntimeOverride,
     type MapRuntimePreset,
@@ -83,6 +76,13 @@ import {
 } from '../services/runtimeLocationService';
 import { fetchNearbyAirports } from '../services/nearbyAirportsService';
 import type { NearbyAirportsResponse } from '../shared/airportReference';
+import {
+    buildMapRuntimeDebugOverride,
+    persistStoredDebuggerBoolean,
+    persistStoredDebuggerString,
+    readStoredDebuggerBoolean,
+    readStoredDebuggerString,
+} from './onPageDebuggerUtils';
 
 const UMAMI_DASHBOARD_URL = 'https://cloud.umami.is/analytics/eu/websites/d8a78257-7625-4891-8954-1a20b10f7537';
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
@@ -576,65 +576,13 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                                 ))}
                             </ul>
                         ) : (
-                            <p className="px-3 py-3 text-slate-600">No commercial airports were returned for this lookup.</p>
+                            <p className="p-3 text-slate-600">No commercial airports were returned for this lookup.</p>
                         )}
                     </div>
                 )}
             </div>
         </div>
     );
-};
-
-export const readStoredDebuggerBoolean = (storageKey: string, fallbackValue: boolean): boolean => {
-    try {
-        const raw = readLocalStorageItem(storageKey);
-        if (raw === '1') return true;
-        if (raw === '0') return false;
-        return fallbackValue;
-    } catch {
-        return fallbackValue;
-    }
-};
-
-export const persistStoredDebuggerBoolean = (storageKey: string, value: boolean, fallbackValue: boolean): void => {
-    try {
-        if (value === fallbackValue) {
-            removeLocalStorageItem(storageKey);
-            return;
-        }
-        writeLocalStorageItem(storageKey, value ? '1' : '0');
-    } catch {
-        // Ignore storage access issues.
-    }
-};
-
-export const readStoredDebuggerString = <T extends string>(
-    storageKey: string,
-    allowedValues: readonly T[],
-    fallbackValue: T,
-): T => {
-    try {
-        const raw = readLocalStorageItem(storageKey);
-        return allowedValues.includes(raw as T) ? (raw as T) : fallbackValue;
-    } catch {
-        return fallbackValue;
-    }
-};
-
-export const persistStoredDebuggerString = <T extends string>(
-    storageKey: string,
-    value: T,
-    fallbackValue: T,
-): void => {
-    try {
-        if (value === fallbackValue) {
-            removeLocalStorageItem(storageKey);
-            return;
-        }
-        writeLocalStorageItem(storageKey, value);
-    } catch {
-        // Ignore storage access issues.
-    }
 };
 
 const getAccessibleName = (element: HTMLElement): string => {
@@ -687,10 +635,13 @@ const collectTrackedViewTransitionNames = (): ViewTransitionNameSnapshot => {
         counts.set(transitionName, (counts.get(transitionName) || 0) + 1);
     });
 
-    const duplicates = Array.from(counts.entries())
-        .filter(([, count]) => count > 1)
-        .map(([name, count]) => `${name} (${count})`)
-        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const duplicates: string[] = [];
+    for (const [name, count] of counts.entries()) {
+        if (count > 1) {
+            duplicates.push(`${name} (${count})`);
+        }
+    }
+    duplicates.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
     return { names, duplicates };
 };
@@ -774,82 +725,6 @@ const MAP_RUNTIME_SUBSYSTEM_LABELS: Record<keyof MapRuntimeSelection, string> = 
     routes: 'Routes',
     locationSearch: 'Location search',
     staticMaps: 'Static maps',
-};
-
-const normalizeMapRuntimeDebugPreset = (
-    value: unknown,
-): MapRuntimePreset | 'default' | null => {
-    if (value === 'default') return 'default';
-    if (value === 'google') return 'google_all';
-    if (value === 'mapbox_visuals') return 'mapbox_visual_google_services';
-    return isMapRuntimePreset(value) ? value : null;
-};
-
-const compactMapRuntimeSelectionOverride = (
-    selection: MapRuntimeSelection,
-    baseSelection: MapRuntimeSelection,
-): Partial<MapRuntimeSelection> => {
-    const override: Partial<MapRuntimeSelection> = {};
-
-    MAP_RUNTIME_SUBSYSTEMS.forEach((subsystem) => {
-        if (selection[subsystem] !== baseSelection[subsystem]) {
-            override[subsystem] = selection[subsystem];
-        }
-    });
-
-    return override;
-};
-
-export const buildMapRuntimeDebugOverride = (
-    command: {
-        preset?: unknown;
-        renderer?: unknown;
-        routes?: unknown;
-        locationSearch?: unknown;
-        staticMaps?: unknown;
-    },
-    runtime: Pick<MapRuntimeResolution, 'defaultPreset' | 'requestedSelection' | 'override'>,
-): MapRuntimeOverride | null => {
-    const requestedPreset = normalizeMapRuntimeDebugPreset(command.preset);
-    const activeOverridePreset = isMapRuntimePreset(runtime.override?.preset)
-        ? runtime.override.preset
-        : null;
-    const basePreset = requestedPreset && requestedPreset !== 'default'
-        ? requestedPreset
-        : activeOverridePreset || runtime.defaultPreset;
-    const baseSelection = getSelectionForMapRuntimePreset(basePreset);
-    const nextRequestedSelection = requestedPreset
-        ? { ...baseSelection }
-        : { ...runtime.requestedSelection };
-
-    if (isMapImplementation(command.renderer)) {
-        nextRequestedSelection.renderer = command.renderer;
-    }
-    if (isMapImplementation(command.routes)) {
-        nextRequestedSelection.routes = command.routes;
-    }
-    if (isMapImplementation(command.locationSearch)) {
-        nextRequestedSelection.locationSearch = command.locationSearch;
-    }
-    if (isMapImplementation(command.staticMaps)) {
-        nextRequestedSelection.staticMaps = command.staticMaps;
-    }
-
-    const selectionOverride = compactMapRuntimeSelectionOverride(nextRequestedSelection, baseSelection);
-    const overridePreset = requestedPreset === null
-        ? activeOverridePreset
-        : requestedPreset === 'default'
-            ? null
-            : requestedPreset;
-
-    if (!overridePreset && Object.keys(selectionOverride).length === 0) {
-        return null;
-    }
-
-    return {
-        ...(overridePreset ? { preset: overridePreset } : {}),
-        ...(Object.keys(selectionOverride).length > 0 ? { selection: selectionOverride } : {}),
-    };
 };
 
 const formatMapRuntimePresetLabel = (preset: MapRuntimePreset | null): string => {
@@ -1038,13 +913,13 @@ const buildOgPlaygroundUrl = (currentUrl: URL): string => {
 };
 
 export const OnPageDebugger: React.FC = () => {
-    const location = useLocation();
+    const routeLocation = useLocation();
     const { isAdmin, isLoading: isAuthLoading } = useAuth();
     const rafRef = useRef<number | null>(null);
     const h1RafRef = useRef<number | null>(null);
     const mapRuntimeResolution = useMemo(() => getClientMapRuntimeResolution(), []);
 
-    const isTripDetailRoute = /^\/trip\/[^/]+/.test(location.pathname);
+    const isTripDetailRoute = /^\/trip\/[^/]+/.test(routeLocation.pathname);
     const showSeoTools = !isTripDetailRoute;
 
     const [isOpen, setIsOpen] = useState(() =>
@@ -1100,7 +975,7 @@ export const OnPageDebugger: React.FC = () => {
     const [prefetchStats, setPrefetchStats] = useState<PrefetchStats>(() => getPrefetchStats());
     const [prefetchHighlightBoxes, setPrefetchHighlightBoxes] = useState<PrefetchHighlightBox[]>([]);
     const [viewTransitionDiagnostics, setViewTransitionDiagnostics] = useState<ViewTransitionDiagnostics>(() =>
-        buildViewTransitionDiagnostics(`${location.pathname}${location.search}`)
+        buildViewTransitionDiagnostics(`${routeLocation.pathname}${routeLocation.search}`)
     );
     const [viewTransitionEvents, setViewTransitionEvents] = useState<ViewTransitionEventEntry[]>([]);
     const simulatedLoggedInRef = useRef(simulatedLoggedIn);
@@ -1111,11 +986,13 @@ export const OnPageDebugger: React.FC = () => {
         + prefetchStats.skippedBudget
         + prefetchStats.skippedUnsupportedPath;
     const recentPrefetchAttempts = prefetchStats.recentAttempts.slice(0, 10);
-    const recentlyWarmedRoutePaths = Array.from(new Set(
-        prefetchStats.recentAttempts
-            .filter((attempt) => attempt.outcome === 'scheduled' || attempt.outcome === 'already-warm')
-            .map((attempt) => attempt.path)
-    )).slice(0, 8);
+    const recentlyWarmedRoutePathSet = new Set<string>();
+    for (const attempt of prefetchStats.recentAttempts) {
+        if (attempt.outcome === 'scheduled' || attempt.outcome === 'already-warm') {
+            recentlyWarmedRoutePathSet.add(attempt.path);
+        }
+    }
+    const recentlyWarmedRoutePaths = Array.from(recentlyWarmedRoutePathSet).slice(0, 8);
 
     useEffect(() => {
         if (autoOpenEnabled) {
@@ -1241,7 +1118,7 @@ export const OnPageDebugger: React.FC = () => {
             setH1HighlightBox(null);
             setSeoAudit(null);
         }
-    }, [location.pathname, location.search, showSeoTools]);
+    }, [routeLocation.pathname, routeLocation.search, showSeoTools]);
 
     const collectTrackingBoxes = useCallback(() => {
         const nodes = Array.from(document.querySelectorAll<HTMLElement>(ANALYTICS_DEBUG_SELECTOR));
@@ -1334,16 +1211,29 @@ export const OnPageDebugger: React.FC = () => {
         });
     }, [collectH1Highlight]);
 
+    const scheduleTrackingRefreshRef = useRef(scheduleTrackingRefresh);
+    const scheduleH1RefreshRef = useRef(scheduleH1Refresh);
+
+    useEffect(() => {
+        scheduleTrackingRefreshRef.current = scheduleTrackingRefresh;
+    }, [scheduleTrackingRefresh]);
+
+    useEffect(() => {
+        scheduleH1RefreshRef.current = scheduleH1Refresh;
+    }, [scheduleH1Refresh]);
+
     useEffect(() => {
         if (!isOpen || !trackingEnabled) {
             setTrackingBoxes([]);
             return;
         }
 
-        scheduleTrackingRefresh();
-        window.addEventListener('resize', scheduleTrackingRefresh);
-        window.addEventListener('scroll', scheduleTrackingRefresh, true);
-        const observer = new MutationObserver(scheduleTrackingRefresh);
+        const handleTrackingRefresh = () => scheduleTrackingRefreshRef.current();
+
+        handleTrackingRefresh();
+        window.addEventListener('resize', handleTrackingRefresh);
+        window.addEventListener('scroll', handleTrackingRefresh, true);
+        const observer = new MutationObserver(handleTrackingRefresh);
         observer.observe(document.body, {
             childList: true,
             subtree: true,
@@ -1357,16 +1247,16 @@ export const OnPageDebugger: React.FC = () => {
                 rafRef.current = null;
             }
             observer.disconnect();
-            window.removeEventListener('resize', scheduleTrackingRefresh);
-            window.removeEventListener('scroll', scheduleTrackingRefresh, true);
+            window.removeEventListener('resize', handleTrackingRefresh);
+            window.removeEventListener('scroll', handleTrackingRefresh, true);
         };
-    }, [collectTrackingBoxes, isOpen, scheduleTrackingRefresh, trackingEnabled]);
+    }, [isOpen, trackingEnabled]);
 
     useEffect(() => {
         if (isOpen && trackingEnabled) {
             scheduleTrackingRefresh();
         }
-    }, [isOpen, location.pathname, location.search, scheduleTrackingRefresh, trackingEnabled]);
+    }, [isOpen, routeLocation.pathname, routeLocation.search, scheduleTrackingRefresh, trackingEnabled]);
 
     useEffect(() => {
         if (!isOpen || !showSeoTools || !h1HighlightEnabled) {
@@ -1374,10 +1264,12 @@ export const OnPageDebugger: React.FC = () => {
             return;
         }
 
-        scheduleH1Refresh();
-        window.addEventListener('resize', scheduleH1Refresh);
-        window.addEventListener('scroll', scheduleH1Refresh, true);
-        const observer = new MutationObserver(scheduleH1Refresh);
+        const handleH1Refresh = () => scheduleH1RefreshRef.current();
+
+        handleH1Refresh();
+        window.addEventListener('resize', handleH1Refresh);
+        window.addEventListener('scroll', handleH1Refresh, true);
+        const observer = new MutationObserver(handleH1Refresh);
         observer.observe(document.body, {
             childList: true,
             subtree: true,
@@ -1391,15 +1283,15 @@ export const OnPageDebugger: React.FC = () => {
                 h1RafRef.current = null;
             }
             observer.disconnect();
-            window.removeEventListener('resize', scheduleH1Refresh);
-            window.removeEventListener('scroll', scheduleH1Refresh, true);
+            window.removeEventListener('resize', handleH1Refresh);
+            window.removeEventListener('scroll', handleH1Refresh, true);
         };
-    }, [h1HighlightEnabled, isOpen, scheduleH1Refresh, showSeoTools]);
+    }, [h1HighlightEnabled, isOpen, showSeoTools]);
 
     useEffect(() => {
         if (!isOpen || !showSeoTools || !h1HighlightEnabled) return;
         scheduleH1Refresh();
-    }, [h1HighlightEnabled, isOpen, location.pathname, location.search, scheduleH1Refresh, showSeoTools]);
+    }, [h1HighlightEnabled, isOpen, routeLocation.pathname, routeLocation.search, scheduleH1Refresh, showSeoTools]);
 
     const openUmami = useCallback(() => {
         window.open(UMAMI_DASHBOARD_URL, '_blank', 'noopener,noreferrer');
@@ -1434,16 +1326,16 @@ export const OnPageDebugger: React.FC = () => {
     }, []);
 
     const runViewTransitionAuditAndStore = useCallback(() => {
-        const route = `${location.pathname}${location.search}`;
+        const route = `${routeLocation.pathname}${routeLocation.search}`;
         const result = buildViewTransitionDiagnostics(route);
         setViewTransitionDiagnostics(result);
         return result;
-    }, [location.pathname, location.search]);
+    }, [routeLocation.pathname, routeLocation.search]);
 
     useEffect(() => {
         if (!isOpen) return;
         runViewTransitionAuditAndStore();
-    }, [isOpen, location.pathname, location.search, runViewTransitionAuditAndStore]);
+    }, [isOpen, routeLocation.pathname, routeLocation.search, runViewTransitionAuditAndStore]);
 
     const toggleAutoOpen = useCallback(() => {
         const next = !autoOpenEnabled;
@@ -2350,7 +2242,7 @@ export const OnPageDebugger: React.FC = () => {
                                                     const mapboxSupported = mapRuntimeResolution.implementationCapabilities.mapbox[subsystem];
 
                                                     return (
-                                                        <div key={subsystem} className="rounded border border-slate-200 bg-slate-50 px-3 py-3 text-slate-700">
+                                                        <div key={subsystem} className="rounded border border-slate-200 bg-slate-50 p-3 text-slate-700">
                                                             <div className="flex items-center justify-between gap-2">
                                                                 <strong className="text-slate-900">{MAP_RUNTIME_SUBSYSTEM_LABELS[subsystem]}</strong>
                                                                 <span className="text-[11px] text-slate-500">
@@ -2447,7 +2339,7 @@ export const OnPageDebugger: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => setPrefetchSectionExpanded((prev) => !prev)}
-                                            className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left hover:bg-slate-50"
+                                            className="flex w-full items-center justify-between gap-2 rounded-md p-1 text-left hover:bg-slate-50"
                                         >
                                             <div className="flex items-center gap-2">
                                                 <span className="font-semibold uppercase tracking-wide text-slate-500">Navigation Prefetch</span>
@@ -2544,7 +2436,7 @@ export const OnPageDebugger: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => setViewTransitionSectionExpanded((prev) => !prev)}
-                                            className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left hover:bg-slate-50"
+                                            className="flex w-full items-center justify-between gap-2 rounded-md p-1 text-left hover:bg-slate-50"
                                         >
                                             <div className="flex items-center gap-2">
                                                 <h3 className="font-semibold uppercase tracking-wide text-slate-500">

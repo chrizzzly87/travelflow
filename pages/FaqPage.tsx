@@ -19,8 +19,8 @@ const normalizeHashId = (hash: string): string => (
 );
 
 export const FaqPage: React.FC = () => {
-    const location = useLocation();
-    const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    const routeLocation = useLocation();
+    const locale = extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE;
     const [openItemIds, setOpenItemIds] = useState<string[]>(() => {
         const firstItemId = FAQ_SECTIONS[0]?.items[0]?.id;
         return firstItemId ? [firstItemId] : [];
@@ -45,9 +45,9 @@ export const FaqPage: React.FC = () => {
         didTrackViewRef.current = true;
         trackEvent('faq__view', {
             locale,
-            hash: normalizeHashId(location.hash) || null,
+            hash: normalizeHashId(routeLocation.hash) || null,
         });
-    }, [locale, location.hash]);
+    }, [locale, routeLocation.hash]);
 
     const handleHashNavigation = useCallback((rawHash: string) => {
         const hashId = normalizeHashId(rawHash);
@@ -78,8 +78,8 @@ export const FaqPage: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        handleHashNavigation(location.hash);
-    }, [handleHashNavigation, location.hash]);
+        handleHashNavigation(routeLocation.hash);
+    }, [handleHashNavigation, routeLocation.hash]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -110,7 +110,7 @@ export const FaqPage: React.FC = () => {
         });
 
         if (!nextOpen || typeof window === 'undefined') return;
-        window.history.replaceState(window.history.state, '', `${location.pathname}#${item.id}`);
+        window.history.replaceState(window.history.state, '', `${routeLocation.pathname}#${item.id}`);
     };
 
     const contactPath = buildLocalizedMarketingPath('contact', locale);
@@ -118,7 +118,7 @@ export const FaqPage: React.FC = () => {
     return (
         <MarketingLayout>
             <section className="pb-8 md:pb-12">
-                <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-6xl">
+                <h1 className="text-4xl font-semibold tracking-tight text-slate-900 md:text-6xl">
                     Frequently asked questions.
                 </h1>
                 <p className="mt-4 max-w-[100ch] text-sm leading-7 text-slate-600 md:text-base">
@@ -147,7 +147,7 @@ export const FaqPage: React.FC = () => {
                 {faqSections.map((section) => (
                     <section key={section.id} id={section.id} className="scroll-mt-28 border-b border-slate-200 py-10 md:py-12">
                         <div className="grid gap-6 md:grid-cols-[220px,minmax(0,1fr)] md:gap-8">
-                            <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-[2rem]">
+                            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-[2rem]">
                                 {section.title}
                             </h2>
                             <FaqAccordionList
@@ -169,7 +169,7 @@ export const FaqPage: React.FC = () => {
             </div>
 
             <section className="pt-10 md:pt-12">
-                <h2 className="text-xl font-bold text-slate-900 md:text-2xl">Still need help?</h2>
+                <h2 className="text-xl font-semibold text-slate-900 md:text-2xl">Still need help?</h2>
                 <p className="mt-3 max-w-[100ch] text-sm leading-6 text-slate-600">
                     Contact us with your question and we will route it to the right team.
                 </p>

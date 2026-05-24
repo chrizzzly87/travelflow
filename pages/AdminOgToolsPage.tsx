@@ -72,7 +72,7 @@ export const AdminOgToolsPage: React.FC = () => {
         excludePaths: parseCsvListInput(excludePathsInput),
         excludePrefixes: parseCsvListInput(excludePrefixesInput),
     }), [excludePathsInput, excludePrefixesInput, includePathsInput, includePrefixesInput, localesInput]);
-    const playgroundSrc = useMemo(() => `${OG_PLAYGROUND_PATH}?mode=${playgroundMode}`, [playgroundMode]);
+    const playgroundSrc = `${OG_PLAYGROUND_PATH}?mode=${playgroundMode}`;
 
     const copyText = async (key: string, value: string): Promise<void> => {
         try {
@@ -303,45 +303,55 @@ export const AdminOgToolsPage: React.FC = () => {
                         </div>
 
                         <div className="grid gap-3 md:grid-cols-2">
-                            <label className="space-y-1">
+                            <label htmlFor="og-locales-input" className="space-y-1 block">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Locales (CSV)</span>
                                 <input
+                                    id="og-locales-input"
+                                    aria-label="Locales (CSV)"
                                     value={localesInput}
                                     onChange={(event) => setLocalesInput(event.target.value)}
                                     placeholder="en,de,fr,fa,ur"
                                     className={fieldClassName}
                                 />
                             </label>
-                            <label className="space-y-1">
+                            <label htmlFor="og-include-paths-input" className="space-y-1 block">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Include paths (CSV)</span>
                                 <input
+                                    id="og-include-paths-input"
+                                    aria-label="Include paths (CSV)"
                                     value={includePathsInput}
                                     onChange={(event) => setIncludePathsInput(event.target.value)}
                                     placeholder="/,/blog,/de/blog"
                                     className={fieldClassName}
                                 />
                             </label>
-                            <label className="space-y-1">
+                            <label htmlFor="og-include-prefixes-input" className="space-y-1 block">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Include prefixes (CSV)</span>
                                 <input
+                                    id="og-include-prefixes-input"
+                                    aria-label="Include prefixes (CSV)"
                                     value={includePrefixesInput}
                                     onChange={(event) => setIncludePrefixesInput(event.target.value)}
                                     placeholder="/blog,/inspirations,/de/blog"
                                     className={fieldClassName}
                                 />
                             </label>
-                            <label className="space-y-1">
+                            <label htmlFor="og-exclude-paths-input" className="space-y-1 block">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Exclude paths (CSV)</span>
                                 <input
+                                    id="og-exclude-paths-input"
+                                    aria-label="Exclude paths (CSV)"
                                     value={excludePathsInput}
                                     onChange={(event) => setExcludePathsInput(event.target.value)}
                                     placeholder="/blog/draft-slug"
                                     className={fieldClassName}
                                 />
                             </label>
-                            <label className="space-y-1 md:col-span-2">
+                            <label htmlFor="og-exclude-prefixes-input" className="space-y-1 block md:col-span-2">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Exclude prefixes (CSV)</span>
                                 <input
+                                    id="og-exclude-prefixes-input"
+                                    aria-label="Exclude prefixes (CSV)"
                                     value={excludePrefixesInput}
                                     onChange={(event) => setExcludePrefixesInput(event.target.value)}
                                     placeholder="/example,/ko/blog"

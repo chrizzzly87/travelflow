@@ -85,8 +85,8 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
                                 remarkPlugins={[remarkGfm]}
                                 components={{
                                     p: ({ node, ...props }) => <p {...props} className="m-0" />,
-                                    a: ({ node, ...props }) => (
-                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800" />
+                                    a: ({ node, children, ...props }) => (
+                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800">{children}</a>
                                     ),
                                     code: ({ node, ...props }) => (
                                         <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />
@@ -109,8 +109,8 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
                                                     remarkPlugins={[remarkGfm]}
                                                     components={{
                                                         p: ({ node, ...props }) => <p {...props} className="m-0" />,
-                                                        a: ({ node, ...props }) => (
-                                                            <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800" />
+                                                        a: ({ node, children, ...props }) => (
+                                                            <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800">{children}</a>
                                                         ),
                                                         code: ({ node, ...props }) => (
                                                             <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />

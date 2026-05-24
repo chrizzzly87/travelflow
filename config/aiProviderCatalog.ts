@@ -70,8 +70,9 @@ const isAiProviderId = (value: string): value is AiProviderId => (
 const toTitleCase = (value: string): string => (
     value
         .split(/[\s_-]+/)
-        .filter(Boolean)
-        .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+        .flatMap((token) => (
+            token ? [`${token.charAt(0).toUpperCase()}${token.slice(1)}`] : []
+        ))
         .join(' ')
 );
 

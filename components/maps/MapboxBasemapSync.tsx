@@ -10,16 +10,23 @@ import {
 import type { MapStyle } from '../../types';
 import {
   getTripMapProviderTuning,
-  resolveTripMapRestingProjection,
   shouldUseTripMapGlobeIntro,
   type TripMapDockMode,
 } from './tripMapProviderTuning';
 import { buildTripMapCameraIntroPlan } from './tripMapProviderCameraIntro';
-
-export interface MapboxBasemapLoadError {
-  message: string;
-  status: number | null;
-}
+import {
+  areMapboxCameraTargetsNearlyEqual,
+  getMapboxBasemapErrorStatus,
+  getMapboxErrorMessage,
+  isMapboxBasemapFatalError,
+  isMapboxStyleReadyForRuntimeMutations,
+  resolveMapboxEffectiveProjection,
+  resolveMapboxViewportSize,
+  shouldDeferMapboxCameraSyncUntilSurfaceLoad,
+  shouldRunMapboxGlobeIntro,
+  stretchMapboxViewport,
+  type MapboxBasemapLoadError,
+} from './mapboxBasemapUtils';
 
 interface MapboxBasemapSyncProps {
   accessToken: string;
@@ -35,7 +42,6 @@ interface MapboxBasemapSyncProps {
   onStyleReload?: () => void;
 }
 
-const MAPBOX_FATAL_HTTP_STATUSES = new Set([401, 403, 404, 429]);
 const MAPBOX_MIN_TILE_CACHE_SIZE = 512;
 const MAPBOX_MAX_TILE_CACHE_SIZE = 1536;
 const MAPBOX_TRIP_TUNING = getTripMapProviderTuning('mapbox');
@@ -47,45 +53,6 @@ const MAPBOX_CLEAR_FOG = {
   'horizon-blend': 0.02,
   'star-intensity': 0,
 } as const;
-
-const getMapboxErrorMessage = (value: unknown): string => {
-  if (value instanceof Error) {
-    return value.message;
-  }
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (value && typeof value === 'object') {
-    const message = (value as { message?: unknown }).message;
-    if (typeof message === 'string') {
-      return message;
-    }
-  }
-  return '';
-};
-
-export const getMapboxBasemapErrorStatus = (value: unknown): number | null => {
-  const rawStatus = value && typeof value === 'object'
-    ? (value as { status?: unknown }).status
-    : null;
-  return typeof rawStatus === 'number' && Number.isFinite(rawStatus) ? rawStatus : null;
-};
-
-export const isMapboxBasemapFatalError = (value: unknown): boolean => {
-  const error = value && typeof value === 'object' && 'error' in value
-    ? (value as { error?: unknown }).error
-    : value;
-  const status = getMapboxBasemapErrorStatus(error);
-  if (status !== null && MAPBOX_FATAL_HTTP_STATUSES.has(status)) {
-    return true;
-  }
-
-  const message = getMapboxErrorMessage(error).toLowerCase();
-  return message.includes('forbidden')
-    || message.includes('unauthorized')
-    || message.includes('access token')
-    || message.includes('not authorized');
-};
 
 const syncMapboxToGoogleCamera = (
   mapboxMap: mapboxgl.Map,
@@ -136,121 +103,6 @@ const readGoogleCameraTarget = (
     center: [center.lng(), center.lat()],
     zoom: Number(zoom),
   };
-};
-
-export const shouldRunMapboxGlobeIntro = (zoom: number | null | undefined): boolean => {
-  return Number.isFinite(zoom);
-};
-
-export const shouldDeferMapboxCameraSyncUntilSurfaceLoad = ({
-  hasCompletedInitialLoad,
-  initialCameraResolved,
-}: {
-  hasCompletedInitialLoad: boolean;
-  initialCameraResolved: boolean;
-}): boolean => !hasCompletedInitialLoad && !initialCameraResolved;
-
-export const isMeaningfulMapboxIntroTarget = (
-  target: { center: [number, number]; zoom: number } | null | undefined,
-): boolean => {
-  if (!target || !Number.isFinite(target.zoom)) return false;
-  const [lng, lat] = target.center;
-  const centerOffset = Math.hypot(lng - MAPBOX_GLOBE_INTRO_CAMERA.center[0], lat - MAPBOX_GLOBE_INTRO_CAMERA.center[1]);
-  return target.zoom >= MAPBOX_TRIP_TUNING.intro.minMeaningfulTargetZoom
-    || centerOffset >= MAPBOX_TRIP_TUNING.intro.minMeaningfulCenterOffsetDegrees;
-};
-
-export const areMapboxCameraTargetsNearlyEqual = (
-  a: { center: [number, number]; zoom: number } | null | undefined,
-  b: { center: [number, number]; zoom: number } | null | undefined,
-): boolean => {
-  if (!a || !b) return false;
-  return Math.abs(a.center[0] - b.center[0]) <= 0.00012
-    && Math.abs(a.center[1] - b.center[1]) <= 0.00012
-    && Math.abs(a.zoom - b.zoom) <= 0.045;
-};
-
-export const stretchMapboxViewport = (
-  mapboxMap: Pick<mapboxgl.Map, 'getCanvas' | 'getCanvasContainer' | 'getContainer'>,
-): void => {
-  const container = mapboxMap.getContainer();
-  const canvasContainer = mapboxMap.getCanvasContainer();
-  const canvas = mapboxMap.getCanvas();
-
-  [container, canvasContainer, canvas].forEach((element) => {
-    element.style.width = '100%';
-    element.style.height = '100%';
-  });
-};
-
-export const resolveMapboxViewportSize = ({
-  mapViewportSize,
-  fallbackViewportSize,
-  container,
-}: {
-  mapViewportSize: { width: number; height: number } | null | undefined;
-  fallbackViewportSize?: { width: number; height: number } | null;
-  container?: Pick<HTMLElement, 'getBoundingClientRect'> | null;
-}): { width: number; height: number } | null => {
-  const pickFiniteSize = (value: { width: number; height: number } | null | undefined) => {
-    if (!value) return null;
-    if (!Number.isFinite(value.width) || !Number.isFinite(value.height)) return null;
-    if (value.width <= 0 || value.height <= 0) return null;
-    return {
-      width: Math.round(value.width),
-      height: Math.round(value.height),
-    };
-  };
-
-  const resolvedViewportSize = pickFiniteSize(mapViewportSize);
-  if (resolvedViewportSize) return resolvedViewportSize;
-
-  const resolvedFallbackSize = pickFiniteSize(fallbackViewportSize);
-  if (resolvedFallbackSize) return resolvedFallbackSize;
-
-  if (!container) return null;
-  const rect = container.getBoundingClientRect();
-  if (!Number.isFinite(rect.width) || !Number.isFinite(rect.height)) return null;
-  if (rect.width <= 0 || rect.height <= 0) return null;
-  return {
-    width: Math.round(rect.width),
-    height: Math.round(rect.height),
-  };
-};
-
-export const resolveMapboxEffectiveProjection = ({
-  mapDockMode,
-  mapViewportSize,
-  introActive,
-}: {
-  mapDockMode: TripMapDockMode;
-  mapViewportSize: { width: number; height: number } | null;
-  introActive: boolean;
-}): 'globe' | 'mercator' => {
-  if (introActive && shouldUseTripMapGlobeIntro({
-    provider: 'mapbox',
-    mapDockMode,
-    mapViewportSize,
-  })) {
-    return 'globe';
-  }
-  return resolveTripMapRestingProjection({
-    provider: 'mapbox',
-    mapDockMode,
-  }) ?? 'mercator';
-};
-
-export const isMapboxStyleReadyForRuntimeMutations = (
-  mapboxMap: Pick<mapboxgl.Map, 'isStyleLoaded'> | null | undefined,
-): boolean => {
-  if (!mapboxMap || typeof mapboxMap.isStyleLoaded !== 'function') {
-    return false;
-  }
-  try {
-    return mapboxMap.isStyleLoaded();
-  } catch {
-    return false;
-  }
 };
 
 const applyMapboxProjectionState = (
@@ -309,8 +161,9 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
   mapViewportSizeRef.current = mapViewportSize;
 
   useEffect(() => {
-    if (!containerRef.current || !googleMap || !accessToken.trim()) return;
-    if (mapboxMapRef.current) return;
+    const noopCleanup = () => {};
+    if (!containerRef.current || !googleMap || !accessToken.trim()) return noopCleanup;
+    if (mapboxMapRef.current) return noopCleanup;
 
     let cancelled = false;
     let hasReportedFatalError = false;
@@ -324,6 +177,10 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
     let introTimeoutId: number | null = null;
     let introSettleTimeoutId: number | null = null;
     let hasCompletedInitialLoad = false;
+    let activeMapboxMap: mapboxgl.Map | null = null;
+    let handleMapboxLoad: (() => void) | null = null;
+    let handleMapboxStyleLoad: (() => void) | null = null;
+    let handleMapboxError: ((error: unknown) => void) | null = null;
 
     const getEffectiveViewportSize = () => resolveMapboxViewportSize({
       mapViewportSize: mapViewportSizeRef.current,
@@ -693,6 +550,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         });
 
         mapboxMapRef.current = mapboxMap;
+        activeMapboxMap = mapboxMap;
         const initialViewportSize = getEffectiveViewportSize();
         if (initialViewportSize) {
           lastViewportSizeRef.current = initialViewportSize;
@@ -710,7 +568,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         stretchMapboxViewport(mapboxMap);
         lastViewportSizeRef.current = null;
 
-        mapboxMap.on('load', () => {
+        handleMapboxLoad = () => {
           if (cancelled || mapboxMapRef.current !== mapboxMap) return;
           hasCompletedInitialLoad = true;
           flushViewportSize();
@@ -738,8 +596,8 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
               scheduleSync();
             }
           });
-        });
-        mapboxMap.on('style.load', () => {
+        };
+        handleMapboxStyleLoad = () => {
           if (cancelled || mapboxMapRef.current !== mapboxMap) return;
           flushViewportSize();
           applyProjection({
@@ -758,11 +616,15 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
               notifyStyleReloadWhenReady();
             });
           }
-        });
-        mapboxMap.on('error', (error) => {
+        };
+        handleMapboxError = (error: unknown) => {
           if (cancelled || mapboxMapRef.current !== mapboxMap) return;
           reportFatalError(error);
-        });
+        };
+
+        mapboxMap.on('load', handleMapboxLoad);
+        mapboxMap.on('style.load', handleMapboxStyleLoad);
+        mapboxMap.on('error', handleMapboxError);
 
         if (interactive) {
           mapboxMap.on('movestart', beginGestureSync);
@@ -774,7 +636,6 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
           mapboxMap.on('rotateend', endGestureSync);
           mapboxMap.on('pitchend', endGestureSync);
         }
-
         if (typeof ResizeObserver !== 'undefined') {
           resizeObserver = new ResizeObserver(() => {
             scheduleViewportResize(false);
@@ -797,6 +658,29 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
     return () => {
       cancelled = true;
       listeners.forEach((listener) => listener?.remove?.());
+      if (activeMapboxMap && handleMapboxLoad) {
+        activeMapboxMap.off('load', handleMapboxLoad);
+      }
+      if (activeMapboxMap && handleMapboxStyleLoad) {
+        activeMapboxMap.off('style.load', handleMapboxStyleLoad);
+      }
+      if (activeMapboxMap && handleMapboxError) {
+        activeMapboxMap.off('error', handleMapboxError);
+      }
+      if (activeMapboxMap && interactive) {
+        activeMapboxMap.off('movestart', beginGestureSync);
+        activeMapboxMap.off('zoomstart', beginGestureSync);
+        activeMapboxMap.off('rotatestart', beginGestureSync);
+        activeMapboxMap.off('pitchstart', beginGestureSync);
+        activeMapboxMap.off('moveend', endGestureSync);
+        activeMapboxMap.off('zoomend', endGestureSync);
+        activeMapboxMap.off('rotateend', endGestureSync);
+        activeMapboxMap.off('pitchend', endGestureSync);
+      }
+      activeMapboxMap = null;
+      handleMapboxLoad = null;
+      handleMapboxStyleLoad = null;
+      handleMapboxError = null;
       resizeObserver?.disconnect();
       if (resizeTimeoutId !== null) {
         window.clearTimeout(resizeTimeoutId);
@@ -890,8 +774,8 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
     <div
       ref={containerRef}
       className={interactive
-        ? 'absolute inset-0 z-0 h-full w-full overflow-hidden'
-        : 'pointer-events-none absolute inset-0 z-0 h-full w-full overflow-hidden'}
+        ? 'absolute inset-0 z-0 size-full overflow-hidden'
+        : 'pointer-events-none absolute inset-0 z-0 size-full overflow-hidden'}
       aria-hidden="true"
     />
   );

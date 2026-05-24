@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 
 const MONTH_INITIALS_FALLBACK = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'] as const;
+const EMPTY_MONTHS: number[] = [];
+const MONTH_INITIAL_CHAR_PATTERN = /\p{L}|\p{N}/u;
 
 interface IdealTravelTimelineProps {
     idealMonths: number[];
@@ -15,7 +17,7 @@ const hasMonth = (months: number[] | undefined, month: number): boolean => {
 
 export const IdealTravelTimeline: React.FC<IdealTravelTimelineProps> = ({
     idealMonths,
-    shoulderMonths = [],
+    shoulderMonths = EMPTY_MONTHS,
     locale,
 }) => {
     const monthInitials = useMemo(() => {
@@ -26,10 +28,11 @@ export const IdealTravelTimeline: React.FC<IdealTravelTimelineProps> = ({
             || 'en';
 
         try {
-            const formatter = new Intl.DateTimeFormat(resolvedLocale, { month: 'long', timeZone: 'UTC' });
             return Array.from({ length: 12 }, (_, index) => {
-                const monthLabel = formatter.format(new Date(Date.UTC(2024, index, 1))).trim();
-                const firstLetter = Array.from(monthLabel).find((char) => /\p{L}|\p{N}/u.test(char));
+                const monthLabel = new Date(Date.UTC(2024, index, 1))
+                    .toLocaleString(resolvedLocale, { month: 'long', timeZone: 'UTC' })
+                    .trim();
+                const firstLetter = Array.from(monthLabel).find((char) => MONTH_INITIAL_CHAR_PATTERN.test(char));
                 return (firstLetter || MONTH_INITIALS_FALLBACK[index]).toLocaleUpperCase(resolvedLocale);
             });
         } catch {
@@ -59,12 +62,16 @@ export const IdealTravelTimeline: React.FC<IdealTravelTimelineProps> = ({
             <div className="relative">
                 <div className="absolute left-0 right-0 top-[3px] h-px bg-slate-300" />
                 <div className="grid grid-cols-12 gap-1 relative">
-                    {monthInitials.map((initial, index) => (
-                        <div key={`tick-${index}`} className="flex flex-col items-center">
-                            <span className="block h-2 w-px bg-slate-400" />
-                            <span className="mt-1 text-[10px] font-medium text-slate-600">{initial}</span>
-                        </div>
-                    ))}
+                    {monthInitials.map((initial, index) => {
+                        const month = index + 1;
+
+                        return (
+                            <div key={`tick-${month}`} className="flex flex-col items-center">
+                                <span className="block h-2 w-px bg-slate-400" />
+                                <span className="mt-1 text-[10px] font-medium text-slate-600">{initial}</span>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </div>

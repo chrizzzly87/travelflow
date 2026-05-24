@@ -1,6 +1,8 @@
 import React from 'react';
 import { MONTH_LABELS } from '../data/countryTravelData';
 
+const EMPTY_MONTHS: number[] = [];
+
 interface MonthSeasonStripProps {
     idealMonths: number[];
     shoulderMonths?: number[];
@@ -15,8 +17,8 @@ const hasMonth = (months: number[] | undefined, month: number): boolean => {
 
 export const MonthSeasonStrip: React.FC<MonthSeasonStripProps> = ({
     idealMonths,
-    shoulderMonths = [],
-    highlightedMonths = [],
+    shoulderMonths = EMPTY_MONTHS,
+    highlightedMonths = EMPTY_MONTHS,
     compact = false,
 }) => {
     return (
@@ -35,7 +37,7 @@ export const MonthSeasonStrip: React.FC<MonthSeasonStripProps> = ({
                     <div
                         key={label}
                         className={[
-                            'rounded-md border px-1 py-1 text-center font-medium leading-none select-none',
+                            'rounded-md border p-1 text-center font-medium leading-none select-none',
                             colorClass,
                             isHighlighted ? 'ring-1 ring-accent-400' : '',
                         ].join(' ').trim()}

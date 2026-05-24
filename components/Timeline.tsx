@@ -39,6 +39,7 @@ interface TimelineProps {
   onToggleDetailsPanel?: () => void;
 }
 
+const EMPTY_SELECTED_CITY_IDS: string[] = [];
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 // Set to >0 if you want a visible gap below city cards before connectors start.
 const TRANSFER_CONNECTOR_TOP_GAP_PX = 0;
@@ -48,6 +49,15 @@ const TRANSFER_CONNECTOR_STYLE: 'straight' | 'rounded' = 'rounded';
 const TRANSFER_CHIP_HEIGHT_PX = 32;
 const TRANSFER_CHIP_ROW_GAP_PX = 10;
 const TRANSFER_LANE_VERTICAL_PADDING_PX = 4;
+
+const createIdleDragState = (): IDragState => ({
+  isDragging: false,
+  itemId: null,
+  action: null,
+  startX: 0,
+  originalOffset: 0,
+  originalDuration: 0,
+});
 
 const parseLocalTripDate = (value: string): Date | null => {
   if (!value) return null;
@@ -98,7 +108,7 @@ const buildTransferConnectorPath = (
 
 export const Timeline: React.FC<TimelineProps> = ({
   trip,
-  selectedCityIds = [],
+  selectedCityIds = EMPTY_SELECTED_CITY_IDS,
   selectedItemId,
   onSelect,
   onUpdateItems,
@@ -124,21 +134,14 @@ export const Timeline: React.FC<TimelineProps> = ({
   const dragStartItemsRef = useRef<ITimelineItem[] | null>(null);
   const latestDragItemsRef = useRef<ITimelineItem[] | null>(null);
   const lastAutoScrollSelectionRef = useRef<string | null>(null);
-  
+
   // Use Refs for synchronous drag tracking to avoid state update race conditions
   const isDraggingRef = useRef(false);
   const dragStartPosRef = useRef(0);
 
-  const [dragState, setDragState] = useState<IDragState>({
-    isDragging: false,
-    itemId: null,
-    action: null,
-    startX: 0,
-    originalOffset: 0,
-    originalDuration: 0,
-  });
+  const dragStateRef = useRef<IDragState>(createIdleDragState());
 
-  const [hoverTravelStart, setHoverTravelStart] = useState<number | null>(null);
+  const hoverTravelStartRef = useRef<number | null>(null);
   const [cityBottomAnchorY, setCityBottomAnchorY] = useState<number | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -178,7 +181,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
     return offset - visualStartOffset;
   }, [parsedTripStartDate, tripLength, tripDayRange.end, tripDayRange.start, visualStartOffset]);
-  
+
   // Separate items into lanes
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const travelItems = trip.items.filter(i => i.type === 'travel' || i.type === 'travel-empty').sort((a, b) => a.startDateOffset - b.startDateOffset);
@@ -377,44 +380,44 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const handleTravelMouseMove = (e: React.MouseEvent) => {
       if (!canEdit) {
-          if (hoverTravelStart !== null) setHoverTravelStart(null);
+          hoverTravelStartRef.current = null;
           return;
       }
       if (!travelLaneRef.current) return;
-      
+
       // Prevent ghost from showing up if we are hovering over an existing block
       const target = e.target as HTMLElement;
       if (target.closest('.timeline-block-item')) {
-          setHoverTravelStart(null);
+          hoverTravelStartRef.current = null;
           return;
       }
 
       const rect = travelLaneRef.current.getBoundingClientRect();
       const offsetX = e.clientX - rect.left;
       const rawDay = visualStartOffset + (offsetX / pixelsPerDay);
-      
+
       // Calculate start time so that the block (duration=1.0) is centered on mouse
       // Center = Start + 0.5  =>  Start = Center - 0.5
       let start = rawDay - 0.5;
-      
+
       // Snap to 0.5 increments
       const snapStep = 0.5;
       start = Math.round(start / snapStep) * snapStep;
-      
+
       if (start < visualStartOffset) start = visualStartOffset;
-      
-      setHoverTravelStart(start);
+
+      hoverTravelStartRef.current = start;
   };
 
   const handleTravelMouseLeave = () => {
-      setHoverTravelStart(null);
+      hoverTravelStartRef.current = null;
   };
 
   const handleTravelClick = () => {
       if (!canEdit) return;
-      if (hoverTravelStart !== null) {
-          createTravelItem(hoverTravelStart, 1.0);
-          setHoverTravelStart(null);
+      if (hoverTravelStartRef.current !== null) {
+          createTravelItem(hoverTravelStartRef.current, 1.0);
+          hoverTravelStartRef.current = null;
       }
   };
 
@@ -432,14 +435,14 @@ export const Timeline: React.FC<TimelineProps> = ({
     // Snapshot items at drag start to avoid cumulative drift on fast moves
     dragStartItemsRef.current = trip.items.map(i => ({ ...i }));
 
-    setDragState({
-      isDragging: false, 
+    dragStateRef.current = {
+      isDragging: false,
       itemId: id,
       action: direction === 'left' ? 'resize-left' : 'resize-right',
       startX: e.clientX,
       originalOffset: item.startDateOffset,
       originalDuration: item.duration,
-    });
+    };
   };
 
   const handleMoveStart = (e: React.MouseEvent | React.PointerEvent, id: string) => {
@@ -453,36 +456,36 @@ export const Timeline: React.FC<TimelineProps> = ({
 
     dragStartItemsRef.current = trip.items.map(i => ({ ...i }));
 
-    setDragState({
-      isDragging: false, 
+    dragStateRef.current = {
+      isDragging: false,
       itemId: id,
       action: 'move',
       startX: e.clientX,
       originalOffset: item.startDateOffset,
       originalDuration: item.duration,
-    });
+    };
   };
 
   useEffect(() => {
     const handlePointerMove = (e: PointerEvent) => {
       // Check if we have an active operation
+      const dragState = dragStateRef.current;
       if (!dragState.itemId || !dragState.action) return;
 
       const deltaX = e.clientX - dragStartPosRef.current;
-      const deltaDays = deltaX / pixelsPerDay; 
+      const deltaDays = deltaX / pixelsPerDay;
 
       // Threshold check: If not yet dragging, check if we moved enough
       if (!isDraggingRef.current) {
         if (Math.abs(deltaX) < 5) return; // 5px threshold
         isDraggingRef.current = true;
-        // Update state to reflect dragging (visuals)
-        setDragState(prev => ({ ...prev, isDragging: true }));
+        dragStateRef.current = { ...dragState, isDragging: true };
       }
 
       const baseItems = dragStartItemsRef.current || trip.items;
       const currentItemIndex = baseItems.findIndex(i => i.id === dragState.itemId);
       if (currentItemIndex === -1) return;
-      
+
       const currentItem = baseItems[currentItemIndex];
       const newItems = baseItems.map(i => ({ ...i }));
 
@@ -496,30 +499,30 @@ export const Timeline: React.FC<TimelineProps> = ({
       if (dragState.action === 'move') {
           let newStart = roundToStep(dragState.originalOffset + snappedDelta, snap);
           if (newStart < 0) newStart = 0;
-          
+
           if (Math.abs(currentItem.startDateOffset - newStart) < 0.000001) return;
 
           newItems[currentItemIndex] = { ...currentItem, startDateOffset: newStart };
           latestDragItemsRef.current = newItems;
           onUpdateItems(newItems, { deferCommit: true });
-      } 
+      }
       else if (dragState.action === 'resize-right') {
         const minDuration = isTravel ? 0.05 : 0.5;
         const newDuration = Math.max(minDuration, roundToStep(dragState.originalDuration + snappedDelta, snap));
         const diff = newDuration - dragState.originalDuration;
-        if (Math.abs(diff) < 0.000001) return; 
+        if (Math.abs(diff) < 0.000001) return;
 
         if (currentItem.type === 'city') {
             const currentEnd = dragState.originalOffset + dragState.originalDuration;
             newItems[currentItemIndex] = { ...currentItem, duration: newDuration };
-            
+
             // Shift later items based on current end so resizing keeps neighbors in sync
             shiftLaterItems(newItems, currentEnd, diff, currentItem.id);
 
         } else {
             newItems[currentItemIndex] = { ...currentItem, duration: newDuration };
         }
-        
+
         latestDragItemsRef.current = newItems;
         onUpdateItems(newItems, { deferCommit: true });
       } else if (dragState.action === 'resize-left') {
@@ -544,8 +547,8 @@ export const Timeline: React.FC<TimelineProps> = ({
             }
         }
 
-        newItems[currentItemIndex] = { 
-            ...currentItem, 
+        newItems[currentItemIndex] = {
+            ...currentItem,
             startDateOffset: newStart,
             duration: newDuration
         };
@@ -577,19 +580,12 @@ export const Timeline: React.FC<TimelineProps> = ({
           onUpdateItems(latestDragItemsRef.current, { deferCommit: false });
         }
       }
-      
+
       // Reset everything
       isDraggingRef.current = false;
       dragStartItemsRef.current = null;
       latestDragItemsRef.current = null;
-      setDragState({
-        isDragging: false,
-        itemId: null,
-        action: null,
-        startX: 0,
-        originalOffset: 0,
-        originalDuration: 0
-      });
+      dragStateRef.current = createIdleDragState();
     };
 
     window.addEventListener('pointermove', handlePointerMove);
@@ -601,7 +597,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       window.removeEventListener('pointerup', handlePointerUp);
       window.removeEventListener('pointercancel', handlePointerUp);
     };
-  }, [dragState, trip.items, onUpdateItems, pixelsPerDay]);
+  }, [trip.items, onUpdateItems, pixelsPerDay]);
 
 
   // --- Render Helpers ---
@@ -706,9 +702,10 @@ export const Timeline: React.FC<TimelineProps> = ({
   }, [selectedItemId, selectionVisibilityKey, trip.items, pixelsPerDay, visualStartOffset]);
 
   return (
-    <div 
-      className="w-full h-full overflow-auto bg-white relative timeline-scroll" 
+    <div
+      className="size-full overflow-auto bg-white relative timeline-scroll"
       ref={containerRef}
+      role="presentation"
       onClick={() => handleBlockSelect(null)}
     >
         <div className="relative min-h-full" style={{ minWidth: '100%', width: `${totalWidth}px` }}>
@@ -739,16 +736,16 @@ export const Timeline: React.FC<TimelineProps> = ({
                     </div>
                 </>
             )}
-            
+
             {/* Header (Adaptive) */}
             <div className={`border-b border-gray-200 flex flex-col sticky top-0 bg-white/95 backdrop-blur z-20 shadow-sm pl-8 transition-all duration-200 ${isZoomedOut ? 'h-20' : 'h-16'}`}>
-                
+
                 {dateHeaders.view === 'detailed' ? (
                     // Detailed View: Single Row per Day
                      <div className="flex h-full">
                         {dateHeaders.days.map((day) => (
-                            <div 
-                                key={day.index} 
+                            <div
+                                key={day.index}
                                 className={`flex-shrink-0 border-r border-gray-100 flex flex-col justify-center px-2 select-none relative
                                     ${day.isToday ? 'bg-red-50/70' : day.isWeekend ? 'bg-gray-50' : 'bg-white'}
                                 `}
@@ -768,21 +765,21 @@ export const Timeline: React.FC<TimelineProps> = ({
                     <div className="flex flex-col h-full">
                         {/* Month Row */}
                         <div className="flex border-b border-gray-100 h-8 overflow-hidden bg-accent-50">
-                             {dateHeaders.months?.map((month, idx) => (
-                                 <div 
-                                    key={idx}
+                            {dateHeaders.months?.map((month) => (
+                                <div
+                                    key={`${month.name}-${month.startIndex}`}
                                     className="flex-shrink-0 flex items-center justify-center font-bold text-xs uppercase tracking-widest text-accent-900 border-r border-accent-100 bg-accent-50 last:border-0"
                                     style={{ width: `${month.widthPx}px` }}
-                                 >
-                                     {month.name}
-                                 </div>
-                             ))}
+                                >
+                                    {month.name}
+                                </div>
+                            ))}
                         </div>
                         {/* Day Row */}
                         <div className="flex flex-1">
                             {dateHeaders.days.map((day) => (
-                                <div 
-                                    key={day.index} 
+                                <div
+                                    key={day.index}
                                     className={`flex-shrink-0 border-r border-gray-100 flex items-center justify-center select-none relative
                                         ${day.isToday ? 'bg-red-50/70' : day.isWeekend ? 'bg-gray-50' : 'bg-white'}
                                     `}
@@ -801,7 +798,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             {/* Grid Background Lines */}
             <div className={`absolute bottom-0 left-8 right-0 pointer-events-none flex z-0 ${isZoomedOut ? 'top-20' : 'top-16'}`}>
                 {renderedDaySlots.map((slot) => (
-                    <div 
+                    <div
                         key={slot.index}
                         className="flex-shrink-0 border-r border-dashed border-gray-100 h-full"
                         style={{ width: `${slot.size}px` }}
@@ -811,7 +808,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
             {/* Content Area with PADDING */}
             <div className="pt-3 pb-16 pl-8 pr-8 space-y-1 md:space-y-2 relative z-10">
-                
+
                 {/* Cities Lane */}
                 <div className="relative w-full group/cities z-20">
                     {/* Lane Label */}
@@ -819,7 +816,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-white/80 pr-2 backdrop-blur-sm rounded">
                              Cities & Stays
                          </span>
-                         <button 
+                         <button type="button"
                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddCity(); }}
                             disabled={!canEdit}
                             className={`opacity-0 group-hover/cities:opacity-100 transition-opacity bg-accent-100 text-accent-700 rounded-full p-1 ${canEdit ? 'hover:bg-accent-200' : 'opacity-50 cursor-not-allowed'}`}
@@ -845,16 +842,16 @@ export const Timeline: React.FC<TimelineProps> = ({
                             // Calculate Neighbors
                             const prev = index > 0 ? cities[index - 1] : null;
                             const next = index < cities.length - 1 ? cities[index + 1] : null;
-                            
+
                             const idealStart = prev ? prev.startDateOffset + prev.duration : 0;
                             const startDiff = Math.abs(city.startDateOffset - idealStart);
-                            
+
                             let endDiff = 0;
                             if (next) {
                                 const currentEnd = city.startDateOffset + city.duration;
                                 endDiff = Math.abs(next.startDateOffset - currentEnd);
                             }
-                            
+
                             const hasGapOrOverlap = startDiff > 0.05 || endDiff > 0.05;
                             const prevEnd = prev ? prev.startDateOffset + prev.duration : 0;
                             const nextStart = next ? next.startDateOffset : null;
@@ -907,7 +904,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-white/80 pr-2 backdrop-blur-sm rounded">
                              Transfer
                          </span>
-                         <button 
+                         <button type="button"
                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; handleAddTravel(); }}
                             disabled={!canEdit}
                             className={`opacity-0 group-hover/travel:opacity-100 transition-opacity bg-stone-100 text-stone-700 rounded-full p-1 ${canEdit ? 'hover:bg-stone-200' : 'opacity-50 cursor-not-allowed'}`}
@@ -917,7 +914,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                              <Plus size={14} />
                         </button>
                     </div>
-                    
+
                     <div
                         className="relative w-full overflow-visible"
                         ref={travelLaneRef}
@@ -981,7 +978,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
                             return (
                                 <div key={link.id} className="absolute inset-0 overflow-visible pointer-events-none z-0">
-                                    <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none" aria-hidden="true">
+                                    <svg className="absolute inset-0 size-full overflow-visible pointer-events-none" aria-hidden="true">
                                         <path
                                             d={fromPath}
                                             fill="none"
@@ -1003,7 +1000,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                             strokeOpacity={connectorOpacity}
                                         />
                                     </svg>
-                                    <button
+                                    <button type="button"
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                         className={`absolute z-10 -translate-y-1/2 rounded-full border text-[11px] font-semibold flex items-center transition-colors pointer-events-auto
                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 shadow-sm opacity-100 ring-2 ring-blue-600 ring-offset-1' : (isUndefinedTransfer ? 'bg-slate-50 border-slate-300 border-dashed text-slate-400 opacity-65 shadow-none justify-center' : 'bg-white border-gray-200 text-gray-600 shadow-sm')}
@@ -1042,18 +1039,18 @@ export const Timeline: React.FC<TimelineProps> = ({
                     {/* Day Column Add Buttons */}
                     <div className="relative h-8 w-full flex mb-2 pointer-events-none">
                          {dateHeaders.days.map((day) => (
-                             <div 
+                             <div
                                 key={day.index}
                                 className="absolute top-0 bottom-0 flex justify-center items-center pointer-events-auto group"
-                                style={{ 
-                                    left: `${day.start}px`, 
-                                    width: `${day.size}px` 
+                                style={{
+                                    left: `${day.start}px`,
+                                    width: `${day.size}px`
                                 }}
                              >
-                                 <button
+                                 <button type="button"
                                      onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(day.dayOffset); }}
                                      disabled={!canEdit}
-                                     className={`w-full h-full mx-1 rounded-md border border-dashed border-transparent flex items-center justify-center text-gray-300 transition-all ${canEdit ? 'hover:border-gray-300 hover:bg-gray-50 hover:text-accent-500' : 'cursor-not-allowed opacity-40'}`}
+                                     className={`size-full mx-1 rounded-md border border-dashed border-transparent flex items-center justify-center text-gray-300 transition-all ${canEdit ? 'hover:border-gray-300 hover:bg-gray-50 hover:text-accent-500' : 'cursor-not-allowed opacity-40'}`}
                                      aria-label={`Add activity for ${day.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`}
                                  >
                                      <Plus size={16} />
@@ -1061,7 +1058,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                              </div>
                          ))}
                     </div>
-                    
+
                     <div className="flex flex-col gap-3">
                         {activityLanes.map((lane, laneIdx) => (
                              <div

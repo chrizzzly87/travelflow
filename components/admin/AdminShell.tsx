@@ -20,11 +20,6 @@ import {
 } from '@phosphor-icons/react';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
-    readLocalStorageItem,
-    readSessionStorageItem,
-    writeLocalStorageItem,
-} from '../../services/browserStorageService';
-import {
     SIMULATED_LOGIN_DEBUG_EVENT,
     SIMULATED_LOGIN_STORAGE_KEY,
     isSimulatedLoggedIn,
@@ -35,8 +30,12 @@ import { AccountMenu } from '../navigation/AccountMenu';
 import { useAuth } from '../../hooks/useAuth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { AppBrand } from '../navigation/AppBrand';
-
-export type AdminDateRange = '7d' | '30d' | '90d' | 'all';
+import {
+    type AdminDateRange,
+    getStoredSidebarCollapseState,
+    isDevAdminBypassDisabled,
+    persistSidebarCollapseState,
+} from './adminShellUtils';
 
 interface AdminShellProps {
     title: string;
@@ -50,21 +49,6 @@ interface AdminShellProps {
     showGlobalSearch?: boolean;
     showDateRange?: boolean;
 }
-
-const SIDEBAR_COLLAPSE_PERSIST_KEY = 'tf_admin_sidebar_collapsed_v1';
-const DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY = 'tf_dev_admin_bypass_disabled';
-
-export const getStoredSidebarCollapseState = (): boolean => {
-    return readLocalStorageItem(SIDEBAR_COLLAPSE_PERSIST_KEY) === '1';
-};
-
-export const persistSidebarCollapseState = (next: boolean): void => {
-    writeLocalStorageItem(SIDEBAR_COLLAPSE_PERSIST_KEY, next ? '1' : '0');
-};
-
-export const isDevAdminBypassDisabled = (): boolean => {
-    return readSessionStorageItem(DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY) === '1';
-};
 
 const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
     if (icon === 'overview') return <ChartPieSlice size={16} weight="duotone" />;
@@ -83,7 +67,7 @@ const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
 
 const buildDesktopNavClass = ({ isActive }: { isActive: boolean }, isCollapsed: boolean) => {
     const base = isCollapsed
-        ? 'flex items-center justify-center rounded-xl border px-2 py-2 text-sm transition-colors'
+        ? 'flex items-center justify-center rounded-xl border p-2 text-sm transition-colors'
         : 'flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors';
     if (isActive) {
         return `${base} border-accent-200 bg-accent-50 font-semibold text-accent-900`;
@@ -105,6 +89,52 @@ const DATE_RANGE_OPTIONS: Array<{ value: AdminDateRange; label: string }> = [
     { value: 'all', label: 'All time' },
 ];
 
+type AdminNavSection = (typeof ADMIN_NAV_SECTIONS)[number] & { items: Array<(typeof ADMIN_NAV_ITEMS)[number]> };
+
+interface AdminNavItemsProps {
+    mode: 'desktop' | 'mobile';
+    sections: AdminNavSection[];
+    isSidebarCollapsed: boolean;
+    onMenuItemClick: (id: string, mode: 'desktop' | 'mobile') => void;
+}
+
+const AdminNavItems: React.FC<AdminNavItemsProps> = ({
+    mode,
+    sections,
+    isSidebarCollapsed,
+    onMenuItemClick,
+}) => (
+    <>
+        {sections.map((section) => (
+            <section key={`section-${mode}-${section.id}`} className="space-y-1.5">
+                {(mode === 'mobile' || !isSidebarCollapsed) && (
+                    <div className="px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        {section.label}
+                    </div>
+                )}
+                <div className="space-y-1">
+                    {section.items.map((item) => (
+                        <NavLink
+                            key={`${mode}-item-${item.id}`}
+                            to={item.path}
+                            end={item.path === '/admin/ai-benchmark'}
+                            title={isSidebarCollapsed && mode === 'desktop' ? item.label : undefined}
+                            className={(nav) => mode === 'desktop'
+                                ? buildDesktopNavClass(nav, isSidebarCollapsed)
+                                : buildMobileNavClass(nav)}
+                            onClick={() => onMenuItemClick(item.id, mode)}
+                            {...getAnalyticsDebugAttributes(`admin__menu--${item.id}`)}
+                        >
+                            {itemIcon(item.icon)}
+                            {(mode === 'mobile' || !isSidebarCollapsed) && <span>{item.label}</span>}
+                        </NavLink>
+                    ))}
+                </div>
+            </section>
+        ))}
+    </>
+);
+
 export const AdminShell: React.FC<AdminShellProps> = ({
     title,
     description,
@@ -117,7 +147,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     showGlobalSearch = true,
     showDateRange = true,
 }) => {
-    const location = useLocation();
+    const routeLocation = useLocation();
     const { access, isAdmin } = useAuth();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => getStoredSidebarCollapseState());
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -150,7 +180,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
 
     useEffect(() => {
         setIsMobileSidebarOpen(false);
-    }, [location.pathname]);
+    }, [routeLocation.pathname]);
 
     useEffect(() => {
         if (!isMobileSidebarOpen) return;
@@ -188,43 +218,20 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     };
 
     const navSections = useMemo(
-        () => ADMIN_NAV_SECTIONS.map((section) => ({
-            ...section,
-            items: ADMIN_NAV_ITEMS.filter((item) => item.section === section.id),
-        })).filter((section) => section.items.length > 0),
+        () => ADMIN_NAV_SECTIONS.reduce<Array<(typeof ADMIN_NAV_SECTIONS)[number] & { items: Array<(typeof ADMIN_NAV_ITEMS)[number]> }>>((sections, section) => {
+            const items = ADMIN_NAV_ITEMS.filter((item) => item.section === section.id);
+            if (items.length > 0) {
+                sections.push({ ...section, items });
+            }
+            return sections;
+        }, []),
         []
     );
 
-    const renderNavItems = (mode: 'desktop' | 'mobile') => navSections.map((section) => (
-        <section key={`section-${mode}-${section.id}`} className="space-y-1.5">
-            {(mode === 'mobile' || !isSidebarCollapsed) && (
-                <div className="px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                    {section.label}
-                </div>
-            )}
-            <div className="space-y-1">
-                {section.items.map((item) => (
-                    <NavLink
-                        key={`${mode}-item-${item.id}`}
-                        to={item.path}
-                        end={item.path === '/admin/ai-benchmark'}
-                        title={isSidebarCollapsed && mode === 'desktop' ? item.label : undefined}
-                        className={(nav) => mode === 'desktop'
-                            ? buildDesktopNavClass(nav, isSidebarCollapsed)
-                            : buildMobileNavClass(nav)}
-                        onClick={() => {
-                            emitMenuEvent(item.id);
-                            if (mode === 'mobile') setIsMobileSidebarOpen(false);
-                        }}
-                        {...getAnalyticsDebugAttributes(`admin__menu--${item.id}`)}
-                    >
-                        {itemIcon(item.icon)}
-                        {(mode === 'mobile' || !isSidebarCollapsed) && <span>{item.label}</span>}
-                    </NavLink>
-                ))}
-            </div>
-        </section>
-    ));
+    const handleMenuItemClick = (id: string, mode: 'desktop' | 'mobile') => {
+        emitMenuEvent(id);
+        if (mode === 'mobile') setIsMobileSidebarOpen(false);
+    };
 
     return (
         <div className="min-h-dvh bg-slate-100 text-slate-900 [&_.rounded-full]:select-none">
@@ -252,7 +259,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <button
                         type="button"
                         onClick={() => setIsMobileSidebarOpen(false)}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                        className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
                         aria-label="Close navigation"
                     >
                         <X size={16} />
@@ -260,7 +267,12 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                 </div>
 
                 <div className="mt-4 flex-1 space-y-4 overflow-y-auto pr-1">
-                    {renderNavItems('mobile')}
+                    <AdminNavItems
+                        mode="mobile"
+                        sections={navSections}
+                        isSidebarCollapsed={isSidebarCollapsed}
+                        onMenuItemClick={handleMenuItemClick}
+                    />
                 </div>
 
                 {isAdmin && (
@@ -297,7 +309,12 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                         </NavLink>
 
                         <div className="mt-4 flex-1 space-y-4 overflow-y-auto pr-1">
-                            {renderNavItems('desktop')}
+                            <AdminNavItems
+                                mode="desktop"
+                                sections={navSections}
+                                isSidebarCollapsed={isSidebarCollapsed}
+                                onMenuItemClick={handleMenuItemClick}
+                            />
                         </div>
 
                         {isAdmin && (
@@ -326,7 +343,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <button
                         type="button"
                         onClick={() => setIsSidebarCollapsed((current) => !current)}
-                        className="absolute -right-4 top-6 z-50 inline-flex h-8 w-8 items-center justify-center rounded-full border border-accent-300 bg-white text-accent-700 shadow-sm hover:bg-accent-50"
+                        className="absolute -right-4 top-6 z-50 inline-flex size-8 items-center justify-center rounded-full border border-accent-300 bg-white text-accent-700 shadow-sm hover:bg-accent-50"
                         aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                         {...getAnalyticsDebugAttributes('admin__menu--collapse_toggle')}
                     >
@@ -336,20 +353,20 @@ export const AdminShell: React.FC<AdminShellProps> = ({
 
                 <main className="min-w-0 flex-1 min-h-dvh" data-tf-handoff-ready="true">
                     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
-                        <div className="grid gap-3 px-4 py-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                        <div className="grid gap-3 p-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
                             <div className="min-w-0 self-start text-left">
                                 <div className="flex items-center gap-2">
                                     <button
                                         type="button"
                                         onClick={() => setIsMobileSidebarOpen(true)}
-                                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 lg:hidden"
+                                        className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 lg:hidden"
                                         aria-label="Open navigation"
                                     >
                                         <List size={16} />
                                     </button>
                                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-700">Admin workspace</p>
                                 </div>
-                                <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">{title}</h1>
+                                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{title}</h1>
                                 {description && (
                                     <p className="mt-1 max-w-3xl text-sm text-slate-600">{description}</p>
                                 )}
@@ -358,10 +375,11 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                 {showGlobalSearch && (
                                     <div className="flex-1 w-full sm:w-auto lg:flex-none">
                                         <label className="sr-only" htmlFor="admin-global-search">Search</label>
-                                        <input
-                                            id="admin-global-search"
-                                            type="search"
-                                            value={searchValue}
+	                                        <input
+	                                            id="admin-global-search"
+	                                            type="search"
+	                                            aria-label="Search"
+	                                            value={searchValue}
                                             onChange={(event) => onSearchValueChange?.(event.target.value)}
                                             placeholder="Search"
                                             disabled={!onSearchValueChange}
@@ -426,7 +444,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                         </section>
                     )}
 
-                    <div className="px-4 py-5 md:px-6 md:py-6">
+                    <div className="px-4 py-5 md:p-6">
                         {children}
                     </div>
                 </main>

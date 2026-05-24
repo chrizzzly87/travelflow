@@ -48,7 +48,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
     return (
         <div className="h-full flex flex-col bg-gray-50 border-l border-gray-200">
             <div className="bg-white border-b border-gray-100 p-4 relative">
-                <button
+                <button type="button"
                     onClick={onClose}
                     className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500"
                     aria-label="Close selection"
@@ -57,7 +57,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                 </button>
                 <div className="pr-10">
                     <div className="text-xs font-bold uppercase tracking-wider text-accent-600">Selected Cities</div>
-                    <h2 className="text-xl font-bold text-gray-900 mt-1">{selectedCities.length} selected</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 mt-1">{selectedCities.length} selected</h2>
                     <p className="text-xs text-gray-500 mt-2">
                         Reorder the selected stops, then apply. Activities move with their city, and changed routes are reset to N/A.
                     </p>
@@ -65,7 +65,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
             </div>
 
             <div className="p-4 border-b border-gray-100 bg-white flex items-center gap-2">
-                <button
+                <button type="button"
                     onClick={() => { if (!canEdit) return; onReverse(); }}
                     disabled={!canEdit}
                     className={`px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 flex items-center gap-1.5 ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
@@ -74,7 +74,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                     <ReverseIcon size={14} />
                     Reverse Selected
                 </button>
-                <button
+                <button type="button"
                     onClick={() => { if (!canEdit) return; setOrderedCityIds(baselineOrder); }}
                     disabled={!hasCustomOrder || !canEdit}
                     className={`px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-600 ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'} disabled:opacity-40 disabled:cursor-not-allowed`}
@@ -82,7 +82,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                 >
                     Reset
                 </button>
-                <button
+                <button type="button"
                     onClick={() => { if (!canEdit) return; onApplyOrder(orderedCityIds); }}
                     disabled={!hasCustomOrder || !canEdit}
                     className={`ml-auto px-3 py-2 rounded-lg bg-accent-600 text-white text-xs font-semibold ${canEdit ? 'hover:bg-accent-700' : 'opacity-50 cursor-not-allowed'} disabled:opacity-40 disabled:cursor-not-allowed`}
@@ -104,7 +104,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                         >
                             <div className="text-xs font-bold text-gray-400 w-5 text-center">{index + 1}</div>
                             <div
-                                className="w-2.5 h-2.5 rounded-full"
+                                className="size-2.5 rounded-full"
                                 style={{ backgroundColor: colorHex }}
                             />
                             <div className="min-w-0">
@@ -112,7 +112,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                                 <div className="text-[11px] text-gray-500">{Number(city.duration.toFixed(1))} nights</div>
                             </div>
                             <div className="ml-auto flex items-center gap-1">
-                                <button
+                                <button type="button"
                                     onClick={() => moveCity(index, index - 1)}
                                     disabled={index === 0 || !canEdit}
                                     className={`p-1.5 rounded-md border border-gray-200 text-gray-500 ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'} disabled:opacity-40 disabled:cursor-not-allowed`}
@@ -120,7 +120,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                                 >
                                     <ArrowUp size={13} />
                                 </button>
-                                <button
+                                <button type="button"
                                     onClick={() => moveCity(index, index + 1)}
                                     disabled={index === orderedCityIds.length - 1 || !canEdit}
                                     className={`p-1.5 rounded-md border border-gray-200 text-gray-500 ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'} disabled:opacity-40 disabled:cursor-not-allowed`}

@@ -12,17 +12,17 @@ const CONTACT_LINK_EVENT = 'not_found__link--contact';
 
 export const NotFoundPage: React.FC = () => {
     const { t } = useTranslation('pages');
-    const location = useLocation();
-    const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    const routeLocation = useLocation();
+    const locale = extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE;
     const createTripPath = buildPath('createTrip');
     const contactPath = buildLocalizedMarketingPath('contact', locale);
 
     useEffect(() => {
         trackEvent('not_found__view', {
             locale,
-            path: `${location.pathname}${location.search}`,
+            path: `${routeLocation.pathname}${routeLocation.search}`,
         });
-    }, [locale, location.pathname, location.search]);
+    }, [locale, routeLocation.pathname, routeLocation.search]);
 
     return (
         <MarketingLayout>
@@ -47,7 +47,7 @@ export const NotFoundPage: React.FC = () => {
 
                 <div className="mt-10 flex w-full max-w-3xl flex-col items-center text-center md:mt-14">
                     <h1
-                        className="max-w-[18ch] text-2xl font-black leading-tight tracking-tight text-slate-900 md:text-5xl"
+                        className="max-w-[18ch] text-2xl font-semibold leading-tight tracking-tight text-slate-900 md:text-5xl"
                         style={{ fontFamily: 'var(--tf-font-heading)' }}
                     >
                         {t('notFound.headline')}

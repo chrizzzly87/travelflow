@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { flushSync } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Article, Clock, Tag, ArrowRight, MagnifyingGlass, GlobeHemisphereWest } from '@phosphor-icons/react';
@@ -14,6 +13,7 @@ import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
 import { AppLanguage } from '../types';
 import {
     BLOG_VIEW_TRANSITION_CLASSES,
+    commitBlogTransitionState,
     createBlogTransitionNavigationState,
     getBlogTransitionStyle,
     getBlogTransitionNavigationState,
@@ -109,13 +109,13 @@ const BlogCard: React.FC<{
             beforeTransition: () => {
                 setPendingBlogTransitionMode(useColdFallback ? 'title-only' : 'full');
                 setPendingBlogTransitionTarget(transitionTarget);
-                flushSync(() => {
+                commitBlogTransitionState(() => {
                     setIsTransitionSource(true);
                 });
             },
             type: 'blog-expand',
             update: () => {
-                flushSync(() => {
+                commitBlogTransitionState(() => {
                     navigate(postPath, {
                         state: createBlogTransitionNavigationState('list', transitionTarget),
                     });
@@ -167,7 +167,7 @@ const BlogCard: React.FC<{
                                     loading={imageLoading}
                                     fetchPriority={imageFetchPriority}
                                     onError={() => setHasImageError(true)}
-                                    className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100`}
+                                    className={`absolute inset-0 size-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100`}
                                     skipFade={!!transitionNames}
                                 />
                             </div>
@@ -184,7 +184,7 @@ const BlogCard: React.FC<{
                 </div>
                 <div className="flex flex-1 flex-col rounded-b-2xl bg-white p-5">
                     <h3
-                        className="text-base font-bold text-slate-900 group-hover:text-accent-700 transition-colors line-clamp-2"
+                        className="text-base font-semibold text-slate-900 group-hover:text-accent-700 transition-colors line-clamp-2"
                         style={
                             transitionNames
                                 ? ({
@@ -236,13 +236,13 @@ const BlogCard: React.FC<{
 
 export const BlogPage: React.FC = () => {
     const { t } = useTranslation('blog');
-    const location = useLocation();
-    const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    const routeLocation = useLocation();
+    const locale = extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE;
     const viewTransitionsEnabled = useMemo(() => supportsBlogViewTransitions(), []);
     const activeTransitionTarget = viewTransitionsEnabled ? getPendingBlogTransitionTarget() : null;
     const transitionNavigationState = useMemo(
-        () => getBlogTransitionNavigationState(location.state),
-        [location.state]
+        () => getBlogTransitionNavigationState(routeLocation.state),
+        [routeLocation.state]
     );
     const transitionTargetHint = useMemo(
         () => resolveBlogTransitionNavigationHint(transitionNavigationState, activeTransitionTarget),
@@ -326,7 +326,7 @@ export const BlogPage: React.FC = () => {
                     {t('index.pill')}
                 </span>
                 <h1
-                    className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-6xl"
+                    className="mt-5 text-4xl font-semibold tracking-tight text-slate-900 md:text-6xl"
                     style={{ fontFamily: 'var(--tf-font-heading)' }}
                 >
                     {t('index.title')}
@@ -343,9 +343,10 @@ export const BlogPage: React.FC = () => {
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div className="relative w-full md:max-w-xl">
                         <MagnifyingGlass size={18} weight="duotone" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        <input
-                            type="text"
-                            value={search}
+	                        <input
+	                            type="text"
+	                            aria-label={t('index.searchPlaceholder')}
+	                            value={search}
                             onChange={(event) => setSearch(event.target.value)}
                             placeholder={t('index.searchPlaceholder')}
                             className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200 transition-shadow"
@@ -393,7 +394,7 @@ export const BlogPage: React.FC = () => {
                 style={{ '--stagger': '160ms' } as React.CSSProperties}
             >
                 <div className="flex flex-wrap gap-2">
-                    <button
+                    <button type="button"
                         onClick={() => setSelectedTag(null)}
                         className={`rounded-full px-3.5 py-1.5 text-sm font-medium shadow-sm transition-all ${
                             selectedTag === null
@@ -404,7 +405,7 @@ export const BlogPage: React.FC = () => {
                         {t('common:buttons.all')}
                     </button>
                     {allTags.map((tag) => (
-                        <button
+                        <button type="button"
                             key={tag}
                             onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
                             className={`inline-flex items-center gap-1 rounded-full px-3.5 py-1.5 text-sm font-medium shadow-sm transition-all ${
@@ -448,9 +449,9 @@ export const BlogPage: React.FC = () => {
 
             <section className="pb-16 md:pb-24 animate-scroll-scale-in">
                 <div className="relative rounded-3xl bg-gradient-to-br from-accent-600 to-accent-800 px-8 py-14 text-center md:px-16 md:py-20 overflow-hidden">
-                    <div className="pointer-events-none absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white/10 blur-[60px]" />
+                    <div className="pointer-events-none absolute -top-20 -right-20 size-60 rounded-full bg-white/10 blur-[60px]" />
                     <h2
-                        className="relative text-3xl font-black tracking-tight text-white md:text-5xl"
+                        className="relative text-3xl font-semibold tracking-tight text-white md:text-5xl"
                         style={{ fontFamily: 'var(--tf-font-heading)' }}
                     >
                         {t('index.communityCtaTitle')}

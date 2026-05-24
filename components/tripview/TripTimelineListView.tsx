@@ -5,7 +5,8 @@ import { Hotel, MapPin } from 'lucide-react';
 
 import { TransportModeIcon } from '../TransportModeIcon';
 import { AnimatedNumber, AnimatedNumberGroup } from '../ui/animated-number';
-import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypePaletteClass } from '../ActivityTypeVisuals';
+import { ActivityTypeIcon } from '../ActivityTypeVisuals';
+import { formatActivityTypeLabel, getActivityTypePaletteClass } from '../ActivityTypeVisualsUtils';
 import { Checkbox } from '../ui/checkbox';
 import type { ITrip } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -93,16 +94,16 @@ const buildMarkdownComponents = (
     );
 
     return {
-    h1: ({ node, ...props }: any) => <h1 {...props} className={MARKDOWN_H1_CLASS} />,
-    h2: ({ node, ...props }: any) => <h2 {...props} className={MARKDOWN_H2_CLASS} />,
-    h3: ({ node, ...props }: any) => <h3 {...props} className={MARKDOWN_H3_CLASS} />,
-    a: ({ node, ...props }: any) => (
+    h1: ({ node, children, ...props }: any) => <h1 {...props} className={MARKDOWN_H1_CLASS}>{children}</h1>,
+    h2: ({ node, children, ...props }: any) => <h2 {...props} className={MARKDOWN_H2_CLASS}>{children}</h2>,
+    h3: ({ node, children, ...props }: any) => <h3 {...props} className={MARKDOWN_H3_CLASS}>{children}</h3>,
+    a: ({ node, children, ...props }: any) => (
         <a
             {...props}
             className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800"
             target="_blank"
             rel="noopener noreferrer"
-        />
+        >{children}</a>
     ),
     p: ({ node, ...props }: any) => <p {...props} className="my-1 leading-6" />,
     ul: ({ node, ...props }: any) => {
@@ -158,6 +159,9 @@ const buildMarkdownComponents = (
                         onClick={(event) => {
                             event.stopPropagation();
                         }}
+                        onKeyDown={(event) => {
+                            event.stopPropagation();
+                        }}
                         onPointerDown={(event) => {
                             event.stopPropagation();
                         }}
@@ -165,7 +169,7 @@ const buildMarkdownComponents = (
                         <Checkbox
                             checked={resolvedChecked}
                             disabled={!onToggleTaskCheckbox}
-                            className="mt-0.5 h-4 w-4 shrink-0"
+                            className="mt-0.5 size-4 shrink-0"
                             aria-label={resolvedChecked ? 'Completed task' : 'Open task'}
                             onClick={(event) => {
                                 event.stopPropagation();
@@ -267,10 +271,10 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
 
     const showCountryRooftitle = useMemo(() => {
         const countryLabels = new Set(
-            model.sections
-                .map((section) => section.city.countryName?.trim() || section.city.countryCode?.trim() || '')
-                .map((value) => value.toLowerCase())
-                .filter(Boolean),
+            model.sections.flatMap((section) => {
+                const value = section.city.countryName?.trim() || section.city.countryCode?.trim() || '';
+                return value ? [value.toLowerCase()] : [];
+            }),
         );
         return countryLabels.size > 1;
     }, [model.sections]);
@@ -364,12 +368,13 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
         let activeCityId: string | null = null;
 
         for (const section of model.sections) {
-            const sectionNode = citySectionRefs.current[section.city.id];
+            const cityId = section.city.id;
+            const sectionNode = citySectionRefs.current[cityId];
             if (!sectionNode) continue;
             const sectionRect = sectionNode.getBoundingClientRect();
 
             if (sectionRect.top <= stickyAnchorTop) {
-                activeCityId = section.city.id;
+                activeCityId = cityId;
                 continue;
             }
 

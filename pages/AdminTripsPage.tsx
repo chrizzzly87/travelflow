@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowSquareOut, DotsThreeVertical, MapPin, SpinnerGap, Trash, X } from '@phosphor-icons/react';
-import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
+import { AdminShell } from '../components/admin/AdminShell';
+import type { AdminDateRange } from '../components/admin/adminShellUtils';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import { AI_MODEL_CATALOG, getDefaultCreateTripModel, sortAiModels } from '../config/aiModelCatalog';
 import {
@@ -18,7 +19,7 @@ import {
     buildTransferTargetPromptDialog,
 } from '../services/appDialogPresets';
 import { dbAdminOverrideTripCommit, dbGetTrip, dbUpsertTrip } from '../services/dbService';
-import { getTripCityStops, buildMiniMapUrl } from '../components/TripManager';
+import { getTripCityStops, buildMiniMapUrl } from '../components/profile/tripPreviewUtils';
 import type { ITrip, TripGenerationAttemptSummary, TripGenerationJobSummary, TripGenerationState } from '../types';
 import {
     Select,
@@ -41,12 +42,14 @@ import { useAppDialog } from '../components/AppDialogProvider';
 import { showAppToast } from '../components/ui/appToast';
 import {
     AdminSortHeaderButton,
+} from '../components/admin/AdminDataTable';
+import {
     ADMIN_TABLE_ROW_SURFACE_CLASS,
     ADMIN_TABLE_SORTED_CELL_CLASS,
     ADMIN_TABLE_SORTED_HEADER_CLASS,
     getAdminStickyBodyCellClass,
     getAdminStickyHeaderCellClass,
-} from '../components/admin/AdminDataTable';
+} from '../components/admin/AdminDataTableUtils';
 import {
     Table,
     TableBody,
@@ -155,13 +158,11 @@ const parseQueryMultiValue = <T extends string>(
     if (!value) return [];
     const allowSet = new Set<string>(allowedValues);
     const unique = new Set<string>();
-    value
-        .split(',')
-        .map((chunk) => chunk.trim())
-        .filter(Boolean)
-        .forEach((chunk) => {
-            if (allowSet.has(chunk)) unique.add(chunk);
-        });
+    for (const chunk of value.split(',')) {
+        const trimmed = chunk.trim();
+        if (!trimmed || !allowSet.has(trimmed)) continue;
+        unique.add(trimmed);
+    }
     return allowedValues.filter((candidate) => unique.has(candidate));
 };
 
@@ -170,8 +171,10 @@ const parseRawQueryMultiValue = (value: string | null): string[] => {
     return Array.from(new Set(
         value
             .split(',')
-            .map((chunk) => chunk.trim())
-            .filter(Boolean)
+            .flatMap((chunk) => {
+                const trimmed = chunk.trim();
+                return trimmed ? [trimmed] : [];
+            })
     ));
 };
 
@@ -431,7 +434,7 @@ const TripRowActionsMenu: React.FC<{
                 type="button"
                 onClick={() => setIsOpen((current) => !current)}
                 disabled={disabled}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Open trip actions"
             >
                 <DotsThreeVertical size={16} />
@@ -1056,7 +1059,7 @@ export const AdminTripsPage: React.FC = () => {
             }
             return 0;
         };
-        return [...visibleTrips].sort((left, right) => {
+        return Array.from(visibleTrips).sort((left, right) => {
             const base = compareBySortColumn(left, right);
             if (base === 0) return left.trip_id.localeCompare(right.trip_id);
             return sortDirection === 'asc' ? base : -base;
@@ -1817,23 +1820,23 @@ export const AdminTripsPage: React.FC = () => {
             <section className="grid gap-3 md:grid-cols-5">
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
-                    <p className="mt-2 text-2xl font-black text-slate-900"><AdminCountUpNumber value={summary.total} /></p>
+                    <p className="mt-2 text-2xl font-semibold text-slate-900"><AdminCountUpNumber value={summary.total} /></p>
                 </article>
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Active</p>
-                    <p className="mt-2 text-2xl font-black text-emerald-700"><AdminCountUpNumber value={summary.active} /></p>
+                    <p className="mt-2 text-2xl font-semibold text-emerald-700"><AdminCountUpNumber value={summary.active} /></p>
                 </article>
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Expired</p>
-                    <p className="mt-2 text-2xl font-black text-amber-700"><AdminCountUpNumber value={summary.expired} /></p>
+                    <p className="mt-2 text-2xl font-semibold text-amber-700"><AdminCountUpNumber value={summary.expired} /></p>
                 </article>
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Archived</p>
-                    <p className="mt-2 text-2xl font-black text-slate-700"><AdminCountUpNumber value={summary.archived} /></p>
+                    <p className="mt-2 text-2xl font-semibold text-slate-700"><AdminCountUpNumber value={summary.archived} /></p>
                 </article>
                 <article className="rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">Failed generation</p>
-                    <p className="mt-2 text-2xl font-black text-rose-700"><AdminCountUpNumber value={summary.failedGeneration} /></p>
+                    <p className="mt-2 text-2xl font-semibold text-rose-700"><AdminCountUpNumber value={summary.failedGeneration} /></p>
                     <button
                         type="button"
                         onClick={() => {
@@ -2233,7 +2236,7 @@ export const AdminTripsPage: React.FC = () => {
                                     <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={tripsTableColumnCount}>
                                         <span className="inline-flex items-center gap-2 font-medium">
                                             <SpinnerGap size={16} className="animate-spin text-slate-400" />
-                                            Loading trips...
+                                            Loading trips…
                                         </span>
                                     </TableCell>
                                 </TableRow>
@@ -2268,7 +2271,7 @@ export const AdminTripsPage: React.FC = () => {
                     </div>
                 </div>
                 {isSaving && (
-                    <p className="mt-2 text-xs text-slate-500">Saving changes...</p>
+                    <p className="mt-2 text-xs text-slate-500">Saving changes…</p>
                 )}
             </section>
 
@@ -2296,7 +2299,7 @@ export const AdminTripsPage: React.FC = () => {
                 >
                     <div className="flex h-full flex-col">
                         <div className="border-b border-slate-200 px-5 py-4">
-                            <h2 className="text-base font-black text-slate-900">Trip details</h2>
+                            <h2 className="text-base font-semibold text-slate-900">Trip details</h2>
                             <p className="truncate text-sm text-slate-600">
                                 {selectedTripForDrawer ? (selectedTripForDrawer.title || selectedTripForDrawer.trip_id) : 'No trip selected'}
                             </p>
@@ -2409,10 +2412,11 @@ export const AdminTripsPage: React.FC = () => {
                                             </div>
                                             <label htmlFor="trip-lifecycle-expiration" className="flex flex-col gap-1">
                                                 <span className="text-xs font-semibold text-slate-500">Expiration timestamp</span>
-                                                <input
-                                                    id="trip-lifecycle-expiration"
-                                                    type="datetime-local"
-                                                    value={drawerExpirationDraft}
+	                                                <input
+	                                                    id="trip-lifecycle-expiration"
+	                                                    type="datetime-local"
+	                                                    aria-label="Expiration timestamp"
+	                                                    value={drawerExpirationDraft}
                                                     onChange={(event) => {
                                                         setDrawerExpirationDraft(event.target.value);
                                                     }}
@@ -2439,7 +2443,7 @@ export const AdminTripsPage: React.FC = () => {
                                     
                                     {isLoadingFullTrip ? (
                                         <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-center text-sm text-slate-500">
-                                            Loading trip map and itinerary...
+                                            Loading trip map and itinerary…
                                         </div>
                                     ) : selectedFullTrip && (previewCityStops.length > 0 || previewMapUrl) ? (
                                         <div className="mt-4 flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -2466,7 +2470,7 @@ export const AdminTripsPage: React.FC = () => {
                                                                             {isStart || isEnd ? (
                                                                                 <MapPin weight="fill" size={13} className={`relative z-10 ${pinClass}`} />
                                                                             ) : (
-                                                                                <span className="relative z-10 h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                                                                                <span className="relative z-10 size-1.5 rounded-full bg-indigo-400" />
                                                                             )}
                                                                         </div>
                                                                         <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
@@ -2487,11 +2491,11 @@ export const AdminTripsPage: React.FC = () => {
                                                             <img
                                                                 src={previewMapUrl}
                                                                 alt={`Map preview for ${selectedFullTrip.title}`}
-                                                                className="h-full w-full object-cover"
+                                                                className="size-full object-cover"
                                                                 loading="lazy"
                                                             />
                                                         ) : (
-                                                            <div className="flex h-full w-full items-center justify-center text-[11px] text-gray-500">
+                                                            <div className="flex size-full items-center justify-center text-[11px] text-gray-500">
                                                                 Map preview unavailable
                                                             </div>
                                                         )}
@@ -2558,7 +2562,7 @@ export const AdminTripsPage: React.FC = () => {
                                         </dl>
                                         {isLoadingTripAttemptLogRows && (
                                             <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                                                Loading attempt history...
+                                                Loading attempt history…
                                             </div>
                                         )}
                                         {selectedTripLatestAttempt ? (
@@ -2684,7 +2688,7 @@ export const AdminTripsPage: React.FC = () => {
                                         )}
                                         {isLoadingTripGenerationJobRows && (
                                             <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                                                Loading queue/dead-letter jobs...
+                                                Loading queue/dead-letter jobs…
                                             </div>
                                         )}
                                         {selectedTripGenerationJobRows.length > 0 && (
@@ -2718,7 +2722,7 @@ export const AdminTripsPage: React.FC = () => {
                                                                 {requeueingGenerationJobId === job.id ? (
                                                                     <>
                                                                         <SpinnerGap size={12} className="mr-1 animate-spin" />
-                                                                        Requeueing...
+                                                                        Requeueing…
                                                                     </>
                                                                 ) : (
                                                                     'Requeue'
@@ -2820,7 +2824,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     disabled={!canRetryGenerationInDrawer}
                                                     className="inline-flex items-center rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-800 transition-colors hover:bg-accent-100 disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
-                                                    {isRetryingGeneration ? 'Retrying generation...' : 'Retry generation'}
+                                                    {isRetryingGeneration ? 'Retrying generation…' : 'Retry generation'}
                                                 </button>
                                             </span>
                                             <button
@@ -2933,7 +2937,7 @@ export const AdminTripsPage: React.FC = () => {
                 >
                     <div className="flex h-full flex-col">
                         <div className="border-b border-slate-200 px-5 py-4">
-                            <h2 className="text-base font-black text-slate-900">Owner details</h2>
+                            <h2 className="text-base font-semibold text-slate-900">Owner details</h2>
                             <p className="truncate text-sm text-slate-600">
                                 {selectedOwnerId
                                     ? <CopyableUuid value={selectedOwnerId} textClassName="max-w-[360px] truncate text-sm" />
@@ -2953,7 +2957,7 @@ export const AdminTripsPage: React.FC = () => {
                         <div className="flex-1 overflow-y-auto p-4">
                             {isLoadingOwnerProfile ? (
                                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                                    Loading owner profile...
+                                    Loading owner profile…
                                 </div>
                             ) : selectedOwnerProfile ? (
                                 <div className="space-y-4">

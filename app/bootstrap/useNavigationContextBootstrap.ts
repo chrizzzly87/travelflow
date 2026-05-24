@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { rememberNavigationPath } from '../../services/navigationContextService';
+import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 export const useNavigationContextBootstrap = (): void => {
-  const location = useLocation();
+  const location = useSafeRouteLocation();
 
   useEffect(() => {
     rememberNavigationPath(`${location.pathname}${location.search}`);

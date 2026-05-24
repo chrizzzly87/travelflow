@@ -54,10 +54,10 @@ const resolvePrefetchIntent = (target: EventTarget | null): PrefetchIntent | nul
 };
 
 export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps> = ({ enabled = true }) => {
-    const location = useLocation();
+    const routeLocation = useLocation();
     const prefetchEnabled = isNavPrefetchEnabled();
     const isPrefetchActive = prefetchEnabled && enabled;
-    const shouldSuppressPassiveWarmups = isFirstLoadCriticalPath(location.pathname) && !hasCompletedInitialRouteHandoff();
+    const shouldSuppressPassiveWarmups = isFirstLoadCriticalPath(routeLocation.pathname) && !hasCompletedInitialRouteHandoff();
 
     const emitPrefetchLinkHighlight = (element: Element, path: string, reason: PrefetchReason) => {
         if (typeof window === 'undefined') return;
@@ -229,15 +229,15 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
             mutationObserver.disconnect();
             observer.disconnect();
         };
-    }, [isPrefetchActive, location.pathname, shouldSuppressPassiveWarmups]);
+    }, [isPrefetchActive, routeLocation.pathname, shouldSuppressPassiveWarmups]);
 
     useEffect(() => {
         if (!isPrefetchActive) return;
         if (shouldSuppressPassiveWarmups) return;
-        const extraCandidates = collectIdleCandidatesForPath(location.pathname);
-        scheduleIdleWarmups(location.pathname, extraCandidates);
+        const extraCandidates = collectIdleCandidatesForPath(routeLocation.pathname);
+        scheduleIdleWarmups(routeLocation.pathname, extraCandidates);
         publishPrefetchStats();
-    }, [isPrefetchActive, location.pathname, shouldSuppressPassiveWarmups]);
+    }, [isPrefetchActive, routeLocation.pathname, shouldSuppressPassiveWarmups]);
 
     return null;
 };

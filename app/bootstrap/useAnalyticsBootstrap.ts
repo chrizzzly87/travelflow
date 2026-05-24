@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { initializeAnalytics, trackPageView } from '../../services/analyticsService';
+import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 export const useAnalyticsBootstrap = (): void => {
-    const location = useLocation();
+    const location = useSafeRouteLocation();
 
     useEffect(() => {
         const disposeAnalytics = initializeAnalytics();

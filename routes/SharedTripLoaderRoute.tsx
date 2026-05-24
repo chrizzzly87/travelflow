@@ -106,7 +106,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
     const { confirm: confirmDialog } = useAppDialog();
     const { t } = useTranslation(['common', 'pricing']);
     const { token } = useParams();
-    const location = useLocation();
+    const routeLocation = useLocation();
     const navigate = useNavigate();
     const { access } = useAuth();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
@@ -139,15 +139,15 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
     }, [viewSettings]);
 
     const versionId = useMemo(() => {
-        const params = new URLSearchParams(location.search);
+        const params = new URLSearchParams(routeLocation.search);
         return params.get('v');
-    }, [location.search]);
+    }, [routeLocation.search]);
 
     useDbSync(onLanguageLoaded);
 
     useEffect(() => {
         if (!token) return;
-        const loadKey = `${token}:${location.search}:${connectivitySnapshot.state}`;
+        const loadKey = `${token}:${routeLocation.search}:${connectivitySnapshot.state}`;
         if (lastLoadRef.current === loadKey) return;
         lastLoadRef.current = loadKey;
         const routeTargetKey = `${token}:${versionId || ''}`;
@@ -275,7 +275,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         };
 
         void load();
-    }, [applyRouteState, connectivitySnapshot.state, token, versionId, location.search, navigate, onTripLoaded, resetRouteState]);
+    }, [applyRouteState, connectivitySnapshot.state, token, versionId, routeLocation.search, navigate, onTripLoaded, resetRouteState]);
 
     const handleCommitShared = (updatedTrip: ITrip, view: IViewSettings | undefined, options?: CommitOptions) => {
         if (shareMode !== 'edit' || !token) return;
@@ -323,7 +323,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         const upgradeTierKey = currentTierKey === 'tier_mid' ? 'tier_premium' : 'tier_mid';
         const currentTier = PLAN_CATALOG[currentTierKey];
         const upgradeTier = PLAN_CATALOG[upgradeTierKey];
-        const currentPath = `${location.pathname}${location.search}${location.hash}`;
+        const currentPath = `${routeLocation.pathname}${routeLocation.search}${routeLocation.hash}`;
 
         trackEvent('trip_limit__dialog--view', {
             source: 'shared_trip',
@@ -398,7 +398,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             source: 'shared_trip_limit_dialog',
             returnTo: currentPath,
         }));
-    }, [access?.tierKey, confirmDialog, location.hash, location.pathname, location.search, navigate, resolveTierHighlights, t]);
+    }, [access?.tierKey, confirmDialog, routeLocation.hash, routeLocation.pathname, routeLocation.search, navigate, resolveTierHighlights, t]);
 
     const handleCopyTrip = async () => {
         if (!trip) return;

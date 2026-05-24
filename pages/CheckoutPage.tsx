@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { ArrowLeft, ArrowSquareOut, Check, CheckCircle, CreditCard, NotePencil, SpinnerGap, SuitcaseRolling, UserCircle, X } from '@phosphor-icons/react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -63,6 +63,25 @@ interface CheckoutProfileFormState {
     preferredLanguage: AppLanguage;
 }
 
+interface CheckoutProfileState {
+    form: CheckoutProfileFormState;
+    hydrated: boolean;
+}
+
+type CheckoutProfileAction =
+    | { type: 'hydrate'; form: CheckoutProfileFormState }
+    | { type: 'field'; key: keyof CheckoutProfileFormState; value: CheckoutProfileFormState[keyof CheckoutProfileFormState] };
+
+interface CheckoutSubscriptionState {
+    summary: BillingSubscriptionSummary | null;
+    loading: boolean;
+}
+
+type CheckoutSubscriptionAction =
+    | { type: 'reset' }
+    | { type: 'loading' }
+    | { type: 'resolved'; summary: BillingSubscriptionSummary | null };
+
 interface CheckoutStepSectionProps {
     step: number;
     state: CheckoutStepState;
@@ -78,6 +97,55 @@ const EMPTY_FORM: CheckoutProfileFormState = {
     preferredLanguage: 'en',
 };
 
+const checkoutProfileReducer = (
+    state: CheckoutProfileState,
+    action: CheckoutProfileAction,
+): CheckoutProfileState => {
+    switch (action.type) {
+        case 'hydrate':
+            if (
+                state.hydrated
+                && state.form.firstName === action.form.firstName
+                && state.form.lastName === action.form.lastName
+                && state.form.country === action.form.country
+                && state.form.city === action.form.city
+                && state.form.preferredLanguage === action.form.preferredLanguage
+            ) {
+                return state;
+            }
+            return { form: action.form, hydrated: true };
+        case 'field':
+            return {
+                ...state,
+                form: {
+                    ...state.form,
+                    [action.key]: action.value,
+                },
+            };
+        default:
+            return state;
+    }
+};
+
+const checkoutSubscriptionReducer = (
+    state: CheckoutSubscriptionState,
+    action: CheckoutSubscriptionAction,
+): CheckoutSubscriptionState => {
+    switch (action.type) {
+        case 'reset':
+            if (!state.summary && !state.loading) return state;
+            return { summary: null, loading: false };
+        case 'loading':
+            if (state.loading) return state;
+            return { ...state, loading: true };
+        case 'resolved':
+            if (state.summary === action.summary && !state.loading) return state;
+            return { summary: action.summary, loading: false };
+        default:
+            return state;
+    }
+};
+
 const PAID_TIER_ORDER: BillingCheckoutTierKey[] = ['tier_mid', 'tier_premium'];
 
 const asDisplayCount = (value: number | null, unlimitedLabel: string): string => value === null ? unlimitedLabel : String(value);
@@ -90,6 +158,11 @@ const isMissingLinkedSubscriptionError = (error: unknown): boolean =>
     error instanceof Error && error.message.includes('No paid Paddle subscription is linked');
 const isExistingSubscriptionCheckoutError = (error: unknown): boolean =>
     Boolean(error && typeof error === 'object' && (((error as BillingApiError).code === 'existing_paid_subscription') || ((error as BillingApiError).code === 'existing_paid_subscription_requires_refresh')));
+const formatCheckoutRenewalDate = (value: string): string => {
+    const parsed = Date.parse(value);
+    if (!Number.isFinite(parsed)) return value;
+    return new Date(parsed).toLocaleDateString();
+};
 
 const extractPaddleEventDiscountCode = (event: PaddleCheckoutEvent): string | null => {
     const data = asOptionalObject(event.data);
@@ -106,10 +179,10 @@ const resolveDiscountBadgeLabel = (
     lookup: BillingDiscountLookup | null,
     fallbackCode: string | null,
 ): string | null => {
-    const formatCurrency = (amount: number, currencyCode: string) => `-${new Intl.NumberFormat(locale, {
+    const formatCurrency = (amount: number, currencyCode: string) => `-${(amount / 100).toLocaleString(locale, {
         style: 'currency',
         currency: currencyCode,
-    }).format(amount / 100)}`;
+    })}`;
 
     if (lookup?.estimate?.savingsAmount && lookup.estimate.currencyCode) {
         return formatCurrency(lookup.estimate.savingsAmount, lookup.estimate.currencyCode);
@@ -153,7 +226,7 @@ const CheckoutStepSection: React.FC<CheckoutStepSectionProps> = ({ step, state, 
         <div className="flex items-start gap-4">
             <div
                 className={cn(
-                    'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
+                    'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
                     state === 'complete'
                         ? 'bg-accent-50 text-accent-700 ring-1 ring-accent-200'
                         : state === 'active'
@@ -173,7 +246,7 @@ const CheckoutStepSection: React.FC<CheckoutStepSectionProps> = ({ step, state, 
 );
 
 export const CheckoutPage: React.FC = () => {
-    const location = useLocation();
+    const routeLocation = useLocation();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation(['pricing', 'profile', 'auth']);
     const {
@@ -190,7 +263,10 @@ export const CheckoutPage: React.FC = () => {
     } = useAuth();
     const accessBilling = access?.billing ?? null;
 
-    const [form, setForm] = useState<CheckoutProfileFormState>(EMPTY_FORM);
+    const [profileState, dispatchProfile] = useReducer(checkoutProfileReducer, {
+        form: EMPTY_FORM,
+        hydrated: false,
+    });
     const [checkoutErrorMessage, setCheckoutErrorMessage] = useState<string | null>(null);
     const [authMode, setAuthMode] = useState<CheckoutAuthMode>('login');
     const [authEmail, setAuthEmail] = useState('');
@@ -204,7 +280,6 @@ export const CheckoutPage: React.FC = () => {
     const [isInlineCheckoutLoading, setIsInlineCheckoutLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAutoAcceptingSignupTerms, setIsAutoAcceptingSignupTerms] = useState(false);
-    const [hasHydratedForm, setHasHydratedForm] = useState(false);
     const [isTravelerDetailsEditing, setIsTravelerDetailsEditing] = useState(false);
     const [isTravelerDetailsSaving, setIsTravelerDetailsSaving] = useState(false);
     const [checkoutCompleted, setCheckoutCompleted] = useState(false);
@@ -213,8 +288,10 @@ export const CheckoutPage: React.FC = () => {
     const [postPaymentTripId, setPostPaymentTripId] = useState<string | null>(null);
     const [postPaymentClaimState, setPostPaymentClaimState] = useState<'idle' | 'processing' | 'ready' | 'error'>('idle');
     const [postPaymentClaimErrorMessage, setPostPaymentClaimErrorMessage] = useState<string | null>(null);
-    const [subscriptionSummary, setSubscriptionSummary] = useState<BillingSubscriptionSummary | null>(null);
-    const [isSubscriptionSummaryLoading, setIsSubscriptionSummaryLoading] = useState(false);
+    const [subscriptionState, dispatchSubscription] = useReducer(checkoutSubscriptionReducer, {
+        summary: null,
+        loading: false,
+    });
     const [upgradePreview, setUpgradePreview] = useState<BillingUpgradePreview | null>(null);
     const [isUpgradePreviewLoading, setIsUpgradePreviewLoading] = useState(false);
     const [isUpgradeSubmitting, setIsUpgradeSubmitting] = useState(false);
@@ -232,14 +309,16 @@ export const CheckoutPage: React.FC = () => {
     const travelerDetailsInitializedRef = useRef(false);
     const openedInlineTransactionRef = useRef<string | null>(null);
     const billingRepairAttemptedRef = useRef(false);
+    const { form, hydrated: hasHydratedForm } = profileState;
+    const { summary: subscriptionSummary, loading: isSubscriptionSummaryLoading } = subscriptionState;
 
     const activeLocale = useMemo(
         () => normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE),
         [i18n.language, i18n.resolvedLanguage],
     );
     const checkoutLocationContext = useMemo(
-        () => readPaddleCheckoutLocationContext(location.search),
-        [location.search],
+        () => readPaddleCheckoutLocationContext(routeLocation.search),
+        [routeLocation.search],
     );
     const selectedTierKey = isPaidTierKey(checkoutLocationContext.tierKey)
         ? checkoutLocationContext.tierKey
@@ -287,10 +366,10 @@ export const CheckoutPage: React.FC = () => {
         && form.city.trim()
     );
     const travelerDetailsLocked = isEligibleAccount && travelerDetailsValid && !isTravelerDetailsEditing;
-    const hasPendingSignupTermsAcceptance = new URLSearchParams(location.search).get('signup_accept_terms') === '1';
+    const hasPendingSignupTermsAcceptance = new URLSearchParams(routeLocation.search).get('signup_accept_terms') === '1';
     const checkoutRedirectTo = typeof window !== 'undefined'
         ? window.location.href
-        : `${location.pathname}${location.search}${location.hash}`;
+        : `${routeLocation.pathname}${routeLocation.search}${routeLocation.hash}`;
     const termsPath = useMemo(() => buildLocalizedMarketingPath('terms', activeLocale), [activeLocale]);
     const privacyPath = useMemo(() => buildLocalizedMarketingPath('privacy', activeLocale), [activeLocale]);
     const contactPath = useMemo(() => buildLocalizedMarketingPath('contact', activeLocale), [activeLocale]);
@@ -339,14 +418,16 @@ export const CheckoutPage: React.FC = () => {
     }, [disabledLabel, enabledLabel, noExpiryLabel, t, unlimitedLabel]);
 
     useEffect(() => {
-        setForm({
-            firstName: profile?.firstName || '',
-            lastName: profile?.lastName || '',
-            country: profile?.country || '',
-            city: profile?.city || '',
-            preferredLanguage: normalizeLocale(profile?.preferredLanguage || activeLocale),
+        dispatchProfile({
+            type: 'hydrate',
+            form: {
+                firstName: profile?.firstName || '',
+                lastName: profile?.lastName || '',
+                country: profile?.country || '',
+                city: profile?.city || '',
+                preferredLanguage: normalizeLocale(profile?.preferredLanguage || activeLocale),
+            },
         });
-        setHasHydratedForm(true);
     }, [activeLocale, profile]);
 
     useEffect(() => {
@@ -395,14 +476,13 @@ export const CheckoutPage: React.FC = () => {
 
     useEffect(() => {
         if (!isEligibleAccount) {
-            setSubscriptionSummary(null);
-            setIsSubscriptionSummaryLoading(false);
+            dispatchSubscription({ type: 'reset' });
             billingRepairAttemptedRef.current = false;
             return;
         }
 
         let cancelled = false;
-        setIsSubscriptionSummaryLoading(true);
+        dispatchSubscription({ type: 'loading' });
         void (async () => {
             let summary = await loadSubscriptionSummaryWithRetry();
             const shouldAttemptRepair = !billingRepairAttemptedRef.current && (
@@ -423,17 +503,12 @@ export const CheckoutPage: React.FC = () => {
                 }
             }
             if (cancelled) return;
-            setSubscriptionSummary(summary);
+            dispatchSubscription({ type: 'resolved', summary });
         })()
             .catch((error) => {
                 if (cancelled) return;
                 console.warn('Failed to load current subscription summary on checkout.', error);
-                setSubscriptionSummary(null);
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setIsSubscriptionSummaryLoading(false);
-                }
+                dispatchSubscription({ type: 'reset' });
             });
 
         return () => {
@@ -473,10 +548,10 @@ export const CheckoutPage: React.FC = () => {
     useEffect(() => {
         if (!hasPendingSignupTermsAcceptance || !isEligibleAccount || isAuthLoading || !access) return;
 
-        const cleanedParams = new URLSearchParams(location.search);
+        const cleanedParams = new URLSearchParams(routeLocation.search);
         cleanedParams.delete('signup_accept_terms');
         const cleanedSearch = cleanedParams.toString();
-        const cleanedTarget = `${location.pathname}${cleanedSearch ? `?${cleanedSearch}` : ''}${location.hash || ''}`;
+        const cleanedTarget = `${routeLocation.pathname}${cleanedSearch ? `?${cleanedSearch}` : ''}${routeLocation.hash || ''}`;
 
         if (!access.termsAcceptanceRequired) {
             navigate(cleanedTarget, { replace: true });
@@ -520,9 +595,9 @@ export const CheckoutPage: React.FC = () => {
         hasPendingSignupTermsAcceptance,
         isAuthLoading,
         isEligibleAccount,
-        location.hash,
-        location.pathname,
-        location.search,
+        routeLocation.hash,
+        routeLocation.pathname,
+        routeLocation.search,
         navigate,
         refreshAccess,
         t,
@@ -622,7 +697,7 @@ export const CheckoutPage: React.FC = () => {
                 try {
                     const refreshedSummary = await getCurrentSubscriptionSummary();
                     if (!cancelled) {
-                        setSubscriptionSummary(refreshedSummary);
+                        dispatchSubscription({ type: 'resolved', summary: refreshedSummary });
                     }
                 } catch (error) {
                     if (!cancelled) {
@@ -870,7 +945,7 @@ export const CheckoutPage: React.FC = () => {
 
     const completedPanel = checkoutCompleted ? (
         <div ref={inlineCheckoutSectionRef} className="space-y-5">
-            <div className="rounded-2xl bg-emerald-50 px-6 py-6 shadow-sm ring-1 ring-emerald-100">
+            <div className="rounded-2xl bg-emerald-50 p-6 shadow-sm ring-1 ring-emerald-100">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
                     {t('checkout.successEyebrow', { ns: 'pricing' })}
                 </p>
@@ -893,7 +968,7 @@ export const CheckoutPage: React.FC = () => {
                 ) : null}
 
                 {completedFlowMode === 'acquisition' && postPaymentSyncState === 'delayed' ? (
-                    <div className="mt-5 border-s-4 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                         <p className="font-semibold">{t('checkout.paymentSyncDelayedTitle', { ns: 'pricing' })}</p>
                         <p className="mt-1">{t('checkout.paymentSyncDelayedDescription', { ns: 'pricing' })}</p>
                     </div>
@@ -914,7 +989,7 @@ export const CheckoutPage: React.FC = () => {
                 ) : null}
 
                 {postPaymentClaimState === 'error' && postPaymentClaimErrorMessage ? (
-                    <div className="mt-5 border-s-4 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                         <p className="font-semibold">{t('checkout.successClaimNeedsAttention', { ns: 'pricing' })}</p>
                         <p className="mt-1">{postPaymentClaimErrorMessage}</p>
                     </div>
@@ -972,7 +1047,7 @@ export const CheckoutPage: React.FC = () => {
     ) : null;
 
     const setField = <K extends keyof CheckoutProfileFormState>(key: K, value: CheckoutProfileFormState[K]) => {
-        setForm((current) => ({ ...current, [key]: value }));
+        dispatchProfile({ type: 'field', key, value });
         if (checkoutErrorMessage) {
             setCheckoutErrorMessage(null);
         }
@@ -1046,7 +1121,7 @@ export const CheckoutPage: React.FC = () => {
         try {
             const repaired = await refreshCurrentPaddleSubscription();
             if (repaired.summary) {
-                setSubscriptionSummary(repaired.summary);
+                dispatchSubscription({ type: 'resolved', summary: repaired.summary });
             }
         } catch (error) {
             if (!isMissingLinkedSubscriptionError(error)) {
@@ -1069,7 +1144,7 @@ export const CheckoutPage: React.FC = () => {
 
             const refreshedSummary = await loadSubscriptionSummaryWithRetry();
             if (refreshedSummary) {
-                setSubscriptionSummary(refreshedSummary);
+                dispatchSubscription({ type: 'resolved', summary: refreshedSummary });
                 return refreshedSummary;
             }
 
@@ -1486,7 +1561,7 @@ export const CheckoutPage: React.FC = () => {
             await refreshProfile();
             try {
                 const refreshedSummary = await getCurrentSubscriptionSummary();
-                setSubscriptionSummary(refreshedSummary);
+                dispatchSubscription({ type: 'resolved', summary: refreshedSummary });
             } catch (summaryError) {
                 console.warn('Checkout upgrade subscription refresh failed.', summaryError);
             }
@@ -1564,7 +1639,7 @@ export const CheckoutPage: React.FC = () => {
                 <section className="mt-8 grid gap-10 xl:gap-16 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_440px] lg:items-start">
                     <div className="order-1 min-w-0">
                         {paddlePublicConfig?.issues.length ? (
-                            <div className="mb-6 border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                            <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                                 <p className="font-semibold">{t('checkout.errorTitle', { ns: 'pricing' })}</p>
                                 <p className="mt-1">{t('checkout.errorConfig', { ns: 'pricing' })}</p>
                             </div>
@@ -1611,9 +1686,10 @@ export const CheckoutPage: React.FC = () => {
                                             <label className="block">
                                                 <span className={checkoutFieldLabelClassName}>{t('labels.email', { ns: 'auth' })}</span>
                                                 <input
-                                                    name="email"
-                                                    type="email"
-                                                    autoComplete={authMode === 'login' ? 'username' : 'email'}
+	                                                    name="email"
+	                                                    type="email"
+	                                                    aria-label={t('labels.email', { ns: 'auth' })}
+	                                                    autoComplete={authMode === 'login' ? 'username' : 'email'}
                                                     inputMode="email"
                                                     autoCapitalize="none"
                                                     autoCorrect="off"
@@ -1627,9 +1703,10 @@ export const CheckoutPage: React.FC = () => {
                                             <label className="block">
                                                 <span className={checkoutFieldLabelClassName}>{t('labels.password', { ns: 'auth' })}</span>
                                                 <input
-                                                    name="password"
-                                                    type="password"
-                                                    autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+	                                                    name="password"
+	                                                    type="password"
+	                                                    aria-label={t('labels.password', { ns: 'auth' })}
+	                                                    autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
                                                     value={authPassword}
                                                     onChange={(event) => setAuthPassword(event.target.value)}
                                                     required
@@ -1662,7 +1739,7 @@ export const CheckoutPage: React.FC = () => {
                                         ) : null}
 
                                         {showAuthSupportMessage ? (
-                                            <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                                                 <p className="font-semibold">{t('errors.auth_unavailable_title', { ns: 'auth' })}</p>
                                                 <p className="mt-1">{t('errors.auth_unavailable_body', { ns: 'auth' })}</p>
                                                 <Link
@@ -1677,12 +1754,12 @@ export const CheckoutPage: React.FC = () => {
                                                 </Link>
                                             </div>
                                         ) : authErrorMessage ? (
-                                            <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                                                 {authErrorMessage}
                                             </div>
                                         ) : null}
                                         {authInfoMessage ? (
-                                            <div className="border-s-4 border-emerald-500 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                                                 {authInfoMessage}
                                             </div>
                                         ) : null}
@@ -1739,7 +1816,7 @@ export const CheckoutPage: React.FC = () => {
                                     </div>
 
                                     {checkoutErrorMessage ? (
-                                        <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                                             {checkoutErrorMessage}
                                         </div>
                                     ) : null}
@@ -1747,8 +1824,9 @@ export const CheckoutPage: React.FC = () => {
                                     <div className="grid gap-4 sm:grid-cols-2">
                                         <label className="block">
                                             <span className={checkoutFieldLabelClassName}>{t('settings.fields.firstName', { ns: 'profile' })}</span>
-                                            <input
-                                                value={form.firstName}
+	                                            <input
+	                                                aria-label={t('settings.fields.firstName', { ns: 'profile' })}
+	                                                value={form.firstName}
                                                 onChange={(event) => setField('firstName', event.target.value)}
                                                 autoComplete="given-name"
                                                 disabled={travelerDetailsLocked || isTravelerDetailsSaving}
@@ -1757,8 +1835,9 @@ export const CheckoutPage: React.FC = () => {
                                         </label>
                                         <label className="block">
                                             <span className={checkoutFieldLabelClassName}>{t('settings.fields.lastName', { ns: 'profile' })}</span>
-                                            <input
-                                                value={form.lastName}
+	                                            <input
+	                                                aria-label={t('settings.fields.lastName', { ns: 'profile' })}
+	                                                value={form.lastName}
                                                 onChange={(event) => setField('lastName', event.target.value)}
                                                 autoComplete="family-name"
                                                 disabled={travelerDetailsLocked || isTravelerDetailsSaving}
@@ -1783,8 +1862,9 @@ export const CheckoutPage: React.FC = () => {
                                         </div>
                                         <label className="block">
                                             <span className={checkoutFieldLabelClassName}>{t('settings.fields.city', { ns: 'profile' })}</span>
-                                            <input
-                                                value={form.city}
+	                                            <input
+	                                                aria-label={t('settings.fields.city', { ns: 'profile' })}
+	                                                value={form.city}
                                                 onChange={(event) => setField('city', event.target.value)}
                                                 autoComplete="address-level2"
                                                 disabled={travelerDetailsLocked || isTravelerDetailsSaving}
@@ -1895,7 +1975,7 @@ export const CheckoutPage: React.FC = () => {
                                     title={t('checkout.upgradeTitle', { ns: 'pricing' })}
                                 >
                                     <div className="max-w-3xl space-y-6">
-                                        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+                                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                                             <p className={checkoutSectionLabelClassName}>{t('checkout.upgradeSummaryLabel', { ns: 'pricing' })}</p>
                                             <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
                                                 <div>
@@ -1931,7 +2011,7 @@ export const CheckoutPage: React.FC = () => {
                                         </div>
 
                                         {checkoutErrorMessage ? (
-                                            <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                                                 {checkoutErrorMessage}
                                             </div>
                                         ) : null}
@@ -1969,7 +2049,7 @@ export const CheckoutPage: React.FC = () => {
                                         : t('checkout.manageBillingTitle', { ns: 'pricing' })}
                                 >
                                     <div className="max-w-3xl space-y-5">
-                                        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+                                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                                             <p className="text-sm leading-6 text-slate-600">
                                                 {isCurrentPlanFlow
                                                     ? t('checkout.currentPlanDescription', {
@@ -1980,7 +2060,7 @@ export const CheckoutPage: React.FC = () => {
                                             </p>
                                             {subscriptionSummary?.currentPeriodEnd ? (
                                                 <p className="mt-3 text-sm text-slate-500">
-                                                    {t('checkout.renewalDateLabel', { ns: 'pricing' })}: {new Date(subscriptionSummary.currentPeriodEnd).toLocaleDateString()}
+                                                    {t('checkout.renewalDateLabel', { ns: 'pricing' })}: {formatCheckoutRenewalDate(subscriptionSummary.currentPeriodEnd)}
                                                 </p>
                                             ) : null}
                                         </div>
@@ -2085,7 +2165,7 @@ export const CheckoutPage: React.FC = () => {
                                                         <button
                                                             type="button"
                                                             onClick={handleClearVoucher}
-                                                            className="inline-flex h-5 w-5 items-center justify-center rounded-full text-emerald-700 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+                                                            className="inline-flex size-5 items-center justify-center rounded-full text-emerald-700 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
                                                             aria-label={t('voucher.clearCta', { ns: 'pricing' })}
                                                             {...getAnalyticsDebugAttributes('checkout__voucher--clear')}
                                                         >
@@ -2095,9 +2175,10 @@ export const CheckoutPage: React.FC = () => {
                                                 </div>
                                             ) : (
                                                 <div className="flex gap-3">
-                                                    <input
-                                                        type="text"
-                                                        value={discountInput}
+	                                                    <input
+	                                                        type="text"
+	                                                        aria-label={t('voucher.placeholder', { ns: 'pricing' })}
+	                                                        value={discountInput}
                                                         onChange={(event) => handleDiscountInputChange(event.target.value)}
                                                         placeholder={t('voucher.placeholder', { ns: 'pricing' })}
                                                         autoCapitalize="characters"

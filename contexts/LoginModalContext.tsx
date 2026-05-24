@@ -1,6 +1,7 @@
 import React, { createContext, Suspense, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useSafeRouteLocation } from '../hooks/useSafeRouteLocation';
 import { trackEvent } from '../services/analyticsService';
 import {
     buildPathFromLocationParts,
@@ -53,7 +54,7 @@ const AuthModal = lazyWithRecovery('AuthModal', () => import('../components/auth
 
 export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const navigate = useNavigate();
-    const location = useLocation();
+    const routeLocation = useSafeRouteLocation();
     const { isAuthenticated, isAnonymous, isLoading } = useAuth();
     const [state, setState] = useState<LoginModalState>(DEFAULT_MODAL_STATE);
 
@@ -66,9 +67,9 @@ export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const openLoginModal = useCallback((options?: OpenLoginModalOptions) => {
         const currentPath = buildPathFromLocationParts({
-            pathname: location.pathname,
-            search: location.search,
-            hash: location.hash,
+            pathname: routeLocation.pathname,
+            search: routeLocation.search,
+            hash: routeLocation.hash,
         });
         const nextPath = resolvePreferredNextPath(options?.nextPath, currentPath);
         rememberAuthReturnPath(nextPath);
@@ -79,7 +80,7 @@ export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             nextPath,
             reloadOnSuccess: options?.reloadOnSuccess ?? true,
         });
-    }, [location.hash, location.pathname, location.search]);
+    }, [routeLocation.hash, routeLocation.pathname, routeLocation.search]);
 
     useEffect(() => {
         if (isLoading || !isAuthenticated || isAnonymous) return;
@@ -92,9 +93,9 @@ export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         if (!pending) return;
 
         const currentPath = buildPathFromLocationParts({
-            pathname: location.pathname,
-            search: location.search,
-            hash: location.hash,
+            pathname: routeLocation.pathname,
+            search: routeLocation.search,
+            hash: routeLocation.hash,
         });
 
         if (!isSafeAuthReturnPath(pending.nextPath)) {
@@ -111,7 +112,7 @@ export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
         if (pending.nextPath === currentPath) return;
         navigate(pending.nextPath, { replace: true });
-    }, [isAnonymous, isAuthenticated, isLoading, location.hash, location.pathname, location.search, navigate]);
+    }, [isAnonymous, isAuthenticated, isLoading, routeLocation.hash, routeLocation.pathname, routeLocation.search, navigate]);
 
     const value = useMemo<LoginModalContextValue>(() => ({
         isLoginModalOpen: state.isOpen,

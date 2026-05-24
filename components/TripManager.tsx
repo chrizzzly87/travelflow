@@ -2,7 +2,6 @@ import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem } from '../types';
 import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDays, History } from 'lucide-react';
-import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
 import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
 import { DB_ENABLED, dbArchiveTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
@@ -24,8 +23,12 @@ import {
   getTripCityStops,
   getTripDateRange,
 } from './profile/tripPreviewUtils';
-
-export { buildMiniMapUrl, getTripCityStops } from './profile/tripPreviewUtils';
+import {
+  type CountryCacheStore,
+  readTripManagerCountryCache,
+  shouldAttemptTripManagerReverseGeocode,
+  writeTripManagerCountryCache,
+} from './tripManagerUtils';
 
 interface TripManagerProps {
   isOpen: boolean;
@@ -56,42 +59,8 @@ interface CountryMatch {
   name: string;
 }
 
-type CountryCacheStore = Record<string, { countryCode: string; countryName: string }>;
-
-const COUNTRY_CACHE_KEY = 'travelflow_country_cache_v1';
 const TRIP_SKELETON_ROWS = [0, 1, 2, 3, 4, 5];
 const MAX_GEOCODE_LOOKUPS_PER_PASS = 24;
-
-export const shouldAttemptTripManagerReverseGeocode = (
-  item: Pick<ITimelineItem, 'coordinates'>,
-  hasStoredOrParsedCountry: boolean,
-  remainingLookups: number
-): boolean => {
-  if (hasStoredOrParsedCountry) return false;
-  if (remainingLookups <= 0) return false;
-  if (!item.coordinates) return false;
-  return Number.isFinite(item.coordinates.lat) && Number.isFinite(item.coordinates.lng);
-};
-
-export const readTripManagerCountryCache = (): CountryCacheStore => {
-  const raw = readLocalStorageItem(COUNTRY_CACHE_KEY);
-  if (!raw) return {};
-  try {
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') return {};
-    return parsed as CountryCacheStore;
-  } catch {
-    return {};
-  }
-};
-
-export const writeTripManagerCountryCache = (cache: CountryCacheStore): void => {
-  try {
-    writeLocalStorageItem(COUNTRY_CACHE_KEY, JSON.stringify(cache));
-  } catch {
-    // ignore cache persistence failures
-  }
-};
 
 const TOOLTIP_WIDTH = 620;
 const TOOLTIP_MIN_HEIGHT = 270;
@@ -178,8 +147,10 @@ const parseCountryFromText = (item: ITimelineItem): CountryMatch | null => {
   for (const value of values) {
     const tokens = value
       .split(/[,\-|/]/g)
-      .map(token => token.trim())
-      .filter(Boolean);
+      .flatMap((token) => {
+        const trimmed = token.trim();
+        return trimmed ? [trimmed] : [];
+      });
 
     for (let i = tokens.length - 1; i >= 0; i--) {
       const match = getCountryFromToken(tokens[i]);
@@ -242,6 +213,16 @@ const compareByUpdatedDesc = (a: ITrip, b: ITrip): number => {
 const getDaysBetween = (target: Date, base: Date): number =>
   Math.round((startOfDay(target).getTime() - startOfDay(base).getTime()) / (1000 * 60 * 60 * 24));
 
+const relativeTimeFormatterCache = new Map<AppLanguage, Intl.RelativeTimeFormat>();
+
+const getRelativeTimeFormatter = (locale: AppLanguage): Intl.RelativeTimeFormat => {
+  const cached = relativeTimeFormatterCache.get(locale);
+  if (cached) return cached;
+  const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  relativeTimeFormatterCache.set(locale, formatter);
+  return formatter;
+};
+
 const getUpcomingLabel = (trip: ITrip, locale: AppLanguage): string | null => {
   const today = startOfDay(new Date());
   const { start, end } = getTripDateRange(trip);
@@ -259,7 +240,7 @@ const getUpcomingLabel = (trip: ITrip, locale: AppLanguage): string | null => {
   const daysUntilStart = getDaysBetween(startDay, today);
   if (daysUntilStart <= 0) return 'Starting today';
 
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  const rtf = getRelativeTimeFormatter(locale);
   if (daysUntilStart < 14) {
     return rtf.format(daysUntilStart, 'day');
   }
@@ -280,7 +261,7 @@ const formatUpdatedTimestamp = (updatedAt: number, locale: AppLanguage): string 
   if (diffMs < 0) return 'Updated just now';
 
   const minutes = Math.round(diffMs / (1000 * 60));
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  const rtf = getRelativeTimeFormatter(locale);
   if (minutes < 60) return `Updated ${rtf.format(-Math.max(1, minutes), 'minute')}`;
 
   const hours = Math.round(minutes / 60);
@@ -504,7 +485,7 @@ const TripRow: React.FC<TripRowProps> = ({
         <button
           type="button"
           onClick={(e) => onDelete(e, trip.id)}
-          className="cursor-pointer p-1.5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100" aria-label="Archive trip"
+          className="cursor-pointer p-1.5 rounded-md text-rose-400 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100" aria-label="Archive trip"
         >
           <Trash2 size={14} />
         </button>
@@ -591,7 +572,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
       onMouseEnter={onHoverStart}
       onMouseLeave={onHoverEnd}
     >
-      <div className="h-full w-full rounded-xl border border-gray-200 bg-white shadow-2xl overflow-hidden flex flex-col">
+      <div className="size-full rounded-xl border border-gray-200 bg-white shadow-2xl overflow-hidden flex flex-col">
         <div className="px-3.5 py-3 border-b border-gray-100">
           <div className="flex items-center justify-between gap-3">
             <div className="text-sm font-semibold text-gray-800 truncate">{trip.title}</div>
@@ -645,7 +626,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
                         {isStart || isEnd ? (
                           <MapPin size={13} className={`relative z-10 ${pinClass}`} />
                         ) : (
-                          <span className="relative z-10 h-1.5 w-1.5 rounded-full bg-accent-400" />
+                          <span className="relative z-10 size-1.5 rounded-full bg-accent-400" />
                         )}
                       </div>
                       <div className="min-w-0 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
@@ -660,7 +641,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
           </div>
 
           <div className="p-2 bg-gray-50 min-h-0">
-            <div className="h-full w-full rounded-lg border border-gray-200 bg-gray-100 overflow-hidden relative">
+            <div className="size-full rounded-lg border border-gray-200 bg-gray-100 overflow-hidden relative">
               {shouldLoadMap ? (
                 mapUrl && !mapError ? (
                   <>
@@ -668,20 +649,20 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
                     <img
                       src={mapUrl}
                       alt={`Map preview for ${trip.title}`}
-                      className="h-full w-full object-cover"
+                      className="size-full object-cover"
                       loading="lazy"
                       onLoad={() => setMapLoaded(true)}
                       onError={() => setMapError(true)}
                     />
                   </>
                 ) : (
-                  <div className="h-full w-full flex items-center justify-center text-[11px] text-gray-500">
+                  <div className="size-full flex items-center justify-center text-[11px] text-gray-500">
                     Map preview unavailable
                   </div>
                 )
               ) : (
-                <div className="h-full w-full flex items-center justify-center text-[11px] text-gray-500">
-                  Loading preview...
+                <div className="size-full flex items-center justify-center text-[11px] text-gray-500">
+                  Loading preview…
                 </div>
               )}
             </div>
@@ -748,7 +729,7 @@ const TripListSkeleton: React.FC<{ syncing: boolean }> = ({ syncing }) => (
       <div className="h-3 w-24 rounded bg-gray-100" />
     </div>
     {TRIP_SKELETON_ROWS.map((row) => (
-      <div key={row} className="rounded-lg border border-gray-100 bg-white px-2 py-2">
+      <div key={row} className="rounded-lg border border-gray-100 bg-white p-2">
         <div className="animate-pulse">
           <div className="h-3.5 w-32 rounded bg-gray-200" />
           <div className="mt-2 h-2.5 w-48 max-w-[85%] rounded bg-gray-100" />
@@ -1217,11 +1198,11 @@ export const TripManager: React.FC<TripManagerProps> = ({
   const regularTrips = React.useMemo(() => filteredTrips.filter(trip => !trip.isFavorite), [filteredTrips]);
 
   const favoriteSortedByUpdate = React.useMemo(
-    () => [...favoriteTrips].sort(compareByUpdatedDesc),
+    () => Array.from(favoriteTrips).sort(compareByUpdatedDesc),
     [favoriteTrips]
   );
   const regularSortedByUpdate = React.useMemo(
-    () => [...regularTrips].sort(compareByUpdatedDesc),
+    () => Array.from(regularTrips).sort(compareByUpdatedDesc),
     [regularTrips]
   );
   const favoriteByTravelDate = React.useMemo(() => splitTripsByTravelDate(favoriteTrips), [favoriteTrips]);
@@ -1260,7 +1241,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
       >
         <button
           type="button"
-          className="h-full w-full bg-black/20 backdrop-blur-sm"
+          className="size-full bg-black/20 backdrop-blur-sm"
           onClick={onClose}
           aria-label="Close My Plans panel"
         />
@@ -1281,7 +1262,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
               <button
                 type="button"
                 onClick={() => setSortMode('updated')}
-                className={`group relative inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+                className={`group relative inline-flex size-7 items-center justify-center rounded-md transition-colors ${
                   sortMode === 'updated'
                     ? 'bg-white text-accent-600 shadow-sm'
                     : 'text-gray-400 hover:text-gray-600 hover:bg-white/80'
@@ -1293,7 +1274,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
               <button
                 type="button"
                 onClick={() => setSortMode('travelDate')}
-                className={`group relative inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+                className={`group relative inline-flex size-7 items-center justify-center rounded-md transition-colors ${
                   sortMode === 'travelDate'
                     ? 'bg-white text-accent-600 shadow-sm'
                     : 'text-gray-400 hover:text-gray-600 hover:bg-white/80'
@@ -1312,9 +1293,10 @@ export const TripManager: React.FC<TripManagerProps> = ({
         <div className="px-3 py-2 border-b border-gray-100">
           <div className="relative">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
+              <input
+                type="text"
+                aria-label="Search trips or cities"
+                value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={hideHoverNow}
               placeholder="Search trips or cities..."
@@ -1323,7 +1305,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-2 py-2 space-y-2" onScroll={hideHoverNow}>
+        <div className="flex-1 overflow-y-auto p-2 space-y-2" onScroll={hideHoverNow}>
           {showLoadingSkeleton ? (
             <TripListSkeleton syncing={isSyncingTrips} />
           ) : trips.length === 0 ? (

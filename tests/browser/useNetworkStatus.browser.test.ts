@@ -100,4 +100,41 @@ describe('hooks/useNetworkStatus', () => {
         expect(addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
         expect(removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
     });
+
+    it('clears probe pending state when offline probing is disabled during a request', async () => {
+        setNavigatorOnlineState(false);
+        let resolveProbe: ((value: unknown) => void) | null = null;
+        const fetchMock = vi.fn(() => new Promise((resolve) => {
+            resolveProbe = resolve;
+        }));
+        vi.stubGlobal('fetch', fetchMock);
+
+        const { result, rerender } = renderHook(
+            ({ probeWhileOffline }) => useNetworkStatus({
+                probeWhileOffline,
+                probeIntervalMs: 1000,
+                probePath: '/healthz',
+            }),
+            { initialProps: { probeWhileOffline: true } },
+        );
+
+        await act(async () => {
+            await Promise.resolve();
+        });
+
+        expect(result.current.isProbePending).toBe(true);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+
+        rerender({ probeWhileOffline: false });
+
+        expect(result.current.isProbePending).toBe(false);
+
+        await act(async () => {
+            resolveProbe?.({});
+            await Promise.resolve();
+        });
+
+        expect(result.current.isOnline).toBe(false);
+        expect(result.current.isProbePending).toBe(false);
+    });
 });

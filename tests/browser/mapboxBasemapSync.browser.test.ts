@@ -12,7 +12,7 @@ import {
   shouldDeferMapboxCameraSyncUntilSurfaceLoad,
   shouldRunMapboxGlobeIntro,
   stretchMapboxViewport,
-} from '../../components/maps/MapboxBasemapSync';
+} from '../../components/maps/mapboxBasemapUtils';
 
 describe('components/maps/MapboxBasemapSync', () => {
   it('detects fatal auth and restriction errors from Mapbox tile requests', () => {

@@ -24,7 +24,8 @@ import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
 import { PROFILE_ACCOUNT_STATUS_OPTIONS, PROFILE_GENDER_OPTIONS } from '../config/profileFields';
 import { buildPath } from '../config/routes';
 import { useAuth } from '../hooks/useAuth';
-import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
+import { AdminShell } from '../components/admin/AdminShell';
+import type { AdminDateRange } from '../components/admin/adminShellUtils';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import {
     adminCreateUserDirect,
@@ -65,12 +66,14 @@ import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import {
     AdminSortHeaderButton,
+} from '../components/admin/AdminDataTable';
+import {
     ADMIN_TABLE_ROW_SURFACE_CLASS,
     ADMIN_TABLE_SORTED_CELL_CLASS,
     ADMIN_TABLE_SORTED_HEADER_CLASS,
     getAdminStickyBodyCellClass,
     getAdminStickyHeaderCellClass,
-} from '../components/admin/AdminDataTable';
+} from '../components/admin/AdminDataTableUtils';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
@@ -341,15 +344,11 @@ const parseQueryMultiValue = <T extends string>(
     if (!value) return [];
     const allowSet = new Set<string>(allowedValues);
     const unique = new Set<string>();
-    value
-        .split(',')
-        .map((chunk) => chunk.trim())
-        .filter(Boolean)
-        .forEach((chunk) => {
-            if (allowSet.has(chunk)) {
-                unique.add(chunk);
-            }
-        });
+    for (const chunk of value.split(',')) {
+        const trimmed = chunk.trim();
+        if (!trimmed || !allowSet.has(trimmed)) continue;
+        unique.add(trimmed);
+    }
     return allowedValues.filter((candidate) => unique.has(candidate));
 };
 
@@ -522,8 +521,10 @@ const resolveActivationStatus = (user: AdminUserRecord): UserActivationStatus =>
         ...(Array.isArray(user.auth_providers) ? user.auth_providers : []),
         user.auth_provider || '',
     ]
-        .map((value) => value.trim().toLowerCase())
-        .filter(Boolean);
+        .flatMap((value) => {
+            const trimmed = value.trim().toLowerCase();
+            return trimmed ? [trimmed] : [];
+        });
     const hasAnonymousProvider = providerCandidates.some((provider) => provider === 'anonymous' || provider === 'anon');
     if (Boolean(user.is_anonymous) || hasAnonymousProvider) return 'anonymous';
 
@@ -997,7 +998,7 @@ const UserRowActionsMenu: React.FC<{
                 type="button"
                 onClick={() => setIsOpen((current) => !current)}
                 disabled={disabled}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Open user actions"
             >
                 <DotsThreeVertical size={16} />
@@ -1211,22 +1212,22 @@ const LoginTypeFilterMenu: React.FC<{
                     <div className="h-px bg-slate-100" />
                     <div className="space-y-0.5 p-1">
                         <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group">
-                            <div className="mr-2 flex h-4 w-4 shrink-0 items-center justify-center">
+                            <div className="mr-2 flex size-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('password')}
                                     onCheckedChange={(checked) => setLoginTypeChecked('password', Boolean(checked))}
-                                    className="h-4 w-4"
+                                    className="size-4"
                                 />
                             </div>
                             <span>Username/password</span>
                             <span className="ml-auto text-xs text-slate-500">{counts.password}</span>
                         </label>
                         <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group">
-                            <div className="mr-2 flex h-4 w-4 shrink-0 items-center justify-center">
+                            <div className="mr-2 flex size-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={socialCheckboxState}
                                     onCheckedChange={(checked) => setSocialParentChecked(Boolean(checked))}
-                                    className="h-4 w-4"
+                                    className="size-4"
                                 />
                             </div>
                             <span>Social</span>
@@ -1243,11 +1244,11 @@ const LoginTypeFilterMenu: React.FC<{
                                         key={`social-provider-filter-${option.value}`}
                                         className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-xs outline-none hover:bg-slate-100 hover:text-slate-900 group"
                                     >
-                                        <div className="mr-2 flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+                                        <div className="mr-2 flex size-3.5 shrink-0 items-center justify-center">
                                             <Checkbox
                                                 checked={checked}
                                                 onCheckedChange={() => toggleSocialProvider(option.value)}
-                                                className="h-3.5 w-3.5 rounded-[2px]"
+                                                className="size-3.5 rounded-[2px]"
                                             />
                                         </div>
                                         <Icon size={12} className="mr-1.5 text-slate-500" />
@@ -1258,11 +1259,11 @@ const LoginTypeFilterMenu: React.FC<{
                             })}
                         </div>
                         <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group">
-                            <div className="mr-2 flex h-4 w-4 shrink-0 items-center justify-center">
+                            <div className="mr-2 flex size-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('unknown')}
                                     onCheckedChange={(checked) => setLoginTypeChecked('unknown', Boolean(checked))}
-                                    className="h-4 w-4"
+                                    className="size-4"
                                 />
                             </div>
                             <span>Unknown</span>
@@ -1841,7 +1842,7 @@ export const AdminUsersPage: React.FC = () => {
             return String(user.account_status || 'active').toLowerCase();
         };
 
-        const sorted = [...filtered].sort((a, b) => {
+        const sorted = Array.from(filtered).sort((a, b) => {
             const left = getSortValue(a);
             const right = getSortValue(b);
             let base = 0;
@@ -2085,7 +2086,9 @@ export const AdminUsersPage: React.FC = () => {
     useEffect(() => {
         setSelectedUserIds((current) => {
             if (current.size === 0) return current;
-            const eligible = new Set(filteredUsers.filter((user) => isUserHardDeleteEligible(user)).map((user) => user.user_id));
+            const eligible = new Set(filteredUsers.flatMap((user) => (
+                isUserHardDeleteEligible(user) ? [user.user_id] : []
+            )));
             let changed = false;
             const next = new Set<string>();
             current.forEach((userId) => {
@@ -2809,7 +2812,7 @@ export const AdminUsersPage: React.FC = () => {
                 <section className="mb-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900">
                     <span className="inline-flex items-center gap-2 font-medium">
                         <SpinnerGap size={14} className="animate-spin" />
-                        Processing admin changes. Please wait...
+                        Processing admin changes. Please wait…
                     </span>
                 </section>
             )}
@@ -2817,14 +2820,14 @@ export const AdminUsersPage: React.FC = () => {
             <section className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Total users</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900">
+                    <p className="mt-2 text-3xl font-semibold text-slate-900">
                         <AdminCountUpNumber value={usersSummary.total} />
                     </p>
                     <p className="mt-1 text-xs text-slate-500">Within active table scope</p>
                 </article>
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Active account ratio</p>
-                    <p className="mt-2 inline-flex items-baseline gap-0.5 text-3xl font-black text-emerald-700">
+                    <p className="mt-2 inline-flex items-baseline gap-0.5 text-3xl font-semibold text-emerald-700">
                         <AdminCountUpNumber value={usersSummary.activeRatioPct} />
                         <span className="text-xl">%</span>
                     </p>
@@ -2834,7 +2837,7 @@ export const AdminUsersPage: React.FC = () => {
                 </article>
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Pending activation</p>
-                    <p className="mt-2 text-3xl font-black text-amber-700">
+                    <p className="mt-2 text-3xl font-semibold text-amber-700">
                         <AdminCountUpNumber value={usersSummary.pendingActivation} />
                     </p>
                     <p className="mt-1 text-xs text-slate-500">{usersSummary.pendingRatioPct}% of visible users</p>
@@ -3371,7 +3374,7 @@ export const AdminUsersPage: React.FC = () => {
                                     <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={usersTableColumnCount}>
                                         <span className="inline-flex items-center gap-2 font-medium">
                                             <SpinnerGap size={16} className="animate-spin text-slate-400" />
-                                            Loading users...
+                                            Loading users…
                                         </span>
                                     </TableCell>
                                 </TableRow>
@@ -3410,7 +3413,7 @@ export const AdminUsersPage: React.FC = () => {
                     <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-white/45 backdrop-blur-[1px]">
                         <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
                             <SpinnerGap size={13} className="animate-spin" />
-                            Applying changes...
+                            Applying changes…
                         </span>
                     </div>
                 )}
@@ -3419,7 +3422,7 @@ export const AdminUsersPage: React.FC = () => {
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogContent className="w-[min(96vw,760px)]">
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-base font-black">
+                        <DialogTitle className="flex items-center gap-2 text-base font-semibold">
                             <UserPlus size={16} className="text-accent-700" />
                             Create user
                         </DialogTitle>
@@ -3456,8 +3459,9 @@ export const AdminUsersPage: React.FC = () => {
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <label className="space-y-1 sm:col-span-2">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email</span>
-                                    <input
-                                        value={inviteDraft.email}
+	                                    <input
+	                                        aria-label="Email"
+	                                        value={inviteDraft.email}
                                         onChange={(event) => setInviteDraft((current) => ({ ...current, email: event.target.value }))}
                                         placeholder="name@example.com"
                                         className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
@@ -3465,27 +3469,29 @@ export const AdminUsersPage: React.FC = () => {
                                 </label>
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">First name</span>
-                                    <input
-                                        value={inviteDraft.firstName}
+	                                    <input
+	                                        aria-label="First name"
+	                                        value={inviteDraft.firstName}
                                         onChange={(event) => setInviteDraft((current) => ({ ...current, firstName: event.target.value }))}
                                         className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                     />
                                 </label>
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Last name</span>
-                                    <input
-                                        value={inviteDraft.lastName}
+	                                    <input
+	                                        aria-label="Last name"
+	                                        value={inviteDraft.lastName}
                                         onChange={(event) => setInviteDraft((current) => ({ ...current, lastName: event.target.value }))}
                                         className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                     />
                                 </label>
-                                <label className="space-y-1 sm:col-span-2">
+                                <div className="space-y-1 sm:col-span-2">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Starting tier</span>
                                     <Select
                                         value={inviteDraft.tierKey}
                                         onValueChange={(value) => setInviteDraft((current) => ({ ...current, tierKey: value as PlanTierKey }))}
                                     >
-                                        <SelectTrigger className="h-9">
+                                        <SelectTrigger className="h-9" aria-label="Starting tier">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -3496,7 +3502,7 @@ export const AdminUsersPage: React.FC = () => {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                </label>
+                                </div>
                                 <div className="sm:col-span-2">
                                     <button
                                         type="button"
@@ -3512,8 +3518,9 @@ export const AdminUsersPage: React.FC = () => {
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <label className="space-y-1 sm:col-span-2">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email</span>
-                                    <input
-                                        value={directDraft.email}
+	                                    <input
+	                                        aria-label="Email"
+	                                        value={directDraft.email}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, email: event.target.value }))}
                                         placeholder="name@example.com"
                                         className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
@@ -3521,37 +3528,40 @@ export const AdminUsersPage: React.FC = () => {
                                 </label>
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">First name</span>
-                                    <input
-                                        value={directDraft.firstName}
+	                                    <input
+	                                        aria-label="First name"
+	                                        value={directDraft.firstName}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, firstName: event.target.value }))}
                                         className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                     />
                                 </label>
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Last name</span>
-                                    <input
-                                        value={directDraft.lastName}
+	                                    <input
+	                                        aria-label="Last name"
+	                                        value={directDraft.lastName}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, lastName: event.target.value }))}
                                         className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                     />
                                 </label>
                                 <label className="space-y-1 sm:col-span-2">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Initial password</span>
-                                    <input
-                                        value={directDraft.password}
+	                                    <input
+	                                        aria-label="Initial password"
+	                                        value={directDraft.password}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, password: event.target.value }))}
                                         type="password"
                                         placeholder="Minimum 8 characters"
                                         className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                     />
                                 </label>
-                                <label className="space-y-1 sm:col-span-2">
+                                <div className="space-y-1 sm:col-span-2">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Starting tier</span>
                                     <Select
                                         value={directDraft.tierKey}
                                         onValueChange={(value) => setDirectDraft((current) => ({ ...current, tierKey: value as PlanTierKey }))}
                                     >
-                                        <SelectTrigger className="h-9">
+                                        <SelectTrigger className="h-9" aria-label="Starting tier">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -3562,7 +3572,7 @@ export const AdminUsersPage: React.FC = () => {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                </label>
+                                </div>
                                 <div className="sm:col-span-2">
                                     <button
                                         type="button"
@@ -3621,7 +3631,7 @@ export const AdminUsersPage: React.FC = () => {
                     ) : (
                         <div className="flex h-full flex-col">
                             <div className="border-b border-slate-200 px-5 py-4">
-                                <h2 className="text-base font-black text-slate-900">{getUserDisplayName(selectedUser)}</h2>
+                                <h2 className="text-base font-semibold text-slate-900">{getUserDisplayName(selectedUser)}</h2>
                                 <p className="truncate text-sm text-slate-600">
                                     {selectedUser.email || (
                                         <CopyableUuid
@@ -3670,24 +3680,27 @@ export const AdminUsersPage: React.FC = () => {
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">First name</span>
-                                        <input
-                                            value={profileDraft.firstName}
+	                                        <input
+	                                            aria-label="First name"
+	                                            value={profileDraft.firstName}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, firstName: event.target.value }))}
                                             className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                         />
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Last name</span>
-                                        <input
-                                            value={profileDraft.lastName}
+	                                        <input
+	                                            aria-label="Last name"
+	                                            value={profileDraft.lastName}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, lastName: event.target.value }))}
                                             className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                         />
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Username</span>
-                                        <input
-                                            value={profileDraft.username}
+	                                        <input
+	                                            aria-label="Username"
+	                                            value={profileDraft.username}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, username: event.target.value }))}
                                             className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                         />
@@ -3710,7 +3723,7 @@ export const AdminUsersPage: React.FC = () => {
                                             Revoke cooldown
                                         </button>
                                     </div>
-                                    <label className="space-y-1">
+                                    <div className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Gender</span>
                                         <Select
                                             value={profileDraft.gender || GENDER_UNSET_VALUE}
@@ -3721,7 +3734,7 @@ export const AdminUsersPage: React.FC = () => {
                                                 }));
                                             }}
                                         >
-                                            <SelectTrigger className="h-9">
+                                            <SelectTrigger className="h-9" aria-label="Gender">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -3735,8 +3748,8 @@ export const AdminUsersPage: React.FC = () => {
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                    </label>
-                                    <label className="space-y-1">
+                                    </div>
+                                    <div className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Country/Region</span>
                                         <ProfileCountryRegionSelect
                                             value={profileDraft.country}
@@ -3746,30 +3759,32 @@ export const AdminUsersPage: React.FC = () => {
                                             toggleLabel="Toggle country/region options"
                                             onValueChange={(nextCode) => setProfileDraft((current) => ({ ...current, country: nextCode }))}
                                         />
-                                    </label>
+                                    </div>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">City</span>
-                                        <input
-                                            value={profileDraft.city}
+	                                        <input
+	                                            aria-label="City"
+	                                            value={profileDraft.city}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, city: event.target.value }))}
                                             className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                         />
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preferred language</span>
-                                        <input
-                                            value={profileDraft.preferredLanguage}
+	                                        <input
+	                                            aria-label="Preferred language"
+	                                            value={profileDraft.preferredLanguage}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, preferredLanguage: event.target.value }))}
                                             className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                         />
                                     </label>
-                                    <label className="space-y-1">
+                                    <div className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Account status</span>
                                         <Select
                                             value={profileDraft.accountStatus}
                                             onValueChange={(value) => setProfileDraft((current) => ({ ...current, accountStatus: value as 'active' | 'disabled' | 'deleted' }))}
                                         >
-                                            <SelectTrigger className="h-9">
+                                            <SelectTrigger className="h-9" aria-label="Account status">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -3780,14 +3795,14 @@ export const AdminUsersPage: React.FC = () => {
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                    </label>
-                                    <label className="space-y-1">
+                                    </div>
+                                    <div className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Role</span>
                                         <Select
                                             value={profileDraft.role}
                                             onValueChange={(value) => setProfileDraft((current) => ({ ...current, role: value as 'admin' | 'user' }))}
                                         >
-                                            <SelectTrigger className="h-9">
+                                            <SelectTrigger className="h-9" aria-label="Role">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -3795,14 +3810,14 @@ export const AdminUsersPage: React.FC = () => {
                                                 <SelectItem value="admin">Admin</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                    </label>
-                                    <label className="space-y-1">
+                                    </div>
+                                    <div className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tier</span>
                                         <Select
                                             value={tierDraft}
                                             onValueChange={(value) => setTierDraft(value as PlanTierKey)}
                                         >
-                                            <SelectTrigger className="h-9">
+                                            <SelectTrigger className="h-9" aria-label="Tier">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -3813,7 +3828,7 @@ export const AdminUsersPage: React.FC = () => {
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                    </label>
+                                    </div>
                                 </div>
                                 </section>
 
@@ -3829,7 +3844,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </a>
                                 </div>
                                 <div className="grid gap-3 sm:grid-cols-2">
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Subscription status</span>
                                         <div className="mt-2 flex flex-wrap items-center gap-2">
                                             <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${subscriptionStatusPillClass(resolveUserSubscriptionStatus(selectedUser))}`}>
@@ -3843,7 +3858,7 @@ export const AdminUsersPage: React.FC = () => {
                                             Provider: {humanizeAdminBillingStatus(selectedUser.provider_status || selectedUser.subscription_status)}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Recurring amount</span>
                                         <div className="mt-2 text-sm font-semibold text-slate-900">
                                             {selectedUser.subscription_amount !== null && selectedUser.subscription_amount !== undefined
@@ -3851,23 +3866,23 @@ export const AdminUsersPage: React.FC = () => {
                                                 : '—'}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Provider subscription ID</span>
                                         <div className="mt-2 break-all font-mono text-[11px] text-slate-700">
                                             {selectedUser.provider_subscription_id || '—'}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Paddle price ID</span>
                                         <div className="mt-2 break-all font-mono text-[11px] text-slate-700">
                                             {selectedUser.provider_price_id || '—'}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current period end</span>
                                         <div className="mt-2 text-sm font-semibold text-slate-900">{formatOptionalTimestamp(selectedUser.current_period_end)}</div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Cancellation / grace</span>
                                         <div className="mt-2 space-y-1 text-xs text-slate-600">
                                             <div>Cancel at: {formatOptionalTimestamp(selectedUser.cancel_at)}</div>
@@ -3876,7 +3891,7 @@ export const AdminUsersPage: React.FC = () => {
                                             <div>Downgrades at: {formatOptionalTimestamp(resolveUserSubscriptionDowngradeAt(selectedUser))}</div>
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 sm:col-span-2">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Latest billing event</span>
                                         <div className="mt-2 grid gap-2 text-xs text-slate-600 sm:grid-cols-[minmax(0,1fr)_auto]">
                                             <div className="space-y-1">
@@ -3894,8 +3909,9 @@ export const AdminUsersPage: React.FC = () => {
                                 <p className="text-xs text-slate-500">
                                     Optional JSON object. Leave this field empty to inherit all limits from the selected tier.
                                 </p>
-                                <textarea
-                                    value={overrideDraft}
+	                                <textarea
+	                                    aria-label="Entitlement overrides"
+	                                    value={overrideDraft}
                                     onChange={(event) => setOverrideDraft(event.target.value)}
                                     placeholder={`{\n  "maxActiveTrips": 15\n}`}
                                     className="min-h-[140px] w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs"
@@ -3946,7 +3962,7 @@ export const AdminUsersPage: React.FC = () => {
                                 <section className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3">
                                 <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Connected trips</h3>
                                 {isLoadingTrips ? (
-                                    <div className="text-sm text-slate-500">Loading trips...</div>
+                                    <div className="text-sm text-slate-500">Loading trips…</div>
                                 ) : userTrips.length === 0 ? (
                                     <div className="text-sm text-slate-500">No trips owned by this user.</div>
                                 ) : (
@@ -3975,10 +3991,11 @@ export const AdminUsersPage: React.FC = () => {
                                                         </div>
                                                     </div>
                                                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                                                        <input
-                                                            key={`${trip.trip_id}-${trip.updated_at}`}
-                                                            type="datetime-local"
-                                                            defaultValue={toDateTimeInputValue(trip.trip_expires_at)}
+	                                                        <input
+	                                                            key={`${trip.trip_id}-${trip.updated_at}`}
+	                                                            type="datetime-local"
+	                                                            aria-label={`Trip expiration for ${trip.title || trip.trip_id}`}
+	                                                            defaultValue={toDateTimeInputValue(trip.trip_expires_at)}
                                                             onBlur={(event) => {
                                                                 void handleTripPatch(trip, { tripExpiresAt: fromDateTimeInputValue(event.target.value) });
                                                             }}
@@ -4059,7 +4076,7 @@ export const AdminUsersPage: React.FC = () => {
                                         </div>
                                     )}
                                     {isLoadingUserChangeLogs ? (
-                                        <div className="text-sm text-slate-500">Loading user change log...</div>
+                                        <div className="text-sm text-slate-500">Loading user change log…</div>
                                     ) : selectedUserChangeEntries.length === 0 ? (
                                         <div className="text-sm text-slate-500">No user-originated changes recorded for this account yet.</div>
                                     ) : (
@@ -4069,7 +4086,7 @@ export const AdminUsersPage: React.FC = () => {
                                                     <article key={log.id} className="rounded-lg border border-slate-200 p-3">
                                                         <div className="flex flex-wrap items-center justify-between gap-2">
                                                             <div className="text-[11px] font-semibold text-slate-500">
-                                                                {new Date(log.created_at).toLocaleString()}
+                                                                {formatTimestamp(log.created_at)}
                                                             </div>
                                                             <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${actionPresentation.className}`}>
                                                                 {actionPresentation.label}

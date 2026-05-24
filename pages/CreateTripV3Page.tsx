@@ -135,6 +135,25 @@ type ChoiceOption<TId extends string> = {
     icon: React.ComponentType<{ size?: number; weight?: 'duotone' | 'fill' | 'regular' | 'bold' | 'thin' | 'light' }>;
 };
 
+const formatChoiceSummary = <TId extends string>(
+    selectedIds: TId[],
+    options: Array<ChoiceOption<TId>>,
+    translate: (key: string) => string,
+): string => {
+    const optionsById = new Map<TId, ChoiceOption<TId>>();
+    for (const option of options) {
+        optionsById.set(option.id, option);
+    }
+    const labels: string[] = [];
+    for (const selectedId of selectedIds) {
+        const option = optionsById.get(selectedId);
+        if (option) {
+            labels.push(translate(option.labelKey));
+        }
+    }
+    return labels.join(', ');
+};
+
 type IntentOption = {
     id: CreateTripWizardBranch;
     icon: React.ComponentType<{ size?: number; weight?: 'duotone' | 'fill' | 'regular' | 'bold' | 'thin' | 'light' }>;
@@ -255,8 +274,15 @@ const toIsoDate = (date: Date): string => {
 
 const clampNumber = (value: number, min: number, max: number): number => Math.max(min, Math.min(value, max));
 
-const monthLabelsFromNumbers = (months: number[]): string[] =>
-    months.filter((month) => month >= 1 && month <= 12).map((month) => MONTH_LABELS[month - 1]);
+const monthLabelsFromNumbers = (months: number[]): string[] => {
+    const labels: string[] = [];
+    for (const month of months) {
+        if (month >= 1 && month <= 12) {
+            labels.push(MONTH_LABELS[month - 1]);
+        }
+    }
+    return labels;
+};
 
 const formatDestinationList = (destinations: string[]): string => {
     if (destinations.length === 0) return '—';
@@ -280,6 +306,220 @@ const inferWizardBranch = (params: {
         return 'known_dates_need_destination';
     }
     return 'need_inspiration';
+};
+
+type CreateTripV3InitialState = {
+    wizardBranch: CreateTripWizardBranch | null;
+    selectedCountries: string[];
+    startDestination: string;
+    dateInputMode: 'exact' | 'flex';
+    startDate: string;
+    endDate: string;
+    flexWeeks: number;
+    flexWindow: FlexWindow;
+    isRoundTrip: boolean;
+    routeLock: boolean;
+    travelerType: TravelerType;
+    soloGender: TravelerGender;
+    soloAge: string;
+    soloComfort: TravelerComfort;
+    coupleTravelerA: TravelerGender;
+    coupleTravelerB: TravelerGender;
+    coupleOccasion: CoupleOccasion;
+    friendsCount: number;
+    friendsEnergy: FriendsEnergy;
+    familyAdults: number;
+    familyChildren: number;
+    familyBabies: number;
+    selectedStyles: string[];
+    selectedVibes: string[];
+    transportModes: TransportMode[];
+    hasTransportOverride: boolean;
+    budget: BudgetType;
+    pace: PaceType;
+    specificCities: string;
+    notes: string;
+    prefillMeta: TripPrefillData['meta'] | null;
+};
+
+const buildCreateTripV3InitialState = (
+    searchParams: URLSearchParams,
+    defaultDates: ReturnType<typeof getDefaultTripDates>
+): CreateTripV3InitialState => {
+    const initialState: CreateTripV3InitialState = {
+        wizardBranch: null,
+        selectedCountries: [],
+        startDestination: '',
+        dateInputMode: 'exact',
+        startDate: defaultDates.startDate,
+        endDate: defaultDates.endDate,
+        flexWeeks: 2,
+        flexWindow: 'shoulder',
+        isRoundTrip: true,
+        routeLock: false,
+        travelerType: 'solo',
+        soloGender: '',
+        soloAge: '',
+        soloComfort: 'balanced',
+        coupleTravelerA: '',
+        coupleTravelerB: '',
+        coupleOccasion: 'none',
+        friendsCount: 4,
+        friendsEnergy: 'mixed',
+        familyAdults: 2,
+        familyChildren: 1,
+        familyBabies: 0,
+        selectedStyles: [],
+        selectedVibes: [],
+        transportModes: ['auto'],
+        hasTransportOverride: false,
+        budget: 'Medium',
+        pace: 'Balanced',
+        specificCities: '',
+        notes: '',
+        prefillMeta: null,
+    };
+
+    const raw = searchParams.get('prefill');
+    if (!raw) return initialState;
+
+    const data = decodeTripPrefill(raw);
+    if (!data) return initialState;
+
+    if (data.countries?.length) initialState.selectedCountries = data.countries;
+    if (data.startDate) initialState.startDate = data.startDate;
+    if (data.endDate) initialState.endDate = data.endDate;
+    if (data.budget) initialState.budget = data.budget as BudgetType;
+    if (data.pace) initialState.pace = data.pace as PaceType;
+    if (data.cities) initialState.specificCities = data.cities;
+    if (data.notes) initialState.notes = data.notes;
+    if (typeof data.roundTrip === 'boolean') initialState.isRoundTrip = data.roundTrip;
+    if (Array.isArray(data.styles)) {
+        const knownStyles = new Set(STYLE_CHOICES.map((entry) => entry.id));
+        initialState.selectedStyles = data.styles.filter((styleId) => knownStyles.has(styleId));
+    }
+    if (Array.isArray(data.vibes)) {
+        const knownVibes = new Set(VIBE_CHOICES.map((entry) => entry.id));
+        initialState.selectedVibes = data.vibes.filter((vibeId) => knownVibes.has(vibeId));
+    }
+
+    const safeMeta = data.meta && typeof data.meta === 'object' && !Array.isArray(data.meta)
+        ? data.meta as Record<string, unknown>
+        : null;
+    const rawDraft = safeMeta?.draft;
+    const draft = rawDraft && typeof rawDraft === 'object' && !Array.isArray(rawDraft)
+        ? rawDraft as Partial<CreateTripPrefillDraft & {
+            transportModes?: TransportMode[];
+            soloGender?: TravelerGender;
+            soloAge?: string;
+            soloComfort?: TravelerComfort;
+            coupleTravelerA?: TravelerGender;
+            coupleTravelerB?: TravelerGender;
+            coupleOccasion?: CoupleOccasion;
+            friendsCount?: number;
+            friendsEnergy?: FriendsEnergy;
+            familyAdults?: number;
+            familyChildren?: number;
+            familyBabies?: number;
+        }>
+        : null;
+
+    if (safeMeta) {
+        const label = typeof safeMeta.label === 'string' ? safeMeta.label : undefined;
+        const source = typeof safeMeta.source === 'string' ? safeMeta.source : undefined;
+        const author = typeof safeMeta.author === 'string' ? safeMeta.author : undefined;
+        if (label || source || author) {
+            initialState.prefillMeta = { label, source, author };
+        }
+    }
+
+    let resolvedDateMode: 'exact' | 'flex' = 'exact';
+    if (draft?.dateInputMode && isCreateTripDateInputMode(draft.dateInputMode)) {
+        resolvedDateMode = draft.dateInputMode;
+        initialState.dateInputMode = draft.dateInputMode;
+    }
+    if (draft && typeof draft.flexWeeks === 'number' && Number.isFinite(draft.flexWeeks)) {
+        initialState.flexWeeks = clampNumber(Math.round(draft.flexWeeks), 1, 8);
+    }
+    if (draft?.flexWindow && isCreateTripFlexWindow(draft.flexWindow)) {
+        initialState.flexWindow = draft.flexWindow;
+    }
+    if (draft && typeof draft.startDestination === 'string') {
+        initialState.startDestination = draft.startDestination;
+    }
+    if (draft && typeof draft.routeLock === 'boolean') {
+        initialState.routeLock = draft.routeLock;
+    }
+    if (draft?.travelerType && isCreateTripTravelerType(draft.travelerType)) {
+        initialState.travelerType = draft.travelerType;
+    }
+    if (Array.isArray(draft?.tripStyleTags)) {
+        const knownStyles = new Set(STYLE_CHOICES.map((entry) => entry.id));
+        initialState.selectedStyles = draft.tripStyleTags.filter((styleId) => knownStyles.has(styleId));
+    }
+    if (Array.isArray(draft?.tripVibeTags)) {
+        const knownVibes = new Set(VIBE_CHOICES.map((entry) => entry.id));
+        initialState.selectedVibes = draft.tripVibeTags.filter((vibeId) => knownVibes.has(vibeId));
+    }
+    const preferredTransportModes = Array.isArray(draft?.transportPreferences)
+        ? draft.transportPreferences
+        : draft?.transportModes;
+    if (Array.isArray(preferredTransportModes)) {
+        const validModes = preferredTransportModes.filter(isCreateTripTransportPreference);
+        if (validModes.length > 0) initialState.transportModes = validModes;
+    }
+    if (draft && typeof draft.hasTransportOverride === 'boolean') {
+        initialState.hasTransportOverride = draft.hasTransportOverride;
+    }
+
+    const travelerDraft = draft?.travelerDetails && typeof draft.travelerDetails === 'object' && !Array.isArray(draft.travelerDetails)
+        ? draft.travelerDetails
+        : {};
+
+    const soloGenderValue = travelerDraft?.soloGender ?? draft?.soloGender;
+    if (isCreateTripTravelerGender(soloGenderValue)) initialState.soloGender = soloGenderValue;
+    if (typeof (travelerDraft?.soloAge ?? draft?.soloAge) === 'string') initialState.soloAge = (travelerDraft?.soloAge ?? draft?.soloAge) as string;
+    const soloComfortValue = travelerDraft?.soloComfort ?? draft?.soloComfort;
+    if (isCreateTripTravelerComfort(soloComfortValue)) initialState.soloComfort = soloComfortValue;
+
+    const coupleTravelerAValue = travelerDraft?.coupleTravelerA ?? draft?.coupleTravelerA;
+    if (isCreateTripTravelerGender(coupleTravelerAValue)) initialState.coupleTravelerA = coupleTravelerAValue;
+    const coupleTravelerBValue = travelerDraft?.coupleTravelerB ?? draft?.coupleTravelerB;
+    if (isCreateTripTravelerGender(coupleTravelerBValue)) initialState.coupleTravelerB = coupleTravelerBValue;
+    const coupleOccasionValue = travelerDraft?.coupleOccasion ?? draft?.coupleOccasion;
+    if (isCreateTripCoupleOccasion(coupleOccasionValue)) initialState.coupleOccasion = coupleOccasionValue;
+
+    const friendsCountValue = travelerDraft?.friendsCount ?? draft?.friendsCount;
+    if (typeof friendsCountValue === 'number' && Number.isFinite(friendsCountValue)) {
+        initialState.friendsCount = clampNumber(Math.round(friendsCountValue), 2, 12);
+    }
+    const friendsEnergyValue = travelerDraft?.friendsEnergy ?? draft?.friendsEnergy;
+    if (isCreateTripFriendsEnergy(friendsEnergyValue)) initialState.friendsEnergy = friendsEnergyValue;
+
+    const familyAdultsValue = travelerDraft?.familyAdults ?? draft?.familyAdults;
+    if (typeof familyAdultsValue === 'number' && Number.isFinite(familyAdultsValue)) {
+        initialState.familyAdults = clampNumber(Math.round(familyAdultsValue), 1, 8);
+    }
+    const familyChildrenValue = travelerDraft?.familyChildren ?? draft?.familyChildren;
+    if (typeof familyChildrenValue === 'number' && Number.isFinite(familyChildrenValue)) {
+        initialState.familyChildren = clampNumber(Math.round(familyChildrenValue), 0, 8);
+    }
+    const familyBabiesValue = travelerDraft?.familyBabies ?? draft?.familyBabies;
+    if (typeof familyBabiesValue === 'number' && Number.isFinite(familyBabiesValue)) {
+        initialState.familyBabies = clampNumber(Math.round(familyBabiesValue), 0, 4);
+    }
+
+    if (draft?.wizardBranch && isCreateTripWizardBranch(draft.wizardBranch)) {
+        initialState.wizardBranch = draft.wizardBranch;
+    } else {
+        initialState.wizardBranch = inferWizardBranch({
+            countries: data.countries || [],
+            dateInputMode: resolvedDateMode,
+            hasDateRange: Boolean(data.startDate && data.endDate),
+        });
+    }
+
+    return initialState;
 };
 
 const buildPreviewTrip = (params: {
@@ -341,7 +581,7 @@ const NumberStepper: React.FC<{
                 type="button"
                 onClick={() => onChange(clampNumber(value - 1, min, max))}
                 disabled={value <= min}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
                 -
             </button>
@@ -350,7 +590,7 @@ const NumberStepper: React.FC<{
                 type="button"
                 onClick={() => onChange(clampNumber(value + 1, min, max))}
                 disabled={value >= max}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
                 +
             </button>
@@ -385,6 +625,15 @@ const StepDots: React.FC<{
     </div>
 );
 
+const createRegionDisplayNames = (locale: string): Intl.DisplayNames | null => {
+    try {
+        const RegionDisplayNames = Intl.DisplayNames;
+        return new RegionDisplayNames([locale], { type: 'region' });
+    } catch {
+        return null;
+    }
+};
+
 export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenerated, onOpenManager }) => {
     const { t, i18n } = useTranslation('createTrip');
     const navigate = useNavigate();
@@ -393,46 +642,47 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     const { isAuthenticated } = useAuth();
     const [searchParams] = useSearchParams();
     const defaultDates = getDefaultTripDates();
+    const [initialPrefillState] = useState(() => buildCreateTripV3InitialState(searchParams, defaultDates));
 
-    const [wizardBranch, setWizardBranch] = useState<CreateTripWizardBranch | null>(null);
+    const [wizardBranch, setWizardBranch] = useState<CreateTripWizardBranch | null>(initialPrefillState.wizardBranch);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
-    const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
-    const [startDestination, setStartDestination] = useState('');
-    const [dateInputMode, setDateInputMode] = useState<'exact' | 'flex'>('exact');
-    const [startDate, setStartDate] = useState(defaultDates.startDate);
-    const [endDate, setEndDate] = useState(defaultDates.endDate);
-    const [flexWeeks, setFlexWeeks] = useState(2);
-    const [flexWindow, setFlexWindow] = useState<FlexWindow>('shoulder');
-    const [isRoundTrip, setIsRoundTrip] = useState(true);
-    const [routeLock, setRouteLock] = useState(false);
+    const [selectedCountries, setSelectedCountries] = useState<string[]>(initialPrefillState.selectedCountries);
+    const [startDestination, setStartDestination] = useState(initialPrefillState.startDestination);
+    const [dateInputMode, setDateInputMode] = useState<'exact' | 'flex'>(initialPrefillState.dateInputMode);
+    const [startDate, setStartDate] = useState(initialPrefillState.startDate);
+    const [endDate, setEndDate] = useState(initialPrefillState.endDate);
+    const [flexWeeks, setFlexWeeks] = useState(initialPrefillState.flexWeeks);
+    const [flexWindow, setFlexWindow] = useState<FlexWindow>(initialPrefillState.flexWindow);
+    const [isRoundTrip, setIsRoundTrip] = useState(initialPrefillState.isRoundTrip);
+    const [routeLock, setRouteLock] = useState(initialPrefillState.routeLock);
 
-    const [travelerType, setTravelerType] = useState<TravelerType>('solo');
-    const [soloGender, setSoloGender] = useState<TravelerGender>('');
-    const [soloAge, setSoloAge] = useState('');
-    const [soloComfort, setSoloComfort] = useState<TravelerComfort>('balanced');
-    const [coupleTravelerA, setCoupleTravelerA] = useState<TravelerGender>('');
-    const [coupleTravelerB, setCoupleTravelerB] = useState<TravelerGender>('');
-    const [coupleOccasion, setCoupleOccasion] = useState<CoupleOccasion>('none');
-    const [friendsCount, setFriendsCount] = useState(4);
-    const [friendsEnergy, setFriendsEnergy] = useState<FriendsEnergy>('mixed');
-    const [familyAdults, setFamilyAdults] = useState(2);
-    const [familyChildren, setFamilyChildren] = useState(1);
-    const [familyBabies, setFamilyBabies] = useState(0);
+    const [travelerType, setTravelerType] = useState<TravelerType>(initialPrefillState.travelerType);
+    const [soloGender, setSoloGender] = useState<TravelerGender>(initialPrefillState.soloGender);
+    const [soloAge, setSoloAge] = useState(initialPrefillState.soloAge);
+    const [soloComfort, setSoloComfort] = useState<TravelerComfort>(initialPrefillState.soloComfort);
+    const [coupleTravelerA, setCoupleTravelerA] = useState<TravelerGender>(initialPrefillState.coupleTravelerA);
+    const [coupleTravelerB, setCoupleTravelerB] = useState<TravelerGender>(initialPrefillState.coupleTravelerB);
+    const [coupleOccasion, setCoupleOccasion] = useState<CoupleOccasion>(initialPrefillState.coupleOccasion);
+    const [friendsCount, setFriendsCount] = useState(initialPrefillState.friendsCount);
+    const [friendsEnergy, setFriendsEnergy] = useState<FriendsEnergy>(initialPrefillState.friendsEnergy);
+    const [familyAdults, setFamilyAdults] = useState(initialPrefillState.familyAdults);
+    const [familyChildren, setFamilyChildren] = useState(initialPrefillState.familyChildren);
+    const [familyBabies, setFamilyBabies] = useState(initialPrefillState.familyBabies);
 
-    const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
-    const [selectedVibes, setSelectedVibes] = useState<string[]>([]);
-    const [transportModes, setTransportModes] = useState<TransportMode[]>(['auto']);
-    const [hasTransportOverride, setHasTransportOverride] = useState(false);
+    const [selectedStyles, setSelectedStyles] = useState<string[]>(initialPrefillState.selectedStyles);
+    const [selectedVibes, setSelectedVibes] = useState<string[]>(initialPrefillState.selectedVibes);
+    const [transportModes, setTransportModes] = useState<TransportMode[]>(initialPrefillState.transportModes);
+    const [hasTransportOverride, setHasTransportOverride] = useState(initialPrefillState.hasTransportOverride);
 
-    const [budget, setBudget] = useState<BudgetType>('Medium');
-    const [pace, setPace] = useState<PaceType>('Balanced');
-    const [specificCities, setSpecificCities] = useState('');
-    const [notes, setNotes] = useState('');
+    const [budget, setBudget] = useState<BudgetType>(initialPrefillState.budget);
+    const [pace, setPace] = useState<PaceType>(initialPrefillState.pace);
+    const [specificCities, setSpecificCities] = useState(initialPrefillState.specificCities);
+    const [notes, setNotes] = useState(initialPrefillState.notes);
     const [enforceIslandOnly, setEnforceIslandOnly] = useState(true);
 
-    const [prefillMeta, setPrefillMeta] = useState<TripPrefillData['meta'] | null>(null);
-    const [prefillHydrated, setPrefillHydrated] = useState(false);
+    const [prefillMeta] = useState<TripPrefillData['meta'] | null>(initialPrefillState.prefillMeta);
+    const prefillHydrated = true;
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationError, setGenerationError] = useState<string | null>(null);
@@ -456,13 +706,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         await requestTripReadyNotificationPermission();
     }, [confirm, t]);
 
-    const regionDisplayNames = useMemo(() => {
-        try {
-            return new Intl.DisplayNames([i18n.language], { type: 'region' });
-        } catch {
-            return null;
-        }
-    }, [i18n.language]);
+    const regionDisplayNames = useMemo(() => createRegionDisplayNames(i18n.language), [i18n.language]);
 
     const getLocalizedCountryName = useCallback((countryCode: string | undefined, fallback: string): string => {
         if (!countryCode || countryCode.length !== 2 || !regionDisplayNames) return fallback;
@@ -492,14 +736,15 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
     const seasonCountryNames = useMemo(() => {
         const seen = new Set<string>();
-        return selectedCountries
-            .map((country) => getDestinationSeasonCountryName(country))
-            .filter((countryName) => {
-                const key = countryName.toLocaleLowerCase();
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            });
+        const countryNames: string[] = [];
+        for (const country of selectedCountries) {
+            const countryName = getDestinationSeasonCountryName(country);
+            const key = countryName.toLocaleLowerCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            countryNames.push(countryName);
+        }
+        return countryNames;
     }, [selectedCountries]);
 
     const selectedIslandNames = useMemo(
@@ -649,29 +894,17 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     }, [t, travelerDetailSummary, travelerType]);
 
     const styleSummary = useMemo(
-        () => selectedStyles
-            .map((styleId) => STYLE_CHOICES.find((entry) => entry.id === styleId))
-            .filter((entry): entry is ChoiceOption<string> => Boolean(entry))
-            .map((entry) => t(entry.labelKey))
-            .join(', '),
+        () => formatChoiceSummary(selectedStyles, STYLE_CHOICES, t),
         [selectedStyles, t]
     );
 
     const vibeSummary = useMemo(
-        () => selectedVibes
-            .map((vibeId) => VIBE_CHOICES.find((entry) => entry.id === vibeId))
-            .filter((entry): entry is ChoiceOption<string> => Boolean(entry))
-            .map((entry) => t(entry.labelKey))
-            .join(', '),
+        () => formatChoiceSummary(selectedVibes, VIBE_CHOICES, t),
         [selectedVibes, t]
     );
 
     const transportSummary = useMemo(
-        () => transportModes
-            .map((mode) => TRANSPORT_OPTIONS.find((entry) => entry.id === mode))
-            .filter((entry): entry is ChoiceOption<TransportMode> => Boolean(entry))
-            .map((entry) => t(entry.labelKey))
-            .join(', '),
+        () => formatChoiceSummary(transportModes, TRANSPORT_OPTIONS, t),
         [t, transportModes]
     );
 
@@ -848,156 +1081,6 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     }, [currentStepIndex, steps.length]);
 
     useEffect(() => {
-        const raw = searchParams.get('prefill');
-        if (!raw) {
-            setPrefillHydrated(true);
-            return;
-        }
-
-        const data = decodeTripPrefill(raw);
-        if (!data) {
-            setPrefillHydrated(true);
-            return;
-        }
-
-        if (data.countries?.length) setSelectedCountries(data.countries);
-        if (data.startDate) setStartDate(data.startDate);
-        if (data.endDate) setEndDate(data.endDate);
-        if (data.budget) setBudget(data.budget as BudgetType);
-        if (data.pace) setPace(data.pace as PaceType);
-        if (data.cities) setSpecificCities(data.cities);
-        if (data.notes) setNotes(data.notes);
-        if (typeof data.roundTrip === 'boolean') setIsRoundTrip(data.roundTrip);
-        if (Array.isArray(data.styles)) {
-            const knownStyles = new Set(STYLE_CHOICES.map((entry) => entry.id));
-            setSelectedStyles(data.styles.filter((styleId) => knownStyles.has(styleId)));
-        }
-        if (Array.isArray(data.vibes)) {
-            const knownVibes = new Set(VIBE_CHOICES.map((entry) => entry.id));
-            setSelectedVibes(data.vibes.filter((vibeId) => knownVibes.has(vibeId)));
-        }
-
-        const safeMeta = data.meta && typeof data.meta === 'object' && !Array.isArray(data.meta)
-            ? data.meta as Record<string, unknown>
-            : null;
-        const rawDraft = safeMeta?.draft;
-        const draft = rawDraft && typeof rawDraft === 'object' && !Array.isArray(rawDraft)
-            ? rawDraft as Partial<CreateTripPrefillDraft & {
-                transportModes?: TransportMode[];
-                soloGender?: TravelerGender;
-                soloAge?: string;
-                soloComfort?: TravelerComfort;
-                coupleTravelerA?: TravelerGender;
-                coupleTravelerB?: TravelerGender;
-                coupleOccasion?: CoupleOccasion;
-                friendsCount?: number;
-                friendsEnergy?: FriendsEnergy;
-                familyAdults?: number;
-                familyChildren?: number;
-                familyBabies?: number;
-            }>
-            : null;
-
-        if (safeMeta) {
-            const label = typeof safeMeta.label === 'string' ? safeMeta.label : undefined;
-            const source = typeof safeMeta.source === 'string' ? safeMeta.source : undefined;
-            const author = typeof safeMeta.author === 'string' ? safeMeta.author : undefined;
-            if (label || source || author) {
-                setPrefillMeta({ label, source, author });
-            }
-        }
-
-        let resolvedDateMode: 'exact' | 'flex' = 'exact';
-        if (draft?.dateInputMode && isCreateTripDateInputMode(draft.dateInputMode)) {
-            resolvedDateMode = draft.dateInputMode;
-            setDateInputMode(draft.dateInputMode);
-        }
-        if (draft && typeof draft.flexWeeks === 'number' && Number.isFinite(draft.flexWeeks)) {
-            setFlexWeeks(clampNumber(Math.round(draft.flexWeeks), 1, 8));
-        }
-        if (draft?.flexWindow && isCreateTripFlexWindow(draft.flexWindow)) {
-            setFlexWindow(draft.flexWindow);
-        }
-        if (draft && typeof draft.startDestination === 'string') {
-            setStartDestination(draft.startDestination);
-        }
-        if (draft && typeof draft.routeLock === 'boolean') {
-            setRouteLock(draft.routeLock);
-        }
-        if (draft?.travelerType && isCreateTripTravelerType(draft.travelerType)) {
-            setTravelerType(draft.travelerType);
-        }
-        if (Array.isArray(draft?.tripStyleTags)) {
-            const knownStyles = new Set(STYLE_CHOICES.map((entry) => entry.id));
-            setSelectedStyles(draft.tripStyleTags.filter((styleId) => knownStyles.has(styleId)));
-        }
-        if (Array.isArray(draft?.tripVibeTags)) {
-            const knownVibes = new Set(VIBE_CHOICES.map((entry) => entry.id));
-            setSelectedVibes(draft.tripVibeTags.filter((vibeId) => knownVibes.has(vibeId)));
-        }
-        const preferredTransportModes = Array.isArray(draft?.transportPreferences)
-            ? draft.transportPreferences
-            : draft?.transportModes;
-        if (Array.isArray(preferredTransportModes)) {
-            const validModes = preferredTransportModes.filter(isCreateTripTransportPreference);
-            if (validModes.length > 0) setTransportModes(validModes);
-        }
-        if (draft && typeof draft.hasTransportOverride === 'boolean') {
-            setHasTransportOverride(draft.hasTransportOverride);
-        }
-
-        const travelerDraft = draft?.travelerDetails && typeof draft.travelerDetails === 'object' && !Array.isArray(draft.travelerDetails)
-            ? draft.travelerDetails
-            : {};
-
-        const soloGenderValue = travelerDraft?.soloGender ?? draft?.soloGender;
-        if (isCreateTripTravelerGender(soloGenderValue)) setSoloGender(soloGenderValue);
-        if (typeof (travelerDraft?.soloAge ?? draft?.soloAge) === 'string') setSoloAge((travelerDraft?.soloAge ?? draft?.soloAge) as string);
-        const soloComfortValue = travelerDraft?.soloComfort ?? draft?.soloComfort;
-        if (isCreateTripTravelerComfort(soloComfortValue)) setSoloComfort(soloComfortValue);
-
-        const coupleTravelerAValue = travelerDraft?.coupleTravelerA ?? draft?.coupleTravelerA;
-        if (isCreateTripTravelerGender(coupleTravelerAValue)) setCoupleTravelerA(coupleTravelerAValue);
-        const coupleTravelerBValue = travelerDraft?.coupleTravelerB ?? draft?.coupleTravelerB;
-        if (isCreateTripTravelerGender(coupleTravelerBValue)) setCoupleTravelerB(coupleTravelerBValue);
-        const coupleOccasionValue = travelerDraft?.coupleOccasion ?? draft?.coupleOccasion;
-        if (isCreateTripCoupleOccasion(coupleOccasionValue)) setCoupleOccasion(coupleOccasionValue);
-
-        const friendsCountValue = travelerDraft?.friendsCount ?? draft?.friendsCount;
-        if (typeof friendsCountValue === 'number' && Number.isFinite(friendsCountValue)) {
-            setFriendsCount(clampNumber(Math.round(friendsCountValue), 2, 12));
-        }
-        const friendsEnergyValue = travelerDraft?.friendsEnergy ?? draft?.friendsEnergy;
-        if (isCreateTripFriendsEnergy(friendsEnergyValue)) setFriendsEnergy(friendsEnergyValue);
-
-        const familyAdultsValue = travelerDraft?.familyAdults ?? draft?.familyAdults;
-        if (typeof familyAdultsValue === 'number' && Number.isFinite(familyAdultsValue)) {
-            setFamilyAdults(clampNumber(Math.round(familyAdultsValue), 1, 8));
-        }
-        const familyChildrenValue = travelerDraft?.familyChildren ?? draft?.familyChildren;
-        if (typeof familyChildrenValue === 'number' && Number.isFinite(familyChildrenValue)) {
-            setFamilyChildren(clampNumber(Math.round(familyChildrenValue), 0, 8));
-        }
-        const familyBabiesValue = travelerDraft?.familyBabies ?? draft?.familyBabies;
-        if (typeof familyBabiesValue === 'number' && Number.isFinite(familyBabiesValue)) {
-            setFamilyBabies(clampNumber(Math.round(familyBabiesValue), 0, 4));
-        }
-
-        if (draft?.wizardBranch && isCreateTripWizardBranch(draft.wizardBranch)) {
-            setWizardBranch(draft.wizardBranch);
-        } else {
-            setWizardBranch(inferWizardBranch({
-                countries: data.countries || [],
-                dateInputMode: resolvedDateMode,
-                hasDateRange: Boolean(data.startDate && data.endDate),
-            }));
-        }
-
-        setPrefillHydrated(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useEffect(() => {
         if (typeof window === 'undefined') return;
         if (!prefillHydrated) return;
 
@@ -1095,11 +1178,14 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     ]);
 
     const setCountriesFromString = useCallback((value: string) => {
-        setSelectedCountries(
-            value
-                ? value.split(',').map((entry) => resolveDestinationName(entry.trim())).filter(Boolean)
-                : []
-        );
+        if (!value) {
+            setSelectedCountries([]);
+            return;
+        }
+        setSelectedCountries(value.split(',').flatMap((entry) => {
+            const destinationName = resolveDestinationName(entry.trim());
+            return destinationName ? [destinationName] : [];
+        }));
     }, []);
 
     const togglePopularPick = useCallback((name: string) => {
@@ -1204,7 +1290,10 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             totalNights: totalNights > 0 ? totalNights : undefined,
             budget,
             pace,
-            interests: notes.split(',').map((token) => token.trim()).filter(Boolean),
+            interests: notes.split(',').flatMap((token) => {
+                const interest = token.trim();
+                return interest ? [interest] : [];
+            }),
             notes: notes.trim() || undefined,
             specificCities: specificCities.trim() || undefined,
             dateInputMode,
@@ -1413,7 +1502,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                 <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
                     <div className="w-full max-w-xl rounded-3xl border border-accent-100 bg-white/95 px-5 py-4 shadow-xl backdrop-blur-sm">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-100 text-accent-600">
+                            <div className="flex size-10 items-center justify-center rounded-full bg-accent-100 text-accent-600">
                                 <Loader2 size={18} className="animate-spin" />
                             </div>
                             <div className="min-w-0">
@@ -1456,9 +1545,10 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('traveler.settings.age')}</label>
-                        <input
-                            type="text"
-                            value={soloAge}
+	                        <input
+	                            type="text"
+	                            aria-label={t('traveler.settings.age')}
+	                            value={soloAge}
                             onChange={(event) => setSoloAge(event.target.value)}
                             placeholder={t('traveler.settings.agePlaceholder')}
                             className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
@@ -1590,7 +1680,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                 <div className="space-y-6">
                     <div className="text-center">
                         <div className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-600">{t('wizard.intent.eyebrow')}</div>
-                        <h1 className="mt-2 text-3xl font-bold text-slate-950 sm:text-4xl">{t('wizard.intent.title')}</h1>
+                        <h1 className="mt-2 text-3xl font-semibold text-slate-950 sm:text-4xl">{t('wizard.intent.title')}</h1>
                         <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-600 sm:text-base">{t('wizard.intent.description')}</p>
                     </div>
 
@@ -1612,11 +1702,11 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                     {...getAnalyticsDebugAttributes('create_trip_wizard__branch--select', { branch: option.id })}
                                 >
                                     <div className="flex items-start justify-between gap-3">
-                                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                                        <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
                                             <Icon size={20} weight="duotone" />
                                         </span>
                                         {active && (
-                                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-accent-600 text-white">
+                                            <span className="inline-flex size-6 items-center justify-center rounded-full bg-accent-600 text-white">
                                                 <Check size={12} />
                                             </span>
                                         )}
@@ -1635,7 +1725,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="space-y-6">
                     <div className="text-center">
-                        <h2 className="text-3xl font-bold text-slate-950">{t('wizard.destination.title')}</h2>
+                        <h2 className="text-3xl font-semibold text-slate-950">{t('wizard.destination.title')}</h2>
                         <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">
                             {wizardBranch === 'known_destinations_exact_dates' || wizardBranch === 'known_destinations_flexible_dates'
                                 ? t('wizard.destination.knownDescription')
@@ -1729,7 +1819,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="space-y-6">
                     <div className="text-center">
-                        <h2 className="text-3xl font-bold text-slate-950">{t('wizard.dates.title')}</h2>
+                        <h2 className="text-3xl font-semibold text-slate-950">{t('wizard.dates.title')}</h2>
                         <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">
                             {dateModeLocked === 'exact'
                                 ? t('wizard.dates.exactDescription')
@@ -1812,7 +1902,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                             <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-600">
                                 <span
                                     className={[
-                                        'inline-block h-2.5 w-2.5 rounded-full',
+                                        'inline-block size-2.5 rounded-full',
                                         seasonQuality.quality === 'great'
                                             ? 'bg-emerald-500'
                                             : seasonQuality.quality === 'shoulder'
@@ -1836,7 +1926,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="space-y-6">
                     <div className="text-center">
-                        <h2 className="text-3xl font-bold text-slate-950">{t('wizard.preferences.title')}</h2>
+                        <h2 className="text-3xl font-semibold text-slate-950">{t('wizard.preferences.title')}</h2>
                         <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">{t('wizard.preferences.description')}</p>
                     </div>
 
@@ -1862,7 +1952,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
                     <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
                         <div className="mb-3 text-sm font-semibold text-slate-900">{travelerSummary}</div>
-                        {renderTravelerDetails()}
+                        {travelerDetailsContent}
                     </div>
 
                     <div className="space-y-3">
@@ -1877,7 +1967,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         type="button"
                                         onClick={() => toggleChip(entry.id, selectedStyles, setSelectedStyles)}
                                         className={[
-                                            'rounded-2xl border px-3 py-3 text-start transition-all',
+                                            'rounded-2xl border p-3 text-start transition-all',
                                             active
                                                 ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100'
                                                 : 'border-slate-200 bg-white text-slate-700 hover:border-accent-300 hover:bg-accent-50/60',
@@ -1905,7 +1995,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         type="button"
                                         onClick={() => toggleChip(entry.id, selectedVibes, setSelectedVibes)}
                                         className={[
-                                            'rounded-2xl border px-3 py-3 text-start transition-all',
+                                            'rounded-2xl border p-3 text-start transition-all',
                                             active
                                                 ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100'
                                                 : 'border-slate-200 bg-white text-slate-700 hover:border-accent-300 hover:bg-accent-50/60',
@@ -1933,7 +2023,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         type="button"
                                         onClick={() => toggleTransportMode(entry.id)}
                                         className={[
-                                            'rounded-2xl border px-3 py-3 text-start transition-all',
+                                            'rounded-2xl border p-3 text-start transition-all',
                                             active
                                                 ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100'
                                                 : 'border-slate-200 bg-white text-slate-700 hover:border-accent-300 hover:bg-accent-50/60',
@@ -1957,7 +2047,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="space-y-6">
                     <div className="text-center">
-                        <h2 className="text-3xl font-bold text-slate-950">{t('wizard.details.title')}</h2>
+                        <h2 className="text-3xl font-semibold text-slate-950">{t('wizard.details.title')}</h2>
                         <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">{t('wizard.details.description')}</p>
                     </div>
 
@@ -1992,9 +2082,10 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
                     <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('wizard.details.specificCitiesLabel')}</label>
-                        <input
-                            type="text"
-                            value={specificCities}
+	                        <input
+	                            type="text"
+	                            aria-label={t('wizard.details.specificCitiesLabel')}
+	                            value={specificCities}
                             onChange={(event) => setSpecificCities(event.target.value)}
                             placeholder={t('wizard.details.specificCitiesPlaceholder')}
                             className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
@@ -2003,8 +2094,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
                     <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('wizard.details.notesLabel')}</label>
-                        <textarea
-                            value={notes}
+	                        <textarea
+	                            aria-label={t('wizard.details.notesLabel')}
+	                            value={notes}
                             onChange={(event) => setNotes(event.target.value)}
                             rows={4}
                             placeholder={t('wizard.details.notesPlaceholder')}
@@ -2044,7 +2136,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         return (
             <div className="space-y-6">
                 <div className="text-center">
-                    <h2 className="text-3xl font-bold text-slate-950">{t('wizard.review.title')}</h2>
+                    <h2 className="text-3xl font-semibold text-slate-950">{t('wizard.review.title')}</h2>
                     <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">{t('wizard.review.description')}</p>
                 </div>
 
@@ -2116,6 +2208,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         );
     };
 
+    const travelerDetailsContent = renderTravelerDetails();
+    const stepContent = renderStepContent();
+
     return (
         <div className="relative isolate flex min-h-screen w-full flex-col overflow-hidden bg-slate-50">
             <HeroWebGLBackground className="z-0" />
@@ -2140,7 +2235,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                 </div>
 
                 <div className="w-full max-w-5xl rounded-[2rem] border border-white/70 bg-white/90 p-5 shadow-[0_30px_90px_rgba(15,23,42,0.12)] backdrop-blur md:p-8">
-                    {renderStepContent()}
+                    {stepContent}
 
                     {currentStepId !== 'intent' && (
                         <div className="mt-8 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">

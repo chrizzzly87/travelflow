@@ -331,7 +331,7 @@ interface TripMetaSummary {
     summaryLine: string;
 }
 
-export interface TripTravelerWarningSummary {
+interface TripTravelerWarningSummary {
     cityName: string;
     notes: string[];
 }
@@ -376,30 +376,30 @@ const buildTripMetaSummary = (trip: ITrip): TripMetaSummary => {
 
 const HEADS_UP_SECTION_REGEX = /### Heads Up\s*([\s\S]*?)(?=\n###\s|\s*$)/i;
 
-export const extractTripTravelerWarnings = (items: ITimelineItem[]): TripTravelerWarningSummary[] => (
-    items
-        .filter((item) => item.type === 'city')
-        .map((item) => {
-            const description = typeof item.description === 'string' ? item.description.trim() : '';
-            if (!description) return null;
+const extractTripTravelerWarnings = (items: ITimelineItem[]): TripTravelerWarningSummary[] => (
+    items.reduce<TripTravelerWarningSummary[]>((warnings, item) => {
+        if (item.type !== 'city') return warnings;
+        const description = typeof item.description === 'string' ? item.description.trim() : '';
+        if (!description) return warnings;
 
-            const match = description.match(HEADS_UP_SECTION_REGEX);
-            if (!match) return null;
+        const match = description.match(HEADS_UP_SECTION_REGEX);
+        if (!match) return warnings;
 
-            const notes = match[1]
-                .split('\n')
-                .map((line) => line.trim())
-                .map((line) => line.replace(/^- \[[ xX]\]\s*/, '').replace(/^-+\s*/, '').trim())
-                .filter(Boolean);
+        const notes: string[] = [];
+        for (const rawLine of match[1].split('\n')) {
+            const note = rawLine.trim().replace(/^- \[[ xX]\]\s*/, '').replace(/^-+\s*/, '').trim();
+            if (note) {
+                notes.push(note);
+            }
+        }
+        if (notes.length === 0) return warnings;
 
-            if (notes.length === 0) return null;
-
-            return {
-                cityName: item.title || item.location || 'Stop',
-                notes,
-            } satisfies TripTravelerWarningSummary;
-        })
-        .filter((warning): warning is TripTravelerWarningSummary => Boolean(warning))
+        warnings.push({
+            cityName: item.title || item.location || 'Stop',
+            notes,
+        });
+        return warnings;
+    }, [])
 );
 
 interface TripViewProps {
@@ -441,14 +441,14 @@ interface ExampleTransitionLocationState {
 }
 
 const MapLoadingFallback: React.FC = () => (
-    <div className="h-full w-full flex items-center justify-center bg-gray-100 text-xs text-gray-500">
-        Loading map...
+    <div className="size-full flex items-center justify-center bg-gray-100 text-xs text-gray-500">
+        Loading map…
     </div>
 );
 
 const MapDeferredFallback: React.FC<{ onLoadNow: () => void }> = ({ onLoadNow }) => (
-    <div className="h-full w-full flex flex-col items-center justify-center gap-3 bg-gray-100 text-xs text-gray-500">
-        <span>Preparing map...</span>
+    <div className="size-full flex flex-col items-center justify-center gap-3 bg-gray-100 text-xs text-gray-500">
+        <span>Preparing map…</span>
         <button
             type="button"
             onClick={onLoadNow}
@@ -488,7 +488,7 @@ const TripInfoModalLoadingFallback: React.FC<{ onClose: () => void }> = ({ onClo
                 <div ref={dialogRef} className="pointer-events-auto bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[84vh] sm:max-h-[88vh]">
                     <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                         <div>
-                            <h3 id="trip-info-loading-title" className="text-lg font-bold text-gray-900">Trip information</h3>
+                            <h3 id="trip-info-loading-title" className="text-lg font-semibold text-gray-900">Trip information</h3>
                             <p className="text-xs text-gray-500">Plan details, destination info, and history.</p>
                         </div>
                         <button ref={closeButtonRef} type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
@@ -918,7 +918,7 @@ const renderDetailsPanelContent = ({
     onExportActivityCalendar,
 }: RenderDetailsPanelContentOptions): React.ReactNode => (
     showSelectedCitiesPanel ? (
-        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
+        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel…</div>}>
             <SelectedCitiesPanel
                 selectedCities={selectedCitiesInTimeline}
                 onClose={onCloseSelection}
@@ -929,7 +929,7 @@ const renderDetailsPanelContent = ({
             />
         </Suspense>
     ) : (
-        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details...</div>}>
+        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details…</div>}>
             <DetailsPanel
                 item={selectedDetailItem}
                 isOpen={!!selectedItemId}
@@ -2297,7 +2297,12 @@ const useTripViewRender = ({
     }, []);
 
     useEffect(() => {
-        const cityIdSet = new Set(trip.items.filter(item => item.type === 'city').map(item => item.id));
+        const cityIdSet = new Set<string>();
+        for (const item of trip.items) {
+            if (item.type === 'city') {
+                cityIdSet.add(item.id);
+            }
+        }
 
         if (selectedCityIds.some(id => !cityIdSet.has(id))) {
             setSelectedCityIds(prev => prev.filter(id => cityIdSet.has(id)));
@@ -2312,13 +2317,16 @@ const useTripViewRender = ({
     const tripSummary = tripMeta.summaryLine;
     const isGenerationInFlight = generationState === 'running' || generationState === 'queued';
     const loadingDestinationSummary = useMemo(() => {
-        const locations = displayTrip.items
-            .filter((item) => item.type === 'city' && typeof item.location === 'string')
-            .map((item) => item.location?.trim() ?? '')
-            .filter((location) => location.length > 0);
-        const uniqueLocations = Array.from(new Set(locations));
-        if (uniqueLocations.length > 0) {
-            return uniqueLocations.join(', ');
+        const uniqueLocations = new Set<string>();
+        for (const item of displayTrip.items) {
+            if (item.type !== 'city' || typeof item.location !== 'string') continue;
+            const location = item.location.trim();
+            if (location.length > 0) {
+                uniqueLocations.add(location);
+            }
+        }
+        if (uniqueLocations.size > 0) {
+            return Array.from(uniqueLocations).join(', ');
         }
         return displayTrip.title.replace(/^Planning\s+/i, '').replace(/\.\.\.$/, '').trim() || 'Destination';
     }, [displayTrip.items, displayTrip.title]);
@@ -2818,10 +2826,11 @@ const useTripViewRender = ({
         currentZoomLevel: number,
         direction: 'in' | 'out',
     ) => {
-        const normalizedPresets = TIMELINE_ZOOM_LEVEL_PRESETS
-            .map((value) => clampZoomLevel(value))
-            .filter((value, index, values) => values.indexOf(value) === index)
-            .sort((left, right) => left - right);
+        const uniquePresets = new Set<number>();
+        for (const value of TIMELINE_ZOOM_LEVEL_PRESETS) {
+            uniquePresets.add(clampZoomLevel(value));
+        }
+        const normalizedPresets = Array.from(uniquePresets).sort((left, right) => left - right);
 
         if (direction === 'in') {
             return normalizedPresets.find((preset) => preset > (currentZoomLevel + 0.001))
@@ -3039,7 +3048,7 @@ const useTripViewRender = ({
     if (viewMode === 'print') {
         return (
             <GoogleMapsLoader language={appLanguage}>
-                <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-sm text-gray-500">Preparing print layout...</div>}>
+                <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-sm text-gray-500">Preparing print layout…</div>}>
                     <PrintLayout
                         trip={displayTrip}
                         isPaywalled={isPaywallLocked}
@@ -3292,7 +3301,7 @@ const useTripViewRender = ({
                         onCloseDetailsDrawer={closeDetailsPanel}
                         onOpenDetailsDrawer={openDetailsPanel}
                         addActivityState={addActivityState}
-                        onCloseAddActivity={() => setAddActivityState({ ...addActivityState, isOpen: false })}
+                        onCloseAddActivity={() => setAddActivityState((prev) => ({ ...prev, isOpen: false }))}
                         onAddActivity={handleAddActivityItem}
                         trip={trip}
                         isAddCityModalOpen={isAddCityModalOpen}

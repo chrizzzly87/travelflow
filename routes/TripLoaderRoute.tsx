@@ -48,13 +48,16 @@ const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => 
 };
 
 const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined => {
-    const locations = trip.items
-        .filter((item) => item.type === 'city' && typeof item.location === 'string')
-        .map((item) => item.location?.trim() ?? '')
-        .filter((location) => location.length > 0);
-    const uniqueLocations = Array.from(new Set(locations));
-    if (uniqueLocations.length === 0) return undefined;
-    return uniqueLocations.join(' || ');
+    const uniqueLocations = new Set<string>();
+    for (const item of trip.items) {
+        if (item.type !== 'city' || typeof item.location !== 'string') continue;
+        const location = item.location.trim();
+        if (location.length > 0) {
+            uniqueLocations.add(location);
+        }
+    }
+    if (uniqueLocations.size === 0) return undefined;
+    return Array.from(uniqueLocations).join(' || ');
 };
 
 const normalizeTripForRouteLoad = (trip: ITrip): ITrip => {
@@ -115,6 +118,20 @@ const resolveSharedTripPathByTripId = async (tripId: string, versionId?: string 
     }
 };
 
+interface TripLoaderRouteState {
+    viewSettings: IViewSettings | undefined;
+    tripAccess: DbTripAccess | null;
+}
+
+type TripLoaderRouteStatePatch = Partial<TripLoaderRouteState>;
+
+const hasRouteStatePatchKey = <Key extends keyof TripLoaderRouteState>(
+    patch: TripLoaderRouteStatePatch,
+    key: Key
+): patch is TripLoaderRouteStatePatch & Pick<TripLoaderRouteState, Key> => {
+    return Object.prototype.hasOwnProperty.call(patch, key);
+};
+
 export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     trip,
     onTripLoaded,
@@ -127,7 +144,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     onLanguageLoaded,
 }) => {
     const { tripId } = useParams();
-    const location = useLocation();
+    const routeLocation = useLocation();
     const navigate = useNavigate();
     const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
@@ -136,19 +153,39 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     const latestViewSettingsRef = useRef<IViewSettings | undefined>(undefined);
     const hasInSessionViewOverrideRef = useRef(false);
     const versionId = useMemo(() => {
-        const params = new URLSearchParams(location.search);
+        const params = new URLSearchParams(routeLocation.search);
         return params.get('v');
-    }, [location.search]);
+    }, [routeLocation.search]);
     const isDbVersionLookup = Boolean(versionId && isUuid(versionId));
 
-    const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
-    const [tripAccess, setTripAccess] = useState<DbTripAccess | null>(null);
+    const [routeState, setRouteState] = useState<TripLoaderRouteState>({
+        viewSettings: undefined,
+        tripAccess: null,
+    });
+    const { viewSettings, tripAccess } = routeState;
 
     useDbSync(onLanguageLoaded);
 
-    useEffect(() => {
-        latestViewSettingsRef.current = viewSettings;
-    }, [viewSettings]);
+    const updateRouteState = useCallback((patch: TripLoaderRouteStatePatch) => {
+        if (hasRouteStatePatchKey(patch, 'viewSettings')) {
+            latestViewSettingsRef.current = patch.viewSettings;
+        }
+        setRouteState((current) => {
+            const nextViewSettings = hasRouteStatePatchKey(patch, 'viewSettings')
+                ? patch.viewSettings
+                : current.viewSettings;
+            const nextTripAccess = hasRouteStatePatchKey(patch, 'tripAccess')
+                ? patch.tripAccess
+                : current.tripAccess;
+            if (areViewSettingsEqual(current.viewSettings, nextViewSettings) && current.tripAccess === nextTripAccess) {
+                return current;
+            }
+            return {
+                viewSettings: nextViewSettings,
+                tripAccess: nextTripAccess,
+            };
+        });
+    }, []);
 
     useEffect(() => {
         if (isAuthLoading) return;
@@ -163,18 +200,16 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
         const load = async () => {
             const connectivityState = connectivitySnapshot.state;
             const currentPath = buildPathFromLocationParts({
-                pathname: location.pathname,
-                search: location.search,
-                hash: location.hash,
+                pathname: routeLocation.pathname,
+                search: routeLocation.search,
+                hash: routeLocation.hash,
             });
 
             // Preserve in-session view preferences during connectivity refreshes
             // for the same route target so late loader responses cannot snap UI
             // controls (e.g. timeline mode) back to stale defaults.
             if (didRouteTargetChange) {
-                setViewSettings(undefined);
-                setTripAccess(null);
-                latestViewSettingsRef.current = undefined;
+                updateRouteState({ viewSettings: undefined, tripAccess: null });
                 hasInSessionViewOverrideRef.current = false;
             }
 
@@ -195,7 +230,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 };
                 const normalizedTrip = normalizeTripForRouteLoad(mergedTrip);
                 const effectiveView = resolveEffectiveView(view, normalizedTrip.defaultView);
-                setViewSettings(effectiveView);
+                updateRouteState({ viewSettings: effectiveView });
                 onTripLoaded(normalizedTrip, effectiveView);
                 return;
             }
@@ -211,7 +246,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                     saveTrip(normalizedLocalSnapshotTrip, { preserveUpdatedAt: true });
                     localResolvedTrip = normalizedLocalSnapshotTrip;
                     localResolvedView = resolveEffectiveView(localEntry.snapshot.view, normalizedLocalSnapshotTrip.defaultView);
-                    setViewSettings(localResolvedView);
+                    updateRouteState({ viewSettings: localResolvedView });
                     onTripLoaded(localResolvedTrip, localResolvedView);
                     return;
                 }
@@ -228,7 +263,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 }
                 localResolvedTrip = normalizedLocalTrip;
                 localResolvedView = resolveEffectiveView(versionedLocalHistoryView, normalizedLocalTrip.defaultView);
-                setViewSettings(localResolvedView);
+                updateRouteState({ viewSettings: localResolvedView });
                 onTripLoaded(normalizedLocalTrip, localResolvedView);
                 if (connectivityState === 'offline') return;
             }
@@ -240,7 +275,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 }
                 localResolvedTrip = normalizedLocalTrip;
                 localResolvedView = resolveEffectiveView(normalizedLocalTrip.defaultView, normalizedLocalTrip.defaultView);
-                setViewSettings(localResolvedView);
+                updateRouteState({ viewSettings: localResolvedView });
                 onTripLoaded(normalizedLocalTrip, localResolvedView);
                 if (connectivityState === 'offline') return;
             }
@@ -255,7 +290,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                         const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
                         const dbUpdatedAt = normalizedVersionTrip.updatedAt ?? 0;
                         if (!localResolvedTrip || dbUpdatedAt >= localUpdatedAt) {
-                            setViewSettings(resolvedView);
+                            updateRouteState({ viewSettings: resolvedView });
                             onTripLoaded(normalizedVersionTrip, resolvedView);
                         }
                         return;
@@ -271,8 +306,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                     const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
                     const dbUpdatedAt = normalizedDbTrip.updatedAt ?? 0;
                     if (!localResolvedTrip || dbUpdatedAt >= localUpdatedAt) {
-                        setTripAccess(dbTrip.access);
-                        setViewSettings(resolvedView);
+                        updateRouteState({ viewSettings: resolvedView, tripAccess: dbTrip.access });
                         onTripLoaded(normalizedDbTrip, resolvedView);
                     }
                     return;
@@ -312,27 +346,27 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     }, [
         isAuthLoading,
         isAuthenticated,
-        location.hash,
-        location.pathname,
-        location.search,
+        routeLocation.hash,
+        routeLocation.pathname,
+        routeLocation.search,
         navigate,
         onTripLoaded,
         tripId,
         versionId,
         isDbVersionLookup,
         connectivitySnapshot.state,
+        updateRouteState,
     ]);
 
     const handleRouteViewSettingsChange = useCallback((settings: IViewSettings) => {
         if (areViewSettingsEqual(latestViewSettingsRef.current, settings)) return;
         hasInSessionViewOverrideRef.current = true;
-        latestViewSettingsRef.current = settings;
-        setViewSettings(settings);
+        updateRouteState({ viewSettings: settings });
         onViewSettingsChange(settings);
         if (!DB_ENABLED || !tripId) return;
         if (tripAccess?.source === 'public_read' || tripAccess?.source === 'admin_fallback') return;
         void dbUpdateTripShareViewSettings(tripId, settings).catch(() => undefined);
-    }, [onViewSettingsChange, tripAccess?.source, tripId]);
+    }, [onViewSettingsChange, tripAccess?.source, tripId, updateRouteState]);
 
     if (!trip) {
         return <TripRouteLoadingShell variant="loadingTrip" />;
