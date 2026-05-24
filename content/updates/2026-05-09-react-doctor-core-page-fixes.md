@@ -11,9 +11,9 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 ---
 
 ## Changes
-- [x] [Fixed] 📅 Calendar-based trip dates now stay on the intended day across time zones in trip list markers and ticket previews.
-- [x] [Fixed] 🧭 Cookie, notice, homepage inspiration, and navigation links now stay smooth while loading safely.
-- [x] [Fixed] 🗺️ Minimap / floating map preview now correctly snaps, docks, and displays its rounded border and shadow styles.
+- [ ] [Fixed] 📅 Calendar-based trip dates now stay on the intended day across time zones in trip list markers and ticket previews.
+- [ ] [Fixed] 🧭 Cookie, notice, homepage inspiration, and navigation links now stay smooth while loading safely.
+- [ ] [Fixed] 🗺️ Minimap / floating map preview now correctly snaps, docks, displays its rounded border and shadow styles, and shows the minimize/maximize controls.
 - [ ] [Internal] 🩺 Cleared React Doctor error findings across the full repository scan, including hook-order, route-location dependency, and cleanup issues.
 - [ ] [Internal] 🧪 Added regression coverage for the login modal hook fallback outside its provider.
 - [ ] [Internal] 📋 Added a React Doctor remediation tracker plus future-feature score and effect-discipline guardrails.
@@ -54,4 +54,5 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] 🧮 Replaced unstable array index key bindings with stable data-derived key attributes in edge function map list elements.
 - [ ] [Internal] 🩺 Resolved accessibility, performance, and lookup issues across sharing modals, admin tools, storage services, and pane resize controls, raising the repository scan score to a perfect `100/100`.
 - [ ] [Internal] 🩺 Configured react-doctor configuration rules to ignore intentional synchronous DOM rendering blocks.
+- [ ] [Fixed] 🧯 Resolved runtime ReferenceError exceptions when loading Prism syntax highlighting in the admin benchmark, audit, and user details screens.
 

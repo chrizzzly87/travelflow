@@ -18,6 +18,10 @@ import {
     ToggleLeft,
     ToggleRight,
 } from '@phosphor-icons/react';
+import Prism from 'prismjs';
+if (typeof window !== 'undefined') {
+    (window as any).Prism = (window as any).Prism || Prism;
+}
 import 'prismjs/components/prism-json';
 import {
     AI_MODEL_CATALOG,

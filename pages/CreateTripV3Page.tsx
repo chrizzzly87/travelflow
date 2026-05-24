@@ -1489,7 +1489,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
     if (isGenerating && previewTrip) {
         return (
-            <div className="relative size-screen">
+            <div className="relative h-screen w-screen">
                 <TripView
                     trip={previewTrip}
                     onUpdateTrip={setPreviewTrip}

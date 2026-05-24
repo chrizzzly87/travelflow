@@ -243,7 +243,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     const buildMap = (mapLayoutMode: 'vertical' | 'horizontal', showLayoutControls = true) => {
         if (!isMapBootstrapEnabled) {
             return (
-                <div className="relative size-full">
+                <div className="relative h-full w-full">
                     {mapDeferredFallback}
                     <div data-floating-map-control="true" className="absolute top-4 end-4 z-[40] flex flex-col gap-2 pointer-events-none">
                         <div className="flex flex-col gap-2 pointer-events-auto">
@@ -353,9 +353,9 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     onClick={onCloseMobileMap}
                 />
             )}
-            <div className={`size-full ${isPaywallLocked ? 'pointer-events-none select-none' : ''}`}>
+            <div className={`w-full h-full ${isPaywallLocked ? 'pointer-events-none select-none' : ''}`}>
                 {isMobile ? (
-                    <div className="size-full flex flex-col">
+                    <div className="w-full h-full flex flex-col">
                         <div
                             ref={mapViewportRef}
                             data-testid="planner-mobile-map-pane"
@@ -380,7 +380,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     </div>
                 ) : (
                     <>
-                        <div className={`size-full flex ${
+                        <div className={`w-full h-full flex ${
                             effectiveMapDockMode === 'floating'
                                 ? 'flex-row'
                                 : (effectiveLayoutMode === 'horizontal' ? 'flex-row' : 'flex-col')
@@ -390,7 +390,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                     <div data-testid="planner-timeline-pane" className="flex-1 min-w-0 h-full relative bg-white border-r border-gray-100">
                                         <div
                                             ref={verticalLayoutTimelineRef}
-                                            className="size-full relative overflow-hidden"
+                                            className="w-full h-full relative overflow-hidden"
                                             onTouchStart={timelineMode === 'calendar' ? onTimelineTouchStart : undefined}
                                             onTouchMove={timelineMode === 'calendar' ? onTimelineTouchMove : undefined}
                                             onTouchEnd={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
@@ -473,7 +473,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                     </button>
                                     <div style={{ height: timelineHeight }} className="w-full bg-white border-t border-gray-200 z-20 shrink-0 relative flex flex-row">
                                         <div ref={verticalLayoutTimelineRef} className="flex-1 h-full relative border-r border-gray-100 min-w-0">
-                                            <div className="size-full relative min-w-0">
+                                            <div className="w-full h-full relative min-w-0">
                                                 {timelineCanvas}
                                                 <div data-testid="planner-timeline-controls" className={`absolute top-4 end-4 ${plannerControlsLayerClassName} pointer-events-auto`}>
                                                     {timelineControls}

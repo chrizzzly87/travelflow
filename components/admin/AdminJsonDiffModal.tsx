@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { SpinnerGap } from '@phosphor-icons/react';
 import Prism from 'prismjs';
+if (typeof window !== 'undefined') {
+    (window as any).Prism = (window as any).Prism || Prism;
+}
 import 'prismjs/components/prism-json';
 import { AppModal } from '../ui/app-modal';
 import { Checkbox } from '../ui/checkbox';

@@ -10,6 +10,7 @@ import {
 import type { MapStyle } from '../../types';
 import {
   getTripMapProviderTuning,
+  shouldUseTripMapGlobeIntro,
   type TripMapDockMode,
 } from './tripMapProviderTuning';
 import { buildTripMapCameraIntroPlan } from './tripMapProviderCameraIntro';

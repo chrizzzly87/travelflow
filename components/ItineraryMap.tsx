@@ -3195,7 +3195,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     return (
         <div
             ref={mapContainerRef}
-            className="relative size-full group"
+            className="relative w-full h-full group"
             data-tf-map-basemap={isMapboxBasemapEnabled ? 'mapbox' : 'google'}
             style={{
                 ...(viewTransitionName ? ({ viewTransitionName } as React.CSSProperties) : {}),
@@ -3226,10 +3226,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     gestureHandling="cooperative"
                     reuseMaps
                     className={shouldHideGoogleCanvasInMixedMode
-                        ? 'pointer-events-none invisible absolute inset-0 z-10 size-full bg-transparent opacity-0'
+                        ? 'pointer-events-none invisible absolute inset-0 z-10 h-full w-full bg-transparent opacity-0'
                         : isMapboxBasemapEnabled
-                            ? 'pointer-events-none absolute inset-0 z-10 size-full bg-transparent'
-                            : 'absolute inset-0 z-10 size-full bg-transparent'}
+                            ? 'pointer-events-none absolute inset-0 z-10 h-full w-full bg-transparent'
+                            : 'absolute inset-0 z-10 h-full w-full bg-transparent'}
                 >
                     <ItineraryMapInstanceBridge mapId={mapInstanceId} onMapInstanceChange={handleMapInstanceChange} />
                 </GoogleMap>

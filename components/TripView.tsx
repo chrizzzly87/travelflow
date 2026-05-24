@@ -3048,7 +3048,7 @@ const useTripViewRender = ({
     if (viewMode === 'print') {
         return (
             <GoogleMapsLoader language={appLanguage}>
-                <Suspense fallback={<div className="size-screen flex items-center justify-center text-sm text-gray-500">Preparing print layout…</div>}>
+                <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-sm text-gray-500">Preparing print layout…</div>}>
                     <PrintLayout
                         trip={displayTrip}
                         isPaywalled={isPaywallLocked}
@@ -3066,7 +3066,7 @@ const useTripViewRender = ({
     return (
         <GoogleMapsLoader language={appLanguage} enabled={isMapBootstrapEnabled}>
             <div
-                className="relative size-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900"
+                className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900"
                 data-tf-handoff-ready="true"
             >
                 

@@ -940,7 +940,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                             data-testid="floating-map-resize-handle"
                             data-floating-map-control="true"
                             onClick={toggleFloatingMapSize}
-                            className="group pointer-events-auto relative flex size-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-white text-gray-600 shadow-sm transition-colors hover:bg-white hover:text-accent-600"
+                            className="group pointer-events-auto relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-white text-gray-600 shadow-sm transition-colors hover:bg-white hover:text-accent-600"
                             aria-label={floatingMapSizePreset === 'lg'
                                 ? 'Use compact floating map size'
                                 : 'Use expanded floating map size'}
@@ -959,7 +959,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                             data-testid="floating-map-orientation-toggle"
                             data-floating-map-control="true"
                             onClick={toggleFloatingMapOrientation}
-                            className="group pointer-events-auto relative flex size-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-white text-gray-600 shadow-sm transition-colors hover:bg-white hover:text-accent-600"
+                            className="group pointer-events-auto relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-white text-gray-600 shadow-sm transition-colors hover:bg-white hover:text-accent-600"
                             aria-label={floatingMapOrientation === 'portrait'
                                 ? 'Switch floating map preview to landscape'
                                 : 'Switch floating map preview to portrait'}
@@ -967,7 +967,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                             <m.span
                                 animate={{ rotate: floatingMapOrientation === 'landscape' ? 90 : 0 }}
                                 transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-                                className="inline-flex size-[18px] items-center justify-center"
+                                className="inline-flex h-[18px] w-[18px] items-center justify-center"
                             >
                                 <DeviceRotate size={18} weight="regular" />
                             </m.span>
@@ -979,7 +979,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                         </button>
                     </div>
                 )}
-                <div className="size-full overflow-hidden" style={{ borderRadius: 'inherit' }}>
+                <div className="h-full w-full overflow-hidden" style={{ borderRadius: 'inherit' }}>
                     {children}
                 </div>
                 {isFloatingMapSettling && <span className="sr-only">Settling floating map preview</span>}
