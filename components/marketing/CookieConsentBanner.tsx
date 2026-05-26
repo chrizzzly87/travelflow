@@ -38,8 +38,8 @@ export const CookieConsentBanner: React.FC = () => {
             window.removeEventListener('keydown', triggerBanner);
         };
 
-        // Wait 4 seconds before rendering the banner to allow the main page elements to paint first
-        timer = setTimeout(triggerBanner, 4000);
+        // Wait 10 seconds before rendering the banner to allow the main page elements to paint first
+        timer = setTimeout(triggerBanner, 10000);
 
         // Also trigger rendering immediately on first user interaction
         window.addEventListener('scroll', triggerBanner, { passive: true });
