@@ -101,6 +101,7 @@
     "@types/node": "^22.19.11",
     "@vitejs/plugin-react": "^5.1.4",
     "@vitest/coverage-v8": "^4.0.18",
+    "critical": "^8.0.0",
     "jsdom": "^28.1.0",
     "promptfoo": "0.121.2",
     "shadcn": "^3.8.5",

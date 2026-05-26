@@ -53,3 +53,9 @@ Before finalizing, ensure all applicable code changes are represented in release
 ## Analytics Requirement
 - For clickable marketing/planner UI changes, instrument events using `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` per `docs/ANALYTICS_CONVENTION.md`.
 - Use the existing event naming/payload convention; avoid ad-hoc query param tracking when Umami events are available.
+
+## Development Command Runtimes (for setting timers)
+- `pnpm test:core`: Takes ~50 seconds to complete. Set a 60-second timer.
+- `pnpm run build`: Takes ~85 seconds (runs test:core, generates assets, validates config, and builds). Set a 90-100 second timer.
+- `node scripts/run-lighthouse-audits.mjs`: Takes ~90 seconds (runs 5 sequential audits). Set a 100-second timer.
+

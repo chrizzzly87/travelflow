@@ -25,7 +25,7 @@ export const SiteFooter: React.FC<SiteFooterProps> = ({ className }) => {
         getAnalyticsDebugAttributes(`footer__${target}`);
 
     return (
-        <footer className={`border-t border-slate-200 bg-white/90 ${className || ''}`.trim()}>
+        <footer className={`border-t border-slate-200 bg-white/90 lazy-site-footer ${className || ''}`.trim()}>
             <div className="mx-auto w-full max-w-6xl px-5 py-8 md:px-8">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <p className="text-sm text-slate-600">{t('footer.rightsReserved', { year })}</p>

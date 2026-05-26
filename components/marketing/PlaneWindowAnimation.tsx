@@ -58,9 +58,8 @@ export const PlaneWindowAnimation: React.FC = () => {
                 alt="Airplane window"
                 draggable={false}
                 className="relative z-10 size-full object-contain drop-shadow-xl"
-                loading="lazy"
                 decoding="async"
-                fetchPriority="low"
+                fetchPriority="high"
             />
         </div>
     );

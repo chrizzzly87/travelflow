@@ -53,7 +53,7 @@ export const FeatureShowcase: React.FC = () => {
     ];
 
     return (
-        <section className="py-16 md:py-24">
+        <section className="py-16 md:py-24 lazy-feature-showcase">
             <div className="animate-scroll-blur-in">
                 <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
                     {t('featureShowcase.title')}
