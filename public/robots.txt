@@ -5,4 +5,4 @@ Disallow: /s/
 Disallow: /admin/
 Disallow: /api/
 
-Sitemap: /sitemap.xml
+Sitemap: https://travelflowapp.netlify.app/sitemap.xml
