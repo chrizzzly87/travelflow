@@ -6,9 +6,6 @@ import { useDbSync } from '../../hooks/useDbSync';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../config/locales';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
 import { MarketingRouteLoadingShell } from '../../components/bootstrap/MarketingRouteLoadingShell';
-import { MarketingHomePage } from '../../pages/MarketingHomePage';
-import { PublicProfilePage } from '../../pages/PublicProfilePage';
-import { PublicProfileStampsPage } from '../../pages/PublicProfileStampsPage';
 import '../../styles/deferred-routes.css';
 import { suspendUntilAuthBootstrapSettles } from '../../services/authBootstrapSuspense';
 import { markInitialRouteHandoffCompleted } from '../../services/marketingRouteShellState';
@@ -17,6 +14,10 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
     moduleKey: string,
     importer: () => Promise<TModule>
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
+
+const MarketingHomePage = lazyWithRecovery('MarketingHomePage', () => import('../../pages/MarketingHomePage').then((module) => ({ default: module.MarketingHomePage })));
+const PublicProfilePage = lazyWithRecovery('PublicProfilePage', () => import('../../pages/PublicProfilePage').then((module) => ({ default: module.PublicProfilePage })));
+const PublicProfileStampsPage = lazyWithRecovery('PublicProfileStampsPage', () => import('../../pages/PublicProfileStampsPage').then((module) => ({ default: module.PublicProfileStampsPage })));
 
 const FeaturesPage = lazyWithRecovery('FeaturesPage', () => import('../../pages/FeaturesPage').then((module) => ({ default: module.FeaturesPage })));
 const UpdatesPage = lazyWithRecovery('UpdatesPage', () => import('../../pages/UpdatesPage').then((module) => ({ default: module.UpdatesPage })));

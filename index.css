@@ -1546,3 +1546,20 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
+
+/* Below-the-fold content visibility optimizations (to speed up initial paints & layout calculations) */
+.lazy-feature-showcase {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1000px;
+}
+
+.lazy-cta-banner {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 350px;
+}
+
+.lazy-site-footer {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 250px;
+}
+

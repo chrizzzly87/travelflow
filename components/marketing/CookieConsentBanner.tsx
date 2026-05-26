@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -13,7 +13,44 @@ export const CookieConsentBanner: React.FC = () => {
     const location = useSafeRouteLocation();
     const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
     const [consent, setConsent] = useState<ConsentChoice | null>(() => readStoredConsent());
-    const isVisible = consent === null;
+    const [shouldRender, setShouldRender] = useState(false);
+
+    useEffect(() => {
+        const isTestEnv = typeof process !== 'undefined' &&
+            (process.env.NODE_ENV === 'test' || typeof process.env.VITEST !== 'undefined');
+
+        if (isTestEnv) {
+            setShouldRender(true);
+            return;
+        }
+
+        let timer: NodeJS.Timeout;
+        const triggerBanner = () => {
+            setShouldRender(true);
+            cleanup();
+        };
+
+        const cleanup = () => {
+            if (timer) clearTimeout(timer);
+            window.removeEventListener('scroll', triggerBanner);
+            window.removeEventListener('mousemove', triggerBanner);
+            window.removeEventListener('touchstart', triggerBanner);
+            window.removeEventListener('keydown', triggerBanner);
+        };
+
+        // Wait 10 seconds before rendering the banner to allow the main page elements to paint first
+        timer = setTimeout(triggerBanner, 10000);
+
+        // Also trigger rendering immediately on first user interaction
+        window.addEventListener('scroll', triggerBanner, { passive: true });
+        window.addEventListener('mousemove', triggerBanner, { passive: true });
+        window.addEventListener('touchstart', triggerBanner, { passive: true });
+        window.addEventListener('keydown', triggerBanner, { passive: true });
+
+        return cleanup;
+    }, []);
+
+    const isVisible = consent === null && shouldRender;
 
     const handleConsent = (choice: ConsentChoice) => {
         setConsent(choice);
