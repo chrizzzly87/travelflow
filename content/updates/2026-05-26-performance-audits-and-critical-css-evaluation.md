@@ -11,7 +11,7 @@ summary: "Applied critical LCP deferral, dynamic font loading optimizations, and
 ---
 
 ## Changes
-- [x] [Improved] ⚡ Deferred cookie consent banner until user interaction or page delay to optimize mobile LCP.
+- [x] [Improved] ⚡ Deferred early access, language suggestion, translation notice, and cookie consent banners by 10s or until user interaction to optimize mobile LCP.
 - [x] [Improved] 🔤 Dynamic language-specific font preloading to load Cyrillic and Vazirmatn full fonts for Cyrillic/Arabic languages, and Latin subsets otherwise.
 - [x] [Improved] 🏎️ Integrated below-the-fold content-visibility and layout constraints to optimize page rendering times.
 - [ ] [Internal] 🧪 Evaluated build-time critical CSS generators and created an automated Lighthouse performance CLI runner script.
