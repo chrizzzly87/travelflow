@@ -64,26 +64,21 @@ export const TranslationNoticeBanner: React.FC = () => {
             return;
         }
 
-        let timer: NodeJS.Timeout;
         const triggerBanner = () => {
             setShouldRender(true);
             cleanup();
         };
 
         const cleanup = () => {
-            if (timer) clearTimeout(timer);
             window.removeEventListener('scroll', triggerBanner);
-            window.removeEventListener('mousemove', triggerBanner);
+            window.removeEventListener('mousedown', triggerBanner);
             window.removeEventListener('touchstart', triggerBanner);
             window.removeEventListener('keydown', triggerBanner);
         };
 
-        // Wait 10 seconds before rendering the banner to allow the main page elements to paint first
-        timer = setTimeout(triggerBanner, 10000);
-
-        // Also trigger rendering immediately on first user interaction
+        // Trigger rendering immediately on first user interaction
         window.addEventListener('scroll', triggerBanner, { passive: true });
-        window.addEventListener('mousemove', triggerBanner, { passive: true });
+        window.addEventListener('mousedown', triggerBanner, { passive: true });
         window.addEventListener('touchstart', triggerBanner, { passive: true });
         window.addEventListener('keydown', triggerBanner, { passive: true });
 
