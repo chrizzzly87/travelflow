@@ -1,6 +1,6 @@
 ---
 id: rel-2026-05-26-robots-txt-validation-fix
-version: v0.116.0
+version: v0.117.0
 title: "Fix search engine crawling configuration"
 date: 2026-05-26
 published_at: 2026-05-26T17:20:00Z
