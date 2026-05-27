@@ -50,7 +50,8 @@
     "ai:eval": "tsx scripts/run-ai-eval.ts",
     "ai:eval:ci": "tsx scripts/run-ai-eval.ts --ci",
     "ai:eval:security": "tsx scripts/run-ai-eval.ts --pack security",
-    "ai:eval:security:ci": "tsx scripts/run-ai-eval.ts --pack security --ci"
+    "ai:eval:security:ci": "tsx scripts/run-ai-eval.ts --pack security --ci",
+    "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
     "@google/genai": "1.45.0",
@@ -104,6 +105,7 @@
     "critical": "^8.0.0",
     "jsdom": "^28.1.0",
     "promptfoo": "0.121.2",
+    "react-doctor": "^0.2.9",
     "shadcn": "^3.8.5",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.2.0",
