@@ -1,8 +1,6 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { HeroSection } from '../components/marketing/HeroSection';
-import { FeatureShowcase } from '../components/marketing/FeatureShowcase';
-import { CtaBanner } from '../components/marketing/CtaBanner';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -15,9 +13,25 @@ const ExampleTripsCarousel = lazyWithRecovery(
     () => import('../components/marketing/ExampleTripsCarousel').then((module) => ({ default: module.ExampleTripsCarousel }))
 );
 
+const FeatureShowcase = lazyWithRecovery(
+    'FeatureShowcase',
+    () => import('../components/marketing/FeatureShowcase').then((module) => ({ default: module.FeatureShowcase }))
+);
+
+const CtaBanner = lazyWithRecovery(
+    'CtaBanner',
+    () => import('../components/marketing/CtaBanner').then((module) => ({ default: module.CtaBanner }))
+);
+
 export const MarketingHomePage: React.FC = () => {
     const [shouldLoadCarousel, setShouldLoadCarousel] = useState(false);
     const carouselSectionRef = useRef<HTMLDivElement | null>(null);
+
+    const [shouldLoadShowcase, setShouldLoadShowcase] = useState(false);
+    const showcaseSectionRef = useRef<HTMLDivElement | null>(null);
+
+    const [shouldLoadCta, setShouldLoadCta] = useState(false);
+    const ctaSectionRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if (shouldLoadCarousel) return;
@@ -31,7 +45,7 @@ export const MarketingHomePage: React.FC = () => {
             if (!entries.some((entry) => entry.isIntersecting)) return;
             setShouldLoadCarousel(true);
             observer.disconnect();
-        }, { rootMargin: '0px' });
+        }, { rootMargin: '100px' });
 
         observer.observe(node);
 
@@ -39,6 +53,48 @@ export const MarketingHomePage: React.FC = () => {
             observer.disconnect();
         };
     }, [shouldLoadCarousel]);
+
+    useEffect(() => {
+        if (shouldLoadShowcase) return;
+        const node = showcaseSectionRef.current;
+        if (!node || typeof IntersectionObserver === 'undefined') {
+            setShouldLoadShowcase(true);
+            return;
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            if (!entries.some((entry) => entry.isIntersecting)) return;
+            setShouldLoadShowcase(true);
+            observer.disconnect();
+        }, { rootMargin: '200px' });
+
+        observer.observe(node);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [shouldLoadShowcase]);
+
+    useEffect(() => {
+        if (shouldLoadCta) return;
+        const node = ctaSectionRef.current;
+        if (!node || typeof IntersectionObserver === 'undefined') {
+            setShouldLoadCta(true);
+            return;
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            if (!entries.some((entry) => entry.isIntersecting)) return;
+            setShouldLoadCta(true);
+            observer.disconnect();
+        }, { rootMargin: '200px' });
+
+        observer.observe(node);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [shouldLoadCta]);
 
     return (
         <MarketingLayout>
@@ -52,8 +108,24 @@ export const MarketingHomePage: React.FC = () => {
                     <div className="h-[460px] w-full" aria-hidden="true" />
                 )}
             </div>
-            <FeatureShowcase />
-            <CtaBanner />
+            <div ref={showcaseSectionRef} className="min-h-[600px]">
+                {shouldLoadShowcase ? (
+                    <Suspense fallback={<div className="h-[600px] w-full" aria-hidden="true" />}>
+                        <FeatureShowcase />
+                    </Suspense>
+                ) : (
+                    <div className="h-[600px] w-full" aria-hidden="true" />
+                )}
+            </div>
+            <div ref={ctaSectionRef} className="min-h-[300px]">
+                {shouldLoadCta ? (
+                    <Suspense fallback={<div className="h-[300px] w-full" aria-hidden="true" />}>
+                        <CtaBanner />
+                    </Suspense>
+                ) : (
+                    <div className="h-[300px] w-full" aria-hidden="true" />
+                )}
+            </div>
         </MarketingLayout>
     );
 };

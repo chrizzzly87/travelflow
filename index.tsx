@@ -117,15 +117,22 @@ if (typeof window !== 'undefined') {
   applyDocumentLocale(initialLocale);
 }
 
-const root = ReactDOM.createRoot(rootElement);
-setupBootstrapShellHandoff(rootElement);
-if (typeof window !== 'undefined') {
-  preloadCriticalRouteModules(window.location.pathname);
-}
-root.render(
+const appNode = (
   <React.StrictMode>
     <ErrorBoundary>
         <App />
     </ErrorBoundary>
   </React.StrictMode>
 );
+
+setupBootstrapShellHandoff(rootElement);
+if (typeof window !== 'undefined') {
+  preloadCriticalRouteModules(window.location.pathname);
+}
+
+if (rootElement.hasChildNodes()) {
+  ReactDOM.hydrateRoot(rootElement, appNode);
+} else {
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(appNode);
+}

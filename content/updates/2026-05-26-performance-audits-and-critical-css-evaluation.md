@@ -1,6 +1,6 @@
 ---
 id: rel-2026-05-26-performance-audits-and-critical-css-evaluation
-version: v0.117.0
+version: v0.118.0
 title: "Performance Audits and Critical CSS Evaluation"
 date: 2026-05-26
 published_at: 2026-05-26T17:30:00Z

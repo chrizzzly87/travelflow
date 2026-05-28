@@ -855,6 +855,18 @@
         </div>
       </div>
     <div id="root"></div>
+    <script>
+      (() => {
+        const root = document.getElementById('root');
+        if (root && root.hasChildNodes()) {
+          const shell = document.getElementById('app-bootstrap-shell');
+          if (shell) {
+            shell.style.display = 'none';
+          }
+          document.documentElement.setAttribute('data-tf-react-shell-visible', 'true');
+        }
+      })();
+    </script>
     <!-- Netlify Forms SPA registration scaffold -->
     <form
       name="contact"

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { WarningCircle, X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -53,39 +53,7 @@ export const TranslationNoticeBanner: React.FC = () => {
         [routeLocation.pathname]
     );
     const [dismissed, setDismissed] = useState<boolean>(() => isDismissedForSession());
-    const [shouldRender, setShouldRender] = useState(false);
-
-    useEffect(() => {
-        const isTestEnv = typeof process !== 'undefined' &&
-            (process.env.NODE_ENV === 'test' || typeof process.env.VITEST !== 'undefined');
-
-        if (isTestEnv) {
-            setShouldRender(true);
-            return;
-        }
-
-        const triggerBanner = () => {
-            setShouldRender(true);
-            cleanup();
-        };
-
-        const cleanup = () => {
-            window.removeEventListener('scroll', triggerBanner);
-            window.removeEventListener('mousedown', triggerBanner);
-            window.removeEventListener('touchstart', triggerBanner);
-            window.removeEventListener('keydown', triggerBanner);
-        };
-
-        // Trigger rendering immediately on first user interaction
-        window.addEventListener('scroll', triggerBanner, { passive: true });
-        window.addEventListener('mousedown', triggerBanner, { passive: true });
-        window.addEventListener('touchstart', triggerBanner, { passive: true });
-        window.addEventListener('keydown', triggerBanner, { passive: true });
-
-        return cleanup;
-    }, []);
-
-    if (activeLocale === DEFAULT_LOCALE || dismissed || !shouldRender) return null;
+    if (activeLocale === DEFAULT_LOCALE || dismissed) return null;
 
     const handleDismiss = () => {
         setDismissed(true);
@@ -99,7 +67,7 @@ export const TranslationNoticeBanner: React.FC = () => {
     };
 
     return (
-        <div className="border-b border-amber-200/70 bg-amber-50/90">
+        <div className="border-b border-amber-200/70 bg-amber-50/90 shadow-sm">
             <div className="mx-auto flex w-full max-w-7xl items-start gap-2 px-5 py-2.5 sm:items-center sm:gap-3 md:px-8">
                 <WarningCircle size={16} weight="duotone" className="shrink-0 text-amber-700" />
                 <p className="min-w-0 flex-1 text-[11px] leading-relaxed text-amber-900 sm:text-sm">
