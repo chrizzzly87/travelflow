@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { X, Translate } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { extractLocaleFromPath, getNamespacesForMarketingPath, isToolRoute } from '../../config/routes';
@@ -143,39 +143,7 @@ export const LanguageSuggestionBanner: React.FC = () => {
     const [dismissed, setDismissed] = useState<boolean>(() => (
         isDismissedForSession() || isSwitchAcknowledged()
     ));
-    const [shouldRender, setShouldRender] = useState(false);
-
-    useEffect(() => {
-        const isTestEnv = typeof process !== 'undefined' &&
-            (process.env.NODE_ENV === 'test' || typeof process.env.VITEST !== 'undefined');
-
-        if (isTestEnv) {
-            setShouldRender(true);
-            return;
-        }
-
-        const triggerBanner = () => {
-            setShouldRender(true);
-            cleanup();
-        };
-
-        const cleanup = () => {
-            window.removeEventListener('scroll', triggerBanner);
-            window.removeEventListener('mousedown', triggerBanner);
-            window.removeEventListener('touchstart', triggerBanner);
-            window.removeEventListener('keydown', triggerBanner);
-        };
-
-        // Trigger rendering immediately on first user interaction
-        window.addEventListener('scroll', triggerBanner, { passive: true });
-        window.addEventListener('mousedown', triggerBanner, { passive: true });
-        window.addEventListener('touchstart', triggerBanner, { passive: true });
-        window.addEventListener('keydown', triggerBanner, { passive: true });
-
-        return cleanup;
-    }, []);
-
-    if (!suggestedLocale || dismissed || !shouldRender) return null;
+    if (!suggestedLocale || dismissed) return null;
 
     const copy = MESSAGE_BY_LOCALE[suggestedLocale];
 
@@ -224,7 +192,7 @@ export const LanguageSuggestionBanner: React.FC = () => {
     };
 
     return (
-        <div className="border-b border-cyan-200/60 bg-cyan-50/90">
+        <div className="border-b border-cyan-200/60 bg-cyan-50/90 shadow-sm">
             <div className="mx-auto flex w-full max-w-7xl items-start gap-2 px-5 py-2.5 sm:items-center sm:gap-3 md:px-8">
                 <Translate size={16} weight="duotone" className="shrink-0 text-cyan-700" />
                 <p className="min-w-0 flex-1 text-[11px] leading-relaxed text-cyan-900 sm:text-sm">

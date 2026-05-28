@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Flask } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -15,39 +15,7 @@ export const EarlyAccessBanner: React.FC = () => {
             return false;
         }
     });
-    const [shouldRender, setShouldRender] = useState(false);
-
-    useEffect(() => {
-        const isTestEnv = typeof process !== 'undefined' &&
-            (process.env.NODE_ENV === 'test' || typeof process.env.VITEST !== 'undefined');
-
-        if (isTestEnv) {
-            setShouldRender(true);
-            return;
-        }
-
-        const triggerBanner = () => {
-            setShouldRender(true);
-            cleanup();
-        };
-
-        const cleanup = () => {
-            window.removeEventListener('scroll', triggerBanner);
-            window.removeEventListener('mousedown', triggerBanner);
-            window.removeEventListener('touchstart', triggerBanner);
-            window.removeEventListener('keydown', triggerBanner);
-        };
-
-        // Trigger rendering immediately on first user interaction
-        window.addEventListener('scroll', triggerBanner, { passive: true });
-        window.addEventListener('mousedown', triggerBanner, { passive: true });
-        window.addEventListener('touchstart', triggerBanner, { passive: true });
-        window.addEventListener('keydown', triggerBanner, { passive: true });
-
-        return cleanup;
-    }, []);
-
-    if (dismissed || !shouldRender) return null;
+    if (dismissed) return null;
 
     const handleDismiss = () => {
         setDismissed(true);
@@ -60,7 +28,7 @@ export const EarlyAccessBanner: React.FC = () => {
     };
 
     return (
-        <div className="border-b border-amber-200/60 bg-gradient-to-r from-amber-50 via-amber-50/80 to-orange-50">
+        <div className="border-b border-amber-200/60 bg-gradient-to-r from-amber-50 via-amber-50/80 to-orange-50 shadow-sm">
             <div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-5 py-2.5 md:px-8">
                 <Flask size={16} weight="duotone" className="shrink-0 text-amber-600" />
                 <p className="flex-1 text-xs leading-relaxed text-amber-900 sm:text-sm">

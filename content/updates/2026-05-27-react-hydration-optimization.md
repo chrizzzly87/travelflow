@@ -13,5 +13,6 @@ summary: "Implemented build-time pre-rendering for key marketing pages and enabl
 ## Changes
 - [x] [Improved] ⚡ Marketing pages now lazy load and progressively hydrate below-the-fold components on scroll.
 - [x] [Improved] 🏎️ Marketing pages are pre-rendered for faster first paint without changing clean route URLs.
+- [x] [Improved] ✨ Top page notices now appear immediately below the navigation without shifting page content after interaction.
 - [ ] [Internal] 🧱 Added an opt-in critical CSS evaluation path while keeping it disabled by default after Lighthouse regression checks.
 - [ ] [Internal] ⚙️ Added comprehensive developer guidelines for above-the-fold optimizations and progressive hydration.
