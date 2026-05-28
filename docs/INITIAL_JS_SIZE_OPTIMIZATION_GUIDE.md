@@ -46,7 +46,7 @@ Replacing React Router v7 (`react-router-dom`) with TanStack Router, and migrati
 
 ## ⚡ 3. Recommended Approach: Quick-Wins First
 
-Before undertaking a framework rewrite (Preact) or a router overhaul (TanStack), we recommend harvesting low-hanging fruit which can yield **150 KB+** in bundle size reductions with virtually zero compatibility risk.
+Before undertaking a framework rewrite (Preact) or a router overhaul (TanStack), harvest lower-risk wins first. Smaller entry bundles matter most when they reduce mobile LCP, TBT, or hydration delay without creating layout instability.
 
 ### Phase 1: Audit with Rollup Visualizer (1 hour)
 Install `rollup-plugin-visualizer` to see a graphical chart of exactly what files and modules make up the `773 KB` bundle:
@@ -76,3 +76,19 @@ Icon packages (like `@phosphor-icons/react` or `lucide-react`) are common source
 Verify that pages loaded inside `DeferredAppRoutes.tsx` are fully code-split:
 *   Ensure that no page-specific heavy library (like `tremor` or `@vis.gl/react-google-maps`) is imported in `index.tsx` or components used by the header.
 *   Google Maps components should only load the maps library dynamically via `GoogleMapsLoader` rather than importing maps globals statically.
+
+### Phase 4: Protect Initial-Viewport Hydration (2 hours)
+Entry bundle reductions should not make visible UI arrive late or shift the page after interaction.
+
+*   Do not delay first-viewport UI behind first-interaction listeners just to improve a synthetic metric. Headers, notices, navigation, primary CTAs, and visible alerts should hydrate as part of the initial route.
+*   If a visible overlay can appear after mount, keep it out of normal document flow or reserve its space from the first render.
+*   Prefer lazy loading for below-the-fold and non-essential interactions. Do not lazy load content that defines the first viewport's meaning or stability.
+*   Validate route changes with a click/navigation check, not only a cold-load Lighthouse run.
+
+### Phase 5: Measure Mobile Before Shipping
+Mobile Lighthouse should be the primary guardrail for JavaScript optimization work.
+
+*   Compare the same route set before and after every bundle or hydration change.
+*   Record score, LCP, TBT, CLS, and transferred bytes.
+*   Re-run at least one route twice when a result looks surprising; Lighthouse variance is real, but repeated CLS or LCP regressions are actionable.
+*   Prefer optimizations that improve mobile LCP and CLS even if they are neutral on desktop.

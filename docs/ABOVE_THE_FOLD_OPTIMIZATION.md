@@ -1,15 +1,15 @@
 # Above-the-Fold & Progressive Hydration Guidelines
 
-This document outlines the architectural patterns and developer guidelines for maintaining optimal web performance (First Contentful Paint, Largest Contentful Paint, Cumulative Layout Shift) across TravelFlow's marketing and product pages.
+This document outlines architectural patterns and developer guidelines for maintaining optimal web performance (First Contentful Paint, Largest Contentful Paint, Cumulative Layout Shift) across public and product pages.
 
 ---
 
 ## 🚀 1. The Core Performance Model
 
-TravelFlow achieves sub-second visual loading by combining three complementary techniques:
-1.  **Static Pre-rendering (SSG)**: Pages are compiled at build time into static HTML files containing the full initial DOM tree.
-2.  **Critical CSS Inlining**: Above-the-fold styles are extracted and injected directly into `<style>` blocks in the document `<head>`, while the main CSS bundle is loaded asynchronously.
-3.  **Progressive (Lazy) Hydration**: React hydrates above-the-fold interactive components immediately, while below-the-fold component JavaScript loads and hydrates dynamically as the user scrolls near them.
+Fast pages depend on three complementary techniques:
+1.  **Static Pre-rendering (SSG)**: Build-time HTML should contain the initial route shell and the content needed for the first viewport.
+2.  **Measured CSS Delivery**: CSS delivery changes must be tested against real Lighthouse output before becoming defaults. Critical CSS inlining can help in narrow cases, but it can also inflate HTML, delay parsing, and worsen CLS.
+3.  **Progressive Hydration**: Above-the-fold interactive components hydrate immediately. Below-the-fold JavaScript loads only when the user is close to needing it.
 
 ---
 
@@ -17,16 +17,18 @@ TravelFlow achieves sub-second visual loading by combining three complementary t
 
 To prevent LCP degradation and layout shifts, follow these guidelines for any content that renders in the initial viewport (typically top `700px` on desktop, `600px` on mobile):
 
-*   **No Heavy Elements in Critical Path**: Avoid placing heavy third-party maps, charts, calendar grids, or raw text editors in the initial viewport. These should be loaded lazily on interaction or scroll.
-*   **Font Optimization**: Critical font families (like *Bricolage Grotesque* and *Space Grotesk*) are preloaded via `link rel="preload"` inline script injections based on page locale to prevent FOIT (Flash of Invisible Text).
+*   **No Heavy Elements in Critical Path**: Avoid placing heavy third-party maps, charts, calendar grids, or raw text editors in the initial viewport. Load these lazily on interaction or near-viewport scroll.
+*   **Initial UI Must Not Wait for Interaction**: UI that is expected to be visible in the first viewport must render and hydrate immediately. Do not gate first-viewport notices, headers, navigation, calls to action, or alerts behind first-click, first-scroll, or first-keyboard listeners.
+*   **No Late Document-Flow Insertion Above Content**: Anything that can appear after initial paint above the page content must either reserve stable space from the start or be positioned outside normal document flow. Fixed or absolute overlays should sit below persistent navigation, use a predictable z-index, and avoid covering essential controls.
+*   **Font Optimization**: Critical font families are preloaded via `link rel="preload"` where appropriate to prevent FOIT (Flash of Invisible Text).
 *   **Zero Layout Shimmer Flickering**: If pre-rendered HTML matches the initial client layout, the bootstrap overlay loading shell (`#app-bootstrap-shell`) is bypassed immediately to prevent a layout shift.
-*   **Image Dimensions**: Any above-the-fold image (e.g. hero banner, blog header) must have explicit `width` and `height` aspect-ratio styles and use high fetch priority (`fetchPriority="high"`).
+*   **Image Dimensions**: Any above-the-fold image must have explicit dimensions or aspect-ratio styles and should use high fetch priority (`fetchPriority="high"`) when it is likely to be the LCP element.
 
 ---
 
 ## 💤 3. Implementing Progressive Hydration
 
-To prevent hydration blockages and initial JS bundle bloat, all below-the-fold components must be loaded lazily.
+To prevent hydration blockages and initial JS bundle bloat, below-the-fold components should be loaded lazily when they are expensive or not needed for initial comprehension.
 
 ### Code Pattern
 When introducing a below-the-fold component:
@@ -96,10 +98,10 @@ export const MyPage: React.FC = () => {
 
 ## ⚡ 4. Hydration Compatibility (Avoiding Mismatches)
 
-React 18 hydration expects the pre-rendered HTML on disk to match the initial render tree on the client. Mismatches trigger rendering corrections that slow down page load.
+React 18 hydration expects the pre-rendered HTML on disk to match the initial render tree on the client. Mismatches trigger rendering corrections that slow down page load and can introduce visible jumps.
 
 *   **Client-Only Code**: Never use client-only globals (like `window.innerWidth`, `localStorage`, or `navigator.language`) directly in the render path.
-*   **Double-Rendering Pattern**: If component output depends on client-only state, delay the rendering of that state until the component is mounted:
+*   **Stable Fallback Pattern**: If component output depends on client-only state, render an equivalent-size fallback until the component is mounted:
     ```typescript
     const [isMounted, setIsMounted] = useState(false);
     useEffect(() => {
@@ -112,6 +114,7 @@ React 18 hydration expects the pre-rendered HTML on disk to match the initial re
         </div>
     );
     ```
+*   **Client-Only Visibility State**: If client-only state determines whether an initially visible element should appear, prefer an immediate deterministic default plus dismissal state over interaction-triggered rendering. If the element may appear after mount, reserve space or position it outside document flow.
 
 ---
 
@@ -119,20 +122,19 @@ React 18 hydration expects the pre-rendered HTML on disk to match the initial re
 
 ### How the build pipeline works:
 1.  **Vite Build**: Compiles TypeScript assets, outputs `dist/index.html` and bundled files under `dist/assets/`.
-2.  **Critical CSS extraction (`scripts/prerender-routes.mjs`)**:
-    *   Temporarily transforms absolute asset paths (`/assets/`) in `dist/index.html` to relative paths (`assets/`) so the `critical` node module can locate assets on the local filesystem.
-    *   Runs a headless browser via Puppeteer to extract above-the-fold styles.
-    *   Inlines these styles inside a `<style>` block in `<head>`, and converts the main stylesheet `<link>` to load asynchronously (`media="print" onload="this.media='all'"`).
-    *   Saves the inlined version back to `dist/index.html` and restores absolute paths (`/assets/`).
-3.  **Route Crawler Pre-rendering**:
+2.  **Optional critical CSS extraction**:
+    *   Critical CSS inlining is an evaluation tool, not a default optimization.
+    *   Only enable it behind an explicit environment flag and compare Lighthouse scores, HTML size, LCP, and CLS before shipping.
+    *   Do not ship CSS delivery changes that increase HTML weight substantially or defer layout-critical styles in a way that changes the initial client layout.
+3.  **Route crawler pre-rendering**:
     *   Spawns a local Vite preview server on port `4173`.
-    *   Playwright opens a browser page with a viewport size of `1280x9999`.
-    *   *Note: The 9999px height viewport is crucial because it forces all progressive hydration IntersectionObservers to intersect immediately, rendering the complete page content.*
+    *   Playwright opens pages with a realistic viewport height so near-viewport loading behaves like a real user session.
+    *   Avoid oversized pre-render viewports. They can force every lazy section to load at build time, generate misleading static HTML, and cause the client to replace large chunks of content with placeholders during hydration.
     *   The crawler waits for the `data-tf-handoff-ready="true"` attribute (placed on root layouts) to ensure React has fully loaded.
-    *   The page source is extracted and written into `dist/<route>/index.html`.
+    *   The page source is extracted and written to clean route outputs. When a hosting platform may normalize trailing slashes, write both the canonical clean route file and any required directory fallback.
 
 ### Adding New Pages to Pre-rendering:
-To ensure new marketing or public pages are pre-rendered, add them to the `ROUTES` array in [prerender-routes.mjs](file:///Users/chrizzzly/.gemini/antigravity/worktrees/travelflow-codex/implement-react-hydration-optimization/scripts/prerender-routes.mjs):
+To ensure new public pages are pre-rendered, add them to the `ROUTES` array in `scripts/prerender-routes.mjs`:
 ```javascript
 const ROUTES = [
   { path: '/', dest: 'index.html' },
@@ -142,5 +144,17 @@ const ROUTES = [
 ```
 
 ### Environment Requirements:
-*   Local builds require `PUPPETEER_EXECUTABLE_PATH` pointing to a local Chrome browser binary on macOS (e.g. `PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`).
-*   If Chrome is missing (such as in restricted cloud build machines), the script catches the error and falls back gracefully to standard pre-rendering using the standard Vite HTML template.
+*   Local and CI builds need a browser runtime available for the pre-render step.
+*   If a browser is missing in a restricted environment, the build should fail clearly or use an explicitly documented fallback. Silent partial pre-rendering makes performance regressions harder to diagnose.
+
+---
+
+## 📊 6. Performance Validation Rules
+
+Performance changes must be validated with the same scenario before and after the change:
+
+*   Test both mobile and desktop. Mobile results are usually more sensitive to LCP and main-thread work.
+*   Compare the same routes, viewport, throttling profile, and deployment class.
+*   Record performance score, LCP, TBT, and CLS. A higher FCP is acceptable only if user-visible completeness, LCP, or CLS improves.
+*   Treat CLS regressions above `0.1` as fix-before-merge for initial-route changes.
+*   After changing hydration or pre-rendering behavior, verify navigation manually or with browser automation. A page can pass Lighthouse and still show late UI insertion after a click.
