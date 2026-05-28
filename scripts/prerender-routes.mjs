@@ -183,7 +183,10 @@ async function main() {
   }
 
   console.log('Preview server is ready. Launching headless browser...');
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  });
   const baseHtmlTemplate = fs.readFileSync(path.join(projectRoot, 'dist', 'index.html'), 'utf8');
 
   for (const route of ROUTES) {

@@ -17,3 +17,4 @@ summary: "Implemented build-time pre-rendering for key marketing pages and enabl
 - [ ] [Internal] 🧱 Added an opt-in critical CSS evaluation path while keeping it disabled by default after Lighthouse regression checks.
 - [ ] [Internal] ⚙️ Added comprehensive developer guidelines for above-the-fold optimizations and progressive hydration.
 - [ ] [Internal] 📚 Documented generalized performance guardrails for hydration timing, pre-render viewport sizing, and mobile Lighthouse validation.
+- [ ] [Internal] 🛠️ Hardened the pre-render browser launch for hosted Linux build environments.
