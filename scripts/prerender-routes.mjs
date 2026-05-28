@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import http from 'http';
@@ -52,6 +52,24 @@ const ROUTES = [
 ];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function ensurePlaywrightChromiumInstalled() {
+  const executablePath = chromium.executablePath();
+  if (fs.existsSync(executablePath)) {
+    return;
+  }
+
+  console.log('Playwright Chromium executable is missing. Installing Chromium browser binary...');
+  const result = spawnSync('pnpm', ['exec', 'playwright', 'install', 'chromium'], {
+    cwd: projectRoot,
+    stdio: 'inherit',
+    env: process.env,
+  });
+
+  if (result.status !== 0) {
+    throw new Error(`Failed to install Playwright Chromium browser binary (exit ${result.status ?? 'unknown'}).`);
+  }
+}
 
 async function inlineCriticalCss() {
   console.log('Generating critical CSS...');
@@ -183,6 +201,7 @@ async function main() {
   }
 
   console.log('Preview server is ready. Launching headless browser...');
+  ensurePlaywrightChromiumInstalled();
   const browser = await chromium.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
