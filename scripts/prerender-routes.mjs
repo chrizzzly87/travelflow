@@ -15,40 +15,40 @@ const BASE_URL = `http://localhost:${PORT}`;
 
 const ROUTES = [
   { path: '/', dest: 'index.html' },
-  { path: '/features', dest: 'features/index.html' },
-  { path: '/pricing', dest: 'pricing/index.html' },
-  { path: '/faq', dest: 'faq/index.html' },
-  { path: '/updates', dest: 'updates/index.html' },
-  { path: '/blog', dest: 'blog/index.html' },
-  { path: '/login', dest: 'login/index.html' },
-  { path: '/inspirations', dest: 'inspirations/index.html' },
+  { path: '/features', dests: ['features.html', 'features/index.html'] },
+  { path: '/pricing', dests: ['pricing.html', 'pricing/index.html'] },
+  { path: '/faq', dests: ['faq.html', 'faq/index.html'] },
+  { path: '/updates', dests: ['updates.html', 'updates/index.html'] },
+  { path: '/blog', dests: ['blog.html', 'blog/index.html'] },
+  { path: '/login', dests: ['login.html', 'login/index.html'] },
+  { path: '/inspirations', dests: ['inspirations.html', 'inspirations/index.html'] },
   
   // Localized routes
-  { path: '/es', dest: 'es/index.html' },
-  { path: '/es/features', dest: 'es/features/index.html' },
-  { path: '/es/pricing', dest: 'es/pricing/index.html' },
-  { path: '/es/faq', dest: 'es/faq/index.html' },
-  { path: '/es/inspirations', dest: 'es/inspirations/index.html' },
+  { path: '/es', dests: ['es.html', 'es/index.html'] },
+  { path: '/es/features', dests: ['es/features.html', 'es/features/index.html'] },
+  { path: '/es/pricing', dests: ['es/pricing.html', 'es/pricing/index.html'] },
+  { path: '/es/faq', dests: ['es/faq.html', 'es/faq/index.html'] },
+  { path: '/es/inspirations', dests: ['es/inspirations.html', 'es/inspirations/index.html'] },
   
-  { path: '/de', dest: 'de/index.html' },
-  { path: '/de/features', dest: 'de/features/index.html' },
-  { path: '/de/pricing', dest: 'de/pricing/index.html' },
-  { path: '/de/faq', dest: 'de/faq/index.html' },
-  { path: '/de/inspirations', dest: 'de/inspirations/index.html' },
+  { path: '/de', dests: ['de.html', 'de/index.html'] },
+  { path: '/de/features', dests: ['de/features.html', 'de/features/index.html'] },
+  { path: '/de/pricing', dests: ['de/pricing.html', 'de/pricing/index.html'] },
+  { path: '/de/faq', dests: ['de/faq.html', 'de/faq/index.html'] },
+  { path: '/de/inspirations', dests: ['de/inspirations.html', 'de/inspirations/index.html'] },
   
-  { path: '/fr', dest: 'fr/index.html' },
-  { path: '/fr/features', dest: 'fr/features/index.html' },
-  { path: '/fr/pricing', dest: 'fr/pricing/index.html' },
-  { path: '/fr/faq', dest: 'fr/faq/index.html' },
-  { path: '/fr/inspirations', dest: 'fr/inspirations/index.html' },
+  { path: '/fr', dests: ['fr.html', 'fr/index.html'] },
+  { path: '/fr/features', dests: ['fr/features.html', 'fr/features/index.html'] },
+  { path: '/fr/pricing', dests: ['fr/pricing.html', 'fr/pricing/index.html'] },
+  { path: '/fr/faq', dests: ['fr/faq.html', 'fr/faq/index.html'] },
+  { path: '/fr/inspirations', dests: ['fr/inspirations.html', 'fr/inspirations/index.html'] },
   
-  { path: '/pt', dest: 'pt/index.html' },
-  { path: '/ru', dest: 'ru/index.html' },
-  { path: '/it', dest: 'it/index.html' },
-  { path: '/pl', dest: 'pl/index.html' },
-  { path: '/ko', dest: 'ko/index.html' },
-  { path: '/fa', dest: 'fa/index.html' },
-  { path: '/ur', dest: 'ur/index.html' }
+  { path: '/pt', dests: ['pt.html', 'pt/index.html'] },
+  { path: '/ru', dests: ['ru.html', 'ru/index.html'] },
+  { path: '/it', dests: ['it.html', 'it/index.html'] },
+  { path: '/pl', dests: ['pl.html', 'pl/index.html'] },
+  { path: '/ko', dests: ['ko.html', 'ko/index.html'] },
+  { path: '/fa', dests: ['fa.html', 'fa/index.html'] },
+  { path: '/ur', dests: ['ur.html', 'ur/index.html'] }
 ];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -115,11 +115,14 @@ async function inlineCriticalCss() {
 }
 
 async function main() {
-  // First, inline critical CSS in the base template
-  try {
-    await inlineCriticalCss();
-  } catch (err) {
-    console.error('Critical CSS generation error:', err);
+  if (process.env.TF_INLINE_CRITICAL_CSS === '1') {
+    try {
+      await inlineCriticalCss();
+    } catch (err) {
+      console.error('Critical CSS generation error:', err);
+    }
+  } else {
+    console.log('Skipping critical CSS inlining; set TF_INLINE_CRITICAL_CSS=1 to evaluate it locally.');
   }
 
   console.log('Starting preview server for pre-rendering...');
@@ -184,12 +187,14 @@ async function main() {
   const baseHtmlTemplate = fs.readFileSync(path.join(projectRoot, 'dist', 'index.html'), 'utf8');
 
   for (const route of ROUTES) {
-    console.log(`Pre-rendering route: ${route.path} -> dist/${route.dest}`);
+    const dests = route.dests || [route.dest];
+    console.log(`Pre-rendering route: ${route.path} -> ${dests.map((dest) => `dist/${dest}`).join(', ')}`);
     
     try {
       const page = await browser.newPage();
-      // Set a tall viewport size to ensure below-the-fold elements are intersected, loaded and rendered fully
-      await page.setViewportSize({ width: 1280, height: 9999 });
+      // Keep prerendering to the first viewport so deferred sections do not hydrate
+      // from full markup into client-side placeholders and trigger mobile CLS.
+      await page.setViewportSize({ width: 1280, height: 640 });
       await page.goto(`${BASE_URL}${route.path}`, { waitUntil: 'domcontentloaded' });
 
       // Wait for the React handoff to complete and mark the route ready
@@ -210,15 +215,17 @@ async function main() {
         .replace('<div id="root"></div>', `<div id="root">${rootHtml}</div>`)
         .replace('<html lang="en">', `<html lang="${lang || 'en'}" dir="${dir || 'ltr'}">`);
 
-      const destPath = path.join(projectRoot, 'dist', route.dest);
-      const destDir = path.dirname(destPath);
-      
-      if (!fs.existsSync(destDir)) {
-        fs.mkdirSync(destDir, { recursive: true });
-      }
+      for (const dest of dests) {
+        const destPath = path.join(projectRoot, 'dist', dest);
+        const destDir = path.dirname(destPath);
+        
+        if (!fs.existsSync(destDir)) {
+          fs.mkdirSync(destDir, { recursive: true });
+        }
 
-      fs.writeFileSync(destPath, outputHtml, 'utf8');
-      console.log(`Successfully pre-rendered dist/${route.dest}`);
+        fs.writeFileSync(destPath, outputHtml, 'utf8');
+        console.log(`Successfully pre-rendered dist/${dest}`);
+      }
     } catch (err) {
       console.error(`Error pre-rendering route ${route.path}:`, err.message);
     }

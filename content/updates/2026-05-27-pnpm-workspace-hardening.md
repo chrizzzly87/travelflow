@@ -1,6 +1,6 @@
 ---
 id: rel-2026-05-27-pnpm-workspace-hardening
-version: v0.118.0
+version: v0.119.0
 title: "Harden pnpm workspace dependency settings"
 date: 2026-05-27
 published_at: 2026-05-27T08:40:00Z
