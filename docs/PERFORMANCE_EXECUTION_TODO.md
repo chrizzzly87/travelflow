@@ -1,6 +1,6 @@
 # Performance Execution TODO
 
-Last updated: 2026-02-21
+Last updated: 2026-05-29
 Owner: Codex + @chrizzzly
 Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure clarity.
 
@@ -14,6 +14,13 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Admin code is no longer part of initial entry preload graph.
 - [x] Prefetch/speculation starts only after app is usable (idle/first interaction).
 - [x] Route-level performance checks for `/`, `/create-trip`, `/trip/:id`.
+
+## Preact compat migration snapshot (2026-05-29)
+- [x] Production Vite now builds the app runtime through Preact compat aliases while Vitest keeps the React peer graph for stable component tests.
+- [x] Entry JS dropped from `771,707 B` raw (`230,354 B` gzip) on `main` to `654,600 B` raw (`194,894 B` gzip) after the migration.
+- [x] Entry CSS stayed effectively unchanged (`370,138 B` raw, `~59.0 KB` gzip).
+- [x] Local mobile Lighthouse route sweep improved scores and transfer on `/`, `/example/thailand-islands`, `/features`, and `/pricing`; CLS stayed `0` on the migrated routes.
+- [ ] Follow up on `/create-trip` TBT: score improved from `74` to `85-87` and transfer dropped from `668.6 KiB` to `618.2 KiB`, but TBT rose from `70 ms` to `210-240 ms` because the classic planner first render is still large under Preact compat.
 
 ## Current baseline snapshot (before this phase)
 - [x] Initial JS (raw) observed around 2.0 MB total from entry + static imports.

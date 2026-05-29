@@ -1,6 +1,6 @@
 # Tech Stack Overview
 
-Last updated: 2026-02-20
+Last updated: 2026-05-29
 
 This file documents the current TravelFlow stack, major architecture decisions, and recommended next upgrades.
 
@@ -10,8 +10,8 @@ This file documents the current TravelFlow stack, major architecture decisions, 
 
 | Area | Current choice | Notes |
 | --- | --- | --- |
-| Frontend framework | React 18.3.1 + TypeScript | SPA architecture. Entry point in `index.tsx`; routing in `App.tsx`. |
-| Build tool | Vite 6 (`@vitejs/plugin-react`) | Uses manual chunking for admin, markdown, UI primitives, icons, Prism, and GenAI SDK in `vite.config.ts`. |
+| Frontend framework | Preact compat production runtime + React 18.3.1 test peer + TypeScript | SPA architecture. Existing React imports are preserved; Vite aliases shipped runtime imports to `preact/compat`. Entry point is `index.tsx`; routing is in `App.tsx`. |
+| Build tool | Vite 6 (`@preact/preset-vite` for production app builds, `@vitejs/plugin-react` for Vitest transforms) | Uses explicit compatibility aliases in `vite.config.ts` and keeps test transforms aligned with the React peer graph. |
 | Styling | Tailwind CSS v4 (`tailwindcss` + `@tailwindcss/vite`, currently `^4.1.18`) | Tokenized theme via CSS variables in `index.css`. No legacy `tailwind.config.js` required for current setup. |
 | Router | `react-router-dom` 7.13 | Browser router with locale-aware marketing routes and lazy loaded sections. |
 | Language/i18n | `i18next`, `react-i18next`, `i18next-icu` | Path-based locale detection, JSON namespaces loaded dynamically via `import.meta.glob`. |

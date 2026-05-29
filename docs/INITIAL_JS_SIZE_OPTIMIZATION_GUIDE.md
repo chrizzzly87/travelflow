@@ -1,6 +1,31 @@
 # Initial JS Bundle Size Optimization Guide
 
-This document analyzes options and strategies for reducing TravelFlow's initial JavaScript bundle size. Currently, the main entry bundle (`dist/assets/index-*.js`) is **~773 KB**, and the total JS footprint includes larger packages like `mapbox-gl` (1.69 MB).
+This document analyzes options and strategies for reducing TravelFlow's initial JavaScript bundle size. Before the Preact migration, the main entry bundle (`dist/assets/index-*.js`) was **~772 KB raw / ~230 KB gzip**, and the total JS footprint included larger packages like `mapbox-gl` (1.69 MB).
+
+## 2026-05-29 Preact compat migration results
+
+The production Vite build now uses `@preact/preset-vite` plus explicit React compatibility aliases so shipped React imports resolve to `preact/compat`. React remains installed for Vitest and dependency peer resolution; the production build was inspected to confirm the entry bundle contains the Preact runtime rather than a separate React runtime.
+
+Measured against local Vite production preview:
+
+| Metric | React baseline (`main`) | Preact compat branch | Delta |
+| --- | ---: | ---: | ---: |
+| Entry JS raw | 771,707 B | 654,600 B | -117,107 B |
+| Entry JS gzip | 230,354 B | 194,894 B | -35,460 B |
+| Entry CSS raw | 370,138 B | 370,138 B | 0 B |
+| Entry CSS gzip | 59,017 B | 58,986 B | -31 B |
+
+Mobile Lighthouse route sweep:
+
+| Route | React score | Preact score | React transfer | Preact transfer | React TBT | Preact TBT | Preact CLS |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `/` | 83 | 92 | 676.2 KiB | 423.8 KiB | 100 ms | 30 ms | 0 |
+| `/create-trip` | 74 | 87 | 668.6 KiB | 618.2 KiB | 70 ms | 210-240 ms | 0 |
+| `/example/thailand-islands` | 49 | 90 | 828.8 KiB | 373.8 KiB | 90 ms | 0 ms | 0 |
+| `/features` | 74 | 91 | 1004.9 KiB | 437.7 KiB | 30 ms | 0 ms | 0 |
+| `/pricing` | 79 | 95 | 943.9 KiB | 429.0 KiB | 220 ms | 20 ms | 0 |
+
+The migration delivers the intended entry-bundle reduction and improves the measured score/transfer envelope across the audited routes. `/create-trip` is the one remaining follow-up: its score and LCP improved, but TBT rose because the classic planner still performs a large synchronous first render under compat. Keep planner render deferral or component extraction on the performance backlog before treating TBT as fully closed.
 
 ---
 
