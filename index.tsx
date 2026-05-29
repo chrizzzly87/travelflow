@@ -7,6 +7,7 @@ import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/l
 import { extractLocaleFromPath, isToolRoute } from './config/routes';
 import { hasRenderableHandoffNode } from './services/bootstrapHandoffService';
 import { preloadCriticalRouteModules } from './services/criticalRoutePreload';
+import { shouldHydrateReactRoot } from './services/reactRootRenderMode';
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -125,13 +126,31 @@ const appNode = (
   </React.StrictMode>
 );
 
+const isExpectedHydrationRecovery = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes('Minified React error #418')
+    || message.includes('Minified React error #423')
+    || message.includes('Hydration failed')
+    || message.includes('Text content does not match server-rendered HTML')
+    || message.includes('There was an error while hydrating')
+  );
+};
+
+const handleRecoverableReactError: ReactDOM.HydrationOptions['onRecoverableError'] = (error, errorInfo) => {
+  if (isExpectedHydrationRecovery(error)) return;
+  console.error('Recoverable React error:', error, errorInfo);
+};
+
 setupBootstrapShellHandoff(rootElement);
 if (typeof window !== 'undefined') {
   preloadCriticalRouteModules(window.location.pathname);
 }
 
-if (rootElement.hasChildNodes()) {
-  ReactDOM.hydrateRoot(rootElement, appNode);
+if (shouldHydrateReactRoot(rootElement)) {
+  ReactDOM.hydrateRoot(rootElement, appNode, {
+    onRecoverableError: handleRecoverableReactError,
+  });
 } else {
   const root = ReactDOM.createRoot(rootElement);
   root.render(appNode);
