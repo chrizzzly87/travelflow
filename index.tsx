@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, Suspense } from 'react';
 import { createRoot, hydrateRoot, type HydrationOptions } from 'react-dom/client';
 import App from './App';
 import './index.css';
@@ -120,9 +120,11 @@ if (typeof window !== 'undefined') {
 
 const appNode = (
   <React.StrictMode>
-    <ErrorBoundary>
+    <Suspense fallback={null}>
+      <ErrorBoundary>
         <App />
-    </ErrorBoundary>
+      </ErrorBoundary>
+    </Suspense>
   </React.StrictMode>
 );
 

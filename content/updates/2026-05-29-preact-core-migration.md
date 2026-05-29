@@ -13,3 +13,4 @@ summary: "Reduces the first-load JavaScript footprint so key pages can become us
 ## Changes
 - [x] [Improved] ⚡ Key pages now download less startup code, helping first visits become usable sooner.
 - [ ] [Internal] 🧩 Swapped the production app runtime to Preact compat while keeping the existing React test harness stable.
+- [ ] [Internal] 🛠️ Added a top-level startup suspense boundary so the Preact preview mounts reliably while translations load.
