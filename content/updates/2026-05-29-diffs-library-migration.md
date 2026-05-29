@@ -11,4 +11,5 @@ summary: "Migrated admin JSON diff generation to the Diffs library."
 ---
 
 ## Changes
-- [ ] [Internal] 🧩 Migrated admin JSON diff generation to the Diffs library while preserving the existing side-by-side modal output.
+- [ ] [Internal] 🧩 Migrated admin JSON diff generation to the shared line-diff engine while preserving the existing side-by-side modal output.
+- [ ] [Internal] 🧪 Hardened JSON diff tests for Node CI environments without browser navigator globals.
