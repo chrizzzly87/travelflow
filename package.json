@@ -79,6 +79,8 @@
     "lucide-react": "^0.575.0",
     "lz-string": "1.5.0",
     "mapbox-gl": "^3.20.0",
+    "preact": "^10.29.2",
+    "preact-render-to-string": "^6.7.0",
     "prismjs": "^1.30.0",
     "radix-ui": "^1.4.3",
     "react": "18.3.1",
@@ -95,6 +97,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
+    "@preact/preset-vite": "^2.10.5",
     "@tailwindcss/vite": "^4.2.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

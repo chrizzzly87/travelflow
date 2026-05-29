@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import ReactDOM from 'react-dom/client';
+import { createRoot, hydrateRoot, type HydrationOptions } from 'react-dom/client';
 import App from './App';
 import './index.css';
 import './i18n';
@@ -137,7 +137,7 @@ const isExpectedHydrationRecovery = (error: unknown): boolean => {
   );
 };
 
-const handleRecoverableReactError: ReactDOM.HydrationOptions['onRecoverableError'] = (error, errorInfo) => {
+const handleRecoverableReactError: HydrationOptions['onRecoverableError'] = (error, errorInfo) => {
   if (isExpectedHydrationRecovery(error)) return;
   console.error('Recoverable React error:', error, errorInfo);
 };
@@ -148,10 +148,10 @@ if (typeof window !== 'undefined') {
 }
 
 if (shouldHydrateReactRoot(rootElement)) {
-  ReactDOM.hydrateRoot(rootElement, appNode, {
+  hydrateRoot(rootElement, appNode, {
     onRecoverableError: handleRecoverableReactError,
   });
 } else {
-  const root = ReactDOM.createRoot(rootElement);
+  const root = createRoot(rootElement);
   root.render(appNode);
 }
