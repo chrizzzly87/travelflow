@@ -1,4 +1,4 @@
-import { diffLines, type Change } from 'diff';
+import { parseDiffFromFile, type FileDiffMetadata } from '@pierre/diffs';
 
 export type JsonDiffLineType = 'context' | 'added' | 'removed' | 'empty';
 
@@ -50,49 +50,44 @@ const pushContextRows = (
     });
 };
 
-const pushChangedRows = (
-    rows: JsonDiffRow[],
-    removedLines: string[],
-    addedLines: string[],
-    counters: { left: number; right: number }
-): void => {
-    const maxLength = Math.max(removedLines.length, addedLines.length);
-    for (let lineIndex = 0; lineIndex < maxLength; lineIndex += 1) {
-        const hasRemovedLine = lineIndex < removedLines.length;
-        const hasAddedLine = lineIndex < addedLines.length;
-        rows.push({
-            leftLineNumber: hasRemovedLine ? counters.left : null,
-            rightLineNumber: hasAddedLine ? counters.right : null,
-            leftValue: hasRemovedLine ? stripLineBreak(removedLines[lineIndex]) : null,
-            rightValue: hasAddedLine ? stripLineBreak(addedLines[lineIndex]) : null,
-            leftType: hasRemovedLine ? 'removed' : 'empty',
-            rightType: hasAddedLine ? 'added' : 'empty',
+const pushRowsFromDiffMetadata = (rows: JsonDiffRow[], diff: FileDiffMetadata): void => {
+    diff.hunks.forEach((hunk) => {
+        hunk.hunkContent.forEach((content) => {
+            if (content.type === 'context') {
+                for (let lineIndex = 0; lineIndex < content.lines; lineIndex += 1) {
+                    const leftIndex = content.deletionLineIndex + lineIndex;
+                    const rightIndex = content.additionLineIndex + lineIndex;
+                    const leftValue = stripLineBreak(diff.deletionLines[leftIndex]);
+                    const rightValue = stripLineBreak(diff.additionLines[rightIndex]);
+                    rows.push({
+                        leftLineNumber: leftIndex + 1,
+                        rightLineNumber: rightIndex + 1,
+                        leftValue,
+                        rightValue,
+                        leftType: 'context',
+                        rightType: 'context',
+                    });
+                }
+                return;
+            }
+
+            const maxLength = Math.max(content.deletions, content.additions);
+            for (let lineIndex = 0; lineIndex < maxLength; lineIndex += 1) {
+                const leftIndex = content.deletionLineIndex + lineIndex;
+                const rightIndex = content.additionLineIndex + lineIndex;
+                const hasRemovedLine = lineIndex < content.deletions;
+                const hasAddedLine = lineIndex < content.additions;
+                rows.push({
+                    leftLineNumber: hasRemovedLine ? leftIndex + 1 : null,
+                    rightLineNumber: hasAddedLine ? rightIndex + 1 : null,
+                    leftValue: hasRemovedLine ? stripLineBreak(diff.deletionLines[leftIndex]) : null,
+                    rightValue: hasAddedLine ? stripLineBreak(diff.additionLines[rightIndex]) : null,
+                    leftType: hasRemovedLine ? 'removed' : 'empty',
+                    rightType: hasAddedLine ? 'added' : 'empty',
+                });
+            }
         });
-        if (hasRemovedLine) counters.left += 1;
-        if (hasAddedLine) counters.right += 1;
-    }
-};
-
-const pushRowsFromLineChanges = (rows: JsonDiffRow[], changes: Change[]): void => {
-    const counters = { left: 1, right: 1 };
-
-    for (let changeIndex = 0; changeIndex < changes.length; changeIndex += 1) {
-        const change = changes[changeIndex];
-        const lines = splitLines(change.value);
-
-        if (!change.added && !change.removed) {
-            pushContextRows(rows, lines, counters);
-            continue;
-        }
-
-        if (change.removed && changes[changeIndex + 1]?.added) {
-            pushChangedRows(rows, lines, splitLines(changes[changeIndex + 1].value), counters);
-            changeIndex += 1;
-            continue;
-        }
-
-        pushChangedRows(rows, change.removed ? lines : [], change.added ? lines : [], counters);
-    }
+    });
 };
 
 export const buildSideBySideJsonDiff = (
@@ -106,7 +101,12 @@ export const buildSideBySideJsonDiff = (
     if (beforeText === afterText) {
         pushContextRows(rows, splitLines(beforeText), { left: 1, right: 1 });
     } else {
-        pushRowsFromLineChanges(rows, diffLines(beforeText, afterText));
+        const diff = parseDiffFromFile(
+            { name: 'snapshot.json', contents: beforeText },
+            { name: 'snapshot.json', contents: afterText },
+            { context: Number.MAX_SAFE_INTEGER }
+        );
+        pushRowsFromDiffMetadata(rows, diff);
     }
 
     const changedRowCount = rows.reduce((count, row) => {

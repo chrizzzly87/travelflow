@@ -5200,7 +5200,7 @@
         "npm:clsx@^2.1.1",
         "npm:cobe@2.0.0",
         "npm:critical@8",
-        "npm:diff@8.0.3",
+        "npm:diff@^8.0.3",
         "npm:flagpack@^1.0.5",
         "npm:framer-motion@^12.34.3",
         "npm:i18next-browser-languagedetector@^8.2.1",

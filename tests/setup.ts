@@ -1,6 +1,15 @@
 import { afterEach, vi } from 'vitest';
 import { resetInitialRouteHandoffCompletedForTests } from '../services/marketingRouteShellState';
 
+if (typeof globalThis.navigator === 'undefined') {
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: {
+      userAgent: 'Vitest Node',
+    },
+  });
+}
+
 const memoryStorageEntries = new WeakMap<Storage, Map<string, string>>();
 
 const installMemoryStoragePrototype = () => {
