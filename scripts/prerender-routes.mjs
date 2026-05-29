@@ -207,7 +207,7 @@ async function main() {
 
       // Inject root HTML, lang, and dir into the base index.html template
       let outputHtml = baseHtmlTemplate
-        .replace('<div id="root"></div>', `<div id="root">${rootHtml}</div>`)
+        .replace('<div id="root"></div>', `<div id="root" data-tf-prerendered-root="true">${rootHtml}</div>`)
         .replace('<html lang="en">', `<html lang="${lang || 'en'}" dir="${dir || 'ltr'}">`);
 
       const destPath = path.join(projectRoot, 'dist', route.dest);
