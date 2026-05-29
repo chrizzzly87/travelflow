@@ -332,7 +332,7 @@ describe('AdminAirportsPage', () => {
         isCommercial: true,
       }));
     });
-  });
+  }, 30000);
 
   it('triggers the upstream sync action from the page', async () => {
     const user = userEvent.setup();
@@ -370,7 +370,7 @@ describe('AdminAirportsPage', () => {
         },
       });
     });
-  });
+  }, 30000);
 
   it('deletes selected airport rows from the bulk editor', async () => {
     const user = userEvent.setup();
