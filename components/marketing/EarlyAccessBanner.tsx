@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Flask } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -8,13 +8,16 @@ const STORAGE_KEY = 'tf_early_access_dismissed';
 
 export const EarlyAccessBanner: React.FC = () => {
     const { t } = useTranslation('common');
-    const [dismissed, setDismissed] = useState(() => {
+    const [dismissed, setDismissed] = useState(false);
+
+    useEffect(() => {
         try {
-            return readLocalStorageItem(STORAGE_KEY) === '1';
+            setDismissed(readLocalStorageItem(STORAGE_KEY) === '1');
         } catch {
-            return false;
+            setDismissed(false);
         }
-    });
+    }, []);
+
     if (dismissed) return null;
 
     const handleDismiss = () => {

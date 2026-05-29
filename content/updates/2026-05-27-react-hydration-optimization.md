@@ -20,3 +20,4 @@ summary: "Implemented build-time pre-rendering for key marketing pages and enabl
 - [ ] [Internal] 📚 Documented generalized performance guardrails for hydration timing, pre-render viewport sizing, and mobile Lighthouse validation.
 - [ ] [Internal] 🛠️ Hardened the pre-render browser launch for hosted Linux build environments.
 - [ ] [Internal] 🧪 Made hosted pre-render builds install the required Playwright browser binary when it is missing.
+- [ ] [Internal] 🧯 Hardened pre-rendered marketing hydration for returning browsers with stored banner, locale, or auth state.

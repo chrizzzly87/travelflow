@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
@@ -32,7 +32,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-8 font-sans text-center" data-tf-handoff-ready="true">
+        <div className="p-8 font-sans text-center" data-tf-handoff-ready="true" data-tf-error-boundary="true">
           <h1 className="text-2xl font-semibold text-red-600 mb-4">Something went wrong</h1>
           <p className="text-gray-600 mb-4">The application encountered an error while loading.</p>
           <pre className="bg-gray-100 p-4 rounded text-left text-sm overflow-auto max-w-2xl mx-auto">
@@ -120,9 +120,11 @@ if (typeof window !== 'undefined') {
 
 const appNode = (
   <React.StrictMode>
-    <ErrorBoundary>
+    <Suspense fallback={null}>
+      <ErrorBoundary>
         <App />
-    </ErrorBoundary>
+      </ErrorBoundary>
+    </Suspense>
   </React.StrictMode>
 );
 

@@ -99,7 +99,7 @@ describe('marketing banner crash guards', () => {
     const user = userEvent.setup();
     render(React.createElement(LanguageSuggestionBanner));
 
-    expect(screen.getByText('Diese Seite ist auch auf Deutsch verfügbar.')).toBeInTheDocument();
+    expect(await screen.findByText('Diese Seite ist auch auf Deutsch verfügbar.')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Sprachhinweis schließen' }));
 
