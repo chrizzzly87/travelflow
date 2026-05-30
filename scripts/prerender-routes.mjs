@@ -207,6 +207,7 @@ async function main() {
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
   const baseHtmlTemplate = fs.readFileSync(path.join(projectRoot, 'dist', 'index.html'), 'utf8');
+  let failedRoutes = 0;
 
   for (const route of ROUTES) {
     const dests = route.dests || [route.dest];
@@ -221,6 +222,11 @@ async function main() {
 
       // Wait for the React handoff to complete and mark the route ready
       await page.waitForSelector('[data-tf-handoff-ready="true"]', { timeout: 10000 });
+
+      const errorBoundaryText = await page.locator('[data-tf-error-boundary="true"]').textContent({ timeout: 250 }).catch(() => null);
+      if (errorBoundaryText) {
+        throw new Error(`React error boundary rendered during prerender: ${errorBoundaryText.slice(0, 240)}`);
+      }
       
       // Wait another short frame to ensure any micro-animations or layout settles
       await sleep(100);
@@ -249,6 +255,7 @@ async function main() {
         console.log(`Successfully pre-rendered dist/${dest}`);
       }
     } catch (err) {
+      failedRoutes += 1;
       console.error(`Error pre-rendering route ${route.path}:`, err.message);
     }
   }
@@ -256,7 +263,7 @@ async function main() {
   console.log('Pre-rendering complete! Closing browser and server...');
   await browser.close();
   cleanup();
-  process.exit(0);
+  process.exit(failedRoutes > 0 ? 1 : 0);
 }
 
 main().catch((err) => {

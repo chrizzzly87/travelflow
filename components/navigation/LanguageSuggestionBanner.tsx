@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { X, Translate } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { extractLocaleFromPath, getNamespacesForMarketingPath, isToolRoute } from '../../config/routes';
@@ -135,14 +135,21 @@ export const LanguageSuggestionBanner: React.FC = () => {
         return extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE;
     }, [routeLocation.pathname]);
 
-    const suggestedLocale = useMemo(() => {
-        if (isToolRoute(routeLocation.pathname)) return null;
-        return getBrowserPreferredLocale(activeLocale);
+    const [suggestedLocale, setSuggestedLocale] = useState<AppLanguage | null>(null);
+    const [dismissed, setDismissed] = useState<boolean>(false);
+
+    useEffect(() => {
+        const nextDismissed = isDismissedForSession() || isSwitchAcknowledged();
+        setDismissed(nextDismissed);
+
+        if (nextDismissed || isToolRoute(routeLocation.pathname)) {
+            setSuggestedLocale(null);
+            return;
+        }
+
+        setSuggestedLocale(getBrowserPreferredLocale(activeLocale));
     }, [activeLocale, routeLocation.pathname]);
 
-    const [dismissed, setDismissed] = useState<boolean>(() => (
-        isDismissedForSession() || isSwitchAcknowledged()
-    ));
     if (!suggestedLocale || dismissed) return null;
 
     const copy = MESSAGE_BY_LOCALE[suggestedLocale];

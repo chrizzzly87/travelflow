@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const trackEventMock = vi.fn();
@@ -23,10 +23,12 @@ describe('components/marketing/EarlyAccessBanner', () => {
     trackEventMock.mockReset();
   });
 
-  it('does not render when previously dismissed', () => {
+  it('does not render when previously dismissed', async () => {
     window.localStorage.setItem('tf_early_access_dismissed', '1');
     render(<EarlyAccessBanner />);
-    expect(screen.queryByLabelText('earlyAccess.dismiss')).toBeNull();
+    await waitFor(() => {
+      expect(screen.queryByLabelText('earlyAccess.dismiss')).toBeNull();
+    });
   });
 
   it('persists dismissal and tracks analytics event', () => {

@@ -36,9 +36,7 @@ const ZigzagUnderline: React.FC = () => (
 
 export const HeroSection: React.FC = () => {
     const { t } = useTranslation('home');
-    const [showPlaneWindow, setShowPlaneWindow] = useState(() => (
-        typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)').matches : false
-    ));
+    const [showPlaneWindow, setShowPlaneWindow] = useState(true);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;

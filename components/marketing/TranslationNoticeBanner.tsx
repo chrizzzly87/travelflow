@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { WarningCircle, X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -52,7 +52,13 @@ export const TranslationNoticeBanner: React.FC = () => {
         () => extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE,
         [routeLocation.pathname]
     );
-    const [dismissed, setDismissed] = useState<boolean>(() => isDismissedForSession());
+    const [dismissed, setDismissed] = useState<boolean>(false);
+
+    useEffect(() => {
+        if (activeLocale === DEFAULT_LOCALE) return;
+        if (isDismissedForSession()) setDismissed(true);
+    }, [activeLocale]);
+
     if (activeLocale === DEFAULT_LOCALE || dismissed) return null;
 
     const handleDismiss = () => {
