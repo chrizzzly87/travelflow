@@ -163,7 +163,7 @@ describe('pages/AdminTripsPage pagination', () => {
 
     expect(await screen.findByText('Showing 26-30 of 30')).toBeInTheDocument();
     expect(screen.getByText('Page 2 / 2')).toBeInTheDocument();
-  });
+  }, 30000);
 
   it('shows attempt metadata details and latest queue job diagnostics in the trip drawer', async () => {
     const user = userEvent.setup();

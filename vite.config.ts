@@ -1,6 +1,6 @@
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
-import react from '@vitejs/plugin-react';
+import preact from '@preact/preset-vite';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({ mode }) => {
@@ -43,7 +43,7 @@ export default defineConfig(({ mode }) => {
                 },
             },
         },
-        plugins: [react(), tailwindcss()],
+        plugins: [preact(), tailwindcss()],
         build: {
             sourcemap: mode !== 'production',
             // Keep global dependency preloading off: targeted warmups are the intended
@@ -69,9 +69,16 @@ export default defineConfig(({ mode }) => {
             'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         },
         resolve: {
-            alias: {
-                '@': path.resolve(__dirname, '.'),
-            },
+            alias: [
+                { find: '@', replacement: path.resolve(__dirname, '.') },
+                { find: /^react-dom\/client$/, replacement: 'preact/compat/client' },
+                { find: /^react-dom\/server$/, replacement: 'preact/compat/server' },
+                { find: /^react-dom\/test-utils$/, replacement: 'preact/test-utils' },
+                { find: /^react-dom$/, replacement: 'preact/compat' },
+                { find: /^react\/jsx-runtime$/, replacement: 'preact/compat/jsx-runtime' },
+                { find: /^react\/jsx-dev-runtime$/, replacement: 'preact/compat/jsx-dev-runtime' },
+                { find: /^react$/, replacement: 'preact/compat' },
+            ],
         },
     };
 });
