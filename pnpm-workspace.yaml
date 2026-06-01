@@ -1,4 +1,5 @@
 minimumReleaseAge: 10080
+blockExoticSubdeps: true
 trustPolicy: no-downgrade
 onlyBuiltDependencies:
   - better-sqlite3
