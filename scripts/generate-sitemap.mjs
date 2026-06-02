@@ -1,23 +1,19 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { resolveSiteUrl } from '../config/site-url.mjs';
+import {
+    ASTRO_MARKETING_STATIC_ROUTES,
+    DEFAULT_MARKETING_LOCALE,
+    SUPPORTED_MARKETING_LOCALES,
+    localizeMarketingManifestPath,
+} from '../config/marketingRouteManifest.mjs';
+import { countryGroups } from '../data/inspirationsData.ts';
 
 const ROOT = process.cwd();
 const BLOG_DIR = path.join(ROOT, 'content', 'blog');
 const OUT_FILE = path.join(ROOT, 'public', 'sitemap.xml');
-const ROUTE_CONFIG_FILES = [
-    path.join(ROOT, 'app', 'routes', 'DeferredAppRoutes.tsx'),
-    path.join(ROOT, 'App.tsx'),
-];
-const LOCALES_FILE = path.join(ROOT, 'config', 'locales.ts');
 
 const SITE_URL = resolveSiteUrl();
-const NON_INDEXABLE_STATIC_PATHS = new Set(['/auth/reset-password', '/share-unavailable']);
-const MARKETING_ROUTE_CONFIG_REGEX = /const\s+MARKETING_ROUTE_CONFIGS[\s\S]*?=\s*\[([\s\S]*?)\];/;
-const SUPPORTED_LOCALES_REGEX = /export\s+const\s+SUPPORTED_LOCALES\s*:[^=]*=\s*\[([\s\S]*?)\];/;
-const DEFAULT_LOCALE_REGEX = /export\s+const\s+DEFAULT_LOCALE\s*:[^=]*=\s*['"]([^'"]+)['"];/;
-const PATH_LITERAL_REGEX = /path:\s*['"]([^'"]+)['"]/g;
-const LOCALE_LITERAL_REGEX = /['"]([A-Za-z0-9-]+)['"]/g;
 
 const FRONTMATTER_REGEX = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/;
 
@@ -48,75 +44,24 @@ const parseFrontmatter = (raw) => {
     return { meta, body: match[2] };
 };
 
-const readLocalesConfig = async () => {
-    const raw = await fs.readFile(LOCALES_FILE, 'utf8');
-    const supportedLocalesMatch = raw.match(SUPPORTED_LOCALES_REGEX);
-    const defaultLocaleMatch = raw.match(DEFAULT_LOCALE_REGEX);
-
-    if (!supportedLocalesMatch || !defaultLocaleMatch) {
-        throw new Error(`[sitemap:generate] Could not parse locales from ${LOCALES_FILE}`);
-    }
-
-    const supportedLocales = [];
-    for (const match of supportedLocalesMatch[1].matchAll(LOCALE_LITERAL_REGEX)) {
-        supportedLocales.push(match[1]);
-    }
-
-    if (supportedLocales.length === 0) {
-        throw new Error(`[sitemap:generate] No locales found in ${LOCALES_FILE}`);
-    }
-
-    const defaultLocale = defaultLocaleMatch[1];
-    if (!supportedLocales.includes(defaultLocale)) {
-        throw new Error(
-            `[sitemap:generate] DEFAULT_LOCALE (${defaultLocale}) is not in SUPPORTED_LOCALES from ${LOCALES_FILE}`
-        );
-    }
-
-    return { supportedLocales, defaultLocale };
-};
-
-const readMarketingRouteConfigSource = async () => {
-    for (const filePath of ROUTE_CONFIG_FILES) {
-        try {
-            const raw = await fs.readFile(filePath, 'utf8');
-            const configMatch = raw.match(MARKETING_ROUTE_CONFIG_REGEX);
-            if (configMatch) {
-                return { filePath, configBody: configMatch[1] };
-            }
-        } catch {
-            // Try next candidate.
-        }
-    }
-
-    throw new Error(
-        `[sitemap:generate] Could not parse MARKETING_ROUTE_CONFIGS from any source file (${ROUTE_CONFIG_FILES.join(', ')})`
-    );
-};
-
 const readIndexableMarketingPaths = async () => {
-    const { filePath, configBody } = await readMarketingRouteConfigSource();
-
-    const uniquePaths = [];
-    for (const match of configBody.matchAll(PATH_LITERAL_REGEX)) {
-        const routePath = match[1];
-        if (routePath.includes(':')) continue;
-        if (NON_INDEXABLE_STATIC_PATHS.has(routePath)) continue;
-        if (uniquePaths.includes(routePath)) continue;
-        uniquePaths.push(routePath);
-    }
+    const staticPaths = ASTRO_MARKETING_STATIC_ROUTES
+        .filter((route) => route.indexable && !route.path.includes(':'))
+        .map((route) => route.path);
+    const countryPaths = countryGroups.map((country) =>
+        `/inspirations/country/${encodeURIComponent(country.country)}`
+    );
+    const uniquePaths = Array.from(new Set([...staticPaths, ...countryPaths]));
 
     if (uniquePaths.length === 0) {
-        throw new Error(`[sitemap:generate] No indexable marketing paths extracted from ${filePath}`);
+        throw new Error('[sitemap:generate] No indexable marketing paths found in marketing route manifest');
     }
 
     return uniquePaths;
 };
 
 const localizePath = (pathName, locale, defaultLocale) => {
-    if (locale === defaultLocale) return pathName;
-    if (pathName === '/') return `/${locale}`;
-    return `/${locale}${pathName}`;
+    return localizeMarketingManifestPath(pathName, locale);
 };
 
 const toAbsoluteUrl = (pathName) => `${SITE_URL}${pathName}`;
@@ -185,10 +130,9 @@ const readPublishedBlogPosts = async ({ supportedLocales, defaultLocale }) => {
 };
 
 const buildSitemap = async () => {
-    const [{ supportedLocales, defaultLocale }, marketingPaths] = await Promise.all([
-        readLocalesConfig(),
-        readIndexableMarketingPaths(),
-    ]);
+    const supportedLocales = SUPPORTED_MARKETING_LOCALES;
+    const defaultLocale = DEFAULT_MARKETING_LOCALE;
+    const marketingPaths = await readIndexableMarketingPaths();
 
     const nodes = [];
 
@@ -238,7 +182,7 @@ const buildSitemap = async () => {
 
     await fs.writeFile(OUT_FILE, xml, 'utf8');
     console.log(
-        `[sitemap:generate] wrote ${OUT_FILE} (${nodes.length} URLs from ${marketingPaths.length} static routes + ${blogPosts.length} blog posts)`
+        `[sitemap:generate] wrote ${OUT_FILE} (${nodes.length} URLs from ${marketingPaths.length} marketing paths + ${blogPosts.length} blog posts)`
     );
 };
 

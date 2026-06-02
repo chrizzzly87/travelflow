@@ -1,0 +1,145 @@
+---
+import '../styles/marketing.css';
+import LanguageSwitcher from '../components/LanguageSwitcher';
+import { LOCALE_LABELS } from '../../config/locales';
+import {
+  SUPPORTED_MARKETING_LOCALES,
+  localizeMarketingManifestPath,
+} from '../../config/marketingRouteManifest.mjs';
+import type { AppLanguage } from '../../types';
+import type { MarketingPageData } from '../lib/marketingContent';
+
+interface Props {
+  page: MarketingPageData;
+}
+
+const { page } = Astro.props;
+const siteUrl = Astro.site || 'https://travelflowapp.netlify.app';
+const canonicalUrl = new URL(page.seo.canonicalPath, siteUrl).toString();
+const ogImageUrl = new URL(`/api/og/site?path=${encodeURIComponent(page.seo.canonicalPath)}`, siteUrl).toString();
+const localeOptions = SUPPORTED_MARKETING_LOCALES.map((locale) => ({
+  locale,
+  label: LOCALE_LABELS[locale as AppLanguage] || locale,
+  path: localizeMarketingManifestPath(page.basePath, locale),
+}));
+const alternateLinks = SUPPORTED_MARKETING_LOCALES.map((locale) => ({
+  locale,
+  href: new URL(localizeMarketingManifestPath(page.basePath, locale), siteUrl).toString(),
+}));
+const xDefaultUrl = new URL(localizeMarketingManifestPath(page.basePath, 'en'), siteUrl).toString();
+const shouldPreloadLatinFonts = page.dir !== 'rtl';
+const navLinks = [
+  { href: localizeMarketingManifestPath('/features', page.locale), label: page.translations.nav.features },
+  { href: localizeMarketingManifestPath('/inspirations', page.locale), label: page.translations.nav.inspirations },
+  { href: localizeMarketingManifestPath('/updates', page.locale), label: page.translations.nav.updates },
+  { href: localizeMarketingManifestPath('/blog', page.locale), label: page.translations.nav.blog },
+  { href: localizeMarketingManifestPath('/pricing', page.locale), label: page.translations.nav.pricing },
+];
+---
+
+<!doctype html>
+<html lang={page.htmlLang} dir={page.dir}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="view-transition" content="same-origin" />
+    <title>{page.seo.title}</title>
+    <meta name="description" content={page.seo.description} />
+    <link rel="canonical" href={canonicalUrl} />
+    {alternateLinks.map((link) => <link rel="alternate" hreflang={link.locale} href={link.href} />)}
+    <link rel="alternate" hreflang="x-default" href={xDefaultUrl} />
+    {shouldPreloadLatinFonts && (
+      <>
+        <link rel="preload" href="/fonts/space-grotesk/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="preload" href="/fonts/bricolage-grotesque/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin />
+      </>
+    )}
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="TravelFlow" />
+    <meta property="og:title" content={page.seo.title} />
+    <meta property="og:description" content={page.seo.description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={page.seo.title} />
+    <meta name="twitter:description" content={page.seo.description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="site-header">
+        <div class="site-header__inner">
+          <a class="brand" href={localizeMarketingManifestPath('/', page.locale)} aria-label="TravelFlow">
+            <span class="brand__mark" aria-hidden="true">
+              <img src="/brand-plane.svg" alt="" width="16" height="16" />
+            </span>
+            <span>TravelFlow</span>
+          </a>
+          <nav class="site-nav" aria-label="Main navigation">
+            {navLinks.map((link) => <a href={link.href}>{link.label}</a>)}
+          </nav>
+          <div class="header-actions">
+            <LanguageSwitcher
+              client:load
+              currentLocale={page.locale}
+              options={localeOptions}
+            />
+            <a class="button-secondary" href="/profile">{page.translations.nav.myTrips}</a>
+            <a
+              class="button"
+              href="/create-trip"
+              data-analytics-event="marketing__header_cta--start_planning"
+            >
+              {page.translations.nav.startPlanning}
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <main class="page-main">
+        <slot />
+      </main>
+
+      <footer class="site-footer">
+        <div class="site-footer__inner">
+          <div>
+            <strong>TravelFlow</strong>
+            <span> · Plan routes that are ready to share.</span>
+          </div>
+          <nav class="footer-links" aria-label="Footer navigation">
+            <a href={localizeMarketingManifestPath('/privacy', page.locale)}>{page.translations.common.privacy}</a>
+            <a href={localizeMarketingManifestPath('/terms', page.locale)}>{page.translations.common.terms}</a>
+            <a href={localizeMarketingManifestPath('/cookies', page.locale)}>Cookies</a>
+            <a href={localizeMarketingManifestPath('/contact', page.locale)}>Contact</a>
+          </nav>
+        </div>
+      </footer>
+    </div>
+
+    <script is:inline>
+      (() => {
+        const track = (name, detail) => {
+          try {
+            window.dispatchEvent(new CustomEvent('tf:analytics-event', { detail: { name, detail } }));
+            if (window.umami && typeof window.umami.track === 'function') {
+              window.umami.track(name, detail || undefined);
+            }
+          } catch {}
+        };
+        document.addEventListener('click', (event) => {
+          const target = event.target instanceof Element
+            ? event.target.closest('[data-analytics-event]')
+            : null;
+          if (!target) return;
+          const name = target.getAttribute('data-analytics-event');
+          if (!name) return;
+          track(name);
+        }, { passive: true });
+      })();
+    </script>
+  </body>
+</html>

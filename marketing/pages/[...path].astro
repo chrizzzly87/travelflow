@@ -1,0 +1,24 @@
+---
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import PageRenderer from '../components/PageRenderer.astro';
+import { getAllMarketingPagePaths, resolveMarketingPage } from '../lib/marketingContent';
+
+export function getStaticPaths() {
+  return getAllMarketingPagePaths()
+    .filter((path) => path !== '/')
+    .map((path) => ({
+      params: { path: decodeURI(path.replace(/^\//, '')) },
+      props: { pathname: path },
+    }));
+}
+
+const { pathname } = Astro.props;
+const page = resolveMarketingPage(pathname);
+if (!page) {
+  throw new Error(`Missing Astro marketing page data for ${pathname}`);
+}
+---
+
+<MarketingLayout page={page}>
+  <PageRenderer page={page} />
+</MarketingLayout>

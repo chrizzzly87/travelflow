@@ -3,18 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { resolvePrefetchTargets } from '../../config/prefetchTargets';
 
 describe('config/prefetchTargets', () => {
-  it('warms deferred marketing routes with their router chunk and page chunk', () => {
-    expect(resolvePrefetchTargets('/pricing').map((target) => target.key)).toEqual([
-      'route:deferred-app-routes',
-      'route:pricing',
-    ]);
-
-    expect(resolvePrefetchTargets('/blog').map((target) => target.key)).toEqual(
-      expect.arrayContaining([
-        'route:deferred-app-routes',
-        'route:blog',
-      ])
-    );
+  it('does not warm Astro-owned marketing routes through React chunks', () => {
+    expect(resolvePrefetchTargets('/pricing').map((target) => target.key)).toEqual([]);
+    expect(resolvePrefetchTargets('/blog').map((target) => target.key)).toEqual([]);
+    expect(resolvePrefetchTargets('/de/features').map((target) => target.key)).toEqual([]);
   });
 
   it('warms protected deferred routes with their router chunk and page chunk', () => {

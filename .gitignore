@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.astro/
+.astro-marketing-dist/
 .netlify
 /coverage/
 *.local
@@ -18,6 +20,7 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 .idea
+.playwright-mcp/
 .DS_Store
 *.suo
 *.ntvs*
@@ -28,6 +31,7 @@ dist-ssr
 # Performance artifacts
 /perf/
 /tmp/perf/
+/tmp/perf-app/
 public/images/og/site/generated/
 .promptfoo/
 artifacts/promptfoo/

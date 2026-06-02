@@ -1,0 +1,14 @@
+---
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import PageRenderer from '../components/PageRenderer.astro';
+import { resolveMarketingPage } from '../lib/marketingContent';
+
+const page = resolveMarketingPage('/');
+if (!page) {
+  throw new Error('Missing Astro marketing page data for /');
+}
+---
+
+<MarketingLayout page={page}>
+  <PageRenderer page={page} />
+</MarketingLayout>

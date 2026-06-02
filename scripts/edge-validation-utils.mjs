@@ -26,43 +26,15 @@ export const findCatchAllEdgeEntries = (entries) =>
 const SITE_OG_META_LOCALES = ["es", "de", "fr", "pt", "ru", "it", "pl", "ko", "fa", "ur"];
 
 const SITE_OG_META_BASE_ALLOWED_PATHS = [
-  "/",
-  "/features",
-  "/inspirations",
-  "/inspirations/*",
-  "/updates",
-  "/blog",
-  "/blog/*",
-  "/pricing",
-  "/faq",
   "/share-unavailable",
   "/login",
-  "/contact",
-  "/imprint",
-  "/privacy",
-  "/terms",
-  "/cookies",
   "/create-trip",
   "/example/*",
 ];
 
 const SITE_OG_META_LOCALIZED_ALLOWED_PATHS = [
-  "/",
-  "/features",
-  "/inspirations",
-  "/inspirations/*",
-  "/updates",
-  "/blog",
-  "/blog/*",
-  "/pricing",
-  "/faq",
   "/share-unavailable",
   "/login",
-  "/contact",
-  "/imprint",
-  "/privacy",
-  "/terms",
-  "/cookies",
   "/create-trip",
 ];
 

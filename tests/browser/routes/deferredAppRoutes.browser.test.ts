@@ -42,10 +42,6 @@ vi.mock('../../../pages/PublicProfileStampsPage', () => ({
   PublicProfileStampsPage: () => React.createElement('div', { 'data-testid': 'mock-public-profile-stamps-page' }, 'Public profile stamps page'),
 }));
 
-vi.mock('../../../pages/PricingPage', () => ({
-  PricingPage: () => React.createElement('div', { 'data-testid': 'mock-pricing-page' }, 'Pricing page'),
-}));
-
 import { DeferredAppRoutes } from '../../../app/routes/DeferredAppRoutes';
 
 const LocationProbe: React.FC = () => {
@@ -68,7 +64,7 @@ const renderDeferredRoutes = (initialPath: string) => {
   );
 };
 
-describe('app/routes/DeferredAppRoutes root auth gate', () => {
+describe('app/routes/DeferredAppRoutes', () => {
   beforeEach(() => {
     cleanup();
     mocks.auth.isLoading = false;
@@ -80,24 +76,22 @@ describe('app/routes/DeferredAppRoutes root auth gate', () => {
     mocks.pendingModules.clear();
   });
 
-  it('redirects authenticated users from root to /profile', async () => {
+  it('hands root marketing routes back to the static Astro document', () => {
     mocks.auth.isAuthenticated = true;
 
     const { getByTestId } = renderDeferredRoutes('/');
 
-    await waitFor(() => {
-      expect(getByTestId('location-probe').textContent).toBe('/profile');
-    });
+    expect(getByTestId('location-probe').textContent).toBe('/');
+    expect(getByTestId('route-loading-shell')).toBeInTheDocument();
   });
 
-  it('redirects authenticated users from localized root to /profile', async () => {
+  it('hands localized root marketing routes back to the static Astro document', () => {
     mocks.auth.isAuthenticated = true;
 
     const { getByTestId } = renderDeferredRoutes('/de');
 
-    await waitFor(() => {
-      expect(getByTestId('location-probe').textContent).toBe('/profile');
-    });
+    expect(getByTestId('location-probe').textContent).toBe('/de');
+    expect(getByTestId('route-loading-shell')).toBeInTheDocument();
   });
 
   it('shows loading fallback while auth is resolving on root', () => {
@@ -166,12 +160,13 @@ describe('app/routes/DeferredAppRoutes root auth gate', () => {
   });
 
   it('lets a parent suspense boundary handle pending deferred routes when wrapInSuspense is disabled', () => {
-    mocks.pendingModules.add('PricingPage');
+    mocks.auth.isAuthenticated = true;
+    mocks.pendingModules.add('ProfilePage');
 
     const { getByTestId, queryByTestId } = render(
       React.createElement(
         MemoryRouter,
-        { initialEntries: ['/pricing'] },
+        { initialEntries: ['/profile'] },
         React.createElement(
           Suspense,
           { fallback: React.createElement('div', { 'data-testid': 'outer-route-fallback' }, 'Outer fallback') },
@@ -186,7 +181,7 @@ describe('app/routes/DeferredAppRoutes root auth gate', () => {
       )
     );
 
-    expect(getByTestId('location-probe').textContent).toBe('/pricing');
+    expect(getByTestId('location-probe').textContent).toBe('/profile');
     expect(getByTestId('outer-route-fallback').textContent).toBe('Outer fallback');
     expect(queryByTestId('route-loading-shell')).toBeNull();
   });

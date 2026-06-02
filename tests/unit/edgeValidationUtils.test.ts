@@ -50,6 +50,16 @@ describe('edge validation utils', () => {
     const violations = findSiteOgMetaScopeViolations(entries);
     expect(violations).toEqual([
       {
+        path: '/',
+        functionName: 'site-og-meta',
+        reason: 'site-og-meta must only be mapped to approved static/example route allowlists. Found disallowed path "/".',
+      },
+      {
+        path: '/de/features',
+        functionName: 'site-og-meta',
+        reason: 'site-og-meta must only be mapped to approved static/example route allowlists. Found disallowed path "/de/features".',
+      },
+      {
         path: '/de/*',
         functionName: 'site-og-meta',
         reason: 'site-og-meta must only be mapped to approved static/example route allowlists. Found disallowed path "/de/*".',
@@ -59,15 +69,14 @@ describe('edge validation utils', () => {
 
   it('passes approved site-og-meta allowlist routes', () => {
     const entries = [
-      { path: '/', functionName: 'site-og-meta' },
-      { path: '/inspirations/*', functionName: 'site-og-meta' },
-      { path: '/blog/*', functionName: 'site-og-meta' },
       { path: '/example/*', functionName: 'site-og-meta' },
-      { path: '/de', functionName: 'site-og-meta' },
-      { path: '/de/inspirations/*', functionName: 'site-og-meta' },
-      { path: '/de/blog/*', functionName: 'site-og-meta' },
+      { path: '/share-unavailable', functionName: 'site-og-meta' },
+      { path: '/login', functionName: 'site-og-meta' },
+      { path: '/create-trip', functionName: 'site-og-meta' },
+      { path: '/de/share-unavailable', functionName: 'site-og-meta' },
+      { path: '/de/login', functionName: 'site-og-meta' },
       { path: '/de/create-trip', functionName: 'site-og-meta' },
-      { path: '/fa/pricing', functionName: 'site-og-meta' },
+      { path: '/fa/login', functionName: 'site-og-meta' },
       { path: '/ur/create-trip', functionName: 'site-og-meta' },
       { path: '/trip/*', functionName: 'trip-og-meta' },
     ];
