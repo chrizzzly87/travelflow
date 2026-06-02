@@ -3,6 +3,7 @@ Allow: /
 Disallow: /trip/
 Disallow: /s/
 Disallow: /admin/
+Disallow: /admin/component-playground
 Disallow: /api/
 
 Sitemap: https://travelflowapp.netlify.app/sitemap.xml
