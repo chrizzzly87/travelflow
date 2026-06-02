@@ -6,6 +6,11 @@ const DIST_DIR = path.join(ROOT, 'dist');
 const ASTRO_DIST_DIR = path.join(ROOT, '.astro-marketing-dist');
 const APP_SHELL_FILE = path.join(DIST_DIR, 'app.html');
 const VITE_INDEX_FILE = path.join(DIST_DIR, 'index.html');
+const APP_ONLY_ASTRO_CSS_CHUNKS = [
+  /<link rel="stylesheet" href="\/_astro\/DeferredAppRoutes\.[^"]+\.css">/g,
+  /<link rel="stylesheet" href="\/_astro\/ItineraryMap\.[^"]+\.css">/g,
+];
+const MARKETING_CSS_LINK = /<link rel="stylesheet" href="(\/_astro\/marketingContent\.[^"]+\.css)">/g;
 
 const copyRecursive = async (source, target) => {
   const stat = await fs.stat(source);
@@ -40,6 +45,32 @@ const main = async () => {
   }
 
   await copyRecursive(ASTRO_DIST_DIR, DIST_DIR);
+
+  const stripAppOnlyCssLinks = async (directory) => {
+    const entries = await fs.readdir(directory, { withFileTypes: true });
+    await Promise.all(entries.map(async (entry) => {
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        await stripAppOnlyCssLinks(entryPath);
+        return;
+      }
+      if (!entry.name.endsWith('.html')) return;
+      const html = await fs.readFile(entryPath, 'utf8');
+      const withoutAppCss = APP_ONLY_ASTRO_CSS_CHUNKS.reduce(
+        (current, pattern) => current.replace(pattern, ''),
+        html
+      );
+      const nextHtml = withoutAppCss.replace(
+        MARKETING_CSS_LINK,
+        "<link rel=\"preload\" href=\"$1\" as=\"style\" onload=\"this.onload=null;this.rel='stylesheet'\"><noscript><link rel=\"stylesheet\" href=\"$1\"></noscript>"
+      );
+      if (nextHtml !== html) {
+        await fs.writeFile(entryPath, nextHtml);
+      }
+    }));
+  };
+
+  await stripAppOnlyCssLinks(DIST_DIR);
 
   const appShellHtml = await fs.readFile(APP_SHELL_FILE, 'utf8');
   if (!appShellHtml.includes('id="root"')) {

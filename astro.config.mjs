@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
-import preact from '@astrojs/preact';
+import react from '@astrojs/react';
+import tailwindcss from '@tailwindcss/vite';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
@@ -10,15 +11,22 @@ export default defineConfig({
   publicDir: './public',
   outDir: './.astro-marketing-dist',
   trailingSlash: 'ignore',
-  integrations: [preact()],
+  integrations: [react()],
   build: {
     format: 'directory',
   },
   vite: {
+    plugins: [tailwindcss()],
+    ssr: {
+      noExternal: [
+        'react-router',
+        'react-router-dom',
+        '@phosphor-icons/react',
+        'react-i18next',
+      ],
+    },
     resolve: {
-      alias: {
-        '@': rootDir,
-      },
+      alias: [{ find: '@', replacement: rootDir }],
     },
   },
 });

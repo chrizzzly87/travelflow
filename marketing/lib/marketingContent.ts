@@ -226,7 +226,11 @@ const buildBasePage = (
       updates: t(locale, 'common', 'nav.updates', 'Updates'),
       blog: t(locale, 'common', 'nav.blog', 'Blog'),
       pricing: t(locale, 'common', 'nav.pricing', 'Pricing'),
+      login: t(locale, 'common', 'nav.login', 'Login'),
+      createTrip: t(locale, 'common', 'nav.createTrip', 'Create Trip'),
       myTrips: t(locale, 'common', 'nav.myTrips', 'My trips'),
+      openMenu: t(locale, 'common', 'nav.openMenu', 'Open menu'),
+      closeMenu: t(locale, 'common', 'buttons.done', 'Done'),
       startPlanning: t(locale, 'common', 'buttons.startPlanning', 'Start planning'),
     },
     common: {

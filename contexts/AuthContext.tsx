@@ -215,7 +215,7 @@ const MISSING_AUTH_PROVIDER_FALLBACK: AuthContextValue = {
 
 export const resolveAuthContextValue = (context: AuthContextValue | null): AuthContextValue => {
     if (context) return context;
-    if (!hasWarnedMissingAuthProvider) {
+    if (typeof window !== 'undefined' && !hasWarnedMissingAuthProvider) {
         hasWarnedMissingAuthProvider = true;
         console.error('useAuthContext was used without an AuthProvider. Falling back to anonymous-safe auth context.');
     }

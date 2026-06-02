@@ -1,6 +1,9 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { HeroSection } from '../components/marketing/HeroSection';
+import { ExampleTripsCarousel as StaticExampleTripsCarousel } from '../components/marketing/ExampleTripsCarousel';
+import { FeatureShowcase as StaticFeatureShowcase } from '../components/marketing/FeatureShowcase';
+import { CtaBanner as StaticCtaBanner } from '../components/marketing/CtaBanner';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -24,13 +27,14 @@ const CtaBanner = lazyWithRecovery(
 );
 
 export const MarketingHomePage: React.FC = () => {
-    const [shouldLoadCarousel, setShouldLoadCarousel] = useState(false);
+    const isStaticRender = typeof window === 'undefined';
+    const [shouldLoadCarousel, setShouldLoadCarousel] = useState(isStaticRender);
     const carouselSectionRef = useRef<HTMLDivElement | null>(null);
 
-    const [shouldLoadShowcase, setShouldLoadShowcase] = useState(false);
+    const [shouldLoadShowcase, setShouldLoadShowcase] = useState(isStaticRender);
     const showcaseSectionRef = useRef<HTMLDivElement | null>(null);
 
-    const [shouldLoadCta, setShouldLoadCta] = useState(false);
+    const [shouldLoadCta, setShouldLoadCta] = useState(isStaticRender);
     const ctaSectionRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -100,7 +104,9 @@ export const MarketingHomePage: React.FC = () => {
         <MarketingLayout>
             <HeroSection />
             <div ref={carouselSectionRef} className="min-h-[460px]">
-                {shouldLoadCarousel ? (
+                {isStaticRender ? (
+                    <StaticExampleTripsCarousel />
+                ) : shouldLoadCarousel ? (
                     <Suspense fallback={<div className="h-[460px] w-full" aria-hidden="true" />}>
                         <ExampleTripsCarousel />
                     </Suspense>
@@ -109,7 +115,9 @@ export const MarketingHomePage: React.FC = () => {
                 )}
             </div>
             <div ref={showcaseSectionRef} className="min-h-[600px]">
-                {shouldLoadShowcase ? (
+                {isStaticRender ? (
+                    <StaticFeatureShowcase />
+                ) : shouldLoadShowcase ? (
                     <Suspense fallback={<div className="h-[600px] w-full" aria-hidden="true" />}>
                         <FeatureShowcase />
                     </Suspense>
@@ -118,7 +126,9 @@ export const MarketingHomePage: React.FC = () => {
                 )}
             </div>
             <div ref={ctaSectionRef} className="min-h-[300px]">
-                {shouldLoadCta ? (
+                {isStaticRender ? (
+                    <StaticCtaBanner />
+                ) : shouldLoadCta ? (
                     <Suspense fallback={<div className="h-[300px] w-full" aria-hidden="true" />}>
                         <CtaBanner />
                     </Suspense>

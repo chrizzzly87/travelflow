@@ -1,12 +1,9 @@
 ---
-import '../styles/marketing.css';
-import LanguageSwitcher from '../components/LanguageSwitcher';
-import { LOCALE_LABELS } from '../../config/locales';
+import '../../index.css';
 import {
   SUPPORTED_MARKETING_LOCALES,
   localizeMarketingManifestPath,
 } from '../../config/marketingRouteManifest.mjs';
-import type { AppLanguage } from '../../types';
 import type { MarketingPageData } from '../lib/marketingContent';
 
 interface Props {
@@ -17,24 +14,61 @@ const { page } = Astro.props;
 const siteUrl = Astro.site || 'https://travelflowapp.netlify.app';
 const canonicalUrl = new URL(page.seo.canonicalPath, siteUrl).toString();
 const ogImageUrl = new URL(`/api/og/site?path=${encodeURIComponent(page.seo.canonicalPath)}`, siteUrl).toString();
-const localeOptions = SUPPORTED_MARKETING_LOCALES.map((locale) => ({
-  locale,
-  label: LOCALE_LABELS[locale as AppLanguage] || locale,
-  path: localizeMarketingManifestPath(page.basePath, locale),
-}));
 const alternateLinks = SUPPORTED_MARKETING_LOCALES.map((locale) => ({
   locale,
   href: new URL(localizeMarketingManifestPath(page.basePath, locale), siteUrl).toString(),
 }));
 const xDefaultUrl = new URL(localizeMarketingManifestPath(page.basePath, 'en'), siteUrl).toString();
-const shouldPreloadLatinFonts = page.dir !== 'rtl';
-const navLinks = [
-  { href: localizeMarketingManifestPath('/features', page.locale), label: page.translations.nav.features },
-  { href: localizeMarketingManifestPath('/inspirations', page.locale), label: page.translations.nav.inspirations },
-  { href: localizeMarketingManifestPath('/updates', page.locale), label: page.translations.nav.updates },
-  { href: localizeMarketingManifestPath('/blog', page.locale), label: page.translations.nav.blog },
-  { href: localizeMarketingManifestPath('/pricing', page.locale), label: page.translations.nav.pricing },
+const fontPreloadsByLocale: Record<string, string[]> = {
+  en: [],
+  es: [],
+  de: [],
+  fr: [],
+  it: [],
+  ko: [],
+  pl: [],
+  pt: [],
+  ru: [
+    '/fonts/noto-fallback/noto-sans-cyrillic.woff2',
+    '/fonts/noto-fallback/noto-sans-cyrillic-ext.woff2',
+  ],
+  fa: [
+    '/fonts/vazirmatn/vazirmatn-arabic-400-normal.woff2',
+    '/fonts/vazirmatn/vazirmatn-arabic-700-normal.woff2',
+  ],
+  ur: [
+    '/fonts/vazirmatn/vazirmatn-arabic-400-normal.woff2',
+    '/fonts/vazirmatn/vazirmatn-arabic-700-normal.woff2',
+  ],
+};
+const fontPreloads = fontPreloadsByLocale[page.locale] ?? [];
+const staticNavLinks = [
+  { href: localizeMarketingManifestPath('/features', page.locale), label: page.translations.nav.features, event: 'navigation__features' },
+  { href: localizeMarketingManifestPath('/inspirations', page.locale), label: page.translations.nav.inspirations, event: 'navigation__inspirations' },
+  { href: localizeMarketingManifestPath('/updates', page.locale), label: page.translations.nav.updates, event: 'navigation__updates' },
+  { href: localizeMarketingManifestPath('/blog', page.locale), label: page.translations.nav.blog, event: 'navigation__blog' },
+  { href: localizeMarketingManifestPath('/pricing', page.locale), label: page.translations.nav.pricing, event: 'navigation__pricing' },
 ];
+const staticCreateTripPath = page.locale === 'en' ? '/create-trip' : `/${page.locale}/create-trip`;
+const staticLoginPath = page.locale === 'en' ? '/login' : `/${page.locale}/login`;
+const languageNames: Record<string, string> = {
+  en: 'English',
+  es: 'Español',
+  de: 'Deutsch',
+  fr: 'Français',
+  pt: 'Português',
+  ru: 'Русский',
+  it: 'Italiano',
+  pl: 'Polski',
+  ko: '한국어',
+  fa: 'فارسی',
+  ur: 'اردو',
+};
+const staticLanguageLinks = SUPPORTED_MARKETING_LOCALES.map((locale) => ({
+  locale,
+  label: languageNames[locale] ?? locale,
+  href: localizeMarketingManifestPath(page.basePath, locale),
+}));
 ---
 
 <!doctype html>
@@ -48,12 +82,9 @@ const navLinks = [
     <link rel="canonical" href={canonicalUrl} />
     {alternateLinks.map((link) => <link rel="alternate" hreflang={link.locale} href={link.href} />)}
     <link rel="alternate" hreflang="x-default" href={xDefaultUrl} />
-    {shouldPreloadLatinFonts && (
-      <>
-        <link rel="preload" href="/fonts/space-grotesk/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
-        <link rel="preload" href="/fonts/bricolage-grotesque/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin />
-      </>
-    )}
+    {fontPreloads.map((href) => (
+      <link rel="preload" href={href} as="font" type="font/woff2" crossorigin />
+    ))}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
@@ -68,56 +99,226 @@ const navLinks = [
     <meta name="twitter:title" content={page.seo.title} />
     <meta name="twitter:description" content={page.seo.description} />
     <meta name="twitter:image" content={ogImageUrl} />
+    <style is:inline>
+      html {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: rgb(248, 250, 252);
+        color: rgb(15, 23, 42);
+      }
+      body {
+        margin: 0;
+        min-block-size: 100vh;
+        background: rgb(248, 250, 252);
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      img,
+      svg {
+        display: block;
+      }
+      img {
+        max-inline-size: 100%;
+        block-size: auto;
+      }
+      button,
+      input,
+      textarea,
+      select {
+        font: inherit;
+      }
+      button {
+        border: 0;
+        background: transparent;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      header {
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 1600;
+        border-block-end: 1px solid rgba(226, 232, 240, 0.7);
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(12px);
+      }
+      header > div {
+        display: flex;
+        max-inline-size: 80rem;
+        align-items: center;
+        justify-content: space-between;
+        margin-inline: auto;
+        padding-block: 1rem;
+        padding-inline: 1.25rem;
+      }
+      header nav {
+        display: none;
+      }
+      main {
+        max-inline-size: 80rem;
+        margin-inline: auto;
+        padding-block: 2.5rem 4rem;
+        padding-inline: 1.25rem;
+      }
+      h1 {
+        margin: 0;
+        color: rgb(2, 6, 23);
+        font-size: clamp(2.7rem, 10vw, 4.75rem);
+        font-weight: 900;
+        letter-spacing: 0;
+        line-height: 0.98;
+      }
+      h1 + p,
+      section > p {
+        color: rgb(71, 85, 105);
+        font-size: clamp(1.05rem, 2.5vw, 1.25rem);
+        line-height: 1.65;
+      }
+      .pointer-events-auto > .border-b {
+        border-block-end: 1px solid rgba(245, 158, 11, 0.18);
+        background: rgba(255, 251, 235, 0.94);
+      }
+      .pointer-events-auto > .border-b > .mx-auto {
+        display: flex;
+        max-inline-size: 80rem;
+        align-items: center;
+        gap: 0.75rem;
+        margin-inline: auto;
+        padding-block: 0.75rem;
+        padding-inline: 1.25rem;
+      }
+      .pointer-events-auto > .border-b p {
+        margin: 0;
+        color: rgb(100, 69, 19);
+        font-size: 0.875rem;
+        line-height: 1.45;
+      }
+      .mx-auto {
+        margin-inline: auto;
+      }
+      .max-w-2xl {
+        max-inline-size: 42rem;
+      }
+      .max-w-3xl {
+        max-inline-size: 48rem;
+      }
+      .max-w-4xl {
+        max-inline-size: 56rem;
+      }
+      .pt-8 {
+        padding-block-start: 2rem;
+      }
+      .pb-8 {
+        padding-block-end: 2rem;
+      }
+      .py-8 {
+        padding-block: 2rem;
+      }
+      .mt-4 {
+        margin-block-start: 1rem;
+      }
+      .mt-5 {
+        margin-block-start: 1.25rem;
+      }
+      .mt-10 {
+        margin-block-start: 2.5rem;
+      }
+      .mb-4 {
+        margin-block-end: 1rem;
+      }
+      .text-4xl {
+        font-size: 2.25rem;
+        line-height: 2.5rem;
+      }
+      .font-extrabold {
+        font-weight: 800;
+      }
+      .tracking-tight {
+        letter-spacing: 0;
+      }
+      .leading-tight {
+        line-height: 1.25;
+      }
+      .text-slate-600 {
+        color: rgb(71, 85, 105);
+      }
+      .text-slate-900 {
+        color: rgb(15, 23, 42);
+      }
+      .text-transparent {
+        color: transparent;
+      }
+      .bg-clip-text {
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+      .bg-gradient-to-r {
+        background-image: linear-gradient(to right, var(--tw-gradient-stops, rgb(79, 70, 229), rgb(14, 165, 233)));
+      }
+      .from-accent-600 {
+        --tw-gradient-from: rgb(79, 70, 229);
+        --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(79, 70, 229, 0));
+      }
+      .to-cyan-500 {
+        --tw-gradient-to: rgb(6, 182, 212);
+      }
+      @media (min-width: 768px) {
+        header > div,
+        main {
+          padding-inline: 2rem;
+        }
+        .md\:text-6xl {
+          font-size: 3.75rem;
+          line-height: 1;
+        }
+      }
+      @media (min-width: 1024px) {
+        header nav {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div class="site-shell">
-      <header class="site-header">
-        <div class="site-header__inner">
-          <a class="brand" href={localizeMarketingManifestPath('/', page.locale)} aria-label="TravelFlow">
-            <span class="brand__mark" aria-hidden="true">
-              <img src="/brand-plane.svg" alt="" width="16" height="16" />
-            </span>
-            <span>TravelFlow</span>
-          </a>
-          <nav class="site-nav" aria-label="Main navigation">
-            {navLinks.map((link) => <a href={link.href}>{link.label}</a>)}
-          </nav>
-          <div class="header-actions">
-            <LanguageSwitcher
-              client:load
-              currentLocale={page.locale}
-              options={localeOptions}
-            />
-            <a class="button-secondary" href="/profile">{page.translations.nav.myTrips}</a>
-            <a
-              class="button"
-              href="/create-trip"
-              data-analytics-event="marketing__header_cta--start_planning"
-            >
-              {page.translations.nav.startPlanning}
-            </a>
-          </div>
+    <script is:inline define:vars={{ locale: page.locale }}>
+      try {
+        window.localStorage.setItem('tf_app_language', locale);
+      } catch {}
+    </script>
+    <slot />
+    <div id="tf-static-mobile-nav" class="tf-static-mobile-nav" hidden>
+      <div class="tf-static-mobile-nav__backdrop" data-tf-static-menu-close></div>
+      <div class="tf-static-mobile-nav__panel" role="dialog" aria-modal="true" aria-label={page.translations.nav.openMenu}>
+        <div class="tf-static-mobile-nav__top">
+          <span class="tf-static-mobile-nav__brand">TravelFlow</span>
+          <button class="tf-static-mobile-nav__close" type="button" aria-label={page.translations.nav.closeMenu} data-tf-static-menu-close>×</button>
         </div>
-      </header>
-
-      <main class="page-main">
-        <slot />
-      </main>
-
-      <footer class="site-footer">
-        <div class="site-footer__inner">
-          <div>
-            <strong>TravelFlow</strong>
-            <span> · Plan routes that are ready to share.</span>
-          </div>
-          <nav class="footer-links" aria-label="Footer navigation">
-            <a href={localizeMarketingManifestPath('/privacy', page.locale)}>{page.translations.common.privacy}</a>
-            <a href={localizeMarketingManifestPath('/terms', page.locale)}>{page.translations.common.terms}</a>
-            <a href={localizeMarketingManifestPath('/cookies', page.locale)}>Cookies</a>
-            <a href={localizeMarketingManifestPath('/contact', page.locale)}>Contact</a>
-          </nav>
+        <nav class="tf-static-mobile-nav__links" aria-label={page.translations.nav.openMenu}>
+          {staticNavLinks.map((link) => (
+            <a href={link.href} data-tf-track-event={link.event}>{link.label}</a>
+          ))}
+        </nav>
+        <div class="tf-static-mobile-nav__actions">
+          <a href={staticLoginPath} data-tf-track-event="navigation__login">{page.translations.nav.login}</a>
+          <a href={staticCreateTripPath} data-tf-track-event="navigation__create_trip">{page.translations.nav.createTrip}</a>
         </div>
-      </footer>
+      </div>
+    </div>
+    <div id="tf-static-language-menu" class="tf-static-language-menu" role="menu" hidden>
+      {staticLanguageLinks.map((link) => (
+        <a
+          href={link.href}
+          role="menuitem"
+          aria-current={link.locale === page.locale ? 'true' : undefined}
+          data-tf-track-event="navigation__language_switch"
+          data-locale={link.locale}
+        >
+          {link.label}
+        </a>
+      ))}
     </div>
 
     <script is:inline>
@@ -139,6 +340,66 @@ const navLinks = [
           if (!name) return;
           track(name);
         }, { passive: true });
+        document.addEventListener('click', (event) => {
+          const target = event.target instanceof Element
+            ? event.target.closest('[data-tf-track-event]')
+            : null;
+          if (!target) return;
+          const name = target.getAttribute('data-tf-track-event');
+          if (!name) return;
+          const locale = target instanceof HTMLElement ? target.dataset.locale : undefined;
+          track(name, locale ? { to: locale } : undefined);
+        }, { passive: true });
+
+        const mobileMenu = document.getElementById('tf-static-mobile-nav');
+        const mobileMenuButton = document.querySelector('[data-tf-track-event="mobile_nav__menu--open"]');
+        const closeMobileMenu = () => {
+          if (!mobileMenu) return;
+          mobileMenu.hidden = true;
+          document.documentElement.classList.remove('tf-static-menu-open');
+          mobileMenuButton?.setAttribute('aria-expanded', 'false');
+        };
+        mobileMenuButton?.addEventListener('click', () => {
+          if (!mobileMenu) return;
+          mobileMenu.hidden = false;
+          document.documentElement.classList.add('tf-static-menu-open');
+          mobileMenuButton.setAttribute('aria-expanded', 'true');
+        });
+        document.querySelectorAll('[data-tf-static-menu-close]').forEach((control) => {
+          control.addEventListener('click', closeMobileMenu);
+        });
+        document.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') closeMobileMenu();
+        });
+
+        const languageButton = document.querySelector('button[aria-label="Language"]');
+        const languageMenu = document.getElementById('tf-static-language-menu');
+        const closeLanguageMenu = () => {
+          if (!languageMenu) return;
+          languageMenu.hidden = true;
+          languageButton?.setAttribute('aria-expanded', 'false');
+        };
+        languageButton?.addEventListener('click', (event) => {
+          if (!languageMenu || !(languageButton instanceof HTMLElement)) return;
+          event.stopPropagation();
+          const rect = languageButton.getBoundingClientRect();
+          languageMenu.style.insetBlockStart = `${Math.round(rect.bottom + 8)}px`;
+          languageMenu.style.insetInlineEnd = `${Math.max(16, Math.round(window.innerWidth - rect.right))}px`;
+          languageMenu.hidden = !languageMenu.hidden;
+          languageButton.setAttribute('aria-expanded', String(!languageMenu.hidden));
+        });
+        document.addEventListener('click', (event) => {
+          if (!languageMenu || languageMenu.hidden) return;
+          if (event.target instanceof Node && languageMenu.contains(event.target)) return;
+          closeLanguageMenu();
+        });
+
+        document.querySelector('[data-tf-track-event="banner__early_access--dismiss"]')?.addEventListener('click', (event) => {
+          const banner = event.target instanceof Element
+            ? event.target.closest('[role="status"], [aria-live], .pointer-events-auto > *')
+            : null;
+          banner?.setAttribute('hidden', '');
+        });
       })();
     </script>
   </body>

@@ -1,7 +1,9 @@
 ---
 import MarketingLayout from '../layouts/MarketingLayout.astro';
-import PageRenderer from '../components/PageRenderer.astro';
+import { ReactMarketingPage } from '../components/ReactMarketingPage';
 import { getAllMarketingPagePaths, resolveMarketingPage } from '../lib/marketingContent';
+import i18n, { preloadLocaleNamespaces } from '../../i18n';
+import { getNamespacesForMarketingPath } from '../../config/routes';
 
 export function getStaticPaths() {
   return getAllMarketingPagePaths()
@@ -17,8 +19,10 @@ const page = resolveMarketingPage(pathname);
 if (!page) {
   throw new Error(`Missing Astro marketing page data for ${pathname}`);
 }
+await preloadLocaleNamespaces(page.locale, getNamespacesForMarketingPath(page.path));
+await i18n.changeLanguage(page.locale);
 ---
 
 <MarketingLayout page={page}>
-  <PageRenderer page={page} />
+  <ReactMarketingPage page={page} />
 </MarketingLayout>
