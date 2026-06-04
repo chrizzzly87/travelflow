@@ -42,33 +42,6 @@ const fontPreloadsByLocale: Record<string, string[]> = {
   ],
 };
 const fontPreloads = fontPreloadsByLocale[page.locale] ?? [];
-const staticNavLinks = [
-  { href: localizeMarketingManifestPath('/features', page.locale), label: page.translations.nav.features, event: 'navigation__features' },
-  { href: localizeMarketingManifestPath('/inspirations', page.locale), label: page.translations.nav.inspirations, event: 'navigation__inspirations' },
-  { href: localizeMarketingManifestPath('/updates', page.locale), label: page.translations.nav.updates, event: 'navigation__updates' },
-  { href: localizeMarketingManifestPath('/blog', page.locale), label: page.translations.nav.blog, event: 'navigation__blog' },
-  { href: localizeMarketingManifestPath('/pricing', page.locale), label: page.translations.nav.pricing, event: 'navigation__pricing' },
-];
-const staticCreateTripPath = page.locale === 'en' ? '/create-trip' : `/${page.locale}/create-trip`;
-const staticLoginPath = page.locale === 'en' ? '/login' : `/${page.locale}/login`;
-const languageNames: Record<string, string> = {
-  en: 'English',
-  es: 'Español',
-  de: 'Deutsch',
-  fr: 'Français',
-  pt: 'Português',
-  ru: 'Русский',
-  it: 'Italiano',
-  pl: 'Polski',
-  ko: '한국어',
-  fa: 'فارسی',
-  ur: 'اردو',
-};
-const staticLanguageLinks = SUPPORTED_MARKETING_LOCALES.map((locale) => ({
-  locale,
-  label: languageNames[locale] ?? locale,
-  href: localizeMarketingManifestPath(page.basePath, locale),
-}));
 ---
 
 <!doctype html>
@@ -285,122 +258,10 @@ const staticLanguageLinks = SUPPORTED_MARKETING_LOCALES.map((locale) => ({
   <body>
     <script is:inline define:vars={{ locale: page.locale }}>
       try {
+        window.__TF_ASTRO_MARKETING__ = true;
         window.localStorage.setItem('tf_app_language', locale);
       } catch {}
     </script>
     <slot />
-    <div id="tf-static-mobile-nav" class="tf-static-mobile-nav" hidden>
-      <div class="tf-static-mobile-nav__backdrop" data-tf-static-menu-close></div>
-      <div class="tf-static-mobile-nav__panel" role="dialog" aria-modal="true" aria-label={page.translations.nav.openMenu}>
-        <div class="tf-static-mobile-nav__top">
-          <span class="tf-static-mobile-nav__brand">TravelFlow</span>
-          <button class="tf-static-mobile-nav__close" type="button" aria-label={page.translations.nav.closeMenu} data-tf-static-menu-close>×</button>
-        </div>
-        <nav class="tf-static-mobile-nav__links" aria-label={page.translations.nav.openMenu}>
-          {staticNavLinks.map((link) => (
-            <a href={link.href} data-tf-track-event={link.event}>{link.label}</a>
-          ))}
-        </nav>
-        <div class="tf-static-mobile-nav__actions">
-          <a href={staticLoginPath} data-tf-track-event="navigation__login">{page.translations.nav.login}</a>
-          <a href={staticCreateTripPath} data-tf-track-event="navigation__create_trip">{page.translations.nav.createTrip}</a>
-        </div>
-      </div>
-    </div>
-    <div id="tf-static-language-menu" class="tf-static-language-menu" role="menu" hidden>
-      {staticLanguageLinks.map((link) => (
-        <a
-          href={link.href}
-          role="menuitem"
-          aria-current={link.locale === page.locale ? 'true' : undefined}
-          data-tf-track-event="navigation__language_switch"
-          data-locale={link.locale}
-        >
-          {link.label}
-        </a>
-      ))}
-    </div>
-
-    <script is:inline>
-      (() => {
-        const track = (name, detail) => {
-          try {
-            window.dispatchEvent(new CustomEvent('tf:analytics-event', { detail: { name, detail } }));
-            if (window.umami && typeof window.umami.track === 'function') {
-              window.umami.track(name, detail || undefined);
-            }
-          } catch {}
-        };
-        document.addEventListener('click', (event) => {
-          const target = event.target instanceof Element
-            ? event.target.closest('[data-analytics-event]')
-            : null;
-          if (!target) return;
-          const name = target.getAttribute('data-analytics-event');
-          if (!name) return;
-          track(name);
-        }, { passive: true });
-        document.addEventListener('click', (event) => {
-          const target = event.target instanceof Element
-            ? event.target.closest('[data-tf-track-event]')
-            : null;
-          if (!target) return;
-          const name = target.getAttribute('data-tf-track-event');
-          if (!name) return;
-          const locale = target instanceof HTMLElement ? target.dataset.locale : undefined;
-          track(name, locale ? { to: locale } : undefined);
-        }, { passive: true });
-
-        const mobileMenu = document.getElementById('tf-static-mobile-nav');
-        const mobileMenuButton = document.querySelector('[data-tf-track-event="mobile_nav__menu--open"]');
-        const closeMobileMenu = () => {
-          if (!mobileMenu) return;
-          mobileMenu.hidden = true;
-          document.documentElement.classList.remove('tf-static-menu-open');
-          mobileMenuButton?.setAttribute('aria-expanded', 'false');
-        };
-        mobileMenuButton?.addEventListener('click', () => {
-          if (!mobileMenu) return;
-          mobileMenu.hidden = false;
-          document.documentElement.classList.add('tf-static-menu-open');
-          mobileMenuButton.setAttribute('aria-expanded', 'true');
-        });
-        document.querySelectorAll('[data-tf-static-menu-close]').forEach((control) => {
-          control.addEventListener('click', closeMobileMenu);
-        });
-        document.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape') closeMobileMenu();
-        });
-
-        const languageButton = document.querySelector('button[aria-label="Language"]');
-        const languageMenu = document.getElementById('tf-static-language-menu');
-        const closeLanguageMenu = () => {
-          if (!languageMenu) return;
-          languageMenu.hidden = true;
-          languageButton?.setAttribute('aria-expanded', 'false');
-        };
-        languageButton?.addEventListener('click', (event) => {
-          if (!languageMenu || !(languageButton instanceof HTMLElement)) return;
-          event.stopPropagation();
-          const rect = languageButton.getBoundingClientRect();
-          languageMenu.style.insetBlockStart = `${Math.round(rect.bottom + 8)}px`;
-          languageMenu.style.insetInlineEnd = `${Math.max(16, Math.round(window.innerWidth - rect.right))}px`;
-          languageMenu.hidden = !languageMenu.hidden;
-          languageButton.setAttribute('aria-expanded', String(!languageMenu.hidden));
-        });
-        document.addEventListener('click', (event) => {
-          if (!languageMenu || languageMenu.hidden) return;
-          if (event.target instanceof Node && languageMenu.contains(event.target)) return;
-          closeLanguageMenu();
-        });
-
-        document.querySelector('[data-tf-track-event="banner__early_access--dismiss"]')?.addEventListener('click', (event) => {
-          const banner = event.target instanceof Element
-            ? event.target.closest('[role="status"], [aria-live], .pointer-events-auto > *')
-            : null;
-          banner?.setAttribute('hidden', '');
-        });
-      })();
-    </script>
   </body>
 </html>

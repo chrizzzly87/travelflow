@@ -484,7 +484,6 @@ export const FeaturesGlobe: React.FC = () => {
     const fijiCard = cardMap.get('fiji');
     const southAfricaCard = cardMap.get('south-africa');
     const route66Card = cardMap.get('route66');
-    const isStaticRender = typeof window === 'undefined';
 
     return (
         <div
@@ -493,7 +492,6 @@ export const FeaturesGlobe: React.FC = () => {
             aria-label={t('globe.accessibility')}
             className={cn(
                 'relative isolate mx-auto h-[min(90vw,25rem)] w-full max-w-[35rem] overflow-visible sm:h-[29rem] lg:mx-0 lg:ml-auto lg:h-[35rem]',
-                isStaticRender ? 'features-globe-static' : null,
                 isDragging ? 'cursor-grabbing' : 'cursor-grab',
             )}
             onPointerDown={handlePointerDown}
@@ -524,15 +522,11 @@ export const FeaturesGlobe: React.FC = () => {
                 </div>
             </div>
 
-            {isStaticRender ? (
-                <div className="features-globe-static-sphere" aria-hidden="true" />
-            ) : null}
-
             <canvas
                 ref={canvasRef}
                 className={cn(
                     'absolute inset-0 z-10 size-full select-none transition-opacity duration-500',
-                    isFallback || isStaticRender ? 'opacity-0' : 'opacity-100',
+                    isFallback ? 'opacity-0' : 'opacity-100',
                 )}
                 aria-hidden="true"
             />

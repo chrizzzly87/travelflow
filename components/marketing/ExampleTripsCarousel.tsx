@@ -51,9 +51,7 @@ export const ExampleTripsCarousel: React.FC = () => {
     const { t, i18n } = useTranslation('home');
     const uiCopy = getExampleTripUiCopy(i18n.resolvedLanguage || i18n.language);
     const tripViewPrefetchRef = useRef<Promise<unknown> | null>(null);
-    const [isMobileViewport, setIsMobileViewport] = useState(() => (
-        typeof window !== 'undefined' ? window.matchMedia(MOBILE_QUERY).matches : false
-    ));
+    const [isMobileViewport, setIsMobileViewport] = useState(false);
 
     const containerRef = useRef<HTMLDivElement | null>(null);
     const trackRef = useRef<HTMLDivElement | null>(null);
