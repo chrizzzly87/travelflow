@@ -1,13 +1,59 @@
 {
   "hero": {
-    "badge": "Planification de voyage par IA",
-    "titleBefore": "Votre prochaine aventure, planifiée",
-    "titleHighlight": "en quelques secondes",
-    "description": "Dites-nous où et quand vous voulez partir, et notre IA crée un itinéraire complet jour par jour avec trajets optimisés, activités sélectionnées et vrais liens de réservation. Ajustez tout sur une timeline visuelle et une carte, puis partagez en un clic.",
+    "badge": "Planificateur IA avec itinéraires modifiables",
+    "titleBefore": "Créez un voyage que vous pouvez",
+    "titleHighlight": "vraiment utiliser",
+    "description": "Commencez par une phrase et obtenez un itinéraire jour par jour avec carte, trajets, activités, liens de réservation et partage. Modifiez le planning, ajustez le rythme et invitez vos compagnons avant de réserver.",
     "floating": {
       "ai": "Itinéraires générés par IA",
       "share": "Partager et collaborer",
       "booking": "Liens de réservation"
+    },
+    "sampleCta": "Tester l’itinéraire exemple",
+    "proof": [
+      "Commencez sans compte",
+      "Planning et carte modifiables",
+      "Partagez avec votre groupe"
+    ],
+    "prompt": {
+      "label": "Décrivez le voyage à planifier",
+      "sample": "10 jours au Portugal et en Espagne avec gastronomie, plages et trains",
+      "cta": "Créer mon itinéraire",
+      "prefillLabel": "Idée de voyage depuis l’accueil"
+    },
+    "preview": {
+      "eyebrow": "Aperçu du planner",
+      "title": "Portugal et Espagne, prêts à modifier",
+      "timeSaved": "Brouillon en secondes",
+      "mapLabel": "Carte du trajet",
+      "routeLabel": "Pensé pour le train",
+      "routeStops": [
+        "Lisbonne",
+        "Séville",
+        "Barcelone"
+      ],
+      "mapAria": "Aperçu de trajet de Lisbonne à Séville puis Barcelone",
+      "timelineLabel": "Planning jour par jour",
+      "timelineTitle": "Brouillon IA, contrôle humain",
+      "days": [
+        {
+          "day": "1",
+          "title": "Arrivée à Lisbonne",
+          "detail": "Installez-vous, explorez Alfama et gardez une adresse dîner près du fleuve."
+        },
+        {
+          "day": "4",
+          "title": "Balade gourmande à Séville",
+          "detail": "Continuez en train, gardez un après-midi léger et réservez une tournée tapas."
+        },
+        {
+          "day": "8",
+          "title": "Pause plage à Barcelone",
+          "detail": "Équilibrez Gaudí avec une soirée plus lente à la Barceloneta."
+        }
+      ],
+      "booking": "Les liens de réservation restent dans le plan",
+      "mapSync": "Carte et planning restent synchronisés"
     }
   },
   "examples": {

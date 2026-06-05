@@ -1,13 +1,59 @@
 {
   "hero": {
-    "badge": "Planowanie podróży z AI",
-    "titleBefore": "Twoja kolejna przygoda, zaplanowana",
-    "titleHighlight": "w kilka sekund",
-    "description": "Powiedz nam dokąd i kiedy chcesz jechać — nasze AI przygotuje kompletny plan dzień po dniu z zoptymalizowaną trasą, dobranymi atrakcjami i realnymi linkami do rezerwacji. Wszystko możesz edytować na wizualnej osi czasu i mapie, a potem udostępnić ekipie jednym kliknięciem.",
+    "badge": "Planer AI z edytowalnymi trasami",
+    "titleBefore": "Zbuduj plan podróży, którego",
+    "titleHighlight": "naprawdę użyjesz",
+    "description": "Zacznij od jednego zdania i otrzymaj plan dzień po dniu z mapą, trasami, aktywnościami, linkami do rezerwacji i udostępnianiem. Edytuj oś czasu, tempo i zaproś ekipę przed rezerwacją.",
     "floating": {
       "ai": "Plany tworzone przez AI",
       "share": "Udostępniaj i współpracuj",
       "booking": "Linki do rezerwacji"
+    },
+    "sampleCta": "Wypróbuj przykładową trasę",
+    "proof": [
+      "Start bez konta",
+      "Edytowalna oś czasu i mapa",
+      "Udostępniaj ekipie"
+    ],
+    "prompt": {
+      "label": "Opisz podróż, którą chcesz zaplanować",
+      "sample": "10 dni w Portugalii i Hiszpanii z jedzeniem, plażami i pociągami",
+      "cta": "Zbuduj trasę",
+      "prefillLabel": "Pomysł z homepage"
+    },
+    "preview": {
+      "eyebrow": "Podgląd planera",
+      "title": "Portugalia i Hiszpania, gotowe do edycji",
+      "timeSaved": "Szkic w sekundy",
+      "mapLabel": "Mapa trasy",
+      "routeLabel": "Przyjazne kolei",
+      "routeStops": [
+        "Lizbona",
+        "Sewilla",
+        "Barcelona"
+      ],
+      "mapAria": "Podgląd trasy z Lizbony przez Sewillę do Barcelony",
+      "timelineLabel": "Plan dzień po dniu",
+      "timelineTitle": "Szkic AI z pełną kontrolą",
+      "days": [
+        {
+          "day": "1",
+          "title": "Przylot do Lizbony",
+          "detail": "Rozgość się, odkryj Alfamę i zapisz kolację nad rzeką."
+        },
+        {
+          "day": "4",
+          "title": "Food walk w Sewilli",
+          "detail": "Przejazd pociągiem, lekki popołudniowy plan i tapas tour."
+        },
+        {
+          "day": "8",
+          "title": "Plażowa przerwa w Barcelonie",
+          "detail": "Połącz Gaudiego ze spokojnym wieczorem przy Barcelonecie."
+        }
+      ],
+      "booking": "Linki rezerwacji zostają w planie",
+      "mapSync": "Mapa i oś czasu są zsynchronizowane"
     }
   },
   "examples": {

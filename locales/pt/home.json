@@ -1,13 +1,59 @@
 {
   "hero": {
-    "badge": "Planeamento de viagens com IA",
-    "titleBefore": "A sua próxima aventura, planeada",
-    "titleHighlight": "em segundos",
-    "description": "Diga-nos para onde quer ir e quando. A nossa IA cria um itinerário completo dia a dia com rotas otimizadas, atividades selecionadas e links reais de reserva. Ajuste tudo numa timeline visual e no mapa, e partilhe com o seu grupo num clique.",
+    "badge": "Planeador de viagens com IA e rotas editáveis",
+    "titleBefore": "Crie um plano de viagem que você",
+    "titleHighlight": "realmente usa",
+    "description": "Comece com uma frase e receba um roteiro diário com mapa, rotas, atividades, links de reserva e compartilhamento. Edite a linha do tempo, ajuste o ritmo e convide sua turma antes de reservar.",
     "floating": {
       "ai": "Itinerários gerados por IA",
       "share": "Partilhar e colaborar",
       "booking": "Links de reserva"
+    },
+    "sampleCta": "Testar rota exemplo",
+    "proof": [
+      "Comece sem conta",
+      "Linha do tempo e mapa editáveis",
+      "Compartilhe com sua turma"
+    ],
+    "prompt": {
+      "label": "Descreva a viagem que quer planejar",
+      "sample": "10 dias em Portugal e Espanha com comida, praias e rotas de trem",
+      "cta": "Criar minha rota",
+      "prefillLabel": "Ideia de viagem da página inicial"
+    },
+    "preview": {
+      "eyebrow": "Prévia do planejador",
+      "title": "Portugal e Espanha, prontos para editar",
+      "timeSaved": "Rascunho em segundos",
+      "mapLabel": "Mapa da rota",
+      "routeLabel": "Boa para trem",
+      "routeStops": [
+        "Lisboa",
+        "Sevilha",
+        "Barcelona"
+      ],
+      "mapAria": "Prévia de rota de Lisboa para Sevilha e Barcelona",
+      "timelineLabel": "Linha do tempo diária",
+      "timelineTitle": "Rascunho com IA e controle humano",
+      "days": [
+        {
+          "day": "1",
+          "title": "Chegada em Lisboa",
+          "detail": "Instale-se, explore Alfama e salve um jantar perto do rio."
+        },
+        {
+          "day": "4",
+          "title": "Passeio gastronômico em Sevilha",
+          "detail": "Siga de trem, deixe a tarde leve e reserve uma rota de tapas."
+        },
+        {
+          "day": "8",
+          "title": "Pausa de praia em Barcelona",
+          "detail": "Equilibre Gaudi com uma noite tranquila na Barceloneta."
+        }
+      ],
+      "booking": "Links de reserva ficam no plano",
+      "mapSync": "Mapa e linha do tempo ficam sincronizados"
     }
   },
   "examples": {

@@ -1,13 +1,59 @@
 {
   "hero": {
-    "badge": "Pianificazione viaggi con IA",
-    "titleBefore": "La tua prossima avventura, pianificata",
-    "titleHighlight": "in pochi secondi",
-    "description": "Dicci dove vuoi andare e quando, e la nostra IA crea un itinerario completo giorno per giorno con percorsi ottimizzati, attività selezionate e link reali per prenotare. Modifica tutto su timeline e mappa, poi condividi con un clic.",
+    "badge": "Planner AI con itinerari modificabili",
+    "titleBefore": "Crea un viaggio che puoi",
+    "titleHighlight": "usare davvero",
+    "description": "Parti da una frase e ottieni un itinerario giorno per giorno con mappa, percorsi, attività, link di prenotazione e condivisione. Modifica la timeline, regola il ritmo e coinvolgi il gruppo prima di prenotare.",
     "floating": {
       "ai": "Itinerari generati dall'IA",
       "share": "Condividi e collabora",
       "booking": "Link di prenotazione"
+    },
+    "sampleCta": "Prova il percorso esempio",
+    "proof": [
+      "Inizia senza account",
+      "Timeline e mappa modificabili",
+      "Condividi con il gruppo"
+    ],
+    "prompt": {
+      "label": "Descrivi il viaggio da pianificare",
+      "sample": "10 giorni in Portogallo e Spagna con cibo, spiagge e treni",
+      "cta": "Crea il mio percorso",
+      "prefillLabel": "Idea viaggio dalla homepage"
+    },
+    "preview": {
+      "eyebrow": "Anteprima planner",
+      "title": "Portogallo e Spagna, pronti da modificare",
+      "timeSaved": "Bozza in pochi secondi",
+      "mapLabel": "Mappa percorso",
+      "routeLabel": "Perfetto in treno",
+      "routeStops": [
+        "Lisbona",
+        "Siviglia",
+        "Barcellona"
+      ],
+      "mapAria": "Anteprima percorso da Lisbona a Siviglia e Barcellona",
+      "timelineLabel": "Timeline giorno per giorno",
+      "timelineTitle": "Bozza AI con controllo umano",
+      "days": [
+        {
+          "day": "1",
+          "title": "Arrivo a Lisbona",
+          "detail": "Sistemati, esplora Alfama e salva una cena vicino al fiume."
+        },
+        {
+          "day": "4",
+          "title": "Food walk a Siviglia",
+          "detail": "Prosegui in treno, tieni leggero il pomeriggio e prenota un tour tapas."
+        },
+        {
+          "day": "8",
+          "title": "Pausa mare a Barcellona",
+          "detail": "Bilancia Gaudi con una serata lenta alla Barceloneta."
+        }
+      ],
+      "booking": "I link di prenotazione restano nel piano",
+      "mapSync": "Mappa e timeline restano sincronizzate"
     }
   },
   "examples": {

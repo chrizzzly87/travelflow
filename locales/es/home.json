@@ -1,13 +1,59 @@
 {
   "hero": {
-    "badge": "Planificación de viajes con IA",
-    "titleBefore": "Tu próxima aventura, lista",
-    "titleHighlight": "en segundos",
-    "description": "Cuéntanos adónde quieres ir y cuándo. Nuestra IA crea un itinerario completo día a día con rutas optimizadas, actividades seleccionadas y enlaces reales de reserva. Ajusta todo en una línea de tiempo visual y en el mapa, y compártelo con tu grupo en un clic.",
+    "badge": "Planificador de viajes con IA y rutas editables",
+    "titleBefore": "Crea un viaje que puedas",
+    "titleHighlight": "usar de verdad",
+    "description": "Empieza con una frase y obtén un itinerario diario con mapa, rutas, actividades, enlaces de reserva y planes para compartir. Edita la línea de tiempo, ajusta el ritmo e invita a tu grupo antes de reservar nada.",
     "floating": {
       "ai": "Itinerarios generados con IA",
       "share": "Comparte y colabora",
       "booking": "Enlaces de reserva"
+    },
+    "sampleCta": "Probar ruta de ejemplo",
+    "proof": [
+      "Empieza sin cuenta",
+      "Cronograma y mapa editables",
+      "Comparte con tu grupo"
+    ],
+    "prompt": {
+      "label": "Describe el viaje que quieres planear",
+      "sample": "10 días en Portugal y España con comida, playas y rutas en tren",
+      "cta": "Crear mi ruta",
+      "prefillLabel": "Idea de viaje desde la portada"
+    },
+    "preview": {
+      "eyebrow": "Vista previa del planificador",
+      "title": "Portugal y España, listo para editar",
+      "timeSaved": "Borrador en segundos",
+      "mapLabel": "Mapa de ruta",
+      "routeLabel": "Ideal en tren",
+      "routeStops": [
+        "Lisboa",
+        "Sevilla",
+        "Barcelona"
+      ],
+      "mapAria": "Vista previa de ruta de Lisboa a Sevilla y Barcelona",
+      "timelineLabel": "Cronograma día a día",
+      "timelineTitle": "Borrador con IA y control humano",
+      "days": [
+        {
+          "day": "1",
+          "title": "Llegada a Lisboa",
+          "detail": "Instálate, explora Alfama y guarda una cena cerca del río."
+        },
+        {
+          "day": "4",
+          "title": "Ruta gastronómica en Sevilla",
+          "detail": "Muévete en tren, deja la tarde ligera y reserva una ruta de tapas."
+        },
+        {
+          "day": "8",
+          "title": "Pausa de playa en Barcelona",
+          "detail": "Equilibra Gaudí con una tarde tranquila en la Barceloneta."
+        }
+      ],
+      "booking": "Los enlaces de reserva quedan en el plan",
+      "mapSync": "Mapa y cronograma siempre sincronizados"
     }
   },
   "examples": {

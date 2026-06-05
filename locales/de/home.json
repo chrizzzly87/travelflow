@@ -1,13 +1,59 @@
 {
   "hero": {
-    "badge": "KI-gestützte Reiseplanung",
-    "titleBefore": "Dein nächstes Abenteuer, geplant",
-    "titleHighlight": "in Sekunden",
-    "description": "Sag uns, wohin und wann du reisen möchtest, und unsere KI erstellt einen kompletten Tagesplan mit optimierten Routen, kuratierten Aktivitäten und echten Buchungslinks. Passe alles auf einer visuellen Timeline und Karte an und teile die Reise mit einem Klick.",
+    "badge": "KI-Reiseplaner mit editierbaren Routen",
+    "titleBefore": "Baue einen Reiseplan, den du",
+    "titleHighlight": "wirklich nutzt",
+    "description": "Starte mit einem Satz und erhalte eine kartierte Tagesroute mit Wegen, Aktivitäten, Buchungslinks und teilbaren Plänen. Bearbeite die Timeline, passe das Tempo an und hole deine Mitreisenden dazu, bevor etwas gebucht ist.",
     "floating": {
       "ai": "KI-generierte Routen",
       "share": "Teilen und gemeinsam planen",
       "booking": "Buchungslinks"
+    },
+    "sampleCta": "Beispielroute testen",
+    "proof": [
+      "Ohne Konto starten",
+      "Editierbare Timeline und Karte",
+      "Mit deiner Reisegruppe teilen"
+    ],
+    "prompt": {
+      "label": "Beschreibe die Reise, die du planen möchtest",
+      "sample": "10 Tage in Portugal und Spanien mit Essen, Stränden und Zugrouten",
+      "cta": "Meine Route bauen",
+      "prefillLabel": "Reiseidee von der Startseite"
+    },
+    "preview": {
+      "eyebrow": "Planner-Vorschau",
+      "title": "Portugal und Spanien, bereit zum Bearbeiten",
+      "timeSaved": "Entwurf in Sekunden",
+      "mapLabel": "Routenkarte",
+      "routeLabel": "Zugfreundlich",
+      "routeStops": [
+        "Lissabon",
+        "Sevilla",
+        "Barcelona"
+      ],
+      "mapAria": "Vorschau einer Route von Lissabon über Sevilla nach Barcelona",
+      "timelineLabel": "Tagesgenaue Timeline",
+      "timelineTitle": "KI-Entwurf mit voller Kontrolle",
+      "days": [
+        {
+          "day": "1",
+          "title": "Ankommen in Lissabon",
+          "detail": "In Ruhe starten, Alfama entdecken und ein spätes Dinner am Fluss vormerken."
+        },
+        {
+          "day": "4",
+          "title": "Food Walk in Sevilla",
+          "detail": "Mit dem Zug weiterfahren, den Nachmittag leicht halten und eine Tapas-Tour buchen."
+        },
+        {
+          "day": "8",
+          "title": "Strandpause in Barcelona",
+          "detail": "Gaudi-Highlights mit einem langsameren Abend an der Barceloneta verbinden."
+        }
+      ],
+      "booking": "Buchungslinks bleiben im Plan",
+      "mapSync": "Karte und Timeline bleiben synchron"
     }
   },
   "examples": {

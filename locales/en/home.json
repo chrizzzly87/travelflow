@@ -1,13 +1,59 @@
 {
   "hero": {
-    "badge": "AI-Powered Trip Planning",
-    "titleBefore": "Your next adventure, planned",
-    "titleHighlight": "in seconds",
-    "description": "Tell us where you want to go and when — our AI builds a complete, day-by-day itinerary with optimized routes, curated activities, and real booking links. Adjust everything on a visual timeline and map, then share with your travel crew in one click.",
+    "badge": "AI trip planner with editable routes",
+    "titleBefore": "Build a trip plan you can",
+    "titleHighlight": "actually use",
+    "description": "Start with a sentence and get a mapped, day-by-day itinerary with routes, activities, booking links, and shareable plans. Edit the timeline, tune the pace, and bring your travel crew in before anything is booked.",
     "floating": {
       "ai": "AI-generated itineraries",
       "share": "Share & collaborate",
       "booking": "Booking links"
+    },
+    "sampleCta": "Try the sample route",
+    "proof": [
+      "No account needed to start",
+      "Editable timeline and map",
+      "Share with your travel crew"
+    ],
+    "prompt": {
+      "label": "Describe the trip you want to plan",
+      "sample": "10 days in Portugal and Spain with food, beaches, and train routes",
+      "cta": "Build my route",
+      "prefillLabel": "Homepage trip idea"
+    },
+    "preview": {
+      "eyebrow": "Live planner preview",
+      "title": "Portugal and Spain, ready to edit",
+      "timeSaved": "Draft in seconds",
+      "mapLabel": "Route map",
+      "routeLabel": "Train-friendly",
+      "routeStops": [
+        "Lisbon",
+        "Seville",
+        "Barcelona"
+      ],
+      "mapAria": "Preview map route from Lisbon to Seville to Barcelona",
+      "timelineLabel": "Day-by-day timeline",
+      "timelineTitle": "AI draft with human control",
+      "days": [
+        {
+          "day": "1",
+          "title": "Lisbon arrival loop",
+          "detail": "Settle in, explore Alfama, and save a late dinner spot near the river."
+        },
+        {
+          "day": "4",
+          "title": "Seville food walk",
+          "detail": "Move by train, keep the afternoon light, and book a tapas crawl."
+        },
+        {
+          "day": "8",
+          "title": "Barcelona beach reset",
+          "detail": "Balance Gaudi sights with a slower evening by Barceloneta."
+        }
+      ],
+      "booking": "Booking links stay with the plan",
+      "mapSync": "Map and timeline stay in sync"
     }
   },
   "examples": {
