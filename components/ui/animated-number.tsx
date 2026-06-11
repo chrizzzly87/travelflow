@@ -7,12 +7,53 @@ import * as React from 'react';
 
 import { cn } from '../../lib/utils';
 
+type ReactModuleLike = {
+    createElement?: (type: unknown, props?: unknown, ...children: unknown[]) => unknown;
+};
+
+export interface AnimatedNumberTextOptions {
+    locales?: Intl.LocalesArgument;
+    format?: NumberFlowProps['format'];
+    prefix?: string;
+    suffix?: string;
+}
+
+export const isPreactCompatReactModule = (reactModule: ReactModuleLike): boolean => {
+    try {
+        const element = reactModule.createElement?.('span', null);
+        return Boolean(
+            element
+            && typeof element === 'object'
+            && (
+                '__k' in element
+                || '__v' in element
+                || '__e' in element
+            ),
+        );
+    } catch {
+        return false;
+    }
+};
+
+export const formatAnimatedNumberText = (
+    value: number,
+    { locales, format, prefix, suffix }: AnimatedNumberTextOptions = {},
+): string => {
+    const formatter = new Intl.NumberFormat(locales, format);
+    return `${prefix ?? ''}${formatter.format(value)}${suffix ?? ''}`;
+};
+
 export interface AnimatedNumberProps extends Omit<NumberFlowProps, 'value' | 'format' | 'locales'> {
     value: number | null | undefined;
     locales?: Intl.LocalesArgument;
     format?: NumberFlowProps['format'];
     fallback?: React.ReactNode;
 }
+
+const shouldRenderStaticNumber = (): boolean => (
+    isPreactCompatReactModule(React)
+    || (typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent))
+);
 
 export const AnimatedNumber = React.forwardRef<NumberFlowElement, AnimatedNumberProps>(
     ({ className, value, fallback = null, format, locales, prefix, suffix, ...props }, ref) => {
@@ -25,11 +66,10 @@ export const AnimatedNumber = React.forwardRef<NumberFlowElement, AnimatedNumber
             );
         }
 
-        if (typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent)) {
-            const formatter = new Intl.NumberFormat(locales, format);
+        if (shouldRenderStaticNumber()) {
             return (
                 <span className={cn('tabular-nums [font-variant-numeric:tabular-nums]', className)}>
-                    {`${prefix ?? ''}${formatter.format(value)}${suffix ?? ''}`}
+                    {formatAnimatedNumberText(value, { locales, format, prefix, suffix })}
                 </span>
             );
         }
