@@ -1,0 +1,52 @@
+---
+interface Props {
+  card: any;
+}
+
+const { card } = Astro.props;
+const title = card.localizedCard?.title || card.title;
+const tags = card.localizedCard?.tags || card.tags || [];
+const countryLabel = (card.countries || []).map((country: any) => `${country.flag || ''} ${country.name}`).join(' · ');
+const mapImageSrc = card.mapImagePath ? `${card.mapImagePath}?v=astro-marketing` : '';
+const mapImageWebpSrc = card.mapImagePath?.endsWith('.png')
+  ? `${card.mapImagePath.replace(/\.png$/, '.webp')}?v=astro-marketing`
+  : '';
+---
+
+<a
+  class="example-card"
+  href={`/example/${encodeURIComponent(card.templateId || card.id)}`}
+  data-analytics-event="home__carousel_card"
+>
+  <div class="example-card__media">
+    {card.mapImagePath ? (
+      <picture>
+        {mapImageWebpSrc ? <source srcset={mapImageWebpSrc} type="image/webp" /> : null}
+        <img
+          src={mapImageSrc}
+          alt={`Route map for ${title}`}
+          width="680"
+          height="306"
+          loading="lazy"
+          decoding="async"
+        />
+      </picture>
+    ) : (
+      <div class="route-preview__map" aria-hidden="true">
+        <div class="route-preview__pins"><span class="pin"></span><span class="pin"></span><span class="pin"></span></div>
+      </div>
+    )}
+  </div>
+  <div class="example-card__body">
+    <h3 class="card-title">{title}</h3>
+    <p class="section-copy">{countryLabel}</p>
+    <div class="meta-row">
+      <span>{card.daysLabel}</span>
+      <span>{card.citiesLabel}</span>
+      {card.isRoundTrip ? <span>{card.roundTripLabel}</span> : null}
+    </div>
+    <div class="tag-row">
+      {tags.slice(0, 4).map((tag: string) => <span class="tag">{tag}</span>)}
+    </div>
+  </div>
+</a>

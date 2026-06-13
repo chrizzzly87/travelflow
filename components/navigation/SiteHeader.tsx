@@ -70,6 +70,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const { t, i18n } = useTranslation('common');
     const { isAuthenticated, isAdmin, access, isLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
+    const isStaticRender = typeof window === 'undefined';
 
     const activeLocale = useMemo<AppLanguage>(() => {
         const routeLocale = extractLocaleFromPath(routeLocation.pathname);
@@ -221,7 +222,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                     className="hidden lg:block"
                                 />
                             </Suspense>
-                        ) : isLoading ? (
+                        ) : !isStaticRender && isLoading ? (
                             <span
                                 className={`${loginClass} cursor-wait items-center gap-2 opacity-70`}
                                 aria-disabled="true"

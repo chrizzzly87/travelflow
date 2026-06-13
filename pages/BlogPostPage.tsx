@@ -50,6 +50,16 @@ const BLOG_DEFERRED_SECTION_STYLE: React.CSSProperties = {
     contentVisibility: 'auto',
     containIntrinsicSize: '1px 720px',
 };
+const DEFAULT_CANONICAL_ORIGIN = 'https://travelflowapp.netlify.app';
+const CANONICAL_ORIGIN = (() => {
+    const envOrigin = String(import.meta.env.VITE_SITE_URL || import.meta.env.SITE_URL || '').trim();
+    if (!envOrigin) return DEFAULT_CANONICAL_ORIGIN;
+    try {
+        return new URL(envOrigin).origin;
+    } catch {
+        return DEFAULT_CANONICAL_ORIGIN;
+    }
+})();
 
 let blogListRouteModulePromise: Promise<unknown> | null = null;
 
@@ -975,7 +985,7 @@ export const BlogPostPage: React.FC = () => {
     useEffect(() => {
         if (!post) return;
         if (typeof document === 'undefined') return;
-        const canonicalHref = new URL(canonicalPath, window.location.origin).toString();
+        const canonicalHref = new URL(canonicalPath, CANONICAL_ORIGIN).toString();
         let canonicalLink = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
         if (!canonicalLink) {
             canonicalLink = document.createElement('link');

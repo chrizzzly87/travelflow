@@ -2,53 +2,26 @@ import { stripLocalePrefix } from '../config/routes';
 
 type CriticalRouteModuleKey =
   | 'DeferredAppRoutes'
-  | 'MarketingHomePage'
-  | 'FeaturesPage'
-  | 'UpdatesPage'
-  | 'BlogPage'
-  | 'PricingPage'
-  | 'FaqPage'
   | 'LoginPage'
-  | 'ContactPage'
-  | 'ImprintPage'
-  | 'PrivacyPage'
-  | 'TermsPage'
-  | 'CookiesPage'
+  | 'ResetPasswordPage'
+  | 'ShareUnavailablePage'
   | 'CreateTripClassicLabPage'
   | 'CreateTripV3Page'
   | 'TripLoaderRoute'
   | 'SharedTripLoaderRoute'
   | 'ExampleTripLoaderRoute';
 
-const MARKETING_PAGE_BY_PATH: Array<{ pattern: RegExp; key: CriticalRouteModuleKey }> = [
-  { pattern: /^\/$/, key: 'MarketingHomePage' },
-  { pattern: /^\/features$/, key: 'FeaturesPage' },
-  { pattern: /^\/updates$/, key: 'UpdatesPage' },
-  { pattern: /^\/blog$/, key: 'BlogPage' },
-  { pattern: /^\/pricing$/, key: 'PricingPage' },
-  { pattern: /^\/faq$/, key: 'FaqPage' },
+const APP_PAGE_BY_PATH: Array<{ pattern: RegExp; key: CriticalRouteModuleKey }> = [
+  { pattern: /^\/share-unavailable$/, key: 'ShareUnavailablePage' },
   { pattern: /^\/login$/, key: 'LoginPage' },
-  { pattern: /^\/contact$/, key: 'ContactPage' },
-  { pattern: /^\/imprint$/, key: 'ImprintPage' },
-  { pattern: /^\/privacy$/, key: 'PrivacyPage' },
-  { pattern: /^\/terms$/, key: 'TermsPage' },
-  { pattern: /^\/cookies$/, key: 'CookiesPage' },
+  { pattern: /^\/auth\/reset-password$/, key: 'ResetPasswordPage' },
 ];
 
 const ROUTE_IMPORTERS: Record<CriticalRouteModuleKey, () => Promise<unknown>> = {
   DeferredAppRoutes: () => import('../app/routes/DeferredAppRoutes'),
-  MarketingHomePage: () => import('../pages/MarketingHomePage'),
-  FeaturesPage: () => import('../pages/FeaturesPage'),
-  UpdatesPage: () => import('../pages/UpdatesPage'),
-  BlogPage: () => import('../pages/BlogPage'),
-  PricingPage: () => import('../pages/PricingPage'),
-  FaqPage: () => import('../pages/FaqPage'),
   LoginPage: () => import('../pages/LoginPage'),
-  ContactPage: () => import('../pages/ContactPage'),
-  ImprintPage: () => import('../pages/ImprintPage'),
-  PrivacyPage: () => import('../pages/PrivacyPage'),
-  TermsPage: () => import('../pages/TermsPage'),
-  CookiesPage: () => import('../pages/CookiesPage'),
+  ResetPasswordPage: () => import('../pages/ResetPasswordPage'),
+  ShareUnavailablePage: () => import('../pages/ShareUnavailablePage'),
   CreateTripClassicLabPage: () => import('../pages/CreateTripClassicLabPage'),
   CreateTripV3Page: () => import('../pages/CreateTripV3Page'),
   TripLoaderRoute: () => import('../routes/TripLoaderRoute'),
@@ -85,13 +58,9 @@ export const getCriticalRouteModuleKeys = (pathname: string): CriticalRouteModul
     return ['CreateTripClassicLabPage'];
   }
 
-  const marketingMatch = MARKETING_PAGE_BY_PATH.find(({ pattern }) => pattern.test(normalizedPath));
-  if (marketingMatch) {
-    return ['DeferredAppRoutes', marketingMatch.key];
-  }
-
-  if (normalizedPath.startsWith('/features') || normalizedPath.startsWith('/inspirations') || normalizedPath.startsWith('/blog') || normalizedPath.startsWith('/pricing') || normalizedPath.startsWith('/faq') || normalizedPath.startsWith('/login') || normalizedPath.startsWith('/contact') || normalizedPath.startsWith('/imprint') || normalizedPath.startsWith('/privacy') || normalizedPath.startsWith('/terms') || normalizedPath.startsWith('/cookies') || normalizedPath.startsWith('/updates')) {
-    return ['DeferredAppRoutes'];
+  const appPageMatch = APP_PAGE_BY_PATH.find(({ pattern }) => pattern.test(normalizedPath));
+  if (appPageMatch) {
+    return ['DeferredAppRoutes', appPageMatch.key];
   }
 
   return [];

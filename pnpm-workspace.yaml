@@ -1,5 +1,11 @@
 minimumReleaseAge: 10080
 blockExoticSubdeps: true
+minimumReleaseAgeExclude:
+  - astro
+  - '@astrojs/*'
+  - preact
+  - react-doctor
+  - oxlint-plugin-react-doctor
 trustPolicy: no-downgrade
 onlyBuiltDependencies:
   - better-sqlite3

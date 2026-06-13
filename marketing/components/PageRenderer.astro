@@ -1,0 +1,373 @@
+---
+import TripExampleCard from './TripExampleCard.astro';
+import { formatDate, localizedPath, type MarketingPageData } from '../lib/marketingContent';
+
+interface Props {
+  page: MarketingPageData;
+}
+
+const { page } = Astro.props;
+const payload: any = page.payload;
+
+const startPlanningLabel = page.translations.common.startPlanning;
+const createTripPath = '/create-trip';
+const examplesPath = `${localizedPath('/inspirations', page.locale)}#examples`;
+---
+
+{page.kind === 'home' && (
+  <>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">{payload.hero.badge}</p>
+        <h1>{payload.hero.titleBefore} <span class="hero-highlight">{payload.hero.titleHighlight}</span></h1>
+        <p class="lead">{payload.hero.description}</p>
+        <div class="hero-actions">
+          <a class="button" href={createTripPath} data-analytics-event="home__hero_cta--start_planning">{startPlanningLabel}</a>
+          <a class="button-secondary" href="#examples" data-analytics-event="home__hero_cta--see_examples">{page.translations.common.seeExampleTrips}</a>
+        </div>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <div class="route-preview">
+          <div class="route-preview__map">
+            <div class="route-preview__pins"><span class="pin"></span><span class="pin"></span><span class="pin"></span></div>
+          </div>
+          <div class="route-preview__body">
+            <div class="timeline-row"><strong>Tokyo · Kyoto · Osaka</strong><span>14 days with balanced transfers</span></div>
+            <div class="timeline-row"><strong>Route, notes, and booking links</strong><span>All ready to share with your crew</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="examples" class="section">
+      <div class="section-header">
+        <h2 class="section-title">Trips built with TravelFlow</h2>
+        <p class="section-copy">Browse static example cards that link into the interactive planner only when you choose one.</p>
+      </div>
+      <div class="example-strip">
+        {payload.examples.map((card: any) => <TripExampleCard card={card} />)}
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">{payload.cta.title}</h2>
+        <p class="section-copy">{payload.cta.subtitle}</p>
+      </div>
+      <div class="grid grid--3">
+        {payload.sections.map((item: any) => (
+          <article class="card">
+            <h3 class="card-title">{item.title}</h3>
+            <p>{item.description}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  </>
+)}
+
+{page.kind === 'features' && (
+  <>
+    <section class="hero">
+      <div>
+        <h1>{payload.hero.titleBefore} <span class="hero-highlight">{payload.hero.titleHighlight}</span></h1>
+        <p class="lead">{payload.hero.description}</p>
+        <div class="hero-actions">
+          <a class="button" href={createTripPath} data-analytics-event="features__hero_cta--start_planning">{payload.hero.primaryCta}</a>
+          <a class="button-secondary" href={examplesPath} data-analytics-event="features__hero_cta--see_examples">{payload.hero.secondaryCta}</a>
+        </div>
+        <ul class="plain-list">
+          {payload.proof.map((proof: string) => <li>{proof}</li>)}
+        </ul>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <div class="route-preview">
+          <div class="route-preview__map">
+            <div class="route-preview__pins"><span class="pin"></span><span class="pin"></span><span class="pin"></span></div>
+          </div>
+          <div class="timeline-row"><strong>Map and timeline stay together</strong><span>Static preview, interactive planner on demand</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="grid grid--3">
+        {payload.bentoItems.map((item: any) => (
+          <article class="card">
+            <h2 class="card-title">{item.title}</h2>
+            <p>{item.description}</p>
+            {item.detail ? <span class="tag">{item.detail}</span> : null}
+          </article>
+        ))}
+      </div>
+    </section>
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">One flow for drafting, shaping, and sharing</h2>
+      </div>
+      <div class="grid grid--3">
+        {payload.workflowSteps.map((step: any) => (
+          <article class="card">
+            <span class="tag">{step.step}</span>
+            <h3 class="card-title">{step.title}</h3>
+            <p>{step.description}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  </>
+)}
+
+{page.kind === 'pricing' && (
+  <>
+    <section class="hero hero--simple">
+      <h1>{payload.hero.title}</h1>
+      <p class="lead">{payload.hero.description}</p>
+    </section>
+    <section class="section">
+      <div class="grid grid--3">
+        {payload.plans.map((plan: any) => (
+          <article class:list={['price-card', plan.highlighted && 'price-card--highlighted']}>
+            <span class="tag">{plan.badge}</span>
+            <h2 class="card-title">{plan.name}</h2>
+            <p>{plan.description}</p>
+            <div class="price">${plan.price}<small>/mo</small></div>
+            <ul class="feature-list">
+              {plan.features.map((feature: string) => <li>{feature}</li>)}
+            </ul>
+            <p><a class="button" href={plan.price === 0 ? createTripPath : `/checkout?tier=${encodeURIComponent(plan.key)}`} data-analytics-event={`pricing__tier--${plan.publicSlug}`}>{plan.cta}</a></p>
+          </article>
+        ))}
+      </div>
+    </section>
+    <section class="section">
+      <article class="card">
+        <h2 class="card-title">{payload.anonymousLimits.title}</h2>
+        <p set:html={payload.anonymousLimits.description}></p>
+        <p>{payload.anonymousLimits.footer}</p>
+      </article>
+    </section>
+  </>
+)}
+
+{page.kind === 'faq' && (
+  <>
+    <section class="hero hero--simple">
+      <h1>Frequently asked questions</h1>
+      <p class="lead">Fast answers for planning, billing, privacy, and support.</p>
+    </section>
+    <section class="section">
+      <div class="grid grid--2">
+        {payload.sections.map((section: any) => (
+          <article>
+            <h2 class="section-title">{section.title}</h2>
+            <div class="faq-list">
+              {section.items.map((item: any) => (
+                <details>
+                  <summary>{item.question}</summary>
+                  <p>{item.answer}</p>
+                </details>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  </>
+)}
+
+{page.kind === 'updates' && (
+  <>
+    <section class="hero hero--simple">
+      <h1>{page.seo.title.replace(' | TravelFlow', '')}</h1>
+      <p class="lead">{page.seo.description}</p>
+    </section>
+    <section class="section">
+      <div class="grid">
+        {payload.releases.map((release: any) => (
+          <article class="release-card">
+            <span class="tag">{release.version} · {formatDate(release.publishedAt, page.locale)}</span>
+            <h2 class="release-title">{release.title}</h2>
+            <p>{release.summary}</p>
+            <ul class="feature-list">
+              {release.websiteItems.slice(0, 5).map((item: any) => <li>{item.text}</li>)}
+            </ul>
+          </article>
+        ))}
+      </div>
+    </section>
+  </>
+)}
+
+{page.kind === 'blog' && (
+  <>
+    <section class="hero hero--simple">
+      <h1>Travel planning blog</h1>
+      <p class="lead">{page.seo.description}</p>
+    </section>
+    <section class="section">
+      <div class="grid grid--3">
+        {payload.posts.map((post: any) => (
+          <a class="blog-card" href={localizedPath(`/blog/${encodeURIComponent(post.slug)}`, page.locale)}>
+            <div class="blog-card__media">
+              <picture>
+                <source
+                  type="image/webp"
+                  srcset={`${post.images.card.sources.xsmall} 480w, ${post.images.card.sources.small} 768w, ${post.images.card.sources.medium} 1024w`}
+                  sizes="(min-width: 960px) 32vw, (min-width: 640px) 48vw, 92vw"
+                />
+                <img
+                  src={post.images.card.sources.medium}
+                  alt={post.images.card.alt}
+                  width="1024"
+                  height="683"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </picture>
+            </div>
+            <div class="blog-card__body">
+              <span class="tag">{formatDate(post.publishedAt, page.locale)} · {post.readingTimeMin} min</span>
+              <h3>{post.title}</h3>
+              <p class="section-copy">{post.summary}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+  </>
+)}
+
+{page.kind === 'blogPost' && (
+  <>
+    <section class="hero hero--simple">
+      <a class="tag" href={localizedPath('/blog', page.locale)}>Back to blog</a>
+      <h1>{payload.post.title}</h1>
+      <p class="lead">{payload.post.summary}</p>
+      <p class="meta-row"><span>{formatDate(payload.post.publishedAt, page.locale)}</span><span>{payload.post.readingTimeMin} min</span><span>{payload.post.author}</span></p>
+    </section>
+    <article class="article" set:html={payload.contentHtml}></article>
+  </>
+)}
+
+{page.kind === 'inspirations' && (
+  <>
+    <section class="hero hero--simple">
+      <p class="eyebrow">{payload.hero.pill}</p>
+      <h1>{payload.hero.title}</h1>
+      <p class="lead">{payload.hero.description}</p>
+    </section>
+    <section id="examples" class="section">
+      <div class="section-header">
+        <h2 class="section-title">Curated destinations</h2>
+      </div>
+      <div class="grid grid--3">
+        {payload.destinations.map((destination: any) => (
+          <a class="card" href="/create-trip" data-analytics-event="inspirations__destination_card">
+            <span class="tag">{destination.flag} {destination.country}</span>
+            <h3 class="card-title">{destination.title}</h3>
+            <p>{destination.description}</p>
+            <div class="meta-row"><span>{destination.durationDays} days</span><span>{destination.cityCount} cities</span></div>
+          </a>
+        ))}
+      </div>
+    </section>
+    <section class="section">
+      <div class="grid grid--3">
+        {payload.countryGroups.map((country: any) => (
+          <a class="card" href={localizedPath(`/inspirations/country/${encodeURIComponent(country.country)}`, page.locale)}>
+            <span class="tag">{country.flag} {country.bestMonths}</span>
+            <h3 class="card-title">{country.country}</h3>
+            <p>{country.tripCount} trip ideas · {country.tags.join(', ')}</p>
+          </a>
+        ))}
+      </div>
+    </section>
+  </>
+)}
+
+{page.kind === 'inspirationsSubpage' && (
+  <>
+    <section class="hero hero--simple">
+      <p class="eyebrow">{payload.pill}</p>
+      <h1>{payload.title}</h1>
+      <p class="lead">{payload.description}</p>
+    </section>
+    <section class="section">
+      <article class="card">
+        <span class="tag">{payload.comingSoon}</span>
+        <p>{payload.comingSoonDescription}</p>
+        <a class="button" href={createTripPath}>{startPlanningLabel}</a>
+      </article>
+    </section>
+  </>
+)}
+
+{page.kind === 'inspirationsCountry' && (
+  <>
+    <section class="hero hero--simple">
+      <p class="eyebrow">{payload.pill}</p>
+      <h1>{payload.country.flag} Travel to {payload.country.country}</h1>
+      <p class="lead">{page.seo.description}</p>
+    </section>
+    <section class="section">
+      <div class="grid grid--3">
+        <article class="card"><h2 class="card-title">Best time</h2><p>{payload.country.bestMonths}</p></article>
+        <article class="card"><h2 class="card-title">Trip ideas</h2><p>{payload.country.tripCount} itineraries</p></article>
+        <article class="card"><h2 class="card-title">Tags</h2><p>{payload.country.tags.join(', ')}</p></article>
+      </div>
+      <article class="card" style="margin-block-start:1rem">
+        <span class="tag">{payload.comingSoon}</span>
+        <p>{payload.comingSoonDescription}</p>
+        <a class="button" href={createTripPath}>{payload.cta}</a>
+      </article>
+    </section>
+  </>
+)}
+
+{page.kind === 'contact' && (
+  <>
+    <section class="hero hero--simple">
+      <h1>{payload.title}</h1>
+      <p class="lead">{payload.description}</p>
+    </section>
+    <section class="section">
+      <div class="grid grid--2">
+        <form class="card form-grid" name="contact" method="POST" data-netlify="true" action="/contact">
+          <input type="hidden" name="form-name" value="contact" />
+          <label>Reason<select name="reason"><option>Problem with the website/app</option><option>Billing / account</option><option>Feature request</option><option>Data/privacy request</option><option>Other</option></select></label>
+          <label>Name<input name="name" autocomplete="name" /></label>
+          <label>Email<input name="email" type="email" autocomplete="email" required /></label>
+          <label>Message<textarea name="message" required></textarea></label>
+          <button class="button" type="submit" data-analytics-event="contact__form--submit">Send message</button>
+        </form>
+        <div class="faq-list">
+          {payload.faqItems.map((item: any) => (
+            <details>
+              <summary>{item.question}</summary>
+              <p>{item.answer}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  </>
+)}
+
+{page.kind === 'legal' && (
+  <>
+    <section class="hero hero--simple">
+      <h1>{payload.title}</h1>
+      <p class="lead">{payload.description}</p>
+    </section>
+    <section class="section">
+      <div class="grid grid--2">
+        {payload.sections.map((section: string) => (
+          <article class="card">
+            <h2 class="card-title">{section}</h2>
+            <p>Review the current TravelFlow policy details and contact us if you need clarification or a data/privacy request.</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  </>
+)}

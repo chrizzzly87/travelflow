@@ -215,7 +215,9 @@ const MISSING_AUTH_PROVIDER_FALLBACK: AuthContextValue = {
 
 export const resolveAuthContextValue = (context: AuthContextValue | null): AuthContextValue => {
     if (context) return context;
-    if (!hasWarnedMissingAuthProvider) {
+    const isAstroMarketingDocument = typeof window !== 'undefined'
+        && Boolean((window as typeof window & { __TF_ASTRO_MARKETING__?: boolean }).__TF_ASTRO_MARKETING__);
+    if (typeof window !== 'undefined' && !isAstroMarketingDocument && !hasWarnedMissingAuthProvider) {
         hasWarnedMissingAuthProvider = true;
         console.error('useAuthContext was used without an AuthProvider. Falling back to anonymous-safe auth context.');
     }

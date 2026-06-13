@@ -1,0 +1,28 @@
+---
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import { ReactMarketingPage } from '../components/ReactMarketingPage';
+import { getAllMarketingPagePaths, resolveMarketingPage } from '../lib/marketingContent';
+import i18n, { preloadLocaleNamespaces } from '../../i18n';
+import { getNamespacesForMarketingPath } from '../../config/routes';
+
+export function getStaticPaths() {
+  return getAllMarketingPagePaths()
+    .filter((path) => path !== '/')
+    .map((path) => ({
+      params: { path: decodeURI(path.replace(/^\//, '')) },
+      props: { pathname: path },
+    }));
+}
+
+const { pathname } = Astro.props;
+const page = resolveMarketingPage(pathname);
+if (!page) {
+  throw new Error(`Missing Astro marketing page data for ${pathname}`);
+}
+await preloadLocaleNamespaces(page.locale, getNamespacesForMarketingPath(page.path));
+await i18n.changeLanguage(page.locale);
+---
+
+<MarketingLayout page={page}>
+  <ReactMarketingPage page={page} client:load />
+</MarketingLayout>

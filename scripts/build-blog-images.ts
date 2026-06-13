@@ -14,6 +14,7 @@ const RESPONSIVE_WEBP_VARIANTS = [
 const LARGE_WEBP_MAX_DIM = 1536;
 const LARGE_WEBP_QUALITY = 64;
 const LARGE_WEBP_SIZE_THRESHOLD_BYTES = 420_000;
+const LARGE_WEBP_MIN_SAVINGS_BYTES = 2_048;
 const OG_JPEG_MAX_DIM = 768;
 const OG_JPEG_QUALITY = 50;
 const OG_JPEG_SIZE_THRESHOLD_BYTES = 180_000;
@@ -137,10 +138,19 @@ const optimizeLargeWebpInPlace = async (
     sourcePath: string,
     maxDim = LARGE_WEBP_MAX_DIM,
     quality = LARGE_WEBP_QUALITY,
-): Promise<void> => {
+): Promise<boolean> => {
     const tmpPath = `${sourcePath}.tmp`;
     await writeWebpDerivative(sourcePath, tmpPath, maxDim, quality);
+    const currentSize = statSync(sourcePath).size;
+    const optimizedSize = statSync(tmpPath).size;
+
+    if (optimizedSize + LARGE_WEBP_MIN_SAVINGS_BYTES >= currentSize) {
+        rmSync(tmpPath, { force: true });
+        return false;
+    }
+
     replaceFile(tmpPath, sourcePath);
+    return true;
 };
 
 const optimizeOgJpegInPlace = async (
@@ -235,9 +245,10 @@ const ensureOptimizedLargeWebps = async (isDryRun: boolean, forceOverwrite: bool
             continue;
         }
 
-        await optimizeLargeWebpInPlace(fullPath, LARGE_WEBP_MAX_DIM, LARGE_WEBP_QUALITY);
-        optimized += 1;
-        process.stdout.write(`[blog-images] Optimized large WebP ${fullPath}\n`);
+        if (await optimizeLargeWebpInPlace(fullPath, LARGE_WEBP_MAX_DIM, LARGE_WEBP_QUALITY)) {
+            optimized += 1;
+            process.stdout.write(`[blog-images] Optimized large WebP ${fullPath}\n`);
+        }
     }
 
     return optimized;

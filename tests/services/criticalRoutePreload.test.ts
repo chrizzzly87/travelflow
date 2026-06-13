@@ -3,9 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { getCriticalRouteModuleKeys } from '../../services/criticalRoutePreload';
 
 describe('criticalRoutePreload', () => {
-  it('preloads the homepage route chain for direct marketing entry', () => {
-    expect(getCriticalRouteModuleKeys('/')).toEqual(['DeferredAppRoutes', 'MarketingHomePage']);
-    expect(getCriticalRouteModuleKeys('/de')).toEqual(['DeferredAppRoutes', 'MarketingHomePage']);
+  it('does not preload React chunks for direct Astro marketing entry', () => {
+    expect(getCriticalRouteModuleKeys('/')).toEqual([]);
+    expect(getCriticalRouteModuleKeys('/de')).toEqual([]);
+    expect(getCriticalRouteModuleKeys('/pricing')).toEqual([]);
+    expect(getCriticalRouteModuleKeys('/de/features')).toEqual([]);
+    expect(getCriticalRouteModuleKeys('/inspirations/themes')).toEqual([]);
   });
 
   it('preloads direct tool entry routes', () => {
@@ -16,9 +19,10 @@ describe('criticalRoutePreload', () => {
     expect(getCriticalRouteModuleKeys('/de/create-trip/wizard')).toEqual(['CreateTripV3Page']);
   });
 
-  it('falls back to deferred marketing routing for localized marketing routes', () => {
-    expect(getCriticalRouteModuleKeys('/pricing')).toEqual(['DeferredAppRoutes', 'PricingPage']);
-    expect(getCriticalRouteModuleKeys('/de/features')).toEqual(['DeferredAppRoutes', 'FeaturesPage']);
-    expect(getCriticalRouteModuleKeys('/inspirations/themes')).toEqual(['DeferredAppRoutes']);
+  it('preloads app-owned deferred public routes', () => {
+    expect(getCriticalRouteModuleKeys('/login')).toEqual(['DeferredAppRoutes', 'LoginPage']);
+    expect(getCriticalRouteModuleKeys('/de/login')).toEqual(['DeferredAppRoutes', 'LoginPage']);
+    expect(getCriticalRouteModuleKeys('/share-unavailable')).toEqual(['DeferredAppRoutes', 'ShareUnavailablePage']);
+    expect(getCriticalRouteModuleKeys('/auth/reset-password')).toEqual(['DeferredAppRoutes', 'ResetPasswordPage']);
   });
 });

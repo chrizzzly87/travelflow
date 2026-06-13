@@ -15,28 +15,11 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
     importer: () => Promise<TModule>
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
 
-const MarketingHomePage = lazyWithRecovery('MarketingHomePage', () => import('../../pages/MarketingHomePage').then((module) => ({ default: module.MarketingHomePage })));
 const PublicProfilePage = lazyWithRecovery('PublicProfilePage', () => import('../../pages/PublicProfilePage').then((module) => ({ default: module.PublicProfilePage })));
 const PublicProfileStampsPage = lazyWithRecovery('PublicProfileStampsPage', () => import('../../pages/PublicProfileStampsPage').then((module) => ({ default: module.PublicProfileStampsPage })));
 
-const FeaturesPage = lazyWithRecovery('FeaturesPage', () => import('../../pages/FeaturesPage').then((module) => ({ default: module.FeaturesPage })));
-const UpdatesPage = lazyWithRecovery('UpdatesPage', () => import('../../pages/UpdatesPage').then((module) => ({ default: module.UpdatesPage })));
-const BlogPage = lazyWithRecovery('BlogPage', () => import('../../pages/BlogPage').then((module) => ({ default: module.BlogPage })));
-const BlogPostPage = lazyWithRecovery('BlogPostPage', () => import('../../pages/BlogPostPage').then((module) => ({ default: module.BlogPostPage })));
-const InspirationsPage = lazyWithRecovery('InspirationsPage', () => import('../../pages/InspirationsPage').then((module) => ({ default: module.InspirationsPage })));
-const ThemesPage = lazyWithRecovery('ThemesPage', () => import('../../pages/inspirations/ThemesPage').then((module) => ({ default: module.ThemesPage })));
-const BestTimeToTravelPage = lazyWithRecovery('BestTimeToTravelPage', () => import('../../pages/inspirations/BestTimeToTravelPage').then((module) => ({ default: module.BestTimeToTravelPage })));
-const CountriesPage = lazyWithRecovery('CountriesPage', () => import('../../pages/inspirations/CountriesPage').then((module) => ({ default: module.CountriesPage })));
-const FestivalsPage = lazyWithRecovery('FestivalsPage', () => import('../../pages/inspirations/FestivalsPage').then((module) => ({ default: module.FestivalsPage })));
-const WeekendGetawaysPage = lazyWithRecovery('WeekendGetawaysPage', () => import('../../pages/inspirations/WeekendGetawaysPage').then((module) => ({ default: module.WeekendGetawaysPage })));
-const CountryDetailPage = lazyWithRecovery('CountryDetailPage', () => import('../../pages/inspirations/CountryDetailPage').then((module) => ({ default: module.CountryDetailPage })));
 const LoginPage = lazyWithRecovery('LoginPage', () => import('../../pages/LoginPage').then((module) => ({ default: module.LoginPage })));
 const ResetPasswordPage = lazyWithRecovery('ResetPasswordPage', () => import('../../pages/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })));
-const ContactPage = lazyWithRecovery('ContactPage', () => import('../../pages/ContactPage').then((module) => ({ default: module.ContactPage })));
-const ImprintPage = lazyWithRecovery('ImprintPage', () => import('../../pages/ImprintPage').then((module) => ({ default: module.ImprintPage })));
-const PrivacyPage = lazyWithRecovery('PrivacyPage', () => import('../../pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
-const TermsPage = lazyWithRecovery('TermsPage', () => import('../../pages/TermsPage').then((module) => ({ default: module.TermsPage })));
-const CookiesPage = lazyWithRecovery('CookiesPage', () => import('../../pages/CookiesPage').then((module) => ({ default: module.CookiesPage })));
 const ProfilePage = lazyWithRecovery('ProfilePage', () => import('../../pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
 const ProfileStampsPage = lazyWithRecovery('ProfileStampsPage', () => import('../../pages/ProfileStampsPage').then((module) => ({ default: module.ProfileStampsPage })));
 const ProfileSettingsPage = lazyWithRecovery('ProfileSettingsPage', () => import('../../pages/ProfileSettingsPage').then((module) => ({ default: module.ProfileSettingsPage })));
@@ -44,8 +27,6 @@ const ProfileOnboardingPage = lazyWithRecovery('ProfileOnboardingPage', () => im
 const CheckoutPage = lazyWithRecovery('CheckoutPage', () => import('../../pages/CheckoutPage').then((module) => ({ default: module.CheckoutPage })));
 const AdminAccessDeniedPage = lazyWithRecovery('AdminAccessDeniedPage', () => import('../../pages/AdminAccessDeniedPage').then((module) => ({ default: module.AdminAccessDeniedPage })));
 const AdminWorkspaceRouter = lazyWithRecovery('AdminWorkspaceRouter', () => import('../../pages/AdminWorkspaceRouter').then((module) => ({ default: module.AdminWorkspaceRouter })));
-const PricingPage = lazyWithRecovery('PricingPage', () => import('../../pages/PricingPage').then((module) => ({ default: module.PricingPage })));
-const FaqPage = lazyWithRecovery('FaqPage', () => import('../../pages/FaqPage').then((module) => ({ default: module.FaqPage })));
 const ShareUnavailablePage = lazyWithRecovery('ShareUnavailablePage', () => import('../../pages/ShareUnavailablePage').then((module) => ({ default: module.ShareUnavailablePage })));
 const NotFoundPage = lazyWithRecovery('NotFoundPage', () => import('../../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
 const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
@@ -71,55 +52,28 @@ const renderWithHandoff = (node: React.ReactElement) => (
     <HandoffReadyBoundary>{node}</HandoffReadyBoundary>
 );
 
-const AuthenticatedMarketingHomeRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
-    const { isLoading, isAuthenticated } = useAuth();
+const LOCALIZED_APP_LOCALES: AppLanguage[] = SUPPORTED_LOCALES.filter((locale) => locale !== DEFAULT_LOCALE);
 
-    suspendUntilAuthBootstrapSettles(isLoading);
-    if (isAuthenticated) {
-        return <Navigate to="/profile" replace />;
-    }
-    return children;
-};
-
-const wrapMarketingRouteElement = (path: string, element: React.ReactElement): React.ReactElement => {
-    if (path !== '/') return element;
-    return (
-        <AuthenticatedMarketingHomeRoute>
-            {element}
-        </AuthenticatedMarketingHomeRoute>
-    );
-};
-
-const LOCALIZED_MARKETING_LOCALES: AppLanguage[] = SUPPORTED_LOCALES.filter((locale) => locale !== DEFAULT_LOCALE);
-
-const MARKETING_ROUTE_CONFIGS: Array<{ path: string; element: React.ReactElement }> = [
-    { path: '/', element: <MarketingHomePage /> },
-    { path: '/features', element: <FeaturesPage /> },
-    { path: '/inspirations', element: <InspirationsPage /> },
-    { path: '/inspirations/themes', element: <ThemesPage /> },
-    { path: '/inspirations/best-time-to-travel', element: <BestTimeToTravelPage /> },
-    { path: '/inspirations/countries', element: <CountriesPage /> },
-    { path: '/inspirations/events-and-festivals', element: <FestivalsPage /> },
-    { path: '/inspirations/weekend-getaways', element: <WeekendGetawaysPage /> },
-    { path: '/inspirations/country/:countryName', element: <CountryDetailPage /> },
-    { path: '/updates', element: <UpdatesPage /> },
-    { path: '/blog', element: <BlogPage /> },
-    { path: '/blog/:slug', element: <BlogPostPage /> },
-    { path: '/pricing', element: <PricingPage /> },
-    { path: '/faq', element: <FaqPage /> },
+const APP_MARKETING_ROUTE_CONFIGS: Array<{ path: string; element: React.ReactElement }> = [
     { path: '/share-unavailable', element: <ShareUnavailablePage /> },
     { path: '/login', element: <LoginPage /> },
     { path: '/auth/reset-password', element: <ResetPasswordPage /> },
-    { path: '/contact', element: <ContactPage /> },
-    { path: '/imprint', element: <ImprintPage /> },
-    { path: '/privacy', element: <PrivacyPage /> },
-    { path: '/terms', element: <TermsPage /> },
-    { path: '/cookies', element: <CookiesPage /> },
 ];
 
-const getLocalizedMarketingRoutePath = (path: string, locale: AppLanguage): string => {
+const getLocalizedAppRoutePath = (path: string, locale: AppLanguage): string => {
     if (path === '/') return `/${locale}`;
     return `/${locale}${path}`;
+};
+
+const AstroMarketingDocumentRoute: React.FC = () => {
+    const location = useLocation();
+    const target = `${location.pathname}${location.search}${location.hash}`;
+
+    useEffect(() => {
+        window.location.assign(target);
+    }, [target]);
+
+    return <RouteLoadingFallback />;
 };
 
 const CreateTripClassicRoute: React.FC<{
@@ -208,22 +162,54 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
 }) => {
     const routes = (
         <Routes>
-            {MARKETING_ROUTE_CONFIGS.map(({ path, element }) => (
+            {APP_MARKETING_ROUTE_CONFIGS.map(({ path, element }) => (
                 <Route
-                    key={`marketing:${path}`}
+                    key={`app-marketing:${path}`}
                     path={path}
-                    element={renderWithHandoff(wrapMarketingRouteElement(path, element))}
+                    element={renderWithHandoff(element)}
                 />
             ))}
-            {LOCALIZED_MARKETING_LOCALES.flatMap((locale) =>
-                MARKETING_ROUTE_CONFIGS.map(({ path, element }) => (
+            {LOCALIZED_APP_LOCALES.flatMap((locale) =>
+                APP_MARKETING_ROUTE_CONFIGS.map(({ path, element }) => (
                     <Route
-                        key={`marketing:${locale}:${path}`}
-                        path={getLocalizedMarketingRoutePath(path, locale)}
-                        element={renderWithHandoff(wrapMarketingRouteElement(path, element))}
+                        key={`app-marketing:${locale}:${path}`}
+                        path={getLocalizedAppRoutePath(path, locale)}
+                        element={renderWithHandoff(element)}
                     />
                 ))
             )}
+            <Route path="/" element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />
+            {LOCALIZED_APP_LOCALES.map((locale) => (
+                <Route
+                    key={`astro-marketing:${locale}:home`}
+                    path={`/${locale}`}
+                    element={renderWithHandoff(<AstroMarketingDocumentRoute />)}
+                />
+            ))}
+            <Route path="/features" element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />
+            <Route path="/inspirations/*" element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />
+            <Route path="/updates" element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />
+            <Route path="/blog/*" element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />
+            <Route path="/pricing" element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />
+            <Route path="/faq" element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />
+            <Route path="/contact" element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />
+            <Route path="/imprint" element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />
+            <Route path="/privacy" element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />
+            <Route path="/terms" element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />
+            <Route path="/cookies" element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />
+            {LOCALIZED_APP_LOCALES.flatMap((locale) => [
+                <Route key={`astro-marketing:${locale}:features`} path={`/${locale}/features`} element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />,
+                <Route key={`astro-marketing:${locale}:inspirations`} path={`/${locale}/inspirations/*`} element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />,
+                <Route key={`astro-marketing:${locale}:updates`} path={`/${locale}/updates`} element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />,
+                <Route key={`astro-marketing:${locale}:blog`} path={`/${locale}/blog/*`} element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />,
+                <Route key={`astro-marketing:${locale}:pricing`} path={`/${locale}/pricing`} element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />,
+                <Route key={`astro-marketing:${locale}:faq`} path={`/${locale}/faq`} element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />,
+                <Route key={`astro-marketing:${locale}:contact`} path={`/${locale}/contact`} element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />,
+                <Route key={`astro-marketing:${locale}:imprint`} path={`/${locale}/imprint`} element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />,
+                <Route key={`astro-marketing:${locale}:privacy`} path={`/${locale}/privacy`} element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />,
+                <Route key={`astro-marketing:${locale}:terms`} path={`/${locale}/terms`} element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />,
+                <Route key={`astro-marketing:${locale}:cookies`} path={`/${locale}/cookies`} element={renderWithHandoff(<AstroMarketingDocumentRoute />)} />,
+            ])}
 
             <Route
                 path="/create-trip/labs/classic-card"

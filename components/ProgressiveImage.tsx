@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { decode } from 'blurhash';
 import { IMAGE_PLACEHOLDERS } from '../data/imagePlaceholders.generated';
 import { buildImageCdnUrl, buildImageSrcSet, isImageCdnEnabled } from '../utils/imageDelivery';
@@ -89,12 +89,16 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
     const resolvedWidth = width ?? placeholderMeta?.width ?? 1536;
     const resolvedHeight = height ?? placeholderMeta?.height ?? 1024;
     const blurhashValue = placeholderBlurhash || placeholderMeta?.blurhash || '';
-    const placeholderDataUrl = useMemo(() => {
-        if (!blurhashValue) return null;
-        if (typeof document === 'undefined') return null;
+    const [placeholderDataUrl, setPlaceholderDataUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!blurhashValue || typeof document === 'undefined') {
+            setPlaceholderDataUrl(null);
+            return;
+        }
         const sourceWidth = placeholderMeta?.width ?? resolvedWidth;
         const sourceHeight = placeholderMeta?.height ?? resolvedHeight;
-        return createBlurhashDataUrl(blurhashValue, sourceWidth, sourceHeight);
+        setPlaceholderDataUrl(createBlurhashDataUrl(blurhashValue, sourceWidth, sourceHeight));
     }, [blurhashValue, placeholderMeta?.height, placeholderMeta?.width, resolvedWidth, resolvedHeight]);
 
     const avifSrcSet = useMemo(

@@ -506,7 +506,7 @@ export const FeaturesGlobe: React.FC = () => {
                         if (node) overlayRefs.current.set('origin-marker', node);
                         else overlayRefs.current.delete('origin-marker');
                     }}
-                    className="absolute left-0 top-0 will-change-transform"
+                    className="features-globe-static-overlay features-globe-static-overlay--origin absolute left-0 top-0 will-change-transform"
                 >
                     <span className="relative block size-11">
                         <span
@@ -539,7 +539,7 @@ export const FeaturesGlobe: React.FC = () => {
                                 if (node) overlayRefs.current.set('paris-panel', node);
                                 else overlayRefs.current.delete('paris-panel');
                             }}
-                            className="absolute left-0 top-0 w-[6.8rem] rounded-[11px] border border-[#ddd1ff] bg-[#f7f3ff]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.1rem]"
+                            className="features-globe-static-overlay features-globe-static-overlay--paris absolute left-0 top-0 w-[6.8rem] rounded-[11px] border border-[#ddd1ff] bg-[#f7f3ff]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.1rem]"
                         >
                             <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
                                 <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{parisCard.emoji}</span>
@@ -554,7 +554,7 @@ export const FeaturesGlobe: React.FC = () => {
                                 if (node) overlayRefs.current.set('fiji-panel', node);
                                 else overlayRefs.current.delete('fiji-panel');
                             }}
-                            className="absolute left-0 top-0 w-[6.9rem] rounded-[11px] border border-[#cbe9d7] bg-[#eef9f1]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.2rem]"
+                            className="features-globe-static-overlay features-globe-static-overlay--fiji absolute left-0 top-0 w-[6.9rem] rounded-[11px] border border-[#cbe9d7] bg-[#eef9f1]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.2rem]"
                         >
                             <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
                                 <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{fijiCard.emoji}</span>
@@ -569,7 +569,7 @@ export const FeaturesGlobe: React.FC = () => {
                                 if (node) overlayRefs.current.set('south-africa-panel', node);
                                 else overlayRefs.current.delete('south-africa-panel');
                             }}
-                            className="absolute left-0 top-0 w-[7.1rem] rounded-[11px] border border-[#cfe8ee] bg-[#eef8fb]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.5rem]"
+                            className="features-globe-static-overlay features-globe-static-overlay--south-africa absolute left-0 top-0 w-[7.1rem] rounded-[11px] border border-[#cfe8ee] bg-[#eef8fb]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.5rem]"
                         >
                             <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
                                 <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{southAfricaCard.emoji}</span>
@@ -584,7 +584,7 @@ export const FeaturesGlobe: React.FC = () => {
                                 if (node) overlayRefs.current.set('route66-panel', node);
                                 else overlayRefs.current.delete('route66-panel');
                             }}
-                            className="absolute left-0 top-0 w-[6.8rem] rounded-[11px] border border-[#f0d5bf] bg-[#fff4e9]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.1rem]"
+                            className="features-globe-static-overlay features-globe-static-overlay--route66 absolute left-0 top-0 w-[6.8rem] rounded-[11px] border border-[#f0d5bf] bg-[#fff4e9]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.1rem]"
                         >
                             <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
                                 <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{route66Card.emoji}</span>
@@ -598,7 +598,7 @@ export const FeaturesGlobe: React.FC = () => {
                             if (node) overlayRefs.current.set('trip-preview', node);
                             else overlayRefs.current.delete('trip-preview');
                         }}
-                        className="absolute left-0 top-0 w-[8.45rem] border border-slate-200 bg-white p-2 shadow-[0_20px_34px_rgba(15,23,42,0.13)] will-change-transform sm:w-[9rem]"
+                        className="features-globe-static-overlay features-globe-static-overlay--trip-preview absolute left-0 top-0 w-[8.45rem] border border-slate-200 bg-white p-2 shadow-[0_20px_34px_rgba(15,23,42,0.13)] will-change-transform sm:w-[9rem]"
                         style={{ borderRadius: '14px 14px 18px 18px' }}
                         >
                             <div className="overflow-hidden rounded-[10px] border border-slate-100">
