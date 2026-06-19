@@ -28,7 +28,10 @@ describe('config/aiModelCatalog', () => {
     expect(modelIds.has('openrouter:google/gemini-3.5-flash')).toBe(true);
     expect(modelIds.has('openrouter:google/gemini-3.1-flash-lite')).toBe(true);
     expect(modelIds.has('openrouter:nvidia/nemotron-3-super-120b-a12b:free')).toBe(true);
+    expect(modelIds.has('openrouter:z-ai/glm-5.2')).toBe(true);
+    expect(modelIds.has('openrouter:z-ai/glm-5.1')).toBe(true);
     expect(modelIds.has('openrouter:z-ai/glm-5')).toBe(true);
+    expect(modelIds.has('openrouter:z-ai/glm-4.7-flash')).toBe(true);
     expect(modelIds.has('openrouter:deepseek/deepseek-v3.2')).toBe(true);
     expect(modelIds.has('openrouter:x-ai/grok-4.3')).toBe(true);
     expect(modelIds.has('openrouter:x-ai/grok-4.1-fast')).toBe(true);
@@ -99,6 +102,7 @@ describe('config/aiModelCatalog', () => {
       'openrouter:google/gemini-3.5-flash',
       'openrouter:google/gemini-3.1-flash-lite',
       'openrouter:x-ai/grok-4.3',
+      'openrouter:z-ai/glm-5.2',
       'openrouter:qwen/qwen3.5-plus-20260420',
     ]));
     expect(new Set(options.map((item) => item.id))).toEqual(uniqueActiveIds);

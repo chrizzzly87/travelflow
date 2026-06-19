@@ -13,4 +13,11 @@ export const tripEvalProviders = [
         },
         label: 'gemini:gemini-3.1-pro-preview',
     },
+    {
+        id: 'file://tripEvalProvider.ts',
+        config: {
+            targetId: 'openrouter:z-ai/glm-5.2',
+        },
+        label: 'openrouter:z-ai/glm-5.2',
+    },
 ];
