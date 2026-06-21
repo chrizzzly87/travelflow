@@ -131,7 +131,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
     }, [mapPreviewUrl]);
 
     return (
-        <article className="rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-lg cursor-pointer">
+        <article className="cursor-pointer rounded-2xl border border-slate-200 bg-white shadow-sm transition-[box-shadow] duration-200 ease-out hover:shadow-lg">
             <div
                 className={`relative h-36 rounded-t-2xl overflow-hidden ${mapImageSrc ? 'bg-slate-100' : card.mapColor}`}
                 style={mapViewTransitionName ? ({ viewTransitionName: mapViewTransitionName } as React.CSSProperties) : undefined}
@@ -172,7 +172,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
 
             <div className="p-4">
                 <h3
-                    className="text-base font-semibold text-slate-900"
+                    className="text-balance text-base font-semibold text-slate-900"
                     style={titleViewTransitionName ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties) : undefined}
                 >
                     {localizedTitle}
@@ -188,11 +188,11 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                 </div>
 
                 <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
-                    <span className="inline-flex items-center gap-1">
+                    <span className="inline-flex items-center gap-1 tabular-nums">
                         <Clock size={14} weight="duotone" className="text-accent-500" />
                         {formatExampleTripCountLabel(currentLocale, uiCopy.days, card.durationDays)}
                     </span>
-                    <span className="inline-flex items-center gap-1">
+                    <span className="inline-flex items-center gap-1 tabular-nums">
                         <MapPin size={14} weight="duotone" className="text-accent-500" />
                         {formatExampleTripCountLabel(currentLocale, uiCopy.cities, card.cityCount)}
                     </span>

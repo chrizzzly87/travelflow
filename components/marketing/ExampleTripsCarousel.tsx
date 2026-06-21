@@ -496,7 +496,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                                         onFocus={prewarmTripView}
                                         onTouchStart={prewarmTripView}
                                         data-prefetch-href={examplePath}
-                                        className="block w-full text-left cursor-pointer select-none [-webkit-user-select:none] [-webkit-touch-callout:none] [&_*]:select-none [&_*]:[-webkit-user-select:none] [&_*]:[-webkit-touch-callout:none] transition-transform duration-300 hover:scale-[1.02] active:scale-[0.99]"
+                                        className="block w-full cursor-pointer select-none text-left transition-transform duration-150 ease-out [-webkit-touch-callout:none] [-webkit-user-select:none] hover:scale-[1.02] active:scale-[0.96] [&_*]:select-none [&_*]:[-webkit-touch-callout:none] [&_*]:[-webkit-user-select:none]"
                                         {...(card.templateId
                                             ? getAnalyticsDebugAttributes('home__carousel_card', { template: card.templateId })
                                             : {})}
@@ -550,7 +550,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                                         onTouchStart={prewarmTripView}
                                         onFocus={prewarmTripView}
                                         data-prefetch-href={examplePath}
-                                        className="block w-full text-left cursor-pointer select-none [-webkit-user-select:none] [-webkit-touch-callout:none] [&_*]:select-none [&_*]:[-webkit-user-select:none] [&_*]:[-webkit-touch-callout:none] transition-transform duration-300 active:scale-[0.99]"
+                                        className="block w-full cursor-pointer select-none text-left transition-transform duration-150 ease-out [-webkit-touch-callout:none] [-webkit-user-select:none] active:scale-[0.96] [&_*]:select-none [&_*]:[-webkit-touch-callout:none] [&_*]:[-webkit-user-select:none]"
                                         {...(card.templateId
                                             ? getAnalyticsDebugAttributes('home__carousel_card', { template: card.templateId })
                                             : {})}

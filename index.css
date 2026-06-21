@@ -349,6 +349,11 @@ html[lang^="ur-"] {
 }
 
 @layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   :where(
     button,
     [role="button"],
@@ -424,6 +429,7 @@ input[type="checkbox"] {
 
 body {
   font-family: var(--tf-font-body);
+  text-wrap: pretty;
 }
 
 h1,
@@ -434,8 +440,8 @@ h5,
 h6,
 .font-heading {
   font-family: var(--tf-font-heading);
-  letter-spacing: -0.015em;
-  text-wrap: pretty;
+  letter-spacing: 0;
+  text-wrap: balance;
 }
 
 /* ── Scroll-driven animations ── */
@@ -1562,4 +1568,3 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   content-visibility: auto;
   contain-intrinsic-size: auto 250px;
 }
-

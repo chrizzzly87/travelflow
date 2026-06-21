@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { decode } from 'blurhash';
 import { IMAGE_PLACEHOLDERS } from '../data/imagePlaceholders.generated';
 import { buildImageCdnUrl, buildImageSrcSet, isImageCdnEnabled } from '../utils/imageDelivery';
+import { cn } from '../lib/utils';
 
 const blurhashDataUrlCache = new Map<string, string>();
 
@@ -139,7 +140,11 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
                     {...fetchPriorityAttr}
                     width={resolvedWidth}
                     height={resolvedHeight}
-                    className={`${className || 'size-full object-cover'} transition-opacity duration-300 ${isLoaded || skipFade ? 'opacity-100' : 'opacity-0'}`}
+                    className={cn(
+                        className || 'size-full object-cover',
+                        'outline outline-1 -outline-offset-1 outline-black/10 transition-opacity duration-300 dark:outline-white/10',
+                        isLoaded || skipFade ? 'opacity-100' : 'opacity-0',
+                    )}
                     onLoad={() => setIsLoaded(true)}
                     onError={() => {
                         setHasError(true);
