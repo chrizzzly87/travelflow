@@ -452,7 +452,7 @@ const MapDeferredFallback: React.FC<{ onLoadNow: () => void }> = ({ onLoadNow })
         <button
             type="button"
             onClick={onLoadNow}
-            className="inline-flex h-8 items-center rounded-md border border-gray-300 bg-white px-3 text-[11px] font-semibold text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+            className="inline-flex min-h-10 items-center rounded-md border border-gray-300 bg-white px-3 text-[11px] font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
         >
             Load map now
         </button>

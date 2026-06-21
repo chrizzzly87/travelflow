@@ -43,7 +43,7 @@ interface SiteHeaderProps {
 }
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) => {
-    const baseClass = 'relative font-semibold text-slate-500 transition-colors hover:text-slate-900 after:pointer-events-none after:absolute after:-bottom-4 after:left-0 after:h-0.5 after:w-full after:origin-center after:scale-x-0 after:rounded-full after:bg-accent-600 after:transition-transform';
+    const baseClass = 'relative inline-flex min-h-10 items-center font-semibold text-slate-500 transition-colors hover:text-slate-900 after:pointer-events-none after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-full after:origin-center after:scale-x-0 after:rounded-full after:bg-accent-600 after:transition-transform';
     if (isActive) return `${baseClass} text-slate-900 after:scale-x-100`;
     return baseClass;
 };
@@ -170,7 +170,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                     <NavLink
                         to={buildLocalizedMarketingPath('home', activeLocale)}
                         onClick={() => handleNavClick('brand')}
-                        className="flex items-center gap-2"
+                        className="flex min-h-10 items-center gap-2"
                         {...navDebugAttributes('brand')}
                     >
                         <AppBrand />

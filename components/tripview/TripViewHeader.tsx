@@ -82,7 +82,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
             <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2.5">
                 <Link
                     to="/"
-                    className="flex shrink-0 cursor-pointer items-center gap-1 transition-opacity hover:opacity-80"
+                    className="flex min-h-10 shrink-0 cursor-pointer items-center gap-1 transition-opacity hover:opacity-80"
                     title="Go to Homepage"
                     aria-label="Go to Homepage"
                 >
@@ -99,7 +99,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                     onMouseEnter={onPrewarmTripInfo}
                     onFocus={onPrewarmTripInfo}
                     onTouchStart={onPrewarmTripInfo}
-                    className="group flex min-w-0 flex-1 items-start gap-1 rounded-xl p-1 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 sm:gap-2 sm:px-2"
+                    className="group flex min-h-10 min-w-0 flex-1 items-start gap-1 rounded-xl p-1 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 sm:gap-2 sm:px-2"
                     aria-label={titleTooltip}
                     data-tooltip={titleTooltip}
                     data-no-press-scale="true"

@@ -601,7 +601,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                 })}
                                             >
                                                 <div className="flex flex-wrap items-end justify-between gap-3">
-                                                    <h3 className={`text-2xl font-semibold tracking-tight underline-offset-4 decoration-2 transition-all group-hover:underline ${citySelected ? 'text-accent-700 decoration-accent-500' : 'text-slate-900 decoration-slate-400'}`}>
+                                                    <h3 className={`text-2xl font-semibold tracking-tight underline-offset-4 decoration-2 transition-[color,text-decoration-color] group-hover:underline ${citySelected ? 'text-accent-700 decoration-accent-500' : 'text-slate-900 decoration-slate-400'}`}>
                                                         {cityTitle}
                                                     </h3>
                                                     <div className="flex flex-wrap items-center gap-2">
@@ -713,7 +713,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                                             <TodayBadge />
                                                                         )}
                                                                     </div>
-                                                                    <p className={`mt-1 inline-flex cursor-pointer text-[17px] leading-7 underline-offset-4 decoration-2 transition-all ${titleHoverShiftClass} group-hover:underline ${isSelected ? 'font-semibold text-accent-700 decoration-accent-400' : 'font-medium text-slate-900 decoration-slate-300'}`}>
+                                                                    <p className={`mt-1 inline-flex cursor-pointer text-[17px] leading-7 underline-offset-4 decoration-2 transition-[color,text-decoration-color,translate] ${titleHoverShiftClass} group-hover:underline ${isSelected ? 'font-semibold text-accent-700 decoration-accent-400' : 'font-medium text-slate-900 decoration-slate-300'}`}>
                                                                         {activity.item.title}
                                                                     </p>
                                                                     {activity.item.description && (

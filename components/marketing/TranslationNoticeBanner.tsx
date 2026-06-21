@@ -88,7 +88,7 @@ export const TranslationNoticeBanner: React.FC = () => {
                         sub_reason: CONTACT_PREFILL_SUB_REASON,
                         source: CONTACT_PREFILL_SOURCE,
                     })}
-                    className="shrink-0 rounded-lg border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 sm:px-2.5"
+                    className="inline-flex min-h-10 shrink-0 items-center rounded-lg border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 sm:px-2.5"
                     {...getAnalyticsDebugAttributes('i18n_notice__contact', {
                         locale: activeLocale,
                         reason: CONTACT_PREFILL_REASON,
@@ -103,7 +103,7 @@ export const TranslationNoticeBanner: React.FC = () => {
                     type="button"
                     onClick={handleDismiss}
                     aria-label={t('earlyAccess.dismiss')}
-                    className="shrink-0 rounded-lg p-1.5 text-amber-600 transition-colors hover:bg-amber-100 hover:text-amber-800"
+                    className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-amber-600 transition-colors hover:bg-amber-100 hover:text-amber-800"
                     {...getAnalyticsDebugAttributes('i18n_notice__dismiss', { locale: activeLocale })}
                 >
                     <X size={14} weight="bold" />
