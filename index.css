@@ -348,6 +348,10 @@ html[lang^="ur-"] {
   }
 }
 
+.tracking-tight {
+  letter-spacing: 0;
+}
+
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;

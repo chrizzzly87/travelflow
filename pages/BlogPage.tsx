@@ -396,7 +396,7 @@ export const BlogPage: React.FC = () => {
                 <div className="flex flex-wrap gap-2">
                     <button type="button"
                         onClick={() => setSelectedTag(null)}
-                        className={`rounded-full px-3.5 py-1.5 text-sm font-medium shadow-sm transition-all ${
+                        className={`min-h-10 rounded-full px-3.5 py-1.5 text-sm font-medium shadow-sm transition-[scale,border-color,color,background-color,box-shadow] duration-150 ease-out active:scale-[0.96] ${
                             selectedTag === null
                                 ? 'bg-accent-100 text-accent-800 ring-2 ring-accent-300'
                                 : 'bg-white border border-slate-200 text-slate-600 hover:border-accent-300 hover:text-accent-700'
@@ -408,7 +408,7 @@ export const BlogPage: React.FC = () => {
                         <button type="button"
                             key={tag}
                             onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
-                            className={`inline-flex items-center gap-1 rounded-full px-3.5 py-1.5 text-sm font-medium shadow-sm transition-all ${
+                            className={`inline-flex min-h-10 items-center gap-1 rounded-full px-3.5 py-1.5 text-sm font-medium shadow-sm transition-[scale,border-color,color,background-color,box-shadow] duration-150 ease-out active:scale-[0.96] ${
                                 selectedTag === tag
                                     ? 'bg-accent-100 text-accent-800 ring-2 ring-accent-300'
                                     : 'bg-white border border-slate-200 text-slate-600 hover:border-accent-300 hover:text-accent-700'
@@ -449,19 +449,18 @@ export const BlogPage: React.FC = () => {
 
             <section className="pb-16 md:pb-24 animate-scroll-scale-in">
                 <div className="relative rounded-3xl bg-gradient-to-br from-accent-600 to-accent-800 px-8 py-14 text-center md:px-16 md:py-20 overflow-hidden">
-                    <div className="pointer-events-none absolute -top-20 -right-20 size-60 rounded-full bg-white/10 blur-[60px]" />
                     <h2
-                        className="relative text-3xl font-semibold tracking-tight text-white md:text-5xl"
+                        className="relative text-balance text-3xl font-semibold text-white md:text-5xl"
                         style={{ fontFamily: 'var(--tf-font-heading)' }}
                     >
                         {t('index.communityCtaTitle')}
                     </h2>
-                    <p className="relative mx-auto mt-4 max-w-xl text-base text-accent-100 md:text-lg">
+                    <p className="relative mx-auto mt-4 max-w-xl text-pretty text-base text-accent-100 md:text-lg">
                         {t('index.communityCtaDescription')}
                     </p>
                     <Link
                         to={buildLocalizedMarketingPath('contact', locale)}
-                        className="relative mt-8 inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-all hover:shadow-xl hover:bg-accent-50 hover:scale-[1.03] active:scale-[0.98]"
+                        className="relative mt-8 inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-[scale,background-color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:bg-accent-50 hover:shadow-xl active:scale-[0.96]"
                     >
                         {t('index.communityCtaButton')}
                         <ArrowRight size={18} weight="bold" />

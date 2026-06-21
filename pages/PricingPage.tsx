@@ -257,12 +257,12 @@ export const PricingPage: React.FC = () => {
             <div className="py-8 md:py-16">
                 <div className="mx-auto mb-12 max-w-3xl text-center md:mb-16">
                     <h1
-                        className="text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl"
+                        className="text-balance text-4xl font-semibold text-slate-900 sm:text-5xl"
                         style={{ fontFamily: 'var(--tf-font-heading)' }}
                     >
                         {t('hero.title')}
                     </h1>
-                    <p className="mt-4 text-lg text-slate-500">
+                    <p className="mt-4 text-pretty text-lg text-slate-500">
                         {t('hero.description')}
                     </p>
                 </div>
@@ -458,7 +458,7 @@ export const PricingPage: React.FC = () => {
                             <article
                                 key={tier.key}
                                 className={cn(
-                                    'group flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg',
+                                    'group flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lg',
                                     style.surfaceClass,
                                 )}
                             >
@@ -471,7 +471,7 @@ export const PricingPage: React.FC = () => {
                                         ) : <span />}
                                         <div className="text-right">
                                             <div
-                                                className="text-4xl font-extrabold tracking-tight text-slate-900"
+                                                className="text-4xl font-extrabold tabular-nums text-slate-900"
                                                 style={{ fontFamily: 'var(--tf-font-heading)' }}
                                             >
                                                 {`$${tier.monthlyPriceUsd}`}
@@ -479,10 +479,10 @@ export const PricingPage: React.FC = () => {
                                             <div className="text-sm font-medium text-slate-500">{t('shared.perMonth')}</div>
                                         </div>
                                     </div>
-                                    <h2 className="mt-5 text-2xl font-semibold tracking-tight text-slate-900">
+                                    <h2 className="mt-5 text-balance text-2xl font-semibold text-slate-900">
                                         {t(`tiers.${tier.publicSlug}.name`)}
                                     </h2>
-                                    <p className="mt-2 max-w-[24rem] text-sm leading-6 text-slate-600">
+                                    <p className="mt-2 max-w-[24rem] text-pretty text-sm leading-6 text-slate-600">
                                         {t(`tiers.${tier.publicSlug}.description`)}
                                     </p>
                                 </div>

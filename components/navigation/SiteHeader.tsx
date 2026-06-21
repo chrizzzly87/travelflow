@@ -153,12 +153,12 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
         : 'sticky top-0 z-[1600] isolate border-b border-slate-200/70 bg-white/90 backdrop-blur';
 
     const loginClass = isGlass
-        ? 'hidden sm:inline-flex rounded-lg border border-slate-200/70 bg-white/60 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900'
-        : 'hidden sm:inline-flex rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900';
+        ? 'hidden min-h-10 items-center rounded-lg border border-slate-200/70 bg-white/60 px-3 py-2 text-sm font-medium text-slate-600 transition-[scale,border-color,color] duration-150 ease-out hover:border-slate-300 hover:text-slate-900 active:scale-[0.96] sm:inline-flex'
+        : 'hidden min-h-10 items-center rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-[scale,border-color,color] duration-150 ease-out hover:border-slate-300 hover:text-slate-900 active:scale-[0.96] sm:inline-flex';
 
     const burgerClass = isGlass
-        ? 'flex size-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-white/60 hover:text-slate-900 lg:hidden'
-        : 'flex size-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden';
+        ? 'flex size-10 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-white/60 hover:text-slate-900 lg:hidden'
+        : 'flex size-10 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden';
 
     return (
         <>
@@ -206,7 +206,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                             <Suspense
                                 fallback={(
                                     <span
-                                        className="hidden size-9 rounded-full border border-slate-200 bg-slate-100 lg:inline-flex"
+                                        className="hidden size-10 rounded-full border border-slate-200 bg-slate-100 lg:inline-flex"
                                         aria-hidden="true"
                                     />
                                 )}
@@ -247,7 +247,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 onMouseEnter={prewarmCreateTripRoute}
                                 onFocus={prewarmCreateTripRoute}
                                 onTouchStart={prewarmCreateTripRoute}
-                                className="rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
+                                className="inline-flex min-h-10 items-center rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-[scale,background-color,box-shadow] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96]"
                                 {...navDebugAttributes('create_trip')}
                             >
                                 {t('nav.createTrip')}

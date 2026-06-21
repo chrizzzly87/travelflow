@@ -210,8 +210,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
 
             <div
                 ref={panelRef}
-                className={`fixed inset-y-0 right-0 z-[1700] w-[85vw] max-w-sm bg-white shadow-2xl transition-transform duration-300 ease-out ${
-                    isOpen ? 'translate-x-0' : 'translate-x-full'
+                className={`fixed inset-y-0 end-0 z-[1700] w-[85vw] max-w-sm bg-white shadow-2xl transition-transform duration-300 ease-out ${
+                    isOpen ? 'translate-x-0' : 'translate-x-full rtl:-translate-x-full'
                 }`}
                 role="dialog"
                 aria-modal="true"
@@ -224,7 +224,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                             ref={closeButtonRef}
                             type="button"
                             onClick={onClose}
-                            className="flex size-9 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                            className="flex size-10 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
                             aria-label="Close menu"
                         >
                             <X size={20} weight="bold" />
@@ -253,7 +253,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                         onMouseEnter={onMyTripsIntent}
                                         onFocus={onMyTripsIntent}
                                         onTouchStart={onMyTripsIntent}
-                                        className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
+                                        className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-[scale,background-color] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96]"
                                         {...mobileNavDebugAttributes('my_trips')}
                                     >
                                         {t('nav.myTrips')}
@@ -262,7 +262,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                     <NavLink
                                         to={buildLocalizedCreateTripPath(activeLocale)}
                                         onClick={() => handleNavClick('create_trip')}
-                                        className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
+                                        className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-[scale,background-color] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96]"
                                         {...mobileNavDebugAttributes('create_trip')}
                                     >
                                         {t('nav.createTrip')}
