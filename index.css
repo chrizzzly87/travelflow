@@ -825,27 +825,6 @@ h6,
   }
 }
 
-@keyframes hand-drawn-zigzag {
-  from {
-    stroke-dashoffset: 360;
-    opacity: 0;
-  }
-  5% {
-    opacity: 1;
-  }
-  to {
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-}
-
-.hand-drawn-zigzag {
-  stroke-dasharray: 360;
-  stroke-dashoffset: 360;
-  opacity: 0;
-  animation: hand-drawn-zigzag 1s cubic-bezier(0.25, 1, 0.5, 1) 0.9s forwards;
-}
-
 @keyframes marquee-scroll {
   from {
     transform: translateX(0);
@@ -1562,4 +1541,3 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   content-visibility: auto;
   contain-intrinsic-size: auto 250px;
 }
-

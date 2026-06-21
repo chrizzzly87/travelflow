@@ -1,38 +1,67 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkle, ShareNetwork, LinkSimple, RocketLaunch } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
+import { GradientShimmer, type GradientStop } from 'gradient-shimmer';
+import { annotate } from 'rough-notation';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { PlaneWindowAnimation } from './PlaneWindowAnimation';
 import { buildPath } from '../../config/routes';
 import { warmRouteAssets } from '../../services/navigationPrefetch';
 
-/** Animated hand-drawn zigzag underline SVG */
-const ZigzagUnderline: React.FC = () => (
-    <svg
-        className="pointer-events-none absolute -bottom-[10%] left-0 w-full"
-        viewBox="0 0 200 14"
-        fill="none"
-        preserveAspectRatio="none"
-        style={{ height: '0.18em' }}
-    >
-        <path
-            d="M 2 8 L 18 3 L 36 10 L 54 2 L 71 9 L 88 3 L 106 10 L 123 2 L 140 9 L 157 3 L 174 10 L 191 4 L 198 7"
-            stroke="var(--tf-accent-400)"
-            strokeWidth="3.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="hand-drawn-zigzag"
-            style={{ filter: 'url(#zigzag-roughen)' }}
-        />
-        <defs>
-            <filter id="zigzag-roughen" x="-5%" y="-20%" width="110%" height="140%">
-                <feTurbulence type="turbulence" baseFrequency="0.035" numOctaves="3" seed="7" result="noise" />
-                <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.8" xChannelSelector="R" yChannelSelector="G" />
-            </filter>
-        </defs>
-    </svg>
-);
+const HERO_UNDERLINE_DELAY_MS = 900;
+
+const heroTitleGradient: GradientStop[] = [
+    { color: '#0f766e', position: 0 },
+    { color: '#14b8a6', position: 0.28 },
+    { color: '#f59e0b', position: 0.62 },
+    { color: '#fb7185', position: 1 },
+];
+
+interface HeroTitleHighlightProps {
+    children: string;
+}
+
+const HeroTitleHighlight: React.FC<HeroTitleHighlightProps> = ({ children }) => {
+    const highlightRef = useRef<HTMLSpanElement | null>(null);
+
+    useEffect(() => {
+        const element = highlightRef.current;
+        if (!element) return;
+
+        const annotation = annotate(element, {
+            type: 'underline',
+            color: 'var(--tf-accent-400)',
+            strokeWidth: 3,
+            iterations: 2,
+            padding: [0, 4, 6, 4],
+            animationDuration: 700,
+            rtl: window.getComputedStyle(element).direction === 'rtl',
+        });
+
+        const showTimer = window.setTimeout(() => annotation.show(), HERO_UNDERLINE_DELAY_MS);
+
+        return () => {
+            window.clearTimeout(showTimer);
+            annotation.remove();
+        };
+    }, []);
+
+    return (
+        <span ref={highlightRef} className="relative inline-block pb-1">
+            <GradientShimmer
+                gradient={heroTitleGradient}
+                duration={1.75}
+                spread={3.5}
+                pauseBetween={1800}
+                baseColor="currentColor"
+                className="text-slate-900"
+            >
+                {children}
+            </GradientShimmer>
+        </span>
+    );
+};
 
 export const HeroSection: React.FC = () => {
     const { t } = useTranslation('home');
@@ -82,10 +111,7 @@ export const HeroSection: React.FC = () => {
                     <div className="animate-hero-stagger" style={{ '--stagger': '80ms' } as React.CSSProperties}>
                         <h1 className="mt-6 text-5xl font-semibold tracking-tight text-slate-900 md:text-7xl" style={{ fontFamily: 'var(--tf-font-heading)' }}>
                             {t('hero.titleBefore')} {' '}
-                            <span className="relative inline-block">
-                                {t('hero.titleHighlight')}
-                                <ZigzagUnderline />
-                            </span>
+                            <HeroTitleHighlight>{t('hero.titleHighlight')}</HeroTitleHighlight>
                         </h1>
                     </div>
 

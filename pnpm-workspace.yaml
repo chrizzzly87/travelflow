@@ -1,4 +1,6 @@
 minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  - gradient-shimmer
 blockExoticSubdeps: true
 trustPolicy: no-downgrade
 onlyBuiltDependencies:
