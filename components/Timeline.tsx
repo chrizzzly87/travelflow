@@ -738,7 +738,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             )}
 
             {/* Header (Adaptive) */}
-            <div className={`border-b border-gray-200 flex flex-col sticky top-0 bg-white/95 backdrop-blur z-20 shadow-sm pl-8 transition-all duration-200 ${isZoomedOut ? 'h-20' : 'h-16'}`}>
+            <div className={`border-b border-gray-200 flex flex-col sticky top-0 bg-white/95 backdrop-blur z-20 shadow-sm pl-8 transition-[height] duration-200 ${isZoomedOut ? 'h-20' : 'h-16'}`}>
 
                 {dateHeaders.view === 'detailed' ? (
                     // Detailed View: Single Row per Day
@@ -819,7 +819,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                          <button type="button"
                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddCity(); }}
                             disabled={!canEdit}
-                            className={`opacity-0 group-hover/cities:opacity-100 transition-opacity bg-accent-100 text-accent-700 rounded-full p-1 ${canEdit ? 'hover:bg-accent-200' : 'opacity-50 cursor-not-allowed'}`}
+                            className={`inline-flex size-10 items-center justify-center rounded-full bg-accent-100 text-accent-700 opacity-0 transition-opacity group-hover/cities:opacity-100 ${canEdit ? 'hover:bg-accent-200' : 'cursor-not-allowed opacity-50'}`}
                             aria-label="Add city to end"
                         >
                              <Plus size={14} />
@@ -907,7 +907,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                          <button type="button"
                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; handleAddTravel(); }}
                             disabled={!canEdit}
-                            className={`opacity-0 group-hover/travel:opacity-100 transition-opacity bg-stone-100 text-stone-700 rounded-full p-1 ${canEdit ? 'hover:bg-stone-200' : 'opacity-50 cursor-not-allowed'}`}
+                            className={`inline-flex size-10 items-center justify-center rounded-full bg-stone-100 text-stone-700 opacity-0 transition-opacity group-hover/travel:opacity-100 ${canEdit ? 'hover:bg-stone-200' : 'cursor-not-allowed opacity-50'}`}
                             aria-label="Add transfer"
                             title="Add transfer"
                         >
@@ -1002,7 +1002,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     </svg>
                                     <button type="button"
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
-                                        className={`absolute z-10 -translate-y-1/2 rounded-full border text-[11px] font-semibold flex items-center transition-colors pointer-events-auto
+                                        className={`absolute z-10 flex min-h-10 -translate-y-1/2 items-center rounded-full border text-[11px] font-semibold transition-colors pointer-events-auto
                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 shadow-sm opacity-100 ring-2 ring-blue-600 ring-offset-1' : (isUndefinedTransfer ? 'bg-slate-50 border-slate-300 border-dashed text-slate-400 opacity-65 shadow-none justify-center' : 'bg-white border-gray-200 text-gray-600 shadow-sm')}
                                             ${showIconOnly ? `justify-center gap-0 ${pillPaddingClass}` : `gap-1.5 ${pillPaddingClass}`}
                                             ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
@@ -1037,7 +1037,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                     </div>
 
                     {/* Day Column Add Buttons */}
-                    <div className="relative h-8 w-full flex mb-2 pointer-events-none">
+                    <div className="relative mb-2 flex h-10 w-full pointer-events-none">
                          {dateHeaders.days.map((day) => (
                              <div
                                 key={day.index}
@@ -1050,7 +1050,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                  <button type="button"
                                      onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(day.dayOffset); }}
                                      disabled={!canEdit}
-                                     className={`size-full mx-1 rounded-md border border-dashed border-transparent flex items-center justify-center text-gray-300 transition-all ${canEdit ? 'hover:border-gray-300 hover:bg-gray-50 hover:text-accent-500' : 'cursor-not-allowed opacity-40'}`}
+                                     className={`mx-1 flex size-full min-h-10 items-center justify-center rounded-md border border-dashed border-transparent text-gray-300 transition-[border-color,background-color,color] ${canEdit ? 'hover:border-gray-300 hover:bg-gray-50 hover:text-accent-500' : 'cursor-not-allowed opacity-40'}`}
                                      aria-label={`Add activity for ${day.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`}
                                  >
                                      <Plus size={16} />

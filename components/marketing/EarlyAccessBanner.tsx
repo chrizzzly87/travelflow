@@ -42,7 +42,7 @@ export const EarlyAccessBanner: React.FC = () => {
                 <button
                     type="button"
                     onClick={handleDismiss}
-                    className="shrink-0 rounded-lg p-1.5 text-amber-500 transition-colors hover:bg-amber-100 hover:text-amber-700"
+                    className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-amber-500 transition-colors hover:bg-amber-100 hover:text-amber-700"
                     aria-label={t('earlyAccess.dismiss')}
                     {...getAnalyticsDebugAttributes('banner__early_access--dismiss')}
                 >

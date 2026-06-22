@@ -63,8 +63,8 @@ interface TripViewPlannerWorkspaceProps {
 
 const TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED = true;
 const formatZoomLevelLabel = (value: number): string => `×${Number.isFinite(value) ? value.toFixed(1) : '1.0'}`;
-const CONTROL_GROUP_CLASS_NAME = 'inline-flex flex-col items-center gap-1 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur';
-const CONTROL_TOGGLE_BUTTON_CLASS_NAME = 'rounded-md p-2 transition-colors';
+const CONTROL_GROUP_CLASS_NAME = 'inline-flex flex-col items-center gap-1 rounded-xl border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur';
+const CONTROL_TOGGLE_BUTTON_CLASS_NAME = 'inline-flex size-10 items-center justify-center rounded-lg transition-colors';
 const CONTROL_TOGGLE_ACTIVE_CLASS_NAME = 'border-accent-700 bg-accent-600 text-white';
 const CONTROL_TOGGLE_INACTIVE_CLASS_NAME = 'text-gray-600 hover:bg-gray-100 hover:text-accent-600';
 
@@ -148,7 +148,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                         <button
                             type="button"
                             onClick={() => onTimelineViewChange('horizontal')}
-                            className={`rounded-md p-1.5 transition-colors ${
+                            className={`inline-flex size-10 items-center justify-center rounded-lg transition-colors ${
                                 timelineView === 'horizontal'
                                     ? 'bg-accent-600 text-white'
                                     : 'text-gray-600 hover:bg-gray-100'
@@ -162,7 +162,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                         <button
                             type="button"
                             onClick={() => onTimelineViewChange('vertical')}
-                            className={`rounded-md p-1.5 transition-colors ${
+                            className={`inline-flex size-10 items-center justify-center rounded-lg transition-colors ${
                                 timelineView === 'vertical'
                                     ? 'bg-accent-600 text-white'
                                     : 'text-gray-600 hover:bg-gray-100'
@@ -178,7 +178,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                         <button
                             type="button"
                             onClick={onZoomOut}
-                            className="rounded-md p-1.5 text-gray-600 transition-colors hover:bg-gray-100"
+                            className="inline-flex size-10 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100"
                             aria-label="Zoom out timeline"
                             {...getAnalyticsDebugAttributes('trip_view__zoom', { direction: 'out' })}
                         >
@@ -188,7 +188,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             <span
                                 role="status"
                                 aria-live="polite"
-                                className="rounded-md px-1 py-1.5 text-center text-xs font-semibold tabular-nums text-slate-700"
+                                className="min-w-12 rounded-md px-1 py-1.5 text-center text-xs font-semibold tabular-nums text-slate-700"
                             >
                                 {formatZoomLevelLabel(zoomLevel)}
                             </span>
@@ -196,7 +196,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                         <button
                             type="button"
                             onClick={onZoomIn}
-                            className="rounded-md p-1.5 text-gray-600 transition-colors hover:bg-gray-100"
+                            className="inline-flex size-10 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100"
                             aria-label="Zoom in timeline"
                             {...getAnalyticsDebugAttributes('trip_view__zoom', { direction: 'in' })}
                         >
@@ -209,7 +209,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                 <button
                     type="button"
                     onClick={() => onTimelineModeChange('calendar')}
-                    className={`inline-flex items-center rounded-md p-1.5 text-xs font-semibold transition-colors ${
+                    className={`inline-flex size-10 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
                         timelineMode === 'calendar'
                             ? 'bg-accent-600 text-white'
                             : 'text-gray-600 hover:bg-gray-100'
@@ -224,7 +224,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                 <button
                     type="button"
                     onClick={() => onTimelineModeChange('timeline')}
-                    className={`inline-flex items-center rounded-md p-1.5 text-xs font-semibold transition-colors ${
+                    className={`inline-flex size-10 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
                         timelineMode === 'timeline'
                             ? 'bg-accent-600 text-white'
                             : 'text-gray-600 hover:bg-gray-100'
@@ -253,7 +253,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                     onClick={toggleMapDockMode}
                                     data-testid="map-dock-toggle-button"
                                     data-floating-map-control="true"
-                                    className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50 transition-colors flex items-center justify-center"
+                                    className="flex size-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-md transition-colors hover:bg-gray-50 hover:text-accent-600"
                                     aria-label={effectiveMapDockMode === 'docked' ? 'Minimize map preview' : 'Maximize map preview'}
                                     {...getAnalyticsDebugAttributes(
                                         effectiveMapDockMode === 'docked' ? 'trip_view__map_preview--minimize' : 'trip_view__map_preview--maximize',
@@ -291,7 +291,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             <button
                                 type="button"
                                 disabled
-                                className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-300 cursor-not-allowed flex items-center justify-center"
+                                className="flex size-10 cursor-not-allowed items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-300 shadow-md"
                                 aria-label="Fit to itinerary"
                             >
                                 <Focus size={18} />
@@ -299,7 +299,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             <button
                                 type="button"
                                 disabled
-                                className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-300 cursor-not-allowed flex items-center justify-center"
+                                className="flex size-10 cursor-not-allowed items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-300 shadow-md"
                                 aria-label="Map style"
                             >
                                 <Layers size={18} />
@@ -406,7 +406,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                         <>
                                             <button
                                                 type="button"
-                                                className="w-1 appearance-none border-0 bg-gray-100 p-0 transition-colors z-[45] flex cursor-col-resize items-center justify-center group hover:bg-accent-500"
+                                                className="group relative z-[45] flex w-2 cursor-col-resize appearance-none items-center justify-center border-0 bg-gray-100 p-0 transition-colors after:absolute after:-inset-x-4 after:inset-y-0 hover:bg-accent-500"
                                                 onMouseDown={(event) => onStartResizing('details', event.clientX)}
                                                 onKeyDown={onDetailsResizeKeyDown}
                                                 aria-label="Resize details panel"
@@ -434,7 +434,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
 
                                     <button
                                         type="button"
-                                        className="w-1 bg-gray-100 hover:bg-accent-500 cursor-col-resize transition-colors z-30 flex items-center justify-center group appearance-none border-0 p-0"
+                                        className="group relative z-30 flex w-2 cursor-col-resize appearance-none items-center justify-center border-0 bg-gray-100 p-0 transition-colors after:absolute after:-inset-x-4 after:inset-y-0 hover:bg-accent-500"
                                         onMouseDown={() => onStartResizing('sidebar')}
                                         onKeyDown={onSidebarResizeKeyDown}
                                         aria-label="Resize timeline and map panels"
@@ -447,7 +447,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                             {detailsPanelContent}
                                             <button
                                                 type="button"
-                                                className="absolute top-0 end-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors appearance-none border-0 bg-transparent p-0"
+                                                className="group absolute top-0 end-0 z-30 flex h-full w-2 cursor-col-resize appearance-none items-center justify-center border-0 bg-transparent p-0 transition-colors after:absolute after:-inset-x-4 after:inset-y-0 hover:bg-accent-50/60"
                                                 onMouseDown={(event) => onStartResizing('details', event.clientX)}
                                                 onKeyDown={onDetailsResizeKeyDown}
                                                 title="Resize details panel"
@@ -464,7 +464,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                     <div ref={dockedMapAnchorRef} className="flex-1 relative bg-gray-100 min-h-0 w-full" />
                                     <button
                                         type="button"
-                                        className="h-1 bg-gray-100 hover:bg-accent-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full appearance-none border-0 p-0"
+                                        className="group relative z-30 flex h-2 w-full cursor-row-resize appearance-none items-center justify-center border-0 bg-gray-100 p-0 transition-colors after:absolute after:inset-x-0 after:-inset-y-4 hover:bg-accent-500"
                                         onMouseDown={() => onStartResizing('timeline-h')}
                                         onKeyDown={onTimelineResizeKeyDown}
                                         aria-label="Resize timeline panel"
@@ -485,7 +485,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                                 {detailsPanelContent}
                                                 <button
                                                     type="button"
-                                                    className="absolute top-0 end-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors appearance-none border-0 bg-transparent p-0"
+                                                    className="group absolute top-0 end-0 z-30 flex h-full w-2 cursor-col-resize appearance-none items-center justify-center border-0 bg-transparent p-0 transition-colors after:absolute after:-inset-x-4 after:inset-y-0 hover:bg-accent-50/60"
                                                     onMouseDown={(event) => onStartResizing('details', event.clientX)}
                                                     onKeyDown={onDetailsResizeKeyDown}
                                                     title="Resize details panel"

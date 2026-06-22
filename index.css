@@ -348,7 +348,16 @@ html[lang^="ur-"] {
   }
 }
 
+.tracking-tight {
+  letter-spacing: 0;
+}
+
 @layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   :where(
     button,
     [role="button"],
@@ -424,6 +433,7 @@ input[type="checkbox"] {
 
 body {
   font-family: var(--tf-font-body);
+  text-wrap: pretty;
 }
 
 h1,
@@ -434,8 +444,8 @@ h5,
 h6,
 .font-heading {
   font-family: var(--tf-font-heading);
-  letter-spacing: -0.015em;
-  text-wrap: pretty;
+  letter-spacing: 0;
+  text-wrap: balance;
 }
 
 /* ── Scroll-driven animations ── */

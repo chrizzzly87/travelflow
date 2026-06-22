@@ -3260,7 +3260,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                             onClick={onMapDockModeToggle}
                             data-testid="map-dock-toggle-button"
                             data-floating-map-control="true"
-                            className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50 transition-colors flex items-center justify-center"
+                            className="flex size-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-md transition-colors hover:bg-gray-50 hover:text-accent-600"
                             aria-label={mapDockMode === 'docked' ? 'Minimize map preview' : 'Maximize map preview'}
                             {...getAnalyticsDebugAttributes(
                                 mapDockMode === 'docked' ? 'trip_view__map_preview--minimize' : 'trip_view__map_preview--maximize',
@@ -3275,12 +3275,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         <>
                             <button type="button"
                                 onClick={() => onLayoutChange('vertical')}
-                                className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Vertical layout"
+                                className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Vertical layout"
                                 {...getAnalyticsDebugAttributes('trip_view__layout_direction--vertical', { surface: 'map_controls' })}
                             ><ArrowUpDown size={18} /></button>
                             <button type="button"
                                 onClick={() => onLayoutChange('horizontal')}
-                                className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Horizontal layout"
+                                className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Horizontal layout"
                                 {...getAnalyticsDebugAttributes('trip_view__layout_direction--horizontal', { surface: 'map_controls' })}
                             ><ArrowLeftRight size={18} /></button>
                         </>
@@ -3289,7 +3289,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     {onToggleExpanded && (
                         <button type="button"
                             onClick={onToggleExpanded}
-                            className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50 transition-colors flex items-center justify-center"
+                            className="flex size-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-md transition-colors hover:bg-gray-50 hover:text-accent-600"
                             title={isExpanded ? 'Shrink map' : 'Expand map'}
                             aria-label={isExpanded ? 'Shrink map' : 'Expand map'}
                         >
@@ -3300,7 +3300,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     <button type="button"
                         onClick={handleFit}
                         disabled={mapActionsDisabled}
-                        className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50 transition-colors flex items-center justify-center disabled:text-gray-300 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-300"
+                        className="flex size-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-md transition-colors hover:bg-gray-50 hover:text-accent-600 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-white disabled:hover:text-gray-300"
                         aria-label="Fit to itinerary"
                     ><Focus size={18} /></button>
                     
@@ -3313,7 +3313,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                   setIsStyleMenuOpen(!isStyleMenuOpen);
                               }}
                               disabled={mapActionsDisabled}
-                              className={`p-2 rounded-lg shadow-md border transition-colors flex items-center justify-center ${
+                              className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
                                   mapActionsDisabled
                                       ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
                                       : isStyleMenuOpen
@@ -3374,7 +3374,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                             type="button"
                             onClick={() => setActivityMarkersEnabled((current) => !current)}
                             disabled={mapActionsDisabled}
-                            className={`p-2 rounded-lg shadow-md border transition-colors flex items-center justify-center ${
+                            className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
                                 mapActionsDisabled
                                     ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
                                     : activityMarkersEnabled

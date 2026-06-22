@@ -10,13 +10,10 @@ export const CtaBanner: React.FC = () => {
     return (
         <section className="pb-16 md:pb-24 animate-scroll-scale-in lazy-cta-banner">
             <div className="relative rounded-3xl bg-gradient-to-br from-accent-600 to-accent-800 px-8 py-14 text-center md:px-16 md:py-20 overflow-hidden">
-                <div className="pointer-events-none absolute -top-20 -right-20 size-60 rounded-full bg-white/10 blur-[60px]" />
-                <div className="pointer-events-none absolute -bottom-16 -left-16 size-48 rounded-full bg-accent-400/20 blur-[50px]" />
-
-                <h2 className="relative text-3xl font-semibold tracking-tight text-white md:text-5xl" style={{ fontFamily: 'var(--tf-font-heading)' }}>
+                <h2 className="relative text-balance text-3xl font-semibold text-white md:text-5xl" style={{ fontFamily: 'var(--tf-font-heading)' }}>
                     {t('home:cta.title')}
                 </h2>
-                <p className="relative mx-auto mt-4 max-w-xl text-base text-accent-100 md:text-lg">
+                <p className="relative mx-auto mt-4 max-w-xl text-pretty text-base text-accent-100 md:text-lg">
                     {t('home:cta.subtitle')}
                 </p>
                 <Link
@@ -24,7 +21,7 @@ export const CtaBanner: React.FC = () => {
                     onClick={() =>
                         trackEvent('home__bottom_cta')
                     }
-                    className="relative mt-8 inline-block rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-all hover:shadow-xl hover:bg-accent-50 hover:scale-[1.03] active:scale-[0.98]"
+                    className="relative mt-8 inline-block rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-[scale,background-color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:bg-accent-50 hover:shadow-xl active:scale-[0.96]"
                     {...getAnalyticsDebugAttributes('home__bottom_cta')}
                 >
                     {t('common:buttons.startPlanningFree')}

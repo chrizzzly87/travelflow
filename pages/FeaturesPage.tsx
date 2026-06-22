@@ -45,7 +45,7 @@ export const FeaturesPage: React.FC = () => {
                     <div className="max-w-3xl">
                         <div className="animate-hero-stagger" style={{ '--stagger': '0ms' } as React.CSSProperties}>
                             <h1
-                                className="max-w-4xl text-5xl font-semibold tracking-tight text-slate-950 md:text-7xl"
+                                className="max-w-4xl text-balance text-5xl font-semibold text-slate-950 md:text-7xl"
                                 style={{ fontFamily: 'var(--tf-font-heading)' }}
                             >
                                 {t('hero.titleBefore')}{' '}
@@ -54,7 +54,7 @@ export const FeaturesPage: React.FC = () => {
                         </div>
 
                         <div className="animate-hero-stagger" style={{ '--stagger': '80ms' } as React.CSSProperties}>
-                            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-600 md:text-xl">
+                            <p className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-slate-600 md:text-xl">
                                 {t('hero.description')}
                             </p>
                         </div>
@@ -69,7 +69,7 @@ export const FeaturesPage: React.FC = () => {
                                 onMouseEnter={prewarmCreateTripRoute}
                                 onFocus={prewarmCreateTripRoute}
                                 onTouchStart={prewarmCreateTripRoute}
-                                className="rounded-lg bg-accent-600 px-7 py-3.5 text-base font-bold text-white shadow-sm shadow-accent-200 transition-all hover:-translate-y-0.5 hover:bg-accent-700 hover:shadow-md hover:shadow-accent-200 active:translate-y-0"
+                                className="rounded-lg bg-accent-600 px-7 py-3.5 text-base font-bold text-white shadow-sm shadow-accent-200 transition-[scale,translate,background-color,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:bg-accent-700 hover:shadow-md hover:shadow-accent-200 active:scale-[0.96] active:translate-y-0"
                                 {...getAnalyticsDebugAttributes('features__hero_cta--start_planning')}
                             >
                                 {t('hero.primaryCta')}
@@ -77,7 +77,7 @@ export const FeaturesPage: React.FC = () => {
                             <Link
                                 to={inspirationsPath}
                                 onClick={() => trackEvent('features__hero_cta--see_examples')}
-                                className="rounded-lg border border-slate-300 bg-white px-7 py-3.5 text-base font-bold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-400 hover:text-slate-950 hover:shadow-md active:translate-y-0"
+                                className="rounded-lg border border-slate-300 bg-white px-7 py-3.5 text-base font-bold text-slate-700 shadow-sm transition-[scale,translate,border-color,color,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:border-slate-400 hover:text-slate-950 hover:shadow-md active:scale-[0.96] active:translate-y-0"
                                 {...getAnalyticsDebugAttributes('features__hero_cta--see_examples')}
                             >
                                 {t('hero.secondaryCta')}
@@ -93,10 +93,10 @@ export const FeaturesPage: React.FC = () => {
 
             <section className="border-t border-slate-200/80 py-16 md:py-24">
                 <div className="animate-scroll-blur-in max-w-3xl">
-                    <h2 className="text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">
+                    <h2 className="text-balance text-3xl font-semibold text-slate-950 md:text-5xl">
                         {t('bento.title')}
                     </h2>
-                    <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
+                    <p className="mt-4 max-w-2xl text-pretty text-base leading-relaxed text-slate-600 md:text-lg">
                         {t('bento.subtitle')}
                     </p>
                 </div>
@@ -110,10 +110,10 @@ export const FeaturesPage: React.FC = () => {
                 <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:items-start">
                     <div>
                         <div className="animate-scroll-blur-in max-w-3xl">
-                            <h2 className="text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">
+                            <h2 className="text-balance text-3xl font-semibold text-slate-950 md:text-5xl">
                                 {t('workflow.title')}
                             </h2>
-                            <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
+                            <p className="mt-4 max-w-2xl text-pretty text-base leading-relaxed text-slate-600 md:text-lg">
                                 {t('workflow.subtitle')}
                             </p>
                         </div>
@@ -180,12 +180,12 @@ export const FeaturesPage: React.FC = () => {
             <section className="pb-16 md:pb-24 animate-scroll-scale-in">
                 <div className="relative overflow-hidden rounded-[18px] border border-slate-200 bg-slate-50 px-8 py-14 text-center shadow-sm shadow-slate-200/70 md:px-16 md:py-20">
                     <h2
-                        className="relative text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl"
+                        className="relative text-balance text-3xl font-semibold text-slate-950 md:text-5xl"
                         style={{ fontFamily: 'var(--tf-font-heading)' }}
                     >
                         {t('cta.title')}
                     </h2>
-                    <p className="relative mx-auto mt-4 max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
+                    <p className="relative mx-auto mt-4 max-w-2xl text-pretty text-base leading-relaxed text-slate-600 md:text-lg">
                         {t('cta.subtitle')}
                     </p>
                     <Link
@@ -194,7 +194,7 @@ export const FeaturesPage: React.FC = () => {
                         onMouseEnter={prewarmCreateTripRoute}
                         onFocus={prewarmCreateTripRoute}
                         onTouchStart={prewarmCreateTripRoute}
-                        className="relative mt-8 inline-flex items-center justify-center rounded-lg bg-accent-600 px-8 py-3.5 text-base font-bold text-white shadow-sm shadow-accent-200 transition-all hover:-translate-y-0.5 hover:bg-accent-700 hover:shadow-md active:translate-y-0"
+                        className="relative mt-8 inline-flex items-center justify-center rounded-lg bg-accent-600 px-8 py-3.5 text-base font-bold text-white shadow-sm shadow-accent-200 transition-[scale,translate,background-color,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:bg-accent-700 hover:shadow-md active:scale-[0.96] active:translate-y-0"
                         {...getAnalyticsDebugAttributes('features__bottom_cta')}
                     >
                         {t('cta.button')}

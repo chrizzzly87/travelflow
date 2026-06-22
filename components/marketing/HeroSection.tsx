@@ -96,9 +96,6 @@ export const HeroSection: React.FC = () => {
 
     return (
         <section className="relative pt-8 pb-16 md:pt-16 md:pb-24">
-            <div className="pointer-events-none absolute -right-32 -top-20 size-[420px] rounded-full bg-accent-300/40 blur-[100px]" />
-            <div className="pointer-events-none absolute -bottom-32 -left-20 size-[380px] rounded-full bg-accent-200/50 blur-[100px]" />
-
             <div className="relative flex items-center gap-8 lg:gap-12">
                 <div className="max-w-3xl flex-1">
                     <div className="animate-hero-stagger" style={{ '--stagger': '0ms' } as React.CSSProperties}>
@@ -109,14 +106,14 @@ export const HeroSection: React.FC = () => {
                     </div>
 
                     <div className="animate-hero-stagger" style={{ '--stagger': '80ms' } as React.CSSProperties}>
-                        <h1 className="mt-6 text-5xl font-semibold tracking-tight text-slate-900 md:text-7xl" style={{ fontFamily: 'var(--tf-font-heading)' }}>
+                        <h1 className="mt-6 text-balance text-5xl font-semibold text-slate-900 md:text-7xl" style={{ fontFamily: 'var(--tf-font-heading)' }}>
                             {t('hero.titleBefore')} {' '}
                             <HeroTitleHighlight>{t('hero.titleHighlight')}</HeroTitleHighlight>
                         </h1>
                     </div>
 
                     <div className="animate-hero-stagger" style={{ '--stagger': '160ms' } as React.CSSProperties}>
-                        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-600 md:text-xl">
+                        <p className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-slate-600 md:text-xl">
                             {t('hero.description')}
                         </p>
                     </div>
@@ -128,7 +125,7 @@ export const HeroSection: React.FC = () => {
                             onMouseEnter={prewarmCreateTripRoute}
                             onFocus={prewarmCreateTripRoute}
                             onTouchStart={prewarmCreateTripRoute}
-                            className="group relative rounded-2xl bg-accent-600 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-accent-200 transition-all hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-300 hover:scale-[1.02] active:scale-[0.98]"
+                            className="group relative rounded-2xl bg-accent-600 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-accent-200 transition-[scale,background-color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-300 active:scale-[0.96]"
                             {...heroCtaDebugAttributes('start_planning')}
                         >
                             {t('common:buttons.startPlanning')}
@@ -136,7 +133,7 @@ export const HeroSection: React.FC = () => {
                         <a
                             href="#examples"
                             onClick={() => handleCtaClick('see_examples')}
-                            className="rounded-2xl border border-slate-300 bg-white px-7 py-3.5 text-base font-bold text-slate-700 transition-all hover:border-slate-400 hover:text-slate-900 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98]"
+                            className="rounded-2xl border border-slate-300 bg-white px-7 py-3.5 text-base font-bold text-slate-700 transition-[scale,border-color,color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:border-slate-400 hover:text-slate-900 hover:shadow-sm active:scale-[0.96]"
                             {...heroCtaDebugAttributes('see_examples')}
                         >
                             {t('common:buttons.seeExampleTrips')}
