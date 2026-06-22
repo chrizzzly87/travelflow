@@ -1,10 +1,10 @@
 ---
 id: rel-2026-06-21-interface-polish-audit
-version: v0.0.0
+version: v0.124.0
 title: "Interface Polish Audit"
-date: 2026-06-21
-published_at: 2026-06-21T20:00:26Z
-status: draft
+date: 2026-06-22
+published_at: 2026-06-22T05:36:43Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Core planning and marketing pages now feel cleaner, steadier, and easier to tap."
