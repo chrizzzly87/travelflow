@@ -1,10 +1,10 @@
 ---
 id: rel-2026-06-24-web-guidelines-audit
-version: v0.0.0
+version: v0.126.0
 title: "Web guidelines audit"
 date: 2026-06-24
-published_at: 2026-06-24T10:00:00Z
-status: draft
+published_at: 2026-06-24T07:30:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "A focused accessibility, motion, and media stability pass for the public site."
