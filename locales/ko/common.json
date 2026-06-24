@@ -35,6 +35,9 @@
     "fa": "فارسی",
     "ur": "اردو"
   },
+  "a11y": {
+    "skipToContent": "본문으로 건너뛰기"
+  },
   "buttons": {
     "startPlanning": "여행 계획 시작",
     "seeExampleTrips": "예시 여행 보기",

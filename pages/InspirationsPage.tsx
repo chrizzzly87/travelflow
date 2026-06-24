@@ -513,7 +513,7 @@ export const InspirationsPage: React.FC = () => {
                                     <a
                                         key={s.id}
                                         href={`#${s.id}`}
-                                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 shadow-sm transition-all hover:border-accent-300 hover:text-accent-700 hover:shadow-md"
+                                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 shadow-sm transition-[border-color,color,box-shadow] duration-150 ease-out hover:border-accent-300 hover:text-accent-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transition-none"
                                     >
                                         <SIcon size={14} weight="duotone" />
                                         {s.label}
@@ -537,7 +537,7 @@ export const InspirationsPage: React.FC = () => {
                                         key={idea.label}
                                         to={buildCreateTripUrl({ countries, startDate: toIso(start), endDate: toIso(end), meta: { source: 'inspirations', label: ideaLabel } })}
                                         onClick={() => trackEvent('inspirations__quick_pill', { label: ideaLabel })}
-                                        className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 shadow-sm transition-all hover:border-accent-300 hover:text-accent-700 hover:shadow-md hover:scale-[1.03] active:scale-[0.98]"
+                                        className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 shadow-sm transition-[transform,border-color,color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:border-accent-300 hover:text-accent-700 hover:shadow-md active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none"
                                         {...getAnalyticsDebugAttributes('inspirations__quick_pill', { label: ideaLabel })}
                                     >
                                         <span className="inline-flex items-center gap-1.5">
@@ -551,7 +551,7 @@ export const InspirationsPage: React.FC = () => {
                     </section>
 
                     {/* ── By Theme ── */}
-                    <div id="themes">
+                    <div id="themes" className="scroll-mt-28">
                         {categories.map((category, idx) => {
                             const CategoryIcon = category.icon;
                             return (
@@ -591,7 +591,7 @@ export const InspirationsPage: React.FC = () => {
                     </div>
 
                     {/* ── By Month (Tab Bar) ── */}
-                    <section id="months" className="py-12 md:py-16 border-t border-slate-200">
+                    <section id="months" className="scroll-mt-28 py-12 md:py-16 border-t border-slate-200">
                         <div className="animate-scroll-blur-in">
                             <div className="flex items-start gap-4">
                                 <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-sky-100">
@@ -618,7 +618,7 @@ export const InspirationsPage: React.FC = () => {
 	                                        key={entry.monthIndex}
 	                                        type="button"
 	                                        onClick={() => setSelectedMonthIndex(entry.monthIndex)}
-                                        className={`relative px-3.5 py-2 text-sm font-semibold transition-all rounded-lg whitespace-nowrap ${
+                                        className={`relative px-3.5 py-2 text-sm font-semibold transition-[background-color,color,box-shadow] duration-150 ease-out rounded-lg whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transition-none ${
                                             selectedMonthIndex === entry.monthIndex
                                                 ? 'bg-white text-sky-700 shadow-sm'
                                                 : 'text-slate-500 hover:text-slate-800'
@@ -663,7 +663,7 @@ export const InspirationsPage: React.FC = () => {
                     </section>
 
                     {/* ── By Country ── */}
-                    <section id="countries" className="py-12 md:py-16 border-t border-slate-200">
+                    <section id="countries" className="scroll-mt-28 py-12 md:py-16 border-t border-slate-200">
                         <div className="animate-scroll-blur-in">
                             <div className="flex items-start gap-4">
                                 <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-teal-600 ring-1 ring-teal-100">
@@ -691,7 +691,7 @@ export const InspirationsPage: React.FC = () => {
                     </section>
 
                     {/* ── Upcoming Events & Festivals ── */}
-                    <section id="festivals" className="py-12 md:py-16 border-t border-slate-200">
+                    <section id="festivals" className="scroll-mt-28 py-12 md:py-16 border-t border-slate-200">
                         <div className="animate-scroll-blur-in">
                             <div className="flex items-start gap-4">
                                 <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-fuchsia-50 text-fuchsia-600 ring-1 ring-fuchsia-100">
@@ -722,7 +722,7 @@ export const InspirationsPage: React.FC = () => {
                             <div className="mt-8 text-center">
                                 <Link
                                     to={buildLocalizedMarketingPath('inspirationsFestivals', locale)}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 shadow-sm transition-all hover:border-accent-300 hover:text-accent-700 hover:shadow-md"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 shadow-sm transition-[border-color,color,box-shadow] duration-150 ease-out hover:border-accent-300 hover:text-accent-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transition-none"
                                 >
                                     {t('inspirations.links.viewAllEvents', { count: upcomingFestivals.length })}
                                     <ArrowRight size={14} weight="bold" />
@@ -732,7 +732,7 @@ export const InspirationsPage: React.FC = () => {
                     </section>
 
                     {/* ── Weekend Getaways ── */}
-                    <section id="weekends" className="py-12 md:py-16 border-t border-slate-200">
+                    <section id="weekends" className="scroll-mt-28 py-12 md:py-16 border-t border-slate-200">
                         <div className="animate-scroll-blur-in">
                             <div className="flex items-start gap-4">
                                 <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 ring-1 ring-amber-100">
@@ -796,7 +796,7 @@ export const InspirationsPage: React.FC = () => {
                             <Link
                                 to="/create-trip"
                                 onClick={() => trackEvent('inspirations__bottom_cta')}
-                                className="relative mt-8 inline-block rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-all hover:shadow-xl hover:bg-accent-50 hover:scale-[1.03] active:scale-[0.98]"
+                                className="relative mt-8 inline-block rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-[transform,background-color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:bg-accent-50 hover:shadow-xl active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-accent-700 motion-reduce:transform-none motion-reduce:transition-none"
                                 {...getAnalyticsDebugAttributes('inspirations__bottom_cta')}
                             >
                                 {t('inspirations.bottomCta.button')}

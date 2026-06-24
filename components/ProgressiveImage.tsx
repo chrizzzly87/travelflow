@@ -142,7 +142,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
                     height={resolvedHeight}
                     className={cn(
                         className || 'size-full object-cover',
-                        'outline outline-1 -outline-offset-1 outline-black/10 transition-opacity duration-300 dark:outline-white/10',
+                        'outline outline-1 -outline-offset-1 outline-black/10 transition-opacity duration-300 motion-reduce:transition-none dark:outline-white/10',
                         isLoaded || skipFade ? 'opacity-100' : 'opacity-0',
                     )}
                     onLoad={() => setIsLoaded(true)}

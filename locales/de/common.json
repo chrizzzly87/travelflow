@@ -35,6 +35,9 @@
     "fa": "فارسی",
     "ur": "اردو"
   },
+  "a11y": {
+    "skipToContent": "Zum Inhalt springen"
+  },
   "buttons": {
     "startPlanning": "Jetzt planen",
     "seeExampleTrips": "Beispielreisen ansehen",

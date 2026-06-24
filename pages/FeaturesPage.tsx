@@ -152,6 +152,8 @@ export const FeaturesPage: React.FC = () => {
                                 src="/images/trip-maps/japan-spring.png"
                                 alt=""
                                 aria-hidden="true"
+                                width={1280}
+                                height={576}
                                 className="size-full object-cover"
                                 loading="lazy"
                             />

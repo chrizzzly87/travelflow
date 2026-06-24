@@ -937,6 +937,13 @@ h6,
   animation: clouds-scroll 25s linear infinite;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .animate-clouds-scroll {
+    animation: none;
+    transform: translateX(0);
+  }
+}
+
 /* Position the cloud mask inside the window opening, slightly inset to
    prevent clouds from bleeding past the frame edges. */
 .plane-window-clouds-mask {
