@@ -35,6 +35,9 @@
     "fa": "فارسی",
     "ur": "اردو"
   },
+  "a11y": {
+    "skipToContent": "مواد پر جائیں"
+  },
   "buttons": {
     "startPlanning": "منصوبہ بندی شروع کریں",
     "seeExampleTrips": "نمونہ سفر دیکھیں",

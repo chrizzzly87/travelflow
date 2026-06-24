@@ -147,6 +147,8 @@ const InspirationVisual: React.FC<BentoVisualProps> = ({ item }) => (
                 src="/images/inspirations/cherry-blossom-trail-480.webp"
                 alt=""
                 aria-hidden="true"
+                width={480}
+                height={320}
                 className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                 loading="lazy"
             />

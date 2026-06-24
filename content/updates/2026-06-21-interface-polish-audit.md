@@ -1,6 +1,6 @@
 ---
 id: rel-2026-06-21-interface-polish-audit
-version: v0.124.0
+version: v0.125.0
 title: "Interface Polish Audit"
 date: 2026-06-22
 published_at: 2026-06-22T05:36:43Z

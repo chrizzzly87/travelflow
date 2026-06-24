@@ -35,6 +35,9 @@
     "fa": "فارسی",
     "ur": "اردو"
   },
+  "a11y": {
+    "skipToContent": "رفتن به محتوا"
+  },
   "buttons": {
     "startPlanning": "شروع برنامه‌ریزی",
     "seeExampleTrips": "مشاهده سفرهای نمونه",
