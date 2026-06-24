@@ -61,7 +61,10 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('openrouter', 'google/gemini-3.5-flash')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'google/gemini-3.1-flash-lite')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'nvidia/nemotron-3-super-120b-a12b:free')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'z-ai/glm-5.2')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'z-ai/glm-5.1')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'z-ai/glm-4.7-flash')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.3')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.20-beta')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'qwen/qwen3.5-9b')).toBeNull();
