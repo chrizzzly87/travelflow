@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityType, ITimelineItem, ITrip } from '../types';
-import { Sparkles, Check } from 'lucide-react';
+import { Sparkles, Check, AlertTriangle } from 'lucide-react';
 import { ALL_ACTIVITY_TYPES, getActivityColorByTypes, normalizeActivityTypes } from '../utils';
 import { ActivityTypeIcon } from './ActivityTypeVisuals';
 import { formatActivityTypeLabel, getActivityTypeButtonClass, getActivityTypePaletteClass } from './ActivityTypeVisualsUtils';
@@ -27,6 +28,7 @@ const loadAiService = async (): Promise<AiServiceModule> => {
 };
 
 export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onClose, dayOffset, location, onAdd, trip, notes }) => {
+    const { t } = useTranslation('common');
     const [mode, setMode] = useState<'manual' | 'ai'>('manual');
     const [title, setTitle] = useState('');
     const [selectedTypes, setSelectedTypes] = useState<ActivityType[]>(['general']);
@@ -36,6 +38,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
     const [prompt, setPrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [proposals, setProposals] = useState<any[]>([]);
+    const [generationFailed, setGenerationFailed] = useState(false);
     const manualTitleInputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
@@ -65,8 +68,9 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
     };
 
     const handleGenerate = async () => {
-        if (!prompt) return;
+        if (!prompt || isGenerating) return;
         setIsGenerating(true);
+        setGenerationFailed(false);
         
         // Construct Comprehensive Context
         const context = {
@@ -96,10 +100,16 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
         try {
             const aiService = await loadAiService();
             const results = await aiService.generateActivityProposals(prompt, location, context);
-            setProposals(results);
+            if (Array.isArray(results) && results.length > 0) {
+                setProposals(results);
+            } else {
+                setProposals([]);
+                setGenerationFailed(true);
+            }
         } catch (error) {
             console.error('Failed to generate activity proposals', error);
             setProposals([]);
+            setGenerationFailed(true);
         } finally {
             setIsGenerating(false);
         }
@@ -143,6 +153,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
         setSelectedTypes(['general']);
         setPrompt('');
         setProposals([]);
+        setGenerationFailed(false);
         setMode('manual');
     };
 
@@ -251,7 +262,11 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                         onChange={e => setPrompt(e.target.value)}
                                         className="flex-1 p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
                                         placeholder="e.g. Something romantic for dinner, or kid-friendly park"
-                                        onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !isGenerating) {
+                                                handleGenerate();
+                                            }
+                                        }}
                                     />
                                     <button 
                                         type="button"
@@ -263,6 +278,22 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                     </button>
                                 </div>
                             </div>
+
+                            {generationFailed && !isGenerating && (
+                                <div role="alert" className="flex items-start justify-between gap-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                                    <div className="flex items-start gap-2">
+                                        <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
+                                        <span>{t('tripView.addActivity.aiError')}</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerate}
+                                        className="font-semibold text-red-700 underline underline-offset-2 hover:text-red-800 whitespace-nowrap"
+                                    >
+                                        {t('tripView.addActivity.aiRetry')}
+                                    </button>
+                                </div>
+                            )}
 
                             {proposals.length > 0 && (
                                 <div className="grid gap-3">
@@ -306,7 +337,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                 </div>
                             )}
                             
-                            {proposals.length === 0 && !isGenerating && (
+                            {proposals.length === 0 && !isGenerating && !generationFailed && (
                                 <div className="text-center py-10 text-gray-400">
                                     <Sparkles size={40} className="mx-auto mb-3 opacity-20" />
                                     <p>Enter a wish above to get AI suggestions.</p>

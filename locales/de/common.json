@@ -505,6 +505,10 @@
         "prefill": "Dein Traveler-Setup, deine Daten und deine Transportwünsche werden übernommen.",
         "adjust": "Du kannst den Entwurf noch anpassen, bevor du eine neue Generierung startest."
       }
+    },
+    "addActivity": {
+      "aiError": "Wir konnten keine Aktivitätsideen laden. Bitte versuch es erneut.",
+      "aiRetry": "Erneut versuchen"
     }
   },
   "tripRouteShell": {
