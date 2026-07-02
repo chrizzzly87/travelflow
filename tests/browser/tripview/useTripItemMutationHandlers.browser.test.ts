@@ -58,7 +58,9 @@ describe('components/tripview/useTripItemMutationHandlers', () => {
       result.current.handleDeleteItem(cityItem.id);
     });
 
-    expect(handleUpdateItems).toHaveBeenCalledWith([activityItem], { suppressCommitToast: true });
+    // Deleting a city cascades to its positionally owned items: the activity
+    // starts inside the city's day window, so it is removed together with it.
+    expect(handleUpdateItems).toHaveBeenCalledWith([], { suppressCommitToast: true });
     expect(showToast).toHaveBeenCalledWith('Removed city "Albanian Heritage & Riviera Loop"', expect.objectContaining({
       tone: 'remove',
       title: 'Removed',
