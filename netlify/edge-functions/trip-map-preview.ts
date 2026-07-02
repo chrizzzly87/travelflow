@@ -18,8 +18,14 @@
  *   scale      — 1 or 2 (default 2)
  */
 
-import { getMapsApiKeyFromEnv } from "../edge-lib/trip-og-data.ts";
+import { getMapboxAccessTokenFromEnv, getMapsApiKeyFromEnv } from "../edge-lib/trip-og-data.ts";
 import { resolveEdgeMapRuntime } from "../edge-lib/map-runtime.ts";
+import {
+  buildPreviewNetlifyVaryValue,
+  createTokenBucketLimiter,
+  parsePreviewCoords,
+  resolvePreviewClientIp,
+} from "../edge-lib/trip-map-preview-guard.ts";
 
 type MapPreviewStyle = "clean" | "minimal" | "standard" | "dark" | "satellite";
 type RoutePreviewMode = "simple" | "realistic";
@@ -146,16 +152,6 @@ const encodePolyline = (coords: Array<{ lat: number; lng: number }>): string => 
   });
 
   return encoded;
-};
-
-const parseCoords = (value: string): Array<{ lat: number; lng: number }> => {
-  return value
-    .split("|")
-    .map((pair) => {
-      const [lat, lng] = pair.split(",").map(Number);
-      return { lat, lng };
-    })
-    .filter((coord) => Number.isFinite(coord.lat) && Number.isFinite(coord.lng));
 };
 
 const normalizeColor = (value: string | null): string | null => {
@@ -420,18 +416,57 @@ const buildMapboxStaticPreviewUrl = async ({
   return url.toString();
 };
 
-export default async (request: Request) => {
+// One request costs 1 token; a "realistic" route request costs more because it
+// can fan out to up to MAX_REALISTIC_DIRECTION_LEGS paid Directions API calls.
+const RATE_LIMIT_BUCKET_CAPACITY = 40;
+const RATE_LIMIT_REFILL_PER_SECOND = 0.5; // ≈30 simple previews per minute per IP
+const REALISTIC_ROUTE_REQUEST_COST = 5;
+
+const previewRateLimiter = createTokenBucketLimiter({
+  capacity: RATE_LIMIT_BUCKET_CAPACITY,
+  refillPerSecond: RATE_LIMIT_REFILL_PER_SECOND,
+});
+
+const SUCCESS_CACHE_HEADERS: Record<string, string> = {
+  "Cache-Control": "public, max-age=86400, s-maxage=86400",
+  "Netlify-CDN-Cache-Control": "public, durable, s-maxage=604800",
+  "Netlify-Vary": buildPreviewNetlifyVaryValue(),
+};
+
+const badRequest = (message: string): Response =>
+  new Response(message, {
+    status: 400,
+    headers: { "Cache-Control": "no-store" },
+  });
+
+export default async (request: Request, context?: { ip?: string }) => {
   const url = new URL(request.url);
   const mapRuntime = resolveEdgeMapRuntime(request);
   const coordsParam = url.searchParams.get("coords");
 
   if (!coordsParam) {
-    return new Response("Missing 'coords' query parameter", { status: 400 });
+    return badRequest("Missing 'coords' query parameter");
   }
 
-  const coords = parseCoords(coordsParam);
-  if (coords.length < 1) {
-    return new Response("At least one valid coordinate is required", { status: 400 });
+  const parsedCoords = parsePreviewCoords(coordsParam);
+  if (!parsedCoords.ok) {
+    return badRequest(parsedCoords.error);
+  }
+  const coords = parsedCoords.coords;
+
+  const routeMode = parseRouteMode(url.searchParams.get("routeMode"));
+
+  const clientIp = resolvePreviewClientIp(request, context);
+  const requestCost = routeMode === "realistic" ? REALISTIC_ROUTE_REQUEST_COST : 1;
+  const rateDecision = previewRateLimiter.consume(clientIp, requestCost);
+  if (!rateDecision.allowed) {
+    return new Response("Too many map preview requests, slow down", {
+      status: 429,
+      headers: {
+        "Cache-Control": "no-store",
+        "Retry-After": String(rateDecision.retryAfterSeconds),
+      },
+    });
   }
 
   const w = clampInt(Number.parseInt(url.searchParams.get("w") || "680", 10), 240, 1280);
@@ -439,10 +474,9 @@ export default async (request: Request) => {
   const scale = clampInt(Number.parseInt(url.searchParams.get("scale") || "2", 10), 1, 2);
   const requestedStyle = parseStyle(url.searchParams.get("style"));
   const style = getEffectiveStaticMapStyle(requestedStyle);
-  const routeMode = parseRouteMode(url.searchParams.get("routeMode"));
   const colorMode = parseColorMode(url.searchParams.get("colorMode"));
   const googleApiKey = getMapsApiKeyFromEnv();
-  const mapboxToken = Deno.env.get("VITE_MAPBOX_ACCESS_TOKEN") || "";
+  const mapboxToken = getMapboxAccessTokenFromEnv();
 
   const requestedPathColor = normalizeColor(url.searchParams.get("pathColor"));
   const pathColor = colorMode === "trip" ? (requestedPathColor || BRAND_ROUTE_COLOR) : BRAND_ROUTE_COLOR;
@@ -481,7 +515,7 @@ export default async (request: Request) => {
       status: 302,
       headers: {
         Location: mapUrl,
-        "Cache-Control": "public, max-age=86400",
+        ...SUCCESS_CACHE_HEADERS,
       },
     });
   }
@@ -539,7 +573,7 @@ export default async (request: Request) => {
     status: 302,
     headers: {
       Location: mapUrl,
-      "Cache-Control": "public, max-age=86400",
+      ...SUCCESS_CACHE_HEADERS,
     },
   });
 };
