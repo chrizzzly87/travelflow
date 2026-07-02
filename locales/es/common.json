@@ -504,6 +504,10 @@
         "prefill": "Reuse your traveler setup, dates, and transport choices.",
         "adjust": "Adjust the draft before starting a fresh generation."
       }
+    },
+    "addActivity": {
+      "aiError": "No pudimos cargar ideas de actividades. Inténtalo de nuevo.",
+      "aiRetry": "Reintentar"
     }
   },
   "tripRouteShell": {
