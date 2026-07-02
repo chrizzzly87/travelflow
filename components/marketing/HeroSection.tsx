@@ -1,15 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkle, ShareNetwork, LinkSimple, RocketLaunch } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { GradientShimmer, type GradientStop } from 'gradient-shimmer';
-import { annotate } from 'rough-notation';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { PlaneWindowAnimation } from './PlaneWindowAnimation';
 import { buildPath } from '../../config/routes';
 import { warmRouteAssets } from '../../services/navigationPrefetch';
-
-const HERO_UNDERLINE_DELAY_MS = 900;
 
 const heroTitleGradient: GradientStop[] = [
     { color: '#0f766e', position: 0 },
@@ -22,46 +19,50 @@ interface HeroTitleHighlightProps {
     children: string;
 }
 
-const HeroTitleHighlight: React.FC<HeroTitleHighlightProps> = ({ children }) => {
-    const highlightRef = useRef<HTMLSpanElement | null>(null);
-
-    useEffect(() => {
-        const element = highlightRef.current;
-        if (!element) return;
-
-        const annotation = annotate(element, {
-            type: 'underline',
-            color: 'var(--tf-accent-400)',
-            strokeWidth: 3,
-            iterations: 2,
-            padding: [0, 4, 6, 4],
-            animationDuration: 700,
-            rtl: window.getComputedStyle(element).direction === 'rtl',
-        });
-
-        const showTimer = window.setTimeout(() => annotation.show(), HERO_UNDERLINE_DELAY_MS);
-
-        return () => {
-            window.clearTimeout(showTimer);
-            annotation.remove();
-        };
-    }, []);
-
-    return (
-        <span ref={highlightRef} className="relative inline-block pb-1">
-            <GradientShimmer
-                gradient={heroTitleGradient}
-                duration={1.75}
-                spread={3.5}
-                pauseBetween={1800}
-                baseColor="currentColor"
-                className="text-slate-900"
-            >
-                {children}
-            </GradientShimmer>
-        </span>
-    );
-};
+// Static hand-drawn-style underline. Rendered identically on the prerendered
+// snapshot and the client so the hero <h1> subtree never changes after first
+// paint — the previous rough-notation effect injected an SVG post-hydration,
+// which invalidated the prerendered heading as the LCP candidate and pushed
+// LCP behind the full JS boot. The draw-in is CSS-only (see .tf-hero-underline
+// in index.css) and respects prefers-reduced-motion.
+const HeroTitleHighlight: React.FC<HeroTitleHighlightProps> = ({ children }) => (
+    <span className="relative inline-block pb-1">
+        <GradientShimmer
+            gradient={heroTitleGradient}
+            duration={1.75}
+            spread={3.5}
+            pauseBetween={1800}
+            baseColor="currentColor"
+            className="text-slate-900"
+        >
+            {children}
+        </GradientShimmer>
+        <svg
+            aria-hidden="true"
+            className="tf-hero-underline"
+            viewBox="0 0 120 12"
+            preserveAspectRatio="none"
+            fill="none"
+        >
+            <path
+                className="tf-hero-underline-stroke"
+                d="M3 8.2 C 22 5.4, 44 4.6, 62 5.8 S 100 8.6, 117 6.2"
+                stroke="var(--tf-accent-400)"
+                strokeWidth="3"
+                strokeLinecap="round"
+                pathLength="100"
+            />
+            <path
+                className="tf-hero-underline-stroke tf-hero-underline-stroke--second"
+                d="M5 10.4 C 28 8.0, 52 7.2, 72 8.2 S 104 10.4, 115 8.8"
+                stroke="var(--tf-accent-400)"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                pathLength="100"
+            />
+        </svg>
+    </span>
+);
 
 export const HeroSection: React.FC = () => {
     const { t } = useTranslation('home');
