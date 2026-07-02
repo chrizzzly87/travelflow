@@ -1,10 +1,10 @@
 ---
 id: rel-2026-07-02-homepage-always-hydrate
-version: v0.0.0
+version: v0.141.0
 title: "Faster homepage first paint"
 date: 2026-07-02
-published_at: 2026-07-02T21:00:00Z
-status: draft
+published_at: 2026-07-02T21:35:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Landing pages now stay visible while the app finishes loading instead of flashing blank."

@@ -1,10 +1,10 @@
 ---
 id: rel-2026-07-02-static-hero-underline
-version: v0.0.0
+version: v0.144.0
 title: "Hero headline paints instantly"
 date: 2026-07-02
-published_at: 2026-07-02T21:30:00Z
-status: draft
+published_at: 2026-07-02T21:38:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "The homepage headline and its underline accent now appear immediately with the page."

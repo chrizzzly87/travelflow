@@ -1,10 +1,10 @@
 ---
 id: rel-2026-07-02-prerender-preload-waterfall
-version: v0.141.0
+version: v0.143.0
 title: "Pages start faster"
 date: 2026-07-02
-published_at: 2026-07-02T21:00:00Z
-status: draft
+published_at: 2026-07-02T21:37:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Marketing pages and deep links now load noticeably faster."
