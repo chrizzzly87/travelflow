@@ -1,15 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkle, ShareNetwork, LinkSimple, RocketLaunch } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { GradientShimmer, type GradientStop } from 'gradient-shimmer';
-import { annotate } from 'rough-notation';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { PlaneWindowAnimation } from './PlaneWindowAnimation';
 import { buildPath } from '../../config/routes';
 import { warmRouteAssets } from '../../services/navigationPrefetch';
-
-const HERO_UNDERLINE_DELAY_MS = 900;
 
 const heroTitleGradient: GradientStop[] = [
     { color: '#0f766e', position: 0 },
@@ -22,33 +19,44 @@ interface HeroTitleHighlightProps {
     children: string;
 }
 
-const HeroTitleHighlight: React.FC<HeroTitleHighlightProps> = ({ children }) => {
-    const highlightRef = useRef<HTMLSpanElement | null>(null);
+// The hero heading must not repaint after its prerendered first paint: any
+// post-hydration change to the <h1> subtree (the old rough-notation SVG
+// injection, or the shimmer restyling the text) registers a new, late LCP
+// candidate and drags homepage LCP behind the full JS boot. Two measures:
+// 1. The underline is a static inline SVG rendered identically on the
+//    prerendered snapshot and the client (draw-in is CSS-only, see
+//    .tf-hero-underline in index.css, reduced-motion safe).
+// 2. The gradient shimmer starts only after the first user interaction —
+//    LCP is finalized on first input, so the sweep never counts against it,
+//    while real visitors still see it the moment they move/scroll.
+// Deliberately no bare 'scroll': Lighthouse's full-page screenshot pass
+// scrolls programmatically mid-trace, which would re-enable the shimmer
+// inside the LCP window. Real scrolling intent arrives as wheel/touch.
+const INTERACTION_EVENTS = ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'] as const;
+
+const useFirstInteraction = (): boolean => {
+    const [interacted, setInteracted] = useState(false);
 
     useEffect(() => {
-        const element = highlightRef.current;
-        if (!element) return;
-
-        const annotation = annotate(element, {
-            type: 'underline',
-            color: 'var(--tf-accent-400)',
-            strokeWidth: 3,
-            iterations: 2,
-            padding: [0, 4, 6, 4],
-            animationDuration: 700,
-            rtl: window.getComputedStyle(element).direction === 'rtl',
-        });
-
-        const showTimer = window.setTimeout(() => annotation.show(), HERO_UNDERLINE_DELAY_MS);
-
+        if (interacted) return;
+        const activate = () => setInteracted(true);
+        INTERACTION_EVENTS.forEach((eventName) =>
+            window.addEventListener(eventName, activate, { once: true, passive: true })
+        );
         return () => {
-            window.clearTimeout(showTimer);
-            annotation.remove();
+            INTERACTION_EVENTS.forEach((eventName) => window.removeEventListener(eventName, activate));
         };
-    }, []);
+    }, [interacted]);
+
+    return interacted;
+};
+
+const HeroTitleHighlight: React.FC<HeroTitleHighlightProps> = ({ children }) => {
+    const shimmerActive = useFirstInteraction();
 
     return (
-        <span ref={highlightRef} className="relative inline-block pb-1">
+    <span className="relative inline-block pb-1">
+        {shimmerActive ? (
             <GradientShimmer
                 gradient={heroTitleGradient}
                 duration={1.75}
@@ -59,7 +67,34 @@ const HeroTitleHighlight: React.FC<HeroTitleHighlightProps> = ({ children }) => 
             >
                 {children}
             </GradientShimmer>
-        </span>
+        ) : (
+            <span className="text-slate-900">{children}</span>
+        )}
+        <svg
+            aria-hidden="true"
+            className="tf-hero-underline"
+            viewBox="0 0 120 12"
+            preserveAspectRatio="none"
+            fill="none"
+        >
+            <path
+                className="tf-hero-underline-stroke"
+                d="M3 8.2 C 22 5.4, 44 4.6, 62 5.8 S 100 8.6, 117 6.2"
+                stroke="var(--tf-accent-400)"
+                strokeWidth="3"
+                strokeLinecap="round"
+                pathLength="100"
+            />
+            <path
+                className="tf-hero-underline-stroke tf-hero-underline-stroke--second"
+                d="M5 10.4 C 28 8.0, 52 7.2, 72 8.2 S 104 10.4, 115 8.8"
+                stroke="var(--tf-accent-400)"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                pathLength="100"
+            />
+        </svg>
+    </span>
     );
 };
 

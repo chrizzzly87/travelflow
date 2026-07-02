@@ -898,6 +898,43 @@ h6,
   animation-delay: var(--stagger, 0ms);
 }
 
+/* Static hero underline: present in the prerendered markup so the heading
+   never repaints late; only the stroke draw-in animates (CSS-only). */
+.tf-hero-underline {
+  position: absolute;
+  inset-inline: -4px;
+  bottom: -6px;
+  width: calc(100% + 8px);
+  height: 12px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.tf-hero-underline-stroke {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: tf-hero-underline-draw 0.7s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  animation-delay: 0.9s;
+}
+
+.tf-hero-underline-stroke--second {
+  animation-delay: 1.15s;
+  opacity: 0.75;
+}
+
+@keyframes tf-hero-underline-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tf-hero-underline-stroke {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
 @utility animate-marquee {
   animation: marquee-scroll var(--marquee-duration, 40s) linear infinite;
 }
