@@ -8,6 +8,7 @@ import {
   getConflictBackups,
   getLatestConflictBackupForTrip,
   getQueueSnapshot,
+  hasQueuedTripCommit,
   removeQueuedTripCommit,
   storeConflictBackup,
   updateQueuedTripCommit,
@@ -62,6 +63,25 @@ describe('services/offlineChangeQueue', () => {
 
     removeQueuedTripCommit(queued.id);
     expect(getQueueSnapshot().pendingCount).toBe(0);
+  });
+
+  it('reports queued commits per trip id', () => {
+    const trip = makeTrip({ id: 'trip-3', title: 'Pending trip' });
+
+    expect(hasQueuedTripCommit('trip-3')).toBe(false);
+    expect(hasQueuedTripCommit('')).toBe(false);
+
+    enqueueTripCommit({
+      tripId: trip.id,
+      tripSnapshot: trip,
+      label: 'Data: Updated trip',
+    });
+
+    expect(hasQueuedTripCommit('trip-3')).toBe(true);
+    expect(hasQueuedTripCommit('other-trip')).toBe(false);
+
+    clearOfflineQueue();
+    expect(hasQueuedTripCommit('trip-3')).toBe(false);
   });
 
   it('stores server conflict backups and resolves latest per trip', () => {

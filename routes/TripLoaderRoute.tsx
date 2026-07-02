@@ -12,6 +12,7 @@ import {
     type DbTripAccess,
 } from '../services/dbApi';
 import { findHistoryEntryByUrl } from '../services/historyService';
+import { hasQueuedTripCommit } from '../services/offlineChangeQueue';
 import { getTripById, saveTrip } from '../services/storageService';
 import {
     buildTripUrl,
@@ -299,16 +300,40 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 const dbTrip = await dbGetTrip(tripId);
                 if (dbTrip?.trip) {
                     const normalizedDbTrip = normalizeTripForRouteLoad(dbTrip.trip);
+                    // Compare against the freshest local copy, not only a trip
+                    // resolved earlier in this run. On reconnect re-runs the
+                    // local branches are skipped (connectivity is 'online'),
+                    // so localResolvedTrip is null even though localStorage
+                    // may hold newer edits still queued for offline sync.
+                    const localComparisonTrip = localResolvedTrip
+                        ?? (localTrip ? normalizeTripForRouteLoad(localTrip) : null);
+                    const localUpdatedAt = localComparisonTrip?.updatedAt ?? 0;
+                    const dbUpdatedAt = normalizedDbTrip.updatedAt ?? 0;
+                    const isLocalAuthoritative = Boolean(localComparisonTrip)
+                        && (hasQueuedTripCommit(tripId) || localUpdatedAt > dbUpdatedAt);
+
+                    if (isLocalAuthoritative && localComparisonTrip) {
+                        // Keep the newer local copy: do not overwrite
+                        // localStorage or the UI with the stale server trip.
+                        if (!localResolvedTrip) {
+                            const resolvedLocalView = resolveEffectiveView(
+                                versionedLocalHistoryView ?? localComparisonTrip.defaultView,
+                                localComparisonTrip.defaultView
+                            );
+                            updateRouteState({ viewSettings: resolvedLocalView, tripAccess: dbTrip.access });
+                            onTripLoaded(localComparisonTrip, resolvedLocalView);
+                        } else {
+                            updateRouteState({ tripAccess: dbTrip.access });
+                        }
+                        return;
+                    }
+
                     if (dbTrip.access.source === 'owner') {
                         saveTrip(normalizedDbTrip, { preserveUpdatedAt: true });
                     }
                     const resolvedView = resolveEffectiveView(versionedLocalHistoryView ?? dbTrip.view, normalizedDbTrip.defaultView);
-                    const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
-                    const dbUpdatedAt = normalizedDbTrip.updatedAt ?? 0;
-                    if (!localResolvedTrip || dbUpdatedAt >= localUpdatedAt) {
-                        updateRouteState({ viewSettings: resolvedView, tripAccess: dbTrip.access });
-                        onTripLoaded(normalizedDbTrip, resolvedView);
-                    }
+                    updateRouteState({ viewSettings: resolvedView, tripAccess: dbTrip.access });
+                    onTripLoaded(normalizedDbTrip, resolvedView);
                     return;
                 }
             }
