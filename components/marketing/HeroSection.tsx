@@ -19,24 +19,54 @@ interface HeroTitleHighlightProps {
     children: string;
 }
 
-// Static hand-drawn-style underline. Rendered identically on the prerendered
-// snapshot and the client so the hero <h1> subtree never changes after first
-// paint — the previous rough-notation effect injected an SVG post-hydration,
-// which invalidated the prerendered heading as the LCP candidate and pushed
-// LCP behind the full JS boot. The draw-in is CSS-only (see .tf-hero-underline
-// in index.css) and respects prefers-reduced-motion.
-const HeroTitleHighlight: React.FC<HeroTitleHighlightProps> = ({ children }) => (
+// The hero heading must not repaint after its prerendered first paint: any
+// post-hydration change to the <h1> subtree (the old rough-notation SVG
+// injection, or the shimmer restyling the text) registers a new, late LCP
+// candidate and drags homepage LCP behind the full JS boot. Two measures:
+// 1. The underline is a static inline SVG rendered identically on the
+//    prerendered snapshot and the client (draw-in is CSS-only, see
+//    .tf-hero-underline in index.css, reduced-motion safe).
+// 2. The gradient shimmer starts only after the first user interaction —
+//    LCP is finalized on first input, so the sweep never counts against it,
+//    while real visitors still see it the moment they move/scroll.
+const INTERACTION_EVENTS = ['pointermove', 'pointerdown', 'keydown', 'scroll', 'touchstart'] as const;
+
+const useFirstInteraction = (): boolean => {
+    const [interacted, setInteracted] = useState(false);
+
+    useEffect(() => {
+        if (interacted) return;
+        const activate = () => setInteracted(true);
+        INTERACTION_EVENTS.forEach((eventName) =>
+            window.addEventListener(eventName, activate, { once: true, passive: true })
+        );
+        return () => {
+            INTERACTION_EVENTS.forEach((eventName) => window.removeEventListener(eventName, activate));
+        };
+    }, [interacted]);
+
+    return interacted;
+};
+
+const HeroTitleHighlight: React.FC<HeroTitleHighlightProps> = ({ children }) => {
+    const shimmerActive = useFirstInteraction();
+
+    return (
     <span className="relative inline-block pb-1">
-        <GradientShimmer
-            gradient={heroTitleGradient}
-            duration={1.75}
-            spread={3.5}
-            pauseBetween={1800}
-            baseColor="currentColor"
-            className="text-slate-900"
-        >
-            {children}
-        </GradientShimmer>
+        {shimmerActive ? (
+            <GradientShimmer
+                gradient={heroTitleGradient}
+                duration={1.75}
+                spread={3.5}
+                pauseBetween={1800}
+                baseColor="currentColor"
+                className="text-slate-900"
+            >
+                {children}
+            </GradientShimmer>
+        ) : (
+            <span className="text-slate-900">{children}</span>
+        )}
         <svg
             aria-hidden="true"
             className="tf-hero-underline"
@@ -62,7 +92,8 @@ const HeroTitleHighlight: React.FC<HeroTitleHighlightProps> = ({ children }) => 
             />
         </svg>
     </span>
-);
+    );
+};
 
 export const HeroSection: React.FC = () => {
     const { t } = useTranslation('home');
