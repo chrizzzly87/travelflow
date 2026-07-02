@@ -29,7 +29,10 @@ interface HeroTitleHighlightProps {
 // 2. The gradient shimmer starts only after the first user interaction —
 //    LCP is finalized on first input, so the sweep never counts against it,
 //    while real visitors still see it the moment they move/scroll.
-const INTERACTION_EVENTS = ['pointermove', 'pointerdown', 'keydown', 'scroll', 'touchstart'] as const;
+// Deliberately no bare 'scroll': Lighthouse's full-page screenshot pass
+// scrolls programmatically mid-trace, which would re-enable the shimmer
+// inside the LCP window. Real scrolling intent arrives as wheel/touch.
+const INTERACTION_EVENTS = ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'] as const;
 
 const useFirstInteraction = (): boolean => {
     const [interacted, setInteracted] = useState(false);
