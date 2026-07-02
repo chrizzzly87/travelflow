@@ -1,6 +1,7 @@
 import LZString from 'lz-string';
 import { ActivityType, AppLanguage, ICoordinates, ITrip, ITimelineItem, IViewSettings, ISharedState, MapColorMode, TransportMode, TripPrefillData } from './types';
 import { normalizeTransportMode } from './shared/transportModes';
+import { formatLocalIsoDate } from './shared/tripSpan';
 import { DEFAULT_LOCALE, localeToIntlLocale, normalizeLocale } from './config/locales';
 import { getTimelineVisualRange } from './utils/timelineVisualLayout';
 
@@ -830,24 +831,25 @@ export const reorderSelectedCities = (
     return [...updatedNonTravelItems, ...nonBoundaryTravelItems, ...rebuiltBoundaryTravelItems];
 };
 
-export const getDefaultTripDates = () => {
-    const today = new Date();
+export const getDefaultTripDates = (now: Date = new Date()) => {
     // 3 months in future
-    const target = new Date(today.getFullYear(), today.getMonth() + 3, 1);
-    
+    const target = new Date(now.getFullYear(), now.getMonth() + 3, 1);
+
     // Find next Friday (0=Sun, 5=Fri)
     const day = target.getDay();
     const diff = (5 - day + 7) % 7;
     target.setDate(target.getDate() + diff);
-    
+
     const start = target;
     const end = new Date(start);
     // "Two weeks long, Friday until Saturday" implies ~15/16 days (3 weekends)
-    end.setDate(start.getDate() + 15); 
-    
+    end.setDate(start.getDate() + 15);
+
+    // Format with local calendar components; toISOString() would convert to UTC
+    // and shift local midnight to the previous day in UTC+ timezones.
     return {
-        startDate: start.toISOString().split('T')[0],
-        endDate: end.toISOString().split('T')[0]
+        startDate: formatLocalIsoDate(start),
+        endDate: formatLocalIsoDate(end)
     };
 };
 
