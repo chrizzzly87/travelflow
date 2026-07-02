@@ -31,6 +31,7 @@ import {
 import type { Destination, FestivalEvent as FestivalEventType, WeekendGetaway as WeekendGetawayType, CountryGroup, QuickIdea } from '../data/inspirationsData';
 import { getBlogPostsBySlugs } from '../services/blogService';
 import { buildCreateTripUrl } from '../utils';
+import { formatLocalIsoDate } from '../shared/tripSpan';
 import { resolveDestinationCodes } from '../services/destinationService';
 import { stripLeadingFlagEmoji } from '../utils/flagUtils';
 import { destinationCardMedia, festivalCardMedia } from '../data/inspirationCardMedia';
@@ -54,7 +55,7 @@ const formatFestivalDate = (date: Date): string => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const toIso = (d: Date): string => d.toISOString().split('T')[0];
+const toIso = (d: Date): string => formatLocalIsoDate(d);
 
 const addDaysLocal = (d: Date, n: number): Date => {
     const r = new Date(d);

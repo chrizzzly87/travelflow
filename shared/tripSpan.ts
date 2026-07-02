@@ -18,6 +18,18 @@ export interface TripSpanSummary {
     longLabel: string;
 }
 
+/**
+ * Formats a Date as a local `YYYY-MM-DD` string using local calendar components.
+ * Unlike `date.toISOString().split('T')[0]`, this never shifts the date across
+ * the UTC boundary (e.g. local Friday midnight in UTC+2 stays Friday).
+ */
+export const formatLocalIsoDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 const parseLocalDate = (value: string): Date | null => {
     if (!value) return null;
     const parts = value.split('-').map(Number);
