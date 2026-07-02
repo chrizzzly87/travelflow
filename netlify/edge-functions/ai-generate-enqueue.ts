@@ -1,3 +1,5 @@
+import { resolveMaxPromptChars } from "../edge-lib/ai-generate-guard.ts";
+
 const JSON_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
   "Cache-Control": "no-store",
@@ -112,6 +114,13 @@ const parseEnqueueRequestBody = (value: unknown): {
 
   const payloadValue = record.payload == null ? null : asObject(record.payload);
   if (record.payload != null && !payloadValue) return null;
+
+  // The queued payload prompt is later sent to a paid provider by the worker;
+  // clamp it here with the same cap as the synchronous /api/ai/generate path.
+  if (payloadValue && typeof payloadValue.prompt === "string"
+    && payloadValue.prompt.length > resolveMaxPromptChars()) {
+    return null;
+  }
 
   return {
     tripId,

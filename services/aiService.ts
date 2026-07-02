@@ -32,6 +32,7 @@ import {
 } from "../utils";
 import { trackEvent } from "./analyticsService";
 import { resolveDestinationName } from "./destinationService";
+import { supabase } from "./supabaseClient";
 
 /**
  * ==============================================================================
@@ -1045,12 +1046,26 @@ const generateItineraryFromPrompt = async (
         }, CLIENT_AI_GENERATION_TIMEOUT_MS)
         : null;
 
+    // Attach the Supabase session token (regular or anonymous session) so the
+    // edge function can verify the caller and apply the per-user rate budget
+    // instead of the stricter shared per-IP budget.
+    let accessToken: string | null = null;
+    if (supabase) {
+        try {
+            const { data } = await supabase.auth.getSession();
+            accessToken = data.session?.access_token || null;
+        } catch {
+            accessToken = null;
+        }
+    }
+
     let edgeResponse: Response;
     try {
         edgeResponse = await fetch('/api/ai/generate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
             },
             body: JSON.stringify(requestBody),
             signal: abortController?.signal,
