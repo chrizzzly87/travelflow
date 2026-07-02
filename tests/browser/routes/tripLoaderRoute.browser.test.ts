@@ -306,6 +306,32 @@ describe('routes/TripLoaderRoute', () => {
     expect(props.onTripLoaded).not.toHaveBeenCalled();
   });
 
+  it('redirects to share-unavailable when a share payload fails validation (decompressTrip returns null)', async () => {
+    mocks.dbEnabled = true;
+    mocks.connectivityState = 'online';
+    mocks.auth.isAuthenticated = true;
+    mocks.route.tripId = 'N4IgMalformedSharePayload';
+    mocks.route.pathname = '/trip/N4IgMalformedSharePayload';
+    // Malformed payload (e.g. trip without an items array) now resolves to null.
+    mocks.decompressTrip.mockReturnValue(null);
+    mocks.getTripById.mockReturnValue(undefined);
+    mocks.dbGetTrip.mockResolvedValue(null);
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: false });
+    vi.stubGlobal('fetch', fetchSpy);
+
+    try {
+      const props = makeRouteProps();
+      render(React.createElement(TripLoaderRoute, props));
+
+      await waitFor(() => {
+        expect(mocks.navigate).toHaveBeenCalledWith('/share-unavailable', { replace: true });
+      });
+      expect(props.onTripLoaded).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('keeps local history snapshot view when loading an explicit version url', async () => {
     mocks.dbEnabled = true;
     mocks.route.tripId = 'trip-local-version';

@@ -4,6 +4,7 @@ import { normalizeTransportMode } from './shared/transportModes';
 import { formatLocalIsoDate } from './shared/tripSpan';
 import { DEFAULT_LOCALE, localeToIntlLocale, normalizeLocale } from './config/locales';
 import { getTimelineVisualRange } from './utils/timelineVisualLayout';
+import { normalizeTrip } from './services/storageService';
 
 export const BASE_PIXELS_PER_DAY = 120; // Width of one day column (Base Zoom 1.0)
 export const PIXELS_PER_DAY = BASE_PIXELS_PER_DAY; // Deprecated: Use prop passed from parent for zooming
@@ -885,7 +886,10 @@ export const decompressTripFromUrl = (hash: string): ITrip | null => {
     try {
         const json = LZString.decompressFromEncodedURIComponent(hash);
         if (!json) return null;
-        return JSON.parse(json);
+        // Validate + normalize the payload shape; malformed payloads (missing
+        // id/title, items not an array, malformed items) resolve to null so
+        // callers can fail gracefully instead of crashing the trip view.
+        return normalizeTrip(JSON.parse(json));
     } catch (e) {
         console.error("Failed to decompress trip", e);
         return null;
@@ -1620,15 +1624,24 @@ export const decompressTrip = (encoded: string): ISharedState | null => {
         }
 
         const parsed = JSON.parse(trimmedJson);
+        if (!parsed || typeof parsed !== 'object') return null;
 
         // Backward compatibility: If parsed object has 'id' and 'items', it's just a trip
         if (parsed.id && Array.isArray(parsed.items)) {
-            return { trip: parsed as ITrip };
+            const trip = normalizeTrip(parsed);
+            return trip ? { trip } : null;
         }
 
-        // precise check for ISharedState structure
+        // ISharedState structure: validate + normalize the embedded trip so
+        // malformed share payloads (e.g. missing or non-array `items`) return
+        // null instead of crashing consumers downstream.
         if (parsed.trip) {
-            return parsed as ISharedState;
+            const trip = normalizeTrip(parsed.trip);
+            if (!trip) return null;
+            const view = parsed.view && typeof parsed.view === 'object'
+                ? parsed.view as IViewSettings
+                : undefined;
+            return { trip, view };
         }
 
         return null;
