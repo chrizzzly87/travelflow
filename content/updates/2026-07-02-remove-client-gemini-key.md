@@ -1,10 +1,10 @@
 ---
 id: rel-2026-07-02-remove-client-gemini-key
-version: v0.0.0
+version: v0.135.0
 title: "Keep AI provider keys server-side only"
 date: 2026-07-02
-published_at: 2026-07-02T12:00:00Z
-status: draft
+published_at: 2026-07-02T19:38:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Removed the browser-side AI provider key path so all AI generation runs through secured server endpoints."

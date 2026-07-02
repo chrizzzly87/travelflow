@@ -1,10 +1,10 @@
 ---
 id: rel-2026-07-02-storage-quota-prune-notice
-version: v0.127.0
+version: v0.137.0
 title: "Warning when device storage runs out"
 date: 2026-07-02
-published_at: 2026-07-02T12:00:00Z
-status: draft
+published_at: 2026-07-02T19:40:00Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "You now get a clear warning when older local trips had to be removed because your device storage was full."

@@ -1,10 +1,10 @@
 ---
 id: rel-2026-07-02-trip-map-preview-hardening
-version: v0.0.0
+version: v0.139.0
 title: "Trip map preview hardening"
 date: 2026-07-02
-published_at: 2026-07-02T12:00:00Z
-status: draft
+published_at: 2026-07-02T19:42:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Trip map preview images load faster thanks to stronger caching, with new protections against abusive traffic."

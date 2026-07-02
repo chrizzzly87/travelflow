@@ -1,10 +1,10 @@
 ---
 id: rel-2026-07-02-default-trip-dates-timezone-fix
-version: v0.127.0
+version: v0.129.0
 title: "Correct Suggested Trip Dates in All Timezones"
 date: 2026-07-02
-published_at: 2026-07-02T12:00:00Z
-status: draft
+published_at: 2026-07-02T19:32:00Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Suggested trip start dates now always land on the intended Friday, no matter your timezone."

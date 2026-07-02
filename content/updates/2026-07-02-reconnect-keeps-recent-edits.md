@@ -1,10 +1,10 @@
 ---
 id: rel-2026-07-02-reconnect-keeps-recent-edits
-version: v0.0.0
+version: v0.134.0
 title: "Reconnect Keeps Your Recent Edits"
 date: 2026-07-02
-published_at: 2026-07-02T12:00:00Z
-status: draft
+published_at: 2026-07-02T19:37:00Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Trips edited offline no longer revert to older server data when your connection comes back."
