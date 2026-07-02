@@ -1809,6 +1809,13 @@ const useTripViewRender = ({
                 });
                 return;
             }
+            if (detail.type === 'sync_conflict_preserved') {
+                showToast(t('connectivity.toast.conflictPreserved'), {
+                    tone: 'neutral',
+                    title: t('connectivity.toast.title'),
+                });
+                return;
+            }
             if (detail.type === 'sync_partial_failure') {
                 const messageKey = detail.failedCount === 1
                     ? 'connectivity.toast.syncPartialFailureOne'
