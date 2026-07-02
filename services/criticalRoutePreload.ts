@@ -97,9 +97,7 @@ export const getCriticalRouteModuleKeys = (pathname: string): CriticalRouteModul
   return [];
 };
 
-export const preloadCriticalRouteModules = (pathname: string): void => {
+export const preloadCriticalRouteModules = (pathname: string): Promise<unknown> => {
   const keys = getCriticalRouteModuleKeys(pathname);
-  for (const key of keys) {
-    void ROUTE_IMPORTERS[key]();
-  }
+  return Promise.allSettled(keys.map((key) => ROUTE_IMPORTERS[key]()));
 };

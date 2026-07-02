@@ -48,11 +48,6 @@
     "backToBlog": "Retour au blog",
     "all": "Tous"
   },
-  "earlyAccess": {
-    "tag": "Aperçu anticipé",
-    "message": "{appName} est en développement actif. Les fonctionnalités peuvent évoluer et certains éléments ne sont pas encore parfaits.",
-    "dismiss": "Fermer la bannière"
-  },
   "cookieBanner": {
     "message": "Nous utilisons des cookies essentiels pour garantir la stabilité de {appName} et des cookies optionnels pour améliorer l'expérience. Voir notre",
     "policyLinkLabel": "Politique de cookies"
@@ -60,7 +55,8 @@
   "translationNotice": {
     "message": "Cette page a été récemment traduite avec l'aide de l'IA et peut encore contenir des erreurs de traduction.",
     "cta": "Signaler une erreur de traduction",
-    "ctaShort": "Signaler"
+    "ctaShort": "Signaler",
+    "dismiss": "Fermer la bannière"
   },
   "networkStatus": {
     "offlineTitle": "Vous etes hors ligne.",
