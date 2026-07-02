@@ -4,17 +4,37 @@ import {
   resolvePriceIdForTier,
 } from '../edge-lib/paddle-billing.ts';
 import {
+  authorizeBillingUser,
   fetchPaddleJson,
+  getAuthToken,
   getPaddleApiConfig,
+  getSupabaseAnonConfig,
   json,
   resolvePaddleApiBaseUrl,
   asTrimmedString,
 } from '../edge-lib/paddle-request.ts';
+import {
+  createTokenBucketLimiter,
+  normalizeVoucherCode,
+  shapeDiscountLookupData,
+  RATE_LIMITED_MESSAGE,
+  UNIFORM_INVALID_VOUCHER_MESSAGE,
+} from '../edge-lib/discount-lookup-guard.ts';
 import { extractServiceError } from '../edge-lib/paddle-webhook-sync.ts';
 
 type CheckoutTierKey = Extract<PlanTierKey, 'tier_mid' | 'tier_premium'>;
 type PaddleDiscountRecord = Record<string, unknown>;
-type PaddleDiscountMatch = { discount: PaddleDiscountRecord; matchedBy: 'code' | 'description' } | null;
+
+// Per-isolate token buckets. Not globally durable, but they cap the voucher
+// enumeration rate any single edge isolate will serve.
+const ipLimiter = createTokenBucketLimiter({ capacity: 10, refillIntervalMs: 60_000 });
+const codeLimiter = createTokenBucketLimiter({ capacity: 20, refillIntervalMs: 60_000 });
+const userLimiter = createTokenBucketLimiter({ capacity: 15, refillIntervalMs: 60_000 });
+
+/** Constant delay before negative responses to blunt high-speed enumeration. */
+const NEGATIVE_RESPONSE_DELAY_MS = 150;
+
+const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 const parseTierKey = (value: unknown): CheckoutTierKey | null => {
   if (value === 'tier_mid') return 'tier_mid';
@@ -41,22 +61,16 @@ const normalizeCode = (value: unknown): string | null => {
   return normalized ? normalized.toUpperCase() : null;
 };
 
-const findMatchingDiscount = (
+/**
+ * Matches by exact redeemable checkout code only. Matching against discount
+ * descriptions (a previous "diagnostics" behavior) allowed unauthenticated
+ * callers to enumerate internal discount descriptions and must not return.
+ */
+const findDiscountByCode = (
   discounts: PaddleDiscountRecord[],
   code: string,
-): PaddleDiscountMatch => {
-  const exactCodeMatch = discounts.find((candidate) => normalizeCode(candidate.code) === code);
-  if (exactCodeMatch) {
-    return { discount: exactCodeMatch, matchedBy: 'code' };
-  }
-
-  const descriptionMatch = discounts.find((candidate) => normalizeCode(candidate.description) === code);
-  if (descriptionMatch) {
-    return { discount: descriptionMatch, matchedBy: 'description' };
-  }
-
-  return null;
-};
+): PaddleDiscountRecord | null =>
+  discounts.find((candidate) => normalizeCode(candidate.code) === code) || null;
 
 const isCheckoutEnabled = (discount: PaddleDiscountRecord): boolean =>
   discount.enabled_for_checkout !== false;
@@ -154,16 +168,24 @@ const listDiscounts = async (
     : [];
 };
 
+const rateLimited = (): Response =>
+  json(429, { ok: false, error: RATE_LIMITED_MESSAGE });
+
+const resolveClientIp = (request: Request, context?: { ip?: string }): string =>
+  asTrimmedString(context?.ip)
+    || asTrimmedString(request.headers.get('x-nf-client-connection-ip'))
+    || 'unknown';
+
 export const __paddleDiscountLookupInternals = {
   buildEstimate,
   getRestrictionIds,
   isDiscountApplicableToTarget,
   normalizeCode,
   parseTierKey,
-  findMatchingDiscount,
+  findDiscountByCode,
 };
 
-export default async (request: Request): Promise<Response> => {
+export default async (request: Request, context?: { ip?: string }): Promise<Response> => {
   if (request.method !== 'GET') {
     return json(405, { ok: false, error: 'Method not allowed.' });
   }
@@ -184,11 +206,36 @@ export default async (request: Request): Promise<Response> => {
     });
   }
 
+  // Strict input validation before any network work: uppercase alphanumeric
+  // voucher codes (max 32 chars) and an allowlisted checkout tier only.
   const url = new URL(request.url);
-  const code = normalizeCode(url.searchParams.get('code'));
+  const code = normalizeVoucherCode(url.searchParams.get('code'));
   const tierKey = parseTierKey(url.searchParams.get('tier'));
   if (!code || !tierKey) {
     return json(400, { ok: false, error: 'A voucher code and supported tier key are required.' });
+  }
+
+  // Rate limit per client IP and per candidate code before touching Paddle.
+  const clientIp = resolveClientIp(request, context);
+  if (!ipLimiter.tryConsume(`ip:${clientIp}`)) {
+    return rateLimited();
+  }
+  if (!codeLimiter.tryConsume(`code:${code}`)) {
+    return rateLimited();
+  }
+
+  // Checkout also serves anonymous visitors, so authentication cannot be
+  // required here. But when the client does send a Supabase session token,
+  // verify it and rate limit on the user id as an additional key.
+  const authToken = getAuthToken(request);
+  if (authToken) {
+    const supabaseConfig = getSupabaseAnonConfig();
+    if (supabaseConfig) {
+      const authorization = await authorizeBillingUser(supabaseConfig, authToken).catch(() => null);
+      if (authorization?.ok && !userLimiter.tryConsume(`user:${authorization.user.userId}`)) {
+        return rateLimited();
+      }
+    }
   }
 
   const targetPriceId = resolvePriceIdForTier(tierKey, paddleConfig.priceMap);
@@ -202,20 +249,14 @@ export default async (request: Request): Promise<Response> => {
       listDiscounts(baseUrl, paddleConfig.apiKey),
       loadPriceDetail(baseUrl, paddleConfig.apiKey, targetPriceId),
     ]);
-    const match = findMatchingDiscount(discounts, code);
-    const discount = match?.discount;
+    const discount = findDiscountByCode(discounts, code);
 
-    if (!discount) {
-      return json(404, { ok: false, error: 'Voucher code not found or not available for checkout.' });
-    }
-    if (!isDiscountActive(discount)) {
-      return json(409, { ok: false, error: 'This Paddle discount exists, but it is not active right now.' });
-    }
-    if (match?.matchedBy === 'description' && !normalizeCode(discount.code)) {
-      return json(409, { ok: false, error: 'This Paddle discount exists, but it does not expose a redeemable checkout code yet.' });
-    }
-    if (!isCheckoutEnabled(discount)) {
-      return json(409, { ok: false, error: 'This Paddle discount exists, but it is not enabled for checkout.' });
+    // Uniform negative response: "not found", "inactive", and "not enabled
+    // for checkout" are indistinguishable so the endpoint cannot be used as
+    // an oracle for the Paddle discount catalog.
+    if (!discount || !isDiscountActive(discount) || !isCheckoutEnabled(discount)) {
+      await delay(NEGATIVE_RESPONSE_DELAY_MS);
+      return json(404, { ok: false, error: UNIFORM_INVALID_VOUCHER_MESSAGE });
     }
 
     const applicableToTier = isDiscountApplicableToTarget(discount, targetPriceId, priceDetail.productId);
@@ -225,17 +266,14 @@ export default async (request: Request): Promise<Response> => {
 
     return json(200, {
       ok: true,
-      data: {
+      data: shapeDiscountLookupData({
         code,
         type: asTrimmedString(discount.type),
         amount: asInteger(discount.amount),
         currencyCode: asTrimmedString(discount.currency_code) || priceDetail.currencyCode,
-        description: asTrimmedString(discount.description),
-        appliesToAllRecurring: discount.recur !== false,
-        maximumRecurringIntervals: asInteger(discount.maximum_recurring_intervals),
         applicableToTier,
         estimate,
-      },
+      }),
     });
   } catch (error) {
     return json(502, {

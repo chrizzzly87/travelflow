@@ -164,9 +164,6 @@ interface BillingDiscountLookupResponse {
     type?: string | null;
     amount?: number | null;
     currencyCode?: string | null;
-    description?: string | null;
-    appliesToAllRecurring?: boolean;
-    maximumRecurringIntervals?: number | null;
     applicableToTier?: boolean;
     estimate?: {
       originalAmount?: number | null;
@@ -285,9 +282,6 @@ export interface BillingDiscountLookup {
   type: string | null;
   amount: number | null;
   currencyCode: string | null;
-  description: string | null;
-  appliesToAllRecurring: boolean;
-  maximumRecurringIntervals: number | null;
   applicableToTier: boolean;
   estimate: {
     originalAmount: number | null;
@@ -751,12 +745,25 @@ export const lookupPaddleDiscount = async (
     throw new Error('A voucher code is required.');
   }
 
+  // Voucher lookup also works for anonymous checkout visitors, but when a
+  // session is available we attach it so the edge function can verify the
+  // Supabase JWT and rate limit per user in addition to per IP.
+  let accessToken: string | null = null;
+  if (DB_ENABLED) {
+    try {
+      accessToken = await dbGetAccessToken();
+    } catch {
+      accessToken = null;
+    }
+  }
+
   const response = await fetch(
     `/api/billing/paddle/discount-lookup?code=${encodeURIComponent(normalizedCode)}&tier=${encodeURIComponent(tierKey)}`,
     {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
     },
   );
@@ -784,9 +791,6 @@ export const lookupPaddleDiscount = async (
     type: data.type ?? null,
     amount: typeof data.amount === 'number' ? data.amount : null,
     currencyCode: data.currencyCode ?? null,
-    description: data.description ?? null,
-    appliesToAllRecurring: data.appliesToAllRecurring === true,
-    maximumRecurringIntervals: typeof data.maximumRecurringIntervals === 'number' ? data.maximumRecurringIntervals : null,
     applicableToTier: data.applicableToTier !== false,
     estimate: data.estimate
       ? {
