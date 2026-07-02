@@ -657,6 +657,65 @@ const isTravelItem = (item: ITimelineItem): boolean =>
 
 const cityPairKey = (fromId: string, toId: string): string => `${fromId}->${toId}`;
 
+/**
+ * Removes a timeline item. When the removed item is a city, also removes the
+ * items that are positionally linked to it and would otherwise be orphaned:
+ * - the travel segments on its inbound/outbound boundaries (travel items are
+ *   linked to city pairs positionally via `findTravelBetweenCities`),
+ * - the activities whose start offset falls inside the city's day window
+ *   (the same ownership rule `reorderSelectedCities` uses to move activities
+ *   with their city),
+ * - all travel items when the last remaining city is removed (no city pair
+ *   can exist anymore).
+ * Non-city items are removed without side effects.
+ */
+export const removeTimelineItemWithLinkedItems = (
+    items: ITimelineItem[],
+    id: string
+): ITimelineItem[] => {
+    const target = items.find(item => item.id === id);
+    if (!target) return items;
+    if (target.type !== 'city') {
+        return items.filter(item => item.id !== id);
+    }
+
+    const idsToRemove = new Set<string>([id]);
+
+    const cities = items
+        .filter(item => item.type === 'city')
+        .sort((a, b) => a.startDateOffset - b.startDateOffset);
+    const cityIndex = cities.findIndex(city => city.id === id);
+    const previousCity = cityIndex > 0 ? cities[cityIndex - 1] : null;
+    const nextCity = cityIndex >= 0 && cityIndex < cities.length - 1 ? cities[cityIndex + 1] : null;
+
+    if (cities.length <= 1) {
+        items.forEach(item => {
+            if (isTravelItem(item)) idsToRemove.add(item.id);
+        });
+    } else {
+        if (previousCity) {
+            const inboundTravel = findTravelBetweenCities(items, previousCity, target);
+            if (inboundTravel) idsToRemove.add(inboundTravel.id);
+        }
+        if (nextCity) {
+            const outboundTravel = findTravelBetweenCities(items, target, nextCity);
+            if (outboundTravel) idsToRemove.add(outboundTravel.id);
+        }
+    }
+
+    const epsilon = 0.00001;
+    const cityStart = target.startDateOffset;
+    const cityEnd = target.startDateOffset + target.duration;
+    items.forEach(item => {
+        if (item.type !== 'activity') return;
+        if (item.startDateOffset >= (cityStart - epsilon) && item.startDateOffset < (cityEnd - epsilon)) {
+            idsToRemove.add(item.id);
+        }
+    });
+
+    return items.filter(item => !idsToRemove.has(item.id));
+};
+
 export const reorderSelectedCities = (
     items: ITimelineItem[],
     selectedCityIds: string[],
