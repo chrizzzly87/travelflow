@@ -51,7 +51,7 @@ describe('injectModulePreloadHints', () => {
     const result = injectModulePreloadHints(html, ['/assets/entry-1.js', '/assets/chunk-2.js']);
 
     expect(result).not.toContain('<link rel="modulepreload" href="/assets/entry-1.js"');
-    const linkIndex = result.indexOf('<link rel="modulepreload" href="/assets/chunk-2.js" crossorigin />');
+    const linkIndex = result.indexOf('<link rel="modulepreload" href="/assets/chunk-2.js" crossorigin fetchpriority="low" />');
     const headCloseIndex = result.indexOf('</head>');
     expect(linkIndex).toBeGreaterThan(-1);
     expect(linkIndex).toBeLessThan(headCloseIndex);
