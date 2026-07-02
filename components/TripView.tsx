@@ -2190,6 +2190,7 @@ const useTripViewRender = ({
         locationPathname: location.pathname,
         currentUrl,
         isExamplePreview,
+        canEdit,
         navigate,
         suppressCommitRef,
         stripHistoryPrefix,

@@ -150,6 +150,8 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const lastLoadRef = useRef<string | null>(null);
     const lastRouteTargetRef = useRef<string | null>(null);
+    const lastTripIdRef = useRef<string | null>(null);
+    const latestTripAccessRef = useRef<DbTripAccess | null>(null);
     const latestViewSettingsRef = useRef<IViewSettings | undefined>(undefined);
     const hasInSessionViewOverrideRef = useRef(false);
     const versionId = useMemo(() => {
@@ -169,6 +171,9 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     const updateRouteState = useCallback((patch: TripLoaderRouteStatePatch) => {
         if (hasRouteStatePatchKey(patch, 'viewSettings')) {
             latestViewSettingsRef.current = patch.viewSettings;
+        }
+        if (hasRouteStatePatchKey(patch, 'tripAccess')) {
+            latestTripAccessRef.current = patch.tripAccess ?? null;
         }
         setRouteState((current) => {
             const nextViewSettings = hasRouteStatePatchKey(patch, 'viewSettings')
@@ -196,6 +201,8 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
         const routeTargetKey = `${tripId}:${versionId || ''}`;
         const didRouteTargetChange = lastRouteTargetRef.current !== routeTargetKey;
         lastRouteTargetRef.current = routeTargetKey;
+        const didTripChange = lastTripIdRef.current !== tripId;
+        lastTripIdRef.current = tripId;
 
         const load = async () => {
             const connectivityState = connectivitySnapshot.state;
@@ -209,9 +216,24 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
             // for the same route target so late loader responses cannot snap UI
             // controls (e.g. timeline mode) back to stale defaults.
             if (didRouteTargetChange) {
-                updateRouteState({ viewSettings: undefined, tripAccess: null });
+                // Keep known access metadata when only the version changes within
+                // the same trip so read-only shares stay read-only while version
+                // browsing; a different trip id must re-resolve access from scratch.
+                if (didTripChange) {
+                    updateRouteState({ viewSettings: undefined, tripAccess: null });
+                } else {
+                    updateRouteState({ viewSettings: undefined });
+                }
                 hasInSessionViewOverrideRef.current = false;
             }
+
+            // Version snapshots must never be persisted to local storage from a
+            // context that cannot edit the trip (view-only share / admin fallback).
+            // Unknown access (owner-local or offline flows) keeps persisting.
+            const canPersistSnapshotLocally = () => {
+                const source = latestTripAccessRef.current?.source;
+                return !source || source === 'owner';
+            };
 
             const resolveEffectiveView = (resolvedView?: IViewSettings, fallbackView?: IViewSettings) => {
                 if (!didRouteTargetChange && hasInSessionViewOverrideRef.current) {
@@ -243,7 +265,9 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 const localEntry = findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId));
                 if (localEntry?.snapshot?.trip) {
                     const normalizedLocalSnapshotTrip = normalizeTripForRouteLoad(localEntry.snapshot.trip);
-                    saveTrip(normalizedLocalSnapshotTrip, { preserveUpdatedAt: true });
+                    if (canPersistSnapshotLocally()) {
+                        saveTrip(normalizedLocalSnapshotTrip, { preserveUpdatedAt: true });
+                    }
                     localResolvedTrip = normalizedLocalSnapshotTrip;
                     localResolvedView = resolveEffectiveView(localEntry.snapshot.view, normalizedLocalSnapshotTrip.defaultView);
                     updateRouteState({ viewSettings: localResolvedView });
@@ -285,7 +309,9 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                     const version = await dbGetTripVersion(tripId, versionId);
                     if (version?.trip) {
                         const normalizedVersionTrip = normalizeTripForRouteLoad(version.trip);
-                        saveTrip(normalizedVersionTrip, { preserveUpdatedAt: true });
+                        if (canPersistSnapshotLocally()) {
+                            saveTrip(normalizedVersionTrip, { preserveUpdatedAt: true });
+                        }
                         const resolvedView = resolveEffectiveView(version.view, normalizedVersionTrip.defaultView);
                         const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
                         const dbUpdatedAt = normalizedVersionTrip.updatedAt ?? 0;

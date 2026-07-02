@@ -28,6 +28,7 @@ interface UseTripHistoryControllerOptions {
     locationPathname: string;
     currentUrl: string;
     isExamplePreview: boolean;
+    canEdit: boolean;
     navigate: NavigateFunction;
     suppressCommitRef: MutableRefObject<boolean>;
     stripHistoryPrefix: (label: string) => string;
@@ -49,6 +50,7 @@ export const useTripHistoryController = ({
     locationPathname,
     currentUrl,
     isExamplePreview,
+    canEdit,
     navigate,
     suppressCommitRef,
     stripHistoryPrefix,
@@ -104,6 +106,7 @@ export const useTripHistoryController = ({
     }, [getHistoryIndex, resolvedHistoryEntries]);
 
     const navigateHistory = useCallback((action: HistoryAction, options?: { silent?: boolean }) => {
+        if (!canEdit) return false;
         const target = getHistoryEntryForAction(action);
         if (!target) {
             if (!options?.silent) {
@@ -128,7 +131,7 @@ export const useTripHistoryController = ({
             });
         }
         return true;
-    }, [getHistoryEntryForAction, navigate, showToast, stripHistoryPrefix, suppressCommitRef]);
+    }, [canEdit, getHistoryEntryForAction, navigate, showToast, stripHistoryPrefix, suppressCommitRef]);
 
     const formatHistoryTime = useCallback((timestamp: number) => {
         const diffMs = Date.now() - timestamp;
@@ -179,7 +182,7 @@ export const useTripHistoryController = ({
     }, [isExamplePreview, refreshHistory, tripId]);
 
     useEffect(() => {
-        if (isExamplePreview || typeof window === 'undefined') return;
+        if (!canEdit || isExamplePreview || typeof window === 'undefined') return;
 
         const handleKeyDown = (event: KeyboardEvent) => {
             const target = event.target as HTMLElement | null;
@@ -204,7 +207,7 @@ export const useTripHistoryController = ({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isExamplePreview, navigateHistory]);
+    }, [canEdit, isExamplePreview, navigateHistory]);
 
     useEffect(() => {
         if (isExamplePreview || typeof window === 'undefined') return;
