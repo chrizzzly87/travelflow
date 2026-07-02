@@ -46,11 +46,6 @@
     "backToBlog": "Wróć do bloga",
     "all": "Wszystkie"
   },
-  "earlyAccess": {
-    "tag": "Wczesny podgląd",
-    "message": "{appName} jest w aktywnym rozwoju. Funkcje mogą się zmieniać, a niektóre elementy mogą jeszcze nie działać idealnie.",
-    "dismiss": "Zamknij baner"
-  },
   "cookieBanner": {
     "message": "Używamy niezbędnych plików cookie, aby {appName} działał stabilnie, oraz opcjonalnych cookie, aby poprawić Twoje doświadczenie. Zobacz naszą",
     "policyLinkLabel": "Politykę cookies"
@@ -58,7 +53,8 @@
   "translationNotice": {
     "message": "Ta strona została niedawno przetłumaczona z pomocą AI i może nadal zawierać błędy tłumaczenia.",
     "cta": "Zgłoś błąd tłumaczenia",
-    "ctaShort": "Zgłoś"
+    "ctaShort": "Zgłoś",
+    "dismiss": "Zamknij baner"
   },
   "networkStatus": {
     "offlineTitle": "Jestes offline.",

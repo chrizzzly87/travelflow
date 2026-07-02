@@ -337,13 +337,6 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'sessionStorage',
     },
     {
-      name: 'tf_early_access_dismissed',
-      purpose: 'Stores dismissal state for early-access marketing banner.',
-      duration: 'Persistent',
-      provider: 'TravelFlow',
-      storage: 'localStorage',
-    },
-    {
       name: 'tf_admin_sidebar_collapsed_v1',
       purpose: 'Persists admin sidebar collapse preference.',
       duration: 'Persistent',

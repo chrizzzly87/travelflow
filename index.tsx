@@ -2,7 +2,7 @@ import React, { ReactNode, Suspense } from 'react';
 import { createRoot, hydrateRoot, type HydrationOptions } from 'react-dom/client';
 import App from './App';
 import './index.css';
-import './i18n';
+import { APP_SHELL_NAMESPACES, preloadLocaleNamespaces } from './i18n';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/locales';
 import { extractLocaleFromPath, isToolRoute } from './config/routes';
 import { hasRenderableHandoffNode } from './services/bootstrapHandoffService';
@@ -144,16 +144,36 @@ const handleRecoverableReactError: HydrationOptions['onRecoverableError'] = (err
   console.error('Recoverable React error:', error, errorInfo);
 };
 
-setupBootstrapShellHandoff(rootElement);
-if (typeof window !== 'undefined') {
-  preloadCriticalRouteModules(window.location.pathname);
-}
+const mountReactRoot = () => {
+  if (shouldHydrateReactRoot(rootElement)) {
+    hydrateRoot(rootElement, appNode, {
+      onRecoverableError: handleRecoverableReactError,
+    });
+  } else {
+    const root = createRoot(rootElement);
+    root.render(appNode);
+  }
+};
 
-if (shouldHydrateReactRoot(rootElement)) {
-  hydrateRoot(rootElement, appNode, {
-    onRecoverableError: handleRecoverableReactError,
-  });
-} else {
-  const root = createRoot(rootElement);
-  root.render(appNode);
-}
+// Warm the critical resources the first render is known to suspend on
+// (route modules plus the i18n namespaces AppContent requests) before
+// mounting, so the initial render commits synchronously instead of
+// suspending into the root fallback. The prerendered markup / boot shell
+// stays on screen during this window, and the timeout guarantees a slow
+// or failed chunk can never block mounting.
+const MOUNT_PRELOAD_TIMEOUT_MS = 2500;
+
+const warmupBeforeMount = async (): Promise<void> => {
+  if (typeof window === 'undefined') return;
+  const preloads = Promise.allSettled([
+    preloadCriticalRouteModules(window.location.pathname),
+    preloadLocaleNamespaces(document.documentElement.lang || DEFAULT_LOCALE, APP_SHELL_NAMESPACES),
+  ]);
+  await Promise.race([
+    preloads,
+    new Promise((resolve) => { window.setTimeout(resolve, MOUNT_PRELOAD_TIMEOUT_MS); }),
+  ]);
+};
+
+setupBootstrapShellHandoff(rootElement);
+void warmupBeforeMount().then(mountReactRoot);

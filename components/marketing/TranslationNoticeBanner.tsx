@@ -102,7 +102,7 @@ export const TranslationNoticeBanner: React.FC = () => {
                 <button
                     type="button"
                     onClick={handleDismiss}
-                    aria-label={t('earlyAccess.dismiss')}
+                    aria-label={t('translationNotice.dismiss')}
                     className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-amber-600 transition-colors hover:bg-amber-100 hover:text-amber-800"
                     {...getAnalyticsDebugAttributes('i18n_notice__dismiss', { locale: activeLocale })}
                 >

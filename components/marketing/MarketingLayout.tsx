@@ -1,5 +1,4 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { EarlyAccessBanner } from './EarlyAccessBanner';
 import { TranslationNoticeBanner } from './TranslationNoticeBanner';
 import { SiteHeader } from '../navigation/SiteHeader';
 import { LanguageSuggestionBanner } from '../navigation/LanguageSuggestionBanner';
@@ -61,7 +60,6 @@ export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children, root
             <SiteHeader onMyTripsClick={openTripManager} onMyTripsIntent={prewarmTripManager} />
             <div className="pointer-events-none fixed inset-x-0 top-[69px] z-[1500] md:top-[73px]">
                 <div className="pointer-events-auto">
-                    <EarlyAccessBanner />
                     <LanguageSuggestionBanner />
                     <TranslationNoticeBanner />
                 </div>
