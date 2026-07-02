@@ -1,10 +1,8 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { ICoordinates, ITimelineItem, ITrip, TripGenerationAttemptSummary, TripGenerationFlow, TripGenerationFailureKind } from "../types";
 import type { AiProviderId } from "../config/aiProviderCatalog";
 import { getDefaultCreateTripModel } from "../config/aiModelCatalog";
 import { buildDurationPromptGuidance, parseFlexibleDurationDays, parseFlexibleDurationHours } from "../shared/durationParsing";
 import { buildTransportModePromptGuidance, MODEL_TRANSPORT_MODE_VALUES, normalizeTransportMode } from "../shared/transportModes";
-import { createGeminiTripItineraryResponseSchema } from "../shared/aiTripItinerarySchema";
 import {
     formatUserPromptDataBlock,
     formatUserPromptDataListBlock,
@@ -26,7 +24,6 @@ import {
     getRandomCityColor,
     normalizeCityColors,
     TRAVEL_COLOR,
-    getGeminiApiKey,
     normalizeActivityTypes,
     generateTripId,
 } from "../utils";
@@ -37,8 +34,10 @@ import { resolveDestinationName } from "./destinationService";
  * ==============================================================================
  * CRITICAL CONFIGURATION
  * ==============================================================================
- * The API Key retrieval logic has been centralized in `utils.ts` to ensure
- * consistency across the application.
+ * All AI generation goes through server endpoints (`/api/ai/generate` and the
+ * enqueue/worker flow). The browser must never hold a provider API key: any
+ * Vite-inlined key (e.g. VITE_GEMINI_API_KEY) is extractable from the public
+ * bundle. Do not reintroduce direct-from-browser provider SDK calls here.
  * ==============================================================================
  */
 
@@ -72,57 +71,6 @@ const normalizePromptDestinationList = (values: string[]): string[] => {
             seen.add(key);
             return true;
         });
-};
-
-const itinerarySchema = createGeminiTripItineraryResponseSchema(Type);
-
-const activityDetailsSchema = {
-    type: Type.OBJECT,
-    properties: {
-        cost: { type: Type.STRING, description: "Estimated cost, e.g. '$20' or 'Free'" },
-        bestTime: { type: Type.STRING, description: "Best time of day to visit" },
-        tips: { type: Type.STRING, description: "Practical tip for visitors" },
-        activityTypes: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING, enum: ACTIVITY_TYPE_ENUM }
-        },
-        type: { 
-            type: Type.STRING, 
-            enum: ACTIVITY_TYPE_ENUM
-        }
-    },
-    required: ["cost", "bestTime", "tips", "type"]
-};
-
-const activityProposalsSchema = {
-    type: Type.ARRAY,
-    items: {
-        type: Type.OBJECT,
-        properties: {
-            title: { type: Type.STRING },
-            description: { type: Type.STRING },
-            cost: { type: Type.STRING },
-            bestTime: { type: Type.STRING },
-            tips: { type: Type.STRING },
-            activityTypes: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING, enum: ACTIVITY_TYPE_ENUM }
-            },
-            type: { 
-                type: Type.STRING, 
-                enum: ACTIVITY_TYPE_ENUM
-            }
-        },
-        required: ["title", "description", "cost", "bestTime", "tips", "activityTypes"]
-    }
-};
-
-const cityNotesSchema = {
-    type: Type.OBJECT,
-    properties: {
-        notes: { type: Type.STRING, description: "Markdown text with checkboxes for Must See, Must Try (Foods), and Must Do." }
-    },
-    required: ["notes"]
 };
 
 export interface GenerateOptions extends CreateTripPreferenceSignals {
@@ -1243,126 +1191,27 @@ const generateItineraryFromPrompt = async (
         });
     }
 
-    const isGeminiFallbackAllowed = !options?.aiTarget || options.aiTarget.provider === 'gemini';
-    if (!isGeminiFallbackAllowed) {
-        console.error('AI Generation failed:', serverError);
-        if (serverError instanceof TripGenerationError) {
-            throw serverError;
-        }
-        throw new TripGenerationError('AI generation failed.', {
-            code: serverError instanceof Error ? serverError.name : 'AI_GENERATION_ERROR',
-            status: 500,
-            details: serverError instanceof Error ? serverError.message : 'Unknown error',
-            requestId,
-            durationMs: Date.now() - requestStartedAtMs,
-            provider: selectedProvider,
-            model: selectedModel,
-            failureKind: createFailureKind(
-                serverError instanceof Error ? serverError.name : null,
-                500,
-                serverError instanceof Error ? serverError.message : 'Unknown error'
-            ),
-            requestPayload: requestBody,
-        });
+    // No client-side provider fallback: generation must stay on server endpoints
+    // so provider API keys are never exposed to the browser bundle.
+    console.error('AI Generation failed:', serverError);
+    if (serverError instanceof TripGenerationError) {
+        throw serverError;
     }
-
-    const fallbackStartedAtMs = Date.now();
-    try {
-        const apiKey = getGeminiApiKey();
-        if (!apiKey) throw new Error('API Key is missing or invalid. Please check your environment configuration.');
-
-        const ai = new GoogleGenAI({ apiKey });
-        const selectedModel = options?.aiTarget?.model || DEFAULT_MODEL;
-
-        const response = await ai.models.generateContent({
-          model: selectedModel,
-          contents: detailedPrompt,
-          config: {
-            responseMimeType: 'application/json',
-            responseSchema: itinerarySchema,
-          },
-        });
-
-        const data = JSON.parse(response.text || '{}');
-        trackEvent('create_trip__ai_request--fallback_success', {
-            provider: 'gemini',
-            model: selectedModel,
-            status: 200,
-            duration_ms: Date.now() - fallbackStartedAtMs,
-        });
-        const builtTrip = buildTripFromModelData(data, startDate, options);
-        const finishedAtIso = new Date().toISOString();
-        const durationMs = Math.max(0, Date.now() - fallbackStartedAtMs);
-        const generatedAttempt: TripGenerationAttemptSummary = {
-            id: options?.generationContext?.attemptId || requestId,
-            flow: options?.generationContext?.flow || 'classic',
-            source: options?.generationContext?.source || 'create_trip_fallback',
-            state: 'succeeded',
-            startedAt: new Date(fallbackStartedAtMs).toISOString(),
-            finishedAt: finishedAtIso,
-            durationMs,
-            requestId,
-            provider: 'gemini',
-            model: selectedModel,
-            providerModel: null,
-            statusCode: 200,
-            metadata: {
-                source: options?.generationContext?.source || 'create_trip_fallback',
-                fallback: true,
-                requestPayload: requestBody,
-            },
-        };
-        return {
-            ...builtTrip,
-            aiMeta: {
-                ...(builtTrip.aiMeta || {
-                    provider: 'gemini',
-                    model: selectedModel,
-                    generatedAt: finishedAtIso,
-                }),
-                provider: 'gemini',
-                model: selectedModel,
-                generatedAt: finishedAtIso,
-                generation: {
-                    state: 'succeeded',
-                    latestAttempt: generatedAttempt,
-                    attempts: [generatedAttempt],
-                    inputSnapshot: builtTrip.aiMeta?.generation?.inputSnapshot || null,
-                    retryCount: builtTrip.aiMeta?.generation?.retryCount || 0,
-                    retryRequestedAt: builtTrip.aiMeta?.generation?.retryRequestedAt || null,
-                    lastSucceededAt: finishedAtIso,
-                    lastFailedAt: null,
-                },
-            },
-        };
-    } catch (fallbackError) {
-        trackEvent('create_trip__ai_request--fallback_failed', {
-            provider: 'gemini',
-            model: options?.aiTarget?.model || DEFAULT_MODEL,
-            status: 500,
-            duration_ms: Date.now() - fallbackStartedAtMs,
-            error_code: fallbackError instanceof Error ? fallbackError.name : 'UNKNOWN_FALLBACK_ERROR',
-        });
-        console.error('AI Generation failed (server and fallback):', { serverError, fallbackError });
-        throw new TripGenerationError(
-            fallbackError instanceof Error ? fallbackError.message : 'AI generation fallback failed.',
-            {
-                code: fallbackError instanceof Error ? fallbackError.name : 'AI_GENERATION_FALLBACK_FAILED',
-                status: 500,
-                details: fallbackError instanceof Error ? fallbackError.message : 'Unknown fallback error',
-                requestId,
-                durationMs: Date.now() - requestStartedAtMs,
-                provider: 'gemini',
-                model: options?.aiTarget?.model || DEFAULT_MODEL,
-                failureKind: createFailureKind(
-                    fallbackError instanceof Error ? fallbackError.name : null,
-                    500,
-                    fallbackError instanceof Error ? fallbackError.message : 'Unknown fallback error'
-                ),
-                requestPayload: requestBody,
-            }
-        );
-    }
+    throw new TripGenerationError('AI generation failed.', {
+        code: serverError instanceof Error ? serverError.name : 'AI_GENERATION_ERROR',
+        status: 500,
+        details: serverError instanceof Error ? serverError.message : 'Unknown error',
+        requestId,
+        durationMs: Date.now() - requestStartedAtMs,
+        provider: selectedProvider,
+        model: selectedModel,
+        failureKind: createFailureKind(
+            serverError instanceof Error ? serverError.name : null,
+            500,
+            serverError instanceof Error ? serverError.message : 'Unknown error'
+        ),
+        requestPayload: requestBody,
+    });
   } finally {
     releaseActiveAbortController();
   }
@@ -1597,164 +1446,35 @@ export const generateTripFromInputSnapshot = async (
 };
 
 
-export const suggestActivityDetails = async (activityName: string, location: string): Promise<any> => {
-    try {
-        const apiKey = getGeminiApiKey();
-        if (!apiKey) return { cost: "Unknown", bestTime: "Anytime", tips: "API Key missing.", type: 'general', activityTypes: ['general'] };
-
-        const ai = new GoogleGenAI({ apiKey });
-        const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: `Provide brief details for a travel activity: "${activityName}" in "${location}".`,
-            config: {
-                 responseMimeType: "application/json",
-                 responseSchema: activityDetailsSchema
-            }
-        });
-        const text = response.text;
-        if (!text) throw new Error("No response from AI");
-        const parsed = JSON.parse(text);
-        const activityTypes = normalizeActivityTypes(parsed.activityTypes ?? parsed.type);
-        return {
-            ...parsed,
-            activityTypes,
-            type: activityTypes[0],
-        };
-    } catch (e) {
-        console.error("Gemini Suggest Error:", e);
-        return { cost: "Unknown", bestTime: "Anytime", tips: "No details available.", type: 'general', activityTypes: ['general'] };
-    }
+/**
+ * Client-side provider calls were removed for security (the browser must never
+ * hold a provider API key). This helper now degrades gracefully — identical to
+ * the previous missing-key behavior — until a server endpoint exists for it.
+ */
+export const suggestActivityDetails = async (_activityName: string, _location: string): Promise<any> => {
+    return { cost: "Unknown", bestTime: "Anytime", tips: "No details available.", type: 'general', activityTypes: ['general'] };
 }
 
-export const generateActivityProposals = async (prompt: string, location: string, context?: any): Promise<any[]> => {
-    try {
-        const apiKey = getGeminiApiKey();
-        if (!apiKey) return [];
-
-        const ai = new GoogleGenAI({ apiKey });
-        
-        let contextString = "";
-        if (context) {
-            // Flatten the itinerary context
-            const citiesStr = context.cities?.map((c:any) => `${c.name} (Day ${Math.floor(c.dayOffset)+1}-${Math.floor(c.dayOffset + c.duration)+1})`).join(', ');
-            const existingActsStr = context.activities?.map((a:any) => `Day ${Math.floor(a.dayOffset)+1}: ${a.title}`).join('; ');
-
-            contextString = `
-            TRIP CONTEXT:
-            - Trip Title: ${context.tripTitle}
-            - Style/Preferences: ${context.preferences}
-            - Target Date: Day ${context.dayNumber + 1}
-            - Full Itinerary Stops: ${citiesStr}
-            - Existing Activities: ${existingActsStr}
-            `;
-        }
-
-        const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: `Suggest 3 distinct travel activities for "${location}" based on this specific user wish: "${prompt}".
-            ${contextString}
-            IMPORTANT RULES:
-            1. Ensure the suggestions fit the user's style defined in context.
-            2. DO NOT duplicate any activities listed in "Existing Activities".
-            3. Consider the flow of the itinerary.
-            4. Return "activityTypes" as an array with 1-3 values from: [${ACTIVITY_TYPES_PROMPT_LIST}].
-            `,
-            config: {
-                 responseMimeType: "application/json",
-                 responseSchema: activityProposalsSchema
-            }
-        });
-        
-        const text = response.text;
-        if (!text) return [];
-        const parsed = JSON.parse(text);
-        if (!Array.isArray(parsed)) return [];
-        return parsed.map((proposal: any) => {
-            const activityTypes = normalizeActivityTypes(proposal.activityTypes ?? proposal.type);
-            return {
-                ...proposal,
-                activityTypes,
-                type: activityTypes[0],
-            };
-        });
-    } catch (e) {
-        console.error("Failed to generate proposals", e);
-        return [];
-    }
+/**
+ * Client-side provider calls were removed for security (the browser must never
+ * hold a provider API key). This helper now degrades gracefully — identical to
+ * the previous missing-key behavior — until a server endpoint exists for it.
+ */
+export const generateActivityProposals = async (_prompt: string, _location: string, _context?: any): Promise<any[]> => {
+    return [];
 }
 
-const getCityNotesModeInstruction = (mode: CityNotesEnhancementMode): string => {
-    if (mode === 'local-tips') {
-        return `
-        Add practical local tips that improve the trip:
-        - transport and neighborhood tips
-        - timing and reservation tips
-        - safety/crowd/weather awareness
-        Prefer checklist items and concise bullet points.
-        `;
-    }
-
-    if (mode === 'day-plan') {
-        return `
-        Add short day-by-day suggestions:
-        - use H3 headers by day idea (for example: "### Day Plan Ideas")
-        - include compact checklists for morning/afternoon/evening
-        Keep it realistic and not overpacked.
-        `;
-    }
-
-    return `
-    Expand and improve the classic travel sections:
-    - Must See
-    - Must Try
-    - Must Do
-    Add useful items that are not already present.
-    `;
-};
-
+/**
+ * Client-side provider calls were removed for security (the browser must never
+ * hold a provider API key). This helper now degrades gracefully — identical to
+ * the previous missing-key behavior — until a server endpoint exists for it.
+ */
 export const generateCityNotesAddition = async (
-    city: string,
-    currentNotes: string,
-    mode: CityNotesEnhancementMode = 'expand-checklists'
+    _city: string,
+    _currentNotes: string,
+    _mode: CityNotesEnhancementMode = 'expand-checklists'
 ): Promise<string> => {
-    try {
-        const apiKey = getGeminiApiKey();
-        if (!apiKey) return '';
-
-        const ai = new GoogleGenAI({ apiKey });
-        const modeInstruction = getCityNotesModeInstruction(mode);
-        const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: `Generate ONLY additional markdown for city travel notes in "${city}".
-
-            Current notes that already exist:
-            """
-            ${currentNotes || '(no notes yet)'}
-            """
-
-            Your task:
-            ${modeInstruction}
-
-            Rules:
-            1. Return ONLY content to append (no explanations outside markdown).
-            2. Do NOT rewrite, summarize, or duplicate the existing notes.
-            3. Prefer markdown checkbox lists (- [ ]) for actionable items.
-            4. Keep it concise and useful (roughly 6-14 lines).
-            `,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: cityNotesSchema
-            }
-        });
-        
-        const text = response.text;
-        if (!text) return '';
-        const data = JSON.parse(text);
-        return data.notes || '';
-    } catch (e) {
-        console.error("Failed to enhance notes", e);
-        return '';
-    }
+    return '';
 }
 
 export const enhanceCityNotes = async (city: string, currentNotes: string): Promise<string> => {

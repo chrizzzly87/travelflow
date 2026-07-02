@@ -62,7 +62,7 @@ Current implementation status:
 1. Generation is centralized in `services/aiService.ts` and directly called by UI.
 2. `services/geminiService.ts` is now a backward-compatibility re-export shim to avoid breaking older imports during migration.
 3. Prompt shaping + schema + normalization already exist and must remain canonical.
-4. Browser currently reads `VITE_GEMINI_API_KEY` and calls provider from client code.
+4. Browser never reads provider API keys; all generation goes through server endpoints (`/api/ai/generate` and the enqueue/worker flow).
 5. Netlify Edge Functions are already configured via `netlify.toml` and can host internal API routes.
 6. Supabase already stores trips with useful source metadata fields (`source_kind`, `source_template_id`).
 
