@@ -156,3 +156,51 @@ describe('netlify/edge-functions/ai-generate-enqueue', () => {
         });
     });
 });
+
+describe('netlify/edge-functions/ai-generate-enqueue prompt cap (regression)', () => {
+    beforeEach(() => {
+        fetchMock.mockReset();
+        envGetMock.mockReset();
+        vi.stubGlobal('fetch', fetchMock);
+        vi.stubGlobal('Deno', {
+            env: {
+                get: (...args: unknown[]) => envGetMock(...args),
+            },
+        });
+        envGetMock.mockImplementation((key: string) => {
+            if (key === 'VITE_SUPABASE_URL') return 'https://supabase.example';
+            if (key === 'VITE_SUPABASE_ANON_KEY') return 'anon-key';
+            if (key === 'TF_ADMIN_API_KEY') return 'admin-key';
+            return '';
+        });
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('rejects payloads whose prompt exceeds the generation prompt cap', async () => {
+        const response = await handler(new Request('https://travelflowapp.netlify.app/api/internal/ai/generation-enqueue', {
+            method: 'POST',
+            headers: {
+                Authorization: 'Bearer user-token',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                tripId: 'trip-1',
+                attemptId: 'attempt-1',
+                payload: {
+                    flow: 'classic',
+                    prompt: 'x'.repeat(200_000),
+                },
+            }),
+        }));
+
+        expect(response.status).toBe(400);
+        await expect(response.json()).resolves.toMatchObject({
+            ok: false,
+            code: 'ASYNC_ENQUEUE_PAYLOAD_INVALID',
+        });
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+});
