@@ -1,10 +1,10 @@
 ---
 id: rel-2026-07-02-offline-sync-conflict-protection
-version: v0.127.0
+version: v0.132.0
 title: "Offline sync conflict protection"
 date: 2026-07-02
-published_at: 2026-07-02T12:00:00Z
-status: draft
+published_at: 2026-07-02T19:35:00Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Edits made on another device are no longer overwritten when offline changes sync back."

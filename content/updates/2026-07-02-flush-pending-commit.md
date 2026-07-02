@@ -1,10 +1,10 @@
 ---
 id: rel-2026-07-02-flush-pending-commit
-version: v0.0.0
+version: v0.131.0
 title: "Reliable saving when leaving the page"
 date: 2026-07-02
-published_at: 2026-07-02T12:00:00Z
-status: draft
+published_at: 2026-07-02T19:34:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Your very last edit is no longer lost when you close the tab right after making it."
