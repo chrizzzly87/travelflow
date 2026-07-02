@@ -8,18 +8,12 @@ export const BASE_PIXELS_PER_DAY = 120; // Width of one day column (Base Zoom 1.
 export const PIXELS_PER_DAY = BASE_PIXELS_PER_DAY; // Deprecated: Use prop passed from parent for zooming
 
 // --- API KEY MANAGEMENT ---
-
-// --- API KEY MANAGEMENT ---
-export const getGeminiApiKey = (): string => {
-   return import.meta.env.VITE_GEMINI_API_KEY || '';
-};
-
+// NOTE: AI provider keys (e.g. Gemini) must never be read in client code.
+// Vite-inlined VITE_* values ship in the public bundle; all AI generation goes
+// through the server endpoints instead. Only intentionally-public,
+// domain-restricted browser keys belong here.
 export const getGoogleMapsApiKey = (): string => {
    return import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-};
-
-export const getApiKey = (): string => {
-   return getGeminiApiKey(); // Backwards compatibility for now, but should be replaced
 };
 
 export const APP_LANGUAGE_STORAGE_KEY = 'tf_app_language';

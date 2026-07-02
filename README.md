@@ -26,8 +26,6 @@ cp .env.example .env.local
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
-# Optional local fallback (browser-side Gemini path for non-Netlify dev)
-VITE_GEMINI_API_KEY=your_gemini_api_key_here
 # Optional provider adapters / benchmark tooling
 OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
@@ -227,8 +225,7 @@ For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEP
 4. Optional: if your Netlify plan exposes custom Functions regions, set the default Netlify Functions region to `eu-west-2` (or the closest EU region available in your account) so scheduled/background functions stay closer to your EU-hosted Supabase project. Edge Functions remain globally distributed.
 5. In Netlify environment variables, add:
    - `SITE_URL` (canonical public base URL for sitemap and absolute SEO URLs, e.g. `https://travelflowapp.netlify.app`)
-   - `GEMINI_API_KEY` (preferred server-side key for `/api/ai/generate`)
-   - `VITE_GEMINI_API_KEY` (optional browser fallback for local/dev compatibility)
+   - `GEMINI_API_KEY` (server-side key for `/api/ai/generate`; never expose it through a `VITE_*` variable — those are inlined into the public browser bundle)
    - `VITE_GOOGLE_MAPS_API_KEY`
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
