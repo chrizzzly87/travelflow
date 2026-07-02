@@ -71,11 +71,27 @@ const renderWithHandoff = (node: React.ReactElement) => (
     <HandoffReadyBoundary>{node}</HandoffReadyBoundary>
 );
 
+/**
+ * Homepage auth gate that never suspends first paint.
+ *
+ * Anonymous visitors (the common case for `/`) render the marketing homepage
+ * immediately without waiting for the Supabase chunk or `getSession()`.
+ *
+ * While auth bootstrap is still pending, `isAuthenticated` already reflects
+ * the synchronous persisted-session hint (`readPersistedSupabaseSessionHint`)
+ * that AuthContext applies on marketing routes. Visitors with that hint keep
+ * the lightweight non-suspending loading shell instead of flashing the
+ * marketing page, and get the same `/profile` redirect once the real session
+ * settles. If the hint turns out stale, the settled context flips
+ * `isAuthenticated` back and the marketing page renders.
+ */
 const AuthenticatedMarketingHomeRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isLoading, isAuthenticated } = useAuth();
 
-    suspendUntilAuthBootstrapSettles(isLoading);
     if (isAuthenticated) {
+        if (isLoading) {
+            return <MarketingRouteLoadingShell />;
+        }
         return <Navigate to="/profile" replace />;
     }
     return children;

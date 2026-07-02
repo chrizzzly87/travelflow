@@ -46,6 +46,10 @@ vi.mock('../../../pages/PricingPage', () => ({
   PricingPage: () => React.createElement('div', { 'data-testid': 'mock-pricing-page' }, 'Pricing page'),
 }));
 
+vi.mock('../../../pages/MarketingHomePage', () => ({
+  MarketingHomePage: () => React.createElement('div', { 'data-testid': 'mock-marketing-home-page' }, 'Marketing home page'),
+}));
+
 import { DeferredAppRoutes } from '../../../app/routes/DeferredAppRoutes';
 
 const LocationProbe: React.FC = () => {
@@ -53,19 +57,20 @@ const LocationProbe: React.FC = () => {
   return React.createElement('div', { 'data-testid': 'location-probe' }, `${location.pathname}${location.search}`);
 };
 
-const renderDeferredRoutes = (initialPath: string) => {
-  return render(
-    React.createElement(
-      MemoryRouter,
-      { initialEntries: [initialPath] },
-      React.createElement(DeferredAppRoutes, {
-        onAppLanguageLoaded: vi.fn(),
-        onTripGenerated: vi.fn(),
-        onOpenManager: vi.fn(),
-      }),
-      React.createElement(LocationProbe)
-    )
+const createDeferredRoutesElement = (initialPath: string) =>
+  React.createElement(
+    MemoryRouter,
+    { initialEntries: [initialPath] },
+    React.createElement(DeferredAppRoutes, {
+      onAppLanguageLoaded: vi.fn(),
+      onTripGenerated: vi.fn(),
+      onOpenManager: vi.fn(),
+    }),
+    React.createElement(LocationProbe)
   );
+
+const renderDeferredRoutes = (initialPath: string) => {
+  return render(createDeferredRoutesElement(initialPath));
 };
 
 describe('app/routes/DeferredAppRoutes root auth gate', () => {
@@ -100,19 +105,55 @@ describe('app/routes/DeferredAppRoutes root auth gate', () => {
     });
   });
 
-  it('shows loading fallback while auth is resolving on root', () => {
+  it('renders the marketing homepage immediately while auth bootstrap is pending (anonymous)', async () => {
     mocks.auth.isLoading = true;
+    mocks.auth.isAuthenticated = false;
 
-    const { getByTestId } = renderDeferredRoutes('/');
-    const fallback = getByTestId('route-loading-shell');
+    const { getByTestId, queryByTestId } = renderDeferredRoutes('/');
 
+    await waitFor(() => {
+      expect(getByTestId('mock-marketing-home-page')).toBeInTheDocument();
+    });
     expect(getByTestId('location-probe').textContent).toBe('/');
-    expect(fallback).toHaveAttribute('data-shell-variant', 'marketing');
-    expect(fallback.textContent).toContain('TravelFlow');
-    expect(fallback.textContent).not.toContain('Create Trip');
-    expect(fallback.querySelector('.tf-boot-nav-skeleton--features')).toBeTruthy();
-    expect(fallback.querySelector('.tf-boot-control-flag')).toBeTruthy();
-    expect(fallback.querySelector('.tf-boot-control-skeleton--cta')).toBeTruthy();
+    expect(queryByTestId('route-loading-shell')).toBeNull();
+  });
+
+  it('holds a non-suspending shell for hint-authenticated visitors, then redirects to /profile once auth settles', async () => {
+    mocks.auth.isLoading = true;
+    mocks.auth.isAuthenticated = true;
+
+    const { getByTestId, queryByTestId, rerender } = renderDeferredRoutes('/');
+
+    const shell = getByTestId('route-loading-shell');
+    expect(getByTestId('location-probe').textContent).toBe('/');
+    expect(shell).toHaveAttribute('data-shell-variant', 'marketing');
+    expect(queryByTestId('mock-marketing-home-page')).toBeNull();
+
+    mocks.auth.isLoading = false;
+    rerender(createDeferredRoutesElement('/'));
+
+    await waitFor(() => {
+      expect(getByTestId('location-probe').textContent).toBe('/profile');
+    });
+  });
+
+  it('falls back to the marketing homepage when a stale auth hint settles as anonymous', async () => {
+    mocks.auth.isLoading = true;
+    mocks.auth.isAuthenticated = true;
+
+    const { getByTestId, queryByTestId, rerender } = renderDeferredRoutes('/');
+
+    expect(getByTestId('route-loading-shell')).toBeInTheDocument();
+
+    mocks.auth.isLoading = false;
+    mocks.auth.isAuthenticated = false;
+    rerender(createDeferredRoutesElement('/'));
+
+    await waitFor(() => {
+      expect(getByTestId('mock-marketing-home-page')).toBeInTheDocument();
+    });
+    expect(getByTestId('location-probe').textContent).toBe('/');
+    expect(queryByTestId('route-loading-shell')).toBeNull();
   });
 
   it('supports public profile routes', async () => {
