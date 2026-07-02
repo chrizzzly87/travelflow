@@ -28,32 +28,36 @@ describe('paddle discount lookup edge internals', () => {
     }, 'pri_mid', 'pro_mid')).toBe(false);
   });
 
-  it('matches discounts by code first and then by description for diagnostics', () => {
-    expect(__paddleDiscountLookupInternals.findMatchingDiscount([
+  it('matches discounts by exact redeemable code only', () => {
+    expect(__paddleDiscountLookupInternals.findDiscountByCode([
       {
         code: 'SPRING20',
         description: 'Spring 20',
       },
     ], 'SPRING20')).toEqual({
-      discount: {
-        code: 'SPRING20',
-        description: 'Spring 20',
-      },
-      matchedBy: 'code',
+      code: 'SPRING20',
+      description: 'Spring 20',
     });
+  });
 
-    expect(__paddleDiscountLookupInternals.findMatchingDiscount([
+  it('regression: never matches discounts by description (enumeration oracle)', () => {
+    // Previously the lookup fell back to matching the code against discount
+    // descriptions, letting unauthenticated callers enumerate internal
+    // discount descriptions. Description-only records must not match.
+    expect(__paddleDiscountLookupInternals.findDiscountByCode([
       {
         code: null,
         description: 'CHRISISTCOOL',
       },
-    ], 'CHRISISTCOOL')).toEqual({
-      discount: {
-        code: null,
-        description: 'CHRISISTCOOL',
+      {
+        code: 'OTHER10',
+        description: 'SPRINGSALE',
       },
-      matchedBy: 'description',
-    });
+    ], 'CHRISISTCOOL')).toBeNull();
+
+    expect(__paddleDiscountLookupInternals.findDiscountByCode([
+      { code: 'OTHER10', description: 'SPRINGSALE' },
+    ], 'SPRINGSALE')).toBeNull();
   });
 
   it('builds percentage and flat estimates from Paddle discount values', () => {

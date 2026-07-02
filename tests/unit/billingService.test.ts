@@ -265,9 +265,6 @@ describe('billingService startPaddleCheckoutSession', () => {
         type: 'percentage',
         amount: 20,
         currencyCode: 'USD',
-        description: 'Spring 20% off',
-        appliesToAllRecurring: true,
-        maximumRecurringIntervals: null,
         applicableToTier: true,
         estimate: {
           originalAmount: 900,
@@ -283,9 +280,6 @@ describe('billingService startPaddleCheckoutSession', () => {
       type: 'percentage',
       amount: 20,
       currencyCode: 'USD',
-      description: 'Spring 20% off',
-      appliesToAllRecurring: true,
-      maximumRecurringIntervals: null,
       applicableToTier: true,
       estimate: {
         originalAmount: 900,

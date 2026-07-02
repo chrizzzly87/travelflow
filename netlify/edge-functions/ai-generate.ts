@@ -1,8 +1,14 @@
 import {
-  GEMINI_DEFAULT_MODEL,
   generateProviderItinerary,
   resolveTimeoutMs,
 } from "../edge-lib/ai-provider-runtime.ts";
+import {
+  createTokenBucketRateLimiter,
+  getBearerToken,
+  resolveClientIp,
+  validateGenerateInput,
+  verifySupabaseUser,
+} from "../edge-lib/ai-generate-guard.ts";
 import { persistAiGenerationTelemetry } from "../edge-lib/ai-generation-telemetry.ts";
 import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
 
@@ -33,13 +39,19 @@ const JSON_HEADERS = {
 // This clamps overly aggressive env values (for example 5000ms) to a safer floor.
 const EDGE_REQUEST_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATE_PROVIDER_TIMEOUT_MS", 45_000, 20_000, 120_000);
 
-const json = (status: number, payload: unknown): Response =>
+// Best-effort per-isolate limiters (see ai-generate-guard.ts for caveats).
+// Verified Supabase sessions get a per-user budget; requests without a
+// verifiable session share a stricter per-IP budget.
+const verifiedUserLimiter = createTokenBucketRateLimiter({ capacity: 10, refillPerMinute: 6 });
+const anonymousIpLimiter = createTokenBucketRateLimiter({ capacity: 5, refillPerMinute: 3 });
+
+const json = (status: number, payload: unknown, extraHeaders?: Record<string, string>): Response =>
   new Response(JSON.stringify(payload), {
     status,
-    headers: JSON_HEADERS,
+    headers: { ...JSON_HEADERS, ...extraHeaders },
   });
 
-export default async (request: Request) => {
+export default async (request: Request, context?: { ip?: string }) => {
   if (request.method !== "POST") {
     return json(405, { error: "Method not allowed. Use POST." });
   }
@@ -51,18 +63,45 @@ export default async (request: Request) => {
     return json(400, { error: "Invalid JSON body." });
   }
 
-  const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
-  if (!prompt) {
-    return json(400, { error: "Missing required field: prompt" });
+  const guarded = validateGenerateInput(body);
+  if (!guarded.ok) {
+    return json(guarded.failure.status, {
+      error: guarded.failure.error,
+      code: guarded.failure.code,
+    });
+  }
+  const { prompt, provider, model } = guarded.value;
+
+  const authToken = getBearerToken(request);
+  let verifiedUserId: string | null = null;
+  let verifiedAnonymousSession = false;
+  if (authToken) {
+    const verification = await verifySupabaseUser(authToken);
+    if (verification.ok) {
+      verifiedUserId = verification.userId;
+      verifiedAnonymousSession = verification.isAnonymous;
+    } else if (verification.reason === "invalid") {
+      return json(401, {
+        error: "Invalid or expired Supabase access token.",
+        code: "AUTH_TOKEN_INVALID",
+      });
+    }
+    // reason === "unavailable": auth service/config unreachable — degrade to
+    // per-IP limiting instead of failing legitimate traffic.
   }
 
-  const provider = typeof body?.target?.provider === "string"
-    ? body.target.provider.trim().toLowerCase()
-    : "gemini";
+  const clientIp = resolveClientIp(request, context);
+  const rateDecision = verifiedUserId
+    ? verifiedUserLimiter.take(`user:${verifiedUserId}`)
+    : anonymousIpLimiter.take(`ip:${clientIp}`);
+  if (!rateDecision.allowed) {
+    return json(429, {
+      error: "Too many generation requests. Please retry shortly.",
+      code: "RATE_LIMITED",
+      retryAfterSeconds: rateDecision.retryAfterSeconds,
+    }, { "Retry-After": String(rateDecision.retryAfterSeconds) });
+  }
 
-  const model = typeof body?.target?.model === "string" && body.target.model.trim()
-    ? body.target.model.trim()
-    : GEMINI_DEFAULT_MODEL;
   const requestId = typeof body?.requestId === "string" && body.requestId.trim()
     ? body.requestId.trim()
     : crypto.randomUUID();
@@ -130,6 +169,10 @@ export default async (request: Request) => {
       totalTokens: result.value.meta.usage?.totalTokens,
       metadata: {
         endpoint: "/api/ai/generate",
+        user_id: verifiedUserId,
+        auth: verifiedUserId
+          ? (verifiedAnonymousSession ? "supabase_anonymous" : "supabase_user")
+          : "unverified",
         trip_id: requestContext?.tripId || null,
         attempt_id: requestContext?.attemptId || null,
         flow: requestContext?.flow || null,
@@ -160,6 +203,10 @@ export default async (request: Request) => {
       errorMessage: error instanceof Error ? error.message : "Unknown error",
       metadata: {
         endpoint: "/api/ai/generate",
+        user_id: verifiedUserId,
+        auth: verifiedUserId
+          ? (verifiedAnonymousSession ? "supabase_anonymous" : "supabase_user")
+          : "unverified",
         trip_id: requestContext?.tripId || null,
         attempt_id: requestContext?.attemptId || null,
         flow: requestContext?.flow || null,

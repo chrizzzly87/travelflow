@@ -17,6 +17,7 @@ import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleCityLaneViewTransitionName } from '../shared/viewTransitionNames';
 import { buildRenderedTimelineDaySlots, buildRenderedTimelineMonths } from './tripview/timelineRenderedSlots';
 import { getTimelineVisualCenter, getTimelineVisualRange, getTimelineVisualSpan } from '../utils/timelineVisualLayout';
+import { findPreviousCity } from '../utils/timelineNeighbors';
 
 interface TimelineProps {
   trip: ITrip;
@@ -538,7 +539,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
         if (Math.abs(currentItem.startDateOffset - newStart) < 0.000001) return;
 
-        const prevCity = newItems.find(i => i.type === 'city' && i.startDateOffset < currentItem.startDateOffset && i.id !== currentItem.id);
+        const prevCity = findPreviousCity(newItems, currentItem.id, currentItem.startDateOffset);
         if (prevCity && currentItem.type === 'city') {
             const prevEnd = prevCity.startDateOffset + prevCity.duration;
             if (newStart < prevEnd) {

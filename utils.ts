@@ -1,25 +1,21 @@
 import LZString from 'lz-string';
 import { ActivityType, AppLanguage, ICoordinates, ITrip, ITimelineItem, IViewSettings, ISharedState, MapColorMode, TransportMode, TripPrefillData } from './types';
 import { normalizeTransportMode } from './shared/transportModes';
+import { formatLocalIsoDate } from './shared/tripSpan';
 import { DEFAULT_LOCALE, localeToIntlLocale, normalizeLocale } from './config/locales';
 import { getTimelineVisualRange } from './utils/timelineVisualLayout';
+import { normalizeTrip } from './services/storageService';
 
 export const BASE_PIXELS_PER_DAY = 120; // Width of one day column (Base Zoom 1.0)
 export const PIXELS_PER_DAY = BASE_PIXELS_PER_DAY; // Deprecated: Use prop passed from parent for zooming
 
 // --- API KEY MANAGEMENT ---
-
-// --- API KEY MANAGEMENT ---
-export const getGeminiApiKey = (): string => {
-   return import.meta.env.VITE_GEMINI_API_KEY || '';
-};
-
+// NOTE: AI provider keys (e.g. Gemini) must never be read in client code.
+// Vite-inlined VITE_* values ship in the public bundle; all AI generation goes
+// through the server endpoints instead. Only intentionally-public,
+// domain-restricted browser keys belong here.
 export const getGoogleMapsApiKey = (): string => {
    return import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-};
-
-export const getApiKey = (): string => {
-   return getGeminiApiKey(); // Backwards compatibility for now, but should be replaced
 };
 
 export const APP_LANGUAGE_STORAGE_KEY = 'tf_app_language';
@@ -657,6 +653,65 @@ const isTravelItem = (item: ITimelineItem): boolean =>
 
 const cityPairKey = (fromId: string, toId: string): string => `${fromId}->${toId}`;
 
+/**
+ * Removes a timeline item. When the removed item is a city, also removes the
+ * items that are positionally linked to it and would otherwise be orphaned:
+ * - the travel segments on its inbound/outbound boundaries (travel items are
+ *   linked to city pairs positionally via `findTravelBetweenCities`),
+ * - the activities whose start offset falls inside the city's day window
+ *   (the same ownership rule `reorderSelectedCities` uses to move activities
+ *   with their city),
+ * - all travel items when the last remaining city is removed (no city pair
+ *   can exist anymore).
+ * Non-city items are removed without side effects.
+ */
+export const removeTimelineItemWithLinkedItems = (
+    items: ITimelineItem[],
+    id: string
+): ITimelineItem[] => {
+    const target = items.find(item => item.id === id);
+    if (!target) return items;
+    if (target.type !== 'city') {
+        return items.filter(item => item.id !== id);
+    }
+
+    const idsToRemove = new Set<string>([id]);
+
+    const cities = items
+        .filter(item => item.type === 'city')
+        .sort((a, b) => a.startDateOffset - b.startDateOffset);
+    const cityIndex = cities.findIndex(city => city.id === id);
+    const previousCity = cityIndex > 0 ? cities[cityIndex - 1] : null;
+    const nextCity = cityIndex >= 0 && cityIndex < cities.length - 1 ? cities[cityIndex + 1] : null;
+
+    if (cities.length <= 1) {
+        items.forEach(item => {
+            if (isTravelItem(item)) idsToRemove.add(item.id);
+        });
+    } else {
+        if (previousCity) {
+            const inboundTravel = findTravelBetweenCities(items, previousCity, target);
+            if (inboundTravel) idsToRemove.add(inboundTravel.id);
+        }
+        if (nextCity) {
+            const outboundTravel = findTravelBetweenCities(items, target, nextCity);
+            if (outboundTravel) idsToRemove.add(outboundTravel.id);
+        }
+    }
+
+    const epsilon = 0.00001;
+    const cityStart = target.startDateOffset;
+    const cityEnd = target.startDateOffset + target.duration;
+    items.forEach(item => {
+        if (item.type !== 'activity') return;
+        if (item.startDateOffset >= (cityStart - epsilon) && item.startDateOffset < (cityEnd - epsilon)) {
+            idsToRemove.add(item.id);
+        }
+    });
+
+    return items.filter(item => !idsToRemove.has(item.id));
+};
+
 export const reorderSelectedCities = (
     items: ITimelineItem[],
     selectedCityIds: string[],
@@ -836,24 +891,25 @@ export const reorderSelectedCities = (
     return [...updatedNonTravelItems, ...nonBoundaryTravelItems, ...rebuiltBoundaryTravelItems];
 };
 
-export const getDefaultTripDates = () => {
-    const today = new Date();
+export const getDefaultTripDates = (now: Date = new Date()) => {
     // 3 months in future
-    const target = new Date(today.getFullYear(), today.getMonth() + 3, 1);
-    
+    const target = new Date(now.getFullYear(), now.getMonth() + 3, 1);
+
     // Find next Friday (0=Sun, 5=Fri)
     const day = target.getDay();
     const diff = (5 - day + 7) % 7;
     target.setDate(target.getDate() + diff);
-    
+
     const start = target;
     const end = new Date(start);
     // "Two weeks long, Friday until Saturday" implies ~15/16 days (3 weekends)
-    end.setDate(start.getDate() + 15); 
-    
+    end.setDate(start.getDate() + 15);
+
+    // Format with local calendar components; toISOString() would convert to UTC
+    // and shift local midnight to the previous day in UTC+ timezones.
     return {
-        startDate: start.toISOString().split('T')[0],
-        endDate: end.toISOString().split('T')[0]
+        startDate: formatLocalIsoDate(start),
+        endDate: formatLocalIsoDate(end)
     };
 };
 
@@ -889,7 +945,10 @@ export const decompressTripFromUrl = (hash: string): ITrip | null => {
     try {
         const json = LZString.decompressFromEncodedURIComponent(hash);
         if (!json) return null;
-        return JSON.parse(json);
+        // Validate + normalize the payload shape; malformed payloads (missing
+        // id/title, items not an array, malformed items) resolve to null so
+        // callers can fail gracefully instead of crashing the trip view.
+        return normalizeTrip(JSON.parse(json));
     } catch (e) {
         console.error("Failed to decompress trip", e);
         return null;
@@ -1624,15 +1683,24 @@ export const decompressTrip = (encoded: string): ISharedState | null => {
         }
 
         const parsed = JSON.parse(trimmedJson);
+        if (!parsed || typeof parsed !== 'object') return null;
 
         // Backward compatibility: If parsed object has 'id' and 'items', it's just a trip
         if (parsed.id && Array.isArray(parsed.items)) {
-            return { trip: parsed as ITrip };
+            const trip = normalizeTrip(parsed);
+            return trip ? { trip } : null;
         }
 
-        // precise check for ISharedState structure
+        // ISharedState structure: validate + normalize the embedded trip so
+        // malformed share payloads (e.g. missing or non-array `items`) return
+        // null instead of crashing consumers downstream.
         if (parsed.trip) {
-            return parsed as ISharedState;
+            const trip = normalizeTrip(parsed.trip);
+            if (!trip) return null;
+            const view = parsed.view && typeof parsed.view === 'object'
+                ? parsed.view as IViewSettings
+                : undefined;
+            return { trip, view };
         }
 
         return null;

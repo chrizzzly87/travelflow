@@ -1,7 +1,7 @@
 import { useCallback, useEffect, type Dispatch, type SetStateAction } from 'react';
 
 import type { ITrip, ITimelineItem } from '../../types';
-import { getActivityColorByTypes, normalizeActivityTypes } from '../../utils';
+import { getActivityColorByTypes, normalizeActivityTypes, removeTimelineItemWithLinkedItems } from '../../utils';
 import { stripHistoryPrefix } from './useTripHistoryPresentation';
 
 interface AddActivityState {
@@ -71,7 +71,9 @@ export const useTripItemMutationHandlers = ({
         }
 
         const previousItems = trip.items;
-        const nextItems = previousItems.filter((candidate) => candidate.id !== id);
+        // Deleting a city also removes its positionally linked travel segments
+        // and activities so no orphaned items remain on the timeline.
+        const nextItems = removeTimelineItemWithLinkedItems(previousItems, id);
         handleUpdateItems(nextItems, { suppressCommitToast: true });
 
         if (item) {

@@ -158,7 +158,7 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 | `PADDLE_WEBHOOK_MAX_AGE_SECONDS` | `paddle-webhook.ts` | Optional timestamp tolerance for webhook signatures (default `300`) |
 | `PADDLE_WEBHOOK_SYNC_MODE` | `paddle-webhook.ts` | Optional webhook processing mode: `full` (default, writes Supabase) or `verify_only` (signature/payload verification only, no Supabase writes) |
 | `GEMINI_API_KEY` | `ai-generate.ts` | Preferred server-side Gemini key for `/api/ai/generate` |
-| `VITE_GEMINI_API_KEY` | `ai-generate.ts` (fallback), legacy browser path | Compatibility fallback if `GEMINI_API_KEY` is not set |
+| `VITE_GEMINI_API_KEY` | `ai-generate.ts` (server env fallback only) | Compatibility fallback if `GEMINI_API_KEY` is not set; never read by browser code |
 | `TF_ADMIN_API_KEY` | `ai-benchmark.ts` | Emergency fallback key for internal benchmark endpoints when `TF_ENABLE_ADMIN_KEY_FALLBACK` is enabled |
 | `TF_ENABLE_ADMIN_KEY_FALLBACK` | `ai-benchmark.ts` | Enables optional `x-tf-admin-key` fallback auth path (disabled by default) |
 | `TF_ADMIN_API_KEY` | `ai-generate-worker.ts` | Required worker auth header secret (`x-tf-admin-key`) |

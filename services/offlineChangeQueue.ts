@@ -137,6 +137,11 @@ export const getQueueSnapshot = (): OfflineQueueSnapshot => {
   };
 };
 
+export const hasQueuedTripCommit = (tripId: string): boolean => {
+  if (!tripId) return false;
+  return readQueue().some((entry) => entry.tripId === tripId);
+};
+
 export const subscribeOfflineQueue = (listener: QueueListener): (() => void) => {
   listeners.add(listener);
   listener(getQueueSnapshot());

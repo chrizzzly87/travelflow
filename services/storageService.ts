@@ -1,4 +1,4 @@
-import { ITrip } from "../types";
+import { ITimelineItem, ITrip } from "../types";
 import { readLocalStorageItem, writeLocalStorageItem } from "./browserStorageService";
 
 const STORAGE_KEY = 'travelflow_trips_v1';
@@ -10,7 +10,13 @@ export interface TripsPrunedEventDetail {
     prunedTitles: string[];
 }
 
-const normalizeTrip = (trip: unknown): ITrip | null => {
+const isMinimallyValidTripItem = (item: unknown): item is ITimelineItem => {
+    if (!item || typeof item !== 'object') return false;
+    const candidate = item as Partial<ITimelineItem>;
+    return typeof candidate.id === 'string' && typeof candidate.type === 'string';
+};
+
+export const normalizeTrip = (trip: unknown): ITrip | null => {
     if (!trip || typeof trip !== 'object') return null;
     const candidate = trip as Partial<ITrip>;
 
@@ -18,11 +24,13 @@ const normalizeTrip = (trip: unknown): ITrip | null => {
     if (typeof candidate.title !== 'string') return null;
     if (!Array.isArray(candidate.items)) return null;
 
+    const items = candidate.items.filter(isMinimallyValidTripItem);
     const createdAt = typeof candidate.createdAt === 'number' ? candidate.createdAt : Date.now();
     const updatedAt = typeof candidate.updatedAt === 'number' ? candidate.updatedAt : createdAt;
 
     return {
         ...candidate,
+        items,
         createdAt,
         updatedAt,
         isFavorite: Boolean(candidate.isFavorite),

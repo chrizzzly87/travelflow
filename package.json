@@ -54,7 +54,6 @@
     "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
-    "@google/genai": "1.45.0",
     "@number-flow/react": "^0.6.0",
     "@phosphor-icons/react": "^2.1.10",
     "@pierre/diffs": "^1.2.2",

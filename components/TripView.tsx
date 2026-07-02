@@ -63,6 +63,7 @@ import { buildQueuedTripGenerationRetryToastOptions } from './tripview/tripGener
 import { useTripItemMutationHandlers } from './tripview/useTripItemMutationHandlers';
 import { useTripItemUpdateHandlers } from './tripview/useTripItemUpdateHandlers';
 import { useTripLiveUpdate, type PendingTripCommitState } from './tripview/useTripLiveUpdate';
+import { useTripCommitFlush } from './tripview/useTripCommitFlush';
 import { useTripRouteStatusState } from './tripview/useTripRouteStatusState';
 import { useTripResizeControls } from './tripview/useTripResizeControls';
 import { useTripShareActions } from './tripview/useTripShareActions';
@@ -1809,6 +1810,13 @@ const useTripViewRender = ({
                 });
                 return;
             }
+            if (detail.type === 'sync_conflict_preserved') {
+                showToast(t('connectivity.toast.conflictPreserved'), {
+                    tone: 'neutral',
+                    title: t('connectivity.toast.title'),
+                });
+                return;
+            }
             if (detail.type === 'sync_partial_failure') {
                 const messageKey = detail.failedCount === 1
                     ? 'connectivity.toast.syncPartialFailureOne'
@@ -2190,6 +2198,7 @@ const useTripViewRender = ({
         locationPathname: location.pathname,
         currentUrl,
         isExamplePreview,
+        canEdit,
         navigate,
         suppressCommitRef,
         stripHistoryPrefix,
@@ -2452,6 +2461,23 @@ const useTripViewRender = ({
         showSavedToastForLabel,
         trip,
     ]);
+
+    const commitPendingNow = useCallback((payload: PendingTripCommitState, label: string) => {
+        if (!onCommitState) return;
+        debugHistory('Flushing pending commit', { label });
+        onCommitState(payload.trip, payload.view, {
+            replace: false,
+            label,
+            adminOverride: isAdminFallbackView && adminOverrideEnabled,
+        });
+    }, [adminOverrideEnabled, debugHistory, isAdminFallbackView, onCommitState]);
+
+    useTripCommitFlush({
+        commitTimerRef,
+        pendingCommitRef,
+        pendingHistoryLabelRef,
+        commitNow: commitPendingNow,
+    });
 
     useEffect(() => {
         const prev = prevViewRef.current;

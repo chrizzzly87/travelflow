@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   getTripById: vi.fn(),
   saveTrip: vi.fn(),
   findHistoryEntryByUrl: vi.fn(),
+  hasQueuedTripCommit: vi.fn(),
   rememberAuthReturnPath: vi.fn(),
   useDbSync: vi.fn(),
   dbGetTrip: vi.fn(),
@@ -79,6 +80,10 @@ vi.mock('../../../services/historyService', () => ({
   findHistoryEntryByUrl: mocks.findHistoryEntryByUrl,
 }));
 
+vi.mock('../../../services/offlineChangeQueue', () => ({
+  hasQueuedTripCommit: mocks.hasQueuedTripCommit,
+}));
+
 vi.mock('../../../services/authNavigationService', () => ({
   buildPathFromLocationParts: ({ pathname, search, hash }: { pathname: string; search: string; hash: string }) => `${pathname}${search}${hash}`,
   rememberAuthReturnPath: mocks.rememberAuthReturnPath,
@@ -131,6 +136,7 @@ describe('routes/TripLoaderRoute', () => {
     mocks.decompressTrip.mockReturnValue(null);
     mocks.getTripById.mockReturnValue(undefined);
     mocks.findHistoryEntryByUrl.mockReturnValue(null);
+    mocks.hasQueuedTripCommit.mockReturnValue(false);
     mocks.dbGetTripVersion.mockResolvedValue(null);
     mocks.dbGetTrip.mockResolvedValue(null);
     mocks.dbUpdateTripShareViewSettings.mockResolvedValue(true);
@@ -300,6 +306,32 @@ describe('routes/TripLoaderRoute', () => {
     expect(props.onTripLoaded).not.toHaveBeenCalled();
   });
 
+  it('redirects to share-unavailable when a share payload fails validation (decompressTrip returns null)', async () => {
+    mocks.dbEnabled = true;
+    mocks.connectivityState = 'online';
+    mocks.auth.isAuthenticated = true;
+    mocks.route.tripId = 'N4IgMalformedSharePayload';
+    mocks.route.pathname = '/trip/N4IgMalformedSharePayload';
+    // Malformed payload (e.g. trip without an items array) now resolves to null.
+    mocks.decompressTrip.mockReturnValue(null);
+    mocks.getTripById.mockReturnValue(undefined);
+    mocks.dbGetTrip.mockResolvedValue(null);
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: false });
+    vi.stubGlobal('fetch', fetchSpy);
+
+    try {
+      const props = makeRouteProps();
+      render(React.createElement(TripLoaderRoute, props));
+
+      await waitFor(() => {
+        expect(mocks.navigate).toHaveBeenCalledWith('/share-unavailable', { replace: true });
+      });
+      expect(props.onTripLoaded).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('keeps local history snapshot view when loading an explicit version url', async () => {
     mocks.dbEnabled = true;
     mocks.route.tripId = 'trip-local-version';
@@ -404,6 +436,99 @@ describe('routes/TripLoaderRoute', () => {
     await waitFor(() => {
       expect(props.onTripLoaded).toHaveBeenCalledWith(dbTrip, dbTrip.defaultView);
     });
+  });
+
+  it('keeps newer local edits when a reconnect re-run returns a stale DB trip', async () => {
+    mocks.dbEnabled = true;
+    mocks.route.tripId = 'trip-reconnect-stale';
+    mocks.route.pathname = '/trip/trip-reconnect-stale';
+    const localTrip = makeTrip({ id: 'trip-reconnect-stale', title: 'Newer local copy', updatedAt: 3000 });
+    const dbTrip = makeTrip({ id: 'trip-reconnect-stale', title: 'Stale DB copy', updatedAt: 2000 });
+    mocks.getTripById.mockReturnValue(localTrip);
+    mocks.dbGetTrip.mockResolvedValue({
+      trip: dbTrip,
+      view: dbTrip.defaultView,
+      access: {
+        source: 'owner',
+        ownerId: 'user-1',
+        ownerEmail: 'owner@example.com',
+        ownerUsername: 'owner',
+        canAdminWrite: false,
+        updatedAtIso: null,
+      },
+    });
+
+    mocks.connectivityState = 'offline';
+    const props = makeRouteProps();
+    const view = render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenCalledWith(localTrip, localTrip.defaultView);
+    });
+
+    mocks.connectivityState = 'online';
+    view.rerender(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(mocks.dbGetTrip).toHaveBeenCalledWith('trip-reconnect-stale');
+    });
+
+    // Local copy stays authoritative: the stale server trip must not be
+    // adopted by the UI nor persisted over the newer local edits.
+    const loadedTitles = props.onTripLoaded.mock.calls.map(([trip]: [{ title: string }]) => trip.title);
+    expect(loadedTitles).not.toContain('Stale DB copy');
+    expect(props.onTripLoaded).toHaveBeenLastCalledWith(localTrip, localTrip.defaultView);
+    expect(mocks.saveTrip).not.toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Stale DB copy' }),
+      expect.anything()
+    );
+  });
+
+  it('keeps local trip authoritative on reconnect while offline changes are still queued', async () => {
+    mocks.dbEnabled = true;
+    mocks.route.tripId = 'trip-reconnect-queued';
+    mocks.route.pathname = '/trip/trip-reconnect-queued';
+    // DB timestamp is ahead of local, but queued offline changes for this
+    // trip mean local edits have not replayed yet — local must win.
+    const localTrip = makeTrip({ id: 'trip-reconnect-queued', title: 'Queued local copy', updatedAt: 1000 });
+    const dbTrip = makeTrip({ id: 'trip-reconnect-queued', title: 'Server copy', updatedAt: 2000 });
+    mocks.getTripById.mockReturnValue(localTrip);
+    mocks.hasQueuedTripCommit.mockReturnValue(true);
+    mocks.dbGetTrip.mockResolvedValue({
+      trip: dbTrip,
+      view: dbTrip.defaultView,
+      access: {
+        source: 'owner',
+        ownerId: 'user-1',
+        ownerEmail: 'owner@example.com',
+        ownerUsername: 'owner',
+        canAdminWrite: false,
+        updatedAtIso: null,
+      },
+    });
+
+    mocks.connectivityState = 'offline';
+    const props = makeRouteProps();
+    const view = render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenCalledWith(localTrip, localTrip.defaultView);
+    });
+
+    mocks.connectivityState = 'online';
+    view.rerender(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(mocks.dbGetTrip).toHaveBeenCalledWith('trip-reconnect-queued');
+    });
+
+    expect(mocks.hasQueuedTripCommit).toHaveBeenCalledWith('trip-reconnect-queued');
+    const loadedTitles = props.onTripLoaded.mock.calls.map(([trip]: [{ title: string }]) => trip.title);
+    expect(loadedTitles).not.toContain('Server copy');
+    expect(mocks.saveTrip).not.toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Server copy' }),
+      expect.anything()
+    );
   });
 
   it('preserves in-session view settings during reconnect refreshes', async () => {

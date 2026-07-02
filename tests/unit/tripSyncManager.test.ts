@@ -57,7 +57,13 @@ import {
   getQueueSnapshot,
   updateQueuedTripCommit,
 } from '../../services/offlineChangeQueue';
-import { retrySyncNow, syncQueuedTripsNow } from '../../services/tripSyncManager';
+import { getTripById, saveTrip } from '../../services/storageService';
+import {
+  retrySyncNow,
+  syncQueuedTripsNow,
+  TRIP_SYNC_TOAST_EVENT,
+  type SyncToastEventDetail,
+} from '../../services/tripSyncManager';
 
 describe('services/tripSyncManager', () => {
   beforeEach(() => {
@@ -123,7 +129,7 @@ describe('services/tripSyncManager', () => {
     expect(getQueueSnapshot().pendingCount).toBe(1);
   });
 
-  it('captures server backup and still applies queued client snapshot during sync', async () => {
+  it('does not overwrite a newer server trip, keeps the backup, and emits a conflict signal', async () => {
     const clientTrip = makeTrip({ id: 'trip-conflict', title: 'Client title', updatedAt: 1_000 });
     const serverTrip = makeTrip({ id: 'trip-conflict', title: 'Server title', updatedAt: 2_000 });
 
@@ -141,10 +147,21 @@ describe('services/tripSyncManager', () => {
       access: null,
     });
 
-    await syncQueuedTripsNow();
+    const toastEvents: SyncToastEventDetail[] = [];
+    const captureToast = (event: Event) => {
+      const detail = (event as CustomEvent<SyncToastEventDetail>).detail;
+      if (detail) toastEvents.push(detail);
+    };
+    window.addEventListener(TRIP_SYNC_TOAST_EVENT, captureToast);
 
-    expect(mockState.dbUpsertTripWithStatus).toHaveBeenCalledTimes(1);
-    expect(mockState.dbUpsertTripWithStatus).toHaveBeenCalledWith(clientTrip, undefined);
+    try {
+      await syncQueuedTripsNow();
+    } finally {
+      window.removeEventListener(TRIP_SYNC_TOAST_EVENT, captureToast);
+    }
+
+    expect(mockState.dbUpsertTripWithStatus).not.toHaveBeenCalled();
+    expect(mockState.dbCreateTripVersion).not.toHaveBeenCalled();
     expect(getQueueSnapshot().pendingCount).toBe(0);
 
     const backups = getConflictBackups();
@@ -152,6 +169,67 @@ describe('services/tripSyncManager', () => {
     expect(backups[0].tripId).toBe(clientTrip.id);
     expect(backups[0].serverTripSnapshot.title).toBe('Server title');
     expect(backups[0].queuedTripSnapshot.title).toBe('Client title');
+
+    const conflictSignals = toastEvents.filter((detail) => detail.type === 'sync_conflict_preserved');
+    expect(conflictSignals.length).toBe(1);
+    expect(conflictSignals[0].tripId).toBe('trip-conflict');
+  });
+
+  it('does not revert local storage to the queued snapshot when the user edited after enqueue', async () => {
+    const queuedSnapshot = makeTrip({ id: 'trip-local-newer', title: 'Queued title', updatedAt: 1_000 });
+    const newerLocalTrip = makeTrip({ id: 'trip-local-newer', title: 'Newer local title', updatedAt: 5_000 });
+
+    enqueueTripCommit({
+      tripId: queuedSnapshot.id,
+      tripSnapshot: queuedSnapshot,
+      label: 'Data: Offline edit',
+      queuedAt: 100,
+    });
+
+    saveTrip(newerLocalTrip, { preserveUpdatedAt: true });
+
+    mockState.connectivityState = 'online';
+    await syncQueuedTripsNow();
+
+    expect(mockState.dbUpsertTripWithStatus).toHaveBeenCalledTimes(1);
+    expect(getQueueSnapshot().pendingCount).toBe(0);
+
+    const localTrip = getTripById('trip-local-newer');
+    expect(localTrip?.title).toBe('Newer local title');
+    expect(localTrip?.updatedAt).toBe(5_000);
+  });
+
+  it('replays a non-conflicting entry normally and re-persists the snapshot locally', async () => {
+    const queuedSnapshot = makeTrip({ id: 'trip-normal', title: 'Queued title', updatedAt: 3_000 });
+    const olderServerTrip = makeTrip({ id: 'trip-normal', title: 'Older server title', updatedAt: 1_000 });
+
+    enqueueTripCommit({
+      tripId: queuedSnapshot.id,
+      tripSnapshot: queuedSnapshot,
+      label: 'Data: Offline edit',
+      queuedAt: 100,
+    });
+
+    saveTrip(queuedSnapshot, { preserveUpdatedAt: true });
+
+    mockState.connectivityState = 'online';
+    mockState.dbGetTrip.mockResolvedValue({
+      trip: olderServerTrip,
+      view: olderServerTrip.defaultView,
+      access: null,
+    });
+
+    await syncQueuedTripsNow();
+
+    expect(mockState.dbUpsertTripWithStatus).toHaveBeenCalledTimes(1);
+    expect(mockState.dbUpsertTripWithStatus).toHaveBeenCalledWith(queuedSnapshot, undefined);
+    expect(mockState.dbCreateTripVersion).toHaveBeenCalledTimes(1);
+    expect(getQueueSnapshot().pendingCount).toBe(0);
+    expect(getConflictBackups().length).toBe(0);
+
+    const localTrip = getTripById('trip-normal');
+    expect(localTrip?.title).toBe('Queued title');
+    expect(localTrip?.updatedAt).toBe(3_000);
   });
 
   it('retries failed entries that previously reached max attempts when retried manually', async () => {
