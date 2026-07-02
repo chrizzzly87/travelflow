@@ -518,5 +518,9 @@
     "preparingSharedPlanner": "공유 플래너 준비 중",
     "loadingExampleTrip": "예시 여행 불러오는 중",
     "preparingExamplePlanner": "예시 플래너 준비 중"
+  },
+  "storageNotice": {
+    "tripsPrunedTitle": "기기 저장 공간이 가득 찼습니다",
+    "tripsPrunedDescription": "{count, plural, other {공간을 확보하기 위해 가장 오래된 저장 여행 #개가 이 기기에서 제거되었습니다.}}"
   }
 }

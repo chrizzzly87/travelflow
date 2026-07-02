@@ -518,5 +518,9 @@
     "preparingSharedPlanner": "Preparando planificador compartido",
     "loadingExampleTrip": "Cargando viaje de ejemplo",
     "preparingExamplePlanner": "Preparando planificador de ejemplo"
+  },
+  "storageNotice": {
+    "tripsPrunedTitle": "El almacenamiento del dispositivo esta lleno",
+    "tripsPrunedDescription": "{count, plural, one {Tu viaje guardado mas antiguo se elimino de este dispositivo para liberar espacio.} other {Tus # viajes guardados mas antiguos se eliminaron de este dispositivo para liberar espacio.}}"
   }
 }

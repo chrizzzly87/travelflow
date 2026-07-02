@@ -168,4 +168,116 @@ describe('services/storageService', () => {
     setItemSpy.mockRestore();
     warnSpy.mockRestore();
   });
+
+  it('emits tf:trips-pruned with count and titles when quota pruning drops trips', () => {
+    const originalSetItem = Storage.prototype.setItem;
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key: string, value: string) {
+      if (key === 'travelflow_trips_v1' && value.length > 450) {
+        throw new Error('quota');
+      }
+      return originalSetItem.call(this, key, value);
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const prunedListener = vi.fn();
+    window.addEventListener('tf:trips-pruned', prunedListener as EventListener);
+
+    const trips = Array.from({ length: 12 }, (_, index) => makeTrip({
+      id: `trip-${index + 1}`,
+      title: `Trip ${index + 1}`,
+      updatedAt: index + 1,
+    }));
+
+    setAllTrips(trips);
+
+    const persisted = getAllTrips();
+    expect(persisted.length).toBeLessThan(trips.length);
+
+    expect(prunedListener).toHaveBeenCalledTimes(1);
+    const detail = (prunedListener.mock.calls[0][0] as CustomEvent<{ prunedCount: number; prunedTitles: string[] }>).detail;
+    expect(detail.prunedCount).toBe(trips.length - persisted.length);
+    expect(detail.prunedTitles).toHaveLength(detail.prunedCount);
+    // The oldest trips (lowest updatedAt) must be the pruned ones.
+    const persistedIds = new Set(persisted.map((trip) => trip.id));
+    for (let index = 0; index < detail.prunedCount; index += 1) {
+      expect(persistedIds.has(`trip-${index + 1}`)).toBe(false);
+      expect(detail.prunedTitles).toContain(`Trip ${index + 1}`);
+    }
+
+    window.removeEventListener('tf:trips-pruned', prunedListener as EventListener);
+    setItemSpy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
+  it('emits tf:trips-pruned when a saveTrip write requires pruning', () => {
+    const originalSetItem = Storage.prototype.setItem;
+    const trips = Array.from({ length: 8 }, (_, index) => makeTrip({
+      id: `trip-${index + 1}`,
+      title: `Trip ${index + 1}`,
+      updatedAt: index + 1,
+    }));
+    setAllTrips(trips);
+
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key: string, value: string) {
+      if (key === 'travelflow_trips_v1' && value.length > 450) {
+        throw new Error('quota');
+      }
+      return originalSetItem.call(this, key, value);
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const prunedListener = vi.fn();
+    window.addEventListener('tf:trips-pruned', prunedListener as EventListener);
+
+    saveTrip(makeTrip({ id: 'fresh-trip', title: 'Fresh trip' }));
+
+    expect(prunedListener).toHaveBeenCalledTimes(1);
+    const detail = (prunedListener.mock.calls[0][0] as CustomEvent<{ prunedCount: number; prunedTitles: string[] }>).detail;
+    expect(detail.prunedCount).toBeGreaterThan(0);
+    // The trip just saved must never be part of the pruned set.
+    expect(detail.prunedTitles).not.toContain('Fresh trip');
+    expect(getTripById('fresh-trip')).toBeDefined();
+
+    window.removeEventListener('tf:trips-pruned', prunedListener as EventListener);
+    setItemSpy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
+  it('keeps the trip being saved even when it is the oldest and pruning kicks in', () => {
+    const originalSetItem = Storage.prototype.setItem;
+    const trips = Array.from({ length: 8 }, (_, index) => makeTrip({
+      id: `trip-${index + 1}`,
+      title: `Trip ${index + 1}`,
+      updatedAt: 1000 + index + 1,
+    }));
+    setAllTrips(trips);
+
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key: string, value: string) {
+      if (key === 'travelflow_trips_v1' && value.length > 450) {
+        throw new Error('quota');
+      }
+      return originalSetItem.call(this, key, value);
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    // preserveUpdatedAt keeps the old timestamp, so without protection this trip
+    // would sort last and become the first pruning victim.
+    saveTrip(makeTrip({ id: 'oldest-trip', title: 'Oldest trip', updatedAt: 1 }), { preserveUpdatedAt: true });
+
+    expect(getTripById('oldest-trip')).toBeDefined();
+
+    setItemSpy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
+  it('does not emit tf:trips-pruned when writes succeed without pruning', () => {
+    const prunedListener = vi.fn();
+    window.addEventListener('tf:trips-pruned', prunedListener as EventListener);
+
+    setAllTrips([makeTrip({ id: 'a' }), makeTrip({ id: 'b' })]);
+    saveTrip(makeTrip({ id: 'c', title: 'C' }));
+    deleteTrip('a');
+
+    expect(prunedListener).not.toHaveBeenCalled();
+
+    window.removeEventListener('tf:trips-pruned', prunedListener as EventListener);
+  });
 });

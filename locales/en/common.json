@@ -518,5 +518,9 @@
     "preparingSharedPlanner": "Preparing shared planner",
     "loadingExampleTrip": "Loading example trip",
     "preparingExamplePlanner": "Preparing example planner"
+  },
+  "storageNotice": {
+    "tripsPrunedTitle": "Device storage is full",
+    "tripsPrunedDescription": "{count, plural, one {Your oldest saved trip was removed from this device to free up space.} other {Your # oldest saved trips were removed from this device to free up space.}}"
   }
 }

@@ -518,5 +518,9 @@
     "preparingSharedPlanner": "Geteilter Planer wird vorbereitet",
     "loadingExampleTrip": "Beispielreise wird geladen",
     "preparingExamplePlanner": "Beispiel-Planer wird vorbereitet"
+  },
+  "storageNotice": {
+    "tripsPrunedTitle": "Der Geratespeicher ist voll",
+    "tripsPrunedDescription": "{count, plural, one {Deine alteste gespeicherte Reise wurde von diesem Gerat entfernt, um Platz zu schaffen.} other {Deine # altesten gespeicherten Reisen wurden von diesem Gerat entfernt, um Platz zu schaffen.}}"
   }
 }
