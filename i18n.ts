@@ -6,6 +6,10 @@ import { APP_NAME } from './config/appGlobals';
 import { readLocalStorageItem, writeLocalStorageItem } from './services/browserStorageService';
 
 const localeModules = import.meta.glob('./locales/*/*.json');
+
+// Namespaces the app shell (AppContent) requests on every route. Preloaded
+// before mount in index.tsx so the first render never suspends on them.
+export const APP_SHELL_NAMESPACES = ['common', 'pages', 'auth', 'wip', 'legal', 'profile'];
 const preloadCache = new Set<string>();
 const LOCALE_STORAGE_KEY = 'tf_app_language';
 

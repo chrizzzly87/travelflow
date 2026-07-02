@@ -25,34 +25,23 @@ describe('reactRootRenderMode', () => {
     expect(shouldHydrateReactRoot(root)).toBe(true);
   });
 
-  it('mounts browser-prerendered snapshots when top banner state is personalized', () => {
-    window.localStorage.setItem('tf_early_access_dismissed', '1');
-    const root = document.createElement('div');
-    root.setAttribute(PRERENDERED_ROOT_ATTRIBUTE, 'true');
-    root.innerHTML = '<main>Prerendered marketing snapshot</main>';
-
-    expect(shouldHydrateReactRoot(root)).toBe(false);
-  });
-
-  it('mounts browser-prerendered snapshots when auth state is present', () => {
+  it('still hydrates prerendered snapshots when personalized browser state exists', () => {
+    // Regression guard: bailing out to a client re-render for returning
+    // visitors (dismissed banners, auth tokens) tore down the prerendered
+    // page into a blank root Suspense fallback until every chunk loaded.
+    // Personalized components render their defaults first and reconcile in
+    // effects, so hydration must always be used when markup exists.
     window.localStorage.setItem('sb-localhost-auth-token', '{"access_token":"test"}');
-    const root = document.createElement('div');
-    root.setAttribute(PRERENDERED_ROOT_ATTRIBUTE, 'true');
-    root.innerHTML = '<main>Prerendered marketing snapshot</main>';
-
-    expect(shouldHydrateReactRoot(root)).toBe(false);
-  });
-
-  it('mounts browser-prerendered snapshots when session banner state is personalized', () => {
+    window.sessionStorage.setItem('tf_locale_suggestion_dismissed_session', '1');
     window.sessionStorage.setItem('tf_translation_notice_dismissed_session', '1');
     const root = document.createElement('div');
     root.setAttribute(PRERENDERED_ROOT_ATTRIBUTE, 'true');
     root.innerHTML = '<main>Prerendered marketing snapshot</main>';
 
-    expect(shouldHydrateReactRoot(root)).toBe(false);
+    expect(shouldHydrateReactRoot(root)).toBe(true);
   });
 
-  it('mounts empty roots normally', () => {
+  it('mounts fresh (no hydration) when the root has no prerendered markup', () => {
     const root = document.createElement('div');
 
     expect(shouldHydrateReactRoot(root)).toBe(false);

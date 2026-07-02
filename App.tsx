@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { APP_SHELL_NAMESPACES } from './i18n';
 import { Scales } from '@phosphor-icons/react';
 import { AppLanguage, ITrip, ITimelineItem, IViewSettings } from './types';
 import { TripManagerProvider } from './contexts/TripManagerContext';
@@ -345,7 +346,7 @@ export const resolveTermsNoticeState = (options: {
 };
 
 const AppContent: React.FC = () => {
-    const { i18n, t } = useTranslation(['common', 'pages', 'auth', 'wip', 'legal', 'profile']);
+    const { i18n, t } = useTranslation(APP_SHELL_NAMESPACES);
     const { access, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
     const [trip, setTrip] = useState<ITrip | null>(null);
     const [isManagerOpen, setIsManagerOpen] = useState(false);
