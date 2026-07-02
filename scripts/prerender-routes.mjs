@@ -5,6 +5,11 @@ import http from 'http';
 import { fileURLToPath } from 'url';
 import { chromium } from '@playwright/test';
 import { generate } from 'critical';
+import {
+  collectModulePreloadHrefs,
+  injectModulePreloadHints,
+  stripBootstrapShell,
+} from './prerender-html-utils.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -206,7 +211,27 @@ async function main() {
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
-  const baseHtmlTemplate = fs.readFileSync(path.join(projectRoot, 'dist', 'index.html'), 'utf8');
+  // dist/index.html gets overwritten with the prerendered homepage below, so a
+  // re-run against a stale dist would silently prerender from prerendered
+  // output. Recover the clean template from dist/spa.html when possible.
+  let baseHtmlTemplate = fs.readFileSync(path.join(projectRoot, 'dist', 'index.html'), 'utf8');
+  if (baseHtmlTemplate.includes('data-tf-prerendered-root')) {
+    const spaHtmlPath = path.join(projectRoot, 'dist', 'spa.html');
+    const spaHtml = fs.existsSync(spaHtmlPath) ? fs.readFileSync(spaHtmlPath, 'utf8') : '';
+    if (!spaHtml || spaHtml.includes('data-tf-prerendered-root')) {
+      throw new Error('dist/index.html is already prerendered and no clean dist/spa.html template exists. Run `vite build` first.');
+    }
+    console.warn('dist/index.html is already prerendered; using dist/spa.html as the template.');
+    baseHtmlTemplate = spaHtml;
+  }
+
+  // Preserve the untouched SPA template BEFORE the loop overwrites dist/index.html
+  // with the prerendered homepage. The host catch-all rewrite (netlify.toml /
+  // vercel.json) points non-prerendered URLs at /spa.html so deep links boot the
+  // clean shell instead of flashing homepage markup and tearing down hydration.
+  fs.writeFileSync(path.join(projectRoot, 'dist', 'spa.html'), baseHtmlTemplate, 'utf8');
+  console.log('Saved SPA fallback template to dist/spa.html');
+
   let failedRoutes = 0;
 
   for (const route of ROUTES) {
@@ -218,10 +243,27 @@ async function main() {
       // Keep prerendering to the first viewport so deferred sections do not hydrate
       // from full markup into client-side placeholders and trigger mobile CLS.
       await page.setViewportSize({ width: 1280, height: 640 });
+
+      // Record the JS module URLs (incl. locale JSON chunks, which Vite builds
+      // as JS modules) this route actually fetches before it becomes
+      // interactive. They become per-route <link rel="modulepreload"> hints so
+      // the browser fetches the whole graph in parallel instead of walking the
+      // 3-5 hop import waterfall (global modulePreload stays off on purpose —
+      // see vite.config.ts).
+      const requestedAssetUrls = [];
+      let collectAssetRequests = true;
+      page.on('request', (request) => {
+        if (!collectAssetRequests) return;
+        requestedAssetUrls.push(request.url());
+      });
+
       await page.goto(`${BASE_URL}${route.path}`, { waitUntil: 'domcontentloaded' });
 
       // Wait for the React handoff to complete and mark the route ready
       await page.waitForSelector('[data-tf-handoff-ready="true"]', { timeout: 10000 });
+      // Everything requested after the handoff is post-interaction warmup; the
+      // preload hints should only cover what boot actually needed.
+      collectAssetRequests = false;
 
       const errorBoundaryText = await page.locator('[data-tf-error-boundary="true"]').textContent({ timeout: 250 }).catch(() => null);
       if (errorBoundaryText) {
@@ -242,6 +284,23 @@ async function main() {
       let outputHtml = baseHtmlTemplate
         .replace('<div id="root"></div>', `<div id="root" data-tf-prerendered-root="true">${rootHtml}</div>`)
         .replace('<html lang="en">', `<html lang="${lang || 'en'}" dir="${dir || 'ltr'}">`);
+
+      // Strip the boot shell: prerendered pages ship real content in #root, so
+      // the shell would be hidden on first paint anyway (index.tsx's
+      // setupBootstrapShellHandoff early-returns when the element is absent).
+      const stripResult = stripBootstrapShell(outputHtml);
+      outputHtml = stripResult.html;
+      if (!stripResult.removedShell || !stripResult.removedStyle || !stripResult.removedScript) {
+        console.warn(
+          `WARNING: boot shell strip incomplete for ${route.path} ` +
+          `(shell: ${stripResult.removedShell}, style: ${stripResult.removedStyle}, script: ${stripResult.removedScript})`
+        );
+      }
+
+      // Inject per-route modulepreload hints (entry-first request order).
+      const preloadHrefs = collectModulePreloadHrefs(requestedAssetUrls);
+      outputHtml = injectModulePreloadHints(outputHtml, preloadHrefs);
+      console.log(`Injected ${preloadHrefs.length} modulepreload hints for ${route.path}`);
 
       for (const dest of dests) {
         const destPath = path.join(projectRoot, 'dist', dest);

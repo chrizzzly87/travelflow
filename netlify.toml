@@ -935,9 +935,16 @@ exit 1
   path = "/trip/*"
   function = "trip-og-meta"
 
+# SPA fallback for non-prerendered URLs (deep links like /trip/*, /profile, most
+# locale pages). Points at the clean boot-shell template (dist/spa.html, written
+# by scripts/prerender-routes.mjs) instead of the prerendered homepage so deep
+# links do not flash homepage markup and tear down hydration.
+# Note: this rewrite is NOT forced (no `force = true`), so Netlify serves
+# existing static files first — `/` keeps the prerendered dist/index.html and
+# prerendered routes keep their `<route>/index.html` files.
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/spa.html"
   status = 200
 
 [[headers]]
