@@ -511,5 +511,9 @@
     "preparingSharedPlanner": "Przygotowywanie udostępnionego planera",
     "loadingExampleTrip": "Wczytywanie przykładowej podróży",
     "preparingExamplePlanner": "Przygotowywanie przykładowego planera"
+  },
+  "storageNotice": {
+    "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",
+    "tripsPrunedDescription": "{count, plural, one {Twoja najstarsza zapisana podroz zostala usunieta z tego urzadzenia, aby zwolnic miejsce.} few {# najstarsze zapisane podroze zostaly usuniete z tego urzadzenia, aby zwolnic miejsce.} many {# najstarszych zapisanych podrozy zostalo usunietych z tego urzadzenia, aby zwolnic miejsce.} other {# najstarszej zapisanej podrozy zostalo usunietych z tego urzadzenia, aby zwolnic miejsce.}}"
   }
 }

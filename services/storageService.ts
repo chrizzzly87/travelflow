@@ -3,6 +3,13 @@ import { readLocalStorageItem, writeLocalStorageItem } from "./browserStorageSer
 
 const STORAGE_KEY = 'travelflow_trips_v1';
 
+export const TRIPS_PRUNED_EVENT = 'tf:trips-pruned';
+
+export interface TripsPrunedEventDetail {
+    prunedCount: number;
+    prunedTitles: string[];
+}
+
 const normalizeTrip = (trip: unknown): ITrip | null => {
     if (!trip || typeof trip !== 'object') return null;
     const candidate = trip as Partial<ITrip>;
@@ -34,20 +41,37 @@ const sortTripsByUpdatedAtDesc = (trips: ITrip[]): ITrip[] =>
 
 const tryWriteTrips = (trips: ITrip[]): boolean => writeLocalStorageItem(STORAGE_KEY, JSON.stringify(trips));
 
-const writeTripsWithPruning = (
-    trips: ITrip[],
-): {
+interface WriteTripsResult {
     success: boolean;
     persistedCount: number;
     originalCount: number;
-} => {
-    const normalized = sortTripsByUpdatedAtDesc(trips);
+    prunedTrips: ITrip[];
+}
+
+const writeTripsWithPruning = (
+    trips: ITrip[],
+    options?: { keepTripId?: string },
+): WriteTripsResult => {
+    let normalized = sortTripsByUpdatedAtDesc(trips);
+
+    // Never prune the trip that triggered this write (e.g. the trip being saved),
+    // even when it is not the most recently updated one.
+    const keepTripId = options?.keepTripId;
+    if (keepTripId) {
+        const keepIndex = normalized.findIndex(trip => trip.id === keepTripId);
+        if (keepIndex > 0) {
+            const [keptTrip] = normalized.splice(keepIndex, 1);
+            normalized = [keptTrip, ...normalized];
+        }
+    }
+
     const originalCount = normalized.length;
     if (tryWriteTrips(normalized)) {
         return {
             success: true,
             persistedCount: originalCount,
             originalCount,
+            prunedTrips: [],
         };
     }
 
@@ -56,6 +80,7 @@ const writeTripsWithPruning = (
             success: false,
             persistedCount: 0,
             originalCount,
+            prunedTrips: [],
         };
     }
 
@@ -80,6 +105,7 @@ const writeTripsWithPruning = (
             success: true,
             persistedCount: bestFitCount,
             originalCount,
+            prunedTrips: normalized.slice(bestFitCount),
         };
     }
 
@@ -87,7 +113,22 @@ const writeTripsWithPruning = (
         success: false,
         persistedCount: 0,
         originalCount,
+        prunedTrips: [],
     };
+};
+
+const notifyPrunedTrips = (writeResult: WriteTripsResult): void => {
+    if (writeResult.prunedTrips.length === 0) return;
+
+    const detail: TripsPrunedEventDetail = {
+        prunedCount: writeResult.prunedTrips.length,
+        prunedTitles: writeResult.prunedTrips.map(trip => trip.title),
+    };
+    console.warn(
+        `Trip storage quota reached; persisted ${writeResult.persistedCount}/${writeResult.originalCount} most-recent trips. ` +
+        `Removed: ${detail.prunedTitles.join(', ')}`,
+    );
+    window.dispatchEvent(new CustomEvent<TripsPrunedEventDetail>(TRIPS_PRUNED_EVENT, { detail }));
 };
 
 export const getAllTrips = (): ITrip[] => {
@@ -133,15 +174,11 @@ export const saveTrip = (trip: ITrip, options?: { preserveUpdatedAt?: boolean })
             trips.unshift(tripToSave);
         }
 
-        const writeResult = writeTripsWithPruning(trips);
+        const writeResult = writeTripsWithPruning(trips, { keepTripId: tripToSave.id });
         if (!writeResult.success) {
             throw new Error('Trip storage write failed');
         }
-        if (writeResult.persistedCount < writeResult.originalCount) {
-            console.warn(
-                `Trip storage quota reached; persisted ${writeResult.persistedCount}/${writeResult.originalCount} most-recent trips.`,
-            );
-        }
+        notifyPrunedTrips(writeResult);
         window.dispatchEvent(new CustomEvent('tf:trips-updated'));
     } catch (e) {
         console.error("Failed to save trip", e);
@@ -156,6 +193,7 @@ export const deleteTrip = (id: string): void => {
         if (!writeResult.success) {
             throw new Error('Trip storage write failed');
         }
+        notifyPrunedTrips(writeResult);
         window.dispatchEvent(new CustomEvent('tf:trips-updated'));
     } catch (e) {
         console.error("Failed to delete trip", e);
@@ -177,11 +215,7 @@ export const setAllTrips = (trips: ITrip[]): void => {
         if (!writeResult.success) {
             throw new Error('Trip storage write failed');
         }
-        if (writeResult.persistedCount < writeResult.originalCount) {
-            console.warn(
-                `Trip storage quota reached; persisted ${writeResult.persistedCount}/${writeResult.originalCount} most-recent trips.`,
-            );
-        }
+        notifyPrunedTrips(writeResult);
         window.dispatchEvent(new CustomEvent('tf:trips-updated'));
     } catch (e) {
         console.error("Failed to replace trips in storage", e);

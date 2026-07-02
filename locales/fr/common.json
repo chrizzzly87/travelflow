@@ -513,5 +513,9 @@
     "preparingSharedPlanner": "Préparation du planificateur partagé",
     "loadingExampleTrip": "Chargement du voyage exemple",
     "preparingExamplePlanner": "Préparation du planificateur exemple"
+  },
+  "storageNotice": {
+    "tripsPrunedTitle": "Le stockage de l'appareil est plein",
+    "tripsPrunedDescription": "{count, plural, one {Votre voyage enregistre le plus ancien a ete supprime de cet appareil pour liberer de l'espace.} other {Vos # voyages enregistres les plus anciens ont ete supprimes de cet appareil pour liberer de l'espace.}}"
   }
 }
