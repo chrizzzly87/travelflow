@@ -126,6 +126,7 @@
       "title": "Sync status",
       "syncCompleted": "Queued trip changes synced successfully.",
       "serverBackupRestored": "Server backup restored for this trip.",
+      "conflictPreserved": "سرور پر اس سفر کے لیے نئی تبدیلیاں موجود تھیں۔ آپ کا آف لائن ورژن بیک اپ کے طور پر محفوظ رکھا گیا۔",
       "syncStartedOne": "Reconnect detected. Replaying {count} queued change.",
       "syncStartedMany": "Reconnect detected. Replaying {count} queued changes.",
       "syncPartialFailureOne": "{count} queued change still failed. You can retry.",

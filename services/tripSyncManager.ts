@@ -18,7 +18,7 @@ import {
   type ConnectivityState,
 } from './supabaseHealthMonitor';
 import { syncTripsFromDb } from './dbService';
-import { saveTrip } from './storageService';
+import { getTripById, saveTrip } from './storageService';
 
 export const TRIP_SYNC_STATUS_EVENT = 'tf:trip-sync-status';
 export const TRIP_SYNC_TOAST_EVENT = 'tf:trip-sync-toast';
@@ -46,9 +46,10 @@ export interface SyncRunSnapshot {
 }
 
 export interface SyncToastEventDetail {
-  type: 'sync_started' | 'sync_completed' | 'sync_partial_failure';
+  type: 'sync_started' | 'sync_completed' | 'sync_partial_failure' | 'sync_conflict_preserved';
   pendingCount: number;
   failedCount: number;
+  tripId?: string;
 }
 
 type SyncListener = (snapshot: SyncRunSnapshot) => void;
@@ -198,7 +199,20 @@ const isServerTripNewerThanQueued = (serverUpdatedAt: number | undefined, queued
   return serverTs !== null && queuedTs !== null && serverTs > queuedTs;
 };
 
-const replaySingleEntryOnce = async (entry: OfflineTripQueueEntry): Promise<void> => {
+const isQueuedSnapshotStillLatestLocally = (entry: OfflineTripQueueEntry): boolean => {
+  const localTrip = getTripById(entry.tripId);
+  if (!localTrip) return true;
+  const localUpdatedAt = typeof localTrip.updatedAt === 'number' && Number.isFinite(localTrip.updatedAt)
+    ? localTrip.updatedAt
+    : null;
+  const snapshotUpdatedAt = typeof entry.tripSnapshot.updatedAt === 'number' && Number.isFinite(entry.tripSnapshot.updatedAt)
+    ? entry.tripSnapshot.updatedAt
+    : null;
+  if (localUpdatedAt === null || snapshotUpdatedAt === null) return true;
+  return localUpdatedAt <= snapshotUpdatedAt;
+};
+
+const replaySingleEntryOnce = async (entry: OfflineTripQueueEntry): Promise<'applied' | 'conflict'> => {
   const connectivityState = getConnectivitySnapshot().state;
   if (connectivityState !== 'online') {
     throw new Error(`Connectivity is ${connectivityState}`);
@@ -211,12 +225,17 @@ const replaySingleEntryOnce = async (entry: OfflineTripQueueEntry): Promise<void
 
   const serverTrip = await dbGetTrip(entry.tripId);
   if (serverTrip?.trip && isServerTripNewerThanQueued(serverTrip.trip.updatedAt, entry.tripSnapshot.updatedAt)) {
+    // Concurrent edit detected: the server copy is newer than the queued
+    // offline snapshot (edited from another device/tab). Never overwrite the
+    // newer server state with the stale snapshot — keep the queued version as
+    // a conflict backup and surface the conflict instead.
     storeConflictBackup({
       queueEntryId: entry.id,
       tripId: entry.tripId,
       serverTripSnapshot: serverTrip.trip,
       queuedTripSnapshot: entry.tripSnapshot,
     });
+    return 'conflict';
   }
 
   const upsertResult = await dbUpsertTripWithStatus(entry.tripSnapshot, entry.viewSnapshot ?? undefined);
@@ -240,7 +259,13 @@ const replaySingleEntryOnce = async (entry: OfflineTripQueueEntry): Promise<void
     throw new Error('Trip version creation failed during replay');
   }
 
-  saveTrip(entry.tripSnapshot, { preserveUpdatedAt: true });
+  // Only re-persist the queued snapshot locally when it is still the latest
+  // local state. If the user kept editing after the snapshot was enqueued,
+  // re-saving it here would revert those newer local edits on reload.
+  if (isQueuedSnapshotStillLatestLocally(entry)) {
+    saveTrip(entry.tripSnapshot, { preserveUpdatedAt: true });
+  }
+  return 'applied';
 };
 
 const replaySingleEntryWithRetries = async (entry: OfflineTripQueueEntry): Promise<{ success: boolean; attemptsUsed: number; lastError: string | null }> => {
@@ -249,9 +274,18 @@ const replaySingleEntryWithRetries = async (entry: OfflineTripQueueEntry): Promi
 
   while (attemptCount < MAX_REPLAY_ATTEMPTS) {
     try {
-      await replaySingleEntryOnce(entry);
+      const outcome = await replaySingleEntryOnce(entry);
       markConnectivitySuccess('sync_replay_success');
       removeQueuedTripCommit(entry.id);
+      if (outcome === 'conflict') {
+        const queueSnapshot = getQueueSnapshot();
+        emitToastEvent({
+          type: 'sync_conflict_preserved',
+          pendingCount: queueSnapshot.pendingCount,
+          failedCount: queueSnapshot.failedCount,
+          tripId: entry.tripId,
+        });
+      }
       return {
         success: true,
         attemptsUsed: attemptCount + 1,

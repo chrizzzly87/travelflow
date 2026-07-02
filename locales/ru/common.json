@@ -255,6 +255,7 @@
       "title": "Sync status",
       "syncCompleted": "Queued trip changes synced successfully.",
       "serverBackupRestored": "Server backup restored for this trip.",
+      "conflictPreserved": "На сервере были более новые изменения для этой поездки. Ваша офлайн-версия сохранена как резервная копия.",
       "syncStartedOne": "Reconnect detected. Replaying {count} queued change.",
       "syncStartedMany": "Reconnect detected. Replaying {count} queued changes.",
       "syncPartialFailureOne": "{count} queued change still failed. You can retry.",
