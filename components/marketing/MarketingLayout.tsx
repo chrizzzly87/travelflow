@@ -77,7 +77,12 @@ export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children, root
                 {children}
             </main>
 
-            <div ref={footerRef} className="min-h-[200px]">
+            {/* No min-height on the wrapper: the footer renders eagerly on
+                prerendered pages and is often shorter than 200px, so a forced
+                min-height showed as an empty band below the footer ("footer not
+                at the bottom"). The loading spacer below still reserves height
+                for the SPA case while the footer chunk loads. */}
+            <div ref={footerRef}>
                 {shouldLoadFooter ? (
                     <Suspense fallback={<div className="h-[200px] w-full" aria-hidden="true" />}>
                         <SiteFooter />
