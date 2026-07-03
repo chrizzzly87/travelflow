@@ -38,12 +38,19 @@ export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children, root
 
     useEffect(() => {
         if (shouldLoadFooter || isPrerenderCapture()) return;
-        const reveal = () => setShouldLoadFooter(true);
-        const ric = window.requestIdleCallback;
-        const handle = ric ? ric(reveal, { timeout: 1500 }) : window.setTimeout(reveal, 200);
+        let done = false;
+        const reveal = () => { if (!done) { done = true; setShouldLoadFooter(true); } };
+        // Guaranteed timer: requestIdleCallback is unreliable in WebKit/Safari
+        // (throttled even with a timeout), which left the footer/sections
+        // unmounted there. A plain setTimeout fires in every browser just after
+        // the hero has painted; rIC is only an optional earlier fast-path.
+        const timer = window.setTimeout(reveal, 250);
+        const ricId = typeof window.requestIdleCallback === 'function'
+            ? window.requestIdleCallback(reveal, { timeout: 250 })
+            : undefined;
         return () => {
-            if (ric && window.cancelIdleCallback) window.cancelIdleCallback(handle);
-            else window.clearTimeout(handle);
+            window.clearTimeout(timer);
+            if (ricId !== undefined && window.cancelIdleCallback) window.cancelIdleCallback(ricId);
         };
     }, [shouldLoadFooter]);
 
