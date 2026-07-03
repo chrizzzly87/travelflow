@@ -59,16 +59,20 @@ export function injectModulePreloadHints(html, hrefs) {
 }
 
 const BOOT_SHELL_ELEMENT_PATTERN = /[ \t]*<div id="app-bootstrap-shell">[\s\S]*?(?=<div id="root")/;
-const BOOT_SHELL_STYLE_PATTERN = /[ \t]*<!--[^>]*boot-shell styles[\s\S]*?-->\s*/i;
-const BOOT_SHELL_STYLE_TAG_PATTERN = /[ \t]*<style[^>]*\bdata-tf-boot-shell-css\b[^>]*>[\s\S]*?<\/style>\s*/;
 const BOOT_SHELL_SCRIPT_COMMENT_PATTERN = /[ \t]*<!--[^>]*boot-shell hide script[\s\S]*?-->\s*/i;
 const BOOT_SHELL_SCRIPT_TAG_PATTERN = /[ \t]*<script[^>]*\bdata-tf-boot-shell-script\b[^>]*>[\s\S]*?<\/script>\s*/;
 
 /**
- * Remove the bootstrap shell markup, its dedicated style block, and the
- * shell hide-script from a prerendered document. Prerendered pages ship real
- * content in #root, so the shell would be hidden instantly anyway — stripping
- * it saves the inline CSS/markup bytes on every prerendered page.
+ * Remove the bootstrap shell markup and the shell hide-script from a
+ * prerendered document. Prerendered pages ship real content in #root, so the
+ * shell markup would be hidden instantly anyway.
+ *
+ * The dedicated boot-shell <style> block is deliberately KEPT: the runtime
+ * `AppBootstrapShell` React component (rendered by `MarketingRouteLoadingShell`
+ * as the Suspense fallback during client-side navigation) reuses the same
+ * `tf-boot-*` classes, and those rules live only in this inline block — not in
+ * the CSS bundle. Stripping it left the navigation fallback unstyled, producing
+ * a full-screen white flash on every page switch. The block is ~2.5KB gzip.
  *
  * @param {string} html
  * @returns {{ html: string, removedShell: boolean, removedStyle: boolean, removedScript: boolean }}
@@ -80,15 +84,6 @@ export function stripBootstrapShell(html) {
   const removedShell = withoutShell !== output;
   output = withoutShell;
 
-  let removedStyle = false;
-  const withoutStyle = output
-    .replace(BOOT_SHELL_STYLE_PATTERN, '')
-    .replace(BOOT_SHELL_STYLE_TAG_PATTERN, (match) => {
-      removedStyle = true;
-      return '';
-    });
-  output = withoutStyle;
-
   let removedScript = false;
   const withoutScript = output
     .replace(BOOT_SHELL_SCRIPT_COMMENT_PATTERN, '')
@@ -98,5 +93,5 @@ export function stripBootstrapShell(html) {
     });
   output = withoutScript;
 
-  return { html: output, removedShell, removedStyle, removedScript };
+  return { html: output, removedShell, removedStyle: false, removedScript };
 }

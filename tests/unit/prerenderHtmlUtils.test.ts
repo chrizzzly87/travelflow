@@ -73,17 +73,20 @@ describe('stripBootstrapShell', () => {
   // with index.html (the built dist/index.html preserves these attributes).
   const sourceHtml = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
 
-  it('removes the shell element, its style block, and the hide-script from the template', () => {
+  it('removes the shell element and the hide-script but KEEPS the boot-shell style block', () => {
     const result = stripBootstrapShell(sourceHtml);
 
     expect(result.removedShell).toBe(true);
-    expect(result.removedStyle).toBe(true);
     expect(result.removedScript).toBe(true);
     expect(result.html).not.toContain('id="app-bootstrap-shell"');
-    expect(result.html).not.toContain('tf-boot-shell');
-    expect(result.html).not.toContain('data-tf-boot-shell-css');
     expect(result.html).not.toContain('data-tf-boot-shell-script');
     expect(result.html).not.toContain("data-tf-react-shell-visible', 'true'");
+    // The boot-shell <style> must survive: the runtime AppBootstrapShell
+    // (Suspense fallback during client-side navigation) reuses these classes
+    // and they exist nowhere else. Stripping it caused a white nav flash.
+    expect(result.removedStyle).toBe(false);
+    expect(result.html).toContain('data-tf-boot-shell-css');
+    expect(result.html).toContain('tf-boot-shell');
   });
 
   it('keeps the root container, entry script, and non-shell styles intact', () => {
