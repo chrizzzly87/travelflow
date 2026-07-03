@@ -131,6 +131,19 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
                 {avifSrcSet && <source type="image/avif" srcSet={avifSrcSet} sizes={sizes} />}
                 {webpSrcSet && <source type="image/webp" srcSet={webpSrcSet} sizes={sizes} />}
                 <img
+                    ref={(node) => {
+                        // The image can finish loading before hydration attaches
+                        // the onLoad handler (warm CDN cache), so the event never
+                        // fires and the image stays at opacity-0 with only the
+                        // blurhash showing. Reconcile from the DOM on mount: if
+                        // it is already complete, reveal it; if it already failed,
+                        // fall back.
+                        if (!node) return;
+                        if (node.complete) {
+                            if (node.naturalWidth > 0) setIsLoaded(true);
+                            else { setHasError(true); onError?.(); }
+                        }
+                    }}
                     src={resolvedSrc}
                     srcSet={imgSrcSet || undefined}
                     sizes={sizes}
