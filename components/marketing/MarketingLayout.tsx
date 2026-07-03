@@ -25,29 +25,22 @@ interface MarketingLayoutProps {
 export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children, rootClassName }) => {
     const { openTripManager, prewarmTripManager } = useTripManager();
     const { t } = useTranslation('common');
-    // Footer stays IntersectionObserver-gated (lazy) on both prerender and
-    // client so hydration matches; it mounts just after hydration near scroll.
+    // The footer is lazy-loaded but NOT gated on IntersectionObserver: in
+    // WebKit/Safari the observer never fired here, so the footer never mounted
+    // (missing footer + large empty gap). Mount it once, right after hydration
+    // (idle callback) — reliable across browsers. First render keeps the empty
+    // spacer, matching the prerendered markup for clean hydration.
     const [shouldLoadFooter, setShouldLoadFooter] = useState(false);
     const footerRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if (shouldLoadFooter) return;
-        const node = footerRef.current;
-        if (!node || typeof IntersectionObserver === 'undefined') {
-            setShouldLoadFooter(true);
-            return;
-        }
-
-        const observer = new IntersectionObserver((entries) => {
-            if (!entries.some((entry) => entry.isIntersecting)) return;
-            setShouldLoadFooter(true);
-            observer.disconnect();
-        }, { rootMargin: '400px' });
-
-        observer.observe(node);
-
+        const reveal = () => setShouldLoadFooter(true);
+        const ric = window.requestIdleCallback;
+        const handle = ric ? ric(reveal, { timeout: 1500 }) : window.setTimeout(reveal, 200);
         return () => {
-            observer.disconnect();
+            if (ric && window.cancelIdleCallback) window.cancelIdleCallback(handle);
+            else window.clearTimeout(handle);
         };
     }, [shouldLoadFooter]);
 

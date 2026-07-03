@@ -24,81 +24,32 @@ const CtaBanner = lazyWithRecovery(
 );
 
 export const MarketingHomePage: React.FC = () => {
-    // Below-fold sections stay IntersectionObserver-gated (lazy) on every
-    // render — prerender and client alike start with the empty spacers, so
-    // hydration matches and they mount just after hydration once scrolled near.
-    // Rendering them eagerly regressed LCP substantially without a real UX win.
-    const [shouldLoadCarousel, setShouldLoadCarousel] = useState(false);
+    // Below-fold sections are lazy-loaded but NOT gated on IntersectionObserver:
+    // in WebKit/Safari the observer callbacks did not fire for these sections,
+    // so the marketing blocks and footer never mounted and the page showed empty
+    // spacers with a large gap. Instead we mount them once, right after hydration
+    // (idle callback) — reliable in every browser and it does not block the
+    // hero's first paint. The first render still shows the empty spacers, which
+    // matches the prerendered markup so hydration stays clean.
+    const [shouldLoadDeferred, setShouldLoadDeferred] = useState(false);
     const carouselSectionRef = useRef<HTMLDivElement | null>(null);
-
-    const [shouldLoadShowcase, setShouldLoadShowcase] = useState(false);
     const showcaseSectionRef = useRef<HTMLDivElement | null>(null);
-
-    const [shouldLoadCta, setShouldLoadCta] = useState(false);
     const ctaSectionRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        if (shouldLoadCarousel) return;
-        const node = carouselSectionRef.current;
-        if (!node || typeof IntersectionObserver === 'undefined') {
-            setShouldLoadCarousel(true);
-            return;
-        }
-
-        const observer = new IntersectionObserver((entries) => {
-            if (!entries.some((entry) => entry.isIntersecting)) return;
-            setShouldLoadCarousel(true);
-            observer.disconnect();
-        }, { rootMargin: '100px' });
-
-        observer.observe(node);
-
+        if (shouldLoadDeferred) return;
+        const reveal = () => setShouldLoadDeferred(true);
+        const ric = window.requestIdleCallback;
+        const handle = ric ? ric(reveal, { timeout: 1500 }) : window.setTimeout(reveal, 200);
         return () => {
-            observer.disconnect();
+            if (ric && window.cancelIdleCallback) window.cancelIdleCallback(handle);
+            else window.clearTimeout(handle);
         };
-    }, [shouldLoadCarousel]);
+    }, [shouldLoadDeferred]);
 
-    useEffect(() => {
-        if (shouldLoadShowcase) return;
-        const node = showcaseSectionRef.current;
-        if (!node || typeof IntersectionObserver === 'undefined') {
-            setShouldLoadShowcase(true);
-            return;
-        }
-
-        const observer = new IntersectionObserver((entries) => {
-            if (!entries.some((entry) => entry.isIntersecting)) return;
-            setShouldLoadShowcase(true);
-            observer.disconnect();
-        }, { rootMargin: '200px' });
-
-        observer.observe(node);
-
-        return () => {
-            observer.disconnect();
-        };
-    }, [shouldLoadShowcase]);
-
-    useEffect(() => {
-        if (shouldLoadCta) return;
-        const node = ctaSectionRef.current;
-        if (!node || typeof IntersectionObserver === 'undefined') {
-            setShouldLoadCta(true);
-            return;
-        }
-
-        const observer = new IntersectionObserver((entries) => {
-            if (!entries.some((entry) => entry.isIntersecting)) return;
-            setShouldLoadCta(true);
-            observer.disconnect();
-        }, { rootMargin: '200px' });
-
-        observer.observe(node);
-
-        return () => {
-            observer.disconnect();
-        };
-    }, [shouldLoadCta]);
+    const shouldLoadCarousel = shouldLoadDeferred;
+    const shouldLoadShowcase = shouldLoadDeferred;
+    const shouldLoadCta = shouldLoadDeferred;
 
     return (
         <MarketingLayout>
