@@ -1,10 +1,10 @@
 ---
 id: rel-2026-07-03-fix-hydration-first-render-match
-version: v0.0.0
+version: v0.149.0
 title: "Reliable landing-page loads across browsers"
 date: 2026-07-03
-published_at: 2026-07-03T13:00:00Z
-status: draft
+published_at: 2026-07-03T11:13:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Fixes the intermittent broken landing-page load (missing footer/sections, occasional blank) across Chrome and Safari."
