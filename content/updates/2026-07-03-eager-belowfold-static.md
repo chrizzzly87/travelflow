@@ -1,10 +1,10 @@
 ---
 id: rel-2026-07-03-eager-belowfold-static
-version: v0.0.0
+version: v0.151.0
 title: "Footer and sections always present"
 date: 2026-07-03
-published_at: 2026-07-03T15:00:00Z
-status: draft
+published_at: 2026-07-03T12:02:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "The footer and below-hero sections are now baked into the page so they can never be missing, in any browser."
