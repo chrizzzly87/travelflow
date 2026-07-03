@@ -2,7 +2,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { isPrerenderedDocument } from '../../services/prerenderHydrationState';
+import { isPrerenderCapture, isPrerenderedDocument } from '../../services/prerenderHydrationState';
 import { PRERENDERED_ROOT_ATTRIBUTE } from '../../services/reactRootRenderMode';
 
 const cleanup = () => {
@@ -34,5 +34,20 @@ describe('isPrerenderedDocument', () => {
     root.id = 'root';
     document.body.appendChild(root);
     expect(isPrerenderedDocument()).toBe(true);
+  });
+});
+
+describe('isPrerenderCapture', () => {
+  it('is false on a real client, even a prerendered one (attribute present, no flag)', () => {
+    const root = document.createElement('div');
+    root.id = 'root';
+    root.setAttribute(PRERENDERED_ROOT_ATTRIBUTE, 'true');
+    document.body.appendChild(root);
+    expect(isPrerenderCapture()).toBe(false);
+  });
+
+  it('is true only while the prerender capture flag is set', () => {
+    (window as unknown as { __TF_PRERENDER_EAGER__?: boolean }).__TF_PRERENDER_EAGER__ = true;
+    expect(isPrerenderCapture()).toBe(true);
   });
 });

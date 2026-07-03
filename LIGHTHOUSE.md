@@ -53,6 +53,29 @@ following were each shipped as regressions and then fixed, so keep them intact:
    the inline `tf-boot-*` classes; stripping that style block caused a
    full-screen white flash on every page switch.
 
+5. **preact/compat hydration ≠ React 18 hydration — this is the big one.**
+   Under `preact/compat` a component that **suspends during hydration** does NOT
+   retain the prerendered DOM (React 18 does); preact swaps in the Suspense
+   fallback. So two hard rules:
+   - **The first client render must not suspend at/above the root.** i18next runs
+     with `useSuspense: true` and `AppContent` reads 6 namespaces above the
+     route boundary — so `index.tsx` **awaits the app-shell namespaces (bounded
+     timeout) before `hydrateRoot`**. Never let that boundary trip; and the root
+     Suspense fallback is the boot-shell skeleton with `data-tf-handoff-ready`,
+     **never `null`** (a null fallback = intermittent blank page).
+   - **The first client render must be byte-identical to the prerender capture.**
+     A mismatch makes preact tear the subtree down (missing footer/sections,
+     flash). Deferred/lazy content (below-fold marketing sections, footer) must
+     render the SAME way on both sides: they stay empty spacers during capture
+     (`isPrerenderCapture()`) AND on the client's first render, then mount right
+     after hydration via `requestIdleCallback` — **not IntersectionObserver**,
+     whose callbacks did not fire for these elements in WebKit/Safari. Content
+     that IS captured into the HTML (image `<picture>` cards) must instead render
+     eagerly on the client's first render (`isPrerenderedDocument()`), matching
+     the capture.
+   - **Always test in WebKit, not just Chromium.** Several of these bugs
+     reproduced only in Safari's engine (`npx playwright` `webkit`).
+
 ### Latest local audits (2026-07-03, `vite preview`; CDN images 404 locally so real LCP is better)
 | Page | Score | FCP | LCP | TBT | CLS |
 | --- | :---: | :---: | :---: | :---: | :---: |

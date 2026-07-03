@@ -5,6 +5,7 @@ import { LanguageSuggestionBanner } from '../navigation/LanguageSuggestionBanner
 import { useTripManager } from '../../contexts/TripManagerContext';
 import { cn } from '../../lib/utils';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
+import { isPrerenderCapture } from '../../services/prerenderHydrationState';
 import { useTranslation } from 'react-i18next';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -25,16 +26,18 @@ interface MarketingLayoutProps {
 export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children, rootClassName }) => {
     const { openTripManager, prewarmTripManager } = useTripManager();
     const { t } = useTranslation('common');
-    // The footer is lazy-loaded but NOT gated on IntersectionObserver: in
-    // WebKit/Safari the observer never fired here, so the footer never mounted
-    // (missing footer + large empty gap). Mount it once, right after hydration
-    // (idle callback) — reliable across browsers. First render keeps the empty
-    // spacer, matching the prerendered markup for clean hydration.
+    // The footer is lazy and mounts right after hydration via an idle callback
+    // — NOT gated on IntersectionObserver (its callbacks did not fire in
+    // WebKit/Safari, so the footer never mounted → missing footer + big gap).
+    // First render shows the empty spacer on BOTH the prerender capture and the
+    // client, so hydration matches exactly (no preact/compat teardown). During
+    // capture we hold the spacer (isPrerenderCapture) so the prerendered HTML
+    // stays light; the client fills it on idle just after hydration.
     const [shouldLoadFooter, setShouldLoadFooter] = useState(false);
     const footerRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        if (shouldLoadFooter) return;
+        if (shouldLoadFooter || isPrerenderCapture()) return;
         const reveal = () => setShouldLoadFooter(true);
         const ric = window.requestIdleCallback;
         const handle = ric ? ric(reveal, { timeout: 1500 }) : window.setTimeout(reveal, 200);
