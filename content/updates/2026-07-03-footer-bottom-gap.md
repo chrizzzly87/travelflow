@@ -1,10 +1,10 @@
 ---
 id: rel-2026-07-03-footer-bottom-gap
-version: v0.0.0
+version: v0.152.0
 title: "Footer sits flush at the bottom"
 date: 2026-07-03
-published_at: 2026-07-03T16:00:00Z
-status: draft
+published_at: 2026-07-03T13:01:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Removes the empty band that appeared below the footer on landing pages."
