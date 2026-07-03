@@ -1,10 +1,10 @@
 ---
 id: rel-2026-07-03-fix-stale-prerender-hints
-version: v0.0.0
+version: v0.147.0
 title: "Landing pages fully interactive on load"
 date: 2026-07-03
-published_at: 2026-07-03T11:00:00Z
-status: draft
+published_at: 2026-07-03T08:06:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Fixes landing pages loading in a half-working state (missing images, footer, banners, active nav) until you clicked to another page."
