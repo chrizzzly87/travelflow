@@ -139,6 +139,11 @@ async function inlineCriticalCss() {
 }
 
 async function main() {
+  // Build output directory, used by the image-CDN proxy and the modulepreload
+  // hint existence check below. (Previously only defined inside
+  // inlineCriticalCss(), so these references silently threw at runtime.)
+  const distDir = path.join(projectRoot, 'dist');
+
   if (process.env.TF_INLINE_CRITICAL_CSS === '1') {
     try {
       await inlineCriticalCss();
@@ -150,8 +155,28 @@ async function main() {
   }
 
   console.log('Starting preview server for pre-rendering...');
-  
-  const serverProcess = spawn('pnpm', ['exec', 'vite', 'preview', '--port', String(PORT)], {
+
+  // Abort if something is already listening on our port. Without this a stray
+  // `vite preview` (e.g. left over from manual testing) keeps the port and our
+  // own `vite preview` silently starts on a different one — we would then
+  // prerender against the STALE server's dist, shipping HTML + modulepreload
+  // hints that reference chunk hashes which no longer exist in the deployed
+  // assets (every chunk then falls through to the SPA fallback as text/html,
+  // MIME-errors, and hydration dies). Fail loudly instead.
+  const portAlreadyInUse = await new Promise((resolve) => {
+    const req = http.get(`${BASE_URL}/`, () => resolve(true));
+    req.on('error', () => resolve(false));
+    req.setTimeout(500, () => { req.destroy(); resolve(false); });
+    req.end();
+  });
+  if (portAlreadyInUse) {
+    console.error(`Port ${PORT} is already in use. Refusing to prerender against a foreign server (would ship stale asset hashes). Stop the other process and retry.`);
+    process.exit(1);
+  }
+
+  // --strictPort so our preview owns the port or fails outright — never
+  // silently starts elsewhere while we poll the wrong server.
+  const serverProcess = spawn('pnpm', ['exec', 'vite', 'preview', '--port', String(PORT), '--strictPort'], {
     cwd: projectRoot,
     stdio: 'ignore',
     detached: true
@@ -358,15 +383,28 @@ async function main() {
       // setupBootstrapShellHandoff early-returns when the element is absent).
       const stripResult = stripBootstrapShell(outputHtml);
       outputHtml = stripResult.html;
-      if (!stripResult.removedShell || !stripResult.removedStyle || !stripResult.removedScript) {
+      // Note: the boot-shell <style> is intentionally KEPT (the runtime
+      // navigation shell reuses those classes — see stripBootstrapShell), so we
+      // only assert the shell markup + hide-script were removed.
+      if (!stripResult.removedShell || !stripResult.removedScript) {
         console.warn(
           `WARNING: boot shell strip incomplete for ${route.path} ` +
-          `(shell: ${stripResult.removedShell}, style: ${stripResult.removedStyle}, script: ${stripResult.removedScript})`
+          `(shell: ${stripResult.removedShell}, script: ${stripResult.removedScript})`
         );
       }
 
       // Inject per-route modulepreload hints (entry-first request order).
-      const preloadHrefs = collectModulePreloadHrefs(requestedAssetUrls);
+      // Defense in depth: only hint chunks that actually exist in this build's
+      // dist/assets. A hint to a missing hash resolves to the SPA-fallback HTML
+      // (text/html), which the browser rejects as a module — so a stale hint
+      // would silently break hydration. Dropping unknown hrefs guarantees we
+      // never ship one, even if hint collection ever races the build again.
+      const allPreloadHrefs = collectModulePreloadHrefs(requestedAssetUrls);
+      const preloadHrefs = allPreloadHrefs.filter((href) => fs.existsSync(path.join(distDir, href.replace(/^\/+/, ''))));
+      const droppedHints = allPreloadHrefs.length - preloadHrefs.length;
+      if (droppedHints > 0) {
+        console.warn(`WARNING: dropped ${droppedHints} modulepreload hint(s) for ${route.path} that do not exist in dist/assets (stale build?).`);
+      }
       outputHtml = injectModulePreloadHints(outputHtml, preloadHrefs);
       console.log(`Injected ${preloadHrefs.length} modulepreload hints for ${route.path}`);
 
@@ -390,6 +428,34 @@ async function main() {
   console.log('Pre-rendering complete! Closing browser and server...');
   await browser.close();
   cleanup();
+
+  // Final safety gate: no prerendered page may reference a JS asset that does
+  // not exist in this build. A dangling /assets/*.js reference is served the
+  // SPA-fallback HTML (text/html), rejected as a module, and silently breaks
+  // hydration on production — the exact failure this guard exists to catch.
+  let danglingRefs = 0;
+  const assetRefPattern = /(?:href|src)="(\/assets\/[^"']+\.js)"/g;
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { walk(full); continue; }
+      if (!entry.name.endsWith('.html')) continue;
+      const html = fs.readFileSync(full, 'utf8');
+      for (const match of html.matchAll(assetRefPattern)) {
+        const ref = match[1];
+        if (!fs.existsSync(path.join(distDir, ref.replace(/^\/+/, '')))) {
+          danglingRefs += 1;
+          console.error(`DANGLING ASSET REF in ${path.relative(distDir, full)}: ${ref}`);
+        }
+      }
+    }
+  };
+  walk(distDir);
+  if (danglingRefs > 0) {
+    console.error(`\nAborting: ${danglingRefs} prerendered asset reference(s) point to files missing from this build.`);
+    process.exit(1);
+  }
+
   process.exit(failedRoutes > 0 ? 1 : 0);
 }
 
