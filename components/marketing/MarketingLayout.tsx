@@ -25,6 +25,8 @@ interface MarketingLayoutProps {
 export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children, rootClassName }) => {
     const { openTripManager, prewarmTripManager } = useTripManager();
     const { t } = useTranslation('common');
+    // Footer stays IntersectionObserver-gated (lazy) on both prerender and
+    // client so hydration matches; it mounts just after hydration near scroll.
     const [shouldLoadFooter, setShouldLoadFooter] = useState(false);
     const footerRef = useRef<HTMLDivElement | null>(null);
 
