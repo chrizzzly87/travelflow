@@ -8,6 +8,7 @@ import { extractLocaleFromPath, isToolRoute } from './config/routes';
 import { hasRenderableHandoffNode } from './services/bootstrapHandoffService';
 import { preloadCriticalRouteModules } from './services/criticalRoutePreload';
 import { shouldHydrateReactRoot } from './services/reactRootRenderMode';
+import { AppBootstrapShell } from './components/bootstrap/AppBootstrapShell';
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -118,9 +119,21 @@ if (typeof window !== 'undefined') {
   applyDocumentLocale(initialLocale);
 }
 
+// Root fallback must never be blank: under preact/compat a suspend at this
+// boundary replaces the tree with the fallback, so `null` = white screen. We
+// render the marketing boot-shell skeleton and tag it data-tf-handoff-ready so
+// the boot-shell handoff still completes (the shell is never left stuck). In
+// practice the i18n preload below keeps this boundary from tripping at all;
+// this is defense in depth.
+const RootFallback = () => (
+  <div data-tf-handoff-ready="true">
+    <AppBootstrapShell variant="marketing" testId="root-suspense-fallback" />
+  </div>
+);
+
 const appNode = (
   <React.StrictMode>
-    <Suspense fallback={null}>
+    <Suspense fallback={<RootFallback />}>
       <ErrorBoundary>
         <App />
       </ErrorBoundary>
@@ -155,18 +168,34 @@ const mountReactRoot = () => {
   }
 };
 
-// Mount immediately. Hydration reuses the prerendered DOM in place and keeps
-// it on screen while React attaches (verified: no blank flash even while the
-// i18n namespaces are still loading — a suspending subtree retains its
-// server-rendered DOM during hydration). Delaying the mount behind a preload
-// gate was a regression: it left prerendered pages non-interactive for several
-// seconds on cold loads (no nav highlight, no banners, and card images/globe/
-// below-fold sections never upgraded until the gate elapsed). Route modules and
-// the app-shell i18n namespaces are still warmed in the background so hydration
-// settles as soon as they arrive.
+// preact/compat (unlike React 18) does not keep the prerendered DOM on screen
+// when the tree suspends during hydration — it swaps in the Suspense fallback.
+// AppContent calls useTranslation(APP_SHELL_NAMESPACES) with useSuspense above
+// the route-level boundary, so if those namespaces aren't in the i18next store
+// when the first render runs, the whole tree suspends to the root fallback.
+// That was the intermittent blank/partial load. So we await the app-shell
+// namespaces before mounting — a small, same-origin JSON fetch (and preloaded
+// via modulepreload), bounded by a timeout so a slow network can never block
+// the mount. Route modules stay a non-blocking background warmup. The
+// prerendered markup remains visible during this short wait; only interactivity
+// waits, and it needs the same namespaces anyway.
+const MOUNT_I18N_TIMEOUT_MS = 1500;
+
+const warmShellI18nThenMount = async () => {
+  if (typeof window !== 'undefined') {
+    void preloadCriticalRouteModules(window.location.pathname);
+    const locale = document.documentElement.lang || DEFAULT_LOCALE;
+    try {
+      await Promise.race([
+        preloadLocaleNamespaces(locale, APP_SHELL_NAMESPACES),
+        new Promise((resolve) => { window.setTimeout(resolve, MOUNT_I18N_TIMEOUT_MS); }),
+      ]);
+    } catch {
+      // Ignore preload failures — mount anyway; i18n falls back to keys/default.
+    }
+  }
+  mountReactRoot();
+};
+
 setupBootstrapShellHandoff(rootElement);
-if (typeof window !== 'undefined') {
-  void preloadCriticalRouteModules(window.location.pathname);
-  void preloadLocaleNamespaces(document.documentElement.lang || DEFAULT_LOCALE, APP_SHELL_NAMESPACES);
-}
-mountReactRoot();
+void warmShellI18nThenMount();

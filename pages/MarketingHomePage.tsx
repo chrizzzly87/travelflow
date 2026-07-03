@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { HeroSection } from '../components/marketing/HeroSection';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
+import { isPrerenderCapture } from '../services/prerenderHydrationState';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -24,20 +25,20 @@ const CtaBanner = lazyWithRecovery(
 );
 
 export const MarketingHomePage: React.FC = () => {
-    // Below-fold sections are lazy-loaded but NOT gated on IntersectionObserver:
-    // in WebKit/Safari the observer callbacks did not fire for these sections,
-    // so the marketing blocks and footer never mounted and the page showed empty
-    // spacers with a large gap. Instead we mount them once, right after hydration
-    // (idle callback) — reliable in every browser and it does not block the
-    // hero's first paint. The first render still shows the empty spacers, which
-    // matches the prerendered markup so hydration stays clean.
+    // Below-fold sections are lazy and mount right after hydration via an idle
+    // callback — NOT gated on IntersectionObserver (its callbacks did not fire
+    // in WebKit/Safari, so the sections never mounted). The first render shows
+    // empty spacers on BOTH the prerender capture and the client, so hydration
+    // matches exactly (no preact/compat teardown/flash). During capture we hold
+    // the spacers (isPrerenderCapture) instead of letting the idle callback fill
+    // them, which keeps the prerendered HTML light and the hero's LCP fast.
     const [shouldLoadDeferred, setShouldLoadDeferred] = useState(false);
     const carouselSectionRef = useRef<HTMLDivElement | null>(null);
     const showcaseSectionRef = useRef<HTMLDivElement | null>(null);
     const ctaSectionRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        if (shouldLoadDeferred) return;
+        if (shouldLoadDeferred || isPrerenderCapture()) return;
         const reveal = () => setShouldLoadDeferred(true);
         const ric = window.requestIdleCallback;
         const handle = ric ? ric(reveal, { timeout: 1500 }) : window.setTimeout(reveal, 200);
