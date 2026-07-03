@@ -1,10 +1,10 @@
 ---
 id: rel-2026-07-03-fix-cold-load-hydration
-version: v0.0.0
+version: v0.146.0
 title: "Landing pages load complete on first paint"
 date: 2026-07-03
-published_at: 2026-07-03T09:00:00Z
-status: draft
+published_at: 2026-07-03T07:23:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Cold-loading a page now shows images, banners, and the active nav immediately instead of a stripped-down page until you click around."
