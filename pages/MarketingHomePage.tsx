@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { HeroSection } from '../components/marketing/HeroSection';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
-import { isPrerenderCapture } from '../services/prerenderHydrationState';
+import { isPrerenderedDocument } from '../services/prerenderHydrationState';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -32,13 +32,17 @@ export const MarketingHomePage: React.FC = () => {
     // matches exactly (no preact/compat teardown/flash). During capture we hold
     // the spacers (isPrerenderCapture) instead of letting the idle callback fill
     // them, which keeps the prerendered HTML light and the hero's LCP fast.
-    const [shouldLoadDeferred, setShouldLoadDeferred] = useState(false);
+    // Eager on prerendered pages so the sections are STATIC markup in the
+    // captured HTML — present even if client hydration is slow/interrupted
+    // (the robust guarantee). On the SPA fallback they mount after hydration
+    // via the timer below.
+    const [shouldLoadDeferred, setShouldLoadDeferred] = useState(() => isPrerenderedDocument());
     const carouselSectionRef = useRef<HTMLDivElement | null>(null);
     const showcaseSectionRef = useRef<HTMLDivElement | null>(null);
     const ctaSectionRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        if (shouldLoadDeferred || isPrerenderCapture()) return;
+        if (shouldLoadDeferred) return;
         let done = false;
         const reveal = () => { if (!done) { done = true; setShouldLoadDeferred(true); } };
         // Guaranteed timer: requestIdleCallback is unreliable in WebKit/Safari
