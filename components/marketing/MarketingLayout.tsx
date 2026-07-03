@@ -5,7 +5,7 @@ import { LanguageSuggestionBanner } from '../navigation/LanguageSuggestionBanner
 import { useTripManager } from '../../contexts/TripManagerContext';
 import { cn } from '../../lib/utils';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
-import { isPrerenderCapture } from '../../services/prerenderHydrationState';
+import { isPrerenderedDocument } from '../../services/prerenderHydrationState';
 import { useTranslation } from 'react-i18next';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -33,11 +33,14 @@ export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children, root
     // client, so hydration matches exactly (no preact/compat teardown). During
     // capture we hold the spacer (isPrerenderCapture) so the prerendered HTML
     // stays light; the client fills it on idle just after hydration.
-    const [shouldLoadFooter, setShouldLoadFooter] = useState(false);
+    // Eager on prerendered pages so the footer is STATIC markup in the
+    // captured HTML — present even if client hydration is slow/interrupted.
+    // On the SPA fallback it mounts after hydration via the timer below.
+    const [shouldLoadFooter, setShouldLoadFooter] = useState(() => isPrerenderedDocument());
     const footerRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        if (shouldLoadFooter || isPrerenderCapture()) return;
+        if (shouldLoadFooter) return;
         let done = false;
         const reveal = () => { if (!done) { done = true; setShouldLoadFooter(true); } };
         // Guaranteed timer: requestIdleCallback is unreliable in WebKit/Safari
