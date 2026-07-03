@@ -1,10 +1,72 @@
 # Lighthouse Shared Plan
 
-Last updated: 2026-05-26
+Last updated: 2026-07-03
 Owner: Performance and SEO team
 
 ## Performance Targets
 - **Mobile Lighthouse Performance score target**: `>= 90` on key entry routes.
+
+---
+
+## ⚠️ Prerender + hydration invariants (read before touching the boot path)
+
+The marketing/landing pages are **prerendered static HTML** (`scripts/prerender-routes.mjs`)
+that the client **hydrates in place**. This is fast but has sharp edges — the
+following were each shipped as regressions and then fixed, so keep them intact:
+
+1. **Hydrate immediately; never gate the mount.** `index.tsx` must call
+   `hydrateRoot` right away. A previous "warm critical chunks before mounting"
+   gate left prerendered pages visually complete but **non-interactive for up to
+   ~5s on cold loads** (no nav highlight, banners, card-image upgrade, globe, or
+   below-fold content until the gate elapsed). Hydration keeps the prerendered
+   DOM on screen while it attaches and does **not** blank even while i18n
+   namespaces are still loading (a suspending subtree retains its server DOM),
+   so there is no reason to delay it. Warm route modules/i18n in the background
+   instead.
+
+2. **What is prerendered must equal the client's FIRST render**, or Preact-compat
+   hydration rebuilds the subtree (flash + CLS). Consequences:
+   - Below-fold `IntersectionObserver`-gated sections (`MarketingHomePage`,
+     footer in `MarketingLayout`) stay **lazy on both** prerender and client —
+     they start as empty spacers on each side and mount just after hydration.
+     Do **not** force them eager: it regressed homepage LCP from ~3.9s to ~6.0s
+     (score 86 → 73) for no real UX gain, since fast hydration already mounts
+     them within a moment of load.
+   - Image cards that swap to an icon/placeholder on error
+     (`BlogPage`, `InspirationsPage`) render their `<picture>`+blurhash whenever
+     `isPrerenderedDocument()` is true (see `services/prerenderHydrationState.ts`).
+     That helper is true during capture (via a `__TF_PRERENDER_EAGER__` init
+     flag) **and** on the client's first render (via the
+     `data-tf-prerendered-root` attribute), so both agree and the image loads
+     from the CDN on the live site instead of freezing as a fallback icon.
+
+3. **Prerender must load images through the CDN endpoint.** The preview server
+   does not implement `/.netlify/images`, so `prerender-routes.mjs` intercepts it
+   with a `sharp` transform that honours `fm`/`w`/`q` (an AVIF `<source>` needs
+   real AVIF bytes — serving webp-as-avif fails to decode → `onError` →
+   fallbacks). Keep transforms modest; do **not** force-scroll every below-fold
+   image into loading at once — the burst overwhelmed the transform and made
+   error-fallback cards capture as fallbacks.
+
+4. **Keep the boot-shell `<style>` in prerendered pages.** The runtime
+   `AppBootstrapShell` (Suspense fallback during client-side navigation) reuses
+   the inline `tf-boot-*` classes; stripping that style block caused a
+   full-screen white flash on every page switch.
+
+### Latest local audits (2026-07-03, `vite preview`; CDN images 404 locally so real LCP is better)
+| Page | Score | FCP | LCP | TBT | CLS |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| Homepage `/` | 86 | 2.1s | 3.9s | 20ms | 0 |
+| Features | 84 | 2.3s | 4.2s | 10ms | 0 |
+| Pricing | 85 | 2.3s | 4.1s | 0ms | 0 |
+| Blog | 85 | 2.2s | 4.1s | 0ms | 0 |
+| Inspirations | 76 | 2.6s | 5.6s | 20ms | 0 |
+
+Remaining levers toward the ≥90 target: the header wordmark is still the
+homepage LCP element (it repaints at hydration commit — inline it into the
+initial header paint); Inspirations is image-heavy (24 cards) and needs an
+above-the-fold image-priority pass; and the dormant critical-CSS inliner
+(`TF_INLINE_CRITICAL_CSS=1`) still crashes and would cut ~0.7s off FCP.
 
 ---
 

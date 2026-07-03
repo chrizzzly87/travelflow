@@ -4,6 +4,7 @@ import path from 'path';
 import http from 'http';
 import { fileURLToPath } from 'url';
 import { chromium } from '@playwright/test';
+import sharp from 'sharp';
 import { generate } from 'critical';
 import {
   collectModulePreloadHrefs,
@@ -232,6 +233,11 @@ async function main() {
   fs.writeFileSync(path.join(projectRoot, 'dist', 'spa.html'), baseHtmlTemplate, 'utf8');
   console.log('Saved SPA fallback template to dist/spa.html');
 
+  // Warm sharp's native pipeline once so the first intercepted image request
+  // isn't served late (a cold-start stall raced the capture and left the first
+  // route's cards in their error-fallback state).
+  try { await sharp({ create: { width: 8, height: 8, channels: 3, background: '#fff' } }).avif().toBuffer(); } catch { /* ignore */ }
+
   let failedRoutes = 0;
 
   for (const route of ROUTES) {
@@ -240,6 +246,43 @@ async function main() {
     
     try {
       const page = await browser.newPage();
+
+      // Emulate the production image-CDN endpoint (/.netlify/images?url=...)
+      // during prerender. The preview server does not implement it, so without
+      // this the card <img>s fail to load, ProgressiveImage fires onError, and
+      // the cards get captured in their no-image fallback state — shipping
+      // image-less, blurhash-less cards to production until hydration
+      // re-renders. We must honour the requested format (fm=avif|webp|...): the
+      // <picture> avif <source> requires real AVIF bytes, otherwise the browser
+      // fails to decode and still fires onError. sharp reproduces exactly what
+      // Netlify's CDN returns (resize + re-encode), so the requested URL stays
+      // identical and the prerendered markup matches the client hydration render.
+      await page.route('**/.netlify/images**', async (routeReq) => {
+        try {
+          const params = new URL(routeReq.request().url()).searchParams;
+          const source = params.get('url') || '';
+          const relPath = source.replace(/^\/+/, '').split('?')[0];
+          const filePath = path.join(distDir, relPath);
+          if (!relPath || !filePath.startsWith(distDir) || !fs.existsSync(filePath)) {
+            return routeReq.continue();
+          }
+          const width = Number.parseInt(params.get('w') || '', 10) || undefined;
+          const height = Number.parseInt(params.get('h') || '', 10) || undefined;
+          const quality = Number.parseInt(params.get('q') || '', 10) || undefined;
+          const fm = (params.get('fm') || '').toLowerCase();
+          let pipeline = sharp(fs.readFileSync(filePath));
+          if (width || height) pipeline = pipeline.resize({ width, height, fit: 'cover', withoutEnlargement: true });
+          let contentType;
+          if (fm === 'avif') { pipeline = pipeline.avif({ quality: quality || 50 }); contentType = 'image/avif'; }
+          else if (fm === 'jpeg' || fm === 'jpg') { pipeline = pipeline.jpeg({ quality: quality || 72 }); contentType = 'image/jpeg'; }
+          else if (fm === 'png') { pipeline = pipeline.png(); contentType = 'image/png'; }
+          else { pipeline = pipeline.webp({ quality: quality || 66 }); contentType = 'image/webp'; }
+          return routeReq.fulfill({ status: 200, contentType, body: await pipeline.toBuffer() });
+        } catch {
+          return routeReq.continue();
+        }
+      });
+
       // Keep prerendering to the first viewport so deferred sections do not hydrate
       // from full markup into client-side placeholders and trigger mobile CLS.
       await page.setViewportSize({ width: 1280, height: 640 });
@@ -257,6 +300,13 @@ async function main() {
         requestedAssetUrls.push(request.url());
       });
 
+      // Mark the capture as a prerendered render so image cards render their
+      // <picture> + blurhash regardless of a transient image hiccup during
+      // capture, matching the client's first hydration render (which detects
+      // the data-tf-prerendered-root attribute). Below-fold sections stay
+      // IntersectionObserver-gated on both sides, so they are not forced here.
+      await page.addInitScript(() => { window.__TF_PRERENDER_EAGER__ = true; });
+
       await page.goto(`${BASE_URL}${route.path}`, { waitUntil: 'domcontentloaded' });
 
       // Wait for the React handoff to complete and mark the route ready
@@ -269,8 +319,26 @@ async function main() {
       if (errorBoundaryText) {
         throw new Error(`React error boundary rendered during prerender: ${errorBoundaryText.slice(0, 240)}`);
       }
-      
-      // Wait another short frame to ensure any micro-animations or layout settles
+
+      // Wait for the images that are actually in the DOM to finish loading so
+      // cards are captured in their loaded state, not the transient
+      // placeholder/error state ProgressiveImage shows mid-flight. We do NOT
+      // force-scroll every below-fold image at once — that floods the on-the-fly
+      // image transform and makes cards that swap to a fallback on error (blog,
+      // inspirations) capture as fallbacks. Below-fold lazy images stay in the
+      // markup as <picture> elements and load from the real CDN on the live site.
+      await page.waitForLoadState('networkidle').catch(() => {});
+      await page.evaluate(async () => {
+        const imgs = Array.from(document.images);
+        await Promise.all(imgs.map((img) => (img.complete ? null : new Promise((resolve) => {
+          img.addEventListener('load', resolve, { once: true });
+          img.addEventListener('error', resolve, { once: true });
+          setTimeout(resolve, 4000);
+        }))));
+        if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch { /* ignore */ } }
+      }).catch(() => {});
+
+      // Final short frame so any post-load layout/micro-animations settle.
       await sleep(100);
 
       // Extract root HTML and HTML document attributes

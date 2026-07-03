@@ -155,25 +155,18 @@ const mountReactRoot = () => {
   }
 };
 
-// Warm the critical resources the first render is known to suspend on
-// (route modules plus the i18n namespaces AppContent requests) before
-// mounting, so the initial render commits synchronously instead of
-// suspending into the root fallback. The prerendered markup / boot shell
-// stays on screen during this window, and the timeout guarantees a slow
-// or failed chunk can never block mounting.
-const MOUNT_PRELOAD_TIMEOUT_MS = 2500;
-
-const warmupBeforeMount = async (): Promise<void> => {
-  if (typeof window === 'undefined') return;
-  const preloads = Promise.allSettled([
-    preloadCriticalRouteModules(window.location.pathname),
-    preloadLocaleNamespaces(document.documentElement.lang || DEFAULT_LOCALE, APP_SHELL_NAMESPACES),
-  ]);
-  await Promise.race([
-    preloads,
-    new Promise((resolve) => { window.setTimeout(resolve, MOUNT_PRELOAD_TIMEOUT_MS); }),
-  ]);
-};
-
+// Mount immediately. Hydration reuses the prerendered DOM in place and keeps
+// it on screen while React attaches (verified: no blank flash even while the
+// i18n namespaces are still loading — a suspending subtree retains its
+// server-rendered DOM during hydration). Delaying the mount behind a preload
+// gate was a regression: it left prerendered pages non-interactive for several
+// seconds on cold loads (no nav highlight, no banners, and card images/globe/
+// below-fold sections never upgraded until the gate elapsed). Route modules and
+// the app-shell i18n namespaces are still warmed in the background so hydration
+// settles as soon as they arrive.
 setupBootstrapShellHandoff(rootElement);
-void warmupBeforeMount().then(mountReactRoot);
+if (typeof window !== 'undefined') {
+  void preloadCriticalRouteModules(window.location.pathname);
+  void preloadLocaleNamespaces(document.documentElement.lang || DEFAULT_LOCALE, APP_SHELL_NAMESPACES);
+}
+mountReactRoot();

@@ -24,6 +24,10 @@ const CtaBanner = lazyWithRecovery(
 );
 
 export const MarketingHomePage: React.FC = () => {
+    // Below-fold sections stay IntersectionObserver-gated (lazy) on every
+    // render — prerender and client alike start with the empty spacers, so
+    // hydration matches and they mount just after hydration once scrolled near.
+    // Rendering them eagerly regressed LCP substantially without a real UX win.
     const [shouldLoadCarousel, setShouldLoadCarousel] = useState(false);
     const carouselSectionRef = useRef<HTMLDivElement | null>(null);
 
