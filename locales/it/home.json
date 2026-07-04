@@ -10,9 +10,60 @@
       "booking": "Link di prenotazione"
     }
   },
+  "howItWorks": {
+    "eyebrow": "Come funziona",
+    "title": "Dal sogno al giorno per giorno",
+    "subtitle": "Tre passaggi rapidi — niente fogli di calcolo né quaranta schede aperte.",
+    "steps": {
+      "describe": {
+        "tag": "Tappa 01",
+        "title": "Dicci dove e quando",
+        "description": "Tokyo durante la fioritura dei ciliegi? Due settimane in Portogallo? Raccontacelo come lo racconteresti a un amico."
+      },
+      "generate": {
+        "tag": "Tappa 02",
+        "title": "Guarda il tuo itinerario costruirsi da solo",
+        "description": "L'IA ordina le città, riempie ogni giornata di attività e stima i tempi di viaggio — una bozza completa in circa 30 secondi."
+      },
+      "refine": {
+        "tag": "Tappa 03",
+        "title": "Rendilo tuo e condividilo",
+        "description": "Trascina, allunga e scambia i piani sulla timeline visuale. Invia un solo link e i tuoi compagni di viaggio vedono tutto — senza account."
+      }
+    }
+  },
   "examples": {
     "title": "Viaggi creati con TravelFlow",
     "subtitle": "Sfoglia itinerari reali della community: da weekend lunghi a viaggi multi-città."
+  },
+  "nightFlight": {
+    "headline": "Pianificare un viaggio dovrebbe già essere parte del viaggio.",
+    "subline": "Salta la fase dei fogli di calcolo e passa subito alla parte bella.",
+    "board": {
+      "title": "Imbarco in corso",
+      "rows": {
+        "tokyo": {
+          "destination": "Tokyo",
+          "note": "Stagione dei ciliegi in fiore",
+          "status": "Imbarco"
+        },
+        "lisbon": {
+          "destination": "Lisbona",
+          "note": "Pastéis de nata e tram",
+          "status": "In orario"
+        },
+        "reykjavik": {
+          "destination": "Reykjavík",
+          "note": "Finestra di aurore boreali",
+          "status": "Gate aperto"
+        },
+        "bali": {
+          "destination": "Bali",
+          "note": "Surf e terrazze di riso",
+          "status": "Ultima chiamata"
+        }
+      }
+    }
   },
   "featureShowcase": {
     "title": "Tutto ciò che serve per pianificare, condividere e partire",
@@ -44,8 +95,25 @@
       }
     }
   },
+  "marquee": {
+    "plan": "Pianifica meno",
+    "travel": "Viaggia di più",
+    "tabs": "Zero schede aperte",
+    "link": "Un solo link per tutto il gruppo",
+    "seconds": "Un itinerario completo in pochi secondi"
+  },
   "cta": {
     "title": "Pronto a pianificare il tuo prossimo viaggio?",
-    "subtitle": "Unisciti a migliaia di viaggiatori che creano itinerari migliori in pochi minuti."
+    "subtitle": "Unisciti a migliaia di viaggiatori che creano itinerari migliori in pochi minuti.",
+    "pass": {
+      "label": "Carta d'imbarco",
+      "airline": "TravelFlow Air",
+      "gateLabel": "Gate",
+      "gateValue": "Ovunque",
+      "seatLabel": "Posto",
+      "seatValue": "Finestrino",
+      "classLabel": "Classe",
+      "classValue": "Avventura"
+    }
   }
 }

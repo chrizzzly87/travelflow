@@ -10,9 +10,60 @@
       "booking": "Enlaces de reserva"
     }
   },
+  "howItWorks": {
+    "eyebrow": "Cómo funciona",
+    "title": "Del sueño al día a día",
+    "subtitle": "Tres pasos rápidos: sin hojas de cálculo ni cuarenta pestañas abiertas.",
+    "steps": {
+      "describe": {
+        "tag": "Etapa 01",
+        "title": "Dinos dónde y cuándo",
+        "description": "¿Tokio en plena floración de los cerezos? ¿Dos semanas por Portugal? Cuéntanoslo como se lo contarías a un amigo."
+      },
+      "generate": {
+        "tag": "Etapa 02",
+        "title": "Mira cómo se construye tu ruta",
+        "description": "La IA ordena tus ciudades, llena cada día con actividades y estima los tiempos de viaje: un borrador completo en unos 30 segundos."
+      },
+      "refine": {
+        "tag": "Etapa 03",
+        "title": "Hazlo tuyo y compártelo",
+        "description": "Arrastra, estira e intercambia planes en la línea de tiempo visual. Envía un solo enlace y todo tu grupo lo verá, sin necesidad de cuentas."
+      }
+    }
+  },
   "examples": {
     "title": "Viajes creados con TravelFlow",
     "subtitle": "Explora itinerarios reales de nuestra comunidad: desde escapadas de una semana en islas hasta road trips entre países."
+  },
+  "nightFlight": {
+    "headline": "Planear un viaje debería sentirse como parte del viaje.",
+    "subline": "Sáltate la fase de hojas de cálculo y ve directo a lo bueno.",
+    "board": {
+      "title": "Embarcando",
+      "rows": {
+        "tokyo": {
+          "destination": "Tokio",
+          "note": "Temporada de cerezos en flor",
+          "status": "Embarcando"
+        },
+        "lisbon": {
+          "destination": "Lisboa",
+          "note": "Pastéis de nata y tranvías",
+          "status": "En hora"
+        },
+        "reykjavik": {
+          "destination": "Reikiavik",
+          "note": "Ventana de auroras boreales",
+          "status": "Puerta abierta"
+        },
+        "bali": {
+          "destination": "Bali",
+          "note": "Surf y terrazas de arroz",
+          "status": "Última llamada"
+        }
+      }
+    }
   },
   "featureShowcase": {
     "title": "Todo lo que necesitas para planear, compartir y viajar",
@@ -44,8 +95,25 @@
       }
     }
   },
+  "marquee": {
+    "plan": "Planea menos",
+    "travel": "Viaja más",
+    "tabs": "Cero pestañas abiertas",
+    "link": "Un enlace para todo el grupo",
+    "seconds": "Un itinerario completo en segundos"
+  },
   "cta": {
     "title": "¿Listo para planear tu próximo viaje?",
-    "subtitle": "Únete a miles de viajeros que crean mejores itinerarios en minutos. No necesitas cuenta para empezar."
+    "subtitle": "Únete a miles de viajeros que crean mejores itinerarios en minutos. No necesitas cuenta para empezar.",
+    "pass": {
+      "label": "Tarjeta de embarque",
+      "airline": "TravelFlow Air",
+      "gateLabel": "Puerta",
+      "gateValue": "Cualquiera",
+      "seatLabel": "Asiento",
+      "seatValue": "Ventanilla",
+      "classLabel": "Clase",
+      "classValue": "Aventura"
+    }
   }
 }

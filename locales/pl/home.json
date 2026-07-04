@@ -10,9 +10,60 @@
       "booking": "Linki do rezerwacji"
     }
   },
+  "howItWorks": {
+    "eyebrow": "Jak to działa",
+    "title": "Od marzeń do planu dzień po dniu",
+    "subtitle": "Trzy szybkie kroki — bez arkuszy i czterdziestu otwartych kart.",
+    "steps": {
+      "describe": {
+        "tag": "Etap 01",
+        "title": "Powiedz, dokąd i kiedy",
+        "description": "Tokio w sezonie kwitnienia wiśni? Dwa tygodnie po Portugalii? Opisz to tak, jak opowiadasz znajomym."
+      },
+      "generate": {
+        "tag": "Etap 02",
+        "title": "Zobacz, jak trasa buduje się sama",
+        "description": "AI układa miasta w kolejności, wypełnia każdy dzień aktywnościami i szacuje czasy przejazdów — kompletny szkic w około 30 sekund."
+      },
+      "refine": {
+        "tag": "Etap 03",
+        "title": "Dopasuj i udostępnij",
+        "description": "Przeciągaj, wydłużaj i zamieniaj plany na wizualnej osi czasu. Wyślij jeden link, a cała ekipa zobaczy wszystko — bez zakładania kont."
+      }
+    }
+  },
   "examples": {
     "title": "Podróże zbudowane w TravelFlow",
     "subtitle": "Przeglądaj prawdziwe plany tworzone przez naszą społeczność — od tygodniowych wypadów na wyspy po road tripy przez cały kraj."
+  },
+  "nightFlight": {
+    "headline": "Planowanie podróży powinno być już częścią podróży.",
+    "subline": "Pomiń etap arkuszy kalkulacyjnych i przejdź od razu do najlepszej części.",
+    "board": {
+      "title": "Wejście na pokład",
+      "rows": {
+        "tokyo": {
+          "destination": "Tokio",
+          "note": "Sezon kwitnącej wiśni",
+          "status": "Boarding"
+        },
+        "lisbon": {
+          "destination": "Lizbona",
+          "note": "Pastéis de nata i tramwaje",
+          "status": "O czasie"
+        },
+        "reykjavik": {
+          "destination": "Reykjavík",
+          "note": "Okno na zorzę polarną",
+          "status": "Bramka otwarta"
+        },
+        "bali": {
+          "destination": "Bali",
+          "note": "Surfing i tarasy ryżowe",
+          "status": "Ostatnie wezwanie"
+        }
+      }
+    }
   },
   "featureShowcase": {
     "title": "Wszystko, czego potrzebujesz, by planować, udostępniać i ruszać w drogę",
@@ -44,8 +95,25 @@
       }
     }
   },
+  "marquee": {
+    "plan": "Planuj mniej",
+    "travel": "Podróżuj więcej",
+    "tabs": "Zero otwartych kart",
+    "link": "Jeden link dla całej ekipy",
+    "seconds": "Cały plan podróży w kilka sekund"
+  },
   "cta": {
     "title": "Gotowy zaplanować kolejną podróż?",
-    "subtitle": "Dołącz do tysięcy podróżników, którzy tworzą lepsze plany w kilka minut. Nie potrzebujesz konta, żeby zacząć."
+    "subtitle": "Dołącz do tysięcy podróżników, którzy tworzą lepsze plany w kilka minut. Nie potrzebujesz konta, żeby zacząć.",
+    "pass": {
+      "label": "Karta pokładowa",
+      "airline": "TravelFlow Air",
+      "gateLabel": "Bramka",
+      "gateValue": "Dowolna",
+      "seatLabel": "Miejsce",
+      "seatValue": "Przy oknie",
+      "classLabel": "Klasa",
+      "classValue": "Przygoda"
+    }
   }
 }

@@ -10,9 +10,60 @@
       "booking": "Links de reserva"
     }
   },
+  "howItWorks": {
+    "eyebrow": "Como funciona",
+    "title": "Do sonho ao dia a dia",
+    "subtitle": "Três passos rápidos — sem folhas de cálculo nem quarenta separadores abertos.",
+    "steps": {
+      "describe": {
+        "tag": "Etapa 01",
+        "title": "Diga onde e quando",
+        "description": "Tóquio na época das cerejeiras? Duas semanas por Portugal? Conte-nos como contaria a um amigo."
+      },
+      "generate": {
+        "tag": "Etapa 02",
+        "title": "Veja a sua rota a construir-se sozinha",
+        "description": "A IA ordena as suas cidades, preenche cada dia com atividades e estima os tempos de viagem — um rascunho completo em cerca de 30 segundos."
+      },
+      "refine": {
+        "tag": "Etapa 03",
+        "title": "Personalize e partilhe",
+        "description": "Arraste, estique e troque planos na linha do tempo visual. Envie um único link e todo o grupo vê tudo — sem precisar de conta."
+      }
+    }
+  },
   "examples": {
     "title": "Viagens criadas com TravelFlow",
     "subtitle": "Explore itinerários reais criados pela nossa comunidade, desde escapadinhas em ilhas durante uma semana até road trips entre países."
+  },
+  "nightFlight": {
+    "headline": "Planear uma viagem devia fazer parte da viagem.",
+    "subline": "Salte a fase das folhas de cálculo e vá direto à parte boa.",
+    "board": {
+      "title": "Embarque",
+      "rows": {
+        "tokyo": {
+          "destination": "Tóquio",
+          "note": "Época das cerejeiras em flor",
+          "status": "A embarcar"
+        },
+        "lisbon": {
+          "destination": "Lisboa",
+          "note": "Pastéis de nata e elétricos",
+          "status": "No horário"
+        },
+        "reykjavik": {
+          "destination": "Reiquiavique",
+          "note": "Janela de auroras boreais",
+          "status": "Porta aberta"
+        },
+        "bali": {
+          "destination": "Bali",
+          "note": "Surf e socalcos de arroz",
+          "status": "Última chamada"
+        }
+      }
+    }
   },
   "featureShowcase": {
     "title": "Tudo o que precisa para planear, partilhar e viajar",
@@ -44,8 +95,25 @@
       }
     }
   },
+  "marquee": {
+    "plan": "Planeie menos",
+    "travel": "Viaje mais",
+    "tabs": "Zero separadores abertos",
+    "link": "Um link para o grupo todo",
+    "seconds": "Um roteiro completo em segundos"
+  },
   "cta": {
     "title": "Pronto para planear a sua próxima viagem?",
-    "subtitle": "Junte-se a milhares de viajantes que criam melhores itinerários em minutos. Não precisa de conta para começar."
+    "subtitle": "Junte-se a milhares de viajantes que criam melhores itinerários em minutos. Não precisa de conta para começar.",
+    "pass": {
+      "label": "Cartão de embarque",
+      "airline": "TravelFlow Air",
+      "gateLabel": "Porta",
+      "gateValue": "Qualquer",
+      "seatLabel": "Lugar",
+      "seatValue": "Janela",
+      "classLabel": "Classe",
+      "classValue": "Aventura"
+    }
   }
 }

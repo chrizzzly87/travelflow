@@ -10,9 +10,60 @@
       "booking": "Booking links"
     }
   },
+  "howItWorks": {
+    "eyebrow": "How it works",
+    "title": "From daydream to day-by-day",
+    "subtitle": "Three quick steps — no spreadsheets, no forty open tabs.",
+    "steps": {
+      "describe": {
+        "tag": "Leg 01",
+        "title": "Say where and when",
+        "description": "Tokyo under cherry blossoms? Two weeks around Portugal? Tell us like you'd tell a friend."
+      },
+      "generate": {
+        "tag": "Leg 02",
+        "title": "Watch your route build itself",
+        "description": "The AI sequences your cities, fills every day with activities, and estimates travel times — a complete draft in about 30 seconds."
+      },
+      "refine": {
+        "tag": "Leg 03",
+        "title": "Make it yours, then share it",
+        "description": "Drag, stretch and swap plans on the visual timeline. Send one link and your travel crew sees everything — no accounts needed."
+      }
+    }
+  },
   "examples": {
     "title": "Trips built with TravelFlow",
     "subtitle": "Browse real itineraries created by our community — from week-long island getaways to cross-country road trips."
+  },
+  "nightFlight": {
+    "headline": "Planning a trip should feel like part of the trip.",
+    "subline": "Skip the spreadsheet stage and get straight to the good part.",
+    "board": {
+      "title": "Now boarding",
+      "rows": {
+        "tokyo": {
+          "destination": "Tokyo",
+          "note": "Cherry blossom season",
+          "status": "Boarding"
+        },
+        "lisbon": {
+          "destination": "Lisbon",
+          "note": "Custard tarts & tram rides",
+          "status": "On time"
+        },
+        "reykjavik": {
+          "destination": "Reykjavík",
+          "note": "Northern lights window",
+          "status": "Gate open"
+        },
+        "bali": {
+          "destination": "Bali",
+          "note": "Surf & rice terraces",
+          "status": "Last call"
+        }
+      }
+    }
   },
   "featureShowcase": {
     "title": "Everything you need to plan, share, and go",
@@ -44,8 +95,25 @@
       }
     }
   },
+  "marquee": {
+    "plan": "Plan less",
+    "travel": "Travel more",
+    "tabs": "Zero open tabs",
+    "link": "One link for the whole crew",
+    "seconds": "A full itinerary in seconds"
+  },
   "cta": {
     "title": "Ready to plan your next trip?",
-    "subtitle": "Join thousands of travelers who build smarter itineraries in minutes. No account needed to start."
+    "subtitle": "Join thousands of travelers who build smarter itineraries in minutes. No account needed to start.",
+    "pass": {
+      "label": "Boarding pass",
+      "airline": "TravelFlow Air",
+      "gateLabel": "Gate",
+      "gateValue": "Anywhere",
+      "seatLabel": "Seat",
+      "seatValue": "Window",
+      "classLabel": "Class",
+      "classValue": "Adventure"
+    }
   }
 }

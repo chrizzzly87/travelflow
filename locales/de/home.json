@@ -10,9 +10,60 @@
       "booking": "Buchungslinks"
     }
   },
+  "howItWorks": {
+    "eyebrow": "So funktioniert's",
+    "title": "Vom Tagtraum zum Tagesplan",
+    "subtitle": "Drei schnelle Schritte - ohne Tabellen und vierzig offene Tabs.",
+    "steps": {
+      "describe": {
+        "tag": "Etappe 01",
+        "title": "Sag uns, wohin und wann",
+        "description": "Tokio zur Kirschblüte? Zwei Wochen durch Portugal? Beschreib es einfach so, wie du es Freunden erzählen würdest."
+      },
+      "generate": {
+        "tag": "Etappe 02",
+        "title": "Sieh zu, wie deine Route entsteht",
+        "description": "Die KI ordnet deine Städte, füllt jeden Tag mit Aktivitäten und schätzt Reisezeiten - ein kompletter Entwurf in rund 30 Sekunden."
+      },
+      "refine": {
+        "tag": "Etappe 03",
+        "title": "Mach sie zu deiner Reise und teile sie",
+        "description": "Verschiebe, verlängere und tausche Pläne auf der visuellen Timeline. Ein Link genügt und deine Reisecrew sieht alles - ganz ohne Konto."
+      }
+    }
+  },
   "examples": {
     "title": "Mit TravelFlow geplante Reisen",
     "subtitle": "Entdecke echte Routen aus der Community - von einwöchigen Inseltrips bis zu langen Roadtrips."
+  },
+  "nightFlight": {
+    "headline": "Reiseplanung sollte sich schon wie Reisen anfühlen.",
+    "subline": "Überspring die Tabellenphase und komm direkt zum schönen Teil.",
+    "board": {
+      "title": "Jetzt einsteigen",
+      "rows": {
+        "tokyo": {
+          "destination": "Tokio",
+          "note": "Kirschblütenzeit",
+          "status": "Boarding"
+        },
+        "lisbon": {
+          "destination": "Lissabon",
+          "note": "Pastéis de Nata und Tramfahrten",
+          "status": "Pünktlich"
+        },
+        "reykjavik": {
+          "destination": "Reykjavík",
+          "note": "Nordlicht-Fenster",
+          "status": "Gate offen"
+        },
+        "bali": {
+          "destination": "Bali",
+          "note": "Surfen und Reisterrassen",
+          "status": "Letzter Aufruf"
+        }
+      }
+    }
   },
   "featureShowcase": {
     "title": "Alles, was du zum Planen brauchst",
@@ -44,8 +95,25 @@
       }
     }
   },
+  "marquee": {
+    "plan": "Weniger planen",
+    "travel": "Mehr reisen",
+    "tabs": "Null offene Tabs",
+    "link": "Ein Link für die ganze Crew",
+    "seconds": "Komplette Route in Sekunden"
+  },
   "cta": {
     "title": "Bereit für deine nächste Reise?",
-    "subtitle": "Plane in wenigen Minuten smartere Routen. Kein Konto nötig, um zu starten."
+    "subtitle": "Plane in wenigen Minuten smartere Routen. Kein Konto nötig, um zu starten.",
+    "pass": {
+      "label": "Bordkarte",
+      "airline": "TravelFlow Air",
+      "gateLabel": "Gate",
+      "gateValue": "Überall",
+      "seatLabel": "Sitz",
+      "seatValue": "Fenster",
+      "classLabel": "Klasse",
+      "classValue": "Abenteuer"
+    }
   }
 }

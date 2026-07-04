@@ -1021,6 +1021,187 @@ h6,
   z-index: 9999;
 }
 
+/* ── Homepage promo: scroll-driven journey ─────────────────────────────
+   All effects are CSS scroll-driven (animation-timeline) so they cost no
+   JS, survive prerendering, and degrade to the finished state in browsers
+   without scroll-timeline support (0s duration + fill:both). */
+
+/* Per-item scroll stagger: pairs with the animate-scroll-* utilities.
+   Declared after the @utility definitions so the range override wins. */
+.tf-stagger-range {
+  animation-range: entry calc(var(--wi, 0) * 7%) entry calc(32% + var(--wi, 0) * 7%);
+}
+
+/* Word-by-word scrubbed headline (night-flight band) */
+@keyframes tf-promo-word-in {
+  from {
+    opacity: 0.12;
+    transform: translateY(0.22em);
+    filter: blur(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.tf-promo-word {
+  display: inline-block;
+  animation: tf-promo-word-in ease-out both;
+  animation-timeline: view();
+  animation-range: entry calc(24% + var(--wi, 0) * 5%) entry calc(52% + var(--wi, 0) * 5%);
+}
+
+/* Route line that draws itself while the band scrolls through the viewport */
+@keyframes tf-promo-route-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.tf-promo-route {
+  stroke-dasharray: 6 5;
+  stroke-dashoffset: 0;
+}
+
+.tf-promo-route-progress {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: tf-promo-route-draw linear both;
+  animation-timeline: view();
+  animation-range: entry 20% cover 75%;
+}
+
+/* Little plane that rides the route (progressive enhancement only) */
+.tf-promo-route-plane {
+  display: none;
+}
+
+@supports (offset-path: path('M0 0 L10 10')) {
+  .tf-promo-route-plane {
+    display: block;
+    offset-path: path('M20 150 C 220 40, 420 190, 620 110 S 1020 30, 1180 96');
+    offset-rotate: auto;
+    animation: tf-promo-route-travel linear both;
+    animation-timeline: view();
+    animation-range: entry 20% cover 75%;
+  }
+}
+
+@keyframes tf-promo-route-travel {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+
+/* Starfield for the night-flight band — two drifting layers of dots */
+.tf-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 12% 24%, rgb(255 255 255 / 0.55) 50%, transparent 51%),
+    radial-gradient(1px 1px at 34% 68%, rgb(255 255 255 / 0.35) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 52% 14%, rgb(255 255 255 / 0.5) 50%, transparent 51%),
+    radial-gradient(1px 1px at 67% 42%, rgb(255 255 255 / 0.4) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 78% 76%, rgb(255 255 255 / 0.45) 50%, transparent 51%),
+    radial-gradient(1px 1px at 91% 22%, rgb(255 255 255 / 0.5) 50%, transparent 51%),
+    radial-gradient(1px 1px at 22% 88%, rgb(255 255 255 / 0.3) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 44% 46%, rgb(255 255 255 / 0.35) 50%, transparent 51%);
+  background-size: 640px 480px;
+}
+
+/* Ticket cards (how-it-works) — perforated divider with side notches */
+.tf-ticket-divider {
+  position: relative;
+  border-block-start: 2px dashed var(--color-slate-200, #e2e8f0);
+  margin-block: 1rem;
+}
+
+.tf-ticket-divider::before,
+.tf-ticket-divider::after {
+  content: "";
+  position: absolute;
+  top: -9px;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--color-slate-50, #f8fafc);
+  border: 1px solid var(--color-slate-200, #e2e8f0);
+}
+
+.tf-ticket-divider::before {
+  inset-inline-start: -33px;
+}
+
+.tf-ticket-divider::after {
+  inset-inline-end: -33px;
+}
+
+/* Boarding-pass CTA: perforation + barcode */
+.tf-pass-perforation {
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .tf-pass-perforation {
+    border-inline-start: 2px dashed rgb(255 255 255 / 0.35);
+  }
+
+  .tf-pass-perforation::before,
+  .tf-pass-perforation::after {
+    content: "";
+    position: absolute;
+    inset-inline-start: -13px;
+    width: 24px;
+    height: 24px;
+    border-radius: 9999px;
+    background: var(--color-slate-50, #f8fafc);
+  }
+
+  .tf-pass-perforation::before {
+    top: -13px;
+  }
+
+  .tf-pass-perforation::after {
+    bottom: -13px;
+  }
+}
+
+.tf-barcode {
+  background-image: repeating-linear-gradient(
+    90deg,
+    currentColor 0 2px,
+    transparent 2px 5px,
+    currentColor 5px 6px,
+    transparent 6px 10px,
+    currentColor 10px 13px,
+    transparent 13px 16px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tf-promo-word {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .tf-promo-route-progress {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .tf-promo-route-plane {
+    display: none !important;
+  }
+}
+
 .example-city-lane-hitbox {
   display: flex;
   align-items: center;

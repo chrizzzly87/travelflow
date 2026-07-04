@@ -10,9 +10,60 @@
       "booking": "Liens de réservation"
     }
   },
+  "howItWorks": {
+    "eyebrow": "Comment ça marche",
+    "title": "Du rêve au jour le jour",
+    "subtitle": "Trois étapes rapides — sans tableurs ni quarante onglets ouverts.",
+    "steps": {
+      "describe": {
+        "tag": "Étape 01",
+        "title": "Dites-nous où et quand",
+        "description": "Tokyo sous les cerisiers en fleurs ? Deux semaines à travers le Portugal ? Racontez-le comme à un ami."
+      },
+      "generate": {
+        "tag": "Étape 02",
+        "title": "Regardez votre itinéraire se construire",
+        "description": "L'IA ordonne vos villes, remplit chaque journée d'activités et estime les temps de trajet — un brouillon complet en 30 secondes environ."
+      },
+      "refine": {
+        "tag": "Étape 03",
+        "title": "Personnalisez, puis partagez",
+        "description": "Glissez, étirez et échangez vos plans sur la timeline visuelle. Envoyez un seul lien et vos compagnons de voyage voient tout — sans compte."
+      }
+    }
+  },
   "examples": {
     "title": "Voyages créés avec TravelFlow",
     "subtitle": "Parcourez des itinéraires réels de la communauté - des escapades d'une semaine aux road trips multi-étapes."
+  },
+  "nightFlight": {
+    "headline": "Préparer un voyage devrait déjà faire partie du voyage.",
+    "subline": "Sautez l'étape du tableur et passez directement au meilleur.",
+    "board": {
+      "title": "Embarquement",
+      "rows": {
+        "tokyo": {
+          "destination": "Tokyo",
+          "note": "Saison des cerisiers en fleurs",
+          "status": "Embarquement"
+        },
+        "lisbon": {
+          "destination": "Lisbonne",
+          "note": "Pastéis de nata et tramways",
+          "status": "À l'heure"
+        },
+        "reykjavik": {
+          "destination": "Reykjavík",
+          "note": "Fenêtre d'aurores boréales",
+          "status": "Porte ouverte"
+        },
+        "bali": {
+          "destination": "Bali",
+          "note": "Surf et rizières en terrasses",
+          "status": "Dernier appel"
+        }
+      }
+    }
   },
   "featureShowcase": {
     "title": "Tout ce qu'il faut pour planifier, partager et partir",
@@ -44,8 +95,25 @@
       }
     }
   },
+  "marquee": {
+    "plan": "Planifiez moins",
+    "travel": "Voyagez plus",
+    "tabs": "Zéro onglet ouvert",
+    "link": "Un seul lien pour toute l'équipe",
+    "seconds": "Un itinéraire complet en quelques secondes"
+  },
   "cta": {
     "title": "Prêt à planifier votre prochain voyage ?",
-    "subtitle": "Rejoignez des milliers de voyageurs qui créent des itinéraires plus intelligents en quelques minutes."
+    "subtitle": "Rejoignez des milliers de voyageurs qui créent des itinéraires plus intelligents en quelques minutes.",
+    "pass": {
+      "label": "Carte d'embarquement",
+      "airline": "TravelFlow Air",
+      "gateLabel": "Porte",
+      "gateValue": "Partout",
+      "seatLabel": "Siège",
+      "seatValue": "Hublot",
+      "classLabel": "Classe",
+      "classValue": "Aventure"
+    }
   }
 }

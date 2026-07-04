@@ -9,6 +9,16 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
     importer: () => Promise<TModule>
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
 
+const HowItWorksSection = lazyWithRecovery(
+    'HowItWorksSection',
+    () => import('../components/marketing/home/HowItWorksSection').then((module) => ({ default: module.HowItWorksSection }))
+);
+
+const NightFlightSection = lazyWithRecovery(
+    'NightFlightSection',
+    () => import('../components/marketing/home/NightFlightSection').then((module) => ({ default: module.NightFlightSection }))
+);
+
 const ExampleTripsCarousel = lazyWithRecovery(
     'ExampleTripsCarousel',
     () => import('../components/marketing/ExampleTripsCarousel').then((module) => ({ default: module.ExampleTripsCarousel }))
@@ -66,6 +76,15 @@ export const MarketingHomePage: React.FC = () => {
     return (
         <MarketingLayout>
             <HeroSection />
+            <div className="min-h-[520px]">
+                {shouldLoadDeferred ? (
+                    <Suspense fallback={<div className="h-[520px] w-full" aria-hidden="true" />}>
+                        <HowItWorksSection />
+                    </Suspense>
+                ) : (
+                    <div className="h-[520px] w-full" aria-hidden="true" />
+                )}
+            </div>
             <div ref={carouselSectionRef} className="min-h-[460px]">
                 {shouldLoadCarousel ? (
                     <Suspense fallback={<div className="h-[460px] w-full" aria-hidden="true" />}>
@@ -73,6 +92,15 @@ export const MarketingHomePage: React.FC = () => {
                     </Suspense>
                 ) : (
                     <div className="h-[460px] w-full" aria-hidden="true" />
+                )}
+            </div>
+            <div className="min-h-[560px]">
+                {shouldLoadDeferred ? (
+                    <Suspense fallback={<div className="h-[560px] w-full" aria-hidden="true" />}>
+                        <NightFlightSection />
+                    </Suspense>
+                ) : (
+                    <div className="h-[560px] w-full" aria-hidden="true" />
                 )}
             </div>
             <div ref={showcaseSectionRef} className="min-h-[600px]">
