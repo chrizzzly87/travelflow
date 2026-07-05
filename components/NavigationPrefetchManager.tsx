@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from '@/lib/router';
 import {
     clearHoverIntentTimer,
     isNavPrefetchEnabled,
@@ -11,7 +11,7 @@ import {
     type PrefetchReason,
     warmRouteAssets,
 } from '../services/navigationPrefetch';
-import { isFirstLoadCriticalPath } from '../app/prefetch/isFirstLoadCriticalPath';
+import { isFirstLoadCriticalPath } from '../appCore/prefetch/isFirstLoadCriticalPath';
 import { hasCompletedInitialRouteHandoff } from '../services/marketingRouteShellState';
 
 interface PrefetchIntent {

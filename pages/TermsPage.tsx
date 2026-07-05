@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from '@/lib/router';
 import { SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';

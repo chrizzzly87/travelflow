@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router';
 import { WarningCircle, X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_LOCALE } from '../../config/locales';

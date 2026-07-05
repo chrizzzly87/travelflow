@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from '@/lib/router';
 import { MarketingLayout } from '../../components/marketing/MarketingLayout';
 import { APP_NAME } from '../../config/appGlobals';
 import { DEFAULT_LOCALE } from '../../config/locales';

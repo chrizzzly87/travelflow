@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from '@/lib/router';
 import { ArrowsClockwise, SpinnerGap } from '@phosphor-icons/react';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
 import type { PlanTierKey } from '../types';

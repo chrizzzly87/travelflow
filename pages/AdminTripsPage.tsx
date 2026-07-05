@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from '@/lib/router';
 import { ArrowSquareOut, DotsThreeVertical, MapPin, SpinnerGap, Trash, X } from '@phosphor-icons/react';
 import { AdminShell } from '../components/admin/AdminShell';
 import type { AdminDateRange } from '../components/admin/adminShellUtils';

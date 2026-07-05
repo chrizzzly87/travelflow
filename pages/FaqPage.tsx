@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from '@/lib/router';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { FaqAccordionList } from '../components/marketing/FaqAccordionList';
 import { DEFAULT_LOCALE } from '../config/locales';

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { Navigate, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, NavLink, useNavigate, useSearchParams } from '@/lib/router';
 import { IdentificationCard, SealCheck, ShieldCheck } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';

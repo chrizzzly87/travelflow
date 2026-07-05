@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/lib/router';
 
 const mocks = vi.hoisted(() => ({
   pendingModules: new Set<string>(['TripLoaderRoute']),
@@ -17,7 +17,7 @@ vi.mock('../../../services/lazyImportRecovery', () => ({
   },
 }));
 
-import { AppRoutes } from '../../../app/routes/AppRoutes';
+import { AppRoutes } from '../../../appCore/routes/AppRoutes';
 
 afterEach(() => {
   mocks.pendingModules.clear();

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { NavLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { NavLink, useNavigate, useParams, useSearchParams } from '@/lib/router';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';

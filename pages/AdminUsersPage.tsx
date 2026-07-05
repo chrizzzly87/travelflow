@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from '@/lib/router';
 import {
     AppleLogo,
     ArrowSquareOut,

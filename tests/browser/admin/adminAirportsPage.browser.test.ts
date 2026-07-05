@@ -3,7 +3,7 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation } from '@/lib/router';
 
 const mocks = vi.hoisted(() => ({
   adminBulkUpdateAirportCatalogRecords: vi.fn(),

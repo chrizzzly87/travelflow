@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, LifeBuoy, WifiOff, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router';
 import { useTranslation } from 'react-i18next';
 
 import { normalizeLocale } from '../config/locales';

@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from '@/lib/router';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(

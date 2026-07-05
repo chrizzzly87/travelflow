@@ -33,7 +33,7 @@ const mocks = vi.hoisted(() => ({
   renderedTripViewProps: null as Record<string, unknown> | null,
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/lib/router', () => ({
   useParams: () => ({ tripId: mocks.route.tripId }),
   useLocation: () => ({
     pathname: mocks.route.pathname,

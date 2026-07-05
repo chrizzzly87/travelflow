@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from '@/lib/router';
 import { useTranslation } from 'react-i18next';
 import { Article, Clock, Tag, ArrowRight, MagnifyingGlass, GlobeHemisphereWest } from '@phosphor-icons/react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';

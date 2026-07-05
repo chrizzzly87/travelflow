@@ -10,7 +10,7 @@ import {
   Star,
   Trash,
 } from '@phosphor-icons/react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router';
 import { isTripExpiredByTimestamp } from '../../config/productLimits';
 import type { AppLanguage, ITrip } from '../../types';
 import { trackEvent } from '../../services/analyticsService';

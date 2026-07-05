@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link } from '@/lib/router';
 import { ShieldWarning, ArrowLeft } from '@phosphor-icons/react';
 import { useAuth } from '../hooks/useAuth';
 

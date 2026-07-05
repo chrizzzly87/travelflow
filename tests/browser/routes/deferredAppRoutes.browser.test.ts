@@ -3,7 +3,7 @@ import React from 'react';
 import { Suspense } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, waitFor } from '@testing-library/react';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation } from '@/lib/router';
 
 const mocks = vi.hoisted(() => ({
   auth: {
@@ -50,7 +50,7 @@ vi.mock('../../../pages/MarketingHomePage', () => ({
   MarketingHomePage: () => React.createElement('div', { 'data-testid': 'mock-marketing-home-page' }, 'Marketing home page'),
 }));
 
-import { DeferredAppRoutes } from '../../../app/routes/DeferredAppRoutes';
+import { DeferredAppRoutes } from '../../../appCore/routes/DeferredAppRoutes';
 
 const LocationProbe: React.FC = () => {
   const location = useLocation();

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { ArrowLeft, ArrowSquareOut, Check, CheckCircle, CreditCard, NotePencil, SpinnerGap, SuitcaseRolling, UserCircle, X } from '@phosphor-icons/react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from '@/lib/router';
 import { useTranslation } from 'react-i18next';
 
 import { SiteHeader } from '../components/navigation/SiteHeader';

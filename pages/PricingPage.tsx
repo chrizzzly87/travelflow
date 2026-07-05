@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from '@/lib/router';
 import { Check } from '@phosphor-icons/react';
 import { Trans, useTranslation } from 'react-i18next';
 

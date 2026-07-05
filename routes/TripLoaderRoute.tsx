@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from '@/lib/router';
 
 import { useAuth } from '../hooks/useAuth';
 import { useDbSync } from '../hooks/useDbSync';

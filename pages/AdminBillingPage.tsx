@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowsClockwise, CreditCard, LinkBreak, ShieldCheck, SpinnerGap, WarningCircle } from '@phosphor-icons/react';
 import { BarChart, BarList, DonutChart, Metric, Text, Title } from '@tremor/react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from '@/lib/router';
 
 import { useAppDialog } from '../components/AppDialogProvider';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';

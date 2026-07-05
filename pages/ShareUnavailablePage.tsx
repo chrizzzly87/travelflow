@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from '@/lib/router';
 import { WarningCircle } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';

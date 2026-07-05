@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Navigate, NavLink } from 'react-router-dom';
+import { Navigate, NavLink } from '@/lib/router';
 import { CaretLeft, IdentificationCard } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';

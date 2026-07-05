@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowSquareOut, CopySimple, Crosshair, DownloadSimple, Info, SpinnerGap, User, X } from '@phosphor-icons/react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from '@/lib/router';
 import { AdminShell } from '../components/admin/AdminShell';
 import type { PlanTierKey } from '../types';
 import {

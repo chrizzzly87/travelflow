@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   onClose: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/lib/router', () => ({
   NavLink: ({
     to,
     children,

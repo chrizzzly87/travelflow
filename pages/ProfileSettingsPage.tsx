@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, NavLink, useLocation, useNavigate } from '@/lib/router';
 import { CaretRight, SpinnerGap } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';

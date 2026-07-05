@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Info, MagnifyingGlass, X } from '@phosphor-icons/react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router';
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';

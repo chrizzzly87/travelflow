@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router';
 import { Sparkle, ShareNetwork, LinkSimple, RocketLaunch } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { GradientShimmer, type GradientStop } from 'gradient-shimmer';

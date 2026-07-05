@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AirplaneTakeoff, CaretDown, CaretRight, FolderSimple, ShieldCheck, SignOut, User } from '@phosphor-icons/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';

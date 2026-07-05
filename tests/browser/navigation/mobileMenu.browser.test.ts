@@ -3,7 +3,7 @@ import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/lib/router';
 
 const mocks = vi.hoisted(() => ({
   isAuthenticated: false,

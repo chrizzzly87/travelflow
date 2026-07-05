@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, Suspense, lazy } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from '@/lib/router';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState } from '../types';
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';

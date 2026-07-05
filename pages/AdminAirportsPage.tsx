@@ -1,6 +1,6 @@
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from '@/lib/router';
 import {
     AirplaneTakeoff,
     ArrowsClockwise,

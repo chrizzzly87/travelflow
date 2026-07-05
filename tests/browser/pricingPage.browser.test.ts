@@ -75,7 +75,7 @@ const mocks = vi.hoisted(() => ({
   trackEvent: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/lib/router', () => ({
   Link: ({ to, children, ...props }: { to: string; children: React.ReactNode }) => (
     React.createElement('a', { href: to, ...props }, children)
   ),

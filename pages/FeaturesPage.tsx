@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router';
 import { ArrowsClockwise, Printer, Sparkle } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { FeaturesBentoGrid, type FeatureBentoItem } from '../components/marketing/features/FeaturesBentoGrid';

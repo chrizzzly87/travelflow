@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from '@/lib/router';
 import { AdminShell } from '../components/admin/AdminShell';
 import type { AdminDateRange } from '../components/admin/adminShellUtils';
 import { adminListTrips, adminListUsers, type AdminTripRecord, type AdminUserRecord } from '../services/adminService';

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation } from '@/lib/router';
 import { ArrowLeft, Globe, ArrowRight } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { MarketingLayout } from '../../components/marketing/MarketingLayout';

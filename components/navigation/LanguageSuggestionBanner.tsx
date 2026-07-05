@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { X, Translate } from '@phosphor-icons/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router';
 import { extractLocaleFromPath, getNamespacesForMarketingPath, isToolRoute } from '../../config/routes';
 import { AppLanguage } from '../../types';
 import { applyDocumentLocale, DEFAULT_LOCALE, LOCALE_FLAGS, SUPPORTED_LOCALES } from '../../config/locales';

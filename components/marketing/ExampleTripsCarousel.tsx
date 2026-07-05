@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from '@/lib/router';
 import { ArrowRight } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { ITrip, IViewSettings } from '../../types';

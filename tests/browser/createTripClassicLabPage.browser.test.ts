@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/lib/router';
 import { render, screen } from '@testing-library/react';
 
 const mocks = vi.hoisted(() => ({

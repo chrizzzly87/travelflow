@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useReducer } from 'react';
 import { ArrowRight, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from '@/lib/router';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { useAuth } from '../hooks/useAuth';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';

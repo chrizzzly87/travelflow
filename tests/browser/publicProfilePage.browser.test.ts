@@ -3,7 +3,7 @@ import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from '@/lib/router';
 import { makeCityItem, makeTrip } from '../helpers/tripFixtures';
 
 const mocks = vi.hoisted(() => ({

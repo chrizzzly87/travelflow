@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useParams, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
+import { useParams, Link, useLocation, Navigate, useNavigate } from '@/lib/router';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Clock, User, Tag, ArrowRight, Compass, Article, ArrowSquareOut } from '@phosphor-icons/react';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';

@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useLayoutEffect, useRef } from 'react';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from '@/lib/router';
 import { AppLanguage, ITrip, IViewSettings } from '../../types';
 import { useDbSync } from '../../hooks/useDbSync';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../config/locales';
