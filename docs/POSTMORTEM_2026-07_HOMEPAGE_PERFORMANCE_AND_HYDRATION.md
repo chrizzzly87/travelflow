@@ -130,3 +130,21 @@ the custom history):
 - Consider whether `preact/compat` is the right long-term choice for a
   prerender+hydrate marketing site, given how many bugs stem from its hydration
   divergence from React 18.
+
+---
+
+## Addendum (2026-07-05): resolved structurally by the Next.js migration
+
+The failure class documented here — prerendered HTML diverging from the
+client's first render under preact/compat hydration — was eliminated at the
+root by migrating to the Next.js App Router (React 19) in #423:
+
+- Server/SSG HTML is rendered from the exact component tree the client
+  hydrates; there is no separate Playwright capture to drift from.
+- i18next is initialized per-locale on the server and the resources are
+  injected before the first client render, removing the suspend-on-i18n and
+  translated-text-mismatch classes.
+- The boot shell, modulepreload hint injection, `spa.html` fallback,
+  two-pass `hydrated` flags, and deferred-mount workarounds were deleted.
+- Active-nav state derives from the server-known pathname, so it is correct
+  in the prerendered HTML itself.

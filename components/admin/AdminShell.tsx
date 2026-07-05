@@ -351,7 +351,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     </button>
                 </div>
 
-                <main className="min-w-0 flex-1 min-h-dvh" data-tf-handoff-ready="true">
+                <main className="min-w-0 flex-1 min-h-dvh">
                     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
                         <div className="grid gap-3 p-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
                             <div className="min-w-0 self-start text-left">

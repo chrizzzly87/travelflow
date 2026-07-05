@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, render, waitFor } from '@testing-library/react';
 
 import type { IViewSettings } from '../../../types';
 import { makeTrip } from '../../helpers/tripFixtures';
@@ -118,6 +118,13 @@ const makeRouteProps = (overrides?: Partial<React.ComponentProps<typeof ExampleT
 const latestTripViewProps = () => mocks.tripViewProps[mocks.tripViewProps.length - 1];
 
 describe('routes/ExampleTripLoaderRoute', () => {
+  // No vitest globals => no RTL auto-cleanup: unmount explicitly so a prior
+  // test's still-mounted route can't resolve its template promise into the
+  // next test's recorded TripView props.
+  afterEach(() => {
+    cleanup();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.tripViewProps.length = 0;

@@ -8,7 +8,17 @@ Owner: Performance and SEO team
 
 ---
 
-## ⚠️ Prerender + hydration invariants (read before touching the boot path)
+## ⚠️ HISTORICAL: Prerender + hydration invariants (superseded by the Next.js migration, #423)
+
+> **2026-07-05:** The custom prerender pipeline (`scripts/prerender-routes.mjs`,
+> boot shell, modulepreload injection, `spa.html`, preact/compat hydration) was
+> removed when the app moved to the Next.js App Router. Server rendering with
+> React 19 resolves this entire invariant class structurally: HTML is rendered
+> from the same component tree that hydrates, translations are embedded
+> server-side, and the active-nav/first-render rules below no longer apply.
+> The section is preserved for incident archaeology only.
+
+## Prerender + hydration invariants (historical)
 
 The marketing/landing pages are **prerendered static HTML** (`scripts/prerender-routes.mjs`)
 that the client **hydrates in place**. This is fast but has sharp edges — the

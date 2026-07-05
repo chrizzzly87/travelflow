@@ -1,4 +1,5 @@
 import React from 'react';
+import '../../styles/boot-shell.css';
 
 type AppBootstrapShellVariant = 'marketing' | 'trip';
 type AppBootstrapShellChromeMode = 'skeleton' | 'ghost';
@@ -8,7 +9,6 @@ interface AppBootstrapShellProps {
   variant?: AppBootstrapShellVariant;
   testId?: string;
   shellState?: string;
-  handoffReady?: boolean;
   chromeMode?: AppBootstrapShellChromeMode;
   surfaceMode?: AppBootstrapShellSurfaceMode;
 }
@@ -20,7 +20,6 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
   variant = 'marketing',
   testId,
   shellState,
-  handoffReady = false,
   chromeMode = 'skeleton',
   surfaceMode = 'default',
 }) => (
@@ -31,7 +30,6 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
     data-shell-state={shellState}
     data-tf-chrome-mode={chromeMode}
     data-tf-surface-mode={surfaceMode}
-    data-tf-handoff-ready={handoffReady ? 'true' : undefined}
     aria-hidden="true"
   >
     {variant === 'trip' ? (

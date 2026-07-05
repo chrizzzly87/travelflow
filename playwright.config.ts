@@ -11,7 +11,7 @@ export default defineConfig({
         trace: 'on-first-retry',
     },
     webServer: {
-        command: 'VITE_E2E_AUTH_SANDBOX=true pnpm dev --host 127.0.0.1 --port 4173',
+        command: 'NEXT_PUBLIC_E2E_AUTH_SANDBOX=true pnpm exec next dev -p 4173 --hostname 127.0.0.1',
         url: 'http://127.0.0.1:4173',
         reuseExistingServer: false,
         timeout: 120_000,

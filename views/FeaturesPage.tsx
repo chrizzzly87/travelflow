@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Link } from '@/lib/router';
+import { Link, useRoutePrefetch } from '@/lib/router';
 import { ArrowsClockwise, Printer, Sparkle } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { FeaturesBentoGrid, type FeatureBentoItem } from '../components/marketing/features/FeaturesBentoGrid';
@@ -11,7 +11,6 @@ import { Card, CardContent } from '../components/ui/card';
 import { normalizeLocale } from '../config/locales';
 import { buildLocalizedMarketingPath, buildPath } from '../config/routes';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
-import { warmRouteAssets } from '../services/navigationPrefetch';
 
 interface WorkflowStep {
     step: string;
@@ -30,6 +29,7 @@ const workflowIconMap = [Sparkle, ArrowsClockwise, Printer];
 
 export const FeaturesPage: React.FC = () => {
     const { t, i18n } = useTranslation('features');
+    const prefetchRoute = useRoutePrefetch();
     const activeLocale = normalizeLocale(i18n.resolvedLanguage || i18n.language);
     const inspirationsPath = buildLocalizedMarketingPath('inspirations', activeLocale);
     const bentoItems = t('bento.items', { returnObjects: true }) as FeatureBentoItem[];
@@ -37,7 +37,7 @@ export const FeaturesPage: React.FC = () => {
     const workflowGlance = t('workflow.glance', { returnObjects: true }) as WorkflowGlance;
 
     const prewarmCreateTripRoute = () => {
-        void warmRouteAssets(buildPath('createTrip'), 'manual');
+        prefetchRoute(buildPath('createTrip'));
     };
 
     return (

@@ -34,7 +34,6 @@ import {
     dbUpsertUserSettings,
     ensureDbSession,
 } from './services/dbApi';
-import { loadLazyComponentWithRecovery } from './services/lazyImportRecovery';
 import { getBlogPostBySlugWithFallback } from './services/blogService';
 import { resolvePageTitle } from './services/pageTitleService';
 import { setCanonicalDocumentTitle } from './services/tripGenerationTabFeedbackService';
@@ -44,12 +43,9 @@ import { useDebuggerBootstrap } from './appCore/bootstrap/useDebuggerBootstrap';
 import { useNavigationContextBootstrap } from './appCore/bootstrap/useNavigationContextBootstrap';
 import { useRuntimeLocationBootstrap } from './appCore/bootstrap/useRuntimeLocationBootstrap';
 import { useTripsPrunedNoticeBootstrap } from './appCore/bootstrap/useTripsPrunedNoticeBootstrap';
-import { useWarmupGate } from './appCore/bootstrap/useWarmupGate';
 import { AppProviderShell } from './appCore/bootstrap/AppProviderShell';
 import { MarketingRouteLoadingShell } from './components/bootstrap/MarketingRouteLoadingShell';
 import { AppShellContext, AppShellValue } from './appCore/AppShellContext';
-import { isFirstLoadCriticalPath } from './appCore/prefetch/isFirstLoadCriticalPath';
-import { hasCompletedInitialRouteHandoff } from './services/marketingRouteShellState';
 import { useConnectivityStatus } from './hooks/useConnectivityStatus';
 import { enqueueTripCommitAndSync } from './services/tripSyncManager';
 import { GlobalConnectivityBadge } from './components/GlobalConnectivityBadge';
@@ -97,10 +93,6 @@ const normalizeSettingsForPersistence = (settings: IViewSettings): Required<Pick
 
 type TripCommitOutcome = 'remote' | 'queued' | 'permission_denied';
 
-const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
-    moduleKey: string,
-    importer: () => Promise<TModule>
-) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
 
 let tripManagerModulePromise: Promise<{ default: React.ComponentType<any> }> | null = null;
 
@@ -111,17 +103,9 @@ const loadTripManagerModule = (): Promise<{ default: React.ComponentType<any> }>
     return tripManagerModulePromise;
 };
 
-const TripManager = lazyWithRecovery('TripManager', () => loadTripManagerModule());
-const SettingsModal = lazyWithRecovery('SettingsModal', () => import('./components/SettingsModal').then((module) => ({ default: module.SettingsModal })));
-const OnPageDebugger = lazyWithRecovery('OnPageDebugger', () => import('./components/OnPageDebugger').then((module) => ({ default: module.OnPageDebugger })));
-const NavigationPrefetchManager = lazyWithRecovery(
-    'NavigationPrefetchManager',
-    () => import('./components/NavigationPrefetchManager').then((module) => ({ default: module.NavigationPrefetchManager }))
-);
-const SpeculationRulesManager = lazyWithRecovery(
-    'SpeculationRulesManager',
-    () => import('./components/SpeculationRulesManager').then((module) => ({ default: module.SpeculationRulesManager }))
-);
+const TripManager = lazy(() => loadTripManagerModule());
+const SettingsModal = lazy(() => import('./components/SettingsModal').then((module) => ({ default: module.SettingsModal })));
+const OnPageDebugger = lazy(() => import('./components/OnPageDebugger').then((module) => ({ default: module.OnPageDebugger })));
 const TRIP_MANAGER_FALLBACK_ROWS = [0, 1, 2, 3, 4, 5];
 
 const normalizeTripForRuntimeLoad = (trip: ITrip): ITrip => {
@@ -202,79 +186,6 @@ const TripManagerLoadingFallback: React.FC<{ isOpen: boolean; onClose: () => voi
         </div>
     </>
 );
-
-const isNavPrefetchEnabled = (): boolean => {
-    const navPrefetchEnabledByEnv = process.env.NEXT_PUBLIC_NAV_PREFETCH_ENABLED;
-    if (navPrefetchEnabledByEnv === 'true') return true;
-    if (navPrefetchEnabledByEnv === 'false') return false;
-    return Boolean((process.env.NODE_ENV === 'production'));
-};
-
-const ViewTransitionHandler: React.FC<{ enabled: boolean }> = ({ enabled }) => {
-    useEffect(() => {
-        if (!enabled) return;
-        // Keep legacy prewarm as a fallback path only when the new
-        // navigation prefetch manager is disabled.
-        if (isNavPrefetchEnabled()) return;
-
-        let fallbackWarmupModulePromise: Promise<{
-            getPathnameFromHref: (href: string) => string;
-            preloadRouteForPath: (pathname: string) => Promise<void>;
-        }> | null = null;
-        const loadFallbackWarmupModule = async () => {
-            if (!fallbackWarmupModulePromise) {
-                fallbackWarmupModulePromise = import('./appCore/prefetch/fallbackRouteWarmup');
-            }
-            return fallbackWarmupModulePromise;
-        };
-
-        const warmLinkTarget = async (target: EventTarget | null) => {
-            const anchor = (target as HTMLElement | null)?.closest?.('a');
-            if (!anchor) return;
-            const href = anchor.getAttribute('href');
-            if (!href || !href.startsWith('/')) return;
-            const { getPathnameFromHref, preloadRouteForPath } = await loadFallbackWarmupModule();
-            const pathname = getPathnameFromHref(href);
-            await preloadRouteForPath(pathname);
-        };
-
-        const handleMouseOver = (event: MouseEvent) => {
-            void warmLinkTarget(event.target);
-        };
-        const handleFocusIn = (event: FocusEvent) => {
-            void warmLinkTarget(event.target);
-        };
-        const handleTouchStart = (event: TouchEvent) => {
-            void warmLinkTarget(event.target);
-        };
-
-        document.addEventListener('mouseover', handleMouseOver, true);
-        document.addEventListener('focusin', handleFocusIn, true);
-        document.addEventListener('touchstart', handleTouchStart, true);
-
-        // Warm high-traffic marketing routes in dev so first local navigation
-        // does not wait on Vite's on-demand transforms.
-        let warmupTimerId: number | null = null;
-        if (IS_DEV) {
-            warmupTimerId = window.setTimeout(() => {
-                void loadFallbackWarmupModule().then(({ preloadRouteForPath }) => Promise.all([
-                    preloadRouteForPath('/features'),
-                    preloadRouteForPath('/inspirations'),
-                    preloadRouteForPath('/blog'),
-                    preloadRouteForPath('/pricing'),
-                ]));
-            }, 600);
-        }
-        return () => {
-            document.removeEventListener('mouseover', handleMouseOver, true);
-            document.removeEventListener('focusin', handleFocusIn, true);
-            document.removeEventListener('touchstart', handleTouchStart, true);
-            if (warmupTimerId !== null) window.clearTimeout(warmupTimerId);
-        };
-    }, [enabled]);
-
-    return null;
-};
 
 const createLocalHistoryEntry = (
     navigate: ReturnType<typeof useNavigate>,
@@ -362,12 +273,6 @@ const AppContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const pendingUserSettingsKeyRef = useRef<string | null>(null);
     const persistedUserSettingsKeyRef = useRef<string | null>(null);
     const shouldLoadDebugger = useDebuggerBootstrap({ appName: APP_NAME, isDev: IS_DEV });
-    const isFirstLoadCritical = useMemo(
-        () => isFirstLoadCriticalPath(routeLocation.pathname),
-        [routeLocation.pathname]
-    );
-    const isWarmupEnabled = useWarmupGate({ interactionOnly: isFirstLoadCritical });
-    const shouldSuppressSpeculationRules = isFirstLoadCritical && !hasCompletedInitialRouteHandoff();
 
     useAuthNavigationBootstrap();
     useNavigationContextBootstrap();
@@ -964,13 +869,6 @@ const AppContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return (
         <TripManagerProvider openTripManager={openTripManager} prewarmTripManager={prewarmTripManager}>
             <GlobalConnectivityBadge />
-            <ViewTransitionHandler enabled={isWarmupEnabled} />
-            {isWarmupEnabled && (
-                <Suspense fallback={null}>
-                    <NavigationPrefetchManager enabled />
-                    <SpeculationRulesManager enabled={!shouldSuppressSpeculationRules} />
-                </Suspense>
-            )}
             {shouldRenderTermsNotice && (
                 <section
                     className={`mx-auto w-full max-w-[1600px] px-4 pt-3 ${shouldShowForceTermsNotice ? 'text-rose-950' : 'text-accent-950'} sm:px-6 lg:px-8`}
@@ -1034,7 +932,7 @@ const AppContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 </section>
             )}
             {shouldBlockForTermsGate ? (
-                <div data-tf-handoff-ready="true">
+                <div>
                     <MarketingRouteLoadingShell />
                 </div>
             ) : (

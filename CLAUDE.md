@@ -54,8 +54,17 @@ Before finalizing, ensure all applicable code changes are represented in release
 - For clickable marketing/planner UI changes, instrument events using `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` per `docs/ANALYTICS_CONVENTION.md`.
 - Use the existing event naming/payload convention; avoid ad-hoc query param tracking when Umami events are available.
 
+## Architecture (post Next.js migration, #423)
+- The app is a Next.js App Router project (React 19). All routes live under `app/[locale]/…`; `en` is served unprefixed via middleware rewrite (see `middleware.ts`).
+- App code uses the router compat layer `@/lib/router` (react-router-like API on next/navigation) — see `docs/ROUTING_COMPAT.md`. Do not import `next/navigation` directly in shared components.
+- Marketing/blog/legal pages are SSG per locale with server-loaded i18n resources; tool routes (create-trip, trip view, profile, checkout, admin) are client-only screens (`ssr: false`).
+- Browser env vars use `process.env.NEXT_PUBLIC_*`. The Netlify deployment env may still define `VITE_*` names — `next.config.ts` maps them.
+- Vite remains only as Vitest's engine (`vitest.config.ts`); the app builds with `next build`.
+
 ## Development Command Runtimes (for setting timers)
 - `pnpm test:core`: Takes ~50 seconds to complete. Set a 60-second timer.
-- `pnpm run build`: Takes ~85 seconds (runs test:core, generates assets, validates config, and builds). Set a 90-100 second timer.
-- `node scripts/run-lighthouse-audits.mjs`: Takes ~90 seconds (runs 5 sequential audits). Set a 100-second timer.
+- `pnpm run build`: runs test:core, asset generation, validators, and `next build`. Set a 3-4 minute timer.
+- `pnpm dev`: `next dev` on port 5173.
+- `pnpm preview`: `next start -p 4173` (requires a prior `next build`).
+- `node scripts/run-lighthouse-audits.mjs`: Takes ~90 seconds (runs 5 sequential audits against port 4173; start `pnpm preview` first).
 

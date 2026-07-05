@@ -76,6 +76,17 @@ export function useParams<K extends string = string>(): Readonly<Params<K>> {
     }, [adapter.params, routeParams]);
 }
 
+/**
+ * Imperative route prefetch (Next router.prefetch under the app, no-op in
+ * tests). Replaces the legacy navigationPrefetch warmRouteAssets calls.
+ */
+export function useRoutePrefetch(): (href: string) => void {
+    const adapter = useRouterAdapter();
+    return useCallback((href: string) => {
+        adapter.prefetch?.(href);
+    }, [adapter]);
+}
+
 export type SetURLSearchParams = (
     nextInit:
         | URLSearchParams

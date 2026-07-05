@@ -1,4 +1,5 @@
 export type ReleaseStatus = 'published' | 'draft';
+import { UPDATES_RAW_FILES } from './generated/updatesContent.generated';
 
 export interface ReleaseNoteItem {
     visibleOnWebsite: boolean;
@@ -26,8 +27,6 @@ export interface ReleaseNote {
     items: ReleaseNoteItem[];
     sourcePath: string;
 }
-
-import { UPDATES_RAW_FILES } from './generated/updatesContent.generated';
 
 const UPDATE_FILES = UPDATES_RAW_FILES;
 

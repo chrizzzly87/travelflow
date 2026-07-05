@@ -136,10 +136,10 @@ describe('client bundle must not contain provider API key access (static regress
     expect(utilsSource).not.toContain('getGeminiApiKey');
   });
 
-  it('vite config does not inline server Gemini keys into the bundle', () => {
-    const viteConfigSource = readRepoFile('vite.config.ts');
-    expect(viteConfigSource).not.toContain('GEMINI_API_KEY');
-    expect(viteConfigSource).not.toContain("'process.env.API_KEY'");
+  it('next config does not inline server Gemini keys into the bundle', () => {
+    const nextConfigSource = readRepoFile('next.config.ts');
+    expect(nextConfigSource).not.toContain('GEMINI_API_KEY');
+    expect(nextConfigSource).not.toContain("'process.env.API_KEY'");
   });
 
   it('package.json no longer depends on the browser Gemini SDK', () => {

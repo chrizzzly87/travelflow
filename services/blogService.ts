@@ -1,6 +1,7 @@
 import { buildBlogImageSeed, getBlogImageMedia } from '../data/blogImageMedia';
 import { AppLanguage } from '../types';
 import { DEFAULT_LOCALE, isLocale } from '../config/locales';
+import { BLOG_RAW_FILES } from './generated/blogContent.generated';
 
 export type BlogStatus = 'published' | 'draft';
 
@@ -44,8 +45,6 @@ export interface BlogPost {
     content: string;
     sourcePath: string;
 }
-
-import { BLOG_RAW_FILES } from './generated/blogContent.generated';
 
 const BLOG_FILES = BLOG_RAW_FILES;
 

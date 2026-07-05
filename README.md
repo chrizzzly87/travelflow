@@ -1,6 +1,6 @@
 # TravelFlow
 
-TravelFlow is a React + TypeScript + Vite app for generating and managing travel itineraries.
+TravelFlow is a Next.js (App Router) + React 19 + TypeScript app for generating and managing travel itineraries. Vitest remains the test runner (Vite stays only as its engine).
 
 ## Requirements
 
@@ -127,7 +127,7 @@ pnpm build
 
 The production output is generated in `dist/`.
 
-`pnpm build` now also runs build-time image optimization for inspirations + blog (responsive derivatives + compression) before validations and Vite bundling.
+`pnpm build` also runs build-time image optimization for inspirations + blog (responsive derivatives + compression) before validations and `next build`.
 
 Admin dashboard planning scope is documented in `docs/ADMIN_DASHBOARD_PLAN.md`.
 
@@ -135,8 +135,8 @@ Admin dashboard planning scope is documented in `docs/ADMIN_DASHBOARD_PLAN.md`.
 
 All available `pnpm` commands in this repo:
 
-- `pnpm dev` — Start Vite dev server.
-- `pnpm build` — Run image optimization (inspirations + blog), validations, and production Vite build.
+- `pnpm dev` — Start the Next.js dev server (port 5173).
+- `pnpm build` — Run image optimization (inspirations + blog), validations, and production `next build`.
 - `pnpm preview` — Preview the production build locally.
 - `pnpm release:prepare` — Generate missing blog source images, then run the full production build pipeline.
 - `pnpm updates:validate` — Validate `content/updates/*.md` formatting and release metadata.
@@ -202,7 +202,7 @@ Re-run this after adding new trip templates or changing city coordinates.
 
 ## Deploy To Vercel
 
-This repo includes `vercel.json` for Vite + SPA routing.
+Vercel auto-detects Next.js — no special routing config is needed (the old SPA-era `vercel.json` was removed).
 
 1. Push this repo to GitHub.
 2. In Vercel, import the GitHub repository.

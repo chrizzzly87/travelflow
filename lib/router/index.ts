@@ -11,7 +11,7 @@ export type {
     To,
 } from './context';
 export { RouterAdapterContext, RouteBaseContext } from './context';
-export { useLocation, useNavigate, useParams, useSearchParams } from './hooks';
+export { useLocation, useNavigate, useParams, useRoutePrefetch, useSearchParams } from './hooks';
 export type { SetURLSearchParams } from './hooks';
 export {
     Link,
