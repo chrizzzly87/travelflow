@@ -56,7 +56,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { PublicProfileStampsPage } from '../../pages/PublicProfileStampsPage';
+import { PublicProfileStampsPage } from '../../views/PublicProfileStampsPage';
 
 const LocationProbe: React.FC = () => {
   const location = useLocation();

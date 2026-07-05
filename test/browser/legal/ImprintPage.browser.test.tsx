@@ -10,7 +10,7 @@ vi.mock('../../../components/marketing/MarketingLayout', () => ({
 }));
 
 import i18n, { preloadLocaleNamespaces } from '../../../i18n';
-import { ImprintPage } from '../../../pages/legal/ImpressumPage';
+import { ImprintPage } from '../../../views/legal/ImpressumPage';
 
 const renderImprint = async (language: 'de' | 'en', initialEntry: string) => {
   await preloadLocaleNamespaces(language, ['legal']);

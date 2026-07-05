@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { __ADMIN_AUDIT_TESTING__ } from '../../pages/AdminAuditPage';
+import { __ADMIN_AUDIT_TESTING__ } from '../../views/AdminAuditPage';
 
 describe('pages/AdminAuditPage labels and grouping', () => {
   it('maps missing labels for audit export and legal terms targets', () => {

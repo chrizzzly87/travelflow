@@ -74,7 +74,7 @@ vi.mock('../../../services/adminService', () => ({
   adminReconcilePaddleSubscriptions: mocks.adminReconcilePaddleSubscriptions,
 }));
 
-import { AdminBillingPage } from '../../../pages/AdminBillingPage';
+import { AdminBillingPage } from '../../../views/AdminBillingPage';
 
 const renderPage = () => render(
   React.createElement(

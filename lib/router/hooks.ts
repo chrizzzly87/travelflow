@@ -115,7 +115,12 @@ export function useSearchParams(): [URLSearchParams, SetURLSearchParams] {
             const params = toSearchParams(resolved);
             const query = params.toString();
             const pathname = adapter.locationOverride?.pathname ?? adapter.pathname;
-            adapter.navigate(`${pathname}${query ? `?${query}` : ''}`, navigateOpts);
+            adapter.navigate(`${pathname}${query ? `?${query}` : ''}`, {
+                // Search-param updates (pagination, drawers) keep the scroll
+                // position, matching react-router semantics.
+                preventScrollReset: true,
+                ...navigateOpts,
+            });
         },
         [adapter]
     );

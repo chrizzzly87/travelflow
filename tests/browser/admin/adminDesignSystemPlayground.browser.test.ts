@@ -39,7 +39,7 @@ vi.mock('../../../components/AppDialogProvider', () => ({
   }),
 }));
 
-import { AdminDesignSystemPlaygroundPage } from '../../../pages/AdminDesignSystemPlaygroundPage';
+import { AdminDesignSystemPlaygroundPage } from '../../../views/AdminDesignSystemPlaygroundPage';
 
 describe('pages/AdminDesignSystemPlaygroundPage', () => {
   beforeEach(() => {

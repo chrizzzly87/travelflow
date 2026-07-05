@@ -150,7 +150,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { LoginPage } from '../../pages/LoginPage';
+import { LoginPage } from '../../views/LoginPage';
 import { QueuedTripGenerationError } from '../../services/tripGenerationQueueService';
 
 const setNativeInputValue = (input: HTMLInputElement, value: string): void => {

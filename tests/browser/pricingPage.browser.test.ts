@@ -134,7 +134,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { PricingPage } from '../../pages/PricingPage';
+import { PricingPage } from '../../views/PricingPage';
 
 describe('pages/PricingPage', () => {
   beforeEach(() => {

@@ -17,8 +17,8 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
 const TripLoaderRoute = lazyWithRecovery('TripLoaderRoute', () => import('../../routes/TripLoaderRoute').then((module) => ({ default: module.TripLoaderRoute })));
 const SharedTripLoaderRoute = lazyWithRecovery('SharedTripLoaderRoute', () => import('../../routes/SharedTripLoaderRoute').then((module) => ({ default: module.SharedTripLoaderRoute })));
 const ExampleTripLoaderRoute = lazyWithRecovery('ExampleTripLoaderRoute', () => import('../../routes/ExampleTripLoaderRoute').then((module) => ({ default: module.ExampleTripLoaderRoute })));
-const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
-const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
+const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../views/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
+const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../views/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
 
 export const RouteLoadingFallback: React.FC = () => (
     <MarketingRouteLoadingShell />

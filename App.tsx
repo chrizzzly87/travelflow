@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from 'react';
 import { useLocation, useNavigate } from '@/lib/router';
 import { useTranslation } from 'react-i18next';
@@ -45,7 +47,7 @@ import { useTripsPrunedNoticeBootstrap } from './appCore/bootstrap/useTripsPrune
 import { useWarmupGate } from './appCore/bootstrap/useWarmupGate';
 import { AppProviderShell } from './appCore/bootstrap/AppProviderShell';
 import { MarketingRouteLoadingShell } from './components/bootstrap/MarketingRouteLoadingShell';
-import { AppRoutes } from './appCore/routes/AppRoutes';
+import { AppShellContext, AppShellValue } from './appCore/AppShellContext';
 import { isFirstLoadCriticalPath } from './appCore/prefetch/isFirstLoadCriticalPath';
 import { hasCompletedInitialRouteHandoff } from './services/marketingRouteShellState';
 import { useConnectivityStatus } from './hooks/useConnectivityStatus';
@@ -345,7 +347,7 @@ export const resolveTermsNoticeState = (options: {
     return 'none';
 };
 
-const AppContent: React.FC = () => {
+const AppContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { i18n, t } = useTranslation(APP_SHELL_NAMESPACES);
     const { access, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
     const [trip, setTrip] = useState<ITrip | null>(null);
@@ -634,6 +636,25 @@ const AppContent: React.FC = () => {
 
     // DB sync (session, upload, sync, user settings) is deferred to trip-related
     // routes via useDbSync to avoid unnecessary network calls on marketing pages.
+
+    // Cold direct loads of unprefixed tool routes (/create-trip, /trip/…)
+    // honor the stored app language. The i18n singleton now boots in the URL
+    // locale (deterministic hydration against the server HTML), so the stored
+    // preference is applied once, right after mount — same end state as the
+    // SPA's localStorage-first boot detection.
+    const initialStoredToolLocaleApplied = useRef(false);
+    useEffect(() => {
+        if (initialStoredToolLocaleApplied.current) return;
+        initialStoredToolLocaleApplied.current = true;
+        if (!isToolRoute(routeLocation.pathname)) return;
+        if (extractLocaleFromPath(routeLocation.pathname)) return;
+        const storedLocale = getStoredAppLanguage();
+        const currentLocale = normalizeLocale(i18n.resolvedLanguage ?? i18n.language);
+        if (storedLocale && storedLocale !== currentLocale) {
+            void i18n.changeLanguage(storedLocale);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         applyDocumentLocale(resolvedRouteLocale);
@@ -927,6 +948,19 @@ const AppContent: React.FC = () => {
         setIsManagerOpen(true);
     }, [prewarmTripManager]);
 
+    const appShellValue: AppShellValue = {
+        trip,
+        appLanguage,
+        onAppLanguageLoaded: setAppLanguage,
+        onTripGenerated: handleTripGenerated,
+        onTripLoaded: handleRouteTripLoaded,
+        onUpdateTrip: handleUpdateTrip,
+        onCommitState: handleCommitState,
+        onViewSettingsChange: handleViewSettingsChange,
+        onOpenManager: openTripManager,
+        onOpenSettings: () => setIsSettingsOpen(true),
+    };
+
     return (
         <TripManagerProvider openTripManager={openTripManager} prewarmTripManager={prewarmTripManager}>
             <GlobalConnectivityBadge />
@@ -1004,18 +1038,9 @@ const AppContent: React.FC = () => {
                     <MarketingRouteLoadingShell />
                 </div>
             ) : (
-                <AppRoutes
-                    trip={trip}
-                    appLanguage={appLanguage}
-                    onAppLanguageLoaded={setAppLanguage}
-                    onTripGenerated={handleTripGenerated}
-                    onTripLoaded={handleRouteTripLoaded}
-                    onUpdateTrip={handleUpdateTrip}
-                    onCommitState={handleCommitState}
-                    onViewSettingsChange={handleViewSettingsChange}
-                    onOpenManager={openTripManager}
-                    onOpenSettings={() => setIsSettingsOpen(true)}
-                />
+                <AppShellContext.Provider value={appShellValue}>
+                    {children}
+                </AppShellContext.Provider>
             )}
 
             {isManagerOpen && (
@@ -1053,10 +1078,10 @@ const AppContent: React.FC = () => {
     );
 };
 
-const App: React.FC = () => {
+const App: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return (
         <AppProviderShell>
-            <AppContent />
+            <AppContent>{children}</AppContent>
         </AppProviderShell>
     );
 };

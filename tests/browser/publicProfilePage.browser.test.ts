@@ -49,7 +49,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { PublicProfilePage } from '../../pages/PublicProfilePage';
+import { PublicProfilePage } from '../../views/PublicProfilePage';
 
 const LocationProbe: React.FC = () => {
   const location = useLocation();

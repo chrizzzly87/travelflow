@@ -247,7 +247,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { CheckoutPage } from '../../pages/CheckoutPage';
+import { CheckoutPage } from '../../views/CheckoutPage';
 
 describe('pages/CheckoutPage', () => {
   beforeEach(() => {

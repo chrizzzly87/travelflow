@@ -176,7 +176,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { CreateTripV3Page } from '../../pages/CreateTripV3Page';
+import { CreateTripV3Page } from '../../views/CreateTripV3Page';
 
 const encodePrefill = (value: unknown): string => {
   const json = JSON.stringify(value);

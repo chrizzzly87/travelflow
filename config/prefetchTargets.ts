@@ -18,39 +18,39 @@ const target = (key: string, load: () => Promise<unknown>): PrefetchTarget => ({
 const tripViewTarget = target('component:trip-view', () => import('../components/TripView'));
 const exampleTemplatesTarget = target('data:example-trip-templates', () => import('../data/exampleTripTemplates'));
 const exampleCardsTarget = target('data:example-trip-cards', () => import('../data/exampleTripCards'));
-const homeTarget = target('route:home', () => import('../pages/MarketingHomePage'));
+const homeTarget = target('route:home', () => import('../views/MarketingHomePage'));
 const deferredAppRoutesTarget = target('route:deferred-app-routes', () => import('../appCore/routes/DeferredAppRoutes'));
 
-const createTripClassicLabTarget = target('route:create-trip-lab-classic', () => import('../pages/CreateTripClassicLabPage'));
-const createTripWizardTarget = target('route:create-trip-wizard', () => import('../pages/CreateTripV3Page'));
-const checkoutTarget = target('route:checkout', () => import('../pages/CheckoutPage'));
+const createTripClassicLabTarget = target('route:create-trip-lab-classic', () => import('../views/CreateTripClassicLabPage'));
+const createTripWizardTarget = target('route:create-trip-wizard', () => import('../views/CreateTripV3Page'));
+const checkoutTarget = target('route:checkout', () => import('../views/CheckoutPage'));
 
-const featuresTarget = target('route:features', () => import('../pages/FeaturesPage'));
-const updatesTarget = target('route:updates', () => import('../pages/UpdatesPage'));
-const pricingTarget = target('route:pricing', () => import('../pages/PricingPage'));
-const faqTarget = target('route:faq', () => import('../pages/FaqPage'));
-const shareUnavailableTarget = target('route:share-unavailable', () => import('../pages/ShareUnavailablePage'));
-const loginTarget = target('route:login', () => import('../pages/LoginPage'));
-const resetPasswordTarget = target('route:reset-password', () => import('../pages/ResetPasswordPage'));
-const contactTarget = target('route:contact', () => import('../pages/ContactPage'));
-const imprintTarget = target('route:imprint', () => import('../pages/ImprintPage'));
-const privacyTarget = target('route:privacy', () => import('../pages/PrivacyPage'));
-const termsTarget = target('route:terms', () => import('../pages/TermsPage'));
-const cookiesTarget = target('route:cookies', () => import('../pages/CookiesPage'));
-const profileTarget = target('route:profile', () => import('../pages/ProfilePage'));
-const profileSettingsTarget = target('route:profile-settings', () => import('../pages/ProfileSettingsPage'));
-const profileOnboardingTarget = target('route:profile-onboarding', () => import('../pages/ProfileOnboardingPage'));
+const featuresTarget = target('route:features', () => import('../views/FeaturesPage'));
+const updatesTarget = target('route:updates', () => import('../views/UpdatesPage'));
+const pricingTarget = target('route:pricing', () => import('../views/PricingPage'));
+const faqTarget = target('route:faq', () => import('../views/FaqPage'));
+const shareUnavailableTarget = target('route:share-unavailable', () => import('../views/ShareUnavailablePage'));
+const loginTarget = target('route:login', () => import('../views/LoginPage'));
+const resetPasswordTarget = target('route:reset-password', () => import('../views/ResetPasswordPage'));
+const contactTarget = target('route:contact', () => import('../views/ContactPage'));
+const imprintTarget = target('route:imprint', () => import('../views/ImprintPage'));
+const privacyTarget = target('route:privacy', () => import('../views/PrivacyPage'));
+const termsTarget = target('route:terms', () => import('../views/TermsPage'));
+const cookiesTarget = target('route:cookies', () => import('../views/CookiesPage'));
+const profileTarget = target('route:profile', () => import('../views/ProfilePage'));
+const profileSettingsTarget = target('route:profile-settings', () => import('../views/ProfileSettingsPage'));
+const profileOnboardingTarget = target('route:profile-onboarding', () => import('../views/ProfileOnboardingPage'));
 
-const inspirationsTarget = target('route:inspirations', () => import('../pages/InspirationsPage'));
-const inspirationsThemesTarget = target('route:inspirations-themes', () => import('../pages/inspirations/ThemesPage'));
-const inspirationsBestTimeTarget = target('route:inspirations-best-time', () => import('../pages/inspirations/BestTimeToTravelPage'));
-const inspirationsCountriesTarget = target('route:inspirations-countries', () => import('../pages/inspirations/CountriesPage'));
-const inspirationsFestivalsTarget = target('route:inspirations-festivals', () => import('../pages/inspirations/FestivalsPage'));
-const inspirationsWeekendsTarget = target('route:inspirations-weekends', () => import('../pages/inspirations/WeekendGetawaysPage'));
-const inspirationsCountryDetailTarget = target('route:inspirations-country-detail', () => import('../pages/inspirations/CountryDetailPage'));
+const inspirationsTarget = target('route:inspirations', () => import('../views/InspirationsPage'));
+const inspirationsThemesTarget = target('route:inspirations-themes', () => import('../views/inspirations/ThemesPage'));
+const inspirationsBestTimeTarget = target('route:inspirations-best-time', () => import('../views/inspirations/BestTimeToTravelPage'));
+const inspirationsCountriesTarget = target('route:inspirations-countries', () => import('../views/inspirations/CountriesPage'));
+const inspirationsFestivalsTarget = target('route:inspirations-festivals', () => import('../views/inspirations/FestivalsPage'));
+const inspirationsWeekendsTarget = target('route:inspirations-weekends', () => import('../views/inspirations/WeekendGetawaysPage'));
+const inspirationsCountryDetailTarget = target('route:inspirations-country-detail', () => import('../views/inspirations/CountryDetailPage'));
 
-const blogTarget = target('route:blog', () => import('../pages/BlogPage'));
-const blogPostTarget = target('route:blog-post', () => import('../pages/BlogPostPage'));
+const blogTarget = target('route:blog', () => import('../views/BlogPage'));
+const blogPostTarget = target('route:blog-post', () => import('../views/BlogPostPage'));
 
 const rules: PrefetchRule[] = [
     {

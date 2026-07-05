@@ -94,7 +94,7 @@ vi.mock('../../../services/adminService', () => ({
   adminUpdateUserProfile: mocks.adminUpdateUserProfile,
 }));
 
-import { AdminUsersPage } from '../../../pages/AdminUsersPage';
+import { AdminUsersPage } from '../../../views/AdminUsersPage';
 
 const daysAgoIso = (days: number): string => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 

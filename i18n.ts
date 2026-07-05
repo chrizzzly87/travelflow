@@ -6,9 +6,8 @@ import { APP_NAME } from './config/appGlobals';
 import { loadLocaleNamespace } from './lib/i18n/resources';
 import { readLocalStorageItem, writeLocalStorageItem } from './services/browserStorageService';
 
-// Namespaces the app shell (AppContent) requests on every route. Preloaded
-// before mount in index.tsx so the first render never suspends on them.
-export const APP_SHELL_NAMESPACES = ['common', 'pages', 'auth', 'wip', 'legal', 'profile'];
+export { APP_SHELL_NAMESPACES } from './lib/i18n/namespaces';
+import { APP_SHELL_NAMESPACES } from './lib/i18n/namespaces';
 const preloadCache = new Set<string>();
 const LOCALE_STORAGE_KEY = 'tf_app_language';
 
@@ -52,11 +51,15 @@ const detectLocaleFromHtmlTag = (): string | null => {
 };
 
 const detectInitialLocale = (): string => {
+    // The html tag is server-rendered from the URL locale, so path + htmlTag
+    // make the client's first render deterministic and identical to the SSR
+    // HTML (no hydration text mismatches). The stored app language is applied
+    // after mount for unprefixed tool routes (see App.tsx).
     return (
         detectLocaleFromPath()
+        || detectLocaleFromHtmlTag()
         || detectLocaleFromLocalStorage()
         || detectLocaleFromNavigator()
-        || detectLocaleFromHtmlTag()
         || DEFAULT_LOCALE
     );
 };

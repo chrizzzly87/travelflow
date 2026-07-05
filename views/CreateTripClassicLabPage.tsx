@@ -1,0 +1,2988 @@
+'use client';
+
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from '@/lib/router';
+import {
+    AirplaneTilt,
+    Bicycle,
+    Buildings,
+    Bus,
+    Cake,
+    CalendarBlank,
+    CarProfile,
+    CaretDown,
+    CaretUp,
+    CheckCircle,
+    Compass,
+    DotsSixVertical,
+    EyeSlash,
+    ForkKnife,
+    GearSix,
+    GenderFemale,
+    GenderMale,
+    GenderNonbinary,
+    Heart,
+    Info,
+    Laptop,
+    MagicWand,
+    MapPin,
+    MagnifyingGlass,
+    Minus,
+    MoonStars,
+    Mountains,
+    PersonSimpleWalk,
+    Plus,
+    Sparkle,
+    SunHorizon,
+    Train,
+    User,
+    Users,
+    UsersThree,
+    UsersFour,
+    Van,
+    WarningCircle,
+    X,
+} from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import { useAppDialog } from '../components/AppDialogProvider';
+import { SiteHeader } from '../components/navigation/SiteHeader';
+import { SiteFooter } from '../components/marketing/SiteFooter';
+import { CreateTripWizardCtaBanner } from '../components/create-trip/CreateTripWizardCtaBanner';
+import { DateRangePicker } from '../components/DateRangePicker';
+import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
+import { FlagIcon } from '../components/flags/FlagIcon';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../components/ui/drawer';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger } from '../components/ui/select';
+import { Switch } from '../components/ui/switch';
+import { ConnectivityStatusBanner } from '../components/ConnectivityStatusBanner';
+import { useDbSync } from '../hooks/useDbSync';
+import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { useSyncStatus } from '../hooks/useSyncStatus';
+import { useAuth } from '../hooks/useAuth';
+import { buildClassicItineraryPrompt } from '../services/aiService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import {
+    buildLoginPathWithNext,
+    rememberAuthReturnPath,
+    setPendingAuthRedirect,
+} from '../services/authNavigationService';
+import { ensureDbSession } from '../services/dbService';
+import { dbUpsertTrip } from '../services/dbApi';
+import { createTripGenerationRequest } from '../services/tripGenerationQueueService';
+import {
+    finishTripGenerationAttemptLog,
+    startTripGenerationAttemptLog,
+} from '../services/tripGenerationAttemptLogService';
+import {
+    createTripGenerationInputSnapshot,
+    createTripGenerationRequestId,
+    markTripGenerationFailed,
+    markTripGenerationRunning,
+    withLatestTripGenerationAttemptId,
+} from '../services/tripGenerationDiagnosticsService';
+import {
+    beginTripGenerationTabFeedback,
+    getTripReadyNotificationPermission,
+    requestTripReadyNotificationPermission,
+    type TripGenerationTabFeedbackSession,
+} from '../services/tripGenerationTabFeedbackService';
+import { enqueueClassicAsyncTripGenerationJob } from '../services/tripGenerationAsyncEnqueueService';
+import { waitForTripAttemptPersistence, waitForTripPersistence } from '../services/tripGenerationPersistenceService';
+import { getCountrySeasonByName, monthRangeBetweenDates } from '../data/countryTravelData';
+import { AppLanguage, ITrip, TripPrefillData } from '../types';
+import {
+    addDays,
+    encodeTripPrefill,
+    getDaysDifference,
+    generateTripId,
+} from '../utils';
+import { getEstimatedTripNightsFromTotalDays, getExactTripDateSpan } from '../shared/tripSpan';
+import {
+    DESTINATION_OPTIONS,
+    getDestinationMetaLabel,
+    getDestinationOptionByName,
+    getDestinationPromptLabel,
+    getRollingRecommendationMonths,
+    getDestinationSeasonCountryName,
+    resolveDestinationName,
+    searchDestinationOptions,
+} from '../services/destinationService';
+import { decodeTripPrefill } from '../services/tripPrefillDecoder';
+import {
+    AI_MODEL_CATALOG,
+    CREATE_TRIP_PREFERRED_MODEL_IDS,
+    DEFAULT_CREATE_TRIP_MODEL_ID,
+    getAiModelById,
+    getCreateTripModelOptions,
+} from '../config/aiModelCatalog';
+import {
+    type CreateTripPrefillDraft,
+    isCreateTripCoupleOccasion,
+    isCreateTripDateInputMode,
+    isCreateTripFlexWindow,
+    isCreateTripFriendsEnergy,
+    isCreateTripTransportPreference,
+    isCreateTripTravelerComfort,
+    isCreateTripTravelerGender,
+    isCreateTripTravelerType,
+} from '../shared/createTripPreferences';
+
+interface CreateTripClassicLabPageProps {
+    onOpenManager: () => void;
+    onTripGenerated: (trip: ITrip) => void;
+    onLanguageLoaded?: (lang: AppLanguage) => void;
+}
+
+type BudgetType = 'Low' | 'Medium' | 'High' | 'Luxury';
+type PaceType = 'Relaxed' | 'Balanced' | 'Fast';
+type DateInputMode = 'exact' | 'flex';
+type FlexWindow = 'spring' | 'summer' | 'autumn' | 'winter' | 'shoulder';
+type TravelerType = 'solo' | 'couple' | 'friends' | 'family';
+type TransportMode = 'auto' | 'plane' | 'car' | 'train' | 'bus' | 'cycle' | 'walk' | 'camper';
+type TravelerGender = '' | 'female' | 'male' | 'non-binary' | 'prefer-not';
+type TravelerGenderSelectValue = Exclude<TravelerGender, ''> | 'unspecified';
+type CollapsibleSection = 'traveler' | 'style' | 'transport';
+type TravelerComfort = 'social' | 'balanced' | 'private';
+type FriendsEnergy = 'chill' | 'mixed' | 'full-send';
+type CoupleOccasion = 'none' | 'honeymoon' | 'anniversary' | 'city-break';
+type SnapshotRouteGeometry = {
+    axisX: number;
+    firstY: number;
+    lastY: number;
+    loopLeft: number;
+    segmentMidpoints: number[];
+};
+
+type ChoiceOption<TId extends string> = {
+    id: TId;
+    labelKey: string;
+    icon: React.ComponentType<{ size?: number; weight?: 'duotone' | 'fill' | 'regular' | 'bold' | 'thin' | 'light' }>;
+};
+
+const formatChoiceSummary = <TId extends string>(
+    selectedIds: TId[],
+    options: Array<ChoiceOption<TId>>,
+    translate: (key: string) => string,
+): string => {
+    const optionsById = new Map<TId, ChoiceOption<TId>>();
+    for (const option of options) {
+        optionsById.set(option.id, option);
+    }
+    const labels: string[] = [];
+    for (const selectedId of selectedIds) {
+        const option = optionsById.get(selectedId);
+        if (option) {
+            labels.push(translate(option.labelKey));
+        }
+    }
+    return labels.join(', ');
+};
+
+const STYLE_CHOICES: Array<ChoiceOption<string>> = [
+    { id: 'culture', labelKey: 'style.options.culture', icon: Buildings },
+    { id: 'food', labelKey: 'style.options.food', icon: ForkKnife },
+    { id: 'nature', labelKey: 'style.options.nature', icon: Mountains },
+    { id: 'beaches', labelKey: 'style.options.beaches', icon: SunHorizon },
+    { id: 'nightlife', labelKey: 'style.options.nightlife', icon: MoonStars },
+    { id: 'remote-work', labelKey: 'style.options.remoteWork', icon: Laptop },
+];
+
+const TRANSPORT_OPTIONS: Array<ChoiceOption<TransportMode>> = [
+    { id: 'auto', labelKey: 'transport.options.auto', icon: MagicWand },
+    { id: 'plane', labelKey: 'transport.options.plane', icon: AirplaneTilt },
+    { id: 'car', labelKey: 'transport.options.car', icon: CarProfile },
+    { id: 'train', labelKey: 'transport.options.train', icon: Train },
+    { id: 'bus', labelKey: 'transport.options.bus', icon: Bus },
+    { id: 'cycle', labelKey: 'transport.options.cycle', icon: Bicycle },
+    { id: 'walk', labelKey: 'transport.options.walk', icon: PersonSimpleWalk },
+    { id: 'camper', labelKey: 'transport.options.camper', icon: Van },
+];
+
+const TRAVELER_OPTIONS: Array<ChoiceOption<TravelerType>> = [
+    { id: 'solo', labelKey: 'traveler.options.solo', icon: User },
+    { id: 'couple', labelKey: 'traveler.options.couple', icon: Users },
+    { id: 'friends', labelKey: 'traveler.options.friends', icon: UsersThree },
+    { id: 'family', labelKey: 'traveler.options.family', icon: UsersFour },
+];
+
+const TRAVELER_GENDER_OPTIONS: Array<ChoiceOption<TravelerGenderSelectValue>> = [
+    { id: 'unspecified', labelKey: 'traveler.settings.notSpecified', icon: EyeSlash },
+    { id: 'female', labelKey: 'traveler.settings.genderFemale', icon: GenderFemale },
+    { id: 'male', labelKey: 'traveler.settings.genderMale', icon: GenderMale },
+    { id: 'non-binary', labelKey: 'traveler.settings.genderNonBinary', icon: GenderNonbinary },
+    { id: 'prefer-not', labelKey: 'traveler.settings.genderPreferNot', icon: EyeSlash },
+];
+
+const COUPLE_OCCASION_OPTIONS: Array<ChoiceOption<CoupleOccasion>> = [
+    { id: 'none', labelKey: 'traveler.settings.occasionOptions.none', icon: Sparkle },
+    { id: 'honeymoon', labelKey: 'traveler.settings.occasionOptions.honeymoon', icon: Heart },
+    { id: 'anniversary', labelKey: 'traveler.settings.occasionOptions.anniversary', icon: Cake },
+    { id: 'city-break', labelKey: 'traveler.settings.occasionOptions.cityBreak', icon: Buildings },
+];
+
+const FLEX_WINDOW_OPTIONS: Array<{ id: FlexWindow; labelKey: string }> = [
+    { id: 'spring', labelKey: 'dates.flexWindow.options.spring' },
+    { id: 'summer', labelKey: 'dates.flexWindow.options.summer' },
+    { id: 'autumn', labelKey: 'dates.flexWindow.options.autumn' },
+    { id: 'winter', labelKey: 'dates.flexWindow.options.winter' },
+    { id: 'shoulder', labelKey: 'dates.flexWindow.options.shoulder' },
+];
+const FLEX_WINDOW_MONTHS: Record<FlexWindow, number[]> = {
+    spring: [3, 4, 5],
+    summer: [6, 7, 8],
+    autumn: [9, 10, 11],
+    winter: [12, 1, 2],
+    shoulder: [4, 5, 9, 10],
+};
+
+const DEFAULT_EFFECTIVE_STYLE_IDS = ['culture', 'food', 'nature', 'beaches', 'nightlife'];
+const DEFAULT_EFFECTIVE_TRAVELER: TravelerType = 'solo';
+const DEFAULT_EFFECTIVE_TRANSPORT: TransportMode = 'auto';
+const MODEL_PREFERENCE_NOTE_KEY_BY_ID: Record<string, string> = {
+    'openrouter:minimax/minimax-m2.5': 'modelPicker.badges.fastAndGood',
+    'perplexity:perplexity/sonar-pro': 'modelPicker.badges.veryFast',
+    [DEFAULT_CREATE_TRIP_MODEL_ID]: 'modelPicker.badges.default',
+};
+const CREATE_TRIP_PREFERRED_MODEL_ID_SET = new Set<string>(CREATE_TRIP_PREFERRED_MODEL_IDS);
+const CREATE_TRIP_MODELS = getCreateTripModelOptions(AI_MODEL_CATALOG);
+const IS_DEV = Boolean((process.env.NODE_ENV !== 'production'));
+
+const createRegionDisplayNames = (locale: string): Intl.DisplayNames | null => {
+    try {
+        const RegionDisplayNames = Intl.DisplayNames;
+        return new RegionDisplayNames([locale], { type: 'region' });
+    } catch {
+        return null;
+    }
+};
+
+const toIsoDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const formatDestinationList = (destinations: string[]): string => {
+    if (destinations.length === 0) return '—';
+    if (destinations.length === 1) return destinations[0];
+    if (destinations.length === 2) return `${destinations[0]} & ${destinations[1]}`;
+    return `${destinations.slice(0, -1).join(', ')} & ${destinations[destinations.length - 1]}`;
+};
+
+const buildLoadingTripPreview = (params: {
+    tripId: string;
+    destinationLabel: string;
+    focusLocations: string[];
+    startDate: string;
+    totalNights: number;
+    requestedStops: number;
+    roundTrip: boolean;
+}): ITrip => {
+    const now = Date.now();
+    const totalNights = Math.max(1, Math.round(params.totalNights));
+    const stops = Math.max(1, Math.min(params.requestedStops, totalNights));
+    const baseDuration = Math.floor(totalNights / stops);
+    const remainder = totalNights % stops;
+
+    let offset = 0;
+    const normalizedFocusLocations = new Set<string>();
+    for (const rawLocation of params.focusLocations) {
+        const location = rawLocation.trim();
+        if (location.length > 0) {
+            normalizedFocusLocations.add(location);
+        }
+    }
+    const focusLocations = Array.from(normalizedFocusLocations);
+    const fallbackLocation = params.destinationLabel.trim() || 'Destination';
+    const items = Array.from({ length: stops }).map((_, index) => {
+        const cityDuration = baseDuration + (index < remainder ? 1 : 0);
+        const location = focusLocations.length > 0
+            ? focusLocations[index % focusLocations.length]
+            : fallbackLocation;
+        const item = {
+            id: `loading-city-${index}-${now}`,
+            type: 'city' as const,
+            title: `Loading stop ${index + 1}`,
+            startDateOffset: offset,
+            duration: cityDuration,
+            color: 'bg-slate-100 border-slate-200 text-slate-400',
+            description: 'AI is generating this part of your itinerary.',
+            location,
+            loading: true,
+        };
+        offset += cityDuration;
+        return item;
+    });
+
+    return {
+        id: params.tripId,
+        title: params.destinationLabel || 'Trip draft',
+        startDate: params.startDate,
+        items,
+        createdAt: now,
+        updatedAt: now,
+        isFavorite: false,
+        roundTrip: params.roundTrip,
+        sourceKind: 'created',
+    };
+};
+
+const getInitialDateRange = (): { startDate: string; endDate: string } => {
+    const start = addDays(new Date(), 21);
+    const end = addDays(start, 9);
+    return {
+        startDate: toIsoDate(start),
+        endDate: toIsoDate(end),
+    };
+};
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+    if (error instanceof Error && error.message) return error.message;
+    return fallback;
+};
+
+const clampNumber = (value: number, min: number, max: number): number => Math.max(min, Math.min(value, max));
+
+type CreateTripClassicInitialState = {
+    destinations: string[];
+    startDestination: string;
+    dateInputMode: DateInputMode;
+    startDate: string;
+    endDate: string;
+    flexWeeks: number;
+    flexWindow: FlexWindow;
+    budget: BudgetType;
+    pace: PaceType;
+    roundTrip: boolean;
+    routeLock: boolean;
+    travelerType: TravelerType;
+    selectedStyles: string[];
+    transportModes: TransportMode[];
+    hasTransportOverride: boolean;
+    soloGender: TravelerGender;
+    soloAge: string;
+    soloComfort: TravelerComfort;
+    coupleTravelerA: TravelerGender;
+    coupleTravelerB: TravelerGender;
+    coupleOccasion: CoupleOccasion;
+    friendsCount: number;
+    friendsEnergy: FriendsEnergy;
+    familyAdults: number;
+    familyChildren: number;
+    familyBabies: number;
+    notes: string;
+    prefillMeta: TripPrefillData['meta'] | null;
+};
+
+const buildCreateTripClassicInitialState = (
+    searchParams: URLSearchParams,
+    initialRange: ReturnType<typeof getInitialDateRange>
+): CreateTripClassicInitialState => {
+    const initialState: CreateTripClassicInitialState = {
+        destinations: [],
+        startDestination: '',
+        dateInputMode: 'exact',
+        startDate: initialRange.startDate,
+        endDate: initialRange.endDate,
+        flexWeeks: 2,
+        flexWindow: 'shoulder',
+        budget: 'Medium',
+        pace: 'Balanced',
+        roundTrip: true,
+        routeLock: false,
+        travelerType: DEFAULT_EFFECTIVE_TRAVELER,
+        selectedStyles: DEFAULT_EFFECTIVE_STYLE_IDS,
+        transportModes: [DEFAULT_EFFECTIVE_TRANSPORT],
+        hasTransportOverride: false,
+        soloGender: '',
+        soloAge: '',
+        soloComfort: 'balanced',
+        coupleTravelerA: '',
+        coupleTravelerB: '',
+        coupleOccasion: 'none',
+        friendsCount: 4,
+        friendsEnergy: 'mixed',
+        familyAdults: 2,
+        familyChildren: 1,
+        familyBabies: 0,
+        notes: '',
+        prefillMeta: null,
+    };
+
+    const raw = searchParams.get('prefill');
+    if (!raw) return initialState;
+
+    const data = decodeTripPrefill(raw);
+    if (!data) return initialState;
+
+    if (data.countries && data.countries.length > 0) {
+        initialState.destinations = data.countries;
+        initialState.startDestination = data.countries[0];
+    }
+    if (data.startDate) initialState.startDate = data.startDate;
+    if (data.endDate) initialState.endDate = data.endDate;
+    if (data.budget) initialState.budget = data.budget as BudgetType;
+    if (data.pace) initialState.pace = data.pace as PaceType;
+    if (typeof data.roundTrip === 'boolean') initialState.roundTrip = data.roundTrip;
+    if (typeof data.notes === 'string') initialState.notes = data.notes;
+    if (Array.isArray(data.styles) && data.styles.length > 0) {
+        const knownStyleIds = new Set(STYLE_CHOICES.map((entry) => entry.id));
+        const filteredStyles = data.styles.filter((styleId) => knownStyleIds.has(styleId));
+        if (filteredStyles.length > 0) initialState.selectedStyles = filteredStyles;
+    }
+
+    const rawMeta = data.meta;
+    const safeMeta = rawMeta && typeof rawMeta === 'object' && !Array.isArray(rawMeta)
+        ? rawMeta as Record<string, unknown>
+        : null;
+
+    if (!safeMeta) return initialState;
+
+    const label = typeof safeMeta.label === 'string' ? safeMeta.label : undefined;
+    const source = typeof safeMeta.source === 'string' ? safeMeta.source : undefined;
+    const author = typeof safeMeta.author === 'string' ? safeMeta.author : undefined;
+    if (label || source || author) {
+        initialState.prefillMeta = { label, source, author };
+    }
+
+    const rawDraft = safeMeta.draft;
+    const draft = rawDraft && typeof rawDraft === 'object' && !Array.isArray(rawDraft)
+        ? rawDraft as Partial<CreateTripPrefillDraft & {
+            transportModes?: TransportMode[];
+            soloGender?: TravelerGender;
+            soloAge?: string;
+            soloComfort?: TravelerComfort;
+            coupleTravelerA?: TravelerGender;
+            coupleTravelerB?: TravelerGender;
+            coupleOccasion?: CoupleOccasion;
+            friendsCount?: number;
+            friendsEnergy?: FriendsEnergy;
+            familyAdults?: number;
+            familyChildren?: number;
+            familyBabies?: number;
+        }>
+        : null;
+
+    if (!draft) return initialState;
+
+    const travelerDetails = (
+        draft.travelerDetails && typeof draft.travelerDetails === 'object' && !Array.isArray(draft.travelerDetails)
+            ? draft.travelerDetails
+            : {}
+    ) as NonNullable<CreateTripPrefillDraft['travelerDetails']>;
+
+    if (isCreateTripDateInputMode(draft.dateInputMode)) {
+        initialState.dateInputMode = draft.dateInputMode;
+    }
+    if (typeof draft.flexWeeks === 'number' && Number.isFinite(draft.flexWeeks)) {
+        initialState.flexWeeks = clampNumber(Math.round(draft.flexWeeks), 1, 12);
+    }
+    if (isCreateTripFlexWindow(draft.flexWindow)) {
+        initialState.flexWindow = draft.flexWindow;
+    }
+    if (typeof draft.startDestination === 'string') {
+        initialState.startDestination = draft.startDestination;
+    }
+    if (typeof draft.routeLock === 'boolean') {
+        initialState.routeLock = draft.routeLock;
+    }
+    if (isCreateTripTravelerType(draft.travelerType)) {
+        initialState.travelerType = draft.travelerType;
+    }
+    if (Array.isArray(draft.tripStyleTags)) {
+        const knownStyleIds = new Set(STYLE_CHOICES.map((entry) => entry.id));
+        const validStyleTags = draft.tripStyleTags.filter(
+            (styleId): styleId is string => typeof styleId === 'string' && knownStyleIds.has(styleId)
+        );
+        if (validStyleTags.length > 0) initialState.selectedStyles = validStyleTags;
+    }
+
+    const preferredTransportModes = Array.isArray(draft.transportPreferences)
+        ? draft.transportPreferences
+        : draft.transportModes;
+    if (Array.isArray(preferredTransportModes)) {
+        const validModes = preferredTransportModes.filter(isCreateTripTransportPreference);
+        if (validModes.length > 0) initialState.transportModes = validModes;
+    }
+    if (typeof draft.hasTransportOverride === 'boolean') {
+        initialState.hasTransportOverride = draft.hasTransportOverride;
+    }
+
+    const soloGenderValue = travelerDetails.soloGender ?? draft.soloGender;
+    if (isCreateTripTravelerGender(soloGenderValue)) initialState.soloGender = soloGenderValue;
+    const soloAgeValue = travelerDetails.soloAge ?? draft.soloAge;
+    if (typeof soloAgeValue === 'string') initialState.soloAge = soloAgeValue;
+    const soloComfortValue = travelerDetails.soloComfort ?? draft.soloComfort;
+    if (isCreateTripTravelerComfort(soloComfortValue)) initialState.soloComfort = soloComfortValue;
+
+    const coupleTravelerAValue = travelerDetails.coupleTravelerA ?? draft.coupleTravelerA;
+    if (isCreateTripTravelerGender(coupleTravelerAValue)) initialState.coupleTravelerA = coupleTravelerAValue;
+    const coupleTravelerBValue = travelerDetails.coupleTravelerB ?? draft.coupleTravelerB;
+    if (isCreateTripTravelerGender(coupleTravelerBValue)) initialState.coupleTravelerB = coupleTravelerBValue;
+    const coupleOccasionValue = travelerDetails.coupleOccasion ?? draft.coupleOccasion;
+    if (isCreateTripCoupleOccasion(coupleOccasionValue)) initialState.coupleOccasion = coupleOccasionValue;
+
+    const friendsCountValue = travelerDetails.friendsCount ?? draft.friendsCount;
+    if (typeof friendsCountValue === 'number' && Number.isFinite(friendsCountValue)) {
+        initialState.friendsCount = clampNumber(Math.round(friendsCountValue), 2, 12);
+    }
+    const friendsEnergyValue = travelerDetails.friendsEnergy ?? draft.friendsEnergy;
+    if (isCreateTripFriendsEnergy(friendsEnergyValue)) initialState.friendsEnergy = friendsEnergyValue;
+
+    const familyAdultsValue = travelerDetails.familyAdults ?? draft.familyAdults;
+    if (typeof familyAdultsValue === 'number' && Number.isFinite(familyAdultsValue)) {
+        initialState.familyAdults = clampNumber(Math.round(familyAdultsValue), 1, 8);
+    }
+    const familyChildrenValue = travelerDetails.familyChildren ?? draft.familyChildren;
+    if (typeof familyChildrenValue === 'number' && Number.isFinite(familyChildrenValue)) {
+        initialState.familyChildren = clampNumber(Math.round(familyChildrenValue), 0, 8);
+    }
+    const familyBabiesValue = travelerDetails.familyBabies ?? draft.familyBabies;
+    if (typeof familyBabiesValue === 'number' && Number.isFinite(familyBabiesValue)) {
+        initialState.familyBabies = clampNumber(Math.round(familyBabiesValue), 0, 4);
+    }
+
+    if (initialState.destinations.length === 0) {
+        initialState.startDestination = '';
+        initialState.routeLock = false;
+    } else if (!initialState.startDestination || !initialState.destinations.includes(initialState.startDestination)) {
+        initialState.startDestination = initialState.destinations[0];
+    }
+    if (initialState.destinations.length <= 1) {
+        initialState.routeLock = false;
+    }
+
+    return initialState;
+};
+
+const NumberStepper: React.FC<{
+    label: string;
+    value: number;
+    min: number;
+    max: number;
+    onChange: (next: number) => void;
+}> = ({ label, value, min, max, onChange }) => (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</div>
+        <div className="mt-2 flex items-center justify-between gap-2">
+            <button
+                type="button"
+                onClick={() => onChange(clampNumber(value - 1, min, max))}
+                disabled={value <= min}
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+                <Minus size={14} />
+            </button>
+            <span className="min-w-[2ch] text-center text-sm font-semibold text-slate-800">{value}</span>
+            <button
+                type="button"
+                onClick={() => onChange(clampNumber(value + 1, min, max))}
+                disabled={value >= max}
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+                <Plus size={14} />
+            </button>
+        </div>
+    </div>
+);
+
+export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> = ({
+    onOpenManager,
+    onTripGenerated,
+    onLanguageLoaded,
+}) => {
+    const { t, i18n } = useTranslation('createTrip');
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { confirm } = useAppDialog();
+    const [searchParams] = useSearchParams();
+    const { isAdmin, isAuthenticated, isAnonymous } = useAuth();
+    const { snapshot: connectivitySnapshot } = useConnectivityStatus();
+    const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
+    const { isOnline: isBrowserOnline } = useNetworkStatus({ probeWhileOffline: false });
+
+    useDbSync(onLanguageLoaded);
+
+    const initialRange = useMemo(() => getInitialDateRange(), []);
+    const [initialPrefillState] = useState(() => buildCreateTripClassicInitialState(searchParams, initialRange));
+
+    const [query, setQuery] = useState('');
+    const [destinations, setDestinations] = useState<string[]>(initialPrefillState.destinations);
+    const [startDestination, setStartDestination] = useState<string>(initialPrefillState.startDestination);
+    const [dragIndex, setDragIndex] = useState<number | null>(null);
+    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+    const [dateInputMode, setDateInputMode] = useState<DateInputMode>(initialPrefillState.dateInputMode);
+    const [startDate, setStartDate] = useState(initialPrefillState.startDate);
+    const [endDate, setEndDate] = useState(initialPrefillState.endDate);
+    const [flexWeeks, setFlexWeeks] = useState(initialPrefillState.flexWeeks);
+    const [flexWindow, setFlexWindow] = useState<FlexWindow>(initialPrefillState.flexWindow);
+
+    const [budget, setBudget] = useState<BudgetType>(initialPrefillState.budget);
+    const [pace, setPace] = useState<PaceType>(initialPrefillState.pace);
+    const [roundTrip, setRoundTrip] = useState(initialPrefillState.roundTrip);
+    const [routeLock, setRouteLock] = useState(initialPrefillState.routeLock);
+
+    const [travelerType, setTravelerType] = useState<TravelerType>(initialPrefillState.travelerType);
+    const [selectedStyles, setSelectedStyles] = useState<string[]>(initialPrefillState.selectedStyles);
+    const [transportModes, setTransportModes] = useState<TransportMode[]>(initialPrefillState.transportModes);
+    const hasTransportOverrideRef = useRef(initialPrefillState.hasTransportOverride);
+
+    const [soloGender, setSoloGender] = useState<TravelerGender>(initialPrefillState.soloGender);
+    const [soloAge, setSoloAge] = useState(initialPrefillState.soloAge);
+    const [soloComfort, setSoloComfort] = useState<TravelerComfort>(initialPrefillState.soloComfort);
+    const [coupleTravelerA, setCoupleTravelerA] = useState<TravelerGender>(initialPrefillState.coupleTravelerA);
+    const [coupleTravelerB, setCoupleTravelerB] = useState<TravelerGender>(initialPrefillState.coupleTravelerB);
+    const [coupleOccasion, setCoupleOccasion] = useState<CoupleOccasion>(initialPrefillState.coupleOccasion);
+    const [friendsCount, setFriendsCount] = useState(initialPrefillState.friendsCount);
+    const [friendsEnergy, setFriendsEnergy] = useState<FriendsEnergy>(initialPrefillState.friendsEnergy);
+    const [familyAdults, setFamilyAdults] = useState(initialPrefillState.familyAdults);
+    const [familyChildren, setFamilyChildren] = useState(initialPrefillState.familyChildren);
+    const [familyBabies, setFamilyBabies] = useState(initialPrefillState.familyBabies);
+    const [travelerSettingsOpen, setTravelerSettingsOpen] = useState(false);
+    const [settingsTraveler, setSettingsTraveler] = useState<TravelerType>(DEFAULT_EFFECTIVE_TRAVELER);
+    const [isDesktopSettings, setIsDesktopSettings] = useState(() => {
+        if (typeof window === 'undefined') return true;
+        return window.matchMedia('(min-width: 768px)').matches;
+    });
+
+    const [notes, setNotes] = useState(initialPrefillState.notes);
+    const [prefillMeta] = useState<TripPrefillData['meta'] | null>(initialPrefillState.prefillMeta);
+    const prefillHydrated = true;
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [selectedModelId, setSelectedModelId] = useState<string>(DEFAULT_CREATE_TRIP_MODEL_ID);
+
+    const [sectionExpanded, setSectionExpanded] = useState<Record<CollapsibleSection, boolean>>({
+        traveler: false,
+        style: false,
+        transport: false,
+    });
+    const [mobileSnapshotExpanded, setMobileSnapshotExpanded] = useState(false);
+    const [mobileSnapshotFooterOffset, setMobileSnapshotFooterOffset] = useState(0);
+
+    const searchWrapperRef = useRef<HTMLDivElement | null>(null);
+    const [searchOpen, setSearchOpen] = useState(false);
+    const snapshotRouteRef = useRef<HTMLDivElement | null>(null);
+    const snapshotNodeRefs = useRef<Array<HTMLDivElement | null>>([]);
+    const submitErrorRef = useRef<HTMLDivElement | null>(null);
+    const [snapshotRouteGeometry, setSnapshotRouteGeometry] = useState<SnapshotRouteGeometry | null>(null);
+    const generationTabFeedbackSessionRef = useRef<TripGenerationTabFeedbackSession | null>(null);
+
+    const maybeRequestTripReadyNotifications = useCallback(async () => {
+        if (getTripReadyNotificationPermission() !== 'default') return;
+
+        const shouldEnable = await confirm({
+            title: t('notifications.prompt.title'),
+            message: t('notifications.prompt.message'),
+            confirmLabel: t('notifications.prompt.enable'),
+            cancelLabel: t('notifications.prompt.notNow'),
+        });
+        if (!shouldEnable) return;
+        await requestTripReadyNotificationPermission();
+    }, [confirm, t]);
+
+    const regionDisplayNames = useMemo(() => createRegionDisplayNames(i18n.language), [i18n.language]);
+
+    const getLocalizedCountryName = useCallback((countryCode: string | undefined, fallback: string): string => {
+        if (!countryCode || countryCode.length !== 2 || !regionDisplayNames) return fallback;
+        return regionDisplayNames.of(countryCode.toUpperCase()) || fallback;
+    }, [regionDisplayNames]);
+
+    const getLocalizedDestinationLabel = useCallback((destinationName: string): string => {
+        const destination = getDestinationOptionByName(destinationName);
+        if (!destination) return destinationName;
+        if (destination.kind === 'country') return getLocalizedCountryName(destination.code, destination.name);
+        return destination.name;
+    }, [getLocalizedCountryName]);
+
+    const getLocalizedIslandMeta = useCallback((destinationName: string): string | undefined => {
+        const destination = getDestinationOptionByName(destinationName);
+        if (!destination || destination.kind !== 'island' || !destination.parentCountryName) return undefined;
+        const parentName = getLocalizedCountryName(destination.parentCountryCode, destination.parentCountryName);
+        return t('destination.islandOf', { country: parentName });
+    }, [getLocalizedCountryName, t]);
+
+    const recommendationMonths = useMemo(() => {
+        if (dateInputMode === 'flex') return FLEX_WINDOW_MONTHS[flexWindow];
+        const exactMonths = monthRangeBetweenDates(startDate, endDate);
+        if (exactMonths.length > 0) return exactMonths;
+        return getRollingRecommendationMonths();
+    }, [dateInputMode, endDate, flexWindow, startDate]);
+
+    const suggestions = useMemo(() => {
+        const normalizedQuery = query.trim().toLocaleLowerCase();
+        const source = searchDestinationOptions(normalizedQuery, {
+            excludeNames: destinations,
+            limit: normalizedQuery ? DESTINATION_OPTIONS.length : 20,
+            months: recommendationMonths,
+        });
+        if (!normalizedQuery) return source.slice(0, 20);
+
+        const startsWithMatches: typeof source = [];
+        const includesMatches: typeof source = [];
+
+        source.forEach((option) => {
+            const localizedName = option.kind === 'country'
+                ? getLocalizedCountryName(option.code, option.name)
+                : option.name;
+            const localizedParent = option.parentCountryCode
+                ? getLocalizedCountryName(option.parentCountryCode, option.parentCountryName || '')
+                : option.parentCountryName || '';
+            const startsWith = [option.name, localizedName, ...(option.aliases || [])]
+                .filter(Boolean)
+                .some((value) => value.toLocaleLowerCase().startsWith(normalizedQuery));
+
+            if (startsWith) {
+                startsWithMatches.push(option);
+                return;
+            }
+
+            const haystack = [
+                option.name,
+                localizedName,
+                option.parentCountryName,
+                localizedParent,
+                ...(option.aliases || []),
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLocaleLowerCase();
+
+            if (haystack.includes(normalizedQuery)) {
+                includesMatches.push(option);
+            }
+        });
+
+        return [...startsWithMatches, ...includesMatches].slice(0, 30);
+    }, [destinations, getLocalizedCountryName, query, recommendationMonths]);
+
+    const orderedDestinations = useMemo(() => {
+        if (destinations.length === 0) return [];
+        const effectiveStart = startDestination && destinations.includes(startDestination) ? startDestination : destinations[0];
+        const startIndex = destinations.indexOf(effectiveStart);
+        if (startIndex <= 0) return destinations;
+        return [...destinations.slice(startIndex), ...destinations.slice(0, startIndex)];
+    }, [destinations, startDestination]);
+
+    const routeHeadline = useMemo(() => {
+        const labels = orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination));
+        if (!routeLock) return formatDestinationList(labels);
+        if (!roundTrip || labels.length === 0) return labels.join(' → ');
+        return [...labels, labels[0]].join(' → ');
+    }, [getLocalizedDestinationLabel, orderedDestinations, routeLock, roundTrip]);
+
+    const dayCount = useMemo(() => {
+        if (dateInputMode === 'flex') return Math.max(7, flexWeeks * 7);
+        return getDaysDifference(startDate, endDate);
+    }, [dateInputMode, endDate, flexWeeks, startDate]);
+    const exactTripSpan = useMemo(
+        () => (dateInputMode === 'exact' ? getExactTripDateSpan(startDate, endDate) : null),
+        [dateInputMode, endDate, startDate]
+    );
+    const totalNights = useMemo(
+        () => (
+            dateInputMode === 'exact'
+                ? (exactTripSpan?.nights ?? 0)
+                : getEstimatedTripNightsFromTotalDays(dayCount)
+        ),
+        [dateInputMode, dayCount, exactTripSpan]
+    );
+    const exactDateRangeError = useMemo(
+        () => (
+            dateInputMode === 'exact' && startDate && endDate && totalNights < 1
+                ? t('errors.minimumNightStay')
+                : null
+        ),
+        [dateInputMode, endDate, startDate, t, totalNights]
+    );
+    const plannerDurationLabel = useMemo(
+        () => (
+            dateInputMode === 'exact'
+                ? t('dates.summaryExact', {
+                    days: exactTripSpan?.days ?? dayCount,
+                    nights: exactTripSpan?.nights ?? totalNights,
+                })
+                : t('dates.summary', { days: dayCount })
+        ),
+        [dateInputMode, dayCount, exactTripSpan, t, totalNights]
+    );
+    const snapshotDurationLabel = useMemo(
+        () => (
+            dateInputMode === 'exact'
+                ? t('snapshot.daysNights', {
+                    days: exactTripSpan?.days ?? dayCount,
+                    nights: exactTripSpan?.nights ?? totalNights,
+                })
+                : t('snapshot.days', { days: dayCount })
+        ),
+        [dateInputMode, dayCount, exactTripSpan, t, totalNights]
+    );
+    const mobileSnapshotDurationValue = useMemo(
+        () => (
+            dateInputMode === 'exact'
+                ? (exactTripSpan?.compactLabel ?? `${Math.max(1, dayCount)}D/${Math.max(0, totalNights)}N`)
+                : String(dayCount)
+        ),
+        [dateInputMode, dayCount, exactTripSpan, totalNights]
+    );
+
+    const mobileDateRangeLabel = useMemo(() => {
+        const start = new Date(`${startDate}T00:00:00`);
+        const end = new Date(`${endDate}T00:00:00`);
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+            return plannerDurationLabel;
+        }
+        const dateFormatOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+        return `${start.toLocaleDateString(i18n.language, dateFormatOptions)} - ${end.toLocaleDateString(i18n.language, dateFormatOptions)}`;
+    }, [dayCount, endDate, i18n.language, plannerDurationLabel, startDate]);
+
+    const averageDaysPerStop = useMemo(() => {
+        if (orderedDestinations.length === 0) return 0;
+        return dayCount / orderedDestinations.length;
+    }, [dayCount, orderedDestinations.length]);
+
+    const selectedAiModel = useMemo(() => {
+        return getAiModelById(selectedModelId)
+            || getAiModelById(DEFAULT_CREATE_TRIP_MODEL_ID)
+            || CREATE_TRIP_MODELS[0]!;
+    }, [selectedModelId]);
+    const preferredCreateTripModels = useMemo(
+        () => CREATE_TRIP_MODELS.filter((model) => CREATE_TRIP_PREFERRED_MODEL_ID_SET.has(model.id)),
+        []
+    );
+    const remainingCreateTripModels = useMemo(
+        () => CREATE_TRIP_MODELS.filter((model) => !CREATE_TRIP_PREFERRED_MODEL_ID_SET.has(model.id)),
+        []
+    );
+
+    const destinationComplete = orderedDestinations.length > 0;
+    const datesComplete = dateInputMode === 'flex'
+        ? Boolean(startDate && endDate)
+        : Boolean(startDate && endDate && totalNights >= 1);
+    const canLockRoute = destinations.length > 1;
+    const isGenerationBlockedOffline = !isBrowserOnline;
+
+    const travelerSummary = t(`traveler.options.${travelerType}`);
+    const styleSummary = formatChoiceSummary(selectedStyles, STYLE_CHOICES, t);
+    const transportSummary = formatChoiceSummary(transportModes, TRANSPORT_OPTIONS, t);
+
+    const travelerDetailSummary = useMemo(() => {
+        const getGenderLabel = (gender: TravelerGender): string => {
+            if (gender === 'female') return t('traveler.settings.genderFemale');
+            if (gender === 'male') return t('traveler.settings.genderMale');
+            if (gender === 'non-binary') return t('traveler.settings.genderNonBinary');
+            if (gender === 'prefer-not') return t('traveler.settings.genderPreferNot');
+            return '';
+        };
+
+        if (travelerType === 'solo') {
+            const chunks: string[] = [];
+            const soloGenderLabel = getGenderLabel(soloGender);
+            if (soloGenderLabel) chunks.push(soloGenderLabel);
+            if (soloAge) chunks.push(`${soloAge}`);
+            chunks.push(t(`traveler.settings.comfortOptions.${soloComfort}`));
+            return chunks.join(', ');
+        }
+
+        if (travelerType === 'couple') {
+            const chunks: string[] = [];
+            const travelerALabel = getGenderLabel(coupleTravelerA);
+            const travelerBLabel = getGenderLabel(coupleTravelerB);
+            if (travelerALabel && travelerBLabel) {
+                chunks.push(`${travelerALabel} + ${travelerBLabel}`);
+            }
+            if (coupleOccasion !== 'none') {
+                const occasionKey = coupleOccasion === 'city-break' ? 'cityBreak' : coupleOccasion;
+                chunks.push(t(`traveler.settings.occasionOptions.${occasionKey}`));
+            }
+            return chunks.length > 0 ? chunks.join(', ') : t('traveler.settings.summaryHint');
+        }
+
+        if (travelerType === 'friends') {
+            return `${friendsCount}, ${t(`traveler.settings.energyOptions.${friendsEnergy}`)}`;
+        }
+
+        return [
+            `${familyAdults} ${t('traveler.settings.adults')}`,
+            `${familyChildren} ${t('traveler.settings.children')}`,
+            `${familyBabies} ${t('traveler.settings.babies')}`,
+        ].join(', ');
+    }, [coupleOccasion, coupleTravelerA, coupleTravelerB, familyAdults, familyBabies, familyChildren, friendsCount, friendsEnergy, soloAge, soloComfort, soloGender, t, travelerType]);
+
+    const travelerPreviewSummary = useMemo(() => {
+        const trimmedDetail = travelerDetailSummary.trim();
+        if (!trimmedDetail || trimmedDetail === t('traveler.settings.summaryHint')) {
+            return travelerSummary;
+        }
+        return `${travelerSummary} (${trimmedDetail})`;
+    }, [travelerDetailSummary, travelerSummary, t]);
+
+    const routeTimelineDestinations = orderedDestinations;
+    const routeHasMultipleStops = routeTimelineDestinations.length > 1;
+    const routeLoopSegmentWidth = snapshotRouteGeometry ? Math.max(snapshotRouteGeometry.axisX - snapshotRouteGeometry.loopLeft, 12) : 0;
+    const routeLoopSegmentHeight = snapshotRouteGeometry ? Math.max(snapshotRouteGeometry.lastY - snapshotRouteGeometry.firstY, 10) : 0;
+    const showLockedRouteLines = Boolean(snapshotRouteGeometry && routeLock && routeHasMultipleStops);
+
+    const openSearch = useCallback(() => {
+        setSearchOpen(true);
+    }, []);
+
+    const showSubmitError = useCallback((message: string) => {
+        setSubmitError(message);
+        if (typeof window === 'undefined') return;
+        window.requestAnimationFrame(() => {
+            submitErrorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    }, []);
+
+    const updateSnapshotRouteGeometry = useCallback(() => {
+        const container = snapshotRouteRef.current;
+        if (!container) {
+            setSnapshotRouteGeometry(null);
+            return;
+        }
+
+        const nodes = snapshotNodeRefs.current.filter((node): node is HTMLDivElement => Boolean(node));
+        if (nodes.length === 0) {
+            setSnapshotRouteGeometry(null);
+            return;
+        }
+
+        const containerRect = container.getBoundingClientRect();
+        const points = nodes.map((node) => {
+            const rect = node.getBoundingClientRect();
+            return {
+                x: rect.left - containerRect.left + rect.width / 2,
+                y: rect.top - containerRect.top + rect.height / 2,
+            };
+        });
+
+        const axisX = points.reduce((total, point) => total + point.x, 0) / points.length;
+        const firstY = points[0].y;
+        const lastY = points[points.length - 1].y;
+        const loopLeft = Math.max(6, axisX - 28);
+        const segmentMidpoints = points.slice(0, -1).map((point, index) => (point.y + points[index + 1].y) / 2);
+
+        setSnapshotRouteGeometry((previous) => {
+            if (!previous) return { axisX, firstY, lastY, loopLeft, segmentMidpoints };
+            const sameMidpoints =
+                previous.segmentMidpoints.length === segmentMidpoints.length &&
+                previous.segmentMidpoints.every((value, index) => Math.abs(value - segmentMidpoints[index]) < 0.5);
+            const unchanged =
+                Math.abs(previous.axisX - axisX) < 0.5 &&
+                Math.abs(previous.firstY - firstY) < 0.5 &&
+                Math.abs(previous.lastY - lastY) < 0.5 &&
+                Math.abs(previous.loopLeft - loopLeft) < 0.5 &&
+                sameMidpoints;
+            return unchanged ? previous : { axisX, firstY, lastY, loopLeft, segmentMidpoints };
+        });
+    }, []);
+
+    useEffect(() => {
+        const updateMobileSnapshotOffset = () => {
+            const footer = document.querySelector('footer');
+            if (!footer) {
+                setMobileSnapshotFooterOffset(0);
+                return;
+            }
+            const rect = footer.getBoundingClientRect();
+            const overlap = Math.max(0, window.innerHeight - rect.top);
+            setMobileSnapshotFooterOffset((previous) => (Math.abs(previous - overlap) < 0.5 ? previous : overlap));
+        };
+
+        updateMobileSnapshotOffset();
+        window.addEventListener('resize', updateMobileSnapshotOffset);
+        window.addEventListener('scroll', updateMobileSnapshotOffset, true);
+        return () => {
+            window.removeEventListener('resize', updateMobileSnapshotOffset);
+            window.removeEventListener('scroll', updateMobileSnapshotOffset, true);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const mediaQuery = window.matchMedia('(min-width: 768px)');
+        const onChange = () => setIsDesktopSettings(mediaQuery.matches);
+        onChange();
+
+        if (mediaQuery.addEventListener) {
+            mediaQuery.addEventListener('change', onChange);
+            return () => mediaQuery.removeEventListener('change', onChange);
+        }
+
+        mediaQuery.addListener(onChange);
+        return () => mediaQuery.removeListener(onChange);
+    }, []);
+
+    const draftMeta = useMemo<CreateTripPrefillDraft>(() => ({
+        version: 2,
+        dateInputMode,
+        flexWeeks,
+        flexWindow,
+        startDestination,
+        routeLock,
+        travelerType,
+        transportPreferences: transportModes,
+        hasTransportOverride: hasTransportOverrideRef.current,
+        tripStyleTags: selectedStyles,
+        destinationOrder: orderedDestinations,
+        travelerDetails: {
+            soloGender,
+            soloAge,
+            soloComfort,
+            coupleTravelerA,
+            coupleTravelerB,
+            coupleOccasion,
+            friendsCount,
+            friendsEnergy,
+            familyAdults,
+            familyChildren,
+            familyBabies,
+        },
+    }), [
+        coupleOccasion,
+        coupleTravelerA,
+        coupleTravelerB,
+        dateInputMode,
+        familyAdults,
+        familyBabies,
+        familyChildren,
+        flexWeeks,
+        flexWindow,
+        friendsCount,
+        friendsEnergy,
+        orderedDestinations,
+        routeLock,
+        selectedStyles,
+        soloAge,
+        soloComfort,
+        soloGender,
+        startDestination,
+        transportModes,
+        travelerType,
+    ]);
+
+    const hasPersistableState = useMemo(() => {
+        const hasTravelerOverrides = soloGender !== ''
+            || soloAge.trim() !== ''
+            || soloComfort !== 'balanced'
+            || coupleTravelerA !== ''
+            || coupleTravelerB !== ''
+            || coupleOccasion !== 'none'
+            || friendsCount !== 4
+            || friendsEnergy !== 'mixed'
+            || familyAdults !== 2
+            || familyChildren !== 1
+            || familyBabies !== 0;
+
+        const hasTransportOverrides = hasTransportOverrideRef.current
+            || transportModes.length !== 1
+            || transportModes[0] !== DEFAULT_EFFECTIVE_TRANSPORT;
+
+        return destinations.length > 0
+            || startDate !== initialRange.startDate
+            || endDate !== initialRange.endDate
+            || budget !== 'Medium'
+            || pace !== 'Balanced'
+            || roundTrip !== true
+            || routeLock !== false
+            || dateInputMode !== 'exact'
+            || flexWeeks !== 2
+            || flexWindow !== 'shoulder'
+            || notes.trim().length > 0
+            || travelerType !== DEFAULT_EFFECTIVE_TRAVELER
+            || selectedStyles.join('|') !== DEFAULT_EFFECTIVE_STYLE_IDS.join('|')
+            || hasTransportOverrides
+            || hasTravelerOverrides;
+    }, [
+        budget,
+        coupleOccasion,
+        coupleTravelerA,
+        coupleTravelerB,
+        dateInputMode,
+        destinations.length,
+        endDate,
+        familyAdults,
+        familyBabies,
+        familyChildren,
+        flexWeeks,
+        flexWindow,
+        friendsCount,
+        friendsEnergy,
+        initialRange.endDate,
+        initialRange.startDate,
+        notes,
+        pace,
+        roundTrip,
+        routeLock,
+        selectedStyles,
+        soloAge,
+        soloComfort,
+        soloGender,
+        startDate,
+        transportModes,
+        travelerType,
+    ]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (!prefillHydrated) return;
+
+        const currentParams = new URLSearchParams(window.location.search);
+
+        if (!hasPersistableState) {
+            if (!currentParams.has('prefill')) return;
+            currentParams.delete('prefill');
+            const nextSearch = currentParams.toString();
+            const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+            window.history.replaceState(window.history.state, '', nextUrl);
+            return;
+        }
+
+        const persistedMeta: TripPrefillData['meta'] = {
+            ...(typeof prefillMeta?.source === 'string' ? { source: prefillMeta.source } : {}),
+            ...(typeof prefillMeta?.author === 'string' ? { author: prefillMeta.author } : {}),
+            ...(typeof prefillMeta?.label === 'string' ? { label: prefillMeta.label } : {}),
+            draft: draftMeta,
+        };
+
+        const prefillPayload: TripPrefillData = {
+            countries: destinations.length > 0 ? destinations : undefined,
+            startDate,
+            endDate,
+            budget,
+            pace,
+            notes: notes.trim() || undefined,
+            roundTrip,
+            styles: selectedStyles.length > 0 ? selectedStyles : undefined,
+            meta: persistedMeta,
+        };
+
+        const encoded = encodeTripPrefill(prefillPayload);
+        if (currentParams.get('prefill') === encoded) return;
+
+        currentParams.set('prefill', encoded);
+        const nextSearch = currentParams.toString();
+        const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+        window.history.replaceState(window.history.state, '', nextUrl);
+    }, [
+        budget,
+        destinations,
+        draftMeta,
+        endDate,
+        hasPersistableState,
+        notes,
+        pace,
+        prefillHydrated,
+        prefillMeta?.author,
+        prefillMeta?.label,
+        prefillMeta?.source,
+        roundTrip,
+        selectedStyles,
+        startDate,
+    ]);
+
+    useEffect(() => {
+        const handleOutsideClick = (event: MouseEvent) => {
+            const target = event.target as Node;
+            if (!searchWrapperRef.current?.contains(target)) {
+                setSearchOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }, []);
+
+    useEffect(() => {
+        snapshotNodeRefs.current = snapshotNodeRefs.current.slice(0, routeTimelineDestinations.length);
+    }, [routeTimelineDestinations.length]);
+
+    const updateSnapshotRouteGeometryRef = useRef(updateSnapshotRouteGeometry);
+    useEffect(() => {
+        updateSnapshotRouteGeometryRef.current = updateSnapshotRouteGeometry;
+    }, [updateSnapshotRouteGeometry]);
+
+    useLayoutEffect(() => {
+        updateSnapshotRouteGeometry();
+    }, [routeTimelineDestinations, roundTrip, routeLock, updateSnapshotRouteGeometry]);
+
+    useEffect(() => {
+        const handleResize = () => updateSnapshotRouteGeometryRef.current();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        if (typeof ResizeObserver === 'undefined') return;
+
+        const observer = new ResizeObserver(() => updateSnapshotRouteGeometry());
+        if (snapshotRouteRef.current) observer.observe(snapshotRouteRef.current);
+        snapshotNodeRefs.current.forEach((node) => {
+            if (node) observer.observe(node);
+        });
+
+        return () => observer.disconnect();
+    }, [routeTimelineDestinations, updateSnapshotRouteGeometry]);
+
+    const toggleSection = (section: CollapsibleSection) => {
+        setSectionExpanded((previous) => {
+            const nextExpanded = !previous[section];
+            trackEvent('create_trip__section--expand', {
+                section_id: section,
+                expanded: nextExpanded,
+            });
+            return {
+                ...previous,
+                [section]: nextExpanded,
+            };
+        });
+    };
+
+    const addDestination = (rawValue: string) => {
+        const normalized = resolveDestinationName(rawValue);
+        if (!normalized) return;
+        const alreadySelected = destinations.some((entry) => entry.toLocaleLowerCase() === normalized.toLocaleLowerCase());
+        if (alreadySelected) return;
+
+        setDestinations((previous) => [...previous, normalized]);
+        if (destinations.length === 0) {
+            setStartDestination(normalized);
+        }
+        setQuery('');
+        setSearchOpen(false);
+    };
+
+    const removeDestination = (name: string) => {
+        const nextDestinations = destinations.filter((entry) => entry !== name);
+        setDestinations(nextDestinations);
+        setStartDestination((current) => {
+            if (nextDestinations.length === 0) return '';
+            return current && nextDestinations.includes(current) ? current : nextDestinations[0];
+        });
+        if (nextDestinations.length <= 1) {
+            setRouteLock(false);
+            setDragIndex(null);
+            setDragOverIndex(null);
+        }
+    };
+
+    const handleDestinationDragStart = (index: number) => {
+        if (!routeLock) return;
+        setDragIndex(index);
+        setDragOverIndex(index);
+    };
+
+    const handleDestinationDragOver = (event: React.DragEvent<HTMLDivElement>, index: number) => {
+        if (!routeLock || dragIndex === null) return;
+        event.preventDefault();
+        if (dragOverIndex !== index) {
+            setDragOverIndex(index);
+        }
+    };
+
+    const handleDestinationDrop = (index: number) => {
+        if (!routeLock || dragIndex === null) return;
+        if (dragIndex === index) {
+            setDragIndex(null);
+            setDragOverIndex(null);
+            return;
+        }
+
+        setDestinations((previous) => {
+            const next = [...previous];
+            const [moved] = next.splice(dragIndex, 1);
+            next.splice(index, 0, moved);
+            return next;
+        });
+
+        setDragIndex(null);
+        setDragOverIndex(null);
+    };
+
+    const handleDestinationDragEnd = () => {
+        setDragIndex(null);
+        setDragOverIndex(null);
+    };
+
+    const toggleStyle = (styleId: string) => {
+        setSelectedStyles((previous) =>
+            previous.includes(styleId)
+                ? previous.filter((entry) => entry !== styleId)
+                : [...previous, styleId]
+        );
+    };
+
+    const toggleTransportMode = (mode: TransportMode) => {
+        hasTransportOverrideRef.current = true;
+        setTransportModes((previous) => {
+            if (mode === 'auto') return ['auto'];
+
+            const withoutAuto = previous.filter((entry) => entry !== 'auto');
+            if (withoutAuto.includes(mode)) {
+                const filtered = withoutAuto.filter((entry) => entry !== mode);
+                return filtered.length > 0 ? filtered : ['auto'];
+            }
+
+            return [...withoutAuto, mode];
+        });
+    };
+
+    const openTravelerSettings = (type: TravelerType) => {
+        setTravelerType(type);
+        setSettingsTraveler(type);
+        setTravelerSettingsOpen(true);
+    };
+
+    const setSnapshotNodeRef = useCallback((index: number, node: HTMLDivElement | null) => {
+        snapshotNodeRefs.current[index] = node;
+    }, []);
+
+    const settingsTravelerLabel = t(`traveler.options.${settingsTraveler}`);
+    const toTravelerGenderSelectValue = useCallback((value: TravelerGender): TravelerGenderSelectValue => (
+        value === '' ? 'unspecified' : value
+    ), []);
+    const fromTravelerGenderSelectValue = useCallback((value: TravelerGenderSelectValue): TravelerGender => (
+        value === 'unspecified' ? '' : value
+    ), []);
+    const getTravelerGenderOption = useCallback((value: TravelerGenderSelectValue) => (
+        TRAVELER_GENDER_OPTIONS.find((entry) => entry.id === value) ?? TRAVELER_GENDER_OPTIONS[0]
+    ), []);
+    const getCoupleOccasionOption = useCallback((value: CoupleOccasion) => (
+        COUPLE_OCCASION_OPTIONS.find((entry) => entry.id === value) ?? COUPLE_OCCASION_OPTIONS[0]
+    ), []);
+    const getFlexWindowOption = useCallback((value: FlexWindow) => (
+        FLEX_WINDOW_OPTIONS.find((entry) => entry.id === value) ?? FLEX_WINDOW_OPTIONS[0]
+    ), []);
+    const isLgbtqCoupleMode = settingsTraveler === 'couple' && coupleTravelerA !== '' && coupleTravelerB !== '' && (
+        coupleTravelerA === 'non-binary'
+        || coupleTravelerB === 'non-binary'
+        || (
+            (coupleTravelerA === 'female' || coupleTravelerA === 'male')
+            && coupleTravelerA === coupleTravelerB
+        )
+    );
+    const lgbtqModalStyle: React.CSSProperties | undefined = isLgbtqCoupleMode
+        ? {
+            pointerEvents: 'auto',
+            border: '8px solid transparent',
+            background:
+                'linear-gradient(rgb(255, 255, 255), rgb(255, 255, 255)) padding-box, repeating-linear-gradient(rgb(228, 3, 3) 0px, rgb(228, 3, 3) 16%, rgb(255, 140, 0) 16%, rgb(255, 140, 0) 32%, rgb(255, 237, 0) 32%, rgb(255, 237, 0) 48%, rgb(0, 128, 38) 48%, rgb(0, 128, 38) 64%, rgb(36, 64, 142) 64%, rgb(36, 64, 142) 80%, rgb(115, 41, 130) 80%, rgb(115, 41, 130) 100%) border-box',
+        }
+        : undefined;
+
+    const settingsContent = (
+        <div className="space-y-4">
+            <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.13em] text-slate-500">{t('traveler.settings.optionalDetails')}</div>
+                <p className="mt-1 text-sm text-slate-600">{t('traveler.settings.helper')}</p>
+            </div>
+
+            {settingsTraveler === 'solo' && (
+                <div className="space-y-3">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                            <label htmlFor="traveler-solo-gender" className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.gender')}</label>
+                            <Select
+                                value={toTravelerGenderSelectValue(soloGender)}
+                                onValueChange={(value) => setSoloGender(fromTravelerGenderSelectValue(value as TravelerGenderSelectValue))}
+                            >
+                                <SelectTrigger id="traveler-solo-gender" className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm">
+                                    {(() => {
+                                        const option = getTravelerGenderOption(toTravelerGenderSelectValue(soloGender));
+                                        const Icon = option.icon;
+                                        return (
+                                            <span className="inline-flex items-center gap-2 truncate">
+                                                <Icon size={15} weight="duotone" className="text-slate-500" />
+                                                <span className="truncate">{t(option.labelKey)}</span>
+                                            </span>
+                                        );
+                                    })()}
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {TRAVELER_GENDER_OPTIONS.map((option) => {
+                                        const Icon = option.icon;
+                                        const label = t(option.labelKey);
+                                        return (
+                                            <SelectItem key={`solo-gender-${option.id}`} value={option.id} textValue={label}>
+                                                <span className="inline-flex items-center gap-2">
+                                                    <Icon size={15} weight="duotone" className="text-slate-500" />
+                                                    <span>{label}</span>
+                                                </span>
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.age')}</label>
+	                            <input
+	                                type="number"
+	                                aria-label={t('traveler.settings.age')}
+	                                min={18}
+                                max={100}
+                                value={soloAge}
+                                onChange={(event) => setSoloAge(event.target.value)}
+                                placeholder={t('traveler.settings.agePlaceholder')}
+                                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.comfortMode')}</label>
+                        <div className="mt-1 grid gap-2 sm:grid-cols-3">
+                            {(['social', 'balanced', 'private'] as const).map((value) => (
+                                <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setSoloComfort(value)}
+                                    className={[
+                                        'rounded-xl border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors',
+                                        soloComfort === value
+                                            ? 'border-accent-300 bg-accent-50 text-accent-800'
+                                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
+                                    ].join(' ')}
+                                >
+                                    {t(`traveler.settings.comfortOptions.${value}`)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {settingsTraveler === 'couple' && (
+                <div className="space-y-3">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                            <label htmlFor="traveler-couple-a-gender" className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.travelerA')}</label>
+                            <Select
+                                value={toTravelerGenderSelectValue(coupleTravelerA)}
+                                onValueChange={(value) => setCoupleTravelerA(fromTravelerGenderSelectValue(value as TravelerGenderSelectValue))}
+                            >
+                                <SelectTrigger id="traveler-couple-a-gender" className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm">
+                                    {(() => {
+                                        const option = getTravelerGenderOption(toTravelerGenderSelectValue(coupleTravelerA));
+                                        const Icon = option.icon;
+                                        return (
+                                            <span className="inline-flex items-center gap-2 truncate">
+                                                <Icon size={15} weight="duotone" className="text-slate-500" />
+                                                <span className="truncate">{t(option.labelKey)}</span>
+                                            </span>
+                                        );
+                                    })()}
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {TRAVELER_GENDER_OPTIONS.map((option) => {
+                                        const Icon = option.icon;
+                                        const label = t(option.labelKey);
+                                        return (
+                                            <SelectItem key={`couple-a-gender-${option.id}`} value={option.id} textValue={label}>
+                                                <span className="inline-flex items-center gap-2">
+                                                    <Icon size={15} weight="duotone" className="text-slate-500" />
+                                                    <span>{label}</span>
+                                                </span>
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <label htmlFor="traveler-couple-b-gender" className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.travelerB')}</label>
+                            <Select
+                                value={toTravelerGenderSelectValue(coupleTravelerB)}
+                                onValueChange={(value) => setCoupleTravelerB(fromTravelerGenderSelectValue(value as TravelerGenderSelectValue))}
+                            >
+                                <SelectTrigger id="traveler-couple-b-gender" className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm">
+                                    {(() => {
+                                        const option = getTravelerGenderOption(toTravelerGenderSelectValue(coupleTravelerB));
+                                        const Icon = option.icon;
+                                        return (
+                                            <span className="inline-flex items-center gap-2 truncate">
+                                                <Icon size={15} weight="duotone" className="text-slate-500" />
+                                                <span className="truncate">{t(option.labelKey)}</span>
+                                            </span>
+                                        );
+                                    })()}
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {TRAVELER_GENDER_OPTIONS.map((option) => {
+                                        const Icon = option.icon;
+                                        const label = t(option.labelKey);
+                                        return (
+                                            <SelectItem key={`couple-b-gender-${option.id}`} value={option.id} textValue={label}>
+                                                <span className="inline-flex items-center gap-2">
+                                                    <Icon size={15} weight="duotone" className="text-slate-500" />
+                                                    <span>{label}</span>
+                                                </span>
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div>
+                        <label htmlFor="traveler-couple-occasion" className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.occasion')}</label>
+                        <Select
+                            value={coupleOccasion}
+                            onValueChange={(value) => setCoupleOccasion(value as CoupleOccasion)}
+                        >
+                            <SelectTrigger id="traveler-couple-occasion" className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm">
+                                {(() => {
+                                    const option = getCoupleOccasionOption(coupleOccasion);
+                                    const Icon = option.icon;
+                                    return (
+                                        <span className="inline-flex items-center gap-2 truncate">
+                                            <Icon size={15} weight="duotone" className="text-slate-500" />
+                                            <span className="truncate">{t(option.labelKey)}</span>
+                                        </span>
+                                    );
+                                })()}
+                            </SelectTrigger>
+                            <SelectContent>
+                                {COUPLE_OCCASION_OPTIONS.map((option) => {
+                                    const Icon = option.icon;
+                                    const label = t(option.labelKey);
+                                    return (
+                                        <SelectItem key={`couple-occasion-${option.id}`} value={option.id} textValue={label}>
+                                            <span className="inline-flex items-center gap-2">
+                                                <Icon size={15} weight="duotone" className="text-slate-500" />
+                                                <span>{label}</span>
+                                            </span>
+                                        </SelectItem>
+                                    );
+                                })}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+            )}
+
+            {settingsTraveler === 'friends' && (
+                <div className="space-y-3">
+                    <NumberStepper label={t('traveler.settings.groupSize')} value={friendsCount} min={2} max={12} onChange={setFriendsCount} />
+                    <div>
+                        <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.groupEnergy')}</label>
+                        <div className="mt-1 grid gap-2 sm:grid-cols-3">
+                            {(['chill', 'mixed', 'full-send'] as const).map((value) => (
+                                <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setFriendsEnergy(value)}
+                                    className={[
+                                        'rounded-xl border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors',
+                                        friendsEnergy === value
+                                            ? 'border-accent-300 bg-accent-50 text-accent-800'
+                                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
+                                    ].join(' ')}
+                                >
+                                    {t(`traveler.settings.energyOptions.${value}`)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {settingsTraveler === 'family' && (
+                <div className="grid gap-3 sm:grid-cols-3">
+                    <NumberStepper label={t('traveler.settings.adults')} value={familyAdults} min={1} max={8} onChange={setFamilyAdults} />
+                    <NumberStepper label={t('traveler.settings.children')} value={familyChildren} min={0} max={8} onChange={setFamilyChildren} />
+                    <NumberStepper label={t('traveler.settings.babies')} value={familyBabies} min={0} max={4} onChange={setFamilyBabies} />
+                </div>
+            )}
+        </div>
+    );
+
+    const settingsDialog = isDesktopSettings ? (
+        <Dialog open={travelerSettingsOpen} onOpenChange={setTravelerSettingsOpen}>
+            <DialogContent className="max-w-xl rounded-2xl p-5" style={lgbtqModalStyle}>
+                <DialogHeader className="p-0">
+                    <DialogTitle>{t('traveler.settings.title', { traveler: settingsTravelerLabel })}</DialogTitle>
+                    <DialogDescription>{t('traveler.settings.description')}</DialogDescription>
+                </DialogHeader>
+                <div className="mt-4">{settingsContent}</div>
+                <DialogFooter className="p-0 pt-4">
+                    <button
+                        type="button"
+                        onClick={() => setTravelerSettingsOpen(false)}
+                        className="rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
+                    >
+                        {t('traveler.settings.done')}
+                    </button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    ) : (
+        <Drawer open={travelerSettingsOpen} onOpenChange={setTravelerSettingsOpen}>
+            <DrawerContent
+                className="max-h-[90vh] rounded-t-2xl p-4"
+                accessibleTitle={t('traveler.settings.title', { traveler: settingsTravelerLabel })}
+                accessibleDescription={t('traveler.settings.optionalDetails')}
+            >
+                <DrawerHeader className="p-0">
+                    <DrawerTitle>{t('traveler.settings.title', { traveler: settingsTravelerLabel })}</DrawerTitle>
+                    <DrawerDescription>{t('traveler.settings.mobileDescription')}</DrawerDescription>
+                </DrawerHeader>
+                <div className="mt-4 max-h-[56vh] overflow-y-auto pr-1">{settingsContent}</div>
+                <DrawerFooter className="p-0 pt-4">
+                    <button
+                        type="button"
+                        onClick={() => setTravelerSettingsOpen(false)}
+                        className="rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
+                    >
+                        {t('traveler.settings.done')}
+                    </button>
+                </DrawerFooter>
+            </DrawerContent>
+        </Drawer>
+    );
+
+    const handleRoundTripChange = (checked: boolean) => {
+        setRoundTrip(checked);
+        trackEvent('create_trip__toggle--roundtrip', { enabled: checked });
+    };
+
+    const handleRouteLockChange = (checked: boolean) => {
+        if (!canLockRoute) return;
+        setRouteLock(checked);
+        trackEvent('create_trip__toggle--route_lock', { enabled: checked });
+    };
+
+    const handleModelChange = (modelId: string) => {
+        const model = getAiModelById(modelId);
+        if (!model || model.availability !== 'active') return;
+        setSelectedModelId(model.id);
+        trackEvent('create_trip__model--select', {
+            provider: model.provider,
+            model: model.model,
+            model_id: model.id,
+            is_default: model.id === DEFAULT_CREATE_TRIP_MODEL_ID,
+        });
+    };
+
+    const handleGenerateTrip = async () => {
+        if (isSubmitting) return;
+        if (isGenerationBlockedOffline) {
+            showSubmitError(t('errors.offlineCreateDisabled'));
+            trackEvent('create_trip__cta--blocked_offline');
+            return;
+        }
+        if (orderedDestinations.length === 0) {
+            showSubmitError(t('errors.destinationRequired'));
+            return;
+        }
+        if (dateInputMode === 'exact' && totalNights < 1) {
+            showSubmitError(t('errors.minimumNightStay'));
+            return;
+        }
+
+        await maybeRequestTripReadyNotifications();
+
+        setIsSubmitting(true);
+        setSubmitError(null);
+
+        trackEvent('create_trip__cta--generate', {
+            destination_count: orderedDestinations.length,
+            date_mode: dateInputMode,
+            route_lock: routeLock,
+            round_trip: roundTrip,
+            provider: selectedAiModel.provider,
+            model: selectedAiModel.model,
+        });
+
+        const sessionUserId = await ensureDbSession();
+        if (!sessionUserId) {
+            const authRedirect = buildLoginPathWithNext({
+                pathname: location.pathname,
+                search: location.search,
+                hash: location.hash,
+                language: i18n.language,
+                resolvedLanguage: i18n.resolvedLanguage,
+            });
+            rememberAuthReturnPath(authRedirect.nextPath);
+            setPendingAuthRedirect(authRedirect.nextPath, 'create_trip_generate');
+            trackEvent('create_trip__cta--redirect_login', {
+                reason: 'missing_db_session',
+                has_authenticated_access: isAuthenticated,
+                is_anonymous_access: isAnonymous,
+            });
+            setIsSubmitting(false);
+            navigate(authRedirect.loginTarget);
+            return;
+        }
+
+        const destinationPromptLabels = orderedDestinations.map((destination) => getDestinationPromptLabel(destination));
+        const localizedDestinationLabels = orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination));
+        const destinationLabel = formatDestinationList(localizedDestinationLabels);
+        const destinationPrompt = destinationPromptLabels.join(', ');
+        const travelerDetails = {
+            ...(travelerType === 'solo'
+                ? {
+                    soloGender,
+                    soloAge: soloAge.trim() || undefined,
+                    soloComfort,
+                }
+                : {}),
+            ...(travelerType === 'couple'
+                ? {
+                    coupleTravelerA,
+                    coupleTravelerB,
+                    coupleOccasion,
+                }
+                : {}),
+            ...(travelerType === 'friends'
+                ? {
+                    friendsCount,
+                    friendsEnergy,
+                }
+                : {}),
+            ...(travelerType === 'family'
+                ? {
+                    familyAdults,
+                    familyChildren,
+                    familyBabies,
+                }
+                : {}),
+        };
+        const notesInterests = notes.split(',').flatMap((token) => {
+            const interest = token.trim();
+            return interest ? [interest] : [];
+        });
+        const classicGenerateOptions = {
+            budget,
+            pace,
+            interests: notesInterests.length > 0 ? notesInterests : undefined,
+            roundTrip,
+            totalDays: dayCount,
+            totalNights: totalNights > 0 ? totalNights : undefined,
+            dateInputMode,
+            flexWeeks: dateInputMode === 'flex' ? flexWeeks : undefined,
+            flexWindow: dateInputMode === 'flex' ? flexWindow : undefined,
+            startDestination: startDestination ? getDestinationPromptLabel(startDestination) : undefined,
+            destinationOrder: destinationPromptLabels,
+            routeLock,
+            travelerType,
+            travelerDetails,
+            tripStyleTags: selectedStyles,
+            transportPreferences: transportModes,
+            hasTransportOverride: hasTransportOverrideRef.current,
+            notes: notes.trim() || undefined,
+            aiTarget: {
+                provider: selectedAiModel.provider,
+                model: selectedAiModel.model,
+            },
+        };
+        const generationSnapshot = createTripGenerationInputSnapshot({
+            flow: 'classic',
+            destinationLabel,
+            startDate,
+            endDate,
+            payload: {
+                destinationPrompt,
+                options: classicGenerateOptions,
+            },
+        });
+
+        if (!isAuthenticated) {
+            try {
+                const queuedRequest = await createTripGenerationRequest('classic', {
+                    version: 1,
+                    flow: 'classic',
+                    destinationLabel,
+                    startDate,
+                    endDate,
+                    destinationPrompt,
+                    options: classicGenerateOptions,
+                });
+                const queueRequestId = queuedRequest.requestId;
+                const requestId = createTripGenerationRequestId();
+                const optimisticTripId = generateTripId();
+                const optimisticBaseTrip = buildLoadingTripPreview({
+                    tripId: optimisticTripId,
+                    destinationLabel,
+                    focusLocations: localizedDestinationLabels,
+                    startDate,
+                    totalNights: Math.max(1, totalNights),
+                    requestedStops: Math.max(orderedDestinations.length, 2),
+                    roundTrip,
+                });
+                const pendingAuthQueuedTrip = markTripGenerationRunning(optimisticBaseTrip, {
+                    flow: 'classic',
+                    source: 'create_trip_classic_lab_pending_auth',
+                    inputSnapshot: generationSnapshot,
+                    provider: selectedAiModel.provider,
+                    model: selectedAiModel.model,
+                    requestId,
+                    state: 'queued',
+                    metadata: {
+                        pendingAuth: true,
+                        queueRequestId,
+                        queueExpiresAt: queuedRequest.expiresAt,
+                        orchestration: 'auth_queue_claim',
+                    },
+                });
+                const pendingAuthAttemptId = pendingAuthQueuedTrip.aiMeta?.generation?.latestAttempt?.id || null;
+                const pendingAuthTrip = markTripGenerationFailed({
+                    ...pendingAuthQueuedTrip,
+                    items: pendingAuthQueuedTrip.items.map((item) => ({
+                        ...item,
+                        loading: false,
+                    })),
+                    updatedAt: Date.now(),
+                }, {
+                    flow: 'classic',
+                    source: 'create_trip_classic_lab_pending_auth',
+                    error: new Error('Sign in to start generation for this trip.'),
+                    provider: selectedAiModel.provider,
+                    model: selectedAiModel.model,
+                    requestId,
+                    attemptId: pendingAuthAttemptId,
+                    metadata: {
+                        pendingAuth: true,
+                        queueRequestId,
+                        queueExpiresAt: queuedRequest.expiresAt,
+                        orchestration: 'auth_queue_claim',
+                    },
+                });
+                onTripGenerated(pendingAuthTrip);
+                trackEvent('create_trip__cta--queue_pending_auth', {
+                    request_id: queueRequestId,
+                    source: 'create_trip_classic_lab',
+                });
+                setIsSubmitting(false);
+                return;
+            } catch {
+                const authRedirect = buildLoginPathWithNext({
+                    pathname: location.pathname,
+                    search: location.search,
+                    hash: location.hash,
+                    language: i18n.language,
+                    resolvedLanguage: i18n.resolvedLanguage,
+                });
+                rememberAuthReturnPath(authRedirect.nextPath);
+                setPendingAuthRedirect(authRedirect.nextPath, 'create_trip_queue_fallback');
+                trackEvent('create_trip__cta--redirect_login', {
+                    reason: 'queue_request_failed',
+                    has_authenticated_access: isAuthenticated,
+                    is_anonymous_access: isAnonymous,
+                });
+                setIsSubmitting(false);
+                navigate(authRedirect.loginTarget);
+                return;
+            }
+        }
+
+        const requestId = createTripGenerationRequestId();
+        const optimisticTripId = generateTripId();
+        const optimisticBaseTrip = buildLoadingTripPreview({
+            tripId: optimisticTripId,
+            destinationLabel,
+            focusLocations: localizedDestinationLabels,
+            startDate,
+            totalNights: Math.max(1, totalNights),
+            requestedStops: Math.max(orderedDestinations.length, 2),
+            roundTrip,
+        });
+        let optimisticTrip = markTripGenerationRunning(optimisticBaseTrip, {
+            flow: 'classic',
+            source: 'create_trip_classic_lab',
+            inputSnapshot: generationSnapshot,
+            provider: selectedAiModel.provider,
+            model: selectedAiModel.model,
+            requestId,
+            state: 'queued',
+            metadata: {
+                orchestration: 'async_worker',
+            },
+        });
+        const optimisticAttempt = optimisticTrip.aiMeta?.generation?.latestAttempt || null;
+        const optimisticAttemptId = optimisticAttempt?.id || null;
+        let attemptId: string | null = null;
+        generationTabFeedbackSessionRef.current?.cancel();
+        generationTabFeedbackSessionRef.current = beginTripGenerationTabFeedback();
+        onTripGenerated(optimisticTrip);
+        const persistedTripId = await dbUpsertTrip(optimisticTrip, undefined);
+        if (!persistedTripId) {
+            throw new Error('Trip was not persisted before async generation started.');
+        }
+        const persistedTripReady = await waitForTripPersistence(optimisticTripId, {
+            timeoutMs: 450,
+            intervalMs: 120,
+            maxAttempts: 3,
+        });
+        if (!persistedTripReady) {
+            throw new Error('Trip was not persisted before async generation started.');
+        }
+        const loggedAttempt = await startTripGenerationAttemptLog({
+            tripId: optimisticTripId,
+            flow: 'classic',
+            source: 'create_trip_classic_lab',
+            state: 'queued',
+            provider: selectedAiModel.provider,
+            model: selectedAiModel.model,
+            requestId,
+            startedAt: optimisticAttempt?.startedAt,
+            metadata: {
+                destination_label: destinationLabel,
+                orchestration: 'async_worker',
+            },
+        });
+        if (loggedAttempt?.id) {
+            optimisticTrip = withLatestTripGenerationAttemptId(optimisticTrip, loggedAttempt.id);
+            attemptId = loggedAttempt.id;
+            onTripGenerated(optimisticTrip);
+            const persistedCanonicalTripId = await dbUpsertTrip(optimisticTrip, undefined);
+            if (!persistedCanonicalTripId) {
+                throw new Error('Trip generation attempt was not persisted before queueing.');
+            }
+            const persistedCanonicalAttempt = await waitForTripAttemptPersistence(optimisticTripId, loggedAttempt.id, {
+                timeoutMs: 450,
+                intervalMs: 120,
+                maxAttempts: 3,
+            });
+            if (!persistedCanonicalAttempt) {
+                throw new Error('Trip generation attempt was not persisted before queueing.');
+            }
+        }
+        try {
+            if (!attemptId) {
+                throw new Error('Could not start async generation attempt.');
+            }
+            const prompt = buildClassicItineraryPrompt(destinationPrompt, classicGenerateOptions);
+            const enqueueSucceeded = await enqueueClassicAsyncTripGenerationJob({
+                tripId: optimisticTripId,
+                attemptId,
+                startedAt: loggedAttempt?.startedAt || optimisticAttempt?.startedAt || null,
+                requestId,
+                source: 'create_trip_classic_lab_async',
+                queueRequestId: null,
+                startDate,
+                roundTrip,
+                prompt,
+                provider: selectedAiModel.provider,
+                model: selectedAiModel.model,
+                inputSnapshot: generationSnapshot,
+                maxRetries: 0,
+            });
+            if (!enqueueSucceeded) {
+                throw new Error('Could not enqueue async generation.');
+            }
+            generationTabFeedbackSessionRef.current?.cancel();
+            generationTabFeedbackSessionRef.current = null;
+            return;
+        } catch (error) {
+            const failedTrip = markTripGenerationFailed({
+                ...optimisticTrip,
+                items: optimisticTrip.items.map((item) => ({
+                    ...item,
+                    loading: false,
+                })),
+                updatedAt: Date.now(),
+            }, {
+                flow: 'classic',
+                source: 'create_trip_classic_lab',
+                error,
+                provider: selectedAiModel.provider,
+                model: selectedAiModel.model,
+                requestId,
+                attemptId: attemptId || optimisticAttemptId,
+                metadata: {
+                    orchestration: 'async_worker_enqueue',
+                },
+            });
+            onTripGenerated(failedTrip);
+            generationTabFeedbackSessionRef.current?.complete('error');
+            generationTabFeedbackSessionRef.current = null;
+            if (loggedAttempt?.id) {
+                await finishTripGenerationAttemptLog({
+                    attemptId: loggedAttempt.id,
+                    state: 'failed',
+                    provider: failedTrip.aiMeta?.provider,
+                    model: failedTrip.aiMeta?.model,
+                    requestId: failedTrip.aiMeta?.generation?.latestAttempt?.requestId || requestId,
+                    durationMs: failedTrip.aiMeta?.generation?.latestAttempt?.durationMs || null,
+                    statusCode: failedTrip.aiMeta?.generation?.latestAttempt?.statusCode || null,
+                    failureKind: failedTrip.aiMeta?.generation?.latestAttempt?.failureKind || null,
+                    errorCode: failedTrip.aiMeta?.generation?.latestAttempt?.errorCode || null,
+                    errorMessage: failedTrip.aiMeta?.generation?.latestAttempt?.errorMessage || getErrorMessage(error, t('errors.genericGenerate')),
+                    finishedAt: failedTrip.aiMeta?.generation?.latestAttempt?.finishedAt || undefined,
+                });
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#eef2ff_0%,#f8fafc_50%,#ffffff_100%)] text-slate-900">
+            <div className="pointer-events-none fixed inset-0 opacity-60">
+                <div className="absolute -left-16 top-12 size-56 rounded-full bg-accent-200/50 blur-3xl" />
+                <div className="absolute right-0 top-24 size-64 rounded-full bg-cyan-200/40 blur-3xl" />
+            </div>
+
+            <div className="relative z-10">
+                <SiteHeader variant="glass" onMyTripsClick={onOpenManager} />
+                <ConnectivityStatusBanner
+                    isPlannerRoute
+                    connectivity={connectivitySnapshot}
+                    sync={syncSnapshot}
+                    onRetrySync={() => retrySyncNow()}
+                    showDeveloperDetails={IS_DEV}
+                />
+
+                <main className="mx-auto w-full max-w-[1260px] px-4 pb-28 pt-8 sm:px-6 sm:pb-32 lg:px-8 lg:pb-14">
+                    {prefillMeta?.label && (
+                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-medium text-accent-800">
+                            <Sparkle size={13} weight="duotone" />
+                            <span>{t('prefillBadge', { label: prefillMeta.label })}</span>
+                        </div>
+                    )}
+                    {submitError && (
+                        <div ref={submitErrorRef} className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                            {submitError}
+                        </div>
+                    )}
+
+                    <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start">
+                        <div className="space-y-5">
+                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
+                                <div className="mb-4 flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                        <Compass size={18} weight="duotone" className="text-accent-600" />
+                                        {t('destination.title')}
+                                    </div>
+                                    <CheckCircle
+                                        size={20}
+                                        weight="fill"
+                                        className={destinationComplete ? 'text-emerald-500' : 'text-slate-300'}
+                                        aria-hidden="true"
+                                    />
+                                </div>
+
+                                <div className="relative" ref={searchWrapperRef}>
+                                    <MagnifyingGlass
+                                        size={18}
+                                        weight="duotone"
+                                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                                    />
+                                    <div className="tf-ios-zoom-safe-shell rounded-xl">
+	                                        <input
+	                                            aria-label={t('destination.searchPlaceholder')}
+	                                            value={query}
+                                            onChange={(event) => {
+                                                setQuery(event.target.value);
+                                                openSearch();
+                                            }}
+                                            onFocus={openSearch}
+                                            onKeyDown={(event) => {
+                                                if (event.key === 'Enter') {
+                                                    event.preventDefault();
+                                                    if (suggestions[0]) addDestination(suggestions[0].name);
+                                                }
+                                            }}
+                                            placeholder={t('destination.searchPlaceholder')}
+                                            className="tf-ios-zoom-safe-field w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 shadow-sm transition-shadow placeholder:text-slate-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200"
+                                        />
+                                    </div>
+
+                                    {searchOpen && (query.trim() || suggestions.length > 0) && (
+                                        <div className="absolute inset-x-0 top-[calc(100%+8px)] z-50 max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl">
+                                            {suggestions.length > 0 ? (
+                                                suggestions.map((option) => {
+                                                    const optionLabel = option.kind === 'country'
+                                                        ? getLocalizedCountryName(option.code, option.name)
+                                                        : option.name;
+                                                    const islandMeta = option.kind === 'island' && option.parentCountryName
+                                                        ? t('destination.islandOf', { country: getLocalizedCountryName(option.parentCountryCode, option.parentCountryName) })
+                                                        : undefined;
+                                                    return (
+                                                        <button
+                                                            key={option.code}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (!query.trim()) {
+                                                                    trackEvent('create_trip__destination_recommendation--select', {
+                                                                        destination_code: option.code,
+                                                                        destination_name: option.name,
+                                                                        destination_kind: option.kind,
+                                                                        source: 'empty_state',
+                                                                        months: recommendationMonths.join(','),
+                                                                    });
+                                                                }
+                                                                addDestination(option.name);
+                                                            }}
+                                                            className="w-full px-4 py-3 text-left transition-colors hover:bg-slate-50"
+                                                            {...(!query.trim()
+                                                                ? getAnalyticsDebugAttributes('create_trip__destination_recommendation--select', {
+                                                                    destination_code: option.code,
+                                                                    destination_name: option.name,
+                                                                    destination_kind: option.kind,
+                                                                    source: 'empty_state',
+                                                                    months: recommendationMonths.join(','),
+                                                                })
+                                                                : {})}
+                                                        >
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div className="min-w-0">
+                                                                    <div className="truncate text-sm font-medium text-slate-800">
+                                                                        <span className="inline-flex items-center gap-1.5">
+                                                                            <FlagIcon value={option.flag} />
+                                                                            {optionLabel}
+                                                                        </span>
+                                                                    </div>
+                                                                    {islandMeta && (
+                                                                        <div className="mt-0.5 text-xs text-slate-500">
+                                                                            {islandMeta}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <Plus size={14} className="mt-0.5 text-accent-500" />
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })
+                                            ) : (
+                                                <div className="px-4 py-6 text-center text-sm text-slate-400">{t('destination.noMatches')}</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {destinations.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {destinations.map((destination, index) => {
+                                            const option = getDestinationOptionByName(destination);
+                                            const dragActive = routeLock && dragOverIndex === index && dragIndex !== null;
+                                            const isStartStop = destination === startDestination;
+                                            const season = getCountrySeasonByName(getDestinationSeasonCountryName(destination));
+                                            const metaLabel = getLocalizedIslandMeta(destination) || getDestinationMetaLabel(destination);
+                                            const destinationLabel = getLocalizedDestinationLabel(destination);
+
+                                            return (
+                                                <span key={destination} className="group relative">
+                                                    <div
+                                                        draggable={routeLock}
+                                                        onDragStart={() => handleDestinationDragStart(index)}
+                                                        onDragOver={(event) => handleDestinationDragOver(event, index)}
+                                                        onDrop={() => handleDestinationDrop(index)}
+                                                        onDragEnd={handleDestinationDragEnd}
+                                                        className={[
+                                                            'inline-flex items-center gap-2 rounded-lg border bg-white px-2.5 py-1 text-sm font-medium text-slate-800 shadow-sm',
+                                                            isStartStop
+                                                                ? 'border-accent-400 bg-accent-50 text-accent-900'
+                                                                : 'border-slate-200',
+                                                            routeLock ? 'cursor-grab active:cursor-grabbing' : '',
+                                                            dragActive ? 'ring-2 ring-accent-200' : '',
+                                                        ].join(' ')}
+                                                    >
+                                                        {routeLock && (
+                                                            <span className="text-slate-400" aria-hidden="true">
+                                                                <DotsSixVertical size={12} weight="duotone" />
+                                                            </span>
+                                                        )}
+                                                        <FlagIcon value={option?.flag || '🌍'} />
+                                                        <span>{destinationLabel}</span>
+                                                        <button
+                                                            type="button"
+                                                            onMouseDown={(event) => event.stopPropagation()}
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                setStartDestination(destination);
+                                                            }}
+                                                            className={[
+                                                                'rounded-full transition-colors',
+                                                                isStartStop ? 'text-accent-700' : 'text-slate-400 hover:text-accent-600',
+                                                            ].join(' ')}
+                                                            aria-label={t('destination.pinAsStart', { destination: destinationLabel })}
+                                                            title={t('destination.pinAsStart', { destination: destinationLabel })}
+                                                        >
+                                                            <MapPin size={12} weight={isStartStop ? 'fill' : 'duotone'} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onMouseDown={(event) => event.stopPropagation()}
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                removeDestination(destination);
+                                                            }}
+                                                            className="rounded-full text-slate-400 transition-colors hover:text-slate-700"
+                                                            aria-label={t('destination.removeDestination', { destination: destinationLabel })}
+                                                        >
+                                                            <X size={12} weight="bold" />
+                                                        </button>
+                                                    </div>
+
+                                                    {season && (
+                                                        <div className="pointer-events-none absolute left-0 top-[calc(100%+8px)] z-[80] hidden w-[280px] rounded-xl border border-gray-200 bg-white p-3 shadow-xl group-hover:block">
+                                                            <div className="text-xs font-semibold text-gray-900">{t('destination.idealTravelTime')}</div>
+                                                            {metaLabel && <div className="mt-0.5 text-[11px] text-gray-500">{metaLabel}</div>}
+                                                            <IdealTravelTimeline idealMonths={season.bestMonths} shoulderMonths={season.shoulderMonths} locale={i18n.language} />
+                                                        </div>
+                                                    )}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    <label htmlFor="classic-round-trip-switch" className="inline-flex items-start gap-2 rounded-xl bg-transparent p-1.5 text-xs text-slate-700 sm:items-center sm:text-sm">
+                                        <Switch
+                                            id="classic-round-trip-switch"
+                                            checked={roundTrip}
+                                            onCheckedChange={handleRoundTripChange}
+                                            {...getAnalyticsDebugAttributes('create_trip__toggle--roundtrip', { enabled: roundTrip })}
+                                        />
+                                        <span>
+                                            <span className="block text-[13px] font-semibold leading-tight text-slate-800 sm:text-sm">{t('destination.roundTrip.title')}</span>
+                                            <span className="block text-[11px] leading-tight text-slate-500 sm:text-xs">{t('destination.roundTrip.description')}</span>
+                                        </span>
+                                    </label>
+
+                                    <label htmlFor="classic-route-lock-switch" className={['inline-flex items-start gap-2 rounded-xl bg-transparent p-1.5 text-xs text-slate-700 sm:items-center sm:text-sm', canLockRoute ? '' : 'opacity-50'].join(' ')}>
+                                        <Switch
+                                            id="classic-route-lock-switch"
+                                            checked={routeLock}
+                                            onCheckedChange={handleRouteLockChange}
+                                            disabled={!canLockRoute}
+                                            {...getAnalyticsDebugAttributes('create_trip__toggle--route_lock', { enabled: routeLock })}
+                                        />
+                                        <span>
+                                            <span className="block text-[13px] font-semibold leading-tight text-slate-800 sm:text-sm">{t('destination.routeLock.title')}</span>
+                                            <span className="block text-[11px] leading-tight text-slate-500 sm:text-xs">{t('destination.routeLock.description')}</span>
+                                        </span>
+                                    </label>
+                                </div>
+                            </section>
+
+                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
+                                <div className="mb-4 flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                        <CalendarBlank size={18} weight="duotone" className="text-accent-600" />
+                                        {t('dates.title')}
+                                    </div>
+                                    <CheckCircle
+                                        size={20}
+                                        weight="fill"
+                                        className={datesComplete ? 'text-emerald-500' : 'text-slate-300'}
+                                        aria-hidden="true"
+                                    />
+                                </div>
+
+                                <div className="mb-3 inline-flex rounded-xl border border-slate-200 bg-white p-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setDateInputMode('exact')}
+                                        className={[
+                                            'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
+                                            dateInputMode === 'exact' ? 'bg-accent-50 text-accent-800' : 'text-slate-600 hover:text-slate-800',
+                                        ].join(' ')}
+                                    >
+                                        {t('dates.mode.exact')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setDateInputMode('flex')}
+                                        className={[
+                                            'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
+                                            dateInputMode === 'flex' ? 'bg-accent-50 text-accent-800' : 'text-slate-600 hover:text-slate-800',
+                                        ].join(' ')}
+                                    >
+                                        {t('dates.mode.flex')}
+                                    </button>
+                                </div>
+
+                                {dateInputMode === 'exact' ? (
+                                    <div className="space-y-3">
+                                        <DateRangePicker
+                                            startDate={startDate}
+                                            endDate={endDate}
+                                            onChange={(nextStartDate, nextEndDate) => {
+                                                setStartDate(nextStartDate);
+                                                setEndDate(nextEndDate);
+                                            }}
+                                            showLabel={false}
+                                            monthLabelFormat="long"
+                                            locale={i18n.language}
+                                            labels={{
+                                                start: t('dates.labels.start'),
+                                                end: t('dates.labels.end'),
+                                                selectDate: t('dates.labels.selectDate'),
+                                                selectStartDate: t('dates.labels.selectStartDate'),
+                                                selectEndDate: t('dates.labels.selectEndDate'),
+                                                previousMonth: t('dates.labels.previousMonth'),
+                                                nextMonth: t('dates.labels.nextMonth'),
+                                            }}
+                                        />
+                                        {exactDateRangeError && (
+                                            <p className="text-sm font-medium text-rose-600">{exactDateRangeError}</p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <label className="space-y-1.5 text-sm">
+                                            <span className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('dates.flexWindow.weeksLabel')}</span>
+                                            <div className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFlexWeeks((previous) => clampNumber(previous - 1, 1, 8))}
+                                                    disabled={flexWeeks <= 1}
+                                                    className="inline-flex size-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                                    aria-label="Decrease weeks"
+                                                >
+                                                    <Minus size={13} />
+                                                </button>
+	                                                <input
+	                                                    type="number"
+	                                                    aria-label={t('dates.flexWindow.weeksLabel')}
+	                                                    min={1}
+                                                    max={8}
+                                                    value={flexWeeks}
+                                                    onChange={(event) => {
+                                                        const value = Number(event.target.value);
+                                                        const normalized = Number.isFinite(value) ? Math.min(8, Math.max(1, value)) : 1;
+                                                        setFlexWeeks(normalized);
+                                                    }}
+                                                    className="h-7 w-10 rounded-md border-0 bg-transparent text-center text-sm font-semibold text-slate-800 outline-none"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFlexWeeks((previous) => clampNumber(previous + 1, 1, 8))}
+                                                    disabled={flexWeeks >= 8}
+                                                    className="inline-flex size-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                                    aria-label="Increase weeks"
+                                                >
+                                                    <Plus size={13} />
+                                                </button>
+                                            </div>
+                                        </label>
+                                        <div className="space-y-1.5 text-sm">
+                                            <span className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">
+                                                <label htmlFor="dates-flex-window-range">{t('dates.flexWindow.rangeLabel')}</label>
+                                            </span>
+                                            <Select
+                                                value={flexWindow}
+                                                onValueChange={(value) => setFlexWindow(value as FlexWindow)}
+                                            >
+                                                <SelectTrigger id="dates-flex-window-range" className="h-9 w-full rounded-lg border-slate-200 bg-white text-sm text-slate-800 focus:border-accent-400 focus:ring-accent-200">
+                                                    <span className="truncate">{t(getFlexWindowOption(flexWindow).labelKey)}</span>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {FLEX_WINDOW_OPTIONS.map((entry) => (
+                                                        <SelectItem key={`flex-window-${entry.id}`} value={entry.id} textValue={t(entry.labelKey)}>
+                                                            {t(entry.labelKey)}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="mt-3 border-t border-slate-200 pt-2 text-xs text-slate-500">
+                                    {plannerDurationLabel}
+                                </div>
+                            </section>
+
+                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
+                                <div className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                    <Info size={16} weight="duotone" className="text-accent-600" />
+                                    {t('notes.title')}
+                                </div>
+                                <p className="mb-2 text-xs text-slate-500">{t('notes.hint')}</p>
+	                                <textarea
+	                                    aria-label={t('notes.title')}
+	                                    value={notes}
+                                    onChange={(event) => setNotes(event.target.value)}
+                                    rows={4}
+                                    placeholder={t('notes.placeholder')}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                />
+                            </section>
+
+                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSection('traveler')}
+                                    className="flex w-full items-center justify-between gap-3 text-left"
+                                    {...getAnalyticsDebugAttributes('create_trip__section--expand', {
+                                        section_id: 'traveler',
+                                        expanded: sectionExpanded.traveler,
+                                    })}
+                                >
+                                    <div className="min-w-0">
+                                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                            <UsersThree size={18} weight="duotone" className="text-accent-600" />
+                                            {t('traveler.title')}
+                                        </div>
+                                        <div className="truncate text-xs text-slate-500">{travelerPreviewSummary}</div>
+                                    </div>
+                                    {sectionExpanded.traveler ? <CaretUp size={16} className="text-slate-500" /> : <CaretDown size={16} className="text-slate-500" />}
+                                </button>
+                                {sectionExpanded.traveler && (
+                                    <div className="mt-4">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {TRAVELER_OPTIONS.map((entry) => {
+                                                const Icon = entry.icon;
+                                                const active = travelerType === entry.id;
+                                                const summary = entry.id === travelerType ? travelerDetailSummary : t('traveler.settings.summaryHint');
+                                                return (
+                                                    <div
+                                                        key={entry.id}
+                                                        onClick={() => setTravelerType(entry.id)}
+                                                        onKeyDown={(event) => {
+                                                            if (event.key === 'Enter' || event.key === ' ') {
+                                                                event.preventDefault();
+                                                                setTravelerType(entry.id);
+                                                            }
+                                                        }}
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        className={[
+                                                            'group relative rounded-xl border p-3 text-left transition-colors',
+                                                            active
+                                                                ? 'border-accent-400 bg-accent-50 text-accent-900'
+                                                                : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300',
+                                                        ].join(' ')}
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                openTravelerSettings(entry.id);
+                                                            }}
+                                                            aria-label={t('traveler.settings.open', { traveler: t(entry.labelKey) })}
+                                                            title={t('traveler.settings.open', { traveler: t(entry.labelKey) })}
+                                                            className={[
+                                                                'absolute right-2 top-2 inline-flex size-7 items-center justify-center rounded-lg border transition-all',
+                                                                active
+                                                                    ? 'border-accent-300 bg-white text-accent-700 opacity-100'
+                                                                    : 'border-slate-200 bg-white text-slate-500 opacity-0 group-hover:opacity-100',
+                                                            ].join(' ')}
+                                                        >
+                                                            <GearSix size={14} />
+                                                        </button>
+                                                        <span className="inline-flex items-center gap-2 text-sm font-semibold">
+                                                            <Icon size={17} weight="duotone" />
+                                                            {t(entry.labelKey)}
+                                                        </span>
+                                                        <div className="mt-1 text-xs text-slate-500">{summary}</div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </section>
+
+                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSection('style')}
+                                    className="flex w-full items-center justify-between gap-3 text-left"
+                                    {...getAnalyticsDebugAttributes('create_trip__section--expand', {
+                                        section_id: 'style',
+                                        expanded: sectionExpanded.style,
+                                    })}
+                                >
+                                    <div className="min-w-0">
+                                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                            <Sparkle size={18} weight="duotone" className="text-accent-600" />
+                                            {t('style.title')}
+                                        </div>
+                                        <div className="truncate text-xs text-slate-500">{styleSummary || t('style.empty')}</div>
+                                    </div>
+                                    {sectionExpanded.style ? <CaretUp size={16} className="text-slate-500" /> : <CaretDown size={16} className="text-slate-500" />}
+                                </button>
+                                {sectionExpanded.style && (
+                                    <div className="mt-4">
+                                        <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                                            {STYLE_CHOICES.map((entry) => {
+                                                const Icon = entry.icon;
+                                                const active = selectedStyles.includes(entry.id);
+                                                return (
+                                                    <button
+                                                        key={entry.id}
+                                                        type="button"
+                                                        onClick={() => toggleStyle(entry.id)}
+                                                        className={[
+                                                            'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
+                                                            active
+                                                                ? 'border-accent-300 bg-accent-50 text-accent-900'
+                                                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
+                                                        ].join(' ')}
+                                                    >
+                                                        <Icon size={15} weight="duotone" />
+                                                        {t(entry.labelKey)}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </section>
+
+                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSection('transport')}
+                                    className="flex w-full items-center justify-between gap-3 text-left"
+                                    {...getAnalyticsDebugAttributes('create_trip__section--expand', {
+                                        section_id: 'transport',
+                                        expanded: sectionExpanded.transport,
+                                    })}
+                                >
+                                    <div className="min-w-0">
+                                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                            <Train size={18} weight="duotone" className="text-accent-600" />
+                                            {t('transport.title')}
+                                        </div>
+                                        <div className="truncate text-xs text-slate-500">{transportSummary}</div>
+                                    </div>
+                                    {sectionExpanded.transport ? <CaretUp size={16} className="text-slate-500" /> : <CaretDown size={16} className="text-slate-500" />}
+                                </button>
+                                {sectionExpanded.transport && (
+                                    <div className="mt-4">
+                                        <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                                            {TRANSPORT_OPTIONS.map((entry) => {
+                                                const Icon = entry.icon;
+                                                const active = transportModes.includes(entry.id);
+                                                return (
+                                                    <button
+                                                        key={entry.id}
+                                                        type="button"
+                                                        onClick={() => toggleTransportMode(entry.id)}
+                                                        className={[
+                                                            'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
+                                                            active
+                                                                ? 'border-accent-300 bg-accent-50 text-accent-900'
+                                                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
+                                                        ].join(' ')}
+                                                    >
+                                                        <Icon size={15} weight="duotone" />
+                                                        {t(entry.labelKey)}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </section>
+
+                        </div>
+
+                        <aside className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
+                            <div className="space-y-4 rounded-2xl border border-indigo-300/20 bg-gradient-to-b from-[#0d1330] via-[#090f26] to-[#060915] p-4 text-slate-100 shadow-2xl sm:p-5">
+                                <div>
+                                    <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-indigo-300/30 bg-white/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-100">
+                                        <Compass size={13} weight="duotone" />
+                                        {t('snapshot.title')}
+                                    </div>
+                                    <h2 className="text-xl font-semibold leading-tight text-white">{routeHeadline}</h2>
+                                </div>
+
+                                <div ref={snapshotRouteRef} className="relative rounded-xl border border-white/15 bg-white/5 p-3">
+                                    {showLockedRouteLines && snapshotRouteGeometry && (
+                                        <>
+                                            <div
+                                                className="pointer-events-none absolute w-[2px] rounded-full bg-indigo-300/80"
+                                                style={{
+                                                    left: snapshotRouteGeometry.axisX - 1,
+                                                    top: snapshotRouteGeometry.firstY,
+                                                    height: Math.max(snapshotRouteGeometry.lastY - snapshotRouteGeometry.firstY, 0),
+                                                }}
+                                            />
+                                            <div
+                                                className="pointer-events-none absolute size-0 border-l-[5px] border-r-[5px] border-t-[8px] border-l-transparent border-r-transparent border-t-indigo-300/85"
+                                                style={{
+                                                    left: snapshotRouteGeometry.axisX - 5,
+                                                    top: snapshotRouteGeometry.lastY + 6,
+                                                }}
+                                            />
+                                            {snapshotRouteGeometry.segmentMidpoints.map((midpoint) => (
+                                                <div
+                                                    key={`route-segment-arrow-${midpoint.toFixed(2)}`}
+                                                    className="pointer-events-none absolute size-0 border-l-[4px] border-r-[4px] border-t-[6px] border-l-transparent border-r-transparent border-t-indigo-300/95"
+                                                    style={{
+                                                        left: snapshotRouteGeometry.axisX - 4,
+                                                        top: midpoint - 3,
+                                                    }}
+                                                />
+                                            ))}
+                                        </>
+                                    )}
+
+                                    {showLockedRouteLines && snapshotRouteGeometry && roundTrip && (
+                                        <>
+                                            <div
+                                                className="pointer-events-none absolute rounded-s-2xl border-y-2 border-indigo-300/70 shadow-[inset_2px_0_0_rgba(165,180,252,0.7)]"
+                                                style={{
+                                                    left: snapshotRouteGeometry.loopLeft,
+                                                    top: snapshotRouteGeometry.firstY,
+                                                    width: routeLoopSegmentWidth,
+                                                    height: routeLoopSegmentHeight,
+                                                }}
+                                            />
+                                            <div
+                                                className="pointer-events-none absolute size-0 border-b-[4px] border-l-[6px] border-t-[4px] border-b-transparent border-t-transparent border-l-indigo-300/90"
+                                                style={{
+                                                    left: snapshotRouteGeometry.loopLeft + routeLoopSegmentWidth / 2 - 6,
+                                                    top: snapshotRouteGeometry.firstY - 4,
+                                                }}
+                                            />
+                                            <div
+                                                className="pointer-events-none absolute size-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-indigo-300/90"
+                                                style={{
+                                                    left: snapshotRouteGeometry.loopLeft - 3,
+                                                    top: snapshotRouteGeometry.firstY + routeLoopSegmentHeight / 2 - 6,
+                                                }}
+                                            />
+                                            <div
+                                                className="pointer-events-none absolute size-0 border-r-[6px] border-b-[4px] border-t-[4px] border-b-transparent border-t-transparent border-r-indigo-300/90"
+                                                style={{
+                                                    left: snapshotRouteGeometry.loopLeft + routeLoopSegmentWidth / 2 - 3,
+                                                    top: snapshotRouteGeometry.lastY - 4,
+                                                }}
+                                            />
+                                        </>
+                                    )}
+
+                                    <div className="relative">
+                                        {routeTimelineDestinations.length === 0 ? (
+                                            <div className="rounded-lg border border-dashed border-white/20 px-3 py-4 text-sm text-indigo-100/80">
+                                                {t('snapshot.emptyDestinations')}
+                                            </div>
+                                        ) : (
+                                            routeTimelineDestinations.map((destination, index) => {
+                                                const option = getDestinationOptionByName(destination);
+                                                const isFirst = index === 0;
+                                                return (
+                                                    <div key={destination} className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-3 pb-4 last:pb-0">
+                                                        <div
+                                                            ref={(node) => setSnapshotNodeRef(index, node)}
+                                                            className="relative z-10 flex size-8 items-center justify-center rounded-full border border-white/30 bg-[#0f173b] text-sm shadow-lg shadow-black/20"
+                                                        >
+                                                            <FlagIcon value={option?.flag || '🌍'} size="xs" />
+                                                        </div>
+                                                        <div className="min-w-0 pt-0.5">
+                                                            <div className="text-sm font-semibold text-indigo-50">{getLocalizedDestinationLabel(destination)}</div>
+                                                            {isFirst && (
+                                                                <div className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-indigo-300/40 bg-indigo-300/10 px-2 py-0.5 text-[11px] font-semibold text-indigo-100">
+                                                                    <MapPin size={12} weight="fill" />
+                                                                    {roundTrip ? t('snapshot.startEnd') : t('snapshot.start')}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="rounded-xl border border-white/15 bg-white/5 p-3">
+                                        <div className="inline-flex items-center gap-2 text-sm font-semibold">
+                                            <CalendarBlank size={15} weight="duotone" className="text-indigo-200" />
+                                            {snapshotDurationLabel}
+                                        </div>
+                                        <div className="mt-1 text-xs text-indigo-100/80">
+                                            {orderedDestinations.length > 0
+                                                ? t('snapshot.avgPerStop', { days: averageDaysPerStop.toFixed(1) })
+                                                : t('snapshot.addDestinations')}
+                                        </div>
+                                    </div>
+                                    <div className="rounded-xl border border-white/15 bg-white/5 p-3">
+                                        <div className="inline-flex items-center gap-2 text-sm font-semibold">
+                                            <UsersThree size={15} weight="duotone" className="text-indigo-200" />
+                                            {travelerSummary}
+                                        </div>
+                                        <div className="mt-1 text-xs text-indigo-100/80">{travelerDetailSummary}</div>
+                                    </div>
+                                    <div className="rounded-xl border border-white/15 bg-white/5 p-3">
+                                        <div className="inline-flex items-center gap-2 text-sm font-semibold">
+                                            <Train size={15} weight="duotone" className="text-indigo-200" />
+                                            {t('snapshot.transport')}
+                                        </div>
+                                        <div className="mt-1 text-xs text-indigo-100/80">{transportSummary}</div>
+                                    </div>
+                                    <div className="rounded-xl border border-white/15 bg-white/5 p-3">
+                                        <div className="inline-flex items-center gap-2 text-sm font-semibold">
+                                            <Sparkle size={15} weight="duotone" className="text-indigo-200" />
+                                            {t('snapshot.style')}
+                                        </div>
+                                        <div className="mt-1 text-xs text-indigo-100/80">{styleSummary || t('style.empty')}</div>
+                                    </div>
+                                </div>
+
+                                {isAdmin && (
+                                    <div className="space-y-1">
+                                        <label htmlFor="create-trip-model-desktop" className="text-[11px] font-semibold uppercase tracking-[0.11em] text-indigo-200/95">
+                                            {t('modelPicker.label')}
+                                        </label>
+                                        <Select value={selectedAiModel.id} onValueChange={handleModelChange}>
+                                            <SelectTrigger
+                                                id="create-trip-model-desktop"
+                                                className="h-auto min-h-11 w-full rounded-xl border-indigo-200/45 bg-white/95 text-left text-indigo-950 hover:bg-white"
+                                                {...getAnalyticsDebugAttributes('create_trip__model--select', {
+                                                    provider: selectedAiModel.provider,
+                                                    model: selectedAiModel.model,
+                                                    model_id: selectedAiModel.id,
+                                                    source: 'desktop_snapshot',
+                                                })}
+                                            >
+                                                <span className="flex min-w-0 flex-wrap items-center gap-1.5 pr-2">
+                                                    <span className="truncate text-sm font-semibold">{selectedAiModel.label}</span>
+                                                    <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-700">
+                                                        {selectedAiModel.providerShortName}
+                                                    </span>
+                                                    {MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id] && (
+                                                        <span className="rounded-full border border-emerald-300/70 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                            {t(MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id])}
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            </SelectTrigger>
+                                            <SelectContent className="max-h-[26rem]">
+                                                {preferredCreateTripModels.length > 0 && (
+                                                    <SelectGroup>
+                                                        <SelectLabel>{t('modelPicker.topPicks')}</SelectLabel>
+                                                        {preferredCreateTripModels.map((model) => {
+                                                            const noteKey = MODEL_PREFERENCE_NOTE_KEY_BY_ID[model.id];
+                                                            return (
+                                                                <SelectItem key={`create-trip-model-pref-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                                    <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                                        <span className="min-w-0">
+                                                                            <span className="block truncate font-semibold">{model.label}</span>
+                                                                            <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                                        </span>
+                                                                        <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
+                                                                            <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                                                {model.providerShortName}
+                                                                            </span>
+                                                                            {noteKey && (
+                                                                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                                                    {t(noteKey)}
+                                                                                </span>
+                                                                            )}
+                                                                        </span>
+                                                                    </span>
+                                                                </SelectItem>
+                                                            );
+                                                        })}
+                                                    </SelectGroup>
+                                                )}
+                                                {preferredCreateTripModels.length > 0 && remainingCreateTripModels.length > 0 && (
+                                                    <SelectSeparator />
+                                                )}
+                                                {remainingCreateTripModels.length > 0 && (
+                                                    <SelectGroup>
+                                                        <SelectLabel>{t('modelPicker.allModels')}</SelectLabel>
+                                                        {remainingCreateTripModels.map((model) => (
+                                                            <SelectItem key={`create-trip-model-all-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                                <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                                    <span className="min-w-0">
+                                                                        <span className="block truncate font-semibold">{model.label}</span>
+                                                                        <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                                    </span>
+                                                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                                        {model.providerShortName}
+                                                                    </span>
+                                                                </span>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectGroup>
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+
+                                <button
+                                    type="button"
+                                    onClick={handleGenerateTrip}
+                                        disabled={isSubmitting || !destinationComplete || isGenerationBlockedOffline || (dateInputMode === 'exact' && totalNights < 1)}
+                                    className="inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold text-indigo-900 transition-colors hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                    {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
+                                        destination_count: orderedDestinations.length,
+                                        date_mode: dateInputMode,
+                                        provider: selectedAiModel.provider,
+                                        model: selectedAiModel.model,
+                                    })}
+                                >
+                                    {isSubmitting ? t('cta.loading') : (isGenerationBlockedOffline ? t('cta.offline') : t('cta.label'))}
+                                </button>
+                            </div>
+                        </aside>
+                    </section>
+
+                    <CreateTripWizardCtaBanner
+                        className="mt-6"
+                        title={t('labsBanner.title')}
+                        description={t('labsBanner.description')}
+                        ctaLabel={t('labsBanner.cta')}
+                    />
+                </main>
+
+                <div
+                    className="fixed inset-x-0 z-40 border-t border-indigo-300/25 bg-gradient-to-b from-[#0d1330]/95 via-[#090f26]/95 to-[#060915]/95 px-3 pb-4 pt-4 text-slate-100 backdrop-blur lg:hidden"
+                    style={{ bottom: `${mobileSnapshotFooterOffset}px` }}
+                >
+                    <div className="mx-auto max-w-[1260px]">
+                        {isAdmin && (
+                            <div className="mb-2.5 space-y-1">
+                                <label htmlFor="create-trip-model-mobile" className="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-200/95">
+                                    {t('modelPicker.label')}
+                                </label>
+                                <Select value={selectedAiModel.id} onValueChange={handleModelChange}>
+                                    <SelectTrigger
+                                        id="create-trip-model-mobile"
+                                        className="h-auto min-h-10 w-full rounded-xl border-white/20 bg-white/10 text-left text-white hover:bg-white/15"
+                                        {...getAnalyticsDebugAttributes('create_trip__model--select', {
+                                            provider: selectedAiModel.provider,
+                                            model: selectedAiModel.model,
+                                            model_id: selectedAiModel.id,
+                                            source: 'mobile_footer',
+                                        })}
+                                    >
+                                        <span className="flex min-w-0 flex-wrap items-center gap-1.5 pr-2">
+                                            <span className="truncate text-sm font-semibold">{selectedAiModel.label}</span>
+                                            <span className="rounded-full border border-indigo-200/40 bg-indigo-300/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-100">
+                                                {selectedAiModel.providerShortName}
+                                            </span>
+                                            {MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id] && (
+                                                <span className="rounded-full border border-emerald-300/35 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-100">
+                                                    {t(MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id])}
+                                                </span>
+                                            )}
+                                        </span>
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-[24rem]">
+                                        {preferredCreateTripModels.length > 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>{t('modelPicker.topPicks')}</SelectLabel>
+                                                {preferredCreateTripModels.map((model) => {
+                                                    const noteKey = MODEL_PREFERENCE_NOTE_KEY_BY_ID[model.id];
+                                                    return (
+                                                        <SelectItem key={`create-trip-model-mobile-pref-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                            <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                                <span className="min-w-0">
+                                                                    <span className="block truncate font-semibold">{model.label}</span>
+                                                                    <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                                </span>
+                                                                <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
+                                                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                                        {model.providerShortName}
+                                                                    </span>
+                                                                    {noteKey && (
+                                                                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                                            {t(noteKey)}
+                                                                        </span>
+                                                                    )}
+                                                                </span>
+                                                            </span>
+                                                        </SelectItem>
+                                                    );
+                                                })}
+                                            </SelectGroup>
+                                        )}
+                                        {preferredCreateTripModels.length > 0 && remainingCreateTripModels.length > 0 && (
+                                            <SelectSeparator />
+                                        )}
+                                        {remainingCreateTripModels.length > 0 && (
+                                            <SelectGroup>
+                                                <SelectLabel>{t('modelPicker.allModels')}</SelectLabel>
+                                                {remainingCreateTripModels.map((model) => (
+                                                    <SelectItem key={`create-trip-model-mobile-all-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                        <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                            <span className="min-w-0">
+                                                                <span className="block truncate font-semibold">{model.label}</span>
+                                                                <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                            </span>
+                                                            <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                                {model.providerShortName}
+                                                            </span>
+                                                        </span>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                        <div className="flex items-start gap-3.5">
+                            <div className="min-w-0 flex-1 space-y-1.5">
+                                <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-200/95">{t('snapshot.title')}</div>
+                                <div className="truncate text-[16px] font-semibold leading-snug text-white">{routeHeadline}</div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-[11px] font-medium text-indigo-100">
+                                        {mobileDateRangeLabel}
+                                    </span>
+                                    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-[11px] font-medium text-indigo-100">
+                                        {snapshotDurationLabel}
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleGenerateTrip}
+                                disabled={isSubmitting || !destinationComplete || isGenerationBlockedOffline || (dateInputMode === 'exact' && totalNights < 1)}
+                                className="rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold text-indigo-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                                {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
+                                    destination_count: orderedDestinations.length,
+                                    date_mode: dateInputMode,
+                                    source: 'mobile_footer',
+                                    provider: selectedAiModel.provider,
+                                    model: selectedAiModel.model,
+                                })}
+                            >
+                                {isSubmitting ? t('cta.loading') : (isGenerationBlockedOffline ? t('cta.offline') : t('cta.label'))}
+                            </button>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setMobileSnapshotExpanded((previous) => !previous)}
+                            className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-100/95"
+                        >
+                            {mobileSnapshotExpanded ? <CaretDown size={12} /> : <CaretUp size={12} />}
+                            {mobileSnapshotExpanded ? t('mobileSnapshot.hideDetails') : t('mobileSnapshot.showDetails')}
+                        </button>
+                        {mobileSnapshotExpanded && (
+                            <div className="mt-2.5 grid grid-cols-2 gap-3 rounded-xl border border-white/15 bg-white/5 p-3.5 text-xs text-indigo-100">
+                                <div>
+                                    <div className="font-semibold text-indigo-200">{t('mobileSnapshot.days')}</div>
+                                    <div>{mobileSnapshotDurationValue}</div>
+                                </div>
+                                <div>
+                                    <div className="font-semibold text-indigo-200">{t('mobileSnapshot.traveler')}</div>
+                                    <div>{travelerSummary}</div>
+                                </div>
+                                <div>
+                                    <div className="font-semibold text-indigo-200">{t('mobileSnapshot.style')}</div>
+                                    <div className="truncate">{styleSummary || t('style.empty')}</div>
+                                </div>
+                                <div>
+                                    <div className="font-semibold text-indigo-200">{t('mobileSnapshot.transport')}</div>
+                                    <div>{transportSummary}</div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {settingsDialog}
+
+                <SiteFooter className="relative z-10 mt-6" />
+            </div>
+        </div>
+    );
+};

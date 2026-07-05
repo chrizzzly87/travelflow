@@ -139,7 +139,7 @@ vi.mock('react-i18next', () => ({
     }),
 }));
 
-import { FeaturesPage } from '../../../pages/FeaturesPage';
+import { FeaturesPage } from '../../../views/FeaturesPage';
 
 describe('pages/FeaturesPage', () => {
     beforeEach(() => {

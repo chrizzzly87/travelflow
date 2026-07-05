@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTermsVersionCandidate } from '../../pages/AdminLegalTermsPage';
+import { buildTermsVersionCandidate } from '../../views/AdminLegalTermsPage';
 
 describe('pages/AdminLegalTermsPage version candidate builder', () => {
   it('returns the base date when it is not used yet', () => {

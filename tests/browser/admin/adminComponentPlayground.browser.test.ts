@@ -36,7 +36,7 @@ vi.mock('cobe', () => ({
   })),
 }));
 
-import { AdminComponentPlaygroundPage } from '../../../pages/AdminComponentPlaygroundPage';
+import { AdminComponentPlaygroundPage } from '../../../views/AdminComponentPlaygroundPage';
 import { ADMIN_NAV_ITEMS } from '../../../components/admin/adminNavConfig';
 
 describe('pages/AdminComponentPlaygroundPage', () => {

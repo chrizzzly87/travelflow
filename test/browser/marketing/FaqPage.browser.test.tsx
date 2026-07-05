@@ -15,7 +15,7 @@ vi.mock('../../../services/analyticsService', () => ({
   getAnalyticsDebugAttributes: () => ({}),
 }));
 
-import { FaqPage } from '../../../pages/FaqPage';
+import { FaqPage } from '../../../views/FaqPage';
 
 describe('pages/FaqPage', () => {
   const originalRequestAnimationFrame = window.requestAnimationFrame;

@@ -96,7 +96,7 @@ vi.mock('../../../services/locationSearchService', () => ({
   resolveCitySuggestion: vi.fn().mockResolvedValue(null),
 }));
 
-import { AdminAirportsPage } from '../../../pages/AdminAirportsPage';
+import { AdminAirportsPage } from '../../../views/AdminAirportsPage';
 
 const LocationSearchProbe: React.FC = () => {
   const location = useLocation();

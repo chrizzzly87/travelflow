@@ -105,7 +105,7 @@ vi.mock('../../../services/tripGenerationJobService', () => ({
   requeueTripGenerationJob: mocks.requeueTripGenerationJob,
 }));
 
-import { AdminTripsPage } from '../../../pages/AdminTripsPage';
+import { AdminTripsPage } from '../../../views/AdminTripsPage';
 
 const daysAgoIso = (days: number): string => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 

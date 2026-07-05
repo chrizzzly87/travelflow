@@ -65,7 +65,7 @@ vi.mock('../../../services/adminService', () => ({
   adminGetAiWorkerHealth: mocks.adminGetAiWorkerHealth,
 }));
 
-import { AdminAiWorkerHealthPage } from '../../../pages/AdminAiWorkerHealthPage';
+import { AdminAiWorkerHealthPage } from '../../../views/AdminAiWorkerHealthPage';
 
 const createCheck = (index: number, overrides: Partial<Record<string, unknown>> = {}) => ({
   id: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,

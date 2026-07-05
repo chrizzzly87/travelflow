@@ -103,7 +103,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { ProfilePage } from '../../pages/ProfilePage';
+import { ProfilePage } from '../../views/ProfilePage';
 
 const renderProfilePage = (initialPath: string) => render(
   React.createElement(

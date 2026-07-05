@@ -163,7 +163,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { CreateTripClassicLabPage } from '../../pages/CreateTripClassicLabPage';
+import { CreateTripClassicLabPage } from '../../views/CreateTripClassicLabPage';
 
 const renderPage = () =>
   render(

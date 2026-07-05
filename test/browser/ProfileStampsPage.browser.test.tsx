@@ -68,7 +68,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { ProfileStampsPage } from '../../pages/ProfileStampsPage';
+import { ProfileStampsPage } from '../../views/ProfileStampsPage';
 
 const LocationProbe: React.FC = () => {
   const location = useLocation();

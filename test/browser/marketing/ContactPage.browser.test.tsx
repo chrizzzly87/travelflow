@@ -96,7 +96,7 @@ vi.mock('../../../services/analyticsService', () => ({
   getAnalyticsDebugAttributes: () => ({}),
 }));
 
-import { ContactPage } from '../../../pages/ContactPage';
+import { ContactPage } from '../../../views/ContactPage';
 
 const renderContactPage = (initialEntries: InitialEntry[] = ['/contact']) => render(
   <MemoryRouter initialEntries={initialEntries}>

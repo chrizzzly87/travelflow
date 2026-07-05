@@ -93,7 +93,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { ProfileSettingsPage } from '../../pages/ProfileSettingsPage';
+import { ProfileSettingsPage } from '../../views/ProfileSettingsPage';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

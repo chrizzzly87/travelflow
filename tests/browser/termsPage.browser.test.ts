@@ -106,7 +106,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { TermsPage } from '../../pages/TermsPage';
+import { TermsPage } from '../../views/TermsPage';
 
 describe('pages/TermsPage acceptance flow', () => {
   beforeEach(() => {

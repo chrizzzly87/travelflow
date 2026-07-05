@@ -32,3 +32,5 @@ public/images/og/site/generated/
 .promptfoo/
 artifacts/promptfoo/
 services/generated/*.generated.ts
+.next/
+next-env.d.ts

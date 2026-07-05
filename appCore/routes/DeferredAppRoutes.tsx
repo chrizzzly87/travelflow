@@ -15,41 +15,41 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
     importer: () => Promise<TModule>
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
 
-const MarketingHomePage = lazyWithRecovery('MarketingHomePage', () => import('../../pages/MarketingHomePage').then((module) => ({ default: module.MarketingHomePage })));
-const PublicProfilePage = lazyWithRecovery('PublicProfilePage', () => import('../../pages/PublicProfilePage').then((module) => ({ default: module.PublicProfilePage })));
-const PublicProfileStampsPage = lazyWithRecovery('PublicProfileStampsPage', () => import('../../pages/PublicProfileStampsPage').then((module) => ({ default: module.PublicProfileStampsPage })));
+const MarketingHomePage = lazyWithRecovery('MarketingHomePage', () => import('../../views/MarketingHomePage').then((module) => ({ default: module.MarketingHomePage })));
+const PublicProfilePage = lazyWithRecovery('PublicProfilePage', () => import('../../views/PublicProfilePage').then((module) => ({ default: module.PublicProfilePage })));
+const PublicProfileStampsPage = lazyWithRecovery('PublicProfileStampsPage', () => import('../../views/PublicProfileStampsPage').then((module) => ({ default: module.PublicProfileStampsPage })));
 
-const FeaturesPage = lazyWithRecovery('FeaturesPage', () => import('../../pages/FeaturesPage').then((module) => ({ default: module.FeaturesPage })));
-const UpdatesPage = lazyWithRecovery('UpdatesPage', () => import('../../pages/UpdatesPage').then((module) => ({ default: module.UpdatesPage })));
-const BlogPage = lazyWithRecovery('BlogPage', () => import('../../pages/BlogPage').then((module) => ({ default: module.BlogPage })));
-const BlogPostPage = lazyWithRecovery('BlogPostPage', () => import('../../pages/BlogPostPage').then((module) => ({ default: module.BlogPostPage })));
-const InspirationsPage = lazyWithRecovery('InspirationsPage', () => import('../../pages/InspirationsPage').then((module) => ({ default: module.InspirationsPage })));
-const ThemesPage = lazyWithRecovery('ThemesPage', () => import('../../pages/inspirations/ThemesPage').then((module) => ({ default: module.ThemesPage })));
-const BestTimeToTravelPage = lazyWithRecovery('BestTimeToTravelPage', () => import('../../pages/inspirations/BestTimeToTravelPage').then((module) => ({ default: module.BestTimeToTravelPage })));
-const CountriesPage = lazyWithRecovery('CountriesPage', () => import('../../pages/inspirations/CountriesPage').then((module) => ({ default: module.CountriesPage })));
-const FestivalsPage = lazyWithRecovery('FestivalsPage', () => import('../../pages/inspirations/FestivalsPage').then((module) => ({ default: module.FestivalsPage })));
-const WeekendGetawaysPage = lazyWithRecovery('WeekendGetawaysPage', () => import('../../pages/inspirations/WeekendGetawaysPage').then((module) => ({ default: module.WeekendGetawaysPage })));
-const CountryDetailPage = lazyWithRecovery('CountryDetailPage', () => import('../../pages/inspirations/CountryDetailPage').then((module) => ({ default: module.CountryDetailPage })));
-const LoginPage = lazyWithRecovery('LoginPage', () => import('../../pages/LoginPage').then((module) => ({ default: module.LoginPage })));
-const ResetPasswordPage = lazyWithRecovery('ResetPasswordPage', () => import('../../pages/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })));
-const ContactPage = lazyWithRecovery('ContactPage', () => import('../../pages/ContactPage').then((module) => ({ default: module.ContactPage })));
-const ImprintPage = lazyWithRecovery('ImprintPage', () => import('../../pages/ImprintPage').then((module) => ({ default: module.ImprintPage })));
-const PrivacyPage = lazyWithRecovery('PrivacyPage', () => import('../../pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
-const TermsPage = lazyWithRecovery('TermsPage', () => import('../../pages/TermsPage').then((module) => ({ default: module.TermsPage })));
-const CookiesPage = lazyWithRecovery('CookiesPage', () => import('../../pages/CookiesPage').then((module) => ({ default: module.CookiesPage })));
-const ProfilePage = lazyWithRecovery('ProfilePage', () => import('../../pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
-const ProfileStampsPage = lazyWithRecovery('ProfileStampsPage', () => import('../../pages/ProfileStampsPage').then((module) => ({ default: module.ProfileStampsPage })));
-const ProfileSettingsPage = lazyWithRecovery('ProfileSettingsPage', () => import('../../pages/ProfileSettingsPage').then((module) => ({ default: module.ProfileSettingsPage })));
-const ProfileOnboardingPage = lazyWithRecovery('ProfileOnboardingPage', () => import('../../pages/ProfileOnboardingPage').then((module) => ({ default: module.ProfileOnboardingPage })));
-const CheckoutPage = lazyWithRecovery('CheckoutPage', () => import('../../pages/CheckoutPage').then((module) => ({ default: module.CheckoutPage })));
-const AdminAccessDeniedPage = lazyWithRecovery('AdminAccessDeniedPage', () => import('../../pages/AdminAccessDeniedPage').then((module) => ({ default: module.AdminAccessDeniedPage })));
-const AdminWorkspaceRouter = lazyWithRecovery('AdminWorkspaceRouter', () => import('../../pages/AdminWorkspaceRouter').then((module) => ({ default: module.AdminWorkspaceRouter })));
-const PricingPage = lazyWithRecovery('PricingPage', () => import('../../pages/PricingPage').then((module) => ({ default: module.PricingPage })));
-const FaqPage = lazyWithRecovery('FaqPage', () => import('../../pages/FaqPage').then((module) => ({ default: module.FaqPage })));
-const ShareUnavailablePage = lazyWithRecovery('ShareUnavailablePage', () => import('../../pages/ShareUnavailablePage').then((module) => ({ default: module.ShareUnavailablePage })));
-const NotFoundPage = lazyWithRecovery('NotFoundPage', () => import('../../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
-const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
-const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
+const FeaturesPage = lazyWithRecovery('FeaturesPage', () => import('../../views/FeaturesPage').then((module) => ({ default: module.FeaturesPage })));
+const UpdatesPage = lazyWithRecovery('UpdatesPage', () => import('../../views/UpdatesPage').then((module) => ({ default: module.UpdatesPage })));
+const BlogPage = lazyWithRecovery('BlogPage', () => import('../../views/BlogPage').then((module) => ({ default: module.BlogPage })));
+const BlogPostPage = lazyWithRecovery('BlogPostPage', () => import('../../views/BlogPostPage').then((module) => ({ default: module.BlogPostPage })));
+const InspirationsPage = lazyWithRecovery('InspirationsPage', () => import('../../views/InspirationsPage').then((module) => ({ default: module.InspirationsPage })));
+const ThemesPage = lazyWithRecovery('ThemesPage', () => import('../../views/inspirations/ThemesPage').then((module) => ({ default: module.ThemesPage })));
+const BestTimeToTravelPage = lazyWithRecovery('BestTimeToTravelPage', () => import('../../views/inspirations/BestTimeToTravelPage').then((module) => ({ default: module.BestTimeToTravelPage })));
+const CountriesPage = lazyWithRecovery('CountriesPage', () => import('../../views/inspirations/CountriesPage').then((module) => ({ default: module.CountriesPage })));
+const FestivalsPage = lazyWithRecovery('FestivalsPage', () => import('../../views/inspirations/FestivalsPage').then((module) => ({ default: module.FestivalsPage })));
+const WeekendGetawaysPage = lazyWithRecovery('WeekendGetawaysPage', () => import('../../views/inspirations/WeekendGetawaysPage').then((module) => ({ default: module.WeekendGetawaysPage })));
+const CountryDetailPage = lazyWithRecovery('CountryDetailPage', () => import('../../views/inspirations/CountryDetailPage').then((module) => ({ default: module.CountryDetailPage })));
+const LoginPage = lazyWithRecovery('LoginPage', () => import('../../views/LoginPage').then((module) => ({ default: module.LoginPage })));
+const ResetPasswordPage = lazyWithRecovery('ResetPasswordPage', () => import('../../views/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })));
+const ContactPage = lazyWithRecovery('ContactPage', () => import('../../views/ContactPage').then((module) => ({ default: module.ContactPage })));
+const ImprintPage = lazyWithRecovery('ImprintPage', () => import('../../views/ImprintPage').then((module) => ({ default: module.ImprintPage })));
+const PrivacyPage = lazyWithRecovery('PrivacyPage', () => import('../../views/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
+const TermsPage = lazyWithRecovery('TermsPage', () => import('../../views/TermsPage').then((module) => ({ default: module.TermsPage })));
+const CookiesPage = lazyWithRecovery('CookiesPage', () => import('../../views/CookiesPage').then((module) => ({ default: module.CookiesPage })));
+const ProfilePage = lazyWithRecovery('ProfilePage', () => import('../../views/ProfilePage').then((module) => ({ default: module.ProfilePage })));
+const ProfileStampsPage = lazyWithRecovery('ProfileStampsPage', () => import('../../views/ProfileStampsPage').then((module) => ({ default: module.ProfileStampsPage })));
+const ProfileSettingsPage = lazyWithRecovery('ProfileSettingsPage', () => import('../../views/ProfileSettingsPage').then((module) => ({ default: module.ProfileSettingsPage })));
+const ProfileOnboardingPage = lazyWithRecovery('ProfileOnboardingPage', () => import('../../views/ProfileOnboardingPage').then((module) => ({ default: module.ProfileOnboardingPage })));
+const CheckoutPage = lazyWithRecovery('CheckoutPage', () => import('../../views/CheckoutPage').then((module) => ({ default: module.CheckoutPage })));
+const AdminAccessDeniedPage = lazyWithRecovery('AdminAccessDeniedPage', () => import('../../views/AdminAccessDeniedPage').then((module) => ({ default: module.AdminAccessDeniedPage })));
+const AdminWorkspaceRouter = lazyWithRecovery('AdminWorkspaceRouter', () => import('../../views/AdminWorkspaceRouter').then((module) => ({ default: module.AdminWorkspaceRouter })));
+const PricingPage = lazyWithRecovery('PricingPage', () => import('../../views/PricingPage').then((module) => ({ default: module.PricingPage })));
+const FaqPage = lazyWithRecovery('FaqPage', () => import('../../views/FaqPage').then((module) => ({ default: module.FaqPage })));
+const ShareUnavailablePage = lazyWithRecovery('ShareUnavailablePage', () => import('../../views/ShareUnavailablePage').then((module) => ({ default: module.ShareUnavailablePage })));
+const NotFoundPage = lazyWithRecovery('NotFoundPage', () => import('../../views/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
+const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../views/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
+const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../views/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
 
 const RouteLoadingFallback: React.FC = () => (
     <MarketingRouteLoadingShell />
