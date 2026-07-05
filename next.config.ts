@@ -17,6 +17,11 @@ const nextConfig: NextConfig = {
     turbopack: {
         root: __dirname,
     },
+    // This worktree lives inside the main checkout (parent lockfiles above),
+    // so Next would infer the wrong workspace root — that nests the traced
+    // server bundle under dev/travelflow/.claude/... and the Netlify Next
+    // runtime then 404s every route.
+    outputFileTracingRoot: __dirname,
     env: {
         ...publicEnvFromVite('VITE_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL'),
         ...publicEnvFromVite('VITE_SUPABASE_ANON_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'),

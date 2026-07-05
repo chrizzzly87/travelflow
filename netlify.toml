@@ -1,6 +1,7 @@
 [build]
   command = "pnpm build:netlify"
-  publish = ".next"
+  # No publish dir: @netlify/plugin-nextjs v5 manages the deploy output itself
+  # (setting publish to .next breaks page routing — everything 404s).
   edge_functions = "netlify/edge-functions"
 
 # Next.js runtime (OpenNext-based). Serves the App Router output; the Deno
