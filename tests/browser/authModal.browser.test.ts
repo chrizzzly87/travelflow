@@ -3,7 +3,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/lib/router';
 
 const mocks = vi.hoisted(() => ({
   navigate: vi.fn(),
@@ -26,8 +26,8 @@ const mocks = vi.hoisted(() => ({
   trackEvent: vi.fn(),
 }));
 
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
+vi.mock('@/lib/router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/router')>();
   return {
     ...actual,
     useNavigate: () => mocks.navigate,

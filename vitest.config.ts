@@ -3,6 +3,10 @@ import path from 'path';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
+// Embeds content/blog + content/updates markdown as generated TS modules
+// (replaces Vite's import.meta.glob, which Next.js does not support).
+import './scripts/generate-content-modules.mjs';
+
 export default defineConfig({
   plugins: [react()],
   resolve: {

@@ -2,7 +2,7 @@
 import React, { Suspense } from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/lib/router';
 import { makeTrip } from '../helpers/tripFixtures';
 
 const mocks = vi.hoisted(() => ({
@@ -103,7 +103,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { ProfilePage } from '../../pages/ProfilePage';
+import { ProfilePage } from '../../views/ProfilePage';
 
 const renderProfilePage = (initialPath: string) => render(
   React.createElement(

@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from '@/lib/router';
 import { useTranslation } from 'react-i18next';
 import { APP_SHELL_NAMESPACES } from './i18n';
 import { Scales } from '@phosphor-icons/react';
@@ -32,22 +34,18 @@ import {
     dbUpsertUserSettings,
     ensureDbSession,
 } from './services/dbApi';
-import { loadLazyComponentWithRecovery } from './services/lazyImportRecovery';
 import { getBlogPostBySlugWithFallback } from './services/blogService';
 import { resolvePageTitle } from './services/pageTitleService';
 import { setCanonicalDocumentTitle } from './services/tripGenerationTabFeedbackService';
-import { useAnalyticsBootstrap } from './app/bootstrap/useAnalyticsBootstrap';
-import { useAuthNavigationBootstrap } from './app/bootstrap/useAuthNavigationBootstrap';
-import { useDebuggerBootstrap } from './app/bootstrap/useDebuggerBootstrap';
-import { useNavigationContextBootstrap } from './app/bootstrap/useNavigationContextBootstrap';
-import { useRuntimeLocationBootstrap } from './app/bootstrap/useRuntimeLocationBootstrap';
-import { useTripsPrunedNoticeBootstrap } from './app/bootstrap/useTripsPrunedNoticeBootstrap';
-import { useWarmupGate } from './app/bootstrap/useWarmupGate';
-import { AppProviderShell } from './app/bootstrap/AppProviderShell';
+import { useAnalyticsBootstrap } from './appCore/bootstrap/useAnalyticsBootstrap';
+import { useAuthNavigationBootstrap } from './appCore/bootstrap/useAuthNavigationBootstrap';
+import { useDebuggerBootstrap } from './appCore/bootstrap/useDebuggerBootstrap';
+import { useNavigationContextBootstrap } from './appCore/bootstrap/useNavigationContextBootstrap';
+import { useRuntimeLocationBootstrap } from './appCore/bootstrap/useRuntimeLocationBootstrap';
+import { useTripsPrunedNoticeBootstrap } from './appCore/bootstrap/useTripsPrunedNoticeBootstrap';
+import { AppProviderShell } from './appCore/bootstrap/AppProviderShell';
 import { MarketingRouteLoadingShell } from './components/bootstrap/MarketingRouteLoadingShell';
-import { AppRoutes } from './app/routes/AppRoutes';
-import { isFirstLoadCriticalPath } from './app/prefetch/isFirstLoadCriticalPath';
-import { hasCompletedInitialRouteHandoff } from './services/marketingRouteShellState';
+import { AppShellContext, AppShellValue } from './appCore/AppShellContext';
 import { useConnectivityStatus } from './hooks/useConnectivityStatus';
 import { enqueueTripCommitAndSync } from './services/tripSyncManager';
 import { GlobalConnectivityBadge } from './components/GlobalConnectivityBadge';
@@ -72,7 +70,7 @@ import {
     buildPathFromLocationParts,
     isSafeAuthReturnPath,
 } from './services/authNavigationService';
-const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
+const IS_DEV = Boolean((process.env.NODE_ENV !== 'production'));
 
 const toFiniteNumber = (value: unknown, fallback: number): number => {
     const parsed = Number(value);
@@ -95,10 +93,6 @@ const normalizeSettingsForPersistence = (settings: IViewSettings): Required<Pick
 
 type TripCommitOutcome = 'remote' | 'queued' | 'permission_denied';
 
-const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
-    moduleKey: string,
-    importer: () => Promise<TModule>
-) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
 
 let tripManagerModulePromise: Promise<{ default: React.ComponentType<any> }> | null = null;
 
@@ -109,17 +103,9 @@ const loadTripManagerModule = (): Promise<{ default: React.ComponentType<any> }>
     return tripManagerModulePromise;
 };
 
-const TripManager = lazyWithRecovery('TripManager', () => loadTripManagerModule());
-const SettingsModal = lazyWithRecovery('SettingsModal', () => import('./components/SettingsModal').then((module) => ({ default: module.SettingsModal })));
-const OnPageDebugger = lazyWithRecovery('OnPageDebugger', () => import('./components/OnPageDebugger').then((module) => ({ default: module.OnPageDebugger })));
-const NavigationPrefetchManager = lazyWithRecovery(
-    'NavigationPrefetchManager',
-    () => import('./components/NavigationPrefetchManager').then((module) => ({ default: module.NavigationPrefetchManager }))
-);
-const SpeculationRulesManager = lazyWithRecovery(
-    'SpeculationRulesManager',
-    () => import('./components/SpeculationRulesManager').then((module) => ({ default: module.SpeculationRulesManager }))
-);
+const TripManager = lazy(() => loadTripManagerModule());
+const SettingsModal = lazy(() => import('./components/SettingsModal').then((module) => ({ default: module.SettingsModal })));
+const OnPageDebugger = lazy(() => import('./components/OnPageDebugger').then((module) => ({ default: module.OnPageDebugger })));
 const TRIP_MANAGER_FALLBACK_ROWS = [0, 1, 2, 3, 4, 5];
 
 const normalizeTripForRuntimeLoad = (trip: ITrip): ITrip => {
@@ -201,79 +187,6 @@ const TripManagerLoadingFallback: React.FC<{ isOpen: boolean; onClose: () => voi
     </>
 );
 
-const isNavPrefetchEnabled = (): boolean => {
-    const navPrefetchEnabledByEnv = (import.meta as any)?.env?.VITE_NAV_PREFETCH_ENABLED;
-    if (navPrefetchEnabledByEnv === 'true') return true;
-    if (navPrefetchEnabledByEnv === 'false') return false;
-    return Boolean((import.meta as any)?.env?.PROD);
-};
-
-const ViewTransitionHandler: React.FC<{ enabled: boolean }> = ({ enabled }) => {
-    useEffect(() => {
-        if (!enabled) return;
-        // Keep legacy prewarm as a fallback path only when the new
-        // navigation prefetch manager is disabled.
-        if (isNavPrefetchEnabled()) return;
-
-        let fallbackWarmupModulePromise: Promise<{
-            getPathnameFromHref: (href: string) => string;
-            preloadRouteForPath: (pathname: string) => Promise<void>;
-        }> | null = null;
-        const loadFallbackWarmupModule = async () => {
-            if (!fallbackWarmupModulePromise) {
-                fallbackWarmupModulePromise = import('./app/prefetch/fallbackRouteWarmup');
-            }
-            return fallbackWarmupModulePromise;
-        };
-
-        const warmLinkTarget = async (target: EventTarget | null) => {
-            const anchor = (target as HTMLElement | null)?.closest?.('a');
-            if (!anchor) return;
-            const href = anchor.getAttribute('href');
-            if (!href || !href.startsWith('/')) return;
-            const { getPathnameFromHref, preloadRouteForPath } = await loadFallbackWarmupModule();
-            const pathname = getPathnameFromHref(href);
-            await preloadRouteForPath(pathname);
-        };
-
-        const handleMouseOver = (event: MouseEvent) => {
-            void warmLinkTarget(event.target);
-        };
-        const handleFocusIn = (event: FocusEvent) => {
-            void warmLinkTarget(event.target);
-        };
-        const handleTouchStart = (event: TouchEvent) => {
-            void warmLinkTarget(event.target);
-        };
-
-        document.addEventListener('mouseover', handleMouseOver, true);
-        document.addEventListener('focusin', handleFocusIn, true);
-        document.addEventListener('touchstart', handleTouchStart, true);
-
-        // Warm high-traffic marketing routes in dev so first local navigation
-        // does not wait on Vite's on-demand transforms.
-        let warmupTimerId: number | null = null;
-        if (IS_DEV) {
-            warmupTimerId = window.setTimeout(() => {
-                void loadFallbackWarmupModule().then(({ preloadRouteForPath }) => Promise.all([
-                    preloadRouteForPath('/features'),
-                    preloadRouteForPath('/inspirations'),
-                    preloadRouteForPath('/blog'),
-                    preloadRouteForPath('/pricing'),
-                ]));
-            }, 600);
-        }
-        return () => {
-            document.removeEventListener('mouseover', handleMouseOver, true);
-            document.removeEventListener('focusin', handleFocusIn, true);
-            document.removeEventListener('touchstart', handleTouchStart, true);
-            if (warmupTimerId !== null) window.clearTimeout(warmupTimerId);
-        };
-    }, [enabled]);
-
-    return null;
-};
-
 const createLocalHistoryEntry = (
     navigate: ReturnType<typeof useNavigate>,
     updatedTrip: ITrip,
@@ -345,7 +258,7 @@ export const resolveTermsNoticeState = (options: {
     return 'none';
 };
 
-const AppContent: React.FC = () => {
+const AppContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { i18n, t } = useTranslation(APP_SHELL_NAMESPACES);
     const { access, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
     const [trip, setTrip] = useState<ITrip | null>(null);
@@ -360,12 +273,6 @@ const AppContent: React.FC = () => {
     const pendingUserSettingsKeyRef = useRef<string | null>(null);
     const persistedUserSettingsKeyRef = useRef<string | null>(null);
     const shouldLoadDebugger = useDebuggerBootstrap({ appName: APP_NAME, isDev: IS_DEV });
-    const isFirstLoadCritical = useMemo(
-        () => isFirstLoadCriticalPath(routeLocation.pathname),
-        [routeLocation.pathname]
-    );
-    const isWarmupEnabled = useWarmupGate({ interactionOnly: isFirstLoadCritical });
-    const shouldSuppressSpeculationRules = isFirstLoadCritical && !hasCompletedInitialRouteHandoff();
 
     useAuthNavigationBootstrap();
     useNavigationContextBootstrap();
@@ -634,6 +541,25 @@ const AppContent: React.FC = () => {
 
     // DB sync (session, upload, sync, user settings) is deferred to trip-related
     // routes via useDbSync to avoid unnecessary network calls on marketing pages.
+
+    // Cold direct loads of unprefixed tool routes (/create-trip, /trip/…)
+    // honor the stored app language. The i18n singleton now boots in the URL
+    // locale (deterministic hydration against the server HTML), so the stored
+    // preference is applied once, right after mount — same end state as the
+    // SPA's localStorage-first boot detection.
+    const initialStoredToolLocaleApplied = useRef(false);
+    useEffect(() => {
+        if (initialStoredToolLocaleApplied.current) return;
+        initialStoredToolLocaleApplied.current = true;
+        if (!isToolRoute(routeLocation.pathname)) return;
+        if (extractLocaleFromPath(routeLocation.pathname)) return;
+        const storedLocale = getStoredAppLanguage();
+        const currentLocale = normalizeLocale(i18n.resolvedLanguage ?? i18n.language);
+        if (storedLocale && storedLocale !== currentLocale) {
+            void i18n.changeLanguage(storedLocale);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         applyDocumentLocale(resolvedRouteLocale);
@@ -927,16 +853,22 @@ const AppContent: React.FC = () => {
         setIsManagerOpen(true);
     }, [prewarmTripManager]);
 
+    const appShellValue: AppShellValue = {
+        trip,
+        appLanguage,
+        onAppLanguageLoaded: setAppLanguage,
+        onTripGenerated: handleTripGenerated,
+        onTripLoaded: handleRouteTripLoaded,
+        onUpdateTrip: handleUpdateTrip,
+        onCommitState: handleCommitState,
+        onViewSettingsChange: handleViewSettingsChange,
+        onOpenManager: openTripManager,
+        onOpenSettings: () => setIsSettingsOpen(true),
+    };
+
     return (
         <TripManagerProvider openTripManager={openTripManager} prewarmTripManager={prewarmTripManager}>
             <GlobalConnectivityBadge />
-            <ViewTransitionHandler enabled={isWarmupEnabled} />
-            {isWarmupEnabled && (
-                <Suspense fallback={null}>
-                    <NavigationPrefetchManager enabled />
-                    <SpeculationRulesManager enabled={!shouldSuppressSpeculationRules} />
-                </Suspense>
-            )}
             {shouldRenderTermsNotice && (
                 <section
                     className={`mx-auto w-full max-w-[1600px] px-4 pt-3 ${shouldShowForceTermsNotice ? 'text-rose-950' : 'text-accent-950'} sm:px-6 lg:px-8`}
@@ -1000,22 +932,13 @@ const AppContent: React.FC = () => {
                 </section>
             )}
             {shouldBlockForTermsGate ? (
-                <div data-tf-handoff-ready="true">
+                <div>
                     <MarketingRouteLoadingShell />
                 </div>
             ) : (
-                <AppRoutes
-                    trip={trip}
-                    appLanguage={appLanguage}
-                    onAppLanguageLoaded={setAppLanguage}
-                    onTripGenerated={handleTripGenerated}
-                    onTripLoaded={handleRouteTripLoaded}
-                    onUpdateTrip={handleUpdateTrip}
-                    onCommitState={handleCommitState}
-                    onViewSettingsChange={handleViewSettingsChange}
-                    onOpenManager={openTripManager}
-                    onOpenSettings={() => setIsSettingsOpen(true)}
-                />
+                <AppShellContext.Provider value={appShellValue}>
+                    {children}
+                </AppShellContext.Provider>
             )}
 
             {isManagerOpen && (
@@ -1053,10 +976,10 @@ const AppContent: React.FC = () => {
     );
 };
 
-const App: React.FC = () => {
+const App: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return (
         <AppProviderShell>
-            <AppContent />
+            <AppContent>{children}</AppContent>
         </AppProviderShell>
     );
 };

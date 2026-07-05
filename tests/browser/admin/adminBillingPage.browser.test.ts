@@ -2,7 +2,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/lib/router';
 
 const mocks = vi.hoisted(() => ({
   adminGetBillingDashboard: vi.fn(),
@@ -74,7 +74,7 @@ vi.mock('../../../services/adminService', () => ({
   adminReconcilePaddleSubscriptions: mocks.adminReconcilePaddleSubscriptions,
 }));
 
-import { AdminBillingPage } from '../../../pages/AdminBillingPage';
+import { AdminBillingPage } from '../../../views/AdminBillingPage';
 
 const renderPage = () => render(
   React.createElement(

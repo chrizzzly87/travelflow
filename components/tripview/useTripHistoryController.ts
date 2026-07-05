@@ -8,7 +8,7 @@ import {
     type MutableRefObject,
     type SetStateAction,
 } from 'react';
-import { type NavigateFunction } from 'react-router-dom';
+import { type NavigateFunction } from '@/lib/router';
 import { findHistoryEntryByUrl, getHistoryEntries, type HistoryEntry } from '../../services/historyService';
 
 export type HistoryAction = 'undo' | 'redo';

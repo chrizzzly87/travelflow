@@ -3,7 +3,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/lib/router';
 
 const mocks = vi.hoisted(() => ({
   adminListUsers: vi.fn(),
@@ -94,7 +94,7 @@ vi.mock('../../../services/adminService', () => ({
   adminUpdateUserProfile: mocks.adminUpdateUserProfile,
 }));
 
-import { AdminUsersPage } from '../../../pages/AdminUsersPage';
+import { AdminUsersPage } from '../../../views/AdminUsersPage';
 
 const daysAgoIso = (days: number): string => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 

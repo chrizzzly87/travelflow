@@ -15,28 +15,28 @@ import {
   updatePaddleInlineCheckout,
 } from '../../services/paddleClient';
 
-const ORIGINAL_TOKEN = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
+const ORIGINAL_TOKEN = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
 
 describe('paddleClient', () => {
   beforeEach(() => {
     __paddleClientInternals.resetForTest();
     document.head.innerHTML = '';
     delete window.Paddle;
-    import.meta.env.VITE_PADDLE_CLIENT_TOKEN = 'test_client_token';
+    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = 'test_client_token';
   });
 
   afterEach(() => {
     __paddleClientInternals.resetForTest();
     document.head.innerHTML = '';
     delete window.Paddle;
-    import.meta.env.VITE_PADDLE_CLIENT_TOKEN = ORIGINAL_TOKEN;
+    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = ORIGINAL_TOKEN;
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
   it('detects when a client token is configured', () => {
     expect(isPaddleClientConfigured()).toBe(true);
-    import.meta.env.VITE_PADDLE_CLIENT_TOKEN = '';
+    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN = '';
     expect(isPaddleClientConfigured()).toBe(false);
   });
 

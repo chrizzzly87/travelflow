@@ -2,7 +2,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from '@/lib/router';
 
 const mocks = vi.hoisted(() => ({
   resolvePublicProfileByHandle: vi.fn(),
@@ -56,7 +56,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { PublicProfileStampsPage } from '../../pages/PublicProfileStampsPage';
+import { PublicProfileStampsPage } from '../../views/PublicProfileStampsPage';
 
 const LocationProbe: React.FC = () => {
   const location = useLocation();

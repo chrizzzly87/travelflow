@@ -2,7 +2,7 @@
 import React from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/lib/router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../components/marketing/MarketingLayout', () => ({
@@ -10,7 +10,7 @@ vi.mock('../../../components/marketing/MarketingLayout', () => ({
 }));
 
 import i18n, { preloadLocaleNamespaces } from '../../../i18n';
-import { ImprintPage } from '../../../pages/legal/ImpressumPage';
+import { ImprintPage } from '../../../views/legal/ImpressumPage';
 
 const renderImprint = async (language: 'de' | 'en', initialEntry: string) => {
   await preloadLocaleNamespaces(language, ['legal']);

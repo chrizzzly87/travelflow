@@ -5,7 +5,7 @@ import {
     X,
 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from '@/lib/router';
 import { Checkbox } from '../ui/checkbox';
 import { useAuth } from '../../hooks/useAuth';
 import { buildLocalizedMarketingPath } from '../../config/routes';

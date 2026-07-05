@@ -438,9 +438,7 @@ const buildDirectStaticMapPreviewUrl = (params: URLSearchParams): string | null 
     return buildDirectMapboxStaticMapPreviewUrlWithToken(params, getMapboxAccessToken());
   }
 
-  const rawMapsApiKey = typeof import.meta !== 'undefined'
-    ? (import.meta.env?.VITE_GOOGLE_MAPS_API_KEY as string | undefined)
-    : undefined;
+  const rawMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const mapsApiKey = typeof rawMapsApiKey === 'string' ? rawMapsApiKey : '';
   return buildDirectStaticMapPreviewUrlWithKey(params, mapsApiKey);
 };

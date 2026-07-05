@@ -2,7 +2,7 @@
 import React from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/lib/router';
 
 const trackEventMock = vi.fn();
 
@@ -15,7 +15,7 @@ vi.mock('../../../services/analyticsService', () => ({
   getAnalyticsDebugAttributes: () => ({}),
 }));
 
-import { FaqPage } from '../../../pages/FaqPage';
+import { FaqPage } from '../../../views/FaqPage';
 
 describe('pages/FaqPage', () => {
   const originalRequestAnimationFrame = window.requestAnimationFrame;

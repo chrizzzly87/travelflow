@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   applyConnectivityOverrideFromSearch: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/lib/router', () => ({
   useLocation: () => ({
     search: mocks.locationSearch,
   }),
@@ -25,7 +25,7 @@ vi.mock('../../services/supabaseHealthMonitor', async () => {
   };
 });
 
-import { useDebuggerBootstrap } from '../../app/bootstrap/useDebuggerBootstrap';
+import { useDebuggerBootstrap } from '../../appCore/bootstrap/useDebuggerBootstrap';
 
 const HookProbe: React.FC = () => {
   useDebuggerBootstrap({ appName: 'TravelFlow', isDev: false });

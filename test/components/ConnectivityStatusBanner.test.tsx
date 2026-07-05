@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/lib/router';
 
 import type { ConnectivitySnapshot } from '../../services/supabaseHealthMonitor';
 import type { SyncRunSnapshot } from '../../services/tripSyncManager';

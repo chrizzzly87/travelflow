@@ -3,7 +3,7 @@ import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from '@/lib/router';
 
 const mocks = vi.hoisted(() => ({
   auth: {
@@ -68,7 +68,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { ProfileStampsPage } from '../../pages/ProfileStampsPage';
+import { ProfileStampsPage } from '../../views/ProfileStampsPage';
 
 const LocationProbe: React.FC = () => {
   const location = useLocation();

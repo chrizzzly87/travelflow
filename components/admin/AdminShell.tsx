@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation } from '@/lib/router';
 import {
     AirplaneTakeoff,
     CaretLeft,
@@ -163,7 +163,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
             return;
         }
 
-        const bypassConfigured = import.meta.env.DEV && import.meta.env.VITE_DEV_ADMIN_BYPASS === 'true';
+        const bypassConfigured = (process.env.NODE_ENV !== 'production') && process.env.NEXT_PUBLIC_DEV_ADMIN_BYPASS === 'true';
         const bypassDisabled = isDevAdminBypassDisabled();
         const bypassSessionUser = (access?.userId || '').trim() === 'dev-admin-id';
         setIsDevAdminBypassActive(bypassConfigured && !bypassDisabled && bypassSessionUser);
@@ -351,7 +351,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     </button>
                 </div>
 
-                <main className="min-w-0 flex-1 min-h-dvh" data-tf-handoff-ready="true">
+                <main className="min-w-0 flex-1 min-h-dvh">
                     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
                         <div className="grid gap-3 p-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
                             <div className="min-w-0 self-start text-left">

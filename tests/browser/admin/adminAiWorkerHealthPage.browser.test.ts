@@ -3,7 +3,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/lib/router';
 
 const mocks = vi.hoisted(() => ({
   adminGetAiWorkerHealth: vi.fn(),
@@ -65,7 +65,7 @@ vi.mock('../../../services/adminService', () => ({
   adminGetAiWorkerHealth: mocks.adminGetAiWorkerHealth,
 }));
 
-import { AdminAiWorkerHealthPage } from '../../../pages/AdminAiWorkerHealthPage';
+import { AdminAiWorkerHealthPage } from '../../../views/AdminAiWorkerHealthPage';
 
 const createCheck = (index: number, overrides: Partial<Record<string, unknown>> = {}) => ({
   id: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,

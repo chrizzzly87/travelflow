@@ -41,7 +41,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { UpdatesPage } from '../../pages/UpdatesPage';
+import { UpdatesPage } from '../../views/UpdatesPage';
 
 describe('pages/UpdatesPage internal release visibility', () => {
   beforeEach(() => {

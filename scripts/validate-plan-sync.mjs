@@ -88,7 +88,7 @@ for (const relativeFile of localePricingFiles) {
     }
 }
 
-const pricingPagePath = path.resolve(repoRoot, 'pages/PricingPage.tsx');
+const pricingPagePath = path.resolve(repoRoot, 'views/PricingPage.tsx');
 const pricingPage = await fs.readFile(pricingPagePath, 'utf8');
 for (const slug of requiredTierKeys) {
     if (!pricingPage.includes(`'${slug}'`)) {

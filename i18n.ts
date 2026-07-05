@@ -3,13 +3,11 @@ import { initReactI18next } from 'react-i18next';
 import resourcesToBackend from 'i18next-resources-to-backend';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, isLocale } from './config/locales';
 import { APP_NAME } from './config/appGlobals';
+import { loadLocaleNamespace } from './lib/i18n/resources';
 import { readLocalStorageItem, writeLocalStorageItem } from './services/browserStorageService';
 
-const localeModules = import.meta.glob('./locales/*/*.json');
-
-// Namespaces the app shell (AppContent) requests on every route. Preloaded
-// before mount in index.tsx so the first render never suspends on them.
-export const APP_SHELL_NAMESPACES = ['common', 'pages', 'auth', 'wip', 'legal', 'profile'];
+export { APP_SHELL_NAMESPACES } from './lib/i18n/namespaces';
+import { APP_SHELL_NAMESPACES } from './lib/i18n/namespaces';
 const preloadCache = new Set<string>();
 const LOCALE_STORAGE_KEY = 'tf_app_language';
 
@@ -53,33 +51,17 @@ const detectLocaleFromHtmlTag = (): string | null => {
 };
 
 const detectInitialLocale = (): string => {
+    // The html tag is server-rendered from the URL locale, so path + htmlTag
+    // make the client's first render deterministic and identical to the SSR
+    // HTML (no hydration text mismatches). The stored app language is applied
+    // after mount for unprefixed tool routes (see App.tsx).
     return (
         detectLocaleFromPath()
+        || detectLocaleFromHtmlTag()
         || detectLocaleFromLocalStorage()
         || detectLocaleFromNavigator()
-        || detectLocaleFromHtmlTag()
         || DEFAULT_LOCALE
     );
-};
-
-const loadLocaleNamespace = async (language: string, namespace: string) => {
-    const normalizedLanguage = isLocale(language) ? language : DEFAULT_LOCALE;
-    const preferredKey = `./locales/${normalizedLanguage}/${namespace}.json`;
-    const fallbackKey = `./locales/${DEFAULT_LOCALE}/${namespace}.json`;
-
-    const preferredLoader = localeModules[preferredKey];
-    if (preferredLoader) {
-        const module = await preferredLoader();
-        return (module as { default: Record<string, unknown> }).default;
-    }
-
-    const fallbackLoader = localeModules[fallbackKey];
-    if (fallbackLoader) {
-        const module = await fallbackLoader();
-        return (module as { default: Record<string, unknown> }).default;
-    }
-
-    return {};
 };
 
 export const preloadLocaleNamespaces = async (language: string, namespaces: string[]): Promise<void> => {

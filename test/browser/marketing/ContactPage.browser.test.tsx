@@ -2,7 +2,7 @@
 import React from 'react';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type InitialEntry, MemoryRouter } from 'react-router-dom';
+import { type InitialEntry, MemoryRouter } from '@/lib/router';
 
 const useAuthMock = vi.fn();
 const getCurrentAccessContextMock = vi.fn();
@@ -96,7 +96,7 @@ vi.mock('../../../services/analyticsService', () => ({
   getAnalyticsDebugAttributes: () => ({}),
 }));
 
-import { ContactPage } from '../../../pages/ContactPage';
+import { ContactPage } from '../../../views/ContactPage';
 
 const renderContactPage = (initialEntries: InitialEntry[] = ['/contact']) => render(
   <MemoryRouter initialEntries={initialEntries}>

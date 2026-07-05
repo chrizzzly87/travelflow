@@ -1,7 +1,13 @@
 [build]
   command = "pnpm build:netlify"
-  publish = "dist"
+  # No publish dir: @netlify/plugin-nextjs v5 manages the deploy output itself
+  # (setting publish to .next breaks page routing — everything 404s).
   edge_functions = "netlify/edge-functions"
+
+# Next.js runtime (OpenNext-based). Serves the App Router output; the Deno
+# edge functions above keep answering /api/* in front of the Next handler.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 [context.production]
   command = "pnpm build"
@@ -935,20 +941,8 @@ exit 1
   path = "/trip/*"
   function = "trip-og-meta"
 
-# SPA fallback for non-prerendered URLs (deep links like /trip/*, /profile, most
-# locale pages). Points at the clean boot-shell template (dist/spa.html, written
-# by scripts/prerender-routes.mjs) instead of the prerendered homepage so deep
-# links do not flash homepage markup and tear down hydration.
-# Note: this rewrite is NOT forced (no `force = true`), so Netlify serves
-# existing static files first — `/` keeps the prerendered dist/index.html and
-# prerendered routes keep their `<route>/index.html` files.
-[[redirects]]
-  from = "/*"
-  to = "/spa.html"
-  status = 200
-
 [[headers]]
-  for = "/assets/*"
+  for = "/_next/static/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 

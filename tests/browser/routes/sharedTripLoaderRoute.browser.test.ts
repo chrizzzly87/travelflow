@@ -38,7 +38,7 @@ const mocks = vi.hoisted(() => ({
   tripViewProps: [] as any[],
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/lib/router', () => ({
   useParams: () => ({ token: mocks.route.token }),
   useLocation: () => ({
     pathname: mocks.route.pathname,

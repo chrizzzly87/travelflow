@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/lib/router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { OnPageDebugger } from '../../components/OnPageDebugger';

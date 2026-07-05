@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useRoutePrefetch } from '@/lib/router';
 import { List, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelect } from './LanguageSelect';
@@ -13,7 +13,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
-import { warmRouteAssets } from '../../services/navigationPrefetch';
 import { AppBrand } from './AppBrand';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
@@ -65,19 +64,9 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [pendingLocale, setPendingLocale] = useState<AppLanguage | null>(null);
-    // The active-nav underline is derived after mount, not on the first render.
-    // The prerendered markup has no active link, and preact/compat does NOT
-    // reconcile a className that only differs between the server DOM and the
-    // first client render during hydration — so computing "active" on the first
-    // render leaves the DOM stuck inactive (vnode already says active, so no
-    // later re-render patches it). Rendering inactive first (matching the
-    // server) and flipping `hydrated` in an effect makes the underline a real
-    // post-hydration change that preact applies. Same two-pass pattern the
-    // banners use.
-    const [hydrated, setHydrated] = useState(false);
-    useEffect(() => { setHydrated(true); }, []);
     const routeLocation = useSafeRouteLocation();
     const navigate = useNavigate();
+    const prefetchRoute = useRoutePrefetch();
     const { t, i18n } = useTranslation('common');
     const { isAuthenticated, isAdmin, access, isLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
@@ -154,7 +143,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
         getAnalyticsDebugAttributes(`navigation__${target}`);
 
     const prewarmCreateTripRoute = () => {
-        void warmRouteAssets(buildLocalizedCreateTripPath(selectedLocale), 'manual');
+        prefetchRoute(buildLocalizedCreateTripPath(selectedLocale));
     };
 
     const isGlass = variant === 'glass';
@@ -190,14 +179,11 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                     <nav className="hidden items-center gap-4 text-sm lg:flex xl:gap-6">
                         {(['features', 'inspirations', 'updates', 'blog', 'pricing'] as const).map((routeKey) => {
                             const path = buildLocalizedMarketingPath(routeKey, activeLocale);
-                            // Inactive on the first render (matches the prerendered markup);
-                            // after `hydrated` flips, derive the active link from the current
-                            // URL. window.location is correct from the first client render and
-                            // react-router updates it synchronously on navigation; referencing
-                            // routeLocation.pathname keeps this recomputing on route changes.
-                            const currentPath = ((hydrated && typeof window !== 'undefined' ? window.location.pathname : routeLocation.pathname) || '/').replace(/\/+$/, '') || '/';
+                            // The router location is correct during SSR and hydration, so the
+                            // active link is derived directly from it in a single pass.
+                            const currentPath = (routeLocation.pathname || '/').replace(/\/+$/, '') || '/';
                             const linkPath = path.replace(/\/+$/, '') || '/';
-                            const isActive = hydrated && (currentPath === linkPath || currentPath.startsWith(`${linkPath}/`));
+                            const isActive = currentPath === linkPath || currentPath.startsWith(`${linkPath}/`);
                             return (
                                 <NavLink
                                     key={routeKey}

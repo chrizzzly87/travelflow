@@ -3,7 +3,7 @@ import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/lib/router';
 
 class ResizeObserverMock {
   observe() {}
@@ -93,7 +93,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { ProfileSettingsPage } from '../../pages/ProfileSettingsPage';
+import { ProfileSettingsPage } from '../../views/ProfileSettingsPage';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

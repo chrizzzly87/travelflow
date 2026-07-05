@@ -27,7 +27,7 @@ const normalizeWidths = (widths: number[]): number[] => {
     return Array.from(unique).sort((a, b) => a - b);
 };
 
-export const isImageCdnEnabled = (): boolean => import.meta.env.PROD;
+export const isImageCdnEnabled = (): boolean => (process.env.NODE_ENV === 'production');
 
 export const buildImageCdnUrl = (sourceUrl: string, params: ImageCdnParams = {}): string => {
     if (!sourceUrl) return sourceUrl;

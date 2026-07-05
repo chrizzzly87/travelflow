@@ -1,6 +1,7 @@
 import { buildBlogImageSeed, getBlogImageMedia } from '../data/blogImageMedia';
 import { AppLanguage } from '../types';
 import { DEFAULT_LOCALE, isLocale } from '../config/locales';
+import { BLOG_RAW_FILES } from './generated/blogContent.generated';
 
 export type BlogStatus = 'published' | 'draft';
 
@@ -45,11 +46,7 @@ export interface BlogPost {
     sourcePath: string;
 }
 
-const BLOG_FILES = import.meta.glob('../content/blog/*.md', {
-    eager: true,
-    import: 'default',
-    query: '?raw',
-}) as Record<string, string>;
+const BLOG_FILES = BLOG_RAW_FILES;
 
 const FRONTMATTER_REGEX = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/;
 

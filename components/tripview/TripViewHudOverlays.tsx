@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router';
 import { Article, Check, RocketLaunch, Sparkle, WarningCircle } from '@phosphor-icons/react';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';

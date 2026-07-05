@@ -132,7 +132,7 @@ const resolveActiveUser = (state: E2EAuthSandboxState): E2EAuthSandboxUser | nul
 );
 
 export const shouldEnableE2EAuthSandbox = (): boolean => (
-    import.meta.env.DEV && import.meta.env.VITE_E2E_AUTH_SANDBOX === 'true'
+    (process.env.NODE_ENV !== 'production') && process.env.NEXT_PUBLIC_E2E_AUTH_SANDBOX === 'true'
 );
 
 export const getE2EAuthSandboxSnapshot = (): {

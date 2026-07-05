@@ -1,0 +1,7 @@
+ ›   Error: `npx netlify logs:function` has been replaced by a more comprehensive `npx netlify logs` command.
+
+To get logs for this function from the last 10 minutes, run:
+
+  npx netlify logs --source functions --function ___netlify-server-handler --since 10m
+
+Run npx netlify logs --help to see all available options.

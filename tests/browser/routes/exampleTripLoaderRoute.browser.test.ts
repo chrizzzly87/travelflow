@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, render, waitFor } from '@testing-library/react';
 
 import type { IViewSettings } from '../../../types';
 import { makeTrip } from '../../helpers/tripFixtures';
@@ -36,7 +36,7 @@ const mocks = vi.hoisted(() => ({
   tripViewProps: [] as any[],
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/lib/router', () => ({
   useParams: () => ({ templateId: mocks.route.templateId }),
   useLocation: () => ({
     pathname: mocks.route.pathname,
@@ -118,6 +118,13 @@ const makeRouteProps = (overrides?: Partial<React.ComponentProps<typeof ExampleT
 const latestTripViewProps = () => mocks.tripViewProps[mocks.tripViewProps.length - 1];
 
 describe('routes/ExampleTripLoaderRoute', () => {
+  // No vitest globals => no RTL auto-cleanup: unmount explicitly so a prior
+  // test's still-mounted route can't resolve its template promise into the
+  // next test's recorded TripView props.
+  afterEach(() => {
+    cleanup();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.tripViewProps.length = 0;
@@ -244,6 +251,11 @@ describe('routes/ExampleTripLoaderRoute', () => {
   });
 
   it('renders a route loading shell while example template resources are still resolving', () => {
+    // No template summary available either: with a summary the route now
+    // paints the example preview immediately (React 19 flushes it in the
+    // first commit), so the loading shell only appears when nothing is
+    // renderable yet.
+    mocks.getExampleTemplateSummary.mockReturnValue(undefined);
     mocks.loadExampleTemplateFactory.mockImplementation(() => new Promise(() => {}));
     const props = makeRouteProps();
     const view = render(React.createElement(ExampleTripLoaderRoute, props));

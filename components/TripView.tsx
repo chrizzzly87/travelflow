@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, Suspense, lazy } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from '@/lib/router';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState } from '../types';
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
@@ -210,7 +210,7 @@ const TIMELINE_ZOOM_LEVEL_PRESETS = [
 const NEGATIVE_OFFSET_EPSILON = 0.001;
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
-const IS_DEV = import.meta.env.DEV;
+const IS_DEV = (process.env.NODE_ENV !== 'production');
 const GENERATION_PROGRESS_MESSAGES = [
     'Analyzing your travel preferences...',
     'Scouting top-rated cities and stops...',
@@ -3093,7 +3093,7 @@ const useTripViewRender = ({
         <GoogleMapsLoader language={appLanguage} enabled={isMapBootstrapEnabled}>
             <div
                 className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900"
-                data-tf-handoff-ready="true"
+               
             >
                 
                 <TripViewHeader

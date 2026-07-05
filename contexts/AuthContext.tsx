@@ -74,8 +74,8 @@ const OPTIMISTIC_AUTH_HINT_SESSION_LIFETIME_SECONDS = 300;
 const FREE_ENTITLEMENTS = getFreePlanEntitlements();
 
 export const shouldEnableDevAdminBypass = (
-    isDevRuntime = import.meta.env.DEV,
-    bypassEnvValue = import.meta.env.VITE_DEV_ADMIN_BYPASS,
+    isDevRuntime = (process.env.NODE_ENV !== 'production'),
+    bypassEnvValue = process.env.NEXT_PUBLIC_DEV_ADMIN_BYPASS,
     bypassDisabled = false,
     pathname = '/'
 ): boolean => {
@@ -230,7 +230,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isLoading, setIsLoading] = useState(true);
     const [isProfileLoading, setIsProfileLoading] = useState(false);
     const [isDevAdminBypassDisabled, setIsDevAdminBypassDisabled] = useState<boolean>(() => {
-        if (!shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false, '/admin')) return false;
+        if (!shouldEnableDevAdminBypass((process.env.NODE_ENV !== 'production'), process.env.NEXT_PUBLIC_DEV_ADMIN_BYPASS, false, '/admin')) return false;
         if (typeof window === 'undefined') return false;
         try {
             return window.sessionStorage.getItem(DEV_ADMIN_BYPASS_DISABLED_STORAGE_KEY) === '1';
@@ -254,7 +254,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     useEffect(() => {
-        if (!shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false, '/admin')) return;
+        if (!shouldEnableDevAdminBypass((process.env.NODE_ENV !== 'production'), process.env.NEXT_PUBLIC_DEV_ADMIN_BYPASS, false, '/admin')) return;
         if (typeof window === 'undefined') return;
         try {
             if (isDevAdminBypassDisabled) {
@@ -683,7 +683,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             await authService.signOut();
         } finally {
-            if (shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false, routeLocation.pathname)) {
+            if (shouldEnableDevAdminBypass((process.env.NODE_ENV !== 'production'), process.env.NEXT_PUBLIC_DEV_ADMIN_BYPASS, false, routeLocation.pathname)) {
                 setIsDevAdminBypassDisabled(true);
             }
             setAccess(null);
@@ -694,8 +694,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const value = useMemo<AuthContextValue>(() => {
         const bypassEnabled = shouldEnableDevAdminBypass(
-            import.meta.env.DEV,
-            import.meta.env.VITE_DEV_ADMIN_BYPASS,
+            (process.env.NODE_ENV !== 'production'),
+            process.env.NEXT_PUBLIC_DEV_ADMIN_BYPASS,
             isDevAdminBypassDisabled,
             routeLocation.pathname
         );

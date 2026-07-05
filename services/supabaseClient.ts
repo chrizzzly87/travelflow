@@ -20,15 +20,15 @@ const toValidHttpUrl = (value: string): string | null => {
     }
 };
 
-const rawSupabaseUrl = normalizeEnvValue(import.meta.env.VITE_SUPABASE_URL);
+const rawSupabaseUrl = normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
 const supabaseUrl = toValidHttpUrl(rawSupabaseUrl);
-const supabaseAnonKey = normalizeEnvValue(import.meta.env.VITE_SUPABASE_ANON_KEY);
+const supabaseAnonKey = normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 const hasSupabaseAnonKey = !isUnsetEnvValue(supabaseAnonKey);
 const supabaseAuthStorage = createSupabaseAuthStorageAdapter();
 
 export const isSupabaseEnabled = Boolean(supabaseUrl && hasSupabaseAnonKey);
 
-if (rawSupabaseUrl && !supabaseUrl && import.meta.env.DEV) {
+if (rawSupabaseUrl && !supabaseUrl && (process.env.NODE_ENV !== 'production')) {
     console.warn('Ignoring invalid VITE_SUPABASE_URL. Database-backed features are disabled.');
 }
 

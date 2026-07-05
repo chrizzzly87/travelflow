@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/lib/router';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -163,7 +163,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { CreateTripClassicLabPage } from '../../pages/CreateTripClassicLabPage';
+import { CreateTripClassicLabPage } from '../../views/CreateTripClassicLabPage';
 
 const renderPage = () =>
   render(

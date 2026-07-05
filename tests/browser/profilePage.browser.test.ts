@@ -3,7 +3,7 @@ import React, { Suspense } from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation } from '@/lib/router';
 import { makeTrip } from '../helpers/tripFixtures';
 
 const siteHeaderSpy = vi.hoisted(() => vi.fn());
@@ -98,7 +98,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-import { ProfilePage } from '../../pages/ProfilePage';
+import { ProfilePage } from '../../views/ProfilePage';
 
 const LocationProbe: React.FC = () => {
   const location = useLocation();

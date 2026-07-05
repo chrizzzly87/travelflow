@@ -1,5 +1,4 @@
 import { afterEach, vi } from 'vitest';
-import { resetInitialRouteHandoffCompletedForTests } from '../services/marketingRouteShellState';
 
 if (typeof globalThis.navigator === 'undefined') {
   Object.defineProperty(globalThis, 'navigator', {
@@ -99,7 +98,6 @@ ensureWindowStorage('sessionStorage');
 
 afterEach(() => {
   vi.useRealTimers();
-  resetInitialRouteHandoffCompletedForTests();
   if (typeof window !== 'undefined') {
     window.localStorage.clear();
     window.sessionStorage.clear();

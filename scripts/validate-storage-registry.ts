@@ -33,7 +33,7 @@ interface DynamicAllowlistRule {
 }
 
 const ROOT = process.cwd();
-const SOURCE_TARGETS = ['App.tsx', 'i18n.ts', 'components', 'pages', 'services', 'config', 'hooks', 'lib'];
+const SOURCE_TARGETS = ['App.tsx', 'i18n.ts', 'components', 'views', 'services', 'config', 'hooks', 'lib'];
 const KEY_PREFIXES = ['tf_', 'travelflow_', 'admin.', 'sb-'];
 const STORAGE_CALL_PATTERN = /(?:window\.)?(localStorage|sessionStorage)\.(?:getItem|setItem|removeItem)\(\s*([^,)]+)\s*(?:,|\))/g;
 const CONST_STRING_PATTERN = /\bconst\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*(["'`])([^"'`]+)\2/g;
@@ -53,7 +53,7 @@ const DYNAMIC_ALLOWLIST: DynamicAllowlistRule[] = [
     reason: 'Generic admin cache helper; concrete keys are validated at callsites.',
   },
   {
-    filePattern: /^pages\/UpdatesPage\.tsx$/,
+    filePattern: /^views\/UpdatesPage\.tsx$/,
     expressionPattern: /^storageKey$/,
     reason: 'Generic helper wrapper over fixed key constants in the same file.',
   },

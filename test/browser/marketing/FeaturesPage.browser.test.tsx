@@ -2,11 +2,10 @@
 import React from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '@/lib/router';
 import featuresLocale from '../../../locales/en/features.json';
 
 const trackEventMock = vi.fn();
-const warmRouteAssetsMock = vi.fn();
 const originalGetContext = HTMLCanvasElement.prototype.getContext;
 const originalIntersectionObserver = globalThis.IntersectionObserver;
 const observerInstances: MockIntersectionObserver[] = [];
@@ -96,10 +95,6 @@ vi.mock('../../../services/analyticsService', () => ({
     getAnalyticsDebugAttributes: () => ({}),
 }));
 
-vi.mock('../../../services/navigationPrefetch', () => ({
-    warmRouteAssets: (...args: unknown[]) => warmRouteAssetsMock(...args),
-}));
-
 vi.mock('../../../services/runtimeLocationService', () => ({
     getRuntimeLocationSnapshot: () => runtimeLocationSnapshot,
     ensureRuntimeLocationLoaded: (...args: unknown[]) => ensureRuntimeLocationLoadedMock(...args),
@@ -139,13 +134,12 @@ vi.mock('react-i18next', () => ({
     }),
 }));
 
-import { FeaturesPage } from '../../../pages/FeaturesPage';
+import { FeaturesPage } from '../../../views/FeaturesPage';
 
 describe('pages/FeaturesPage', () => {
     beforeEach(() => {
         cleanup();
         trackEventMock.mockReset();
-        warmRouteAssetsMock.mockReset();
         ensureRuntimeLocationLoadedMock.mockReset();
         fetchNearbyAirportsMock.mockReset();
         ensureRuntimeLocationLoadedMock.mockResolvedValue(runtimeLocationSnapshot);

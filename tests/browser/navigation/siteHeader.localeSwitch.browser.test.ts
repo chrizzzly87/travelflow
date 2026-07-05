@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   onClose: vi.fn(),
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('@/lib/router', () => ({
   NavLink: ({
     to,
     children,
@@ -38,6 +38,7 @@ vi.mock('react-router-dom', () => ({
   }, children),
   useLocation: () => mocks.location,
   useNavigate: () => mocks.navigate,
+  useRoutePrefetch: () => vi.fn(),
 }));
 
 vi.mock('../../../hooks/useHasSavedTrips', () => ({
@@ -137,6 +138,16 @@ describe('navigation locale switch handoff', () => {
     mocks.location.pathname = '/es/pricing';
     mocks.location.search = '';
     mocks.location.hash = '';
+  });
+
+  it('marks the current route nav link active on the first render (no hydration gate)', () => {
+    render(React.createElement(SiteHeader));
+
+    // Single-pass render: the active link is derived from the router location
+    // immediately, without waiting for a post-mount "hydrated" flip.
+    expect(screen.getByRole('link', { name: 'Pricing' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Blog' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: 'Features' })).not.toHaveAttribute('aria-current');
   });
 
   it('keeps the header locale selection on English while the route handoff is still pending', async () => {

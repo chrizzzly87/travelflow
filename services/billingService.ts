@@ -496,7 +496,7 @@ export const startPaddleCheckoutSession = async (
   const parsed = await parseJsonPayload(response);
 
   if (!response.ok || parsed.ok === false) {
-    const devRoutingHint = response.status === 404 && import.meta.env.DEV
+    const devRoutingHint = response.status === 404 && (process.env.NODE_ENV !== 'production')
       ? ' Paddle checkout route is unavailable in Vite-only dev. Run `pnpm dev:netlify` to proxy `/api/billing/paddle/*`.'
       : '';
     const error = buildBillingApiError(parsed, response.status, 'Paddle checkout request failed');

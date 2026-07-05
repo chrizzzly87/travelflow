@@ -15,7 +15,7 @@ export interface RegisteredStorageEntry {
 
 const CATEGORIES: CookieCategory[] = ['essential', 'analytics', 'marketing'];
 const OPTIONAL_CATEGORIES: CookieCategory[] = ['analytics', 'marketing'];
-const isDevRuntime = Boolean((import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV);
+const isDevRuntime = Boolean((process.env.NODE_ENV !== 'production'));
 
 const exactRegistryMap = new Map<string, RegisteredStorageEntry>();
 const wildcardRegistryList: RegisteredStorageEntry[] = [];

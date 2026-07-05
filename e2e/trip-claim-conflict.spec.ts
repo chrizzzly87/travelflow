@@ -148,12 +148,14 @@ test('guest registration hits the claim-conflict modal and preserves create-simi
     await page.goto(createSimilarHref!);
     await expect(page).toHaveURL(/\/create-trip\/wizard\?prefill=/);
 
-    const decodedPrefill = await page.evaluate(async () => {
-        const encoded = new URLSearchParams(window.location.search).get('prefill');
-        if (!encoded) return null;
-        const { decodeTripPrefill } = await import('/services/tripPrefillDecoder.ts');
-        return decodeTripPrefill(encoded);
-    });
+    // Decode in the test's Node context: Vite dev used to serve raw TS
+    // modules by URL for in-page import; the Next dev server does not. This
+    // mirrors decodeTripPrefill's base64url envelope (the raw payload shape
+    // is what the encoder wrote, which is what we assert on).
+    const encodedPrefill = await page.evaluate(() => new URLSearchParams(window.location.search).get('prefill'));
+    const decodedPrefill = encodedPrefill
+        ? JSON.parse(Buffer.from(encodedPrefill.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'))
+        : null;
 
     expect(decodedPrefill).toMatchObject({
         countries: ['Mallorca'],

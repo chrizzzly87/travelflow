@@ -6,8 +6,7 @@ const ROOT = process.cwd();
 const BLOG_DIR = path.join(ROOT, 'content', 'blog');
 const OUT_FILE = path.join(ROOT, 'public', 'sitemap.xml');
 const ROUTE_CONFIG_FILES = [
-    path.join(ROOT, 'app', 'routes', 'DeferredAppRoutes.tsx'),
-    path.join(ROOT, 'App.tsx'),
+    path.join(ROOT, 'config', 'marketingRoutePaths.ts'),
 ];
 const LOCALES_FILE = path.join(ROOT, 'config', 'locales.ts');
 

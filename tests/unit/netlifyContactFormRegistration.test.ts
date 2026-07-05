@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-describe('index.html Netlify contact form scaffold', () => {
-  it('contains the static contact form registration markup for SPA deployments', () => {
-    const indexHtmlPath = resolve(process.cwd(), 'index.html');
+describe('Netlify contact form scaffold (public/__forms.html)', () => {
+  it('contains the static contact form registration markup for the Next.js deployment', () => {
+    const indexHtmlPath = resolve(process.cwd(), 'public', '__forms.html');
     const html = readFileSync(indexHtmlPath, 'utf8');
 
     expect(html).toContain('name="contact"');

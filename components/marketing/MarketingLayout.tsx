@@ -1,11 +1,10 @@
-import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { TranslationNoticeBanner } from './TranslationNoticeBanner';
 import { SiteHeader } from '../navigation/SiteHeader';
 import { LanguageSuggestionBanner } from '../navigation/LanguageSuggestionBanner';
 import { useTripManager } from '../../contexts/TripManagerContext';
 import { cn } from '../../lib/utils';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
-import { isPrerenderedDocument } from '../../services/prerenderHydrationState';
 import { useTranslation } from 'react-i18next';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -26,36 +25,6 @@ interface MarketingLayoutProps {
 export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children, rootClassName }) => {
     const { openTripManager, prewarmTripManager } = useTripManager();
     const { t } = useTranslation('common');
-    // The footer is lazy and mounts right after hydration via an idle callback
-    // — NOT gated on IntersectionObserver (its callbacks did not fire in
-    // WebKit/Safari, so the footer never mounted → missing footer + big gap).
-    // First render shows the empty spacer on BOTH the prerender capture and the
-    // client, so hydration matches exactly (no preact/compat teardown). During
-    // capture we hold the spacer (isPrerenderCapture) so the prerendered HTML
-    // stays light; the client fills it on idle just after hydration.
-    // Eager on prerendered pages so the footer is STATIC markup in the
-    // captured HTML — present even if client hydration is slow/interrupted.
-    // On the SPA fallback it mounts after hydration via the timer below.
-    const [shouldLoadFooter, setShouldLoadFooter] = useState(() => isPrerenderedDocument());
-    const footerRef = useRef<HTMLDivElement | null>(null);
-
-    useEffect(() => {
-        if (shouldLoadFooter) return;
-        let done = false;
-        const reveal = () => { if (!done) { done = true; setShouldLoadFooter(true); } };
-        // Guaranteed timer: requestIdleCallback is unreliable in WebKit/Safari
-        // (throttled even with a timeout), which left the footer/sections
-        // unmounted there. A plain setTimeout fires in every browser just after
-        // the hero has painted; rIC is only an optional earlier fast-path.
-        const timer = window.setTimeout(reveal, 250);
-        const ricId = typeof window.requestIdleCallback === 'function'
-            ? window.requestIdleCallback(reveal, { timeout: 250 })
-            : undefined;
-        return () => {
-            window.clearTimeout(timer);
-            if (ricId !== undefined && window.cancelIdleCallback) window.cancelIdleCallback(ricId);
-        };
-    }, [shouldLoadFooter]);
 
     return (
         <div className={cn('min-h-screen scroll-smooth bg-slate-50 text-slate-900 flex flex-col overflow-x-clip', rootClassName)}>
@@ -77,20 +46,12 @@ export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children, root
                 {children}
             </main>
 
-            {/* No min-height on the wrapper: the footer renders eagerly on
-                prerendered pages and is often shorter than 200px, so a forced
-                min-height showed as an empty band below the footer ("footer not
-                at the bottom"). The loading spacer below still reserves height
-                for the SPA case while the footer chunk loads. */}
-            <div ref={footerRef}>
-                {shouldLoadFooter ? (
-                    <Suspense fallback={<div className="h-[200px] w-full" aria-hidden="true" />}>
-                        <SiteFooter />
-                    </Suspense>
-                ) : (
-                    <div className="h-[200px] w-full" aria-hidden="true" />
-                )}
-            </div>
+            {/* The footer renders in one pass on server and client; the
+                Suspense spacer only shows while the lazy chunk loads during a
+                client-side navigation. */}
+            <Suspense fallback={<div className="h-[200px] w-full" aria-hidden="true" />}>
+                <SiteFooter />
+            </Suspense>
         </div>
     );
 };

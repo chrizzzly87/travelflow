@@ -3,7 +3,7 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation } from '@/lib/router';
 
 const mocks = vi.hoisted(() => ({
   adminBulkUpdateAirportCatalogRecords: vi.fn(),
@@ -96,7 +96,7 @@ vi.mock('../../../services/locationSearchService', () => ({
   resolveCitySuggestion: vi.fn().mockResolvedValue(null),
 }));
 
-import { AdminAirportsPage } from '../../../pages/AdminAirportsPage';
+import { AdminAirportsPage } from '../../../views/AdminAirportsPage';
 
 const LocationSearchProbe: React.FC = () => {
   const location = useLocation();
@@ -378,7 +378,10 @@ describe('AdminAirportsPage', () => {
 
     expect(await screen.findByRole('button', { name: 'Delete selected' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('checkbox', { name: 'Select Hamburg Airport' }));
+    // The catalog rows stream in after the toolbar renders — await the row
+    // checkbox instead of assuming it's already committed (React 19 timing
+    // under coverage instrumentation exposed this race).
+    await user.click(await screen.findByRole('checkbox', { name: 'Select Hamburg Airport' }));
     await user.click(screen.getByRole('button', { name: 'Delete selected' }));
 
     await waitFor(() => {
