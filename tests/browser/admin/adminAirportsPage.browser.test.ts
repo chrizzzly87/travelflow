@@ -378,7 +378,10 @@ describe('AdminAirportsPage', () => {
 
     expect(await screen.findByRole('button', { name: 'Delete selected' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('checkbox', { name: 'Select Hamburg Airport' }));
+    // The catalog rows stream in after the toolbar renders — await the row
+    // checkbox instead of assuming it's already committed (React 19 timing
+    // under coverage instrumentation exposed this race).
+    await user.click(await screen.findByRole('checkbox', { name: 'Select Hamburg Airport' }));
     await user.click(screen.getByRole('button', { name: 'Delete selected' }));
 
     await waitFor(() => {

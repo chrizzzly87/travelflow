@@ -1,0 +1,2 @@
+#!/bin/sh
+exec npx -y pnpm@10.18.1 "$@"
