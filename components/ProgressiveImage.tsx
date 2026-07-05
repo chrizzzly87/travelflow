@@ -113,9 +113,9 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
 
     const fallbackWidth = srcSetWidths[srcSetWidths.length - 1] || width;
     const resolvedSrc = disableCdn ? src : buildImageCdnUrl(src, { width: fallbackWidth, quality: 66 });
-    const fetchPriorityAttr = fetchPriority
-        ? ({ fetchpriority: fetchPriority } as { fetchpriority: 'high' | 'low' | 'auto' })
-        : undefined;
+    // React 19 supports the camelCase prop natively (the lowercase spelling
+    // was a preact/compat workaround and now triggers an unknown-prop warning).
+    const fetchPriorityAttr = fetchPriority ? { fetchPriority } : undefined;
 
     return (
         <div className="relative size-full overflow-hidden">

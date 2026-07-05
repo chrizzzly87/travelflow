@@ -35,13 +35,10 @@ const nextConfig: NextConfig = {
         ...publicEnvFromVite('VITE_PREFETCH_DEBUG', 'NEXT_PUBLIC_PREFETCH_DEBUG'),
         ...publicEnvFromVite('VITE_SPECULATION_RULES_ENABLED', 'NEXT_PUBLIC_SPECULATION_RULES_ENABLED'),
     },
-    // Gates run separately: tsc via `pnpm typecheck` (follow-up: strict mode),
-    // ESLint via `pnpm lint` once eslint-config-next lands.
+    // Gates run separately: tsc via `pnpm typecheck` (follow-up issue #425
+    // tracks strict mode + eslint-config-next).
     typescript: {
         ignoreBuildErrors: true,
-    },
-    eslint: {
-        ignoreDuringBuilds: true,
     },
     async rewrites() {
         if (process.env.NODE_ENV !== 'development') return [];

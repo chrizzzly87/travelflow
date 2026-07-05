@@ -63,13 +63,26 @@ export function useNavigate(): NavigateFunction {
     );
 }
 
+// Next's useParams returns segments still percent-encoded (e.g. '+' as
+// '%2B' in lz-string share payloads); react-router decoded them. Decode for
+// parity, tolerating malformed sequences.
+const safeDecodeParam = (value: string): string => {
+    try {
+        return decodeURIComponent(value);
+    } catch {
+        return value;
+    }
+};
+
 export function useParams<K extends string = string>(): Readonly<Params<K>> {
     const adapter = useRouterAdapter();
     const routeParams = useContext(RouteParamsContext);
     return useMemo(() => {
         const merged: Record<string, string | undefined> = {};
         for (const [key, value] of Object.entries(adapter.params)) {
-            merged[key] = Array.isArray(value) ? value.join('/') : value;
+            merged[key] = Array.isArray(value)
+                ? value.map(safeDecodeParam).join('/')
+                : (value === undefined ? undefined : safeDecodeParam(value));
         }
         if (routeParams) Object.assign(merged, routeParams);
         return merged as Readonly<Params<K>>;
