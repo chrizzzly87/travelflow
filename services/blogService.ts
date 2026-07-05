@@ -45,11 +45,9 @@ export interface BlogPost {
     sourcePath: string;
 }
 
-const BLOG_FILES = import.meta.glob('../content/blog/*.md', {
-    eager: true,
-    import: 'default',
-    query: '?raw',
-}) as Record<string, string>;
+import { BLOG_RAW_FILES } from './generated/blogContent.generated';
+
+const BLOG_FILES = BLOG_RAW_FILES;
 
 const FRONTMATTER_REGEX = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/;
 

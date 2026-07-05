@@ -13,7 +13,7 @@ describe('components/SpeculationRulesManager', () => {
   });
 
   it('cleans up safely even if the speculation rules script was already detached', () => {
-    vi.stubEnv('VITE_SPECULATION_RULES_ENABLED', 'true');
+    vi.stubEnv('NEXT_PUBLIC_SPECULATION_RULES_ENABLED', 'true');
 
     Object.defineProperty(HTMLScriptElement, 'supports', {
       configurable: true,

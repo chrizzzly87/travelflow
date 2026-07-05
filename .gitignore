@@ -31,3 +31,4 @@ dist-ssr
 public/images/og/site/generated/
 .promptfoo/
 artifacts/promptfoo/
+services/generated/*.generated.ts

@@ -148,7 +148,7 @@ export interface PaddlePublicConfig {
 
 const isBrowser = () => typeof window !== 'undefined' && typeof document !== 'undefined';
 
-const readPaddleClientToken = (): string => String(import.meta.env.VITE_PADDLE_CLIENT_TOKEN || '').trim();
+const readPaddleClientToken = (): string => String(process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || '').trim();
 
 const normalizePaddleEnvironment = (value: unknown): PaddleClientEnvironment =>
     value === 'sandbox' ? 'sandbox' : 'live';

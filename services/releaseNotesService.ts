@@ -27,11 +27,9 @@ export interface ReleaseNote {
     sourcePath: string;
 }
 
-const UPDATE_FILES = import.meta.glob('../content/updates/*.md', {
-    eager: true,
-    import: 'default',
-    query: '?raw',
-}) as Record<string, string>;
+import { UPDATES_RAW_FILES } from './generated/updatesContent.generated';
+
+const UPDATE_FILES = UPDATES_RAW_FILES;
 
 const FRONTMATTER_REGEX = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/;
 const RELEASE_ITEM_REGEX = /^\s*-\s+\[(x|X| )\]\s+\[([^\]]+)\]\s+(.+)$/;

@@ -227,7 +227,7 @@ export const ContactPage: React.FC = () => {
     const currentPath = `${routeLocation.pathname}${routeLocation.search}`;
     const lastVisitedPath = useMemo(() => getLastVisitedPath(currentPath), [currentPath]);
     const appVersion = useMemo(() => {
-        const rawVersion = (import.meta.env.VITE_APP_VERSION || '').trim();
+        const rawVersion = (process.env.NEXT_PUBLIC_APP_VERSION || '').trim();
         return rawVersion.length ? rawVersion : null;
     }, []);
 

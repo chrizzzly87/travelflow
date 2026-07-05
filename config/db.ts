@@ -17,9 +17,9 @@ const toValidHttpUrl = (value: string): string | null => {
     }
 };
 
-const rawSupabaseUrl = normalizeEnvValue(import.meta.env.VITE_SUPABASE_URL);
+const rawSupabaseUrl = normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
 const supabaseUrl = toValidHttpUrl(rawSupabaseUrl);
-const supabaseAnonKey = normalizeEnvValue(import.meta.env.VITE_SUPABASE_ANON_KEY);
+const supabaseAnonKey = normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 const hasSupabaseAnonKey = !isUnsetEnvValue(supabaseAnonKey);
 
 export const DB_ENABLED = Boolean(supabaseUrl && hasSupabaseAnonKey);

@@ -72,7 +72,7 @@ import {
     buildPathFromLocationParts,
     isSafeAuthReturnPath,
 } from './services/authNavigationService';
-const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
+const IS_DEV = Boolean((process.env.NODE_ENV !== 'production'));
 
 const toFiniteNumber = (value: unknown, fallback: number): number => {
     const parsed = Number(value);
@@ -202,10 +202,10 @@ const TripManagerLoadingFallback: React.FC<{ isOpen: boolean; onClose: () => voi
 );
 
 const isNavPrefetchEnabled = (): boolean => {
-    const navPrefetchEnabledByEnv = (import.meta as any)?.env?.VITE_NAV_PREFETCH_ENABLED;
+    const navPrefetchEnabledByEnv = process.env.NEXT_PUBLIC_NAV_PREFETCH_ENABLED;
     if (navPrefetchEnabledByEnv === 'true') return true;
     if (navPrefetchEnabledByEnv === 'false') return false;
-    return Boolean((import.meta as any)?.env?.PROD);
+    return Boolean((process.env.NODE_ENV === 'production'));
 };
 
 const ViewTransitionHandler: React.FC<{ enabled: boolean }> = ({ enabled }) => {

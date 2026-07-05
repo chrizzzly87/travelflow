@@ -65,7 +65,7 @@ const isLocalOrigin = (origin: string): boolean => {
 };
 
 export const resolvePublicSiteOrigin = (): string => {
-    const envSiteUrl = normalizeSiteOrigin((import.meta as { env?: Record<string, unknown> }).env?.VITE_SITE_URL as string | undefined);
+    const envSiteUrl = normalizeSiteOrigin(process.env.NEXT_PUBLIC_SITE_URL);
     if (envSiteUrl && !isLocalOrigin(envSiteUrl)) return envSiteUrl;
 
     if (typeof window !== 'undefined' && window.location) {

@@ -13,7 +13,7 @@ import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analytic
 import type { ConnectivityState } from '../../services/supabaseHealthMonitor';
 import { Spinner } from '../ui/spinner';
 
-const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
+const IS_DEV = Boolean((process.env.NODE_ENV !== 'production'));
 
 interface TripViewStatusBannersProps {
     shareStatus?: ShareMode;

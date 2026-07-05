@@ -210,7 +210,7 @@ const TIMELINE_ZOOM_LEVEL_PRESETS = [
 const NEGATIVE_OFFSET_EPSILON = 0.001;
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
-const IS_DEV = import.meta.env.DEV;
+const IS_DEV = (process.env.NODE_ENV !== 'production');
 const GENERATION_PROGRESS_MESSAGES = [
     'Analyzing your travel preferences...',
     'Scouting top-rated cities and stops...',

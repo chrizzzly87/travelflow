@@ -20,18 +20,8 @@ declare global {
     }
 }
 
-const readImportMetaEnv = (): Record<string, string | undefined> => {
-    try {
-        const candidate = (import.meta as { env?: Record<string, string | undefined> }).env;
-        return candidate && typeof candidate === 'object' ? candidate : {};
-    } catch {
-        return {};
-    }
-};
-
-const IMPORT_META_ENV = readImportMetaEnv();
-const UMAMI_SCRIPT_URL = String(IMPORT_META_ENV.VITE_UMAMI_SCRIPT_URL || '').trim();
-const UMAMI_WEBSITE_ID = String(IMPORT_META_ENV.VITE_UMAMI_WEBSITE_ID || '').trim();
+const UMAMI_SCRIPT_URL = String(process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL || '').trim();
+const UMAMI_WEBSITE_ID = String(process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID || '').trim();
 const SCRIPT_ID = 'tf-umami-script';
 
 let scriptLoadPromise: Promise<boolean> | null = null;

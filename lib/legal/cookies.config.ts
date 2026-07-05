@@ -639,7 +639,7 @@ export const validateCookieRegistry = (): { valid: boolean; errors: string[] } =
   };
 };
 
-const isDevRuntime = Boolean((import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV);
+const isDevRuntime = Boolean((process.env.NODE_ENV !== 'production'));
 
 if (isDevRuntime) {
   const validation = validateCookieRegistry();

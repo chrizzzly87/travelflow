@@ -34,7 +34,7 @@ const workerTriggerByTrip = new Map<string, number>();
 const WORKER_TRIGGER_PATH = '/api/internal/ai/generation-worker';
 
 const isLocalDevRuntime = (): boolean => {
-    if (import.meta.env.DEV) return true;
+    if ((process.env.NODE_ENV !== 'production')) return true;
     if (typeof window === 'undefined') return false;
     const hostname = window.location.hostname.trim().toLowerCase();
     return hostname === 'localhost' || hostname === '127.0.0.1';

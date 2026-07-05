@@ -363,7 +363,7 @@ const isRpcOverloadSelectionError = (message: string | null | undefined, fnName:
 };
 
 export const shouldUseAdminMockData = (
-    isDevRuntime = import.meta.env.DEV,
+    isDevRuntime = (process.env.NODE_ENV !== 'production'),
     simulatedLoginEnabled = isSimulatedLoggedIn()
 ): boolean => isDevRuntime && simulatedLoginEnabled;
 
@@ -1302,10 +1302,10 @@ const callAdminInternalApiRequest = async <T extends Record<string, unknown>>(
         const fallbackText = responseText.trim();
         const normalizedFallback = fallbackText && fallbackText.length <= 280 ? fallbackText : null;
         const pathMessages = resolveInternalApiDevMessages(path);
-        const devNotFoundMessage = looksLikeViteNotFoundPage && import.meta.env.DEV
+        const devNotFoundMessage = looksLikeViteNotFoundPage && (process.env.NODE_ENV !== 'production')
             ? pathMessages?.notFound ?? null
             : null;
-        const looksLikeViteProxyFailure = import.meta.env.DEV
+        const looksLikeViteProxyFailure = (process.env.NODE_ENV !== 'production')
             && response.status === 500
             && !payloadError
             && (!normalizedFallback || normalizedFallback === 'Internal Server Error');

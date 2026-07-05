@@ -80,7 +80,7 @@ const isDebugEnabled = () => {
     } catch {
         // ignore
     }
-    return import.meta.env.VITE_DEBUG_DB === 'true';
+    return process.env.NEXT_PUBLIC_DEBUG_DB === 'true';
 };
 
 const debugLog = (...args: unknown[]) => {
@@ -196,7 +196,7 @@ const isAnonymousSessionUser = (user: SessionUserLike | null | undefined): boole
 };
 
 const maybeDisableSimulatedLoginForRealSession = (sessionUser: SessionUserLike | null | undefined): void => {
-    if (!import.meta.env.DEV) return;
+    if (!(process.env.NODE_ENV !== 'production')) return;
     if (!isSimulatedLoggedIn()) return;
     if (isAnonymousSessionUser(sessionUser ?? null)) return;
     setSimulatedLoggedIn(false);
@@ -1677,7 +1677,7 @@ export const uploadLocalTripsToDb = async () => {
 export const syncTripsFromDb = async () => {
     if (!DB_ENABLED) return;
     const trips = await dbListTrips();
-    const shouldUseSimulatedMerge = import.meta.env.DEV && isSimulatedLoggedIn();
+    const shouldUseSimulatedMerge = (process.env.NODE_ENV !== 'production') && isSimulatedLoggedIn();
     if (shouldUseSimulatedMerge) {
         let shouldMergeLocalTrips = false;
         try {

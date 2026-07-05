@@ -18,10 +18,10 @@ const isSpeculationRulesSupported = (): boolean => {
 };
 
 const isSpeculationRulesEnabled = (): boolean => {
-    const env = import.meta.env.VITE_SPECULATION_RULES_ENABLED;
+    const env = process.env.NEXT_PUBLIC_SPECULATION_RULES_ENABLED;
     if (env === 'true') return true;
     if (env === 'false') return false;
-    return import.meta.env.PROD;
+    return (process.env.NODE_ENV === 'production');
 };
 
 const speculationRules = {

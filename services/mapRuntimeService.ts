@@ -12,7 +12,7 @@ import {
 import { readCookieItem, removeCookieItem, writeCookieItem } from './cookieStorageService';
 
 export const getDefaultMapRuntimePreset = (): MapRuntimePreset => {
-  const rawPreset = import.meta.env.VITE_MAP_RUNTIME_PRESET;
+  const rawPreset = process.env.NEXT_PUBLIC_MAP_RUNTIME_PRESET;
   return rawPreset === 'mapbox_visual_google_services'
     || rawPreset === 'mapbox_all'
     || rawPreset === 'google_all'
@@ -21,7 +21,7 @@ export const getDefaultMapRuntimePreset = (): MapRuntimePreset => {
 };
 
 export const getMapboxAccessToken = (): string => (
-  import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || ''
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || ''
 );
 
 export const readMapRuntimeAdminOverride = (): MapRuntimeOverride | null => (

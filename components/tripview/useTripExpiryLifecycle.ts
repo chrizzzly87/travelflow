@@ -10,7 +10,7 @@ import {
 } from '../../config/paywall';
 import type { ITrip } from '../../types';
 
-const IS_DEV = import.meta.env.DEV;
+const IS_DEV = (process.env.NODE_ENV !== 'production');
 const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
 
 type TripDebugWindow = Window & typeof globalThis & {

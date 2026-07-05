@@ -163,7 +163,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
             return;
         }
 
-        const bypassConfigured = import.meta.env.DEV && import.meta.env.VITE_DEV_ADMIN_BYPASS === 'true';
+        const bypassConfigured = (process.env.NODE_ENV !== 'production') && process.env.NEXT_PUBLIC_DEV_ADMIN_BYPASS === 'true';
         const bypassDisabled = isDevAdminBypassDisabled();
         const bypassSessionUser = (access?.userId || '').trim() === 'dev-admin-id';
         setIsDevAdminBypassActive(bypassConfigured && !bypassDisabled && bypassSessionUser);

@@ -51,14 +51,14 @@ const MAX_IDLE_WARMUPS_PER_VIEW = 2;
 const HOVER_INTENT_DELAY_MS = 65;
 const MAX_RECENT_PREFETCH_ATTEMPTS = 24;
 
-const isProd = import.meta.env.PROD;
-const navPrefetchEnabledByEnv = import.meta.env.VITE_NAV_PREFETCH_ENABLED;
-const debugPrefetch = import.meta.env.VITE_PREFETCH_DEBUG === 'true';
+const isProd = (process.env.NODE_ENV === 'production');
+const navPrefetchEnabledByEnv = process.env.NEXT_PUBLIC_NAV_PREFETCH_ENABLED;
+const debugPrefetch = process.env.NEXT_PUBLIC_PREFETCH_DEBUG === 'true';
 
 export const isNavPrefetchEnabled = (): boolean => {
     if (navPrefetchEnabledByEnv === 'true') return true;
     if (navPrefetchEnabledByEnv === 'false') return false;
-    return isProd || import.meta.env.DEV;
+    return isProd || (process.env.NODE_ENV !== 'production');
 };
 
 const defaultStats = (): PrefetchStats => ({
