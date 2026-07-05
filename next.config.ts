@@ -14,6 +14,9 @@ const publicEnvFromVite = (viteKey: string, nextKey: string): Record<string, str
 };
 
 const nextConfig: NextConfig = {
+    turbopack: {
+        root: __dirname,
+    },
     env: {
         ...publicEnvFromVite('VITE_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL'),
         ...publicEnvFromVite('VITE_SUPABASE_ANON_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'),

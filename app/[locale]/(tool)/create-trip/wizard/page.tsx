@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import React from 'react';
-import { buildPageTitle, getServerT } from '../../../../lib/i18n/server';
-import { CreateTripClassicScreen } from './CreateTripClassicScreen';
+import { buildPageTitle, getServerT } from '../../../../../lib/i18n/server';
+import { CreateTripWizardScreen } from './CreateTripWizardScreen';
 
 interface PageProps {
     params: Promise<{ locale: string }>;
@@ -13,6 +13,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: buildPageTitle(t('nav.createTrip')) };
 }
 
-export default function CreateTripPage() {
-    return <CreateTripClassicScreen />;
+export default function CreateTripWizardPage() {
+    return <CreateTripWizardScreen />;
 }

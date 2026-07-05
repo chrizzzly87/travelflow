@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import React from 'react';
 import { buildPageTitle, getServerT } from '../../../../lib/i18n/server';
-import { CreateTripClassicScreen } from './CreateTripClassicScreen';
+import { CheckoutScreen } from './CheckoutScreen';
 
 interface PageProps {
     params: Promise<{ locale: string }>;
@@ -9,10 +9,10 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { locale } = await params;
-    const t = await getServerT(locale, ['common']);
-    return { title: buildPageTitle(t('nav.createTrip')) };
+    const t = await getServerT(locale, ['pricing']);
+    return { title: buildPageTitle(t('checkout.eyebrow', { defaultValue: 'Checkout' })) };
 }
 
-export default function CreateTripPage() {
-    return <CreateTripClassicScreen />;
+export default function CheckoutRoutePage() {
+    return <CheckoutScreen />;
 }

@@ -244,6 +244,11 @@ describe('routes/ExampleTripLoaderRoute', () => {
   });
 
   it('renders a route loading shell while example template resources are still resolving', () => {
+    // No template summary available either: with a summary the route now
+    // paints the example preview immediately (React 19 flushes it in the
+    // first commit), so the loading shell only appears when nothing is
+    // renderable yet.
+    mocks.getExampleTemplateSummary.mockReturnValue(undefined);
     mocks.loadExampleTemplateFactory.mockImplementation(() => new Promise(() => {}));
     const props = makeRouteProps();
     const view = render(React.createElement(ExampleTripLoaderRoute, props));
