@@ -36,7 +36,7 @@ const MARKETING_PAGE_BY_PATH: Array<{ pattern: RegExp; key: CriticalRouteModuleK
 ];
 
 const ROUTE_IMPORTERS: Record<CriticalRouteModuleKey, () => Promise<unknown>> = {
-  DeferredAppRoutes: () => import('../app/routes/DeferredAppRoutes'),
+  DeferredAppRoutes: () => import('../appCore/routes/DeferredAppRoutes'),
   MarketingHomePage: () => import('../pages/MarketingHomePage'),
   FeaturesPage: () => import('../pages/FeaturesPage'),
   UpdatesPage: () => import('../pages/UpdatesPage'),

@@ -19,7 +19,7 @@ const tripViewTarget = target('component:trip-view', () => import('../components
 const exampleTemplatesTarget = target('data:example-trip-templates', () => import('../data/exampleTripTemplates'));
 const exampleCardsTarget = target('data:example-trip-cards', () => import('../data/exampleTripCards'));
 const homeTarget = target('route:home', () => import('../pages/MarketingHomePage'));
-const deferredAppRoutesTarget = target('route:deferred-app-routes', () => import('../app/routes/DeferredAppRoutes'));
+const deferredAppRoutesTarget = target('route:deferred-app-routes', () => import('../appCore/routes/DeferredAppRoutes'));
 
 const createTripClassicLabTarget = target('route:create-trip-lab-classic', () => import('../pages/CreateTripClassicLabPage'));
 const createTripWizardTarget = target('route:create-trip-wizard', () => import('../pages/CreateTripV3Page'));

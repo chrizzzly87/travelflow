@@ -193,15 +193,6 @@ export const Routes: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     const base = useContext(RouteBaseContext);
 
     const match = useMemo<RouteMatch | null>(() => {
-        const strippedPathname = stripLocalePrefix(pathname);
-        const normalizedBase = normalizePathname(base);
-        let remainder = strippedPathname;
-        if (normalizedBase !== '/' && (
-            strippedPathname === normalizedBase || strippedPathname.startsWith(`${normalizedBase}/`)
-        )) {
-            remainder = strippedPathname.slice(normalizedBase.length) || '/';
-        }
-
         const routeElements: Array<{ path?: string; index?: boolean; element?: React.ReactNode }> = [];
         React.Children.forEach(children, (child) => {
             if (React.isValidElement<RouteProps>(child) && child.type === Route) {
@@ -209,17 +200,39 @@ export const Routes: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             }
         });
 
-        for (const route of routeElements) {
-            if (route.index) {
-                if (remainder === '/' || remainder === '') {
-                    return { params: {}, element: route.element };
-                }
-                continue;
+        const normalizedBase = normalizePathname(base);
+        const toRemainder = (candidatePathname: string): string => {
+            if (normalizedBase !== '/' && (
+                candidatePathname === normalizedBase || candidatePathname.startsWith(`${normalizedBase}/`)
+            )) {
+                return candidatePathname.slice(normalizedBase.length) || '/';
             }
-            if (route.path === undefined) continue;
-            const pattern = route.path.startsWith('/') ? route.path : `/${route.path}`;
-            const params = matchPattern(pattern, remainder);
-            if (params) return { params, element: route.element };
+            return candidatePathname;
+        };
+
+        // Each route tries the literal pathname first (react-router semantics,
+        // e.g. explicit '/de/features' patterns) and then the locale-stripped
+        // one (so relative admin routes match under '/de/admin/...'), keeping
+        // definition-order priority so a trailing '*' cannot shadow more
+        // specific routes.
+        const stripped = stripLocalePrefix(pathname);
+        const remainders = stripped === pathname
+            ? [toRemainder(pathname)]
+            : [toRemainder(pathname), toRemainder(stripped)];
+
+        for (const route of routeElements) {
+            for (const remainder of remainders) {
+                if (route.index) {
+                    if (remainder === '/' || remainder === '') {
+                        return { params: {}, element: route.element };
+                    }
+                    continue;
+                }
+                if (route.path === undefined) continue;
+                const pattern = route.path.startsWith('/') ? route.path : `/${route.path}`;
+                const params = matchPattern(pattern, remainder);
+                if (params) return { params, element: route.element };
+            }
         }
         return null;
     }, [base, children, pathname]);

@@ -221,7 +221,7 @@ const ViewTransitionHandler: React.FC<{ enabled: boolean }> = ({ enabled }) => {
         }> | null = null;
         const loadFallbackWarmupModule = async () => {
             if (!fallbackWarmupModulePromise) {
-                fallbackWarmupModulePromise = import('./app/prefetch/fallbackRouteWarmup');
+                fallbackWarmupModulePromise = import('./appCore/prefetch/fallbackRouteWarmup');
             }
             return fallbackWarmupModulePromise;
         };
