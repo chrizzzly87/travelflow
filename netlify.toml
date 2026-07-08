@@ -40,6 +40,10 @@ exit 1
   targetPort = 5173
 
 [[edge_functions]]
+  path = "/api/debug/env"
+  function = "env-debug"
+
+[[edge_functions]]
   path = "/api/health"
   function = "health"
 
