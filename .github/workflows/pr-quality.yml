@@ -72,3 +72,6 @@ jobs:
 
       - name: Run build gate
         run: pnpm build
+        env:
+          VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
