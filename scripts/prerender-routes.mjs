@@ -26,7 +26,6 @@ const ROUTES = [
   { path: '/faq', dests: ['faq.html', 'faq/index.html'] },
   { path: '/updates', dests: ['updates.html', 'updates/index.html'] },
   { path: '/blog', dests: ['blog.html', 'blog/index.html'] },
-  { path: '/login', dests: ['login.html', 'login/index.html'] },
   { path: '/inspirations', dests: ['inspirations.html', 'inspirations/index.html'] },
   
   // Localized routes

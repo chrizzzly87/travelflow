@@ -73,6 +73,7 @@ import {
     rememberAuthReturnPath,
     setPendingAuthRedirect,
 } from '../services/authNavigationService';
+import { hasTripGenerationSessionAccess } from '../services/tripGenerationAccessService';
 import { ensureDbSession } from '../services/dbService';
 import { createTripGenerationRequest } from '../services/tripGenerationQueueService';
 import {
@@ -639,7 +640,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     const navigate = useNavigate();
     const location = useLocation();
     const { confirm } = useAppDialog();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, isAnonymous } = useAuth();
     const [searchParams] = useSearchParams();
     const defaultDates = getDefaultTripDates();
     const [initialPrefillState] = useState(() => buildCreateTripV3InitialState(searchParams, defaultDates));
@@ -1337,7 +1338,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             },
         });
 
-        if (!isAuthenticated) {
+        if (!hasTripGenerationSessionAccess({ isAuthenticated, isAnonymous, sessionUserId })) {
             try {
                 const queuedRequest = await createTripGenerationRequest('wizard', {
                     version: 1,
