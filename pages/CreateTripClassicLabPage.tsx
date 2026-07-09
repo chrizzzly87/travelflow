@@ -66,6 +66,7 @@ import {
     rememberAuthReturnPath,
     setPendingAuthRedirect,
 } from '../services/authNavigationService';
+import { hasTripGenerationSessionAccess } from '../services/tripGenerationAccessService';
 import { ensureDbSession } from '../services/dbService';
 import { dbUpsertTrip } from '../services/dbApi';
 import { createTripGenerationRequest } from '../services/tripGenerationQueueService';
@@ -1789,7 +1790,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             },
         });
 
-        if (!isAuthenticated) {
+        if (!hasTripGenerationSessionAccess({ isAuthenticated, isAnonymous, sessionUserId })) {
             try {
                 const queuedRequest = await createTripGenerationRequest('classic', {
                     version: 1,

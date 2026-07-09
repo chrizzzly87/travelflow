@@ -25,10 +25,22 @@ describe('netlify/edge-functions/ai-generate hardening (regression)', () => {
         get: (key: string) => envValues[key],
       },
     });
+    for (const key of [
+      'VITE_SUPABASE_URL',
+      'VITE_SUPABASE_ANON_KEY',
+      'GEMINI_API_KEY',
+      'VITE_GEMINI_API_KEY',
+      'OPENAI_API_KEY',
+      'ANTHROPIC_API_KEY',
+      'OPENROUTER_API_KEY',
+    ]) {
+      vi.stubEnv(key, '');
+    }
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it('rejects oversized prompts with 413 before any provider call', async () => {

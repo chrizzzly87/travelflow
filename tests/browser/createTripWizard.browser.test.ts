@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   requestTripReadyNotificationPermission: vi.fn().mockResolvedValue('granted' as NotificationPermission),
   authState: {
     isAuthenticated: true,
+    isAnonymous: false,
   },
 }));
 
@@ -261,6 +262,7 @@ describe('pages/CreateTripV3Page', () => {
     mocks.getTripReadyNotificationPermission.mockReturnValue('default');
     mocks.requestTripReadyNotificationPermission.mockResolvedValue('granted');
     mocks.authState.isAuthenticated = true;
+    mocks.authState.isAnonymous = false;
   });
 
   afterEach(() => {
@@ -347,6 +349,46 @@ describe('pages/CreateTripV3Page', () => {
       transportPreferences: ['train'],
       hasTransportOverride: true,
     }));
+  });
+
+  it('starts generation for a newly created anonymous session before auth context catches up', async () => {
+    const user = userEvent.setup();
+    mocks.authState.isAuthenticated = false;
+    mocks.authState.isAnonymous = false;
+    renderPage({
+      initialEntries: [
+        buildPrefilledWizardEntry({
+          countries: ['Japan'],
+          mode: 'wizard',
+          meta: {
+            draft: {
+              version: 2,
+              wizardBranch: 'known_destinations_flexible_dates',
+              dateInputMode: 'flex',
+              flexWeeks: 1,
+              flexWindow: 'any',
+            },
+          },
+        }),
+      ],
+    });
+
+    await user.click(screen.getByRole('button', { name: /wizard\.intent\.options\.known_destinations_flexible_dates\.title/i }));
+    await waitForWizardText('wizard.destination.title');
+    await continueWizard(user);
+    await waitForWizardText('wizard.dates.title');
+    await continueWizard(user);
+    await waitForWizardText('wizard.preferences.title');
+    await continueWizard(user);
+    await waitForWizardText('wizard.details.title');
+    await continueWizard(user);
+    await waitForWizardText('wizard.review.title');
+    await user.click(getPrimaryAction(/wizard\.actions\.generate/i));
+
+    await waitFor(() => {
+      expect(mocks.startClientAsyncTripGeneration).toHaveBeenCalledTimes(1);
+    });
+    expect(mocks.createTripGenerationRequest).not.toHaveBeenCalled();
   });
 
   it('blocks same-day exact ranges and sends totalNights for valid exact trips', async () => {

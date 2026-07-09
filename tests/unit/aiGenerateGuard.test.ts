@@ -19,6 +19,7 @@ const stubDenoEnv = (values: Record<string, string | undefined>) => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe('validateGenerateInput', () => {
@@ -218,6 +219,8 @@ describe('verifySupabaseUser', () => {
 
   it('degrades to unavailable when Supabase config is missing', async () => {
     stubDenoEnv({});
+    vi.stubEnv('VITE_SUPABASE_URL', '');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', '');
     const fetchMock = vi.fn();
     const result = await verifySupabaseUser('any-token', fetchMock as typeof fetch);
     expect(result).toEqual({ ok: false, reason: 'unavailable' });
