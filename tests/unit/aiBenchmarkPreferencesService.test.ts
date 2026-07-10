@@ -12,6 +12,11 @@ describe('services/aiBenchmarkPreferencesService', () => {
     expect(BENCHMARK_DEFAULT_MODEL_IDS).toEqual(expect.arrayContaining([
       'openrouter:openai/gpt-5.5',
       'openrouter:openai/gpt-5.6-sol',
+      'openrouter:openai/gpt-5.6-luna-pro',
+      'openrouter:openai/gpt-5.6-terra-pro',
+      'openrouter:openai/gpt-5.6-sol-pro',
+      'openrouter:anthropic/claude-opus-4.8',
+      'openrouter:openai/gpt-chat-latest',
       'openrouter:x-ai/grok-4.5',
       'openrouter:z-ai/glm-5.2',
       'openrouter:google/gemini-3.5-flash',
@@ -124,6 +129,11 @@ describe('services/aiBenchmarkPreferencesService', () => {
   it('can merge newly added default targets into an existing saved default preference payload', () => {
     const fallbackPresets = createSystemBenchmarkPresets('2026-05-10', '2026-05-24');
     const newDefaultTargets = [
+      'openrouter:openai/gpt-5.6-luna-pro',
+      'openrouter:openai/gpt-5.6-terra-pro',
+      'openrouter:openai/gpt-5.6-sol-pro',
+      'openrouter:anthropic/claude-opus-4.8',
+      'openrouter:openai/gpt-chat-latest',
       'openrouter:openai/gpt-5.6-sol',
       'openrouter:x-ai/grok-4.5',
       'openrouter:z-ai/glm-5.2',
