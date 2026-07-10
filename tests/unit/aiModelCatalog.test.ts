@@ -25,12 +25,15 @@ describe('config/aiModelCatalog', () => {
     expect(modelIds.has('openrouter:openai/gpt-5.4-nano')).toBe(true);
     expect(modelIds.has('openrouter:openai/gpt-5.4-mini')).toBe(true);
     expect(modelIds.has('openrouter:openai/gpt-5.5')).toBe(true);
+    expect(modelIds.has('openrouter:openai/gpt-5.6-sol')).toBe(true);
     expect(modelIds.has('openrouter:google/gemini-3.5-flash')).toBe(true);
     expect(modelIds.has('openrouter:google/gemini-3.1-flash-lite')).toBe(true);
     expect(modelIds.has('openrouter:nvidia/nemotron-3-super-120b-a12b:free')).toBe(true);
     expect(modelIds.has('openrouter:z-ai/glm-5')).toBe(true);
+    expect(modelIds.has('openrouter:z-ai/glm-5.2')).toBe(true);
     expect(modelIds.has('openrouter:deepseek/deepseek-v3.2')).toBe(true);
     expect(modelIds.has('openrouter:x-ai/grok-4.3')).toBe(true);
+    expect(modelIds.has('openrouter:x-ai/grok-4.5')).toBe(true);
     expect(modelIds.has('openrouter:x-ai/grok-4.1-fast')).toBe(true);
     expect(modelIds.has('openrouter:x-ai/grok-4.20-beta')).toBe(true);
     expect(modelIds.has('openrouter:minimax/minimax-m2.5')).toBe(true);
@@ -58,6 +61,9 @@ describe('config/aiModelCatalog', () => {
 
     expect(providerLabelOrder[0]).toBe('OpenAI');
     expect(sorted.find((item) => item.id === 'openrouter:openai/gpt-5.5')?.providerLabel).toBe('OpenAI');
+    expect(sorted.findIndex((item) => item.id === 'openrouter:openai/gpt-5.6-sol')).toBeLessThan(
+      sorted.findIndex((item) => item.id === 'openrouter:openai/gpt-5.5')
+    );
     expect(sorted.find((item) => item.id === 'openrouter:google/gemini-3.5-flash')?.providerLabel).toBe('Google Gemini');
     expect(sorted.find((item) => item.id === 'openrouter:x-ai/grok-4.3')?.providerLabel).toBe('xAI');
     expect(sorted.find((item) => item.id === 'openrouter:qwen/qwen3.5-plus-20260420')?.providerLabel).toBe('Qwen');
@@ -96,6 +102,9 @@ describe('config/aiModelCatalog', () => {
     );
     expect([...CREATE_TRIP_PREFERRED_MODEL_IDS]).toEqual(expect.arrayContaining([
       'openrouter:openai/gpt-5.5',
+      'openrouter:openai/gpt-5.6-sol',
+      'openrouter:x-ai/grok-4.5',
+      'openrouter:z-ai/glm-5.2',
       'openrouter:google/gemini-3.5-flash',
       'openrouter:google/gemini-3.1-flash-lite',
       'openrouter:x-ai/grok-4.3',

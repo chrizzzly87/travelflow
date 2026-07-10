@@ -37,6 +37,13 @@ describe('components/admin/AiProviderLogo', () => {
     expect(image?.getAttribute('src')).toBe('/images/ai-providers/openai.svg');
   });
 
+  it('uses the Z.ai logo for OpenRouter GLM models', () => {
+    const { container } = render(
+      <AiProviderLogo provider="openrouter" model="z-ai/glm-5.2" size={20} />,
+    );
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/images/ai-providers/z-ai.png');
+  });
+
   it('falls back to text badge when no logo mapping exists', () => {
     render(<AiProviderLogo provider="unknown-provider" size={20} />);
     expect(screen.getByText('AI')).toBeTruthy();
