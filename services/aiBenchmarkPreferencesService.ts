@@ -40,6 +40,9 @@ export interface BenchmarkPreferencesPayload {
 
 export const BENCHMARK_DEFAULT_MODEL_IDS = [
     'openai:gpt-5.4',
+    'openrouter:openai/gpt-5.6-sol',
+    'openrouter:x-ai/grok-4.5',
+    'openrouter:z-ai/glm-5.2',
     'openrouter:openai/gpt-5.5',
     'openrouter:google/gemini-3.5-flash',
     'openrouter:google/gemini-3.1-flash-lite',
