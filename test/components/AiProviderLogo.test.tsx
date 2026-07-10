@@ -37,6 +37,13 @@ describe('components/admin/AiProviderLogo', () => {
     expect(image?.getAttribute('src')).toBe('/images/ai-providers/openai.svg');
   });
 
+  it('uses the Anthropic logo for OpenRouter Opus models', () => {
+    const { container } = render(
+      <AiProviderLogo provider="openrouter" model="anthropic/claude-opus-4.8" size={20} />,
+    );
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/images/ai-providers/anthropic.svg');
+  });
+
   it('uses the Z.ai logo for OpenRouter GLM models', () => {
     const { container } = render(
       <AiProviderLogo provider="openrouter" model="z-ai/glm-5.2" size={20} />,

@@ -26,6 +26,14 @@ describe('config/aiModelCatalog', () => {
     expect(modelIds.has('openrouter:openai/gpt-5.4-mini')).toBe(true);
     expect(modelIds.has('openrouter:openai/gpt-5.5')).toBe(true);
     expect(modelIds.has('openrouter:openai/gpt-5.6-sol')).toBe(true);
+    expect(modelIds.has('openrouter:openai/gpt-5.6-sol-pro')).toBe(true);
+    expect(modelIds.has('openrouter:openai/gpt-5.6-terra')).toBe(true);
+    expect(modelIds.has('openrouter:openai/gpt-5.6-terra-pro')).toBe(true);
+    expect(modelIds.has('openrouter:openai/gpt-5.6-luna')).toBe(true);
+    expect(modelIds.has('openrouter:openai/gpt-5.6-luna-pro')).toBe(true);
+    expect(modelIds.has('openrouter:openai/gpt-chat-latest')).toBe(true);
+    expect(modelIds.has('openrouter:anthropic/claude-opus-4.8')).toBe(true);
+    expect(modelIds.has('openrouter:anthropic/claude-opus-4.8-fast')).toBe(true);
     expect(modelIds.has('openrouter:google/gemini-3.5-flash')).toBe(true);
     expect(modelIds.has('openrouter:google/gemini-3.1-flash-lite')).toBe(true);
     expect(modelIds.has('openrouter:nvidia/nemotron-3-super-120b-a12b:free')).toBe(true);
@@ -63,6 +71,9 @@ describe('config/aiModelCatalog', () => {
     expect(sorted.find((item) => item.id === 'openrouter:openai/gpt-5.5')?.providerLabel).toBe('OpenAI');
     expect(sorted.findIndex((item) => item.id === 'openrouter:openai/gpt-5.6-sol')).toBeLessThan(
       sorted.findIndex((item) => item.id === 'openrouter:openai/gpt-5.5')
+    );
+    expect(sorted.findIndex((item) => item.id === 'openrouter:anthropic/claude-opus-4.8')).toBeLessThan(
+      sorted.findIndex((item) => item.id === 'anthropic:claude-opus-4.6')
     );
     expect(sorted.find((item) => item.id === 'openrouter:google/gemini-3.5-flash')?.providerLabel).toBe('Google Gemini');
     expect(sorted.find((item) => item.id === 'openrouter:x-ai/grok-4.3')?.providerLabel).toBe('xAI');
@@ -103,6 +114,11 @@ describe('config/aiModelCatalog', () => {
     expect([...CREATE_TRIP_PREFERRED_MODEL_IDS]).toEqual(expect.arrayContaining([
       'openrouter:openai/gpt-5.5',
       'openrouter:openai/gpt-5.6-sol',
+      'openrouter:openai/gpt-5.6-luna-pro',
+      'openrouter:openai/gpt-5.6-terra-pro',
+      'openrouter:openai/gpt-5.6-sol-pro',
+      'openrouter:anthropic/claude-opus-4.8',
+      'openrouter:openai/gpt-chat-latest',
       'openrouter:x-ai/grok-4.5',
       'openrouter:z-ai/glm-5.2',
       'openrouter:google/gemini-3.5-flash',

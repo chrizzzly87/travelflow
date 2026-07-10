@@ -40,7 +40,12 @@ export interface BenchmarkPreferencesPayload {
 
 export const BENCHMARK_DEFAULT_MODEL_IDS = [
     'openai:gpt-5.4',
+    'openrouter:openai/gpt-5.6-luna-pro',
+    'openrouter:openai/gpt-5.6-terra-pro',
+    'openrouter:openai/gpt-5.6-sol-pro',
     'openrouter:openai/gpt-5.6-sol',
+    'openrouter:anthropic/claude-opus-4.8',
+    'openrouter:openai/gpt-chat-latest',
     'openrouter:x-ai/grok-4.5',
     'openrouter:z-ai/glm-5.2',
     'openrouter:openai/gpt-5.5',

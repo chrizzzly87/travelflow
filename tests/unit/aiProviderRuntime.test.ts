@@ -59,6 +59,14 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('openrouter', 'openai/gpt-5.4-mini')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openai/gpt-5.5')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openai/gpt-5.6-sol')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'openai/gpt-5.6-sol-pro')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'openai/gpt-5.6-terra')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'openai/gpt-5.6-terra-pro')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'openai/gpt-5.6-luna')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'openai/gpt-5.6-luna-pro')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'openai/gpt-chat-latest')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'anthropic/claude-opus-4.8')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'anthropic/claude-opus-4.8-fast')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'google/gemini-3.5-flash')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'google/gemini-3.1-flash-lite')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'nvidia/nemotron-3-super-120b-a12b:free')).toBeNull();
