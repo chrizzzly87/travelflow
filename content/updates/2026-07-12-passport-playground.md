@@ -11,6 +11,6 @@ summary: "A hidden design playground explores a tactile passport, page turns, to
 ---
 
 ## Changes
-- [ ] [Internal] 📕 Added a hidden travel passport playground with nationality-specific covers and tactile page-turning interactions.
-- [ ] [Internal] 🗺️ Added deterministic topographic paper art plus controls for contours, page character, motion, and stamp treatments.
+- [ ] [Internal] 📕 Added a hidden travel passport playground with nationality-specific bound covers, layered page edges, and synchronized physical page turns.
+- [ ] [Internal] 🗺️ Added deterministic marching-squares topographic paper art plus controls for contours, page character, motion, and stamp treatments.
 - [ ] [Internal] 🏷️ Designed a collection system with more than 30 place, landmark, journey, and travel-ritual achievements across three vector styles.

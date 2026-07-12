@@ -61,5 +61,8 @@ describe('PassportBook', () => {
     expect(turningPage).not.toBeNull();
     expect(screen.getAllByLabelText('Passport page 3').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /next passport spread/i })).toBeDisabled();
+
+    fireEvent.animationEnd(container.querySelector('.passport-turn__edge') as Element, { animationName: 'passport-edge-reveal' });
+    expect(screen.getByText(`1 / ${spreads.length}`)).toBeInTheDocument();
   });
 });
