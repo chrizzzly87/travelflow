@@ -48,6 +48,7 @@ const PricingPage = lazyWithRecovery('PricingPage', () => import('../../pages/Pr
 const FaqPage = lazyWithRecovery('FaqPage', () => import('../../pages/FaqPage').then((module) => ({ default: module.FaqPage })));
 const ShareUnavailablePage = lazyWithRecovery('ShareUnavailablePage', () => import('../../pages/ShareUnavailablePage').then((module) => ({ default: module.ShareUnavailablePage })));
 const NotFoundPage = lazyWithRecovery('NotFoundPage', () => import('../../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
+const PassportPlaygroundPage = lazyWithRecovery('PassportPlaygroundPage', () => import('../../pages/PassportPlaygroundPage').then((module) => ({ default: module.PassportPlaygroundPage })));
 const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
 const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
 
@@ -270,6 +271,11 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
             <Route path="/create-trip/v1" element={<Navigate to="/create-trip" replace />} />
             <Route path="/create-trip/v2" element={<Navigate to="/create-trip" replace />} />
             <Route path="/create-trip/v3" element={<Navigate to="/create-trip/wizard" replace />} />
+
+            <Route
+                path="/passport"
+                element={renderWithHandoff(<PassportPlaygroundPage />)}
+            />
 
             <Route
                 path="/checkout"
