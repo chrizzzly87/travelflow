@@ -33,7 +33,7 @@ const ACTIVITY_TYPE_VALUES = [
 const CITY_DESCRIPTION_REQUIRED_SECTIONS_PATTERN =
   "(?=[\\s\\S]*###\\s*Must\\s*See)(?=[\\s\\S]*###\\s*Must\\s*Try)(?=[\\s\\S]*###\\s*Must\\s*Do)[\\s\\S]*";
 
-export const TRIP_ITINERARY_SCHEMA_NAME = "travelflow_trip_itinerary_v1";
+export const TRIP_ITINERARY_SCHEMA_NAME = "travelflow_trip_itinerary_v2";
 
 const tripCountryInfoJsonSchema = {
   type: "object",
@@ -73,10 +73,12 @@ const tripCityJsonSchema = {
       minLength: 1,
       pattern: CITY_DESCRIPTION_REQUIRED_SECTIONS_PATTERN,
     },
+    countryName: { type: "string", minLength: 1 },
+    countryCode: { type: "string", pattern: "^[A-Z]{2}$" },
     lat: { type: "number", minimum: -90, maximum: 90 },
     lng: { type: "number", minimum: -180, maximum: 180 },
   },
-  required: ["name", "days", "description", "lat", "lng"],
+  required: ["name", "days", "description", "countryName", "countryCode", "lat", "lng"],
 } as const;
 
 const tripTravelSegmentJsonSchema = {
@@ -167,10 +169,12 @@ export const createGeminiTripItineraryResponseSchema = <TValue extends string | 
           name: { type: Type.STRING },
           days: { type: Type.NUMBER, description: "Number of nights to stay in this stop" },
           description: { type: Type.STRING, description: "Markdown text that MUST contain 3 sections: '### Must See', '### Must Try', and '### Must Do' with checkbox lists." },
+          countryName: { type: Type.STRING, description: "English country name for this stop, e.g. Spain" },
+          countryCode: { type: Type.STRING, description: "ISO 3166-1 alpha-2 country code in uppercase, e.g. ES" },
           lat: { type: Type.NUMBER, description: "Latitude of the city center" },
           lng: { type: Type.NUMBER, description: "Longitude of the city center" },
         },
-        required: ["name", "days", "description", "lat", "lng"],
+        required: ["name", "days", "description", "countryName", "countryCode", "lat", "lng"],
       },
     },
     travelSegments: {

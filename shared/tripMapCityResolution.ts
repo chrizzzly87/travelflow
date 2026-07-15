@@ -69,9 +69,12 @@ const collectLocationContextQueries = (
 ): string[] => {
   const queries = items.flatMap((item) => {
     if (item.type !== 'city' || item.id === cityId) return [];
+    const storedCountry = normalizeText(item.countryName || item.countryCode);
     const location = normalizeText(item.location || item.title);
-    if (!location) return [];
-    return extractLocationSuffixes(location);
+    if (!location) return storedCountry ? [storedCountry] : [];
+    return storedCountry
+      ? [storedCountry, ...extractLocationSuffixes(location)]
+      : extractLocationSuffixes(location);
   });
 
   return dedupeCaseInsensitive(queries);
@@ -130,6 +133,7 @@ export const buildCityGeocodeQueryCandidates = ({
   }
 
   const contextQueries = dedupeCaseInsensitive([
+    normalizeText(city.countryName || city.countryCode),
     ...splitQueryList(focusLocationQuery),
     ...collectLocationContextQueries(items, city.id),
   ]);

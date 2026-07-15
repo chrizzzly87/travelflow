@@ -52,6 +52,15 @@ describe('shared/aiTripItinerarySchema', () => {
     });
   });
 
+  it('requires canonical country metadata for every generated city', () => {
+    const cities = (TRIP_ITINERARY_JSON_SCHEMA.properties.cities as {
+      items: { properties: Record<string, unknown>; required: readonly string[] };
+    }).items;
+
+    expect(cities.required).toEqual(expect.arrayContaining(['countryName', 'countryCode', 'lat', 'lng']));
+    expect(cities.properties.countryCode).toEqual({ type: 'string', pattern: '^[A-Z]{2}$' });
+  });
+
   it('stays inside the OpenAI strict structured-output JSON Schema subset', () => {
     const unsupportedUsages: string[] = [];
     const objectShapeMismatches: string[] = [];

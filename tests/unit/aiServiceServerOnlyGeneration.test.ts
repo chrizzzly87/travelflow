@@ -26,8 +26,8 @@ const buildSuccessPayload = () => ({
   data: {
     title: 'Test Trip',
     cities: [
-      { name: 'Lisbon', days: 2, lat: 38.7223, lng: -9.1393, description: 'Start' },
-      { name: 'Porto', days: 2, lat: 41.1579, lng: -8.6291, description: 'End' },
+      { name: 'Lisbon', days: 2, countryName: 'Portugal', countryCode: 'PT', lat: 38.7223, lng: -9.1393, description: 'Start' },
+      { name: 'Porto', days: 2, countryName: 'Portugal', countryCode: 'PT', lat: 41.1579, lng: -8.6291, description: 'End' },
     ],
     activities: [
       { cityIndex: 0, dayOffsetInCity: 0, duration: 1, title: 'Tram 28 ride', type: 'sightseeing' },
@@ -61,6 +61,13 @@ describe('aiService server-only generation (no client provider keys)', () => {
     );
 
     const trip = await generateItinerary('Trip through Portugal', '2026-08-01');
+
+    expect(trip.items.find((item) => item.type === 'city')).toMatchObject({
+      title: 'Lisbon',
+      coordinates: { lat: 38.7223, lng: -9.1393 },
+      countryName: 'Portugal',
+      countryCode: 'PT',
+    });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];

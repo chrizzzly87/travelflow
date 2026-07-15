@@ -1,4 +1,5 @@
 import { parseFlexibleDurationDays, parseFlexibleDurationHours } from "../../shared/durationParsing.ts";
+import { parseAiTripCityLocation } from "../../shared/aiTripCityLocation.ts";
 import { normalizeTransportMode } from "../../shared/transportModes.ts";
 import {
   BENCHMARK_ACTIVITY_TYPES as ACTIVITY_TYPES,
@@ -512,6 +513,8 @@ const buildTripFromModelData = (
     days: number;
     description: string;
     coordinates?: { lat: number; lng: number };
+    countryName?: string;
+    countryCode?: string;
     sourceIndex: number;
   }> = [];
 
@@ -520,17 +523,17 @@ const buildTripFromModelData = (
   rawCities.forEach((city, index) => {
     if (!city || typeof city !== "object") return;
     const typed = city as Record<string, unknown>;
-    const name = String(typed.name || `Stop ${index + 1}`);
+    const location = parseAiTripCityLocation(typed, `Stop ${index + 1}`);
     const daysRaw = Number(typed.days);
     const days = Number.isFinite(daysRaw) && daysRaw > 0 ? Math.round(daysRaw) : 1;
-    const lat = Number(typed.lat);
-    const lng = Number(typed.lng);
 
     parsedCities.push({
-      name,
+      name: location.name,
       days,
-      description: String(typed.description || ""),
-      coordinates: Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : undefined,
+      description: location.description,
+      coordinates: location.coordinates,
+      countryName: location.countryName,
+      countryCode: location.countryCode,
       sourceIndex: index,
     });
   });
@@ -562,6 +565,8 @@ const buildTripFromModelData = (
       description: city.description,
       location: city.name,
       coordinates: city.coordinates,
+      countryName: city.countryName,
+      countryCode: city.countryCode,
     });
 
     const rawActivities = Array.isArray(data.activities) ? data.activities : [];
