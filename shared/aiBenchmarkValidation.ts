@@ -295,6 +295,8 @@ export const validateModelData = (data: Record<string, unknown>, options: Valida
     return (
       hasText(city.name) &&
       hasText(city.description) &&
+      hasText(city.countryName) &&
+      /^[A-Z]{2}$/.test(String(city.countryCode || '')) &&
       (hasPositiveDays || isTerminalRoundTripZeroDayCity) &&
       Number.isFinite(Number(city.lat)) &&
       Number.isFinite(Number(city.lng))

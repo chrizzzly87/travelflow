@@ -83,6 +83,16 @@ describe('shared/tripMapCityResolution', () => {
     ]);
   });
 
+  it('uses stored per-city country metadata when recovering missing coordinates', () => {
+    const madrid = makeCity({ id: 'madrid', title: 'Madrid', location: 'Madrid' });
+    madrid.countryName = 'Spain';
+
+    expect(buildCityGeocodeQueryCandidates({
+      city: madrid,
+      items: [madrid],
+    })).toEqual(['Madrid, Spain', 'Madrid']);
+  });
+
   it('fills missing city coordinates from the first successful disambiguated query', async () => {
     const items = [
       makeCity({ id: 'palma', title: 'Palma', location: 'Palma' }),

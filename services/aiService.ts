@@ -2,6 +2,7 @@ import { ICoordinates, ITimelineItem, ITrip, TripGenerationAttemptSummary, TripG
 import type { AiProviderId } from "../config/aiProviderCatalog";
 import { getDefaultCreateTripModel } from "../config/aiModelCatalog";
 import { buildDurationPromptGuidance, parseFlexibleDurationDays, parseFlexibleDurationHours } from "../shared/durationParsing";
+import { parseAiTripCityLocation } from "../shared/aiTripCityLocation";
 import { buildTransportModePromptGuidance, MODEL_TRANSPORT_MODE_VALUES, normalizeTransportMode } from "../shared/transportModes";
 import {
     formatUserPromptDataBlock,
@@ -240,6 +241,8 @@ interface ParsedCityStop {
     days: number;
     description: string;
     coordinates?: ICoordinates;
+    countryName?: string;
+    countryCode?: string;
     sourceIndex: number;
 }
 
@@ -251,7 +254,7 @@ export type CityNotesEnhancementMode =
 const BASE_ITINERARY_RULES_PROMPT = `
       Return a list of consecutive cities/stops.
       Important Rules for complex trips:
-      1. Provide accurate Latitude and Longitude for each city/stop.
+      1. Provide accurate Latitude and Longitude plus the English countryName and uppercase ISO 3166-1 alpha-2 countryCode for each city/stop.
       2. Treat multi-day excursions (like treks, cruises, jungle expeditions, or hikes) as separate 'cities/stops' with their own duration and coordinates.
          - In the "cities" array, the "days" field means nights stayed in that stop.
          - Arrival day and departure day each count as calendar days outside that night count.
@@ -283,7 +286,7 @@ const BASE_ITINERARY_RULES_PROMPT = `
 const BASE_ITINERARY_RULES_PROMPT_COMPACT = `
       Return a concise list of consecutive cities/stops.
       Important Rules for compact benchmark output:
-      1. Provide accurate Latitude and Longitude for each city/stop.
+      1. Provide accurate Latitude and Longitude plus the English countryName and uppercase ISO 3166-1 alpha-2 countryCode for each city/stop.
       2. Treat multi-day excursions (like treks, cruises, jungle expeditions, or hikes) as separate 'cities/stops' with their own duration and coordinates.
          - In the "cities" array, the "days" field means nights stayed in that stop.
          - Arrival day and departure day each count as calendar days outside that night count.
@@ -322,6 +325,8 @@ const STRICT_JSON_OBJECT_CONTRACT_PROMPT = `
          - name
          - days
          - description
+         - countryName (English country name)
+         - countryCode (uppercase ISO 3166-1 alpha-2)
          - lat
          - lng
          - IMPORTANT: "days" means nights stayed in that stop.
@@ -348,6 +353,7 @@ const STRICT_JSON_OBJECT_CONTRACT_PROMPT = `
          - Every city.description contains all three headings: "### Must See", "### Must Try", "### Must Do".
          - Only add "### Heads Up" when a practical warning is genuinely needed.
          - cities[].days is interpreted as nights stayed, not touched calendar days.
+         - Every city has countryName, countryCode, lat, and lng for unambiguous map placement.
          - countryInfo is a single object, languages is an array, and the canonical countryInfo keys are used exactly.
          - Return exactly one JSON object and nothing else.
     `;
@@ -785,17 +791,17 @@ const buildTripFromModelData = (
     const cityDurations: number[] = [];
 
     const parsedCities: ParsedCityStop[] = (Array.isArray(data.cities) ? data.cities : []).map((city: any, index: number) => {
+        const location = parseAiTripCityLocation(city, `Stop ${index + 1}`);
         const parsedCityDays = Number(city?.days);
         const cityDays = Number.isFinite(parsedCityDays) && parsedCityDays > 0 ? parsedCityDays : 1;
-        const cityLat = Number(city?.lat);
-        const cityLng = Number(city?.lng);
-        const hasCoordinates = Number.isFinite(cityLat) && Number.isFinite(cityLng);
 
         return {
-            name: city?.name || `Stop ${index + 1}`,
+            name: location.name,
             days: cityDays,
-            description: city?.description || "",
-            coordinates: hasCoordinates ? { lat: cityLat, lng: cityLng } : undefined,
+            description: location.description,
+            coordinates: location.coordinates,
+            countryName: location.countryName,
+            countryCode: location.countryCode,
             sourceIndex: index,
         };
     });
@@ -825,7 +831,9 @@ const buildTripFromModelData = (
             color: getRandomCityColor(index),
             description: city.description,
             location: city.name,
-            coordinates: city.coordinates
+            coordinates: city.coordinates,
+            countryName: city.countryName,
+            countryCode: city.countryCode,
         });
 
         if (Array.isArray(data.activities) && city.sourceIndex >= 0) {
