@@ -90,7 +90,7 @@ This position is more specific than “AI trip planner,” but broad enough to s
 | P0 | Make trip shape the first planning decision | Prevents a single-city weekend, hub trip, and country circuit from being forced through the same multi-stop form. | Hidden Thailand flow implemented. |
 | P0 | Use canonical cities, neighborhoods, places, and route legs | Makes selections stable, searchable, reusable, sourceable, and compatible with maps and future products. | Thailand foundation implemented. |
 | P0 | Reveal several feasible route concepts before day planning | Creates a fast, fun decision moment and avoids waiting for a full itinerary to learn that the route is wrong. | Deterministic reveal implemented; visual refinement remains. |
-| P0 | Govern travel knowledge as versioned data, not prompt prose | Improves consistency, speed, provenance, reviewability, and rollback. | Schema, source registry, ingestion, private snapshots, candidates, and admin review queue implemented. Artifact publishing remains gated. |
+| P0 | Govern travel knowledge as versioned data, not prompt prose | Improves consistency, speed, provenance, reviewability, and rollback. | Schema, source registry, ingestion, private snapshots, review queue, deterministic artifacts, and atomic activation/rollback implemented; broader source adapters remain gated. |
 | P1 | Add a progressive traveler setup | Families, couples, solo travelers, friend groups, accessibility needs, dietary needs, and audience context should change ranking without making the default wizard long. | Contract extension planned. |
 | P1 | Add group preference negotiation | Multi-traveler planning needs per-person must-haves, avoids, optional votes, and conflict explanations instead of one merged free-text prompt. | Planned. |
 | P1 | Enrich progressively after the skeleton | Neighborhoods, activities, dishes, prices, practical notes, and live facts should stream in independently while the route remains editable. | Deterministic brief/enrichment baseline implemented. |
@@ -250,11 +250,12 @@ It can reuse canonical ports/cities, neighborhoods, activities, dishes, pricing 
 
 ## 11. Recommended execution order
 
-1. Finish the admin review, artifact staging, publish, and rollback workflow.
-2. Promote the Thailand route-first wizard only after product and source-quality gates pass.
-3. Implement progressive traveler setup for family, group, accessibility, dietary, and audience context.
-4. Add group preference negotiation and explainable route scoring.
-5. Complete the flatter application shell and signature route-reveal visual system.
-6. Add two or three deeper Thailand content verticals: neighborhoods, family supply, food, and seasonal alternatives.
-7. Prove the country-pack factory with one structurally different second country.
-8. Prototype camper and cruise as separate adapters/products after the core graph and publishing workflow are stable.
+The admin review, deterministic artifact staging, atomic publish, and rollback foundation is complete.
+
+1. Promote the Thailand route-first wizard only after product and source-quality gates pass.
+2. Implement progressive traveler setup for family, group, accessibility, dietary, and audience context.
+3. Add group preference negotiation and explainable route scoring.
+4. Complete the flatter application shell and signature route-reveal visual system.
+5. Add two or three deeper Thailand content verticals: neighborhoods, family supply, food, and seasonal alternatives.
+6. Prove the country-pack factory with one structurally different second country.
+7. Prototype camper and cruise as separate adapters/products after the core graph and publishing workflow are stable.
