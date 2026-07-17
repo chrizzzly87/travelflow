@@ -9694,8 +9694,7 @@ declare
   table_name text;
 begin
   foreach table_name in array array[
-    'travel_source_snapshots',
-    'travel_review_decisions'
+    'travel_source_snapshots'
   ]
   loop
     execute format('drop policy if exists "Travel operations admin read" on public.%I', table_name);
@@ -9712,6 +9711,15 @@ begin
 end
 $$;
 
+drop policy if exists "Travel operations admin insert" on public.travel_review_decisions;
+drop policy if exists "Travel operations admin read" on public.travel_review_decisions;
+create policy "Travel operations admin read"
+on public.travel_review_decisions for select to authenticated
+using (
+  not coalesce(((select auth.jwt()) ->> 'is_anonymous')::boolean, false)
+  and public.is_admin((select auth.uid()))
+);
+
 revoke all on table
   public.travel_source_runs,
   public.travel_source_snapshots,
@@ -9727,7 +9735,10 @@ grant select, insert, update, delete on table
 to authenticated;
 
 grant select, insert on table
-  public.travel_source_snapshots,
+  public.travel_source_snapshots
+to authenticated;
+
+grant select on table
   public.travel_review_decisions
 to authenticated;
 
@@ -9783,6 +9794,315 @@ grant all on table
   public.travel_template_legs,
   public.travel_template_tags
 to service_role;
+
+drop function if exists public.admin_list_travel_knowledge_candidates(text, text[], integer, integer);
+create or replace function public.admin_list_travel_knowledge_candidates(
+  p_country_code text default null,
+  p_statuses text[] default array[]::text[],
+  p_limit integer default 100,
+  p_offset integer default 0
+)
+returns table(
+  candidate_id uuid,
+  source_snapshot_id uuid,
+  source_run_id uuid,
+  country_code text,
+  target_kind text,
+  target_key text,
+  target_name text,
+  target_entity_id uuid,
+  target_template_id uuid,
+  field_path text,
+  change_kind text,
+  previous_value jsonb,
+  proposed_value jsonb,
+  extraction_method text,
+  confidence numeric,
+  severity text,
+  validation_findings jsonb,
+  status text,
+  source_key text,
+  source_name text,
+  source_url text,
+  retrieved_at timestamptz,
+  created_at timestamptz,
+  updated_at timestamptz,
+  review_count bigint,
+  latest_decision text,
+  latest_reason text,
+  latest_accepted_value jsonb,
+  latest_reviewed_at timestamptz
+)
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+begin
+  if v_uid is null
+    or coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+    or not public.is_admin(v_uid) then
+    raise exception 'Admin access required.';
+  end if;
+
+  return query
+  select
+    candidate.id,
+    candidate.source_snapshot_id,
+    source_run.id,
+    candidate.country_code,
+    candidate.target_kind,
+    candidate.target_key,
+    coalesce(entity.primary_name, template.template_key, candidate.target_key),
+    candidate.target_entity_id,
+    candidate.target_template_id,
+    candidate.field_path,
+    candidate.change_kind,
+    candidate.previous_value,
+    candidate.proposed_value,
+    candidate.extraction_method,
+    candidate.confidence,
+    candidate.severity,
+    candidate.validation_findings,
+    candidate.status,
+    source.source_key,
+    source.name,
+    snapshot.source_url,
+    snapshot.retrieved_at,
+    candidate.created_at,
+    candidate.updated_at,
+    coalesce(review_summary.review_count, 0),
+    latest_review.decision,
+    latest_review.reason,
+    latest_review.accepted_value,
+    latest_review.reviewed_at
+  from public.travel_change_candidates candidate
+  join public.travel_source_snapshots snapshot on snapshot.id = candidate.source_snapshot_id
+  join public.travel_source_runs source_run on source_run.id = snapshot.source_run_id
+  join public.travel_sources source on source.id = source_run.source_id
+  left join public.travel_entities entity on entity.id = candidate.target_entity_id
+  left join public.travel_templates template on template.id = candidate.target_template_id
+  left join lateral (
+    select count(*)::bigint as review_count
+    from public.travel_review_decisions decision_count
+    where decision_count.candidate_id = candidate.id
+  ) review_summary on true
+  left join lateral (
+    select decision.decision, decision.reason, decision.accepted_value, decision.reviewed_at
+    from public.travel_review_decisions decision
+    where decision.candidate_id = candidate.id
+    order by decision.reviewed_at desc, decision.created_at desc
+    limit 1
+  ) latest_review on true
+  where (
+      p_country_code is null
+      or trim(p_country_code) = ''
+      or candidate.country_code = upper(trim(p_country_code))
+    )
+    and (
+      coalesce(cardinality(p_statuses), 0) = 0
+      or candidate.status = any(p_statuses)
+    )
+  order by
+    case candidate.severity
+      when 'critical' then 0
+      when 'high' then 1
+      when 'moderate' then 2
+      else 3
+    end,
+    candidate.created_at asc,
+    candidate.id asc
+  limit least(greatest(coalesce(p_limit, 100), 1), 250)
+  offset greatest(coalesce(p_offset, 0), 0);
+end;
+$$;
+
+drop function if exists public.admin_get_travel_knowledge_review_summary(text);
+create or replace function public.admin_get_travel_knowledge_review_summary(
+  p_country_code text default null
+)
+returns table(
+  candidate_total bigint,
+  new_count bigint,
+  needs_review_count bigint,
+  accepted_count bigint,
+  rejected_count bigint,
+  successful_run_count bigint,
+  snapshot_count bigint,
+  latest_source_run_at timestamptz
+)
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+begin
+  if v_uid is null
+    or coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+    or not public.is_admin(v_uid) then
+    raise exception 'Admin access required.';
+  end if;
+
+  return query
+  with candidate_summary as (
+    select
+      count(*)::bigint as candidate_total,
+      count(*) filter (where candidate.status = 'new')::bigint as new_count,
+      count(*) filter (where candidate.status = 'needs_review')::bigint as needs_review_count,
+      count(*) filter (where candidate.status = 'accepted')::bigint as accepted_count,
+      count(*) filter (where candidate.status = 'rejected')::bigint as rejected_count
+    from public.travel_change_candidates candidate
+    where p_country_code is null
+      or trim(p_country_code) = ''
+      or candidate.country_code = upper(trim(p_country_code))
+  ),
+  run_summary as (
+    select
+      count(*) filter (where source_run.status = 'succeeded')::bigint as successful_run_count,
+      max(coalesce(source_run.finished_at, source_run.started_at, source_run.created_at)) as latest_source_run_at
+    from public.travel_source_runs source_run
+    where p_country_code is null
+      or trim(p_country_code) = ''
+      or source_run.country_code = upper(trim(p_country_code))
+  ),
+  snapshot_summary as (
+    select count(*)::bigint as snapshot_count
+    from public.travel_source_snapshots snapshot
+    join public.travel_source_runs source_run on source_run.id = snapshot.source_run_id
+    where p_country_code is null
+      or trim(p_country_code) = ''
+      or source_run.country_code = upper(trim(p_country_code))
+  )
+  select
+    candidate_summary.candidate_total,
+    candidate_summary.new_count,
+    candidate_summary.needs_review_count,
+    candidate_summary.accepted_count,
+    candidate_summary.rejected_count,
+    run_summary.successful_run_count,
+    snapshot_summary.snapshot_count,
+    run_summary.latest_source_run_at
+  from candidate_summary
+  cross join run_summary
+  cross join snapshot_summary;
+end;
+$$;
+
+drop function if exists public.admin_review_travel_knowledge_candidate(uuid, text, text, jsonb, text);
+create or replace function public.admin_review_travel_knowledge_candidate(
+  p_candidate_id uuid,
+  p_decision text,
+  p_reason text,
+  p_accepted_value jsonb default null,
+  p_review_policy_version text default 'travel-review-v1'
+)
+returns table(
+  candidate_id uuid,
+  candidate_status text,
+  decision_id uuid,
+  decision text,
+  reviewed_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = ''
+set row_security = off
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_candidate public.travel_change_candidates%rowtype;
+  v_candidate_status text;
+  v_decision_id uuid;
+  v_reviewed_at timestamptz;
+begin
+  if v_uid is null
+    or coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+    or not public.is_admin(v_uid) then
+    raise exception 'Admin access required.';
+  end if;
+
+  if p_decision is null or p_decision not in ('accept', 'accept_with_edit', 'reject', 'request_changes') then
+    raise exception 'Unsupported travel knowledge decision.';
+  end if;
+
+  if nullif(trim(coalesce(p_reason, '')), '') is null then
+    raise exception 'A review reason is required.';
+  end if;
+
+  if nullif(trim(coalesce(p_review_policy_version, '')), '') is null then
+    raise exception 'A review policy version is required.';
+  end if;
+
+  if p_decision = 'accept_with_edit' and p_accepted_value is null then
+    raise exception 'An edited value is required for accept_with_edit.';
+  end if;
+
+  select candidate.*
+    into v_candidate
+    from public.travel_change_candidates candidate
+   where candidate.id = p_candidate_id
+   for update;
+
+  if not found then
+    raise exception 'Travel knowledge candidate not found.';
+  end if;
+
+  if v_candidate.status not in ('new', 'needs_review') then
+    raise exception 'Travel knowledge candidate has already reached a terminal state.';
+  end if;
+
+  v_candidate_status := case
+    when p_decision in ('accept', 'accept_with_edit') then 'accepted'
+    when p_decision = 'reject' then 'rejected'
+    else 'needs_review'
+  end;
+
+  insert into public.travel_review_decisions (
+    candidate_id,
+    reviewer_id,
+    decision,
+    reason,
+    accepted_value,
+    review_policy_version,
+    metadata
+  )
+  values (
+    v_candidate.id,
+    v_uid,
+    p_decision,
+    trim(p_reason),
+    case
+      when p_decision = 'accept' then v_candidate.proposed_value
+      when p_decision = 'accept_with_edit' then p_accepted_value
+      else null
+    end,
+    trim(p_review_policy_version),
+    jsonb_build_object(
+      'candidateStatusBefore', v_candidate.status,
+      'candidateStatusAfter', v_candidate_status
+    )
+  )
+  returning id, reviewed_at into v_decision_id, v_reviewed_at;
+
+  update public.travel_change_candidates candidate
+     set status = v_candidate_status,
+         updated_at = now()
+   where candidate.id = v_candidate.id;
+
+  return query
+  select v_candidate.id, v_candidate_status, v_decision_id, p_decision, v_reviewed_at;
+end;
+$$;
+
+revoke all on function public.admin_list_travel_knowledge_candidates(text, text[], integer, integer) from public, anon;
+revoke all on function public.admin_get_travel_knowledge_review_summary(text) from public, anon;
+revoke all on function public.admin_review_travel_knowledge_candidate(uuid, text, text, jsonb, text) from public, anon;
+
+grant execute on function public.admin_list_travel_knowledge_candidates(text, text[], integer, integer) to authenticated;
+grant execute on function public.admin_get_travel_knowledge_review_summary(text) to authenticated;
+grant execute on function public.admin_review_travel_knowledge_candidate(uuid, text, text, jsonb, text) to authenticated;
 
 drop function if exists public.get_travel_entity_suggestions(text, text, text[], integer);
 create or replace function public.get_travel_entity_suggestions(

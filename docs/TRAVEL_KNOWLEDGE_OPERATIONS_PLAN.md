@@ -1,6 +1,6 @@
 # Travel knowledge operations plan
 
-Status: operational foundation plus GeoNames/Wikidata identity ingestion deployed for Thailand; review UI and artifact publishing remain staged work
+Status: operational foundation, GeoNames/Wikidata identity ingestion, and admin review queue deployed for Thailand; artifact staging and publishing remain gated work
 
 Owner: TravelFlow product/data engineering with explicit editorial review
 
@@ -185,7 +185,7 @@ Immutable output records:
 
 RLS must keep snapshots, candidates, and review data admin-only. Public clients can read only the published projection through the versioned pack RPC.
 
-Production verification confirms that all five tables have RLS enabled, anonymous table access is revoked, and none of the operational tables are referenced by the public destination-pack RPC. Raw snapshots and review decisions are append-only for authenticated admins; the service role retains controlled retention access.
+Production verification confirms that all five tables have RLS enabled, anonymous table access is revoked, and none of the operational tables are referenced by the public destination-pack RPC. Raw snapshots remain append-only for authenticated admins. Review decisions are readable by admins but can be inserted only through the atomic review RPC, which records the immutable decision and updates candidate status in one transaction. The service role retains controlled retention access.
 
 The private `travel-knowledge-snapshots` Storage bucket is capped at 50 MiB per object. It has no permissive browser policy and adds restrictive policies that continue denying this bucket if a broad Storage allow policy is introduced later. Fetchers upload with `upsert: false`; object deletion or replacement is never part of ingestion. Use the Storage API for object lifecycle work, never direct SQL against `storage.objects`.
 
@@ -286,6 +286,8 @@ The monthly identity workflow always runs a dry reconciliation first. It persist
 - [x] Use the GeoNames country dump rather than per-entity web-service requests and keep Wikidata requests to one bounded SPARQL query plus one label batch.
 - [x] Save source payloads with retrieval metadata and SHA-256 checksums before producing candidates.
 - [x] Keep all resulting external-ID changes in `needs_review`; do not mutate the published pack.
+- [x] Add an admin review queue with source links, structured before/after values, validation findings, review reasons, and atomic accept, edit, reject, or request-changes decisions.
+- [x] Keep review and publishing separate; a terminal candidate decision cannot change the published destination pack.
 - Add Wikimedia popularity and OSM POI candidates next.
 - Add government/TMD adapters only for individually licensed datasets.
 - Keep TAT, UNESCO, audience context, food, neighborhood judgment, and route-template copy in editorial review.
