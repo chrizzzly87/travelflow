@@ -55,6 +55,8 @@
     "travel-knowledge:generate-source-registry": "tsx scripts/generate-travel-knowledge-source-registry.ts",
     "travel-knowledge:check-source-registry": "tsx scripts/generate-travel-knowledge-source-registry.ts --check",
     "travel-knowledge:audit": "tsx scripts/audit-travel-knowledge-freshness.ts",
+    "travel-knowledge:ingest": "tsx scripts/ingest-travel-knowledge-sources.ts",
+    "travel-knowledge:verify-snapshots": "tsx scripts/verify-travel-knowledge-snapshots.ts",
     "travel-knowledge:check": "pnpm travel-knowledge:validate && pnpm travel-knowledge:check-seed && pnpm travel-knowledge:check-source-registry && pnpm travel-knowledge:audit",
     "travel-knowledge:benchmark": "tsx scripts/benchmark-trip-shape-fast-path.ts",
     "ai:eval": "tsx scripts/run-ai-eval.ts",

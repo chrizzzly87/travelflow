@@ -9300,6 +9300,45 @@ create table if not exists public.travel_source_snapshots (
   unique (source_run_id, checksum, storage_object_key)
 );
 
+-- Raw source payloads are immutable, private, and written only through the
+-- Storage API by the server-side service role. The restrictive policies keep
+-- this bucket private even if a broader permissive Storage policy is added later.
+do $$
+begin
+  if exists (
+    select 1
+    from storage.buckets
+    where (id = 'travel-knowledge-snapshots' or name = 'travel-knowledge-snapshots')
+      and not (
+        id = 'travel-knowledge-snapshots'
+        and name = 'travel-knowledge-snapshots'
+        and public is false
+        and file_size_limit = 52428800
+      )
+  ) then
+    raise exception 'Conflicting travel-knowledge-snapshots bucket configuration';
+  end if;
+end
+$$;
+
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('travel-knowledge-snapshots', 'travel-knowledge-snapshots', false, 52428800)
+on conflict (id) do nothing;
+
+drop policy if exists "Travel knowledge bucket deny non-service access" on storage.buckets;
+create policy "Travel knowledge bucket deny non-service access"
+on storage.buckets
+as restrictive for all to public
+using (id <> 'travel-knowledge-snapshots')
+with check (id <> 'travel-knowledge-snapshots');
+
+drop policy if exists "Travel knowledge objects deny non-service access" on storage.objects;
+create policy "Travel knowledge objects deny non-service access"
+on storage.objects
+as restrictive for all to public
+using (bucket_id <> 'travel-knowledge-snapshots')
+with check (bucket_id <> 'travel-knowledge-snapshots');
+
 create table if not exists public.travel_change_candidates (
   id uuid primary key default gen_random_uuid(),
   source_snapshot_id uuid not null references public.travel_source_snapshots(id) on delete restrict,

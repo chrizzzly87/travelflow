@@ -38,4 +38,12 @@ describe('travel knowledge operations schema', () => {
     expect(sql).toContain('"Travel operations admin insert"');
     expect(sql).toContain('grant select, insert on table\n  public.travel_source_snapshots,\n  public.travel_review_decisions\nto authenticated;');
   });
+
+  it('creates a conflict-checked private snapshot bucket with defense-in-depth denial', () => {
+    expect(sql).toContain("values ('travel-knowledge-snapshots', 'travel-knowledge-snapshots', false, 52428800)");
+    expect(sql).toContain("raise exception 'Conflicting travel-knowledge-snapshots bucket configuration'");
+    expect(sql).toContain('create policy "Travel knowledge bucket deny non-service access"');
+    expect(sql).toContain('create policy "Travel knowledge objects deny non-service access"');
+    expect(sql).not.toContain('bucket_id = \'travel-knowledge-snapshots\'');
+  });
 });

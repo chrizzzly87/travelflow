@@ -1,6 +1,6 @@
 # Travel knowledge operations plan
 
-Status: operational foundation deployed for Thailand; scheduled fetchers, review UI, and artifact publishing remain staged work
+Status: operational foundation plus GeoNames/Wikidata identity ingestion deployed for Thailand; review UI and artifact publishing remain staged work
 
 Owner: TravelFlow product/data engineering with explicit editorial review
 
@@ -187,6 +187,8 @@ RLS must keep snapshots, candidates, and review data admin-only. Public clients 
 
 Production verification confirms that all five tables have RLS enabled, anonymous table access is revoked, and none of the operational tables are referenced by the public destination-pack RPC. Raw snapshots and review decisions are append-only for authenticated admins; the service role retains controlled retention access.
 
+The private `travel-knowledge-snapshots` Storage bucket is capped at 50 MiB per object. It has no permissive browser policy and adds restrictive policies that continue denying this bucket if a broad Storage allow policy is introduced later. Fetchers upload with `upsert: false`; object deletion or replacement is never part of ingestion. Use the Storage API for object lifecycle work, never direct SQL against `storage.objects`.
+
 ## 8. Fetcher contract
 
 Every source adapter implements the same contract:
@@ -260,7 +262,7 @@ Track these per country and dataset version:
 - [x] Register Wikidata, GeoNames, IANA, Wikimedia Analytics, OSM/Geofabrik, data.go.th, TMD Open Data, Wikimedia Commons, and the current manual/editorial sources with explicit ingestion modes and storage rules.
 - [x] Add a deterministic freshness/license audit to the repository quality gate before adding any crawler.
 - [x] Add a read-only Monday audit workflow; GitHub will begin running it from the default branch after this feature merges.
-- [ ] Persist scheduled run summaries after the first source-run worker is available.
+- [x] Persist source-run summaries, immutable snapshot metadata, and review-only candidates for the first bounded ingestion worker.
 
 The current commands are:
 
@@ -268,13 +270,22 @@ The current commands are:
 pnpm travel-knowledge:audit
 pnpm travel-knowledge:generate-source-registry
 pnpm travel-knowledge:check-source-registry
+pnpm travel-knowledge:ingest -- --source all --country TH
+pnpm travel-knowledge:verify-snapshots
 ```
+
+Ingestion is dry-run by default. A server-side write requires both `--persist` and `TRAVEL_KNOWLEDGE_WRITE_MODE=review_candidates_only`; it also requires the server-only Supabase key. Never set that key in a browser-visible environment variable. The first live run stored four source snapshots and produced 32 `needs_review` identity candidates without changing any published entity. A repeated run created zero duplicate candidates; checksum and conditional-request reuse skipped unchanged snapshots.
 
 `pnpm travel-knowledge:check` runs the dataset validator, Thailand artifact reproducibility checks, registry reproducibility check, and freshness/license audit together. It fails on expired evidence, overdue source content, overdue license reviews, source/registry drift, or an unregistered published source. Warnings surface upcoming reviews and missing directly dated evidence without silently blocking an unrelated application build.
 
+The monthly identity workflow always runs a dry reconciliation first. It persists only when the repository secrets `TRAVELFLOW_SUPABASE_URL` and `TRAVELFLOW_SUPABASE_SERVICE_ROLE_KEY` exist; until then, scheduled persistence exits successfully with a warning. A manual run can request persistence explicitly, and fails closed when either secret is missing.
+
 ### Stage 3 — safe automated ingestion
 
-- Build Wikidata/GeoNames identity reconciliation first.
+- [x] Build Wikidata/GeoNames identity reconciliation first, limited to the Thailand country plus 15 route cities.
+- [x] Use the GeoNames country dump rather than per-entity web-service requests and keep Wikidata requests to one bounded SPARQL query plus one label batch.
+- [x] Save source payloads with retrieval metadata and SHA-256 checksums before producing candidates.
+- [x] Keep all resulting external-ID changes in `needs_review`; do not mutate the published pack.
 - Add Wikimedia popularity and OSM POI candidates next.
 - Add government/TMD adapters only for individually licensed datasets.
 - Keep TAT, UNESCO, audience context, food, neighborhood judgment, and route-template copy in editorial review.
