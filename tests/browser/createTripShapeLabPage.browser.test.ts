@@ -105,6 +105,28 @@ describe('pages/CreateTripShapeLabPage', () => {
     expect(screen.getByRole('button', { name: /wizard\.actions\.continue/i })).not.toBeDisabled();
   });
 
+  it('resolves a neighborhood alias to its canonical city and neighborhood selection', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /shapeLab\.shape\.options\.city_break\.title/i }));
+    const search = screen.getByRole('searchbox', { name: 'shapeLab.place.searchLabel' });
+    await user.type(search, 'Chinatown');
+    await user.click(screen.getByRole('button', { name: /Yaowarat/i }));
+
+    expect(screen.getByText('Bangkok', { selector: 'strong' }).closest('button')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /Yaowarat/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /wizard\.actions\.continue/i })).not.toBeDisabled();
+    expect(trackEvent).toHaveBeenCalledWith(
+      'create_trip_shape__neighborhood--select_search',
+      expect.objectContaining({
+        neighborhood: 'th-bangkok-yaowarat',
+        city: 'th-bangkok',
+        journey_type: 'city_break',
+      }),
+    );
+  });
+
   it('reveals a premade route and opens a knowledge-enriched editable plan without AI generation', async () => {
     const user = userEvent.setup();
     const onTripGenerated = vi.fn();

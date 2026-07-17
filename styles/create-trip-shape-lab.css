@@ -222,6 +222,51 @@
 
 .shape-choice > .shape-next-icon { justify-self: end; }
 
+.shape-place-search {
+  display: grid;
+  gap: 0.55rem;
+  margin-block-end: 2rem;
+}
+
+.shape-place-search > label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.shape-place-search > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  min-height: 3.75rem;
+  padding-inline: 1rem;
+  border: 2px solid var(--shape-ink);
+  background: oklch(99% 0.005 84);
+}
+
+.shape-place-search > div:focus-within {
+  outline: 3px solid var(--shape-lagoon);
+  outline-offset: 3px;
+}
+
+.shape-place-search input {
+  min-width: 0;
+  min-height: 3.4rem;
+  border: 0;
+  outline: 0;
+  color: var(--shape-ink);
+  background: transparent;
+  font: inherit;
+  font-size: 1rem;
+  text-align: start;
+}
+
+.shape-place-search input::placeholder { color: var(--shape-muted); opacity: 0.82; }
+.shape-place-search > small { max-width: 70ch; color: var(--shape-muted); line-height: 1.5; }
+.shape-place-search__empty { padding-block: 1.25rem; border-block-end: 1px solid var(--shape-rule); color: var(--shape-muted); }
+
 .shape-city-list {
   display: grid;
   border-block-start: 1px solid var(--shape-rule);
@@ -265,6 +310,7 @@
 .shape-city-option__tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .shape-city-option__tags small { padding: 0.25rem 0.5rem; border: 1px solid var(--shape-rule); text-transform: capitalize; }
 .shape-city-option__check { color: oklch(38% 0.12 167); }
+.shape-city-option--neighborhood .shape-city-option__pin { border-radius: 42% 58% 62% 38%; background: var(--shape-lagoon); transform: rotate(-4deg); }
 
 .shape-neighborhoods {
   display: grid;

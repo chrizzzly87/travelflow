@@ -18,6 +18,8 @@ That creates a defensible gap between inspiration/tracking products such as Pola
 
 The Thailand foundation already proves the core architecture: structured `JourneySpec`, first-class cities and neighborhoods, cached country knowledge, premade route concepts, deterministic matching, immediate editable skeletons, and a reusable map contract. The next product work should deepen traveler-aware planning, progressive enrichment, and the route-reveal experience before expanding globally.
 
+The follow-up trip visualization direction is defined in [JOURNEY_SPEC_SIDEBAR_CONCEPTS.md](./JOURNEY_SPEC_SIDEBAR_CONCEPTS.md). It recommends a synchronized Journey Lens and Route Storyboard, prototyped in isolation before any large TripView layout change.
+
 ## 2. What the current codebase did well and where it was constrained
 
 Before this branch, both create-trip surfaces ultimately optimized for collecting prompt fields and starting one AI generation request. They supported broad preferences, but the planning model still had four structural limitations:
@@ -256,6 +258,7 @@ The admin review, deterministic artifact staging, atomic publish, and rollback f
 2. Implement progressive traveler setup for family, group, accessibility, dietary, and audience context.
 3. Add group preference negotiation and explainable route scoring.
 4. Complete the flatter application shell and signature route-reveal visual system.
-5. Add two or three deeper Thailand content verticals: neighborhoods, family supply, food, and seasonal alternatives.
-6. Prove the country-pack factory with one structurally different second country.
-7. Prototype camper and cruise as separate adapters/products after the core graph and publishing workflow are stable.
+5. Prototype and validate the Journey Lens sidebar and Journey Ribbon visualization without changing TripView persistence or routes.
+6. Add two or three deeper Thailand content verticals: neighborhoods, family supply, food, and seasonal alternatives.
+7. Prove the country-pack factory with one structurally different second country.
+8. Prototype camper and cruise as separate adapters/products after the core graph and publishing workflow are stable.

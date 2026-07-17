@@ -10,6 +10,7 @@ import {
   Database,
   ForkKnife,
   MapPin,
+  MagnifyingGlass,
   Minus,
   MoonStars,
   Mountains,
@@ -36,6 +37,7 @@ import {
   buildJourneySpecFromShapeWizard,
   getJourneyShapeAnchorCities,
   getJourneyShapeNeighborhoods,
+  searchJourneyShapePlaces,
   type JourneyShapeWizardDraft,
   type JourneyShapeWizardType,
 } from '../shared/journeyShapeWizard';
@@ -44,7 +46,7 @@ import {
   type TravelTemplateMatch,
 } from '../shared/travelTemplateMatcher';
 import type { JourneyPace } from '../shared/journeySpec';
-import type { TravelDestinationPack } from '../shared/travelKnowledge';
+import type { TravelDestinationPack, TravelEntityCatalogItem } from '../shared/travelKnowledge';
 import type { ITrip } from '../types';
 import '../styles/create-trip-shape-lab.css';
 
@@ -169,6 +171,7 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
   const [loadWarning, setLoadWarning] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [draft, setDraft] = useState<JourneyShapeWizardDraft>(buildInitialDraft);
+  const [placeQuery, setPlaceQuery] = useState('');
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>();
   const [routeComparison, setRouteComparison] = useState<PreparedRouteComparison>();
   const progressRef = useRef<HTMLElement>(null);
@@ -211,6 +214,13 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
     () => getJourneyShapeNeighborhoods(pack, draft.selectedCitySlug),
     [draft.selectedCitySlug, pack],
   );
+  const placeSearch = useMemo(() => {
+    const results = searchJourneyShapePlaces(pack, draft.journeyType, placeQuery, 10);
+    return {
+      cities: results.filter((result) => result.matchKind === 'city'),
+      neighborhoods: results.filter((result) => result.matchKind === 'neighborhood'),
+    };
+  }, [draft.journeyType, pack, placeQuery]);
 
   const journeyResult = useMemo(() => {
     try {
@@ -263,8 +273,42 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
       selectedCitySlug: undefined,
       selectedNeighborhoodSlugs: [],
     });
+    setPlaceQuery('');
     trackEvent('create_trip_shape__shape--select', { journey_type: shape.id });
     moveToStep(1);
+  };
+
+  const chooseAnchorCity = (
+    city: TravelEntityCatalogItem,
+    source: 'curated' | 'search',
+  ) => {
+    const selected = draft.selectedCitySlug === city.canonicalSlug;
+    updateDraft({
+      selectedCitySlug: selected && !cityRequired ? undefined : city.canonicalSlug,
+      selectedNeighborhoodSlugs: [],
+    });
+    setPlaceQuery('');
+    trackEvent('create_trip_shape__city--select', {
+      city: city.canonicalSlug,
+      journey_type: draft.journeyType,
+      source,
+    });
+  };
+
+  const chooseSearchedNeighborhood = (
+    neighborhood: TravelEntityCatalogItem,
+    city: TravelEntityCatalogItem,
+  ) => {
+    updateDraft({
+      selectedCitySlug: city.canonicalSlug,
+      selectedNeighborhoodSlugs: [neighborhood.canonicalSlug],
+    });
+    setPlaceQuery('');
+    trackEvent('create_trip_shape__neighborhood--select_search', {
+      neighborhood: neighborhood.canonicalSlug,
+      city: city.canonicalSlug,
+      journey_type: draft.journeyType,
+    });
   };
 
   const goBack = () => {
@@ -408,8 +452,25 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
         <p>{t(cityRequired ? 'shapeLab.place.requiredDescription' : 'shapeLab.place.optionalDescription')}</p>
       </div>
 
-      <div className="shape-city-list">
-        {anchorCities.map((city) => {
+      <div className="shape-place-search">
+        <label htmlFor="shape-place-search">{t('shapeLab.place.searchLabel')}</label>
+        <div>
+          <MagnifyingGlass size={20} weight="bold" aria-hidden="true" />
+          <input
+            id="shape-place-search"
+            type="search"
+            value={placeQuery}
+            placeholder={t('shapeLab.place.searchPlaceholder')}
+            aria-describedby="shape-place-search-hint"
+            aria-controls="shape-place-results"
+            onChange={(event) => setPlaceQuery(event.currentTarget.value)}
+          />
+        </div>
+        <small id="shape-place-search-hint">{t('shapeLab.place.searchHint')}</small>
+      </div>
+
+      <div id="shape-place-results" className="shape-city-list">
+        {(placeQuery.trim() ? placeSearch.cities.map((result) => result.city) : anchorCities).map((city) => {
           const selected = draft.selectedCitySlug === city.canonicalSlug;
           return (
             <button
@@ -418,13 +479,7 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
               className="shape-city-option"
               data-selected={selected ? 'true' : 'false'}
               aria-pressed={selected}
-              onClick={() => {
-                updateDraft({
-                  selectedCitySlug: selected && !cityRequired ? undefined : city.canonicalSlug,
-                  selectedNeighborhoodSlugs: [],
-                });
-                trackEvent('create_trip_shape__city--select', { city: city.canonicalSlug, journey_type: draft.journeyType });
-              }}
+              onClick={() => chooseAnchorCity(city, placeQuery.trim() ? 'search' : 'curated')}
               {...getAnalyticsDebugAttributes('create_trip_shape__city--select', { city: city.canonicalSlug })}
             >
               <span className="shape-city-option__pin"><MapPin size={20} weight="fill" /></span>
@@ -440,7 +495,39 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
             </button>
           );
         })}
+        {placeQuery.trim() ? placeSearch.neighborhoods.map((result) => {
+          const selected = draft.selectedNeighborhoodSlugs.includes(result.entity.canonicalSlug);
+          return (
+            <button
+              key={result.entity.entityId}
+              type="button"
+              className="shape-city-option shape-city-option--neighborhood"
+              data-selected={selected ? 'true' : 'false'}
+              aria-pressed={selected}
+              onClick={() => chooseSearchedNeighborhood(result.entity, result.city)}
+              {...getAnalyticsDebugAttributes('create_trip_shape__neighborhood--select_search', {
+                neighborhood: result.entity.canonicalSlug,
+                city: result.city.canonicalSlug,
+              })}
+            >
+              <span className="shape-city-option__pin"><Buildings size={20} weight="duotone" /></span>
+              <span className="shape-city-option__copy">
+                <strong>{result.entity.name}</strong>
+                <small>{t('shapeLab.place.neighborhoodResult', { city: result.city.name })}</small>
+              </span>
+              <span className="shape-city-option__tags" aria-hidden="true">
+                <small>{t('shapeLab.place.popularity', { score: result.entity.popularityScore })}</small>
+                <small>{t('shapeLab.place.hiddenGem', { score: result.entity.hiddenGemScore })}</small>
+              </span>
+              {selected ? <Check className="shape-city-option__check" size={20} weight="bold" /> : null}
+            </button>
+          );
+        }) : null}
       </div>
+
+      {placeQuery.trim() && placeSearch.cities.length === 0 && placeSearch.neighborhoods.length === 0 ? (
+        <p className="shape-place-search__empty" role="status">{t('shapeLab.place.noSearchResults')}</p>
+      ) : null}
 
       {draft.selectedCitySlug && neighborhoods.length > 0 ? (
         <div className="shape-neighborhoods">
