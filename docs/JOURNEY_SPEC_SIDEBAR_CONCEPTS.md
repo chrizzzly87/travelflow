@@ -1,8 +1,19 @@
 # JourneySpec Trip Visualization and Sidebar Concepts
 
-Status: concept direction for follow-up implementation
+Status: concepts implemented in an isolated comparison lab; TripView integration remains default-off
 
 Reviewed: 2026-07-17
+
+## Prototype checkpoint
+
+The first two low-risk steps are now implemented without changing the live trip workspace:
+
+- a pure, versioned overview adapter derives chapters, transfers, journey load, destination context, audience evidence, warnings, and provenance from structured or legacy trips;
+- one Thailand circuit can be explored as Journey Lens, Route Storyboard, or Adaptive Inspector while city and transfer selection stays synchronized;
+- the lab is lazy-loaded and fetch-free, so it does not add work to the normal planner path;
+- the adapter is covered for a country circuit, a hub with a day trip, a legacy trip, and an over-tolerance transfer.
+
+The next checkpoint is user selection of a default and compact concept. Only after that choice should the chosen hybrid connect to TripView selection behind a default-off rollout.
 
 ## Decision summary
 
@@ -187,8 +198,8 @@ The adapter should:
 
 ## Low-risk implementation sequence
 
-1. Build the pure overview-model adapter and fixtures for city break, hub/day trips, circuit, legacy trip, and incomplete trip.
-2. Add an isolated concept lab with the same trip rendered in all three structures; no TripView route or persistence changes.
+1. **Complete:** Build the pure overview-model adapter and fixtures for hub/day trips, circuit, legacy trip, and transfer warnings. Add city-break and incomplete-trip fixtures when their UI states enter the prototype.
+2. **Complete:** Add an isolated concept lab with the same trip rendered in all three structures; no TripView route or persistence changes.
 3. Test wide desktop, laptop, tablet, mobile, and RTL layouts; gather preference and comprehension feedback.
 4. Select one default and one compact state. Validate the information hierarchy before polishing motion.
 5. Integrate behind a default-off TripView rollout flag using the existing selection and details-panel contracts.

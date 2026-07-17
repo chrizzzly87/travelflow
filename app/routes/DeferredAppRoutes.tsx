@@ -57,6 +57,7 @@ const PassportPlaygroundPage = lazyWithRecovery('PassportPlaygroundPage', () => 
 const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
 const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
 const CreateTripShapeLabPage = lazyWithRecovery('CreateTripShapeLabPage', () => import('../../pages/CreateTripShapeLabPage').then((module) => ({ default: module.CreateTripShapeLabPage })));
+const JourneyOverviewLabPage = lazyWithRecovery('JourneyOverviewLabPage', () => import('../../pages/JourneyOverviewLabPage').then((module) => ({ default: module.JourneyOverviewLabPage })));
 
 const RouteLoadingFallback: React.FC = () => (
     <MarketingRouteLoadingShell />
@@ -286,6 +287,10 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                         onOpenManager={onOpenManager}
                     />)
                 }
+            />
+            <Route
+                path="/create-trip/labs/journey-view"
+                element={renderWithHandoff(<JourneyOverviewLabPage />)}
             />
             <Route path="/create-trip/labs/classic-legacy" element={<Navigate to="/create-trip" replace />} />
             <Route path="/create-trip/labs/split-workspace" element={<Navigate to="/create-trip" replace />} />

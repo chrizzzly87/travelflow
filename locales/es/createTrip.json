@@ -452,5 +452,25 @@
       "compare": "Comparar rutas",
       "openPlan": "Abrir plan editable"
     }
+  },
+  "journeyLab": {
+    "badge": "Laboratorio de visualización del viaje",
+    "title": "Ve todo el viaje, no solo los puntos.",
+    "intro": "Tres estructuras convierten el mismo viaje en una historia clara: bases, carga de traslados, barrios, comida, actividades, afinidad y fuentes.",
+    "prototypeNote": "Este es un laboratorio de conceptos aislado. El planificador actual no cambia.",
+    "conceptsLabel": "Compara tres formas de entender un viaje",
+    "concepts": {
+      "lens": { "title": "Journey Lens", "description": "Una vista general permanente junto al espacio de planificación.", "bestFor": "Opción recomendada" },
+      "storyboard": { "title": "Route Storyboard", "description": "Una vista editorial por capítulos con un recorrido marcado.", "bestFor": "Presentar y compartir" },
+      "inspector": { "title": "Adaptive Inspector", "description": "Un índice compacto con detalles solo cuando hacen falta.", "bestFor": "Edición enfocada" }
+    },
+    "labels": {
+      "tripExample": "Ejemplo de Tailandia", "tripCharacter": "Carácter del viaje", "routeOverview": "Vista interactiva del viaje", "focusHint": "Elige una ciudad o traslado para verlo", "chapters": "Capítulos de la ruta", "chapter": "Capítulo", "transfer": "Traslado", "routeStory": "La historia de la ruta", "compactIndex": "Índice de capítulos", "selected": "Contexto seleccionado", "compare": "Primero, la estructura", "evidence": "Creado con datos conocidos", "whyFits": "Por qué encaja esta ruta", "neighborhoods": "Barrios", "dishes": "Empieza por", "activities": "Buenos puntos de partida"
+    },
+    "summary": { "days": "{count} días", "bases": "Bases", "transfers": "Traslados", "transferTime": "Tiempo de viaje", "activities": "Planificadas" },
+    "chapter": { "nights": "{count} noches", "days": "Días {range}" },
+    "transfer": { "ariaLabel": "Traslado de {from} a {to}, {duration}", "duration": "Duración", "distance": "Distancia", "load": "Carga del viaje", "toleranceWarning": "Este tramo supera el límite de traslado del plan.", "light": "Tramo ligero", "balanced": "Tramo equilibrado", "heavy": "Tramo exigente", "unknown": "Faltan datos de ruta" },
+    "empty": { "neighborhoods": "Elige una zona base", "dishes": "Añade comida local", "activities": "Deja tiempo libre" },
+    "evidence": { "title": "Respuestas rápidas con una base visible.", "description": "La vista se crea con la misma JourneySpec versionada, lugares canónicos, guías de destino y métricas de ruta que pueden alimentar el planificador.", "dataset": "Conjunto de datos", "template": "Plantilla de ruta", "routeFit": "Afinidad de ruta" }
   }
 }

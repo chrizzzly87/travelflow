@@ -29,6 +29,9 @@ vi.mock('../../../pages/CreateTripV3Page', () => ({
 vi.mock('../../../pages/CreateTripShapeLabPage', () => ({
   CreateTripShapeLabPage: () => React.createElement('div', { 'data-testid': 'shape-creator' }),
 }));
+vi.mock('../../../pages/JourneyOverviewLabPage', () => ({
+  JourneyOverviewLabPage: () => React.createElement('div', { 'data-testid': 'journey-overview-lab' }),
+}));
 
 import { AppRoutes } from '../../../app/routes/AppRoutes';
 
@@ -111,6 +114,7 @@ describe('app/routes/AppRoutes create-trip rollout', () => {
     import('../../../pages/CreateTripClassicLabPage'),
     import('../../../pages/CreateTripV3Page'),
     import('../../../pages/CreateTripShapeLabPage'),
+    import('../../../pages/JourneyOverviewLabPage'),
   ]);
 
   const renderRoutes = (path: string) => render(
@@ -166,5 +170,12 @@ describe('app/routes/AppRoutes create-trip rollout', () => {
       rollout: 'primary',
     });
     promoted.unmount();
+  });
+
+  it('keeps the journey overview concepts isolated on their lab route', async () => {
+    await warmCreatorModules();
+    const view = renderRoutes('/create-trip/labs/journey-view');
+    expect(await view.findByTestId('journey-overview-lab')).toBeTruthy();
+    view.unmount();
   });
 });

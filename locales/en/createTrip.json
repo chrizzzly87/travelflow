@@ -452,5 +452,81 @@
       "compare": "Compare routes",
       "openPlan": "Open editable plan"
     }
+  },
+  "journeyLab": {
+    "badge": "Journey visualization lab",
+    "title": "See the whole journey, not just the pins.",
+    "intro": "Three structures turn the same trip into a clear route story—bases, transfer load, neighborhoods, food, activities, traveler fit, and evidence included.",
+    "prototypeNote": "This is an isolated concept lab. The current trip planner is unchanged.",
+    "conceptsLabel": "Compare three ways to understand a trip",
+    "concepts": {
+      "lens": {
+        "title": "Journey Lens",
+        "description": "A persistent overview rail beside the planning canvas.",
+        "bestFor": "Recommended default"
+      },
+      "storyboard": {
+        "title": "Route Storyboard",
+        "description": "An editorial chapter view with a strong journey spine.",
+        "bestFor": "Reveal and sharing"
+      },
+      "inspector": {
+        "title": "Adaptive Inspector",
+        "description": "A compact chapter index with details only when needed.",
+        "bestFor": "Focused editing"
+      }
+    },
+    "labels": {
+      "tripExample": "Thailand example",
+      "tripCharacter": "Trip character",
+      "routeOverview": "Interactive journey overview",
+      "focusHint": "Choose a city or transfer to inspect it",
+      "chapters": "Route chapters",
+      "chapter": "Chapter",
+      "transfer": "Transfer",
+      "routeStory": "The route story",
+      "compactIndex": "Trip chapter index",
+      "selected": "Selected context",
+      "compare": "Structure first",
+      "evidence": "Built from known data",
+      "whyFits": "Why this route fits",
+      "neighborhoods": "Neighborhoods",
+      "dishes": "Start with",
+      "activities": "Good anchors"
+    },
+    "summary": {
+      "days": "{count} days",
+      "bases": "Bases",
+      "transfers": "Transfers",
+      "transferTime": "Travel time",
+      "activities": "Planned"
+    },
+    "chapter": {
+      "nights": "{count} nights",
+      "days": "Days {range}"
+    },
+    "transfer": {
+      "ariaLabel": "Transfer from {from} to {to}, {duration}",
+      "duration": "Duration",
+      "distance": "Distance",
+      "load": "Journey load",
+      "toleranceWarning": "This leg exceeds the transfer limit in the trip brief.",
+      "light": "Light leg",
+      "balanced": "Balanced leg",
+      "heavy": "Heavy leg",
+      "unknown": "Needs route data"
+    },
+    "empty": {
+      "neighborhoods": "Choose a base area",
+      "dishes": "Add local food",
+      "activities": "Keep time open"
+    },
+    "evidence": {
+      "title": "Fast answers with a visible foundation.",
+      "description": "The view is compiled from the same versioned JourneySpec, canonical places, destination briefs, and route metrics that can power the planner.",
+      "dataset": "Dataset",
+      "template": "Route template",
+      "routeFit": "Route fit"
+    }
   }
 }
