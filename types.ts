@@ -202,7 +202,21 @@ export interface JourneyPlanningTrace {
     matchedTemplateReasons?: string[];
     matchedTemplateTradeoffs?: string[];
     knowledgeActivityCount?: number;
+    personalization?: JourneyPersonalizationTrace;
     compiledAt: string;
+}
+
+export interface JourneyPersonalizationTrace {
+    version: number;
+    requestId: string;
+    provider: string;
+    model: string;
+    durationMs: number;
+    operationCount: number;
+    unresolvedCount: number;
+    applied: boolean;
+    datasetVersion: string;
+    createdAt: string;
 }
 
 export type TimelineKnowledgeOrigin = 'traveler_selection' | 'route_template' | 'knowledge_ranker';

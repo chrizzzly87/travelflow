@@ -685,6 +685,7 @@ const generateWithGemini = async (
             contents: [{ role: "user", parts: [{ text: promptBody }] }],
             generationConfig: {
               responseMimeType: "application/json",
+              ...(jsonSchema ? { responseJsonSchema: jsonSchema.schema } : {}),
               maxOutputTokens: maxOutputTokens,
               temperature: strictParseRetry || jsonSchema ? 0 : 0.2,
             },

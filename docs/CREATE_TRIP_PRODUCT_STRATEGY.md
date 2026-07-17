@@ -16,7 +16,7 @@ The proposed position is:
 
 That creates a defensible gap between inspiration/tracking products such as Polarsteps and Skratch, and logistics-heavy planners such as Wanderlog and Stippl. TravelFlow can still grow into the full planning lifecycle, but its memorable first win should be a source-backed route reveal rather than an empty day planner.
 
-The Thailand foundation now proves the core architecture: structured `JourneySpec`, first-class cities and neighborhoods, bounded two-stage retrieval from an active country pack, premade route concepts, deterministic matching, immediate editable skeletons, typed activity metadata, a searchable admin catalogue, and a reusable map contract. The next product work should add constrained AI personalization and traveler-aware planning before expanding globally.
+The Thailand foundation now proves the core architecture: structured `JourneySpec`, first-class cities and neighborhoods, bounded two-stage retrieval from an active country pack, premade route concepts, deterministic matching, immediate editable skeletons, constrained AI patching, typed activity metadata, a searchable admin catalogue, and a reusable map contract. The next product work should deepen traveler-aware planning and activity coverage before expanding globally.
 
 The follow-up trip visualization direction is defined in [JOURNEY_SPEC_SIDEBAR_CONCEPTS.md](./JOURNEY_SPEC_SIDEBAR_CONCEPTS.md). Its synchronized Journey Lens and Route Storyboard remain paused until the fast-path experience is approved; no further large TripView layout change should ship as part of this foundation.
 
@@ -170,10 +170,11 @@ This is faster than putting every fact into a vector database, produces stable a
 - Selecting one route retrieves a deeper, template-pinned context with up to four neighborhoods and six POIs per city.
 - The route reveal visibly reports source, dataset/retriever version, retrieval time, payload size, selected/source counts, and zero AI calls.
 - Opening the base compiles an editable trip locally and preserves the retrieval receipt plus canonical entity IDs.
+- The optional free-text adaptation sends one bounded request after route selection, accepts only allowlisted preference and known-place patches, validates the result twice, and supports review, apply, and undo before opening the trip.
 - Researched Bangkok activities expose structured duration, hours, pricing, booking, dress, audience, practical, freshness, and source fields; absent data stays absent.
 - The admin travel-knowledge workspace opens on a searchable published catalogue and keeps ingestion candidates in a separate review queue.
 
-This is a structured retrieval/RAG system, but it is not yet semantic or fully personalized. Vector retrieval for free-text wishes and the AI patch step are open. The existing classic generator still uses the large-prompt generation path and remains useful as the comparison baseline.
+This is a structured retrieval/RAG system with constrained model-assisted personalization, but it is not yet semantic/vector retrieval or a complete traveler model. The selected route and most planning data are retrieved and compiled without AI; a single fast-model call can optionally interpret free text into a validated patch. The existing classic generator still uses the large-prompt generation path and remains useful as the comparison baseline.
 
 ## 9. Continuous update plan
 
@@ -265,11 +266,11 @@ It can reuse canonical ports/cities, neighborhoods, activities, dishes, pricing 
 
 The admin review, deterministic artifact staging, atomic publish, and rollback foundation is complete.
 
-1. Validate the Thailand deterministic fast path against the classic generator with the visible engine receipt and tester checklist.
-2. Add constrained AI personalization that patches the selected canonical route without regenerating the entire trip.
-3. Implement progressive traveler setup for family, group, accessibility, dietary, and audience context.
+1. Validate the Thailand deterministic fast path and constrained adaptation against the classic generator with the visible receipts and tester checklist.
+2. Implement progressive traveler setup for family, group, accessibility, dietary, and audience context.
+3. Add typed activity variants and deepen Thailand coverage for neighborhoods, family supply, food, and seasonal alternatives.
 4. Add group preference negotiation and explainable route scoring.
-5. Keep the Journey Lens/sidebar work paused until the trip workspace direction is approved from isolated concepts.
-6. Add two or three deeper Thailand content verticals: neighborhoods, family supply, food, and seasonal alternatives.
+5. Add hybrid semantic retrieval for free-text wishes and long-tail editorial notes without weakening structured filters.
+6. Keep the Journey Lens/sidebar work paused until the trip workspace direction is approved from isolated concepts.
 7. Prove the country-pack factory with one structurally different second country.
 8. Prototype camper and cruise as separate adapters/products after the core graph and publishing workflow are stable.
