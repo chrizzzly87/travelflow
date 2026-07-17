@@ -52,7 +52,7 @@ describe('journey skeleton service', () => {
       match,
       planningContext: {
         version: 1,
-        retrieverVersion: 'structured-pack-v1',
+        retrieverVersion: 'structured-pack-v2',
         source: 'bundled',
         loadDurationMs: 8.5,
         rawBytes: 32_000,
@@ -71,7 +71,7 @@ describe('journey skeleton service', () => {
     expect(trip.items.find((item) => item.type === 'activity')?.description).toContain('round-trip transport');
     expect(trip.planningMeta).toMatchObject({
       routeStage: 'skeleton',
-      datasetVersion: '2026.07.17-v6',
+      datasetVersion: '2026.07.17-v7',
       templateKey: match.template.templateKey,
       templateVersion: 1,
       trace: {
@@ -81,7 +81,7 @@ describe('journey skeleton service', () => {
         matchedTemplateScore: match.score,
         planningContext: {
           version: 1,
-          retrieverVersion: 'structured-pack-v1',
+          retrieverVersion: 'structured-pack-v2',
           source: 'bundled',
           rawBytes: 32_000,
           aiCallCount: 0,
@@ -90,14 +90,14 @@ describe('journey skeleton service', () => {
     });
     expect(trip.items.find((item) => item.type === 'city')?.knowledgeMeta).toMatchObject({
       entity: { canonicalSlug: 'th-bangkok', entityType: 'city' },
-      datasetVersion: '2026.07.17-v6',
+      datasetVersion: '2026.07.17-v7',
       origin: 'route_template',
       templateKey: match.template.templateKey,
     });
     const bangkokBrief = trip.planningMeta?.destinationBriefs.find((brief) => brief.city.canonicalSlug === 'th-bangkok');
     expect(bangkokBrief).toMatchObject({
       version: 1,
-      datasetVersion: '2026.07.17-v6',
+      datasetVersion: '2026.07.17-v7',
       signatureDishes: {
         value: expect.arrayContaining(['boat noodles', 'pad kra pao']),
         support: { sourceKey: 'travelflow_editorial' },

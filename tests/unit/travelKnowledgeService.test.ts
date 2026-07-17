@@ -9,7 +9,7 @@ import {
 describe('travel knowledge service', () => {
   it('provides the versioned Thailand bundle immediately', () => {
     const pack = getBundledTravelDestinationPack('th');
-    expect(pack?.dataset?.version).toBe('2026.07.17-v6');
+    expect(pack?.dataset?.version).toBe('2026.07.17-v7');
     expect(pack?.entities).toHaveLength(84);
     expect(pack?.templates).toHaveLength(15);
     expect(pack?.entities.find((entity) => entity.canonicalSlug === 'th-bangkok')?.resolution).toBe('canonical');
@@ -28,7 +28,7 @@ describe('travel knowledge service', () => {
 
     expect(result.source).toBe('bundled');
     expect(result.loadDurationMs).toBeGreaterThanOrEqual(0);
-    expect(result.pack.dataset?.version).toBe('2026.07.17-v6');
+    expect(result.pack.dataset?.version).toBe('2026.07.17-v7');
     expect(result.pack.locale).toBe('de-de');
   });
 

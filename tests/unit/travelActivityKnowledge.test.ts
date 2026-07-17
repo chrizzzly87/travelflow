@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { getBundledTravelDestinationPack } from '../../services/travelKnowledgeService';
 import {
   buildTravelActivityKnowledge,
+  getTravelActivityKnowledgeCoverage,
+  getTravelActivityProfile,
   TRAVEL_ACTIVITY_KNOWLEDGE_VERSION,
+  validateTravelActivityFactValue,
 } from '../../shared/travelActivityKnowledge';
 
 const pack = getBundledTravelDestinationPack('TH', 'en');
@@ -80,5 +83,52 @@ describe('travel activity knowledge', () => {
     expect(knowledge?.recommendedDuration).toBeUndefined();
     expect(knowledge?.openingHours).toBeUndefined();
     expect(knowledge?.admission).toBeUndefined();
+  });
+
+  it('persists a category and planning tier for every Thailand POI', () => {
+    const pois = pack.entities.filter((entity) => entity.entityType === 'poi');
+    const profiles = pois.map((entity) => getTravelActivityProfile(entity));
+
+    expect(pois).toHaveLength(32);
+    expect(profiles.every(Boolean)).toBe(true);
+    expect(getTravelActivityProfile(poi('th-phuket-karon-viewpoint'))).toMatchObject({
+      primaryCategory: 'viewpoint',
+      planningTier: 'supporting',
+      derivedFromTags: false,
+    });
+  });
+
+  it('makes rich and starter coverage visually distinguishable without inventing facts', () => {
+    const richSlugs = [
+      'th-bangkok-grand-palace',
+      'th-bangkok-wat-pho',
+      'th-bangkok-wat-arun',
+      'th-bangkok-chatuchak',
+    ];
+    richSlugs.forEach((slug) => {
+      expect(getTravelActivityKnowledgeCoverage(poi(slug))?.status).toBe('rich');
+    });
+
+    expect(getTravelActivityKnowledgeCoverage(poi('th-koh-samui-ang-thong'))).toMatchObject({
+      category: 'national_park',
+      planningTier: 'anchor',
+      status: 'starter',
+      missingRequiredFactKeys: expect.arrayContaining([
+        'visit.duration_minutes',
+        'visit.weather_dependency',
+        'visit.physical_intensity',
+      ]),
+    });
+  });
+
+  it('rejects malformed typed activity facts before they enter a published pack', () => {
+    expect(validateTravelActivityFactValue('visit.duration_minutes', { min: 180, max: 60 }))
+      .toContain('must be an object with finite min/max minutes and max >= min');
+    expect(validateTravelActivityFactValue('opening_hours.regular', {
+      timezone: 'Asia/Bangkok',
+      schedule: [{ days: ['funday'], opens: '9', closes: '18:00' }],
+    })).toContain('schedule entry 1 must include valid days, opens, and closes');
+    expect(validateTravelActivityFactValue('visit.weather_dependency', { level: 'sometimes' }))
+      .toContain('must include a supported weather-dependency level');
   });
 });

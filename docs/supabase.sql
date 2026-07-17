@@ -11396,8 +11396,10 @@ as $$
           (
             select jsonb_agg(
               (fact - 'metadata') || jsonb_build_object(
-                'metadata', case
-                  when jsonb_typeof(fact #> '{metadata,sourceUrl}') = 'string'
+                'metadata',
+                case
+                  when fact ->> 'factKey' = 'summary'
+                    and nullif(fact #>> '{metadata,sourceUrl}', '') is not null
                     then jsonb_build_object('sourceUrl', fact #>> '{metadata,sourceUrl}')
                   else '{}'::jsonb
                 end
@@ -11405,6 +11407,24 @@ as $$
               order by fact ->> 'factKey', fact ->> 'observedAt' desc
             )
             from jsonb_array_elements(coalesce(entity_rows.entity -> 'facts', '[]'::jsonb)) fact
+            where fact ->> 'factKey' = any(array[
+              'summary',
+              'season.best_months',
+              'season.caution',
+              'transport.summary',
+              'food.signature_dishes',
+              'cost.relative_level',
+              'stay.recommended_days',
+              'visit.duration_minutes',
+              'visit.best_time',
+              'visit.weather_dependency',
+              'visit.physical_intensity',
+              'access.transport',
+              'audience.family_fit',
+              'audience.lgbtq_fit',
+              'audience.solo_fit',
+              'audience.mobility_fit'
+            ]::text[])
           ),
           '[]'::jsonb
         ),
@@ -11436,7 +11456,7 @@ as $$
   )
   select jsonb_build_object(
     'version', 1,
-    'retrieverVersion', 'structured-pack-v1',
+    'retrieverVersion', 'structured-pack-v2',
     'query', jsonb_build_object(
       'countryCode', requested.country_code,
       'locale', requested.locale,

@@ -102,7 +102,7 @@ describe('journey knowledge enrichment service', () => {
       coordinates: { lat: expect.any(Number), lng: expect.any(Number) },
       knowledgeMeta: {
         entity: { entityType: 'poi', resolution: 'canonical' },
-        datasetVersion: '2026.07.17-v6',
+        datasetVersion: '2026.07.17-v7',
         origin: 'knowledge_ranker',
         matchScore: expect.any(Number),
         sourceKeys: expect.arrayContaining(['tat_official']),
@@ -114,7 +114,7 @@ describe('journey knowledge enrichment service', () => {
       item.knowledgeMeta?.entity.canonicalSlug === 'th-bangkok-grand-palace'
     ));
     expect(grandPalace?.activityKnowledge).toMatchObject({
-      version: 1,
+      version: 2,
       recommendedDuration: { value: { min: 120, max: 180, unit: 'minutes' } },
       openingHours: { support: { sourceKey: 'grand_palace_official' } },
       admission: { value: { currency: 'THB', adultForeign: 500 } },

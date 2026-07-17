@@ -140,7 +140,7 @@ Publishable dataset manifests with version, checksum, source snapshot, entity co
 
 ## 6. Thailand dataset scope
 
-The current `2026.07.17-v6` pack contains 84 canonical entities, 277 sourced facts, 405 evidence-aware tags, 15 route templates, and 16 sourced route legs. It includes activity coverage for every required template base, including the Gulf-island circuit across Ko Samui, Ko Phangan, and Ko Tao. Bangkok's Grand Palace, Wat Pho, Wat Arun, and Chatuchak Market now prove a richer per-activity contract: duration, best time, opening hours, price, booking guidance, dress rules where relevant, audience fit, practical notes, freshness, and per-field provenance. Sparse POIs remain valid but do not invent fields that have not been researched.
+The current `2026.07.17-v7` pack contains 84 canonical entities, 321 sourced facts, 420 evidence-aware tags, 15 route templates, and 16 sourced route legs. It includes activity coverage for every required template base, including the Gulf-island circuit across Ko Samui, Ko Phangan, and Ko Tao. Eight anchor POIs now prove a richer, category-aware activity contract: Bangkok's Grand Palace, Wat Pho, Wat Arun, and Chatuchak Market plus Ayutthaya Historical Park, Sukhothai Historical Park, Doi Inthanon National Park, and Erawan Waterfall. Their structured fields cover duration, best time, opening hours, price, booking guidance, weather and effort where relevant, access, facilities, audience fit, practical notes, freshness, and per-field provenance. Every POI has an explicit planning category and tier; sparse POIs remain valid and visibly report their research gaps instead of inventing fields.
 
 ### 6.1 Canonical places
 

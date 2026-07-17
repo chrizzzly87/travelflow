@@ -2,6 +2,7 @@ import type { JourneyPlaceRole, JourneySpec } from './journeySpec';
 import {
   type TravelDestinationPack,
   type TravelEntityCatalogItem,
+  type TravelEntityFact,
   type TravelTemplateCatalogItem,
 } from './travelKnowledge';
 import {
@@ -11,7 +12,7 @@ import {
 import { matchTravelTemplates } from './travelTemplateMatcher';
 
 export const TRAVEL_PLANNING_CONTEXT_VERSION = 1 as const;
-export const TRAVEL_PLANNING_RETRIEVER_VERSION = 'structured-pack-v1' as const;
+export const TRAVEL_PLANNING_RETRIEVER_VERSION = 'structured-pack-v2' as const;
 
 const ROUTE_SELECTION_ROLES = new Set<JourneyPlaceRole>([
   'entry',
@@ -182,18 +183,44 @@ const AUDIENCE_TAG_KEYS = new Set([
   'solo_travel_interest',
 ]);
 
+const PLANNING_CONTEXT_FACT_KEYS = new Set([
+  'summary',
+  'season.best_months',
+  'season.caution',
+  'transport.summary',
+  'food.signature_dishes',
+  'cost.relative_level',
+  'stay.recommended_days',
+  'visit.duration_minutes',
+  'visit.best_time',
+  'visit.weather_dependency',
+  'visit.physical_intensity',
+  'access.transport',
+  'audience.family_fit',
+  'audience.lgbtq_fit',
+  'audience.solo_fit',
+  'audience.mobility_fit',
+]);
+
+const compactPlanningFact = (fact: TravelEntityFact): TravelEntityFact => {
+  const sourceUrl = fact.factKey === 'summary' && typeof fact.metadata.sourceUrl === 'string'
+    ? fact.metadata.sourceUrl
+    : undefined;
+  return {
+    ...fact,
+    metadata: sourceUrl ? { sourceUrl } : {},
+  };
+};
+
 const compactContextEntity = (entity: TravelEntityCatalogItem): TravelEntityCatalogItem => ({
   ...entity,
   attributes: Object.fromEntries(
     Object.entries(entity.attributes).filter(([key]) => key !== 'sourceUrls'),
   ),
   names: entity.names.filter((name) => name.isPreferred),
-  facts: entity.facts.map((fact) => ({
-    ...fact,
-    metadata: typeof fact.metadata.sourceUrl === 'string'
-      ? { sourceUrl: fact.metadata.sourceUrl }
-      : {},
-  })),
+  facts: entity.facts
+    .filter((fact) => PLANNING_CONTEXT_FACT_KEYS.has(fact.factKey))
+    .map(compactPlanningFact),
   tags: entity.tags.map((tag) => (
     AUDIENCE_TAG_KEYS.has(tag.tagKey)
       ? tag

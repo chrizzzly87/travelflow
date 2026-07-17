@@ -3,6 +3,7 @@ import {
     BookOpenText,
     Buildings,
     ClockCountdown,
+    GitDiff,
     LinkSimple,
     MapPin,
     Path,
@@ -10,6 +11,10 @@ import {
 } from '@phosphor-icons/react';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import type { TravelKnowledgeLoadSource } from '../../services/travelKnowledgeService';
+import {
+    getTravelActivityKnowledgeCoverage,
+    type TravelActivityCoverageStatus,
+} from '../../shared/travelActivityKnowledge';
 import {
     TRAVEL_ENTITY_TYPE_VALUES,
     type TravelDestinationPack,
@@ -29,6 +34,7 @@ import { AdminSurfaceCard } from './AdminSurfaceCard';
 
 type CatalogMode = 'entities' | 'templates';
 type EntityTypeFilter = 'all' | TravelEntityType;
+type ActivityCoverageFilter = 'all' | TravelActivityCoverageStatus;
 
 interface TravelKnowledgeCatalogProps {
     pack: TravelDestinationPack | null;
@@ -85,6 +91,7 @@ const EntityCard: React.FC<{
     entity: TravelEntityCatalogItem;
     parentName?: string;
 }> = ({ entity, parentName }) => {
+    const activityCoverage = getTravelActivityKnowledgeCoverage(entity);
     const sourceKeys = Array.from(new Set([
         ...entity.facts.map((fact) => fact.sourceKey),
         ...entity.tags.map((tag) => tag.sourceKey),
@@ -107,6 +114,14 @@ const EntityCard: React.FC<{
                         <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
                             {humanizeToken(entity.status)}
                         </span>
+                        {activityCoverage ? (
+                            <span
+                                className="inline-flex rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700"
+                                title={`${activityCoverage.missingRequiredFactKeys.length} required and ${activityCoverage.missingRecommendedFactKeys.length} recommended fields missing`}
+                            >
+                                {humanizeToken(activityCoverage.category)} · {activityCoverage.score}% {activityCoverage.status}
+                            </span>
+                        ) : null}
                     </div>
                     <h3 className="mt-3 text-lg font-black tracking-tight text-slate-950">{entity.name}</h3>
                     <p className="mt-1 break-all font-mono text-xs text-slate-500">{entity.canonicalSlug}</p>
@@ -136,6 +151,11 @@ const EntityCard: React.FC<{
                 <span className="inline-flex items-center gap-1 rounded-lg bg-slate-50 px-2.5 py-1.5">
                     <ClockCountdown size={14} /> {formatTimestamp(latestObservedAt)}
                 </span>
+                {activityCoverage ? (
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-slate-50 px-2.5 py-1.5">
+                        <GitDiff size={14} /> {activityCoverage.presentFactKeys.length} planning fields · {activityCoverage.missingRequiredFactKeys.length} required gaps
+                    </span>
+                ) : null}
             </div>
 
             <details className="mt-4 border-t border-slate-100 pt-3">
@@ -198,6 +218,35 @@ const EntityCard: React.FC<{
                             <strong className="text-slate-800">Source keys</strong>
                             <p className="mt-1 break-words font-mono">{sourceKeys.join(', ') || '—'}</p>
                         </div>
+                        {activityCoverage ? (
+                            <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600">
+                                <strong className="text-slate-800">Structured activity coverage</strong>
+                                <dl className="mt-2 grid grid-cols-2 gap-2">
+                                    <div><dt>Category</dt><dd className="font-semibold text-slate-900">{humanizeToken(activityCoverage.category)}</dd></div>
+                                    <div><dt>Planning tier</dt><dd className="font-semibold text-slate-900">{humanizeToken(activityCoverage.planningTier)}</dd></div>
+                                    <div><dt>Expiring in 30 days</dt><dd className="font-semibold text-slate-900">{activityCoverage.expiringFactCount}</dd></div>
+                                    <div><dt>Expired</dt><dd className="font-semibold text-slate-900">{activityCoverage.expiredFactCount}</dd></div>
+                                </dl>
+                                {activityCoverage.missingRequiredFactKeys.length > 0 ? (
+                                    <div className="mt-3">
+                                        <span className="font-semibold text-rose-700">Missing required</span>
+                                        <p className="mt-1 break-words font-mono">{activityCoverage.missingRequiredFactKeys.join(', ')}</p>
+                                    </div>
+                                ) : null}
+                                {activityCoverage.missingRecommendedFactKeys.length > 0 ? (
+                                    <div className="mt-3">
+                                        <span className="font-semibold text-amber-700">Missing recommended</span>
+                                        <p className="mt-1 break-words font-mono">{activityCoverage.missingRecommendedFactKeys.join(', ')}</p>
+                                    </div>
+                                ) : null}
+                                {activityCoverage.invalidFactKeys.length > 0 ? (
+                                    <div className="mt-3">
+                                        <span className="font-semibold text-rose-700">Invalid values</span>
+                                        <p className="mt-1 break-words font-mono">{activityCoverage.invalidFactKeys.join(', ')}</p>
+                                    </div>
+                                ) : null}
+                            </div>
+                        ) : null}
                     </section>
                 </div>
             </details>
@@ -252,6 +301,7 @@ export const TravelKnowledgeCatalog: React.FC<TravelKnowledgeCatalogProps> = ({
 }) => {
     const [mode, setMode] = useState<CatalogMode>('entities');
     const [entityType, setEntityType] = useState<EntityTypeFilter>('all');
+    const [activityCoverageFilter, setActivityCoverageFilter] = useState<ActivityCoverageFilter>('all');
     const normalizedSearch = searchValue.trim().toLowerCase();
     const entityById = useMemo(() => new Map(
         (pack?.entities ?? []).map((entity) => [entity.entityId, entity]),
@@ -266,18 +316,44 @@ export const TravelKnowledgeCatalog: React.FC<TravelKnowledgeCatalogProps> = ({
     const filteredEntities = useMemo(() => (
         (pack?.entities ?? [])
             .filter((entity) => entityType === 'all' || entity.entityType === entityType)
+            .filter((entity) => {
+                if (activityCoverageFilter === 'all') return true;
+                return getTravelActivityKnowledgeCoverage(entity)?.status === activityCoverageFilter;
+            })
             .filter((entity) => !normalizedSearch || entitySearchText(entity).includes(normalizedSearch))
             .toSorted((left, right) => (
                 left.entityType.localeCompare(right.entityType)
                 || right.popularityScore - left.popularityScore
                 || left.name.localeCompare(right.name)
             ))
-    ), [entityType, normalizedSearch, pack]);
+    ), [activityCoverageFilter, entityType, normalizedSearch, pack]);
     const filteredTemplates = useMemo(() => (
         (pack?.templates ?? [])
             .filter((template) => !normalizedSearch || templateSearchText(template).includes(normalizedSearch))
             .toSorted((left, right) => left.copy.title.localeCompare(right.copy.title))
     ), [normalizedSearch, pack]);
+    const activityCoverageSummary = useMemo(() => {
+        const coverage = (pack?.entities ?? [])
+            .map((entity) => ({ entity, coverage: getTravelActivityKnowledgeCoverage(entity) }))
+            .filter((item): item is { entity: TravelEntityCatalogItem; coverage: NonNullable<typeof item.coverage> } => Boolean(item.coverage));
+        const counts: Record<TravelActivityCoverageStatus, number> = { starter: 0, usable: 0, rich: 0 };
+        const missingCounts = new Map<string, number>();
+        coverage.forEach(({ coverage: itemCoverage }) => {
+            counts[itemCoverage.status] += 1;
+            [...itemCoverage.missingRequiredFactKeys, ...itemCoverage.missingRecommendedFactKeys]
+                .forEach((factKey) => missingCounts.set(factKey, (missingCounts.get(factKey) ?? 0) + 1));
+        });
+        return {
+            total: coverage.length,
+            counts,
+            averageScore: coverage.length > 0
+                ? Math.round(coverage.reduce((sum, item) => sum + item.coverage.score, 0) / coverage.length)
+                : 0,
+            commonGaps: Array.from(missingCounts.entries())
+                .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+                .slice(0, 4),
+        };
+    }, [pack]);
 
     if (isLoading && !pack) {
         return <AdminSurfaceCard className="py-14 text-center text-sm text-slate-500">Loading the published catalogue…</AdminSurfaceCard>;
@@ -313,7 +389,10 @@ export const TravelKnowledgeCatalog: React.FC<TravelKnowledgeCatalogProps> = ({
                             </SelectContent>
                         </Select>
                         {mode === 'entities' ? (
-                            <Select value={entityType} onValueChange={(value) => setEntityType(value as EntityTypeFilter)}>
+                            <Select value={entityType} onValueChange={(value) => {
+                                setEntityType(value as EntityTypeFilter);
+                                if (value !== 'all' && value !== 'poi') setActivityCoverageFilter('all');
+                            }}>
                                 <SelectTrigger className="min-w-44" aria-label="Entity type">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -322,6 +401,22 @@ export const TravelKnowledgeCatalog: React.FC<TravelKnowledgeCatalogProps> = ({
                                     {TRAVEL_ENTITY_TYPE_VALUES.map((type) => (
                                         <SelectItem key={type} value={type}>{humanizeToken(type)} ({typeCounts.get(type) ?? 0})</SelectItem>
                                     ))}
+                                </SelectContent>
+                            </Select>
+                        ) : null}
+                        {mode === 'entities' && (entityType === 'all' || entityType === 'poi') ? (
+                            <Select value={activityCoverageFilter} onValueChange={(value) => {
+                                setActivityCoverageFilter(value as ActivityCoverageFilter);
+                                trackEvent('admin__travel_knowledge_coverage--filter', { coverage: value });
+                            }}>
+                                <SelectTrigger className="min-w-44" aria-label="Activity coverage">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All coverage levels</SelectItem>
+                                    <SelectItem value="rich">Rich ({activityCoverageSummary.counts.rich})</SelectItem>
+                                    <SelectItem value="usable">Usable ({activityCoverageSummary.counts.usable})</SelectItem>
+                                    <SelectItem value="starter">Starter ({activityCoverageSummary.counts.starter})</SelectItem>
                                 </SelectContent>
                             </Select>
                         ) : null}
@@ -334,6 +429,29 @@ export const TravelKnowledgeCatalog: React.FC<TravelKnowledgeCatalogProps> = ({
                         </span>
                     ))}
                 </div>
+                <div className="grid gap-2 border-t border-slate-100 pt-4 sm:grid-cols-4">
+                    <div className="rounded-xl bg-slate-50 p-3">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Activity POIs</div>
+                        <div className="mt-1 text-xl font-black text-slate-900">{activityCoverageSummary.total}</div>
+                    </div>
+                    <div className="rounded-xl bg-emerald-50 p-3">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">Rich</div>
+                        <div className="mt-1 text-xl font-black text-emerald-900">{activityCoverageSummary.counts.rich}</div>
+                    </div>
+                    <div className="rounded-xl bg-amber-50 p-3">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-700">Usable / starter</div>
+                        <div className="mt-1 text-xl font-black text-amber-900">{activityCoverageSummary.counts.usable} / {activityCoverageSummary.counts.starter}</div>
+                    </div>
+                    <div className="rounded-xl bg-violet-50 p-3">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-violet-700">Average coverage</div>
+                        <div className="mt-1 text-xl font-black text-violet-900">{activityCoverageSummary.averageScore}%</div>
+                    </div>
+                </div>
+                {activityCoverageSummary.commonGaps.length > 0 ? (
+                    <p className="text-xs text-slate-500">
+                        Most common gaps: {activityCoverageSummary.commonGaps.map(([factKey, count]) => `${humanizeToken(factKey)} (${count})`).join(' · ')}
+                    </p>
+                ) : null}
             </AdminSurfaceCard>
 
             <p className="text-sm text-slate-500">
