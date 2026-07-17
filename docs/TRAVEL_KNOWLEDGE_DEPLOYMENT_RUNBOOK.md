@@ -15,8 +15,10 @@ Applied migrations:
 - `20260717071632 seed_travel_knowledge_thailand_v5`
 - `20260717074656 add_travel_knowledge_operations`
 - `20260717074708 register_travel_knowledge_sources_v1`
+- `20260717081752 add_private_travel_knowledge_snapshot_bucket`
+- `20260717082244 activate_geonames_wikidata_ingestion_v1`
 
-Only the isolated 751-line travel-knowledge section of `docs/supabase.sql` was applied, followed by the exact generated Thailand seed. The rest of the documented schema was not replayed.
+The initial foundation applied only the isolated travel-knowledge section of `docs/supabase.sql`, followed by the exact generated Thailand seed. Later operations and private-bucket migrations were also narrow and additive; the rest of the documented schema was not replayed.
 
 Final verification:
 
@@ -30,12 +32,25 @@ Final verification:
 - RLS is enabled on all five operational tables, anonymous table reads are revoked, and the public pack RPC does not reference operational history
 - final database size was 242 MB
 
+The first active identity ingestion completed after the bucket migration:
+
+- GeoNames run `0e7c56d8-b552-4b37-9b9e-2b052d9d650e`: succeeded, 264,778 raw rows examined, 16 review candidates, zero warnings/errors
+- Wikidata run `ba167796-386a-44d3-8253-f48157eb562d`: succeeded, 16 unique identities, 16 review candidates, zero warnings/errors
+- four initial immutable objects and ledger rows had identical aggregate size: 11,021,238 bytes
+- object downloads matched all four recorded byte sizes and SHA-256 checksums
+- all 32 external-ID candidates remained `needs_review`
+- a repeat run reused unchanged content and created zero duplicate candidates
+- Thailand remained at 84 published entities and 15 published templates
+- an anonymous Storage client saw zero objects, could not resolve the private bucket, and could not upload the probe object
+
 ## Sources of truth
 
 - Additive schema and policies: `docs/supabase.sql`
 - Generated Thailand seed: `docs/travel-knowledge-thailand.seed.generated.sql`
+- Generated source registry seed: `docs/travel-knowledge-source-registry.seed.generated.sql`
 - Repository dataset: `data/travelKnowledge/thailand.v1.json`
 - Compiled bundled fallback: `data/travelKnowledge/thailand.v1.pack.generated.json`
+- Source registry: `data/travelKnowledge/source-registry.v1.json`
 
 Run before applying anything:
 
@@ -127,6 +142,22 @@ The repository validator expects:
 
 Also verify that the public read RPC returns the published pack and that an anonymous client cannot write any travel-knowledge row.
 
+For source ingestion, first run without persistence and inspect every proposed identity:
+
+```bash
+pnpm travel-knowledge:ingest -- --source all --country TH --verbose
+```
+
+After license, target-project, and dry-run review, the server-side operator may persist snapshots and candidates:
+
+```bash
+TRAVEL_KNOWLEDGE_WRITE_MODE=review_candidates_only \
+  pnpm travel-knowledge:ingest -- --source all --country TH --persist
+pnpm travel-knowledge:verify-snapshots
+```
+
+The persist command does not publish candidates. It may insert only source runs, immutable snapshot ledger rows, immutable Storage objects, and `needs_review` candidates. Published rows change only through the separate reviewed artifact/publish workflow.
+
 ## Activate remote reads
 
 The remote flag is enabled only for the `codex/journey-spec-thailand-foundation` Netlify branch while the feature is tested. Production remains on the bundled fallback. After branch QA and copy sign-off, enable:
@@ -139,7 +170,7 @@ Deploy this flag separately from the schema change. The read service remains ver
 
 ## Advisor follow-ups
 
-No travel-specific missing-RLS, missing-policy, or mutable-function-search-path security issue remains. The security advisor reports the intentional anonymous public-read policies.
+No travel-specific missing-RLS, missing-policy, or mutable-function-search-path security issue remains. The security advisor reports the intentional anonymous public-read policies. It also identifies the two restrictive Storage denial policies as policies applying to `public`; those policies are defense-in-depth denials, not grants, and their predicates explicitly exclude the snapshot bucket.
 
 The operations migration added the five previously missing foreign-key indexes and changed travel admin policies to use init-plan-safe auth expressions. Supabase no longer reports those two finding classes for the travel tables.
 
