@@ -160,6 +160,9 @@ export const buildJourneyDestinationBriefs = (
   const selectedSlugs = new Set(
     spec.places.filter((place) => place.locked === true).map((place) => place.entity.canonicalSlug),
   );
+  const avoidedSlugs = new Set(
+    spec.places.filter((place) => place.role === 'avoid').map((place) => place.entity.canonicalSlug),
+  );
   const preferenceTags = new Set([
     ...spec.preferences.interestTags,
     ...spec.preferences.vibeTags,
@@ -177,9 +180,11 @@ export const buildJourneyDestinationBriefs = (
   return uniqueBaseCities.map((city): JourneyDestinationBrief => {
     const neighborhoods = city.entityId
       ? [...getTravelKnowledgeChildren(index, city.entityId, 'neighborhood')]
+        .filter((entity) => !avoidedSlugs.has(entity.canonicalSlug))
       : [];
     const activities = city.entityId
       ? [...getTravelKnowledgeDescendants(index, city.entityId, 'poi')]
+        .filter((entity) => !avoidedSlugs.has(entity.canonicalSlug))
       : [];
 
     return {

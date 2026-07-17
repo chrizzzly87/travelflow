@@ -22,12 +22,18 @@ import {
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { JourneyDestinationBriefPreview } from '../components/create-trip/JourneyDestinationBriefPreview';
+import { JourneyPersonalizationCard } from '../components/create-trip/JourneyPersonalizationCard';
 import {
   PlayfulDecisionButton,
   PlayfulDecisionSurface,
 } from '../components/ui/playful-decision-card';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { buildJourneyDestinationBriefs } from '../services/journeyDestinationBriefService';
+import {
+  JourneyPersonalizationError,
+  requestJourneyPersonalization,
+  type JourneyPersonalizationResult,
+} from '../services/journeyPersonalizationService';
 import { buildKnowledgeEnrichedTripFromTemplate } from '../services/journeyKnowledgeEnrichmentService';
 import {
   buildJourneyRouteConcepts,
@@ -54,7 +60,7 @@ import {
   type AppliedTravelTemplate,
   type TravelTemplateMatch,
 } from '../shared/travelTemplateMatcher';
-import type { JourneyPace } from '../shared/journeySpec';
+import type { JourneyPace, JourneySpec } from '../shared/journeySpec';
 import type { TravelEntityCatalogItem } from '../shared/travelKnowledge';
 import type { ITrip } from '../types';
 import '../styles/create-trip-shape-lab.css';
@@ -196,10 +202,16 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
   const [selectedRouteContextBytes, setSelectedRouteContextBytes] = useState(0);
   const [isPreparingComparison, setIsPreparingComparison] = useState(false);
   const [isPreparingSelectedRoute, setIsPreparingSelectedRoute] = useState(false);
+  const [personalizationRequest, setPersonalizationRequest] = useState('');
+  const [personalizationResult, setPersonalizationResult] = useState<JourneyPersonalizationResult>();
+  const [personalizedSpec, setPersonalizedSpec] = useState<JourneySpec>();
+  const [personalizationErrorCode, setPersonalizationErrorCode] = useState<string>();
+  const [isPersonalizing, setIsPersonalizing] = useState(false);
   const progressRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const comparisonRequestRef = useRef(0);
   const selectedRouteRequestRef = useRef(0);
+  const personalizationAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -227,6 +239,8 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
       active = false;
     };
   }, [i18n.language]);
+
+  useEffect(() => () => personalizationAbortRef.current?.abort('unmounted'), []);
 
   const currentStep = STEPS[stepIndex] ?? 'shape';
   const labels = useMemo(() => monthLabels(i18n.language), [i18n.language]);
@@ -259,11 +273,16 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
   const routePack = routeComparison?.retrieval.context.pack ?? pack;
   const routeLoadSource = routeComparison?.retrieval.source ?? loadSource;
   const selectedRoute = routeConcepts.find(({ match }) => match.template.templateKey === selectedTemplateKey);
+  const activeAppliedRoute = useMemo(() => (
+    selectedRoute
+      ? (personalizedSpec ? { ...selectedRoute.applied, spec: personalizedSpec } : selectedRoute.applied)
+      : undefined
+  ), [personalizedSpec, selectedRoute]);
   const selectedRoutePack = selectedRouteContext?.context.pack ?? routePack;
   const selectedRouteLoadSource = selectedRouteContext?.source ?? routeLoadSource;
   const selectedDestinationBriefs = useMemo(
-    () => selectedRoute ? buildJourneyDestinationBriefs(selectedRoute.applied.spec, selectedRoutePack) : [],
-    [selectedRoute, selectedRoutePack],
+    () => activeAppliedRoute ? buildJourneyDestinationBriefs(activeAppliedRoute.spec, selectedRoutePack) : [],
+    [activeAppliedRoute, selectedRoutePack],
   );
   const cityRequired = draft.journeyType !== 'single_country_circuit';
   const exactDatesValid = draft.dateMode !== 'exact' || journeyResult.error === null;
@@ -283,6 +302,12 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
     setSelectedRouteContextBytes(0);
     setIsPreparingComparison(false);
     setIsPreparingSelectedRoute(false);
+    personalizationAbortRef.current?.abort('draft_changed');
+    setPersonalizationRequest('');
+    setPersonalizationResult(undefined);
+    setPersonalizedSpec(undefined);
+    setPersonalizationErrorCode(undefined);
+    setIsPersonalizing(false);
   };
 
   const moveToStep = (nextIndex: number, afterPaint?: () => void) => {
@@ -435,6 +460,11 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
     setSelectedTemplateKey(match.template.templateKey);
     setSelectedRouteContext(undefined);
     setSelectedRouteContextBytes(0);
+    personalizationAbortRef.current?.abort('route_changed');
+    setPersonalizationResult(undefined);
+    setPersonalizedSpec(undefined);
+    setPersonalizationErrorCode(undefined);
+    setIsPersonalizing(false);
     trackEvent('create_trip_shape__template--select', {
       template: match.template.templateKey,
       score: match.score,
@@ -477,8 +507,91 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
     });
   };
 
+  const personalizeSelectedRoute = async () => {
+    if (!selectedRoute || !personalizationRequest.trim() || isPersonalizing) return;
+    const retrieval = selectedRouteContext ?? routeComparison?.retrieval;
+    if (!retrieval) return;
+    personalizationAbortRef.current?.abort('superseded');
+    const controller = new AbortController();
+    personalizationAbortRef.current = controller;
+    setIsPersonalizing(true);
+    setPersonalizationErrorCode(undefined);
+    setPersonalizationResult(undefined);
+    setPersonalizedSpec(undefined);
+    trackEvent('create_trip_shape__personalization--request', {
+      template: selectedRoute.match.template.templateKey,
+      request_length: personalizationRequest.trim().length,
+      dataset_version: retrieval.context.pack.dataset?.version,
+      retriever_version: retrieval.context.retrieverVersion,
+      context_entity_count: retrieval.context.stats.selectedEntityCount,
+    });
+    try {
+      const result = await requestJourneyPersonalization({
+        spec: selectedRoute.applied.spec,
+        pack: retrieval.context.pack,
+        retrieverVersion: retrieval.context.retrieverVersion,
+        locale: i18n.resolvedLanguage ?? i18n.language,
+        travelerRequest: personalizationRequest,
+        signal: controller.signal,
+      });
+      if (personalizationAbortRef.current !== controller) return;
+      setPersonalizationResult(result);
+      trackEvent('create_trip_shape__personalization--ready', {
+        template: selectedRoute.match.template.templateKey,
+        request_id: result.meta.requestId,
+        provider: result.meta.provider,
+        model: result.meta.model,
+        duration_ms: result.meta.durationMs,
+        change_count: result.applied.changes.length,
+        unresolved_count: result.proposal.unresolved.length,
+        dataset_version: result.request.context.datasetVersion,
+      });
+    } catch (error) {
+      if (personalizationAbortRef.current !== controller) return;
+      const code = error instanceof JourneyPersonalizationError
+        ? error.code
+        : 'PERSONALIZATION_UNKNOWN_ERROR';
+      setPersonalizationErrorCode(code);
+      trackEvent('create_trip_shape__personalization--fail', {
+        template: selectedRoute.match.template.templateKey,
+        error_code: code,
+      });
+    } finally {
+      if (personalizationAbortRef.current === controller) setIsPersonalizing(false);
+    }
+  };
+
+  const applyPersonalization = () => {
+    if (!personalizationResult) return;
+    setPersonalizedSpec(personalizationResult.applied.spec);
+    trackEvent('create_trip_shape__personalization--apply', {
+      template: personalizationResult.request.context.templateKey,
+      request_id: personalizationResult.meta.requestId,
+      change_count: personalizationResult.applied.changes.length,
+      dataset_version: personalizationResult.request.context.datasetVersion,
+    });
+  };
+
+  const undoPersonalization = () => {
+    if (!personalizationResult) return;
+    setPersonalizedSpec(undefined);
+    trackEvent('create_trip_shape__personalization--undo', {
+      template: personalizationResult.request.context.templateKey,
+      request_id: personalizationResult.meta.requestId,
+    });
+  };
+
+  const clearPersonalizationProposal = () => {
+    setPersonalizationResult(undefined);
+    setPersonalizedSpec(undefined);
+    setPersonalizationErrorCode(undefined);
+    trackEvent('create_trip_shape__personalization--clear', {
+      template: selectedRoute?.match.template.templateKey,
+    });
+  };
+
   const openSelectedSkeleton = () => {
-    if (!selectedRoute || isPreparingSelectedRoute) return;
+    if (!selectedRoute || !activeAppliedRoute || isPreparingSelectedRoute) return;
     const planningContext = selectedRouteContext ?? routeComparison?.retrieval;
     const planningContextBytes = selectedRouteContext ? selectedRouteContextBytes : routeComparison?.rawBytes;
     const {
@@ -488,7 +601,7 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
       enrichmentDurationMs,
       compileDurationMs,
     } = buildKnowledgeEnrichedTripFromTemplate(
-      selectedRoute.applied,
+      activeAppliedRoute,
       selectedRoutePack,
       {
         knowledgeSource: selectedRouteLoadSource,
@@ -503,7 +616,19 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
           selectedTemplateCount: planningContext.context.stats.selectedTemplateCount,
           selectedNeighborhoodCount: planningContext.context.stats.selectedNeighborhoodCount,
           selectedPoiCount: planningContext.context.stats.selectedPoiCount,
-          aiCallCount: 0,
+          aiCallCount: personalizationResult ? 1 : 0,
+        } : undefined,
+        personalization: personalizationResult ? {
+          version: personalizationResult.proposal.version,
+          requestId: personalizationResult.meta.requestId,
+          provider: personalizationResult.meta.provider,
+          model: personalizationResult.meta.model,
+          durationMs: roundDurationMs(personalizationResult.meta.durationMs),
+          operationCount: personalizationResult.applied.changes.length,
+          unresolvedCount: personalizationResult.proposal.unresolved.length,
+          applied: Boolean(personalizedSpec),
+          datasetVersion: personalizationResult.request.context.datasetVersion,
+          createdAt: new Date().toISOString(),
         } : undefined,
       },
     );
@@ -517,7 +642,9 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
       compile_duration_ms: roundDurationMs(compileDurationMs),
       planning_context_source: planningContext?.source,
       planning_context_bytes: planningContextBytes,
-      ai_call_count: 0,
+      ai_call_count: personalizationResult ? 1 : 0,
+      personalization_applied: Boolean(personalizedSpec),
+      personalization_change_count: personalizationResult?.applied.changes.length ?? 0,
       route_stage: trip.planningMeta?.routeStage,
       dataset_version: trip.planningMeta?.datasetVersion,
     });
@@ -937,6 +1064,31 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
 
       {selectedRoute ? (
         <>
+          {!isPreparingSelectedRoute ? (
+            <JourneyPersonalizationCard
+              value={personalizationRequest}
+              result={personalizationResult}
+              errorCode={personalizationErrorCode}
+              isLoading={isPersonalizing}
+              isApplied={Boolean(personalizedSpec)}
+              onChange={(value) => {
+                setPersonalizationRequest(value);
+                setPersonalizationErrorCode(undefined);
+              }}
+              onSubmit={() => void personalizeSelectedRoute()}
+              onApply={applyPersonalization}
+              onUndo={undoPersonalization}
+              onClear={clearPersonalizationProposal}
+              onExampleSelect={(value, index) => {
+                setPersonalizationRequest(value);
+                setPersonalizationErrorCode(undefined);
+                trackEvent('create_trip_shape__personalization_example--select', {
+                  template: selectedRoute.match.template.templateKey,
+                  example_index: index,
+                });
+              }}
+            />
+          ) : null}
           <JourneyDestinationBriefPreview
             briefs={selectedDestinationBriefs}
             monthLabels={labels}

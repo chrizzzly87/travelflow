@@ -37,6 +37,14 @@ vi.mock('../../services/travelPlanningContextService', async (importOriginal) =>
   };
 });
 
+vi.mock('../../services/journeyPersonalizationService', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../services/journeyPersonalizationService')>();
+  return {
+    ...actual,
+    requestJourneyPersonalization: vi.fn(),
+  };
+});
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, options?: Record<string, unknown>) => {
@@ -60,6 +68,13 @@ import {
   type TravelKnowledgeLoadResult,
 } from '../../services/travelKnowledgeService';
 import { loadTravelPlanningContext } from '../../services/travelPlanningContextService';
+import { requestJourneyPersonalization } from '../../services/journeyPersonalizationService';
+import {
+  JOURNEY_PERSONALIZATION_VERSION,
+  applyJourneyPersonalizationProposal,
+  buildJourneyPersonalizationContext,
+  type JourneyPersonalizationProposalV1,
+} from '../../shared/journeyPersonalization';
 import { buildTravelPlanningContext } from '../../shared/travelPlanningContext';
 
 const renderPage = (onTripGenerated = vi.fn()) => {
@@ -95,6 +110,7 @@ afterEach(() => {
   vi.mocked(trackEvent).mockClear();
   vi.mocked(loadTravelDestinationPack).mockReset();
   vi.mocked(loadTravelPlanningContext).mockReset();
+  vi.mocked(requestJourneyPersonalization).mockReset();
 });
 
 describe('pages/CreateTripShapeLabPage', () => {
@@ -231,6 +247,103 @@ describe('pages/CreateTripShapeLabPage', () => {
     expect(trip.items.some((item: { knowledgeMeta?: { origin?: string } }) => (
       item.knowledgeMeta?.origin === 'knowledge_ranker'
     ))).toBe(true);
+  });
+
+  it('reviews and applies a catalogue-validated AI patch without replacing the route', async () => {
+    vi.mocked(requestJourneyPersonalization).mockImplementation(async (options) => {
+      const context = buildJourneyPersonalizationContext(
+        options.spec,
+        options.pack,
+        options.retrieverVersion,
+      );
+      const poi = context.entities.find((entity) => entity.entityType === 'poi');
+      if (!poi) throw new Error('Personalization POI fixture is unavailable.');
+      const proposal: JourneyPersonalizationProposalV1 = {
+        version: JOURNEY_PERSONALIZATION_VERSION,
+        datasetVersion: context.datasetVersion,
+        templateKey: context.templateKey,
+        summary: 'A slower, food-first Bangkok route with one requested anchor.',
+        preferencePatch: {
+          pace: 'relaxed',
+          replaceInterestTags: true,
+          interestTags: ['food', 'culture'],
+          replaceVibeTags: false,
+          vibeTags: [],
+          replaceTransportPreferences: false,
+          transportPreferences: [],
+          setMaxTransferMinutes: false,
+          maxTransferMinutes: 0,
+        },
+        placeDecisions: [{ entityId: poi.entityId, role: 'must_visit', reason: 'Requested anchor.' }],
+        unresolved: [],
+        cautions: [],
+      };
+      const applied = applyJourneyPersonalizationProposal(options.spec, options.pack, context, proposal);
+      return {
+        request: {
+          version: JOURNEY_PERSONALIZATION_VERSION,
+          locale: options.locale,
+          travelerRequest: options.travelerRequest,
+          journeySpec: options.spec,
+          context,
+        },
+        proposal,
+        applied,
+        meta: {
+          requestId: 'personalization-request-1',
+          durationMs: 420,
+          provider: 'gemini',
+          model: 'gemini-2.5-flash-lite',
+        },
+      };
+    });
+    const user = userEvent.setup();
+    const onTripGenerated = vi.fn();
+    renderPage(onTripGenerated);
+
+    await user.click(screen.getByRole('button', { name: /shapeLab\.shape\.options\.city_break\.title/i }));
+    await user.click(screen.getByRole('button', { name: /Bangkok/i }));
+    await user.click(screen.getByRole('button', { name: /wizard\.actions\.continue/i }));
+    await user.click(screen.getByRole('button', { name: /wizard\.actions\.continue/i }));
+    await user.click(screen.getByRole('button', { name: /shapeLab\.actions\.compare/i }));
+    await user.click(screen.getAllByRole('button', { name: /shapeLab\.reveal\.chooseRoute/i })[0]!);
+    await waitFor(() => expect(screen.getByRole('button', { name: /shapeLab\.actions\.openPlan/i })).toBeEnabled());
+
+    await user.type(
+      screen.getByRole('textbox', { name: /wizard\.personalize\.requestLabel/i }),
+      'Please make this slower and food-first.',
+    );
+    await user.click(screen.getByRole('button', { name: /wizard\.personalize\.submit/i }));
+
+    expect(await screen.findByText('A slower, food-first Bangkok route with one requested anchor.')).toBeInTheDocument();
+    expect(screen.getByText('gemini-2.5-flash-lite')).toBeInTheDocument();
+    expect(trackEvent).toHaveBeenCalledWith(
+      'create_trip_shape__personalization--ready',
+      expect.objectContaining({
+        request_id: 'personalization-request-1',
+        change_count: 3,
+        dataset_version: '2026.07.17-v6',
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: /wizard\.personalize\.apply/i }));
+    await user.click(screen.getByRole('button', { name: /shapeLab\.actions\.openPlan/i }));
+
+    await waitFor(() => expect(onTripGenerated).toHaveBeenCalledTimes(1));
+    const trip = onTripGenerated.mock.calls[0]?.[0];
+    expect(trip.planningMeta).toMatchObject({
+      journeySpec: { preferences: { pace: 'relaxed' } },
+      trace: {
+        planningContext: { aiCallCount: 1 },
+        personalization: {
+          requestId: 'personalization-request-1',
+          provider: 'gemini',
+          model: 'gemini-2.5-flash-lite',
+          operationCount: 3,
+          applied: true,
+          datasetVersion: '2026.07.17-v6',
+        },
+      },
+    });
   });
 
   it('keeps a revealed comparison bound to its dataset when a remote refresh finishes later', async () => {

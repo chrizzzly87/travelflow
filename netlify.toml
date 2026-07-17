@@ -92,6 +92,10 @@ exit 1
   function = "ai-generate"
 
 [[edge_functions]]
+  path = "/api/ai/personalize-journey"
+  function = "ai-personalize-journey"
+
+[[edge_functions]]
   path = "/api/ai/generate/abort"
   function = "ai-generate-abort"
 

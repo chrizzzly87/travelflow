@@ -210,6 +210,60 @@
   "wizard": {
     "flowLabel": "Adaptiver Assistent",
     "stepBadge": "Schritt {current} von {total}",
+    "personalize": {
+      "eyebrow": "Mach die Basis zu deiner Reise",
+      "title": "Passe diese Route an, ohne sie neu zu bauen.",
+      "description": "Beschreibe, was sich ändern soll. Die KI darf nur kleine Anpassungen mit Orten und Tags vorschlagen, die bereits im abgerufenen Katalog stehen.",
+      "guarded": "Durch Katalog begrenzt",
+      "requestLabel": "Was soll sich anders anfühlen?",
+      "placeholder": "Zum Beispiel: ruhige Vormittage, mehr Essen, den Grand Palace behalten und volle Märkte vermeiden.",
+      "requestHint": "Noch {count} Zeichen",
+      "examplesLabel": "Beispiele für die Personalisierung",
+      "examples": {
+        "0": "Ruhige Vormittage, Essen zuerst",
+        "1": "Berühmte Highlights, weniger Eile",
+        "2": "Geheimtipps, volle Märkte vermeiden"
+      },
+      "submit": "Ausgewählte Route personalisieren",
+      "loading": "Katalog wird geprüft…",
+      "routeLocked": "Route, Daten und Dauer bleiben unverändert.",
+      "errorTitle": "Die Basisroute ist weiterhin bereit.",
+      "errorDescription": "Die Personalisierung konnte nicht abgeschlossen werden. Du kannst es erneut versuchen oder den Sofortplan ohne KI öffnen.",
+      "proposalEyebrow": "Geprüfter Vorschlag",
+      "ready": "Bereit zur Prüfung",
+      "applied": "Übernommen",
+      "noChanges": "Für diese Anfrage war keine sichere Katalogänderung nötig.",
+      "unresolved": "Mit diesem Kontext nicht möglich",
+      "cautions": "Bitte beachten",
+      "apply": "{count} Änderungen übernehmen",
+      "undo": "Änderungen rückgängig machen",
+      "tryAnother": "Andere Anfrage testen",
+      "minutes": "{count} Minuten",
+      "receipt": {
+        "aiCalls": "KI-Aufrufe",
+        "model": "Modell",
+        "time": "Antwort",
+        "dataset": "Datensatz"
+      },
+      "changeLabels": {
+        "pace": "Reiserhythmus",
+        "interest_tags": "Interessen",
+        "vibe_tags": "Stimmung",
+        "transport_preferences": "Transport",
+        "max_transfer_minutes": "Transferlimit",
+        "place_role": "Ort"
+      },
+      "roles": {
+        "must_visit": "Unbedingt besuchen",
+        "consider": "In Betracht ziehen",
+        "avoid": "Vermeiden"
+      },
+      "paces": {
+        "relaxed": "Entspannt",
+        "balanced": "Ausgewogen",
+        "full": "Voll"
+      }
+    },
     "actions": {
       "back": "Zurück",
       "continue": "Weiter",

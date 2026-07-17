@@ -692,6 +692,115 @@
   text-underline-offset: 0.2rem;
 }
 
+.shape-personalize {
+  display: grid;
+  gap: 1.25rem;
+  margin-block-start: 3.5rem;
+  padding: clamp(1.15rem, 2.5vw, 1.8rem);
+  border: 2px solid var(--shape-ink);
+  border-radius: 2rem 1.2rem 1.8rem 1.4rem;
+  background:
+    linear-gradient(135deg, oklch(97% 0.045 305), oklch(97% 0.045 86));
+  box-shadow: 0.42rem 0.42rem 0 var(--shape-ink);
+  transform: rotate(-0.18deg);
+}
+
+.shape-personalize__intro {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.shape-personalize__icon {
+  display: inline-flex;
+  width: 2.8rem;
+  height: 2.8rem;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--shape-ink);
+  border-radius: 42% 58% 63% 37%;
+  background: var(--shape-hibiscus);
+  transform: rotate(-8deg);
+}
+
+.shape-personalize__intro > div { display: grid; gap: 0.25rem; }
+.shape-personalize__intro > div > span { color: oklch(41% 0.13 304); font-size: 0.68rem; font-weight: 850; letter-spacing: 0.1em; text-transform: uppercase; }
+.shape-personalize__intro h3 { font-size: clamp(1.35rem, 2.5vw, 2rem); line-height: 1.05; letter-spacing: -0.03em; }
+.shape-personalize__intro p { max-width: 62ch; color: var(--shape-muted); font-size: 0.84rem; line-height: 1.5; }
+.shape-personalize__guard { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.55rem; border: 1px solid var(--shape-ink); border-radius: 999px; background: oklch(96% 0.07 159); font-size: 0.65rem; font-weight: 850; white-space: nowrap; }
+
+.shape-personalize__field { display: grid; gap: 0.45rem; }
+.shape-personalize__field > span { font-size: 0.72rem; font-weight: 850; letter-spacing: 0.06em; text-transform: uppercase; }
+.shape-personalize__field textarea {
+  width: 100%;
+  min-height: 6.5rem;
+  resize: vertical;
+  padding: 0.9rem 1rem;
+  border: 2px solid var(--shape-ink);
+  border-radius: 1.1rem 0.7rem 1rem 0.8rem;
+  color: var(--shape-ink);
+  background: oklch(99% 0.008 85);
+  font: inherit;
+  line-height: 1.5;
+}
+.shape-personalize__field textarea:focus-visible { outline: 3px solid oklch(69% 0.18 304); outline-offset: 0.18rem; }
+.shape-personalize__field small { justify-self: end; color: var(--shape-muted); font-size: 0.68rem; }
+
+.shape-personalize__examples { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.shape-personalize__examples button { display: inline-flex; align-items: center; gap: 0.3rem; min-height: 2.2rem; padding-inline: 0.65rem; border: 1px solid var(--shape-ink); border-radius: 999px; color: var(--shape-ink); background: transparent; font-size: 0.68rem; font-weight: 750; }
+.shape-personalize__examples button:hover { background: var(--shape-mango); transform: translateY(-1px) rotate(-0.4deg); }
+
+.shape-personalize__actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.shape-personalize__actions > span { color: var(--shape-muted); font-size: 0.72rem; }
+.shape-personalize__submit,
+.shape-personalize__proposal-actions button {
+  display: inline-flex;
+  min-height: 2.8rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding-inline: 0.9rem;
+  border: 2px solid var(--shape-ink);
+  color: var(--shape-ink);
+  background: var(--shape-paper);
+  font-weight: 850;
+}
+.shape-personalize__submit { color: var(--shape-paper); background: var(--shape-ink); }
+.shape-personalize__submit:disabled { cursor: not-allowed; opacity: 0.45; }
+
+.shape-personalize__proposal { display: grid; gap: 1rem; padding-block-start: 1.2rem; border-block-start: 2px dashed var(--shape-ink); }
+.shape-personalize__proposal-header { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.shape-personalize__proposal-header > div { display: grid; gap: 0.3rem; }
+.shape-personalize__proposal-header > div > span { color: oklch(41% 0.13 304); font-size: 0.65rem; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; }
+.shape-personalize__proposal-header h4 { max-width: 52ch; font-size: 1.1rem; line-height: 1.35; }
+.shape-personalize__proposal-header > span { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 0.3rem; padding: 0.35rem 0.55rem; border: 1px solid var(--shape-ink); border-radius: 999px; background: var(--shape-mango); font-size: 0.65rem; font-weight: 850; }
+.shape-personalize__proposal-header > span[data-applied="true"] { background: oklch(91% 0.11 159); }
+
+.shape-personalize__receipt { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; border-block: 1px solid var(--shape-rule); }
+.shape-personalize__receipt > div { display: grid; gap: 0.2rem; padding: 0.7rem; }
+.shape-personalize__receipt > div + div { border-inline-start: 1px solid var(--shape-rule); }
+.shape-personalize__receipt dt { color: var(--shape-muted); font-size: 0.6rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; }
+.shape-personalize__receipt dd { overflow: hidden; margin: 0; font-size: 0.74rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+
+.shape-personalize__changes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; margin: 0; padding: 0; list-style: none; }
+.shape-personalize__change { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.55rem; padding: 0.7rem; border: 1px solid var(--shape-rule); background: oklch(99% 0.008 85 / 0.8); }
+.shape-personalize__change > span { display: inline-flex; width: 1.4rem; height: 1.4rem; align-items: center; justify-content: center; border-radius: 50%; color: oklch(32% 0.11 160); background: oklch(91% 0.11 159); }
+.shape-personalize__change > div { display: grid; gap: 0.15rem; min-width: 0; }
+.shape-personalize__change strong { font-size: 0.76rem; }
+.shape-personalize__change small { overflow: hidden; color: oklch(39% 0.11 304); font-size: 0.7rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.shape-personalize__change p { color: var(--shape-muted); font-size: 0.68rem; line-height: 1.4; }
+.shape-personalize__no-changes { color: var(--shape-muted); font-size: 0.78rem; }
+
+.shape-personalize__message { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.6rem; padding: 0.7rem; border-inline-start: 0.3rem solid var(--shape-mango); background: oklch(98% 0.035 86); font-size: 0.72rem; }
+.shape-personalize__message--error { border-inline-start-color: oklch(58% 0.2 27); background: oklch(96% 0.045 27); }
+.shape-personalize__message > div { display: grid; gap: 0.25rem; }
+.shape-personalize__message ul { display: grid; gap: 0.2rem; margin: 0; padding-inline-start: 1rem; }
+.shape-personalize__message small { color: var(--shape-muted); }
+
+.shape-personalize__proposal-actions { display: flex; flex-wrap: wrap; gap: 0.55rem; }
+.shape-personalize__proposal-actions .shape-personalize__apply { color: var(--shape-paper); background: var(--shape-ink); }
+
 .shape-open-route {
   display: flex;
   align-items: center;
@@ -781,6 +890,16 @@
   .shape-open-route { align-items: stretch; flex-direction: column; }
   .shape-open-route > button { width: 100%; }
   .shape-brief-card__facts > div { grid-template-columns: 1fr; gap: 0.3rem; }
+  .shape-personalize { transform: none; }
+  .shape-personalize__intro { grid-template-columns: auto minmax(0, 1fr); }
+  .shape-personalize__guard { grid-column: 2; justify-self: start; }
+  .shape-personalize__actions { align-items: stretch; flex-direction: column; }
+  .shape-personalize__submit { width: 100%; }
+  .shape-personalize__receipt { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .shape-personalize__receipt > div:nth-child(3) { border-inline-start: 0; border-block-start: 1px solid var(--shape-rule); }
+  .shape-personalize__receipt > div:nth-child(4) { border-block-start: 1px solid var(--shape-rule); }
+  .shape-personalize__changes { grid-template-columns: 1fr; }
+  .shape-personalize__proposal-header { align-items: start; flex-direction: column; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -792,5 +911,7 @@
   .shape-choice:focus-visible,
   .shape-choice[data-selected="true"],
   .shape-template-card[data-selected="true"] { transform: none; }
+  .shape-personalize { transform: none; }
+  .shape-personalize__examples button:hover { transform: none; }
   .shape-engine-proof__spinner { animation: none; }
 }

@@ -3,6 +3,7 @@ import type {
   ITrip,
   JourneyKnowledgeSource,
   JourneyPlanningContextTrace,
+  JourneyPersonalizationTrace,
   TimelineKnowledgeOrigin,
 } from '../types';
 import {
@@ -39,6 +40,7 @@ export interface JourneySkeletonBuildOptions {
   knowledgeSource?: JourneyKnowledgeSource;
   planningContext?: JourneyPlanningContextTrace;
   match?: Pick<TravelTemplateMatch, 'score' | 'reasons' | 'tradeoffs'>;
+  personalization?: JourneyPersonalizationTrace;
 }
 
 const formatIsoDate = (date: Date): string => date.toISOString().slice(0, 10);
@@ -249,6 +251,7 @@ export const buildTripSkeletonFromTemplate = (
         matchedTemplateScore: options.match?.score,
         matchedTemplateReasons: options.match ? [...options.match.reasons] : undefined,
         matchedTemplateTradeoffs: options.match ? [...options.match.tradeoffs] : undefined,
+        personalization: options.personalization,
         compiledAt: now.toISOString(),
       },
     },

@@ -36,3 +36,4 @@ summary: "A hidden route-first planner now compares trusted Thailand trip concep
 - [ ] [Internal] 🧭 Kept the Journey Lens workspace integration default-off after fit testing, with its structure isolated for further concept review.
 - [ ] [Internal] 🎨 Scoped the editorial decision-card system to route examples and high-level choices while keeping the working planner visually restrained.
 - [ ] [Internal] 🩺 Distinguished exhausted AI-provider quota from generic request failures in generation telemetry and retry diagnostics.
+- [ ] [Internal] 🪄 Added optional one-call route adaptation with schema-constrained output, catalogue-only place decisions, review, apply, undo, and a visible model receipt without regenerating the full itinerary.
