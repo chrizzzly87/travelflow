@@ -140,7 +140,7 @@ const MARKETING_ROUTE_CONFIGS: Array<{ path: string; element: React.ReactElement
     { path: '/cookies', element: <CookiesPage /> },
 ];
 
-const getLocalizedMarketingRoutePath = (path: string, locale: AppLanguage): string => {
+const getLocalizedRoutePath = (path: string, locale: AppLanguage): string => {
     if (path === '/') return `/${locale}`;
     return `/${locale}${path}`;
 };
@@ -252,7 +252,7 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                 MARKETING_ROUTE_CONFIGS.map(({ path, element }) => (
                     <Route
                         key={`marketing:${locale}:${path}`}
-                        path={getLocalizedMarketingRoutePath(path, locale)}
+                        path={getLocalizedRoutePath(path, locale)}
                         element={renderWithHandoff(wrapMarketingRouteElement(path, element))}
                     />
                 ))
@@ -291,6 +291,13 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                 path="/create-trip/labs/journey-view"
                 element={renderWithHandoff(<JourneyOverviewLabPage />)}
             />
+            {LOCALIZED_MARKETING_LOCALES.map((locale) => (
+                <Route
+                    key={`journey-overview-lab:${locale}`}
+                    path={getLocalizedRoutePath('/create-trip/labs/journey-view', locale)}
+                    element={renderWithHandoff(<JourneyOverviewLabPage />)}
+                />
+            ))}
             <Route path="/create-trip/labs/classic-legacy" element={<Navigate to="/create-trip" replace />} />
             <Route path="/create-trip/labs/split-workspace" element={<Navigate to="/create-trip" replace />} />
             <Route path="/create-trip/labs/journey-architect" element={<Navigate to="/create-trip" replace />} />

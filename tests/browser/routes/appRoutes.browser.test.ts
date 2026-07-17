@@ -177,5 +177,9 @@ describe('app/routes/AppRoutes create-trip rollout', () => {
     const view = renderRoutes('/create-trip/labs/journey-view');
     expect(await view.findByTestId('journey-overview-lab')).toBeTruthy();
     view.unmount();
+
+    const localizedView = renderRoutes('/de/create-trip/labs/journey-view');
+    expect(await localizedView.findByTestId('journey-overview-lab')).toBeTruthy();
+    localizedView.unmount();
   });
 });
