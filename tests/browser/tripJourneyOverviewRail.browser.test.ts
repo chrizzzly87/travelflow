@@ -70,6 +70,22 @@ afterEach(() => {
 });
 
 describe('components/journey-overview/TripJourneyOverviewRail', () => {
+  it('keeps the live planning rail independent from playful decision-card styling', () => {
+    render(React.createElement(TripJourneyOverviewRail, {
+      trip,
+      selectedItemId: 'city-bangkok',
+      onSelectItem: vi.fn(),
+    }));
+
+    const rail = screen.getByTestId('trip-journey-overview');
+    const bangkok = screen.getAllByRole('button', { name: 'Bangkok, 3 nights' })[0]!;
+
+    expect(rail).not.toHaveClass('tf-travel-experience');
+    expect(bangkok).toHaveClass('tf-trip-journey-route__chapter');
+    expect(bangkok).not.toHaveClass('tf-playful-decision-card');
+    expect(bangkok).toHaveAttribute('data-selected', 'true');
+  });
+
   it('maps chapter and transfer choices back to the shared TripView item selection', async () => {
     const user = userEvent.setup();
     const onSelectItem = vi.fn();

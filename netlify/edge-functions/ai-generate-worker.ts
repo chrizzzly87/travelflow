@@ -285,6 +285,7 @@ const classifyFailureKind = (params: {
     code.includes("provider")
     || code.includes("model_not_allowed")
     || code.includes("key_missing")
+    || code.includes("quota")
     || code.includes("request_failed")
   ) {
     return "provider";

@@ -1,6 +1,6 @@
 # JourneySpec Trip Visualization and Sidebar Concepts
 
-Status: concepts implemented; Journey Lens integration is implemented behind a default-off TripView rollout
+Status: concepts implemented; live TripView rollout paused after workspace-fit feedback
 
 Reviewed: 2026-07-17
 
@@ -13,9 +13,9 @@ The first two low-risk steps are now implemented without changing the live trip 
 - the lab is lazy-loaded and fetch-free, so it does not add work to the normal planner path;
 - the adapter is covered for a country circuit, a hub with a day trip, a legacy trip, and an over-tolerance transfer.
 
-The next checkpoint is real-trip feedback on the provisional default and compact behavior. The integration remains default-off until that feedback confirms the information hierarchy and workspace fit.
+The next checkpoint is concept feedback on information hierarchy and workspace fit. The integration remains default-off, and test previews should keep it off until one expanded structure and one compact structure are selected deliberately.
 
-The recommended hybrid now also has an additive TripView integration boundary for testing. It is disabled unless `VITE_TRIP_JOURNEY_OVERVIEW_ROLLOUT=tripview`, loads its model and visual code only when enabled, reuses the current city/transfer selection contract, compacts when the existing details panel opens, and becomes a focused chapter sheet on mobile. Its important chapter choices use the same product-neutral editorial tokens and accessible decision-card primitive as the route-first wizard. It does not add a map implementation, persistence key, or alternate item editor.
+The recommended hybrid has an additive TripView integration boundary, but the first real-workspace preview showed that even a compact rail competes with the timeline and existing details panel. It stays disabled unless `VITE_TRIP_JOURNEY_OVERVIEW_ROLLOUT=tripview`. Its styling is now intentionally independent from the playful decision cards used by route examples and high-level choices. The working planner should remain flat, compact, and neutral; chapter color is a restrained orientation cue rather than decorative chrome.
 
 ## Decision summary
 
@@ -204,7 +204,7 @@ The adapter should:
 2. **Complete:** Add an isolated concept lab with the same trip rendered in all three structures; no TripView route or persistence changes.
 3. Test wide desktop, laptop, tablet, mobile, and RTL layouts; gather preference and comprehension feedback.
 4. Select one default and one compact state. Validate the information hierarchy before polishing motion.
-5. **Implemented behind a default-off rollout:** Integrate the Journey Lens using the existing selection and details-panel contracts; complete real-trip preview testing before selecting the production default.
+5. **Paused after first workspace-fit test:** Keep the existing selection/details-panel integration boundary default-off while concept feedback determines the right expanded and compact structures.
 6. Measure chapter selection, map/timeline handoff, rail collapse, warning interaction, and time to first edit.
 7. Only then add preparation modules or child-app-specific chapter content.
 

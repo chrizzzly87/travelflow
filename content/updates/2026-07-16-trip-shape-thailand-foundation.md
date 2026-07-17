@@ -25,10 +25,11 @@ summary: "A hidden route-first planner now compares trusted Thailand trip concep
 - [ ] [Internal] 📦 Added deterministic reviewed-data artifacts with guarded staging, atomic activation, immutable history, and version-pointer rollback.
 - [ ] [Internal] 🗓️ Added a monthly dry-run-first identity refresh that remains read-only until dedicated TravelFlow database secrets are configured.
 - [ ] [Internal] 🛡️ Backed up the existing production data, deployed the isolated travel-knowledge schema and Thailand pack, verified row parity and RLS, and enabled remote reads only on the test branch.
-- [ ] [Internal] 🧩 Added a reusable map presentation contract that separates markers, route legs, selection, and viewport data from product state.
+- [ ] [Internal] 🧩 Added a reusable map presentation contract and routed the live trip workspace through validated marker, route, selection, and viewport scene layers separated from product state.
 - [ ] [Internal] 🚦 Added a default-off rollout that can promote the route-first planner on the wizard surface first, then on both production creator entries without changing their URLs.
 - [ ] [Internal] 🔍 Added canonical city and neighborhood search across primary, local, and alternate place names in every active language.
 - [ ] [Internal] 🧵 Defined three low-risk JourneySpec sidebar concepts and a shared Journey Ribbon visualization before changing the main trip workspace.
 - [ ] [Internal] 🎛️ Added an isolated comparison lab for the Journey Lens, Route Storyboard, and Adaptive Inspector with synchronized city and transfer focus.
-- [ ] [Internal] 🧭 Added a default-off Journey Lens to the trip workspace with shared map/timeline selection, automatic compact mode, and a focused mobile chapter sheet.
-- [ ] [Internal] 🎨 Extracted a shared editorial travel palette and accessible decision-card system for the route-first wizard and Journey Lens.
+- [ ] [Internal] 🧭 Kept the Journey Lens workspace integration default-off after fit testing, with its structure isolated for further concept review.
+- [ ] [Internal] 🎨 Scoped the editorial decision-card system to route examples and high-level choices while keeping the working planner visually restrained.
+- [ ] [Internal] 🩺 Distinguished exhausted AI-provider quota from generic request failures in generation telemetry and retry diagnostics.

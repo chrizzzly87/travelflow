@@ -28,6 +28,7 @@ import {
 } from '../config/paywall';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { removeLocalStorageItem } from '../services/browserStorageService';
+import { buildTripMapPresentation } from '../services/tripMapPresentationAdapter';
 import { buildBillingCheckoutPath } from '../services/billingService';
 import { useLoginModal } from '../hooks/useLoginModal';
 import {
@@ -1030,6 +1031,10 @@ const useTripViewRender = ({
     const displayTrip = useMemo(
         () => (isPaywallLocked ? buildPaywalledTripDisplay(trip) : trip),
         [isPaywallLocked, trip]
+    );
+    const mapPresentation = useMemo(
+        () => buildTripMapPresentation(displayTrip),
+        [displayTrip]
     );
     const hasLoadingItems = useMemo(
         () => displayTrip.items.some((item) => item.loading),
@@ -3295,7 +3300,7 @@ const useTripViewRender = ({
                         ItineraryMapComponent={ItineraryMap}
                         mapLoadingFallback={<MapLoadingFallback />}
                         mapDeferredFallback={<MapDeferredFallback onLoadNow={enableMapBootstrap} />}
-                        displayItems={displayTrip.items}
+                        mapPresentation={mapPresentation}
                         selectedItemId={selectedItemId}
                         onMapCitySelect={handleMapCitySelect}
                         onMapActivitySelect={handleMapActivitySelect}

@@ -27,6 +27,18 @@ const buildTrip = (): ITrip => ({
 });
 
 describe('tripGenerationDiagnosticsService', () => {
+  it('classifies provider quota exhaustion as a provider failure', () => {
+    expect(classifyTripGenerationFailure({
+      code: 'OPENAI_QUOTA_EXHAUSTED',
+      status: 429,
+      message: 'OpenAI generation request failed.',
+    })).toMatchObject({
+      kind: 'provider',
+      code: 'OPENAI_QUOTA_EXHAUSTED',
+      statusCode: 429,
+    });
+  });
+
   it('preserves trip identity/title and writes failed diagnostics on classic failure', () => {
     const snapshot = createTripGenerationInputSnapshot({
       flow: 'classic',
