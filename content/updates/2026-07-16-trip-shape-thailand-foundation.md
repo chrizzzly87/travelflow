@@ -22,6 +22,7 @@ summary: "A hidden route-first planner now compares trusted Thailand trip concep
 - [ ] [Internal] 🧾 Deployed an admin-only source-run and review ledger, registered 13 governed sources, and added build-blocking plus weekly freshness, expiry, license, and registry-drift checks before enabling crawlers.
 - [ ] [Internal] 📥 Added guarded GeoNames and Wikidata ingestion with private immutable source snapshots, deterministic identity matching, and review-only change candidates.
 - [ ] [Internal] ✅ Added an admin review queue with source evidence, structured value comparisons, and atomic accept, edit, reject, or request-changes decisions that cannot publish data directly.
+- [ ] [Internal] 📦 Added deterministic reviewed-data artifacts with guarded staging, atomic activation, immutable history, and version-pointer rollback.
 - [ ] [Internal] 🗓️ Added a monthly dry-run-first identity refresh that remains read-only until dedicated TravelFlow database secrets are configured.
 - [ ] [Internal] 🛡️ Backed up the existing production data, deployed the isolated travel-knowledge schema and Thailand pack, verified row parity and RLS, and enabled remote reads only on the test branch.
 - [ ] [Internal] 🧩 Added a reusable map presentation contract that separates markers, route legs, selection, and viewport data from product state.

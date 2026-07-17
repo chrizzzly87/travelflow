@@ -1,6 +1,6 @@
 # Travel knowledge operations plan
 
-Status: operational foundation, GeoNames/Wikidata identity ingestion, and admin review queue deployed for Thailand; artifact staging and publishing remain gated work
+Status: operational foundation, GeoNames/Wikidata identity ingestion, admin review, deterministic artifact staging, and atomic activation/rollback deployed for Thailand; broader source adapters remain gated work
 
 Owner: TravelFlow product/data engineering with explicit editorial review
 
@@ -130,9 +130,9 @@ These services may later be integrated as clearly separated live providers when 
 
 Refreshing does not automatically mean publishing. A source run produces candidates; material changes still require review.
 
-## 7. Deployed additive operational tables
+## 7. Deployed additive operational and activation tables
 
-The existing `travel_*` catalog remains the published projection. The following admin-only tables were deployed on 2026-07-17 before any crawler was enabled:
+The existing `travel_*` catalog remains the published projection. The following controlled operational and activation tables were deployed on 2026-07-17 before any crawler or reviewed-data publish workflow was enabled:
 
 ### `travel_source_runs`
 
@@ -183,9 +183,33 @@ Immutable output records:
 - validation report and publish status
 - staged, published, superseded, and rolled-back times
 
+### `travel_dataset_payloads`
+
+One immutable runtime pack per dataset version and locale:
+
+- compiled pack and localized template-copy payload
+- pack checksum, byte size, and validation report
+- staged, published, or retired status
+
+### `travel_active_datasets`
+
+One small active pointer per country:
+
+- active dataset version and artifact
+- activation actor and timestamp
+- atomically replaced only by the guarded publish or rollback RPC
+
+### `travel_dataset_activations`
+
+An immutable publish/rollback ledger:
+
+- previous and target dataset/artifact IDs
+- action, reason, actor kind, and timestamp
+- metadata binding the activation to its repository commit
+
 RLS must keep snapshots, candidates, and review data admin-only. Public clients can read only the published projection through the versioned pack RPC.
 
-Production verification confirms that all five tables have RLS enabled, anonymous table access is revoked, and none of the operational tables are referenced by the public destination-pack RPC. Raw snapshots remain append-only for authenticated admins. Review decisions are readable by admins but can be inserted only through the atomic review RPC, which records the immutable decision and updates candidate status in one transaction. The service role retains controlled retention access.
+Production verification confirms that all eight operational and activation tables have RLS enabled. Snapshots, candidates, decisions, artifacts, and activation history remain admin-only; public access is restricted to the selected columns of the active pointer and its published payload. Raw snapshots remain append-only for authenticated admins. Review decisions are readable by admins but can be inserted only through the atomic review RPC, which records the immutable decision and updates candidate status in one transaction. The service role retains controlled retention access.
 
 The private `travel-knowledge-snapshots` Storage bucket is capped at 50 MiB per object. It has no permissive browser policy and adds restrictive policies that continue denying this bucket if a broad Storage allow policy is introduced later. Fetchers upload with `upsert: false`; object deletion or replacement is never part of ingestion. Use the Storage API for object lifecycle work, never direct SQL against `storage.objects`.
 
@@ -252,9 +276,9 @@ Track these per country and dataset version:
 
 ### Stage 1 — current reviewed pack
 
-- Deploy the additive schema and Thailand v5 seed.
-- Keep bundled fallback enabled until production counts, RLS, and the pack RPC pass.
-- Record the first database artifact and rollback version.
+- [x] Deploy the additive schema and Thailand v5 seed.
+- [x] Keep bundled fallback enabled until production counts, RLS, and the pack RPC pass.
+- [x] Record and activate the first immutable database artifact; future publishes now retain the prior artifact as a rollback target.
 
 ### Stage 2 — freshness and source registry
 
@@ -288,9 +312,21 @@ The monthly identity workflow always runs a dry reconciliation first. It persist
 - [x] Keep all resulting external-ID changes in `needs_review`; do not mutate the published pack.
 - [x] Add an admin review queue with source links, structured before/after values, validation findings, review reasons, and atomic accept, edit, reject, or request-changes decisions.
 - [x] Keep review and publishing separate; a terminal candidate decision cannot change the published destination pack.
+- [x] Materialize only accepted, supported review changes into a new repository dataset version before generating an artifact.
+- [x] Bind every deterministic pack, seed, source-run set, and accepted decision set to checksums and a repository commit.
+- [x] Stage immutable payloads privately, then publish or roll back with one guarded transaction and an immutable activation record.
 - Add Wikimedia popularity and OSM POI candidates next.
 - Add government/TMD adapters only for individually licensed datasets.
 - Keep TAT, UNESCO, audience context, food, neighborhood judgment, and route-template copy in editorial review.
+
+Artifact commands are dry-run first and require a distinct write-mode confirmation for each mutation:
+
+```bash
+pnpm travel-knowledge:materialize-reviews -- --version <version> --generated-at <timestamp>
+pnpm travel-knowledge:stage-artifact
+pnpm travel-knowledge:activate-artifact -- --publish <artifact-id> --reason <reason>
+pnpm travel-knowledge:activate-artifact -- --rollback <artifact-id> --country TH --reason <reason>
+```
 
 ### Stage 4 — contributor and traveler corrections
 

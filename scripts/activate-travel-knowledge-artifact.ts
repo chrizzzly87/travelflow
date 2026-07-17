@@ -66,7 +66,7 @@ const main = async () => {
 
   const { data: artifact, error: artifactError } = await client
     .from('travel_dataset_artifacts')
-    .select('id,status,dataset_version_id,repository_commit,artifact_checksum,storage_object_key,travel_dataset_versions!inner(country_code,version,status)')
+    .select('id,status,dataset_version_id,repository_commit,artifact_checksum,storage_object_key,travel_dataset_versions!travel_dataset_artifacts_dataset_version_id_fkey!inner(country_code,version,status)')
     .eq('id', options.artifactId)
     .maybeSingle();
   if (artifactError) throw new Error(`Could not inspect artifact: ${artifactError.message}`);
