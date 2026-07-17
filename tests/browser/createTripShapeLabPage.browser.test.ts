@@ -293,7 +293,7 @@ describe('pages/CreateTripShapeLabPage', () => {
           requestId: 'personalization-request-1',
           durationMs: 420,
           provider: 'gemini',
-          model: 'gemini-2.5-flash-lite',
+          model: 'gemini-3.1-flash-lite',
         },
       };
     });
@@ -316,7 +316,7 @@ describe('pages/CreateTripShapeLabPage', () => {
     await user.click(screen.getByRole('button', { name: /wizard\.personalize\.submit/i }));
 
     expect(await screen.findByText('A slower, food-first Bangkok route with one requested anchor.')).toBeInTheDocument();
-    expect(screen.getByText('gemini-2.5-flash-lite')).toBeInTheDocument();
+    expect(screen.getByText('gemini-3.1-flash-lite')).toBeInTheDocument();
     expect(trackEvent).toHaveBeenCalledWith(
       'create_trip_shape__personalization--ready',
       expect.objectContaining({
@@ -337,7 +337,7 @@ describe('pages/CreateTripShapeLabPage', () => {
         personalization: {
           requestId: 'personalization-request-1',
           provider: 'gemini',
-          model: 'gemini-2.5-flash-lite',
+          model: 'gemini-3.1-flash-lite',
           operationCount: 3,
           applied: true,
           datasetVersion: '2026.07.17-v6',
