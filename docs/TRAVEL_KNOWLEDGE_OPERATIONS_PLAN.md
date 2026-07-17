@@ -259,7 +259,8 @@ Track these per country and dataset version:
 - [x] Add the operational tables above.
 - [x] Register Wikidata, GeoNames, IANA, Wikimedia Analytics, OSM/Geofabrik, data.go.th, TMD Open Data, Wikimedia Commons, and the current manual/editorial sources with explicit ingestion modes and storage rules.
 - [x] Add a deterministic freshness/license audit to the repository quality gate before adding any crawler.
-- [ ] Schedule that audit weekly and persist its run summary after the first source-run worker is available.
+- [x] Add a read-only Monday audit workflow; GitHub will begin running it from the default branch after this feature merges.
+- [ ] Persist scheduled run summaries after the first source-run worker is available.
 
 The current commands are:
 

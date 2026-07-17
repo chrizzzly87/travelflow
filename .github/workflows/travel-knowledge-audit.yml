@@ -1,0 +1,54 @@
+name: Travel Knowledge Audit
+
+on:
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      as_of:
+        description: Optional ISO timestamp for replaying the freshness audit
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: travel-knowledge-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TRAVEL_KNOWLEDGE_AUDIT_AT: ${{ github.event.inputs.as_of }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate dataset, generated artifacts, source registry, and freshness
+        run: pnpm travel-knowledge:check
+
+      - name: Record audit scope
+        if: always()
+        run: |
+          {
+            echo '## Travel knowledge audit'
+            echo
+            echo '- Dataset: Thailand v5'
+            echo '- Checks: schema, generated artifacts, source registry, licenses, freshness, and expiry'
+            echo '- Mode: read-only; this workflow never crawls sources or mutates Supabase'
+          } >> "$GITHUB_STEP_SUMMARY"
