@@ -31,3 +31,4 @@ summary: "A hidden route-first planner now compares trusted Thailand trip concep
 - [ ] [Internal] 🧵 Defined three low-risk JourneySpec sidebar concepts and a shared Journey Ribbon visualization before changing the main trip workspace.
 - [ ] [Internal] 🎛️ Added an isolated comparison lab for the Journey Lens, Route Storyboard, and Adaptive Inspector with synchronized city and transfer focus.
 - [ ] [Internal] 🧭 Added a default-off Journey Lens to the trip workspace with shared map/timeline selection, automatic compact mode, and a focused mobile chapter sheet.
+- [ ] [Internal] 🎨 Extracted a shared editorial travel palette and accessible decision-card system for the route-first wizard and Journey Lens.

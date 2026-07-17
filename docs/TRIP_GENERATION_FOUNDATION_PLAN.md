@@ -354,6 +354,8 @@ The `2026.07.17-v5` English pack is 445,767 bytes raw and 39,185 bytes gzip; loc
 - extracted map/route/timeline primitives
 - responsive, RTL, keyboard, and reduced-motion validation
 
+Baseline implemented on the feature branch: the route-first wizard and Journey Lens now share one product-neutral travel-experience token layer plus accessible decision-button and decision-surface primitives. The shared layer owns the warm editorial palette, squircle geometry, interaction states, focus treatment, and reduced-motion behavior without importing `JourneySpec`, AI, persistence, or map concerns. Deeper map-renderer and timeline extraction remains the next Phase E boundary.
+
 ### Later bucket
 
 - detailed family and individual traveler profiles

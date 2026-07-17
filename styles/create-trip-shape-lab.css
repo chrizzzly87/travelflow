@@ -1,11 +1,11 @@
 .shape-lab-page {
-  --shape-paper: oklch(97% 0.014 83);
-  --shape-ink: oklch(22% 0.025 264);
-  --shape-muted: oklch(48% 0.025 264);
-  --shape-rule: oklch(82% 0.026 78);
-  --shape-mango: oklch(84% 0.16 84);
-  --shape-lagoon: oklch(78% 0.12 190);
-  --shape-hibiscus: oklch(72% 0.19 25);
+  --shape-paper: var(--tf-travel-paper);
+  --shape-ink: var(--tf-travel-ink);
+  --shape-muted: var(--tf-travel-muted);
+  --shape-rule: var(--tf-travel-rule);
+  --shape-mango: var(--tf-travel-mango);
+  --shape-lagoon: var(--tf-travel-lagoon);
+  --shape-hibiscus: var(--tf-travel-hibiscus);
   min-height: 100vh;
   color: var(--shape-ink);
   background:
@@ -160,45 +160,14 @@
 }
 
 .shape-choice {
-  position: relative;
+  --tf-playful-selected-lift: -0.4rem;
   display: grid;
   min-height: 20rem;
   grid-template-rows: auto auto auto 1fr auto;
   gap: 1rem;
   padding: clamp(1.35rem, 3vw, 2rem);
   overflow: hidden;
-  border: 2px solid var(--shape-ink);
-  border-radius: 2.4rem 1.7rem 2.2rem 1.4rem / 2rem 2.4rem 1.6rem 2.2rem;
-  corner-shape: squircle;
-  color: var(--shape-ink);
-  text-align: start;
-  transform: rotate(calc((var(--choice-index) - 1) * 1.25deg));
-  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), filter 160ms ease-out;
 }
-
-.shape-choice--mango { background: var(--shape-mango); }
-.shape-choice--lagoon { background: var(--shape-lagoon); }
-.shape-choice--hibiscus { background: var(--shape-hibiscus); color: oklch(18% 0.04 25); }
-
-.shape-choice::after {
-  content: "";
-  position: absolute;
-  inset-inline: 12% 7%;
-  inset-block-end: 13%;
-  height: 1.1rem;
-  border-block-start: 3px solid currentColor;
-  border-radius: 50%;
-  opacity: 0.42;
-  transform: rotate(-3deg);
-}
-
-.shape-choice:hover,
-.shape-choice:focus-visible,
-.shape-choice[data-selected="true"] {
-  transform: translateY(-0.4rem) rotate(0deg);
-}
-
-.shape-choice:active { transform: translateY(0.1rem) scale(0.985); }
 
 .shape-choice__number {
   justify-self: end;
@@ -479,23 +448,15 @@
 .shape-data-note small { font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; }
 
 .shape-template-card {
-  position: relative;
+  --tf-playful-selected-lift: -0.55rem;
   display: flex;
   min-height: 33rem;
   flex-direction: column;
   gap: 1rem;
   padding: clamp(1.25rem, 2.5vw, 1.8rem);
-  border: 2px solid var(--shape-ink);
-  border-radius: 2.2rem 1.5rem 2.5rem 1.6rem / 1.8rem 2.4rem 1.7rem 2.2rem;
-  corner-shape: squircle;
-  transform: rotate(calc((var(--template-index) - 1) * 0.9deg));
-  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.shape-template-card--mango { background: var(--shape-mango); }
-.shape-template-card--lagoon { background: var(--shape-lagoon); }
-.shape-template-card--hibiscus { background: var(--shape-hibiscus); }
-.shape-template-card[data-selected="true"] { transform: translateY(-0.55rem) rotate(0); outline: 4px double var(--shape-ink); outline-offset: 0.35rem; }
+.shape-template-card[data-selected="true"] { outline: 4px double var(--shape-ink); outline-offset: 0.35rem; }
 
 .shape-template-card__topline { display: flex; align-items: center; justify-content: space-between; gap: 1rem; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 .shape-template-card__topline > span:last-child { display: inline-flex; align-items: center; gap: 0.3rem; }

@@ -352,7 +352,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
         >
             {journeyOverviewRail ? (
                 <aside
-                    className="tf-trip-journey-rail-slot shrink-0"
+                    className="tf-trip-journey-rail-slot tf-travel-experience shrink-0"
                     data-testid="planner-journey-overview-rail"
                     data-compact={detailsPanelVisible ? 'true' : 'false'}
                 >
