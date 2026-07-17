@@ -507,6 +507,18 @@
       "aiRetry": "Reintentar"
     }
   },
+  "tripActivityKnowledge": {
+    "title": "Información para visitantes con fuentes",
+    "description": "Datos estructurados del catálogo, no texto generado.",
+    "currentUntil": "Vigente hasta {date}",
+    "freshness": { "current": "Vigente", "expired": "Volver a comprobar", "undated": "Sin fecha de revisión" },
+    "duration": "Duración recomendada", "bestTime": "Mejor momento", "hours": "Horario", "lastEntry": "última entrada {time}", "admission": "Entrada", "free": "Gratis", "booking": "Reserva",
+    "bookingModes": { "walk_in": "Sin reserva", "optional_advance": "Reserva anticipada opcional", "recommended_advance": "Reserva con antelación", "required_advance": "Reserva anticipada obligatoria" },
+    "audience": "Adecuación", "audienceLabels": { "family": "Familias", "lgbtq": "LGBTQ+", "solo": "En solitario", "mobility": "Movilidad" },
+    "fitLabels": { "good": "Buena opción", "conditional": "Consulta las notas", "limited": "Opción limitada", "unknown": "Aún sin verificar" },
+    "dressCode": "Vestimenta", "accessibility": "Accesibilidad", "practicalNotes": "Conviene saber", "sources": "Fuentes",
+    "verifyLive": "Los horarios, precios y la disponibilidad pueden cambiar. Consulta la fuente enlazada antes de ir."
+  },
   "tripRouteShell": {
     "loadingTrip": "Cargando viaje",
     "preparingPlanner": "Preparando planificador",

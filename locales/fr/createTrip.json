@@ -406,6 +406,19 @@
       "titleMany": "{count} routes solides à travers la Thaïlande.",
       "description": "Ces squelettes versionnés viennent du pack de connaissances sur la Thaïlande : aucun lieu n’est inventé pendant l’attente.",
       "dataNote": "{templates} modèles comparés à {entities} lieux canoniques · données {version}",
+      "engine": {
+        "label": "Preuve du planificateur rapide",
+        "title": "Parcours rapide sourcé",
+        "description": "Ces options ont été récupérées et compilées depuis le catalogue Thaïlande avant toute personnalisation par l’IA.",
+        "noAi": "0 appel IA",
+        "retrieval": "Récupération",
+        "milliseconds": "{value} ms",
+        "places": "Lieux sélectionnés",
+        "templates": "Modèles sélectionnés",
+        "payload": "Contexte",
+        "loadingSelected": "Chargement du contexte détaillé du catalogue pour cet itinéraire…",
+        "selectedReady": "Itinéraire prêt avec {neighborhoods} quartiers et {pois} POI dans un contexte de {size}."
+      },
       "fallback": "Données disponibles hors ligne",
       "sources": {
         "memory": "Cache à jour",
@@ -450,7 +463,8 @@
     },
     "actions": {
       "compare": "Comparer les routes",
-      "openPlan": "Ouvrir le plan modifiable"
+      "preparing": "Récupération des itinéraires…",
+      "openPlan": "Ouvrir la base instantanée"
     }
   },
   "journeyLab": {

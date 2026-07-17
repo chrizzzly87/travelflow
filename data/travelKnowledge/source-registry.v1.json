@@ -1,8 +1,8 @@
 {
   "manifest": {
     "registryKey": "travel-knowledge-sources",
-    "version": "2026.07.17-v1",
-    "generatedAt": "2026-07-17T07:35:00Z",
+    "version": "2026.07.17-v2",
+    "generatedAt": "2026-07-17T13:45:00Z",
     "defaultCountryCodes": ["TH"]
   },
   "sources": [
@@ -205,6 +205,90 @@
       "countryCodes": ["TH"],
       "metadata": {
         "usage": "Manual fact confirmation and original TravelFlow summaries only; do not crawl or syndicate source prose or images."
+      }
+    },
+    {
+      "sourceKey": "grand_palace_official",
+      "name": "The Grand Palace",
+      "sourceKind": "official",
+      "baseUrl": "https://www.royalgrandpalace.th/",
+      "termsUrl": "https://www.royalgrandpalace.th/en/visit/practical-information",
+      "attributionText": "Bureau of the Royal Household",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Manual confirmation of structured visitor facts only; do not crawl or store source prose or images."
+      }
+    },
+    {
+      "sourceKey": "wat_pho_official",
+      "name": "Wat Pho",
+      "sourceKind": "official",
+      "baseUrl": "https://www.watpho.com/",
+      "termsUrl": "https://www.watpho.com/en/contact/plan",
+      "attributionText": "Wat Phra Chetuphon Wimon Mangkhalaram",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Manual confirmation of structured visitor facts only; do not crawl or store source prose or images."
+      }
+    },
+    {
+      "sourceKey": "bma_official",
+      "name": "Bangkok Metropolitan Administration",
+      "sourceKind": "official",
+      "baseUrl": "https://www.bangkok.go.th/",
+      "termsUrl": "https://gov.bangkok.go.th/Policy/Terms",
+      "attributionText": "Bangkok Metropolitan Administration",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Manual confirmation from BMA public-information pages; store structured values and source URLs only."
+      }
+    },
+    {
+      "sourceKey": "wat_arun_community",
+      "name": "Wat Arun visitor guide",
+      "sourceKind": "community",
+      "baseUrl": "https://www.wat-arun.com/",
+      "termsUrl": "https://www.wat-arun.com/",
+      "attributionText": "Wat Arun community visitor guide",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Community reference for time-sensitive visitor facts; require freshness warnings and on-site verification."
       }
     },
     {

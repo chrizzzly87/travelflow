@@ -164,7 +164,7 @@ describe('travel template matcher', () => {
     expect(applied.overflowNights).toBe(0);
     expect(applied.spec.knowledgeContext).toEqual({
       datasetKey: 'thailand-core',
-      datasetVersion: '2026.07.17-v5',
+      datasetVersion: '2026.07.17-v6',
       templateKey: match.template.templateKey,
       templateVersion: match.template.version,
     });

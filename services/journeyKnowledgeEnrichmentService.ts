@@ -1,5 +1,6 @@
 import type { ITimelineItem, ITrip, TimelineKnowledgeOrigin } from '../types';
 import type { AppliedTravelTemplate } from '../shared/travelTemplateMatcher';
+import { buildTravelActivityKnowledge } from '../shared/travelActivityKnowledge';
 import type {
   TravelDestinationPack,
   TravelEntityCatalogItem,
@@ -69,7 +70,12 @@ const intervalsOverlap = (
   right: OccupiedInterval,
 ): boolean => left.start < right.end && right.start < left.end;
 
-const candidateDuration = (entity: TravelEntityCatalogItem): number => {
+const candidateDuration = (entity: TravelEntityCatalogItem, now: Date): number => {
+  const activityKnowledge = buildTravelActivityKnowledge(entity, now);
+  if (activityKnowledge?.recommendedDuration) {
+    const { min, max } = activityKnowledge.recommendedDuration.value;
+    return Math.min(0.8, Math.max(0.04, ((min + max) / 2) / 1_440));
+  }
   const range = getTravelEntityRecommendedStayRange(entity);
   if (!range) return 0.2;
   return Math.min(0.8, Math.max(0.08, (range.min + range.max) / 2));
@@ -130,6 +136,7 @@ export const enrichTripSkeletonFromKnowledge = (
     throw new Error('Knowledge enrichment requires the same dataset version used for route selection.');
   }
 
+  const now = options.now ?? new Date();
   const index = getTravelKnowledgeIndex(pack);
   const existingEntitySlugs = new Set(skeleton.items.flatMap((item) => (
     item.knowledgeMeta ? [item.knowledgeMeta.entity.canonicalSlug] : []
@@ -169,7 +176,7 @@ export const enrichTripSkeletonFromKnowledge = (
         ?? index.bySlug.get(candidate.entity.canonicalSlug);
       if (!entity || entity.entityType !== 'poi') continue;
 
-      const duration = candidateDuration(entity);
+      const duration = candidateDuration(entity, now);
       const startDateOffset = findAvailableStart(slots, duration, cityEnd, occupied);
       if (startDateOffset === undefined) continue;
       const activityTypes = getTravelEntityActivityTypes(entity);
@@ -186,6 +193,7 @@ export const enrichTripSkeletonFromKnowledge = (
         countryCode: entity.countryCode,
         countryName: 'Thailand',
         activityType: activityTypes,
+        activityKnowledge: buildTravelActivityKnowledge(entity, now),
         knowledgeMeta: knowledgeMetaForCandidate(entity, skeleton, candidate.matchScore),
       });
       existingEntitySlugs.add(entity.canonicalSlug);
@@ -194,7 +202,6 @@ export const enrichTripSkeletonFromKnowledge = (
     }
   }
 
-  const now = options.now ?? new Date();
   const paletteId = skeleton.cityColorPaletteId ?? DEFAULT_CITY_COLOR_PALETTE_ID;
   return {
     ...skeleton,

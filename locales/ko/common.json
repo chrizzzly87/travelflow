@@ -507,6 +507,16 @@
       "aiRetry": "다시 시도"
     }
   },
+  "tripActivityKnowledge": {
+    "title": "출처가 있는 방문 정보", "description": "생성된 설명이 아닌 구조화된 카탈로그 데이터입니다.", "currentUntil": "{date}까지 최신",
+    "freshness": { "current": "최신", "expired": "다시 확인", "undated": "검토일 없음" },
+    "duration": "권장 소요 시간", "bestTime": "추천 시간", "hours": "운영 시간", "lastEntry": "마지막 입장 {time}", "admission": "입장료", "free": "무료", "booking": "예약",
+    "bookingModes": { "walk_in": "현장 방문", "optional_advance": "사전 예약 선택", "recommended_advance": "사전 예약 권장", "required_advance": "사전 예약 필수" },
+    "audience": "여행자 적합도", "audienceLabels": { "family": "가족", "lgbtq": "LGBTQ+", "solo": "혼자", "mobility": "이동 편의" },
+    "fitLabels": { "good": "잘 맞음", "conditional": "메모 확인", "limited": "제한적", "unknown": "미확인" },
+    "dressCode": "복장 규정", "accessibility": "접근성", "practicalNotes": "알아둘 점", "sources": "출처",
+    "verifyLive": "운영 시간, 가격, 이용 가능 여부는 바뀔 수 있습니다. 방문 전 연결된 출처를 확인하세요."
+  },
   "tripRouteShell": {
     "loadingTrip": "여행 불러오는 중",
     "preparingPlanner": "플래너 준비 중",

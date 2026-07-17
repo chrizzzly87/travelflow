@@ -16,9 +16,9 @@ The proposed position is:
 
 That creates a defensible gap between inspiration/tracking products such as Polarsteps and Skratch, and logistics-heavy planners such as Wanderlog and Stippl. TravelFlow can still grow into the full planning lifecycle, but its memorable first win should be a source-backed route reveal rather than an empty day planner.
 
-The Thailand foundation already proves the core architecture: structured `JourneySpec`, first-class cities and neighborhoods, cached country knowledge, premade route concepts, deterministic matching, immediate editable skeletons, and a reusable map contract. The next product work should deepen traveler-aware planning, progressive enrichment, and the route-reveal experience before expanding globally.
+The Thailand foundation now proves the core architecture: structured `JourneySpec`, first-class cities and neighborhoods, bounded two-stage retrieval from an active country pack, premade route concepts, deterministic matching, immediate editable skeletons, typed activity metadata, a searchable admin catalogue, and a reusable map contract. The next product work should add constrained AI personalization and traveler-aware planning before expanding globally.
 
-The follow-up trip visualization direction is defined in [JOURNEY_SPEC_SIDEBAR_CONCEPTS.md](./JOURNEY_SPEC_SIDEBAR_CONCEPTS.md). It recommends a synchronized Journey Lens and Route Storyboard, prototyped in isolation before any large TripView layout change.
+The follow-up trip visualization direction is defined in [JOURNEY_SPEC_SIDEBAR_CONCEPTS.md](./JOURNEY_SPEC_SIDEBAR_CONCEPTS.md). Its synchronized Journey Lens and Route Storyboard remain paused until the fast-path experience is approved; no further large TripView layout change should ship as part of this foundation.
 
 ## 2. What the current codebase did well and where it was constrained
 
@@ -155,14 +155,25 @@ TravelFlow should use a hybrid retrieval system, not an embeddings-only RAG data
 
 1. Resolve text selections to canonical entities.
 2. Apply hard filters for geography, dates, duration, transport, traveler constraints, and freshness.
-3. Retrieve a bounded country or regional pack from cache/Supabase.
+3. Retrieve a bounded country or regional context from the active Supabase artifact, with an immutable bundled fallback.
 4. Rank templates, neighborhoods, activities, and day trips deterministically.
 5. Use lexical/vector retrieval only for free-text wishes and long-tail editorial notes.
-6. Let the model select known IDs and explain the result.
+6. Let the model propose a constrained patch that can select only known IDs and explain the result.
 7. Validate IDs, source coverage, transfers, duplicates, and hard constraints.
 8. Persist the dataset, template, ranker, prompt, and model versions with the trip.
 
 This is faster than putting every fact into a vector database, produces stable answers for identical inputs, and makes citations and rollback practical.
+
+### Implemented Thailand checkpoint
+
+- The comparison step retrieves at most three templates, two neighborhoods per city, and two POIs per city.
+- Selecting one route retrieves a deeper, template-pinned context with up to four neighborhoods and six POIs per city.
+- The route reveal visibly reports source, dataset/retriever version, retrieval time, payload size, selected/source counts, and zero AI calls.
+- Opening the base compiles an editable trip locally and preserves the retrieval receipt plus canonical entity IDs.
+- Researched Bangkok activities expose structured duration, hours, pricing, booking, dress, audience, practical, freshness, and source fields; absent data stays absent.
+- The admin travel-knowledge workspace opens on a searchable published catalogue and keeps ingestion candidates in a separate review queue.
+
+This is a structured retrieval/RAG system, but it is not yet semantic or fully personalized. Vector retrieval for free-text wishes and the AI patch step are open. The existing classic generator still uses the large-prompt generation path and remains useful as the comparison baseline.
 
 ## 9. Continuous update plan
 
@@ -254,11 +265,11 @@ It can reuse canonical ports/cities, neighborhoods, activities, dishes, pricing 
 
 The admin review, deterministic artifact staging, atomic publish, and rollback foundation is complete.
 
-1. Promote the Thailand route-first wizard only after product and source-quality gates pass.
-2. Implement progressive traveler setup for family, group, accessibility, dietary, and audience context.
-3. Add group preference negotiation and explainable route scoring.
-4. Complete the flatter application shell and signature route-reveal visual system.
-5. Prototype and validate the Journey Lens sidebar and Journey Ribbon visualization without changing TripView persistence or routes.
+1. Validate the Thailand deterministic fast path against the classic generator with the visible engine receipt and tester checklist.
+2. Add constrained AI personalization that patches the selected canonical route without regenerating the entire trip.
+3. Implement progressive traveler setup for family, group, accessibility, dietary, and audience context.
+4. Add group preference negotiation and explainable route scoring.
+5. Keep the Journey Lens/sidebar work paused until the trip workspace direction is approved from isolated concepts.
 6. Add two or three deeper Thailand content verticals: neighborhoods, family supply, food, and seasonal alternatives.
 7. Prove the country-pack factory with one structurally different second country.
 8. Prototype camper and cruise as separate adapters/products after the core graph and publishing workflow are stable.

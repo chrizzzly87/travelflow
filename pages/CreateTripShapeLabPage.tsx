@@ -6,6 +6,7 @@ import {
   Buildings,
   CalendarBlank,
   Check,
+  CircleNotch,
   Compass,
   Database,
   ForkKnife,
@@ -33,6 +34,10 @@ import {
   type JourneyRouteConcept,
 } from '../services/journeyRouteConceptService';
 import {
+  loadTravelPlanningContext,
+  type TravelPlanningContextLoadResult,
+} from '../services/travelPlanningContextService';
+import {
   getBundledTravelDestinationPack,
   loadTravelDestinationPack,
   type TravelKnowledgeLoadSource,
@@ -50,7 +55,7 @@ import {
   type TravelTemplateMatch,
 } from '../shared/travelTemplateMatcher';
 import type { JourneyPace } from '../shared/journeySpec';
-import type { TravelDestinationPack, TravelEntityCatalogItem } from '../shared/travelKnowledge';
+import type { TravelEntityCatalogItem } from '../shared/travelKnowledge';
 import type { ITrip } from '../types';
 import '../styles/create-trip-shape-lab.css';
 
@@ -61,8 +66,8 @@ interface CreateTripShapeLabPageProps {
 
 interface PreparedRouteComparison {
   concepts: JourneyRouteConcept[];
-  pack: TravelDestinationPack;
-  source: TravelKnowledgeLoadSource;
+  retrieval: TravelPlanningContextLoadResult;
+  rawBytes: number;
 }
 
 type WizardStep = 'shape' | 'place' | 'timing' | 'style' | 'reveal';
@@ -137,6 +142,15 @@ const measureNow = (): number => (
 
 const roundDurationMs = (durationMs: number): number => Math.round(durationMs * 1_000) / 1_000;
 
+const serializedByteLength = (value: unknown): number => {
+  const serialized = JSON.stringify(value);
+  return typeof TextEncoder !== 'undefined'
+    ? new TextEncoder().encode(serialized).byteLength
+    : serialized.length;
+};
+
+const formatContextKilobytes = (bytes: number): string => `${Math.round(bytes / 1_024)} KB`;
+
 const TemplateRouteStrip: React.FC<{ applied: AppliedTravelTemplate }> = ({ applied }) => {
   const { t } = useTranslation('createTrip');
   const stops = applied.spec.places.filter((place) => place.role === 'base' || place.role === 'day_trip');
@@ -178,8 +192,14 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
   const [placeQuery, setPlaceQuery] = useState('');
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>();
   const [routeComparison, setRouteComparison] = useState<PreparedRouteComparison>();
+  const [selectedRouteContext, setSelectedRouteContext] = useState<TravelPlanningContextLoadResult>();
+  const [selectedRouteContextBytes, setSelectedRouteContextBytes] = useState(0);
+  const [isPreparingComparison, setIsPreparingComparison] = useState(false);
+  const [isPreparingSelectedRoute, setIsPreparingSelectedRoute] = useState(false);
   const progressRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const comparisonRequestRef = useRef(0);
+  const selectedRouteRequestRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -236,12 +256,14 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
   }, [draft, pack]);
 
   const routeConcepts = routeComparison?.concepts ?? EMPTY_ROUTE_CONCEPTS;
-  const routePack = routeComparison?.pack ?? pack;
-  const routeLoadSource = routeComparison?.source ?? loadSource;
+  const routePack = routeComparison?.retrieval.context.pack ?? pack;
+  const routeLoadSource = routeComparison?.retrieval.source ?? loadSource;
   const selectedRoute = routeConcepts.find(({ match }) => match.template.templateKey === selectedTemplateKey);
+  const selectedRoutePack = selectedRouteContext?.context.pack ?? routePack;
+  const selectedRouteLoadSource = selectedRouteContext?.source ?? routeLoadSource;
   const selectedDestinationBriefs = useMemo(
-    () => selectedRoute ? buildJourneyDestinationBriefs(selectedRoute.applied.spec, routePack) : [],
-    [routePack, selectedRoute],
+    () => selectedRoute ? buildJourneyDestinationBriefs(selectedRoute.applied.spec, selectedRoutePack) : [],
+    [selectedRoute, selectedRoutePack],
   );
   const cityRequired = draft.journeyType !== 'single_country_circuit';
   const exactDatesValid = draft.dateMode !== 'exact' || journeyResult.error === null;
@@ -252,9 +274,15 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
       : true;
 
   const updateDraft = (update: Partial<JourneyShapeWizardDraft>) => {
+    comparisonRequestRef.current += 1;
+    selectedRouteRequestRef.current += 1;
     setDraft((current) => ({ ...current, ...update }));
     setSelectedTemplateKey(undefined);
     setRouteComparison(undefined);
+    setSelectedRouteContext(undefined);
+    setSelectedRouteContextBytes(0);
+    setIsPreparingComparison(false);
+    setIsPreparingSelectedRoute(false);
   };
 
   const moveToStep = (nextIndex: number, afterPaint?: () => void) => {
@@ -321,8 +349,8 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
     moveToStep(nextIndex);
   };
 
-  const goForward = () => {
-    if (!canContinue) return;
+  const goForward = async () => {
+    if (!canContinue || isPreparingComparison) return;
     const nextIndex = Math.min(STEPS.length - 1, stepIndex + 1);
     trackEvent('create_trip_shape__step--continue', { from: currentStep, to: STEPS[nextIndex] });
     const spec = journeyResult.spec;
@@ -332,28 +360,54 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
     }
 
     const revealStartedAt = measureNow();
-    const prepared = buildJourneyRouteConcepts(spec, pack, { limit: 3 });
-    setRouteComparison({ concepts: prepared.concepts, pack, source: loadSource });
-    trackEvent('create_trip_shape__concepts--prepare', {
-      journey_type: spec.journeyType,
-      concept_count: prepared.concepts.length,
-      attempted_template_count: prepared.attemptedTemplateCount,
-      failed_template_count: prepared.failedTemplateCount,
-      rank_duration_ms: roundDurationMs(prepared.rankDurationMs),
-      apply_duration_ms: roundDurationMs(prepared.applyDurationMs),
-      total_duration_ms: roundDurationMs(prepared.totalDurationMs),
-      knowledge_source: loadSource,
-      dataset_version: pack.dataset?.version,
-    });
-    moveToStep(nextIndex, () => {
-      trackEvent('create_trip_shape__reveal--ready', {
+    const requestId = comparisonRequestRef.current + 1;
+    comparisonRequestRef.current = requestId;
+    setIsPreparingComparison(true);
+    try {
+      const retrieval = await loadTravelPlanningContext({
+        spec,
+        locale: i18n.language,
+        networkPolicy: 'network-first',
+        templateLimit: 3,
+        neighborhoodLimitPerCity: 2,
+        poiLimitPerCity: 2,
+      });
+      if (comparisonRequestRef.current !== requestId) return;
+      const contextPack = retrieval.context.pack;
+      const rawBytes = serializedByteLength(retrieval.context);
+      const prepared = buildJourneyRouteConcepts(spec, contextPack, { limit: 3 });
+      setRouteComparison({ concepts: prepared.concepts, retrieval, rawBytes });
+      trackEvent('create_trip_shape__concepts--prepare', {
         journey_type: spec.journeyType,
         concept_count: prepared.concepts.length,
-        duration_ms: roundDurationMs(measureNow() - revealStartedAt),
-        knowledge_source: loadSource,
-        dataset_version: pack.dataset?.version,
+        attempted_template_count: prepared.attemptedTemplateCount,
+        failed_template_count: prepared.failedTemplateCount,
+        rank_duration_ms: roundDurationMs(prepared.rankDurationMs),
+        apply_duration_ms: roundDurationMs(prepared.applyDurationMs),
+        total_duration_ms: roundDurationMs(prepared.totalDurationMs),
+        context_load_duration_ms: roundDurationMs(retrieval.loadDurationMs),
+        context_bytes: rawBytes,
+        retrieved_entity_count: retrieval.context.stats.selectedEntityCount,
+        retrieved_template_count: retrieval.context.stats.selectedTemplateCount,
+        retriever_version: retrieval.context.retrieverVersion,
+        knowledge_source: retrieval.source,
+        dataset_version: contextPack.dataset?.version,
       });
-    });
+      moveToStep(nextIndex, () => {
+        trackEvent('create_trip_shape__reveal--ready', {
+          journey_type: spec.journeyType,
+          concept_count: prepared.concepts.length,
+          duration_ms: roundDurationMs(measureNow() - revealStartedAt),
+          context_load_duration_ms: roundDurationMs(retrieval.loadDurationMs),
+          context_bytes: rawBytes,
+          retriever_version: retrieval.context.retrieverVersion,
+          knowledge_source: retrieval.source,
+          dataset_version: contextPack.dataset?.version,
+        });
+      });
+    } finally {
+      if (comparisonRequestRef.current === requestId) setIsPreparingComparison(false);
+    }
   };
 
   const toggleNeighborhood = (slug: string) => {
@@ -376,16 +430,57 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
   };
 
   const chooseTemplate = (match: TravelTemplateMatch) => {
+    const route = routeConcepts.find((concept) => concept.match.template.templateKey === match.template.templateKey);
+    if (!route) return;
     setSelectedTemplateKey(match.template.templateKey);
+    setSelectedRouteContext(undefined);
+    setSelectedRouteContextBytes(0);
     trackEvent('create_trip_shape__template--select', {
       template: match.template.templateKey,
       score: match.score,
       dataset_version: routePack.dataset?.version,
     });
+
+    const requestId = selectedRouteRequestRef.current + 1;
+    selectedRouteRequestRef.current = requestId;
+    setIsPreparingSelectedRoute(true);
+    void loadTravelPlanningContext({
+      spec: route.applied.spec,
+      locale: i18n.language,
+      networkPolicy: 'network-first',
+      templateKeys: [match.template.templateKey],
+      templateLimit: 1,
+      neighborhoodLimitPerCity: 4,
+      poiLimitPerCity: 6,
+    }).then((retrieval) => {
+      if (selectedRouteRequestRef.current !== requestId) return;
+      const rawBytes = serializedByteLength(retrieval.context);
+      setSelectedRouteContext(retrieval);
+      setSelectedRouteContextBytes(rawBytes);
+      trackEvent('create_trip_shape__selected_context--load', {
+        template: match.template.templateKey,
+        context_load_duration_ms: roundDurationMs(retrieval.loadDurationMs),
+        context_bytes: rawBytes,
+        retrieved_entity_count: retrieval.context.stats.selectedEntityCount,
+        retrieved_neighborhood_count: retrieval.context.stats.selectedNeighborhoodCount,
+        retrieved_poi_count: retrieval.context.stats.selectedPoiCount,
+        retriever_version: retrieval.context.retrieverVersion,
+        knowledge_source: retrieval.source,
+        dataset_version: retrieval.context.pack.dataset?.version,
+      });
+    }).catch(() => {
+      if (selectedRouteRequestRef.current !== requestId || !routeComparison) return;
+      setSelectedRouteContext(routeComparison.retrieval);
+      setSelectedRouteContextBytes(routeComparison.rawBytes);
+    }).finally(() => {
+      if (selectedRouteRequestRef.current === requestId) setIsPreparingSelectedRoute(false);
+    });
   };
 
   const openSelectedSkeleton = () => {
-    if (!selectedRoute) return;
+    if (!selectedRoute || isPreparingSelectedRoute) return;
+    const planningContext = selectedRouteContext ?? routeComparison?.retrieval;
+    const planningContextBytes = selectedRouteContext ? selectedRouteContextBytes : routeComparison?.rawBytes;
     const {
       trip,
       addedActivityCount,
@@ -394,10 +489,22 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
       compileDurationMs,
     } = buildKnowledgeEnrichedTripFromTemplate(
       selectedRoute.applied,
-      routePack,
+      selectedRoutePack,
       {
-        knowledgeSource: routeLoadSource,
+        knowledgeSource: selectedRouteLoadSource,
         match: selectedRoute.match,
+        planningContext: planningContext ? {
+          version: planningContext.context.version,
+          retrieverVersion: planningContext.context.retrieverVersion,
+          source: planningContext.source,
+          loadDurationMs: roundDurationMs(planningContext.loadDurationMs),
+          rawBytes: planningContextBytes ?? 0,
+          selectedEntityCount: planningContext.context.stats.selectedEntityCount,
+          selectedTemplateCount: planningContext.context.stats.selectedTemplateCount,
+          selectedNeighborhoodCount: planningContext.context.stats.selectedNeighborhoodCount,
+          selectedPoiCount: planningContext.context.stats.selectedPoiCount,
+          aiCallCount: 0,
+        } : undefined,
       },
     );
     trackEvent('create_trip_shape__skeleton--open', {
@@ -408,6 +515,9 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
       skeleton_duration_ms: roundDurationMs(skeletonDurationMs),
       enrichment_duration_ms: roundDurationMs(enrichmentDurationMs),
       compile_duration_ms: roundDurationMs(compileDurationMs),
+      planning_context_source: planningContext?.source,
+      planning_context_bytes: planningContextBytes,
+      ai_call_count: 0,
       route_stage: trip.planningMeta?.routeStage,
       dataset_version: trip.planningMeta?.datasetVersion,
     });
@@ -714,15 +824,64 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
         <p>{t('shapeLab.reveal.description')}</p>
       </div>
 
-      <div className="shape-data-note">
-        <Database size={18} weight="duotone" />
-        <span>{t('shapeLab.reveal.dataNote', {
-          entities: routePack.entities.length,
-          templates: routePack.templates.length,
-          version: routePack.dataset?.version ?? 'local',
-        })}</span>
-        <small>{loadWarning ? t('shapeLab.reveal.fallback') : t(`shapeLab.reveal.sources.${routeLoadSource}`)}</small>
-      </div>
+      {routeComparison ? (
+        <aside className="shape-engine-proof" aria-label={t('shapeLab.reveal.engine.label')}>
+          <div className="shape-engine-proof__header">
+            <span className="shape-engine-proof__icon"><Database size={21} weight="duotone" /></span>
+            <span>
+              <strong>{t('shapeLab.reveal.engine.title')}</strong>
+              <small>{t('shapeLab.reveal.engine.description')}</small>
+            </span>
+            <span className="shape-engine-proof__ai">{t('shapeLab.reveal.engine.noAi')}</span>
+          </div>
+          <dl className="shape-engine-proof__metrics">
+            <div>
+              <dt>{t('shapeLab.reveal.engine.retrieval')}</dt>
+              <dd>{t('shapeLab.reveal.engine.milliseconds', {
+                value: routeComparison.retrieval.loadDurationMs < 1
+                  ? '<1'
+                  : Math.round(routeComparison.retrieval.loadDurationMs),
+              })}</dd>
+            </div>
+            <div>
+              <dt>{t('shapeLab.reveal.engine.places')}</dt>
+              <dd>{routeComparison.retrieval.context.stats.selectedEntityCount} / {routeComparison.retrieval.context.stats.sourceEntityCount}</dd>
+            </div>
+            <div>
+              <dt>{t('shapeLab.reveal.engine.templates')}</dt>
+              <dd>{routeComparison.retrieval.context.stats.selectedTemplateCount} / {routeComparison.retrieval.context.stats.sourceTemplateCount}</dd>
+            </div>
+            <div>
+              <dt>{t('shapeLab.reveal.engine.payload')}</dt>
+              <dd>{formatContextKilobytes(routeComparison.rawBytes)}</dd>
+            </div>
+          </dl>
+          <div className="shape-engine-proof__provenance">
+            <span>{loadWarning ? t('shapeLab.reveal.fallback') : t(`shapeLab.reveal.sources.${routeLoadSource}`)}</span>
+            <span>{routePack.dataset?.version ?? 'local'}</span>
+            <span>{routeComparison.retrieval.context.retrieverVersion}</span>
+          </div>
+          {selectedRoute ? (
+            <div className="shape-engine-proof__selected" aria-live="polite">
+              {isPreparingSelectedRoute ? (
+                <>
+                  <CircleNotch size={17} className="shape-engine-proof__spinner" aria-hidden="true" />
+                  <span>{t('shapeLab.reveal.engine.loadingSelected')}</span>
+                </>
+              ) : selectedRouteContext ? (
+                <>
+                  <Check size={17} weight="bold" aria-hidden="true" />
+                  <span>{t('shapeLab.reveal.engine.selectedReady', {
+                    neighborhoods: selectedRouteContext.context.stats.selectedNeighborhoodCount,
+                    pois: selectedRouteContext.context.stats.selectedPoiCount,
+                    size: formatContextKilobytes(selectedRouteContextBytes),
+                  })}</span>
+                </>
+              ) : null}
+            </div>
+          ) : null}
+        </aside>
+      ) : null}
 
       {routeConcepts.length === 0 ? (
         <div className="shape-empty-route">
@@ -816,7 +975,7 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
                 <small>{t('shapeLab.reveal.readyDescription')}</small>
               </span>
             </div>
-            <button type="button" onClick={openSelectedSkeleton}>
+            <button type="button" onClick={openSelectedSkeleton} disabled={isPreparingSelectedRoute}>
               {t('shapeLab.actions.openPlan')}
               <ArrowRight className="shape-next-icon" size={18} weight="bold" />
             </button>
@@ -877,11 +1036,20 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
               <button
                 type="button"
                 className="shape-lab-actions__next"
-                onClick={goForward}
-                disabled={!canContinue}
+                onClick={() => void goForward()}
+                disabled={!canContinue || isPreparingComparison}
+                aria-busy={isPreparingComparison || undefined}
               >
-                {currentStep === 'style' ? t('shapeLab.actions.compare') : t('wizard.actions.continue')}
-                <ArrowRight className="shape-next-icon" size={18} weight="bold" />
+                {currentStep === 'style' && isPreparingComparison
+                  ? t('shapeLab.actions.preparing')
+                  : currentStep === 'style'
+                    ? t('shapeLab.actions.compare')
+                    : t('wizard.actions.continue')}
+                {isPreparingComparison ? (
+                  <CircleNotch size={18} className="shape-engine-proof__spinner" aria-hidden="true" />
+                ) : (
+                  <ArrowRight className="shape-next-icon" size={18} weight="bold" />
+                )}
               </button>
             ) : null}
           </footer>

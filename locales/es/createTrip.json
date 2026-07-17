@@ -406,6 +406,19 @@
       "titleMany": "{count} rutas fundamentadas por Tailandia.",
       "description": "Son esqueletos versionados del paquete de conocimiento de Tailandia, no destinos inventados durante la espera.",
       "dataNote": "{templates} plantillas comparadas con {entities} lugares canónicos · datos {version}",
+      "engine": {
+        "label": "Evidencia del planificador rápido",
+        "title": "Ruta rápida respaldada por fuentes",
+        "description": "Estas opciones se recuperaron y compilaron del catálogo de Tailandia antes de cualquier personalización con IA.",
+        "noAi": "0 llamadas a IA",
+        "retrieval": "Recuperación",
+        "milliseconds": "{value} ms",
+        "places": "Lugares seleccionados",
+        "templates": "Plantillas seleccionadas",
+        "payload": "Contexto",
+        "loadingSelected": "Cargando el contexto ampliado del catálogo para esta ruta…",
+        "selectedReady": "Ruta lista con {neighborhoods} barrios y {pois} POI en un contexto de {size}."
+      },
       "fallback": "Datos disponibles sin conexión",
       "sources": {
         "memory": "Caché actual",
@@ -450,7 +463,8 @@
     },
     "actions": {
       "compare": "Comparar rutas",
-      "openPlan": "Abrir plan editable"
+      "preparing": "Recuperando rutas…",
+      "openPlan": "Abrir base instantánea"
     }
   },
   "journeyLab": {

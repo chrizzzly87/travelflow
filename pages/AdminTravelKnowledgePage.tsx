@@ -13,6 +13,7 @@ import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { TravelKnowledgeCatalog } from '../components/admin/TravelKnowledgeCatalog';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { showAppToast } from '../components/ui/appToast';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
@@ -26,6 +27,11 @@ import {
     type AdminTravelKnowledgeReviewDecision,
     type AdminTravelKnowledgeReviewSummary,
 } from '../services/adminService';
+import {
+    loadTravelDestinationPack,
+    type TravelKnowledgeLoadSource,
+} from '../services/travelKnowledgeService';
+import type { TravelDestinationPack } from '../shared/travelKnowledge';
 
 const REVIEW_FETCH_LIMIT = 250;
 const OPEN_REVIEW_STATUSES: AdminTravelKnowledgeCandidateStatus[] = ['new', 'needs_review'];
@@ -230,8 +236,11 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, isReviewing, o
 
 export const AdminTravelKnowledgePage: React.FC = () => {
     const { prompt: promptDialog } = useAppDialog();
+    const [activeView, setActiveView] = useState<'catalog' | 'review'>('catalog');
     const [candidates, setCandidates] = useState<AdminTravelKnowledgeCandidateRecord[]>([]);
     const [summary, setSummary] = useState<AdminTravelKnowledgeReviewSummary | null>(null);
+    const [catalogPack, setCatalogPack] = useState<TravelDestinationPack | null>(null);
+    const [catalogSource, setCatalogSource] = useState<TravelKnowledgeLoadSource | null>(null);
     const [searchValue, setSearchValue] = useState('');
     const [statusFilters, setStatusFilters] = useState<AdminTravelKnowledgeCandidateStatus[]>(OPEN_REVIEW_STATUSES);
     const [severityFilters, setSeverityFilters] = useState<AdminTravelKnowledgeCandidateSeverity[]>([]);
@@ -245,12 +254,19 @@ export const AdminTravelKnowledgePage: React.FC = () => {
         setIsLoading(true);
         setErrorMessage(null);
         try {
-            const [nextCandidates, nextSummary] = await Promise.all([
+            const [nextCandidates, nextSummary, nextCatalog] = await Promise.all([
                 adminListTravelKnowledgeCandidates({ limit: REVIEW_FETCH_LIMIT }),
                 adminGetTravelKnowledgeReviewSummary(),
+                loadTravelDestinationPack({
+                    countryCode: 'TH',
+                    locale: 'en',
+                    networkPolicy: 'network-first',
+                }),
             ]);
             setCandidates(nextCandidates);
             setSummary(nextSummary);
+            setCatalogPack(nextCatalog.pack);
+            setCatalogSource(nextCatalog.source);
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Could not load the travel knowledge review queue.');
         } finally {
@@ -304,6 +320,9 @@ export const AdminTravelKnowledgePage: React.FC = () => {
             return true;
         });
     }, [candidates, countryFilters, searchValue, severityFilters, sourceFilters, statusFilters]);
+    const catalogFactCount = useMemo(() => (
+        catalogPack?.entities.reduce((total, entity) => total + entity.facts.length, 0) ?? 0
+    ), [catalogPack]);
 
     const reviewCandidate = useCallback(async (
         candidate: AdminTravelKnowledgeCandidateRecord,
@@ -378,7 +397,7 @@ export const AdminTravelKnowledgePage: React.FC = () => {
     return (
         <AdminShell
             title="Travel Knowledge"
-            description="Review source-backed changes before they can enter a versioned destination pack. Decisions here never publish data by themselves."
+            description="Inspect the published destination catalogue and review source-backed changes before they enter a future version."
             searchValue={searchValue}
             onSearchValueChange={setSearchValue}
             showDateRange={false}
@@ -389,105 +408,174 @@ export const AdminTravelKnowledgePage: React.FC = () => {
                         void loadData();
                     }}
                     isLoading={isLoading}
-                    label="Reload queue"
+                    label="Reload data"
                 />
             )}
         >
             <div className="space-y-5">
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <SummaryCard
-                        label="Open review"
-                        value={(summary?.newCount || 0) + (summary?.needsReviewCount || 0)}
-                        hint={`${summary?.candidateTotal || 0} candidates across the ledger`}
-                    />
-                    <SummaryCard
-                        label="Accepted"
-                        value={summary?.acceptedCount || 0}
-                        hint="Approved for a future staged artifact"
-                    />
-                    <SummaryCard
-                        label="Source runs"
-                        value={summary?.successfulRunCount || 0}
-                        hint={`Latest ${formatTimestamp(summary?.latestSourceRunAt)}`}
-                    />
-                    <SummaryCard
-                        label="Private snapshots"
-                        value={summary?.snapshotCount || 0}
-                        hint="Immutable evidence objects available to reviewers"
-                    />
-                </div>
-
-                <AdminSurfaceCard className="space-y-3">
-                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                        <div>
-                            <h2 className="text-base font-black tracking-tight text-slate-950">Candidate queue</h2>
-                            <p className="mt-1 text-sm text-slate-500">
-                                Showing {filteredCandidates.length} of {candidates.length} loaded candidates. Open decisions are selected by default.
-                            </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            <AdminFilterMenu
-                                label="Status"
-                                options={statusOptions}
-                                selectedValues={statusFilters}
-                                onSelectedValuesChange={(values) => setStatusFilters(values as AdminTravelKnowledgeCandidateStatus[])}
-                            />
-                            <AdminFilterMenu
-                                label="Severity"
-                                options={severityOptions}
-                                selectedValues={severityFilters}
-                                onSelectedValuesChange={(values) => setSeverityFilters(values as AdminTravelKnowledgeCandidateSeverity[])}
-                            />
-                            <AdminFilterMenu
-                                label="Source"
-                                options={sourceOptions}
-                                selectedValues={sourceFilters}
-                                onSelectedValuesChange={setSourceFilters}
-                            />
-                            <AdminFilterMenu
-                                label="Country"
-                                options={countryOptions}
-                                selectedValues={countryFilters}
-                                onSelectedValuesChange={setCountryFilters}
-                            />
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                        <MagnifyingGlass size={16} />
-                        Search covers targets, fields, source names, IDs, proposed values, and prior review reasons.
-                    </div>
-                </AdminSurfaceCard>
-
-                {errorMessage ? (
-                    <AdminSurfaceCard className="border-rose-200 bg-rose-50 text-sm text-rose-900">
-                        <div className="flex items-start gap-2">
-                            <WarningCircle size={18} className="mt-0.5 shrink-0" weight="bold" />
-                            <div>
-                                <div className="font-semibold">Review queue unavailable</div>
-                                <p className="mt-1">{errorMessage}</p>
-                            </div>
-                        </div>
-                    </AdminSurfaceCard>
-                ) : null}
-
-                {!errorMessage && !isLoading && filteredCandidates.length === 0 ? (
-                    <AdminSurfaceCard className="py-12 text-center">
-                        <GitDiff size={34} className="mx-auto text-slate-300" weight="duotone" />
-                        <h2 className="mt-3 text-base font-black text-slate-900">No candidates match these filters</h2>
-                        <p className="mt-1 text-sm text-slate-500">Clear one or more filters, or wait for the next source ingestion run.</p>
-                    </AdminSurfaceCard>
-                ) : null}
-
-                <div className="space-y-4">
-                    {filteredCandidates.map((candidate) => (
-                        <CandidateCard
-                            key={candidate.candidateId}
-                            candidate={candidate}
-                            isReviewing={reviewingCandidateId === candidate.candidateId}
-                            onReview={(nextCandidate, decision) => void reviewCandidate(nextCandidate, decision)}
-                        />
+                <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1" role="tablist" aria-label="Travel knowledge views">
+                    {([
+                        ['catalog', 'Published catalogue'],
+                        ['review', 'Review queue'],
+                    ] as const).map(([view, label]) => (
+                        <button
+                            key={view}
+                            type="button"
+                            role="tab"
+                            aria-selected={activeView === view}
+                            className={`min-h-9 rounded-lg px-3 text-sm font-semibold transition-colors ${activeView === view ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                            onClick={() => {
+                                setActiveView(view);
+                                setSearchValue('');
+                                trackEvent('admin__travel_knowledge_view--change', { view });
+                            }}
+                            {...getAnalyticsDebugAttributes('admin__travel_knowledge_view--change', { view })}
+                        >
+                            {label}
+                        </button>
                     ))}
                 </div>
+
+                {activeView === 'catalog' ? (
+                    <>
+                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            <SummaryCard
+                                label="Active dataset"
+                                value={catalogPack?.dataset?.version ?? '—'}
+                                hint={`Published ${formatTimestamp(catalogPack?.dataset?.publishedAt)}`}
+                            />
+                            <SummaryCard
+                                label="Entities"
+                                value={catalogPack?.entities.length ?? 0}
+                                hint="Countries, regions, cities, neighborhoods, and POIs"
+                            />
+                            <SummaryCard
+                                label="Source-backed facts"
+                                value={catalogFactCount}
+                                hint="Values with confidence, review state, and freshness"
+                            />
+                            <SummaryCard
+                                label="Route templates"
+                                value={catalogPack?.templates.length ?? 0}
+                                hint="Versioned city breaks, hubs, and circuits"
+                            />
+                        </div>
+                        {errorMessage ? (
+                            <AdminSurfaceCard className="border-rose-200 bg-rose-50 text-sm text-rose-900">
+                                <div className="flex items-start gap-2">
+                                    <WarningCircle size={18} className="mt-0.5 shrink-0" weight="bold" />
+                                    <div>
+                                        <div className="font-semibold">Travel knowledge unavailable</div>
+                                        <p className="mt-1">{errorMessage}</p>
+                                    </div>
+                                </div>
+                            </AdminSurfaceCard>
+                        ) : null}
+                        <TravelKnowledgeCatalog
+                            pack={catalogPack}
+                            source={catalogSource}
+                            searchValue={searchValue}
+                            isLoading={isLoading}
+                        />
+                    </>
+                ) : (
+                    <>
+                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            <SummaryCard
+                                label="Open review"
+                                value={(summary?.newCount || 0) + (summary?.needsReviewCount || 0)}
+                                hint={`${summary?.candidateTotal || 0} candidates across the ledger`}
+                            />
+                            <SummaryCard
+                                label="Accepted"
+                                value={summary?.acceptedCount || 0}
+                                hint="Approved for a future staged artifact"
+                            />
+                            <SummaryCard
+                                label="Source runs"
+                                value={summary?.successfulRunCount || 0}
+                                hint={`Latest ${formatTimestamp(summary?.latestSourceRunAt)}`}
+                            />
+                            <SummaryCard
+                                label="Private snapshots"
+                                value={summary?.snapshotCount || 0}
+                                hint="Immutable evidence objects available to reviewers"
+                            />
+                        </div>
+
+                        <AdminSurfaceCard className="space-y-3">
+                            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                                <div>
+                                    <h2 className="text-base font-black tracking-tight text-slate-950">Candidate queue</h2>
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        Showing {filteredCandidates.length} of {candidates.length} loaded candidates. Open decisions are selected by default.
+                                    </p>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <AdminFilterMenu
+                                        label="Status"
+                                        options={statusOptions}
+                                        selectedValues={statusFilters}
+                                        onSelectedValuesChange={(values) => setStatusFilters(values as AdminTravelKnowledgeCandidateStatus[])}
+                                    />
+                                    <AdminFilterMenu
+                                        label="Severity"
+                                        options={severityOptions}
+                                        selectedValues={severityFilters}
+                                        onSelectedValuesChange={(values) => setSeverityFilters(values as AdminTravelKnowledgeCandidateSeverity[])}
+                                    />
+                                    <AdminFilterMenu
+                                        label="Source"
+                                        options={sourceOptions}
+                                        selectedValues={sourceFilters}
+                                        onSelectedValuesChange={setSourceFilters}
+                                    />
+                                    <AdminFilterMenu
+                                        label="Country"
+                                        options={countryOptions}
+                                        selectedValues={countryFilters}
+                                        onSelectedValuesChange={setCountryFilters}
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                <MagnifyingGlass size={16} />
+                                Search covers targets, fields, source names, IDs, proposed values, and prior review reasons.
+                            </div>
+                        </AdminSurfaceCard>
+
+                        {errorMessage ? (
+                            <AdminSurfaceCard className="border-rose-200 bg-rose-50 text-sm text-rose-900">
+                                <div className="flex items-start gap-2">
+                                    <WarningCircle size={18} className="mt-0.5 shrink-0" weight="bold" />
+                                    <div>
+                                        <div className="font-semibold">Review queue unavailable</div>
+                                        <p className="mt-1">{errorMessage}</p>
+                                    </div>
+                                </div>
+                            </AdminSurfaceCard>
+                        ) : null}
+
+                        {!errorMessage && !isLoading && filteredCandidates.length === 0 ? (
+                            <AdminSurfaceCard className="py-12 text-center">
+                                <GitDiff size={34} className="mx-auto text-slate-300" weight="duotone" />
+                                <h2 className="mt-3 text-base font-black text-slate-900">No candidates match these filters</h2>
+                                <p className="mt-1 text-sm text-slate-500">Clear one or more filters, or wait for the next source ingestion run.</p>
+                            </AdminSurfaceCard>
+                        ) : null}
+
+                        <div className="space-y-4">
+                            {filteredCandidates.map((candidate) => (
+                                <CandidateCard
+                                    key={candidate.candidateId}
+                                    candidate={candidate}
+                                    isReviewing={reviewingCandidateId === candidate.candidateId}
+                                    onReview={(nextCandidate, decision) => void reviewCandidate(nextCandidate, decision)}
+                                />
+                            ))}
+                        </div>
+                    </>
+                )}
             </div>
         </AdminShell>
     );

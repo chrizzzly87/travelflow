@@ -507,6 +507,28 @@
       "aiRetry": "Erneut versuchen"
     }
   },
+  "tripActivityKnowledge": {
+    "title": "Besucherinfos mit Quellen",
+    "description": "Strukturierte Katalogdaten statt generiertem Aktivitätstext.",
+    "currentUntil": "Aktuell bis {date}",
+    "freshness": { "current": "Aktuell", "expired": "Erneut prüfen", "undated": "Kein Prüfdatum" },
+    "duration": "Empfohlene Dauer",
+    "bestTime": "Beste Zeit",
+    "hours": "Öffnungszeiten",
+    "lastEntry": "letzter Einlass {time}",
+    "admission": "Eintritt",
+    "free": "Kostenlos",
+    "booking": "Buchung",
+    "bookingModes": { "walk_in": "Ohne Buchung", "optional_advance": "Vorab buchen optional", "recommended_advance": "Vorab buchen", "required_advance": "Vorab buchen erforderlich" },
+    "audience": "Eignung",
+    "audienceLabels": { "family": "Familien", "lgbtq": "LGBTQ+", "solo": "Alleinreisende", "mobility": "Mobilität" },
+    "fitLabels": { "good": "Gut geeignet", "conditional": "Hinweise prüfen", "limited": "Eingeschränkt", "unknown": "Noch nicht geprüft" },
+    "dressCode": "Kleiderordnung",
+    "accessibility": "Barrierefreiheit",
+    "practicalNotes": "Gut zu wissen",
+    "sources": "Quellen",
+    "verifyLive": "Öffnungszeiten, Preise und Verfügbarkeit können sich ändern. Prüfe vor dem Besuch die verlinkte Quelle."
+  },
   "tripRouteShell": {
     "loadingTrip": "Reise wird geladen",
     "preparingPlanner": "Planer wird vorbereitet",
