@@ -15,6 +15,10 @@ import type { ITrip } from '../../types';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
+  PlayfulDecisionButton,
+  type PlayfulDecisionTone,
+} from '../ui/playful-decision-card';
+import {
   buildJourneyOverviewModel,
   type JourneyOverviewChapter,
   type JourneyOverviewLeg,
@@ -28,11 +32,9 @@ interface TripJourneyOverviewRailProps {
   onSelectItem: (itemId: string, isCity: boolean) => void;
 }
 
-type ChapterTone = 'mango' | 'lagoon' | 'hibiscus' | 'orchid';
+const CHAPTER_TONES: readonly PlayfulDecisionTone[] = ['mango', 'lagoon', 'hibiscus', 'orchid'];
 
-const CHAPTER_TONES: readonly ChapterTone[] = ['mango', 'lagoon', 'hibiscus', 'orchid'];
-
-const chapterTone = (order: number): ChapterTone => CHAPTER_TONES[order % CHAPTER_TONES.length]!;
+const chapterTone = (order: number): PlayfulDecisionTone => CHAPTER_TONES[order % CHAPTER_TONES.length]!;
 
 const humanizeTag = (tag: string): string => tag
   .replaceAll('_', ' ')
@@ -143,11 +145,12 @@ const JourneyRouteList: React.FC<JourneyRouteListProps> = ({
               </li>
             ) : null}
             <li>
-              <button
+              <PlayfulDecisionButton
                 type="button"
                 className="tf-trip-journey-route__chapter"
-                data-tone={chapterTone(chapter.order)}
-                data-selected={selectedChapterId === chapter.id && !selectedLegId ? 'true' : 'false'}
+                tone={chapterTone(chapter.order)}
+                rotation={index % 2 === 0 ? -0.45 : 0.4}
+                selected={selectedChapterId === chapter.id && !selectedLegId}
                 onClick={() => onSelectChapter(chapter, surface)}
                 aria-pressed={selectedChapterId === chapter.id && !selectedLegId}
                 aria-label={`${chapter.title}, ${t('journeyLab.chapter.nights', { count: chapter.nights })}`}
@@ -160,7 +163,7 @@ const JourneyRouteList: React.FC<JourneyRouteListProps> = ({
                 <strong dir="auto">{chapter.title}</strong>
                 <small>{t('journeyLab.chapter.nights', { count: chapter.nights })}</small>
                 {chapter.dayTrips.length > 0 ? <em>{chapter.dayTrips.length} ↗</em> : null}
-              </button>
+              </PlayfulDecisionButton>
             </li>
           </React.Fragment>
         );
@@ -308,7 +311,7 @@ export const TripJourneyOverviewRail: React.FC<TripJourneyOverviewRailProps> = (
   };
 
   return (
-    <div className="tf-trip-journey-rail" data-testid="trip-journey-overview">
+    <div className="tf-trip-journey-rail tf-travel-experience" data-testid="trip-journey-overview">
       <button
         type="button"
         className="tf-trip-journey-mobile-trigger"
@@ -349,11 +352,12 @@ export const TripJourneyOverviewRail: React.FC<TripJourneyOverviewRailProps> = (
       <nav className="tf-trip-journey-compact" aria-label={t('journeyLab.labels.compactIndex')}>
         <Compass size={22} weight="duotone" aria-hidden="true" />
         {model.chapters.map((chapter) => (
-          <button
+          <PlayfulDecisionButton
             key={chapter.id}
             type="button"
-            data-tone={chapterTone(chapter.order)}
-            data-selected={selectedChapterId === chapter.id && !selectedLeg ? 'true' : 'false'}
+            tone={chapterTone(chapter.order)}
+            rotation={chapter.order % 2 === 0 ? -3 : 3}
+            selected={selectedChapterId === chapter.id && !selectedLeg}
             onClick={() => selectChapter(chapter, 'tripview_compact')}
             aria-label={chapter.title}
             aria-pressed={selectedChapterId === chapter.id && !selectedLeg}
@@ -363,7 +367,7 @@ export const TripJourneyOverviewRail: React.FC<TripJourneyOverviewRailProps> = (
             })}
           >
             {String(chapter.order + 1).padStart(2, '0')}
-          </button>
+          </PlayfulDecisionButton>
         ))}
       </nav>
 

@@ -15,7 +15,7 @@ The first two low-risk steps are now implemented without changing the live trip 
 
 The next checkpoint is real-trip feedback on the provisional default and compact behavior. The integration remains default-off until that feedback confirms the information hierarchy and workspace fit.
 
-The recommended hybrid now also has an additive TripView integration boundary for testing. It is disabled unless `VITE_TRIP_JOURNEY_OVERVIEW_ROLLOUT=tripview`, loads its model and visual code only when enabled, reuses the current city/transfer selection contract, compacts when the existing details panel opens, and becomes a focused chapter sheet on mobile. It does not add a map implementation, persistence key, or alternate item editor.
+The recommended hybrid now also has an additive TripView integration boundary for testing. It is disabled unless `VITE_TRIP_JOURNEY_OVERVIEW_ROLLOUT=tripview`, loads its model and visual code only when enabled, reuses the current city/transfer selection contract, compacts when the existing details panel opens, and becomes a focused chapter sheet on mobile. Its important chapter choices use the same product-neutral editorial tokens and accessible decision-card primitive as the route-first wizard. It does not add a map implementation, persistence key, or alternate item editor.
 
 ## Decision summary
 

@@ -21,6 +21,10 @@ import {
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { JourneyDestinationBriefPreview } from '../components/create-trip/JourneyDestinationBriefPreview';
+import {
+  PlayfulDecisionButton,
+  PlayfulDecisionSurface,
+} from '../components/ui/playful-decision-card';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { buildJourneyDestinationBriefs } from '../services/journeyDestinationBriefService';
 import { buildKnowledgeEnrichedTripFromTemplate } from '../services/journeyKnowledgeEnrichmentService';
@@ -422,12 +426,13 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
           const Icon = shape.icon;
           const selected = draft.journeyType === shape.id;
           return (
-            <button
+            <PlayfulDecisionButton
               key={shape.id}
-              type="button"
-              className={`shape-choice shape-choice--${shape.tone}`}
-              data-selected={selected ? 'true' : 'false'}
-              style={{ '--choice-index': index } as React.CSSProperties}
+              className="shape-choice"
+              tone={shape.tone}
+              rotation={(index - 1) * 1.25}
+              selected={selected}
+              scribble
               onClick={() => chooseShape(shape)}
               aria-pressed={selected}
               {...getAnalyticsDebugAttributes('create_trip_shape__shape--select', { journey_type: shape.id })}
@@ -437,7 +442,7 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
               <strong>{t(`shapeLab.shape.options.${shape.id}.title`)}</strong>
               <span>{t(`shapeLab.shape.options.${shape.id}.description`)}</span>
               <ArrowRight className="shape-next-icon" size={20} weight="bold" aria-hidden="true" />
-            </button>
+            </PlayfulDecisionButton>
           );
         })}
       </div>
@@ -731,11 +736,12 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
           {routeConcepts.map(({ match, applied }, index) => {
             const selected = selectedTemplateKey === match.template.templateKey;
             return (
-              <article
+              <PlayfulDecisionSurface
                 key={match.template.id}
-                className={`shape-template-card shape-template-card--${templateCardTone(index)}`}
-                data-selected={selected ? 'true' : 'false'}
-                style={{ '--template-index': index } as React.CSSProperties}
+                className="shape-template-card"
+                tone={templateCardTone(index)}
+                rotation={(index - 1) * 0.9}
+                selected={selected}
               >
                 <div className="shape-template-card__topline">
                   <span>{t('shapeLab.reveal.match', { score: Math.round(match.score) })}</span>
@@ -764,7 +770,7 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
                 >
                   {selected ? t('shapeLab.reveal.keepSelected') : t('shapeLab.reveal.chooseRoute')}
                 </button>
-              </article>
+              </PlayfulDecisionSurface>
             );
           })}
         </div>
@@ -831,7 +837,7 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
           : renderRevealStep();
 
   return (
-    <div className="shape-lab-page">
+    <div className="shape-lab-page tf-travel-experience">
       <SiteHeader hideCreateTrip onMyTripsClick={onOpenManager} />
       <main id="main-content" className="shape-lab-main">
         <header className="shape-lab-hero">
