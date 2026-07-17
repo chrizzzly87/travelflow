@@ -458,6 +458,7 @@
     "title": "See the whole journey, not just the pins.",
     "intro": "Three structures turn the same trip into a clear route story—bases, transfer load, neighborhoods, food, activities, traveler fit, and evidence included.",
     "prototypeNote": "This is an isolated concept lab. The current trip planner is unchanged.",
+    "live": { "close": "Close journey overview" },
     "conceptsLabel": "Compare three ways to understand a trip",
     "concepts": {
       "lens": {

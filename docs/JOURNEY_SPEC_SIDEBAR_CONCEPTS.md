@@ -1,6 +1,6 @@
 # JourneySpec Trip Visualization and Sidebar Concepts
 
-Status: concepts implemented in an isolated comparison lab; TripView integration remains default-off
+Status: concepts implemented; Journey Lens integration is implemented behind a default-off TripView rollout
 
 Reviewed: 2026-07-17
 
@@ -13,7 +13,9 @@ The first two low-risk steps are now implemented without changing the live trip 
 - the lab is lazy-loaded and fetch-free, so it does not add work to the normal planner path;
 - the adapter is covered for a country circuit, a hub with a day trip, a legacy trip, and an over-tolerance transfer.
 
-The next checkpoint is user selection of a default and compact concept. Only after that choice should the chosen hybrid connect to TripView selection behind a default-off rollout.
+The next checkpoint is real-trip feedback on the provisional default and compact behavior. The integration remains default-off until that feedback confirms the information hierarchy and workspace fit.
+
+The recommended hybrid now also has an additive TripView integration boundary for testing. It is disabled unless `VITE_TRIP_JOURNEY_OVERVIEW_ROLLOUT=tripview`, loads its model and visual code only when enabled, reuses the current city/transfer selection contract, compacts when the existing details panel opens, and becomes a focused chapter sheet on mobile. It does not add a map implementation, persistence key, or alternate item editor.
 
 ## Decision summary
 
@@ -202,7 +204,7 @@ The adapter should:
 2. **Complete:** Add an isolated concept lab with the same trip rendered in all three structures; no TripView route or persistence changes.
 3. Test wide desktop, laptop, tablet, mobile, and RTL layouts; gather preference and comprehension feedback.
 4. Select one default and one compact state. Validate the information hierarchy before polishing motion.
-5. Integrate behind a default-off TripView rollout flag using the existing selection and details-panel contracts.
+5. **Implemented behind a default-off rollout:** Integrate the Journey Lens using the existing selection and details-panel contracts; complete real-trip preview testing before selecting the production default.
 6. Measure chapter selection, map/timeline handoff, rail collapse, warning interaction, and time to first edit.
 7. Only then add preparation modules or child-app-specific chapter content.
 

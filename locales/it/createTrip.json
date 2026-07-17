@@ -458,6 +458,7 @@
     "title": "Guarda tutto il viaggio, non solo i segnaposto.",
     "intro": "Tre strutture trasformano lo stesso viaggio in un racconto chiaro: basi, carico dei trasferimenti, quartieri, cibo, attività, affinità e fonti.",
     "prototypeNote": "Questo è un laboratorio di concetti isolato. Il planner attuale non cambia.",
+    "live": { "close": "Chiudi la panoramica del viaggio" },
     "conceptsLabel": "Confronta tre modi di capire un viaggio",
     "concepts": {
       "lens": { "title": "Journey Lens", "description": "Una panoramica sempre visibile accanto all’area di pianificazione.", "bestFor": "Scelta consigliata" },

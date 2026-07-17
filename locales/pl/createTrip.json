@@ -458,6 +458,7 @@
     "title": "Zobacz całą podróż, nie tylko punkty.",
     "intro": "Trzy układy zamieniają tę samą podróż w czytelną opowieść: bazy, obciążenie przejazdami, dzielnice, jedzenie, atrakcje, dopasowanie i źródła.",
     "prototypeNote": "To odizolowane laboratorium koncepcji. Obecny planer pozostaje bez zmian.",
+    "live": { "close": "Zamknij przegląd podróży" },
     "conceptsLabel": "Porównaj trzy sposoby rozumienia podróży",
     "concepts": {
       "lens": { "title": "Journey Lens", "description": "Stały panel podsumowania obok obszaru planowania.", "bestFor": "Zalecany domyślnie" },
