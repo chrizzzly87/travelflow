@@ -166,10 +166,13 @@ export const buildTripSkeletonFromTemplate = (
   }
 
   let currentBaseEntry = orderedBaseEntries[0];
+  const baseEntryBySlug = new Map(
+    orderedBaseEntries.map((entry) => [entry.entity.canonicalSlug, entry] as const),
+  );
   let detailIndexWithinBase = 0;
   for (const place of places) {
     if (place.role === 'base') {
-      currentBaseEntry = orderedBaseEntries.find((entry) => entry.entity.canonicalSlug === place.entity.canonicalSlug)
+      currentBaseEntry = baseEntryBySlug.get(place.entity.canonicalSlug)
         ?? currentBaseEntry;
       detailIndexWithinBase = 0;
       continue;

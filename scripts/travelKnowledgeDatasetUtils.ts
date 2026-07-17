@@ -7,6 +7,10 @@ import type {
   TravelEntityTag,
   TravelTemplateCatalogItem,
 } from '../shared/travelKnowledge';
+import {
+  deriveTravelActivityProfile,
+  validateTravelActivityFactValue,
+} from '../shared/travelActivityKnowledge';
 import { MODEL_TRANSPORT_MODE_VALUES, type TransportMode } from '../shared/transportModes';
 
 export interface TravelKnowledgeDatasetSource {
@@ -244,6 +248,24 @@ export const compileEntityFacts = (
   return [...facts, ...(entity.facts ?? [])];
 };
 
+export const compileTravelEntityAttributes = (
+  entity: TravelKnowledgeDatasetEntity,
+): Record<string, unknown> => {
+  const activityProfile = deriveTravelActivityProfile({
+    entityType: entity.entityType,
+    canonicalSlug: entity.canonicalSlug,
+    tagKeys: entity.tagKeys ?? [],
+    popularityScore: entity.popularityScore,
+    hiddenGemScore: entity.hiddenGemScore,
+    attributes: entity.attributes,
+  });
+  return {
+    ...(entity.attributes ?? {}),
+    ...(activityProfile ? { activityProfile } : {}),
+    sourceUrls: entity.sourceUrls ?? [],
+  };
+};
+
 export const validateTravelKnowledgeDataset = (
   dataset: TravelKnowledgeDataset,
 ): TravelKnowledgeDatasetValidationResult => {
@@ -333,6 +355,11 @@ export const validateTravelKnowledgeDataset = (
       if (!sourceKeys.has(fact.sourceKey)) errors.push(`Entity ${entity.canonicalSlug} fact ${fact.factKey} has unknown source ${fact.sourceKey}.`);
       if (!Number.isFinite(Date.parse(fact.observedAt ?? dataset.manifest.generatedAt))) {
         errors.push(`Entity ${entity.canonicalSlug} fact ${fact.factKey} has invalid observedAt.`);
+      }
+      if (entity.entityType === 'poi') {
+        validateTravelActivityFactValue(fact.factKey, fact.value).forEach((finding) => {
+          errors.push(`Entity ${entity.canonicalSlug} fact ${fact.factKey} ${finding}.`);
+        });
       }
     }
 
@@ -561,7 +588,7 @@ export const compileTravelDestinationPack = (
       popularityScore: entity.popularityScore,
       hiddenGemScore: entity.hiddenGemScore,
       tourismIntensityScore: entity.tourismIntensityScore,
-      attributes: { ...(entity.attributes ?? {}), sourceUrls: entity.sourceUrls ?? [] },
+      attributes: compileTravelEntityAttributes(entity),
       names,
       facts,
       tags,
@@ -684,7 +711,7 @@ export const generateTravelKnowledgeSeedSql = (dataset: TravelKnowledgeDataset):
     const entityIdReference = sqlEntityId(entity.canonicalSlug);
     const parentIdReference = entity.parentSlug ? sqlEntityId(entity.parentSlug) : null;
     lines.push(`insert into public.travel_entities (id, canonical_slug, entity_type, parent_id, country_code, primary_name, local_name, timezone, latitude, longitude, status, dataset_version, typical_min_days, typical_max_days, popularity_score, hidden_gem_score, tourism_intensity_score, attributes, published_at)`);
-    lines.push(`values (${sqlString(entityId)}::uuid, ${sqlString(entity.canonicalSlug)}, ${sqlString(entity.entityType)}, ${parentIdReference ?? 'null'}, ${sqlString(entity.countryCode)}, ${sqlString(entity.primaryName)}, ${sqlString(entity.localName)}, ${sqlString(entity.timezone)}, ${sqlNumber(entity.latitude)}, ${sqlNumber(entity.longitude)}, 'published', ${sqlString(dataset.manifest.version)}, ${sqlNumber(entity.typicalMinDays)}, ${sqlNumber(entity.typicalMaxDays)}, ${entity.popularityScore}, ${entity.hiddenGemScore}, ${entity.tourismIntensityScore}, ${sqlJson({ ...(entity.attributes ?? {}), sourceUrls: entity.sourceUrls ?? [] })}, ${sqlString(dataset.manifest.generatedAt)}::timestamptz)`);
+    lines.push(`values (${sqlString(entityId)}::uuid, ${sqlString(entity.canonicalSlug)}, ${sqlString(entity.entityType)}, ${parentIdReference ?? 'null'}, ${sqlString(entity.countryCode)}, ${sqlString(entity.primaryName)}, ${sqlString(entity.localName)}, ${sqlString(entity.timezone)}, ${sqlNumber(entity.latitude)}, ${sqlNumber(entity.longitude)}, 'published', ${sqlString(dataset.manifest.version)}, ${sqlNumber(entity.typicalMinDays)}, ${sqlNumber(entity.typicalMaxDays)}, ${entity.popularityScore}, ${entity.hiddenGemScore}, ${entity.tourismIntensityScore}, ${sqlJson(compileTravelEntityAttributes(entity))}, ${sqlString(dataset.manifest.generatedAt)}::timestamptz)`);
     lines.push(`on conflict (canonical_slug) do update set entity_type = excluded.entity_type, parent_id = excluded.parent_id, country_code = excluded.country_code, primary_name = excluded.primary_name, local_name = excluded.local_name, timezone = excluded.timezone, latitude = excluded.latitude, longitude = excluded.longitude, status = excluded.status, dataset_version = excluded.dataset_version, typical_min_days = excluded.typical_min_days, typical_max_days = excluded.typical_max_days, popularity_score = excluded.popularity_score, hidden_gem_score = excluded.hidden_gem_score, tourism_intensity_score = excluded.tourism_intensity_score, attributes = excluded.attributes, published_at = excluded.published_at;`);
     lines.push('');
 

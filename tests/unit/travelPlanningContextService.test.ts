@@ -35,7 +35,7 @@ describe('travel planning context service', () => {
 
     expect(result.source).toBe('bundled');
     expect(result.loadDurationMs).toBeGreaterThanOrEqual(0);
-    expect(result.context.pack.dataset?.version).toBe('2026.07.17-v6');
+    expect(result.context.pack.dataset?.version).toBe('2026.07.17-v7');
     expect(result.context.pack.locale).toBe('de');
     expect(result.context.pack.templates.map((template) => template.templateKey)).toEqual([
       'th-bangkok-long-weekend',
@@ -45,7 +45,7 @@ describe('travel planning context service', () => {
 
   it('normalizes the database context contract and rejects partial payloads', () => {
     const context = buildTravelPlanningContext(pack, spec);
-    const normalized = normalizeTravelPlanningContext(JSON.parse(JSON.stringify(context)));
+    const normalized = normalizeTravelPlanningContext(structuredClone(context));
 
     expect(normalized).toEqual(context);
     expect(normalizeTravelPlanningContext({ ...context, retrieverVersion: 'unknown' })).toBeNull();

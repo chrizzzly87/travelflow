@@ -251,9 +251,13 @@ describe('pages/AdminTravelKnowledgePage', () => {
     renderPage();
 
     expect(await screen.findByRole('heading', { name: 'Published catalogue' })).toBeInTheDocument();
-    expect(screen.getAllByText('2026.07.17-v6').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('2026.07.17-v7').length).toBeGreaterThan(0);
     expect(screen.getAllByText('84').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Thailand').length).toBeGreaterThan(0);
+    expect(screen.getByText('Activity POIs')).toBeInTheDocument();
+    expect(screen.getAllByText('32').length).toBeGreaterThan(0);
+    expect(screen.getByText('0 / 24')).toBeInTheDocument();
+    expect(screen.getByText('36%')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Published catalogue' })).toHaveAttribute('aria-selected', 'true');
   });
 });

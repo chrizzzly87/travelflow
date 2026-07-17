@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  compileTravelEntityAttributes,
   compileTravelDestinationPack,
   deterministicTravelUuid,
   generateTravelKnowledgeSeedSql,
@@ -209,5 +210,48 @@ describe('travel knowledge dataset tooling', () => {
       transportModes: ['train'],
       roundTrip: true,
     });
+  });
+
+  it('compiles a reusable activity profile into POI attributes', () => {
+    const attributes = compileTravelEntityAttributes({
+      ...dataset.entities[4]!,
+      tagKeys: ['city_break'],
+      attributes: { editorialNote: 'keep me' },
+    });
+
+    expect(attributes).toMatchObject({
+      editorialNote: 'keep me',
+      activityProfile: {
+        version: 1,
+        primaryCategory: 'general_attraction',
+        planningTier: 'anchor',
+        derivedFromTags: true,
+      },
+    });
+  });
+
+  it('rejects invalid typed POI facts during dataset validation', () => {
+    const invalid: TravelKnowledgeDataset = {
+      ...dataset,
+      entities: dataset.entities.map((entity) => (
+        entity.canonicalSlug === 'th-bangkok-grand-palace'
+          ? {
+              ...entity,
+              facts: [{
+                factKey: 'visit.duration_minutes',
+                value: { min: 180, max: 60 },
+                sourceKey: 'travelflow_editorial',
+              }],
+            }
+          : entity
+      )),
+    };
+
+    const result = validateTravelKnowledgeDataset(invalid);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      'Entity th-bangkok-grand-palace fact visit.duration_minutes must be an object with finite min/max minutes and max >= min.',
+    );
   });
 });

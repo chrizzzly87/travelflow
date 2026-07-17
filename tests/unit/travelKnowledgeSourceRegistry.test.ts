@@ -25,7 +25,7 @@ describe('travel knowledge source registry and freshness audit', () => {
 
     expect(result.valid).toBe(true);
     expect(result.counts).toMatchObject({
-      sources: 17,
+      sources: 18,
       automated: 7,
       blocked: 2,
     });
@@ -39,8 +39,8 @@ describe('travel knowledge source registry and freshness audit', () => {
 
     expect(result.valid).toBe(true);
     expect(result.counts.errors).toBe(0);
-    expect(result.counts.registeredSources).toBe(17);
-    expect(result.counts.datasetSources).toBe(11);
+    expect(result.counts.registeredSources).toBe(18);
+    expect(result.counts.datasetSources).toBe(12);
     expect(result.counts.observations).toBeGreaterThan(20);
   });
 

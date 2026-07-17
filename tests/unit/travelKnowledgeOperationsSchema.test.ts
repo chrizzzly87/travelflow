@@ -116,7 +116,7 @@ describe('travel knowledge operations schema', () => {
 
     expect(contextStart).toBeGreaterThan(-1);
     expect(contextFunction).toContain('security invoker');
-    expect(contextFunction).toContain("'retrieverVersion', 'structured-pack-v1'");
+    expect(contextFunction).toContain("'retrieverVersion', 'structured-pack-v2'");
     expect(contextFunction).toContain('public.get_active_travel_destination_pack');
     expect(contextFunction).toContain('requested.neighborhood_limit');
     expect(contextFunction).toContain('requested.poi_limit');

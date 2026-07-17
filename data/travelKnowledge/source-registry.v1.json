@@ -1,8 +1,8 @@
 {
   "manifest": {
     "registryKey": "travel-knowledge-sources",
-    "version": "2026.07.17-v2",
-    "generatedAt": "2026-07-17T13:45:00Z",
+    "version": "2026.07.17-v3",
+    "generatedAt": "2026-07-17T15:46:00Z",
     "defaultCountryCodes": ["TH"]
   },
   "sources": [
@@ -205,6 +205,27 @@
       "countryCodes": ["TH"],
       "metadata": {
         "usage": "Manual fact confirmation and original TravelFlow summaries only; do not crawl or syndicate source prose or images."
+      }
+    },
+    {
+      "sourceKey": "fine_arts_department",
+      "name": "Thailand Fine Arts Department virtual historical parks",
+      "sourceKind": "official",
+      "baseUrl": "https://virtualhistoricalpark.finearts.go.th/",
+      "termsUrl": "https://virtualhistoricalpark.finearts.go.th/",
+      "attributionText": "Fine Arts Department, Ministry of Culture, Thailand",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Manual confirmation of structured historical-park visitor facts only; do not crawl or store source prose or images."
       }
     },
     {
