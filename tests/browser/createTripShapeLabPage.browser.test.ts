@@ -247,6 +247,14 @@ describe('pages/CreateTripShapeLabPage', () => {
     expect(trip.items.some((item: { knowledgeMeta?: { origin?: string } }) => (
       item.knowledgeMeta?.origin === 'knowledge_ranker'
     ))).toBe(true);
+    expect(trip.items.find((item: { title?: string }) => (
+      item.title === 'Grand Palace and Wat Phra Kaew'
+    ))?.activityKnowledge).toMatchObject({
+      openingHours: { value: { schedule: expect.any(Array) } },
+      admission: { value: { currency: 'THB' } },
+      booking: { value: { mode: expect.any(String) } },
+      practicalNotes: { value: expect.any(Array) },
+    });
   });
 
   it('reviews and applies a catalogue-validated AI patch without replacing the route', async () => {

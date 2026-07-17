@@ -61,7 +61,7 @@ import {
   type TravelTemplateMatch,
 } from '../shared/travelTemplateMatcher';
 import type { JourneyPace, JourneySpec } from '../shared/journeySpec';
-import type { TravelEntityCatalogItem } from '../shared/travelKnowledge';
+import type { TravelDestinationPack, TravelEntityCatalogItem } from '../shared/travelKnowledge';
 import type { ITrip } from '../types';
 import '../styles/create-trip-shape-lab.css';
 
@@ -74,6 +74,7 @@ interface PreparedRouteComparison {
   concepts: JourneyRouteConcept[];
   retrieval: TravelPlanningContextLoadResult;
   rawBytes: number;
+  cataloguePack: TravelDestinationPack;
 }
 
 type WizardStep = 'shape' | 'place' | 'timing' | 'style' | 'reveal';
@@ -279,10 +280,11 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
       : undefined
   ), [personalizedSpec, selectedRoute]);
   const selectedRoutePack = selectedRouteContext?.context.pack ?? routePack;
+  const selectedRouteCataloguePack = routeComparison?.cataloguePack ?? selectedRoutePack;
   const selectedRouteLoadSource = selectedRouteContext?.source ?? routeLoadSource;
   const selectedDestinationBriefs = useMemo(
-    () => activeAppliedRoute ? buildJourneyDestinationBriefs(activeAppliedRoute.spec, selectedRoutePack) : [],
-    [activeAppliedRoute, selectedRoutePack],
+    () => activeAppliedRoute ? buildJourneyDestinationBriefs(activeAppliedRoute.spec, selectedRouteCataloguePack) : [],
+    [activeAppliedRoute, selectedRouteCataloguePack],
   );
   const cityRequired = draft.journeyType !== 'single_country_circuit';
   const exactDatesValid = draft.dateMode !== 'exact' || journeyResult.error === null;
@@ -401,7 +403,10 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
       const contextPack = retrieval.context.pack;
       const rawBytes = serializedByteLength(retrieval.context);
       const prepared = buildJourneyRouteConcepts(spec, contextPack, { limit: 3 });
-      setRouteComparison({ concepts: prepared.concepts, retrieval, rawBytes });
+      const cataloguePack = pack.dataset?.version === contextPack.dataset?.version
+        ? pack
+        : contextPack;
+      setRouteComparison({ concepts: prepared.concepts, retrieval, rawBytes, cataloguePack });
       trackEvent('create_trip_shape__concepts--prepare', {
         journey_type: spec.journeyType,
         concept_count: prepared.concepts.length,
@@ -602,7 +607,7 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
       compileDurationMs,
     } = buildKnowledgeEnrichedTripFromTemplate(
       activeAppliedRoute,
-      selectedRoutePack,
+      selectedRouteCataloguePack,
       {
         knowledgeSource: selectedRouteLoadSource,
         match: selectedRoute.match,
