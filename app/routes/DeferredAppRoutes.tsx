@@ -9,6 +9,11 @@ import { MarketingRouteLoadingShell } from '../../components/bootstrap/Marketing
 import '../../styles/deferred-routes.css';
 import { suspendUntilAuthBootstrapSettles } from '../../services/authBootstrapSuspense';
 import { markInitialRouteHandoffCompleted } from '../../services/marketingRouteShellState';
+import {
+    getCreateTripShapeRollout,
+    resolveCreateTripExperience,
+} from '../../config/createTripExperience';
+import { trackEvent } from '../../services/analyticsService';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -50,6 +55,7 @@ const ShareUnavailablePage = lazyWithRecovery('ShareUnavailablePage', () => impo
 const NotFoundPage = lazyWithRecovery('NotFoundPage', () => import('../../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
 const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
 const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
+const CreateTripShapeLabPage = lazyWithRecovery('CreateTripShapeLabPage', () => import('../../pages/CreateTripShapeLabPage').then((module) => ({ default: module.CreateTripShapeLabPage })));
 
 const RouteLoadingFallback: React.FC = () => (
     <MarketingRouteLoadingShell />
@@ -159,6 +165,16 @@ const CreateTripWizardRoute: React.FC<{
     onLanguageLoaded?: (lang: AppLanguage) => void;
 }> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
     useDbSync(onLanguageLoaded);
+    const rollout = getCreateTripShapeRollout();
+    const experience = resolveCreateTripExperience('wizard', rollout);
+
+    useEffect(() => {
+        trackEvent('create_trip__experience--view', { surface: 'wizard', experience, rollout });
+    }, [experience, rollout]);
+
+    if (experience === 'shape_thailand') {
+        return <CreateTripShapeLabPage onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />;
+    }
     return (
         <CreateTripV3Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
     );
@@ -258,6 +274,15 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                         onTripGenerated={onTripGenerated}
                         onOpenManager={onOpenManager}
                         onLanguageLoaded={onAppLanguageLoaded}
+                    />)
+                }
+            />
+            <Route
+                path="/create-trip/labs/shape"
+                element={
+                    renderWithHandoff(<CreateTripShapeLabPage
+                        onTripGenerated={onTripGenerated}
+                        onOpenManager={onOpenManager}
                     />)
                 }
             />

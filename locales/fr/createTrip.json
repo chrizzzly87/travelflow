@@ -325,5 +325,127 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "shapeLab": {
+    "badge": "Laboratoire d’itinéraires en Thaïlande",
+    "title": "Choisissez la route avant l’itinéraire.",
+    "intro": "Commencez par la forme du voyage, comparez trois routes solides, puis ouvrez immédiatement un plan modifiable. Les activités détaillées viendront une fois la route validée.",
+    "progressLabel": "Progression de la planification",
+    "steps": {
+      "shape": "Format",
+      "place": "Lieux",
+      "timing": "Période",
+      "style": "Rythme",
+      "reveal": "Routes"
+    },
+    "shape": {
+      "eyebrow": "Commencer par la structure",
+      "title": "Quelle forme donner à ce voyage ?",
+      "description": "Cette décision détermine le bon nombre d’étapes, de transferts et d’excursions.",
+      "options": {
+        "city_break": {
+          "title": "Une ville, vraiment",
+          "description": "Restez dans une seule ville et explorez ses quartiers sans changer d’hôtel."
+        },
+        "hub_and_day_trips": {
+          "title": "Un camp de base, plus loin",
+          "description": "Posez vos valises une fois et ajoutez des excursions réalistes à la journée."
+        },
+        "single_country_circuit": {
+          "title": "Un circuit en Thaïlande",
+          "description": "Reliez plusieurs étapes tout en gardant les transferts sous contrôle."
+        }
+      }
+    },
+    "place": {
+      "eyebrow": "Des lieux à part entière",
+      "title": "Quel lieu doit donner le ton ?",
+      "requiredDescription": "Choisissez la ville qui servira de base. Chaque option dispose déjà d’une route adaptée.",
+      "optionalDescription": "Choisissez une ville incontournable ou laissez la durée, la saison et vos envies décider.",
+      "stayRange": "En général {min}–{max} nuits",
+      "popularity": "Popularité {score}/100",
+      "hiddenGem": "Découverte {score}/100",
+      "neighborhoodTitle": "Donnez plus de relief à la ville",
+      "neighborhoodHint": "Facultatif : choisissez jusqu’à trois quartiers. Ils resteront des lieux canoniques dans le brief."
+    },
+    "timing": {
+      "eyebrow": "Partir de la vraie contrainte",
+      "title": "De combien de temps disposons-nous ?",
+      "description": "Une période flexible est plus rapide. Utilisez des dates précises si le transport ou les disponibilités sont déjà fixés.",
+      "modeLabel": "Souplesse des dates",
+      "modes": {
+        "flexible": "Période flexible",
+        "exact": "Dates précises"
+      },
+      "durationLabel": "Durée du voyage",
+      "nights": "nuits",
+      "decreaseDuration": "Retirer une nuit",
+      "increaseDuration": "Ajouter une nuit",
+      "monthLabel": "Mois souhaité",
+      "startDate": "Date de début",
+      "endDate": "Date de fin",
+      "dateError": "Choisissez une date de fin postérieure au départ pour comparer les routes."
+    },
+    "style": {
+      "eyebrow": "Seulement les signaux utiles",
+      "title": "Que doit privilégier la route ?",
+      "description": "Le rythme et les centres d’intérêt suffisent pour une première comparaison. Vous affinerez le reste dans le plan.",
+      "paceLabel": "Rythme du voyage",
+      "interestsLabel": "Davantage de",
+      "advancedLabel": "Ajuster les limites",
+      "maxChanges": "Nombre maximal de changements de base"
+    },
+    "reveal": {
+      "eyebrow": "Routes immédiates",
+      "titleOne": "Une route solide à travers la Thaïlande.",
+      "titleMany": "{count} routes solides à travers la Thaïlande.",
+      "description": "Ces squelettes versionnés viennent du pack de connaissances sur la Thaïlande : aucun lieu n’est inventé pendant l’attente.",
+      "dataNote": "{templates} modèles comparés à {entities} lieux canoniques · données {version}",
+      "fallback": "Données disponibles hors ligne",
+      "sources": {
+        "memory": "Cache à jour",
+        "bundled": "Réserve locale",
+        "supabase": "Supabase en direct"
+      },
+      "noMatchesTitle": "Les contraintes actuelles sont trop strictes.",
+      "noMatchesDescription": "Changez la ville de base, ajoutez une nuit ou autorisez une étape supplémentaire.",
+      "adjustRoute": "Ajuster le brief",
+      "match": "{score} % de correspondance",
+      "selected": "Sélectionnée",
+      "tradeoff": "À savoir avant de choisir",
+      "keepSelected": "Garder cette route",
+      "chooseRoute": "Choisir cette route",
+      "readyTitle": "Le squelette de votre route est prêt.",
+      "readyDescription": "Ouvrez-le avec de vraies villes, coordonnées, nuits, excursions et épingles modifiables.",
+    "dayTripShort": "excursion",
+    "nightsShort": "{count} nuits",
+    "brief": {
+      "title": "Donnez du relief à l’itinéraire.",
+      "description": "Ces fiches ville sont déjà intégrées au plan, pour garder les prochaines réponses rapides et cohérentes.",
+      "bestMonths": "Mois les plus adaptés",
+      "dishes": "À goûter",
+      "neighborhoods": "Quartiers",
+      "activities": "Bons points d’ancrage",
+      "stayRange": "{min}–{max} nuits",
+      "source": "Voir la source",
+      "audienceContext": "Contexte voyageurs",
+      "audienceSignals": {
+        "family_activity_supply": "Offre d’activités familiales",
+        "lgbtq_scene": "Scène LGBTQ+ documentée",
+        "solo_travel_interest": "Intérêt pour le voyage en solo"
+      }
+    },
+    "reasons": {
+        "duration_fit": "Adaptée à votre durée",
+        "pace_fit": "Adaptée à votre rythme",
+        "season_fit": "Bonne saison",
+        "interest_fit": "Adaptée à vos envies",
+        "selected_places_fit": "Inclut vos lieux"
+      }
+    },
+    "actions": {
+      "compare": "Comparer les routes",
+      "openPlan": "Ouvrir le plan modifiable"
+    }
   }
 }

@@ -325,5 +325,127 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "shapeLab": {
+    "badge": "Laboratorium tras po Tajlandii",
+    "title": "Najpierw wybierz trasę, potem plan dnia.",
+    "intro": "Zacznij od formy podróży, porównaj trzy sprawdzone koncepcje tras i od razu otwórz edytowalny plan. Szczegółowe atrakcje mogą pojawić się, gdy trasa będzie już właściwa.",
+    "progressLabel": "Postęp planowania podróży",
+    "steps": {
+      "shape": "Forma",
+      "place": "Miejsca",
+      "timing": "Termin",
+      "style": "Rytm",
+      "reveal": "Trasy"
+    },
+    "shape": {
+      "eyebrow": "Zacznij od struktury",
+      "title": "Jaką formę ma mieć ta podróż?",
+      "description": "Ta decyzja określa sensowną liczbę baz, przejazdów i wycieczek jednodniowych.",
+      "options": {
+        "city_break": {
+          "title": "Jedno miasto, porządnie",
+          "description": "Zostań w jednym mieście i poznawaj dzielnice bez zmiany hotelu."
+        },
+        "hub_and_day_trips": {
+          "title": "Jedna baza, większy zasięg",
+          "description": "Rozpakuj się raz i dodaj realistyczne wycieczki jednodniowe z bazy."
+        },
+        "single_country_circuit": {
+          "title": "Objazd po Tajlandii",
+          "description": "Połącz kilka baz noclegowych, zachowując kontrolę nad przejazdami."
+        }
+      }
+    },
+    "place": {
+      "eyebrow": "Miejsca jako pełnoprawne dane",
+      "title": "Które miejsce ma nadać kierunek trasie?",
+      "requiredDescription": "Wybierz miasto będące bazą tej podróży. Każda opcja ma już dopasowaną trasę.",
+      "optionalDescription": "Wybierz obowiązkowe miasto albo pozwól zdecydować długości, porze roku i zainteresowaniom.",
+      "stayRange": "Zwykle {min}–{max} nocy",
+      "popularity": "Popularność {score}/100",
+      "hiddenGem": "Odkrywanie {score}/100",
+      "neighborhoodTitle": "Dodaj miastu więcej charakteru",
+      "neighborhoodHint": "Opcjonalnie: wybierz do trzech dzielnic. Pozostaną nazwanymi, kanonicznymi miejscami w briefie."
+    },
+    "timing": {
+      "eyebrow": "Użyj prawdziwego ograniczenia",
+      "title": "Ile mamy czasu?",
+      "description": "Elastyczny termin jest najszybszy. Dokładne daty wybierz, gdy transport lub dostępność są już ustalone.",
+      "modeLabel": "Elastyczność terminu",
+      "modes": {
+        "flexible": "Elastyczny termin",
+        "exact": "Dokładne daty"
+      },
+      "durationLabel": "Długość podróży",
+      "nights": "nocy",
+      "decreaseDuration": "Usuń jedną noc",
+      "increaseDuration": "Dodaj jedną noc",
+      "monthLabel": "Preferowany miesiąc",
+      "startDate": "Data rozpoczęcia",
+      "endDate": "Data zakończenia",
+      "dateError": "Wybierz datę zakończenia późniejszą niż rozpoczęcia, aby porównać trasy."
+    },
+    "style": {
+      "eyebrow": "Tylko sygnały, które mają znaczenie",
+      "title": "Co powinna optymalizować trasa?",
+      "description": "Rytm i zainteresowania wystarczą do pierwszego porównania. Szczegóły dopracujesz w planie.",
+      "paceLabel": "Rytm podróży",
+      "interestsLabel": "Więcej tego",
+      "advancedLabel": "Dostosuj limity trasy",
+      "maxChanges": "Maksymalna liczba zmian bazy"
+    },
+    "reveal": {
+      "eyebrow": "Natychmiastowe trasy",
+      "titleOne": "Jedna sprawdzona trasa przez Tajlandię.",
+      "titleMany": "{count} sprawdzone trasy przez Tajlandię.",
+      "description": "To wersjonowane szkielety tras z pakietu wiedzy o Tajlandii, a nie miejsca wymyślone podczas oczekiwania.",
+      "dataNote": "Porównano {templates} szablonów z {entities} kanonicznymi miejscami · dane {version}",
+      "fallback": "Dane dostępne offline",
+      "sources": {
+        "memory": "Aktualna pamięć podręczna",
+        "bundled": "Lokalna rezerwa",
+        "supabase": "Supabase na żywo"
+      },
+      "noMatchesTitle": "Obecne ograniczenia są zbyt restrykcyjne.",
+      "noMatchesDescription": "Zmień miasto bazowe, dodaj noc albo dopuść jeszcze jedną zmianę bazy.",
+      "adjustRoute": "Zmień założenia",
+      "match": "{score}% dopasowania",
+      "selected": "Wybrano",
+      "tradeoff": "Warto wiedzieć przed wyborem",
+      "keepSelected": "Zachowaj tę trasę",
+      "chooseRoute": "Wybierz tę trasę",
+      "readyTitle": "Szkielet trasy jest gotowy.",
+      "readyDescription": "Otwórz go z prawdziwymi miastami, współrzędnymi, nocami, wycieczkami i edytowalnymi znacznikami.",
+    "dayTripShort": "wycieczka",
+    "nightsShort": "{count} nocy",
+    "brief": {
+      "title": "Dodaj trasie charakteru.",
+      "description": "Te krótkie opisy miast są już częścią planu, więc kolejne odpowiedzi pozostaną szybkie i spójne.",
+      "bestMonths": "Najlepsze miesiące",
+      "dishes": "Warto spróbować",
+      "neighborhoods": "Dzielnice",
+      "activities": "Dobre punkty startowe",
+      "stayRange": "{min}–{max} nocy",
+      "source": "Zobacz źródło",
+      "audienceContext": "Kontekst dla podróżnych",
+      "audienceSignals": {
+        "family_activity_supply": "Oferta aktywności rodzinnych",
+        "lgbtq_scene": "Udokumentowana scena LGBTQ+",
+        "solo_travel_interest": "Zainteresowanie podróżami solo"
+      }
+    },
+    "reasons": {
+        "duration_fit": "Pasuje do czasu",
+        "pace_fit": "Pasuje do rytmu",
+        "season_fit": "Dobra pora roku",
+        "interest_fit": "Pasuje do zainteresowań",
+        "selected_places_fit": "Zawiera Twoje miejsca"
+      }
+    },
+    "actions": {
+      "compare": "Porównaj trasy",
+      "openPlan": "Otwórz edytowalny plan"
+    }
   }
 }

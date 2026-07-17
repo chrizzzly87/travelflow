@@ -1,6 +1,9 @@
 
 import type { TransportMode as CanonicalTransportMode } from './shared/transportModes';
 import type { CreateTripPrefillDraft } from './shared/createTripPreferences';
+import type { JourneySpec } from './shared/journeySpec';
+import type { JourneyDestinationBrief } from './shared/journeyDestinationBrief';
+import type { TravelEntityReference } from './shared/travelKnowledge';
 
 export type ItemType = 'city' | 'activity' | 'travel' | 'travel-empty';
 export type TransportMode = CanonicalTransportMode;
@@ -163,6 +166,39 @@ export interface ITripAiMeta {
     generation?: TripGenerationMeta;
 }
 
+export interface ITripPlanningMeta {
+    journeySpec: JourneySpec;
+    routeStage: 'skeleton' | 'enriched';
+    datasetVersion: string;
+    templateKey: string;
+    templateVersion: number;
+    destinationBriefs: JourneyDestinationBrief[];
+    trace?: JourneyPlanningTrace;
+}
+
+export interface JourneyPlanningTrace {
+    skeletonCompilerVersion: string;
+    templateRankerVersion: string;
+    knowledgeEnricherVersion?: string;
+    knowledgeSource?: 'bundled' | 'remote';
+    matchedTemplateScore?: number;
+    matchedTemplateReasons?: string[];
+    matchedTemplateTradeoffs?: string[];
+    knowledgeActivityCount?: number;
+    compiledAt: string;
+}
+
+export type TimelineKnowledgeOrigin = 'traveler_selection' | 'route_template' | 'knowledge_ranker';
+
+export interface ITimelineItemKnowledgeMeta {
+    entity: TravelEntityReference;
+    datasetVersion: string;
+    origin: TimelineKnowledgeOrigin;
+    templateKey?: string;
+    matchScore?: number;
+    sourceKeys: string[];
+}
+
 export interface IHotel {
     id: string;
     name: string;
@@ -208,6 +244,7 @@ export interface ITimelineItem {
   activityType?: ActivityType[]; // Array for multi-select
   aiInsights?: IAiInsights;
   hotels?: IHotel[];
+  knowledgeMeta?: ITimelineItemKnowledgeMeta;
   
   // Travel Specifics
   bufferBefore?: number; // Minutes
@@ -237,6 +274,7 @@ export interface ITrip {
   cityColorPaletteId?: string;
   mapColorMode?: MapColorMode;
   aiMeta?: ITripAiMeta;
+  planningMeta?: ITripPlanningMeta;
   defaultView?: IViewSettings;
   status?: 'active' | 'archived' | 'expired';
   tripExpiresAt?: string | null;

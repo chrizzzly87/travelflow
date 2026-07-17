@@ -1,0 +1,455 @@
+{
+  "datasetVersion": "2026.07.17-v5",
+  "templates": {
+    "th-bangkok-long-weekend": {
+      "en": {
+        "locale": "en",
+        "title": "Bangkok in layers",
+        "summary": "A focused first visit balancing the river and Old Town with markets, food, and one modern neighborhood.",
+        "highlights": [
+          "Historic river day",
+          "Yaowarat food evening",
+          "Flexible modern-Bangkok block"
+        ],
+        "tradeoffs": [
+          "Cross-city travel still needs careful grouping",
+          "Three days requires selective sightseeing"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Bangkok in vielen Facetten",
+        "summary": "Eine fokussierte erste Reise mit Fluss und Altstadt, Märkten, Essen und einem modernen Viertel.",
+        "highlights": [
+          "Historischer Tag am Fluss",
+          "Food-Abend in Yaowarat",
+          "Flexibler Block im modernen Bangkok"
+        ],
+        "tradeoffs": [
+          "Weite Wege müssen sinnvoll gebündelt werden",
+          "Drei Tage verlangen eine klare Auswahl"
+        ]
+      }
+    },
+    "th-bangkok-food-neighborhoods": {
+      "en": {
+        "locale": "en",
+        "title": "Bangkok, one table at a time",
+        "summary": "Build the city break around Yaowarat, neighborhood cafés, markets, and a lively late evening rather than a temple checklist.",
+        "highlights": [
+          "Yaowarat after dark",
+          "Ari neighborhood food",
+          "Market-led city rhythm"
+        ],
+        "tradeoffs": [
+          "A food-first route leaves less time for major monuments",
+          "Popular dinner areas still benefit from a short list"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Bangkok, Teller für Teller",
+        "summary": "Richte den Citytrip auf Yaowarat, Cafés in den Vierteln, Märkte und einen lebhaften späten Abend aus – statt auf eine Tempel-Checkliste.",
+        "highlights": [
+          "Yaowarat nach Einbruch der Dunkelheit",
+          "Food-Spots in Ari",
+          "Stadtrhythmus entlang der Märkte"
+        ],
+        "tradeoffs": [
+          "Der Food-Fokus lässt weniger Zeit für große Monumente",
+          "Für beliebte Dinner-Viertel hilft weiterhin eine kurze Vorauswahl"
+        ]
+      }
+    },
+    "th-bangkok-river-slow": {
+      "en": {
+        "locale": "en",
+        "title": "Bangkok with breathing room",
+        "summary": "Slow the capital down with river travel, one focused Old Town block, and calmer neighborhood time in Ari.",
+        "highlights": [
+          "River-led orientation",
+          "Selective Old Town day",
+          "Ari at an easier pace"
+        ],
+        "tradeoffs": [
+          "A slower rhythm deliberately skips some headline sights",
+          "Cross-river journeys still need realistic buffers"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Bangkok mit Luft zum Atmen",
+        "summary": "Nimm Tempo aus der Hauptstadt: mit Wegen auf dem Fluss, einem fokussierten Altstadt-Block und ruhiger Zeit in Ari.",
+        "highlights": [
+          "Orientierung entlang des Flusses",
+          "Ausgewählter Altstadt-Tag",
+          "Ari in ruhigerem Tempo"
+        ],
+        "tradeoffs": [
+          "Der langsamere Rhythmus lässt bewusst einige Top-Sehenswürdigkeiten aus",
+          "Wege über den Fluss brauchen realistische Puffer"
+        ]
+      }
+    },
+    "th-bangkok-ayutthaya-hub": {
+      "en": {
+        "locale": "en",
+        "title": "Bangkok base, Ayutthaya day",
+        "summary": "Keep one Bangkok hotel while adding a full heritage day in the former Siamese capital.",
+        "highlights": [
+          "No hotel change",
+          "Bangkok neighborhood contrast",
+          "UNESCO heritage day"
+        ],
+        "tradeoffs": [
+          "Ayutthaya becomes a long active day",
+          "Less evening time in Bangkok on excursion day"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Bangkok als Basis, Ayutthaya als Tagestrip",
+        "summary": "Bleib in einem Hotel in Bangkok und ergänze einen ganzen Kulturerbe-Tag in der früheren Hauptstadt Siams.",
+        "highlights": [
+          "Kein Hotelwechsel",
+          "Kontraste zwischen Bangkoks Vierteln",
+          "UNESCO-Kulturerbe als Tagesausflug"
+        ],
+        "tradeoffs": [
+          "Ayutthaya wird ein langer, aktiver Tag",
+          "Am Ausflugstag bleibt weniger Abendzeit in Bangkok"
+        ]
+      }
+    },
+    "th-northern-culture-loop": {
+      "en": {
+        "locale": "en",
+        "title": "Northern culture and mountains",
+        "summary": "Use Chiang Mai as the main base, then add quieter Chiang Rai and an optional Pai mountain detour.",
+        "highlights": [
+          "Lanna food and temples",
+          "Mountain day trips",
+          "Quieter second city"
+        ],
+        "tradeoffs": [
+          "Pai adds a winding road transfer",
+          "Late dry-season air quality can change the route"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Kultur und Berge im Norden",
+        "summary": "Nutze Chiang Mai als Hauptbasis, ergänze das ruhigere Chiang Rai und optional einen Abstecher ins bergige Pai.",
+        "highlights": [
+          "Lanna-Küche und Tempel",
+          "Tagesausflüge in die Berge",
+          "Ruhigere zweite Stadt"
+        ],
+        "tradeoffs": [
+          "Pai bringt eine kurvenreiche Straßenetappe mit",
+          "Die Luftqualität am Ende der Trockenzeit kann die Route verändern"
+        ]
+      }
+    },
+    "th-first-timer-bangkok-north-beach": {
+      "en": {
+        "locale": "en",
+        "title": "Thailand first-timer trio",
+        "summary": "A high-contrast route through Bangkok, Chiang Mai, and one Andaman beach base.",
+        "highlights": [
+          "Capital-city energy",
+          "Northern food and temples",
+          "Beach finish"
+        ],
+        "tradeoffs": [
+          "Requires two domestic transfers",
+          "Covers iconic places rather than quieter alternatives"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Thailands Klassiker für die erste Reise",
+        "summary": "Eine kontrastreiche Route durch Bangkok, Chiang Mai und eine Strandbasis an der Andamanenküste.",
+        "highlights": [
+          "Energie der Hauptstadt",
+          "Essen und Tempel im Norden",
+          "Abschluss am Strand"
+        ],
+        "tradeoffs": [
+          "Zwei Inlandsverbindungen sind nötig",
+          "Die Route zeigt Klassiker statt ruhigerer Alternativen"
+        ]
+      }
+    },
+    "th-andaman-island-circuit": {
+      "en": {
+        "locale": "en",
+        "title": "Andaman beaches, two speeds",
+        "summary": "Combine an easy flight gateway with Krabi's limestone coast and a quieter Koh Lanta finish.",
+        "highlights": [
+          "Phuket flight access",
+          "Railay and island boats",
+          "Slower Koh Lanta days"
+        ],
+        "tradeoffs": [
+          "Ferry and road connections need buffer",
+          "Monsoon timing can invalidate the route"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Andamanenküste in zwei Tempi",
+        "summary": "Verbinde einen einfachen Flugzugang mit Krabis Kalksteinküste und einem ruhigeren Abschluss auf Koh Lanta.",
+        "highlights": [
+          "Flugzugang über Phuket",
+          "Railay und Inselboote",
+          "Langsamere Tage auf Koh Lanta"
+        ],
+        "tradeoffs": [
+          "Fähren und Straßenverbindungen brauchen Puffer",
+          "Die Monsunzeit kann diese Route unbrauchbar machen"
+        ]
+      }
+    },
+    "th-gulf-island-circuit": {
+      "en": {
+        "locale": "en",
+        "title": "Gulf islands, choose your rhythm",
+        "summary": "Move from Samui's convenience through Phangan's mixed scenes to diving-focused Koh Tao.",
+        "highlights": [
+          "Three distinct island personalities",
+          "Wellness and nightlife choices",
+          "Diving and snorkeling"
+        ],
+        "tradeoffs": [
+          "Multiple ferry legs",
+          "Weather and event dates can change the best sequence"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Golfinseln in deinem Rhythmus",
+        "summary": "Reise von Samuis Komfort über Phangans unterschiedliche Szenen bis zum Tauchfokus auf Koh Tao.",
+        "highlights": [
+          "Drei eigenständige Inselcharaktere",
+          "Wellness oder Nachtleben",
+          "Tauchen und Schnorcheln"
+        ],
+        "tradeoffs": [
+          "Mehrere Fährverbindungen",
+          "Wetter und Eventtermine können die beste Reihenfolge verändern"
+        ]
+      }
+    },
+    "th-heritage-to-north-circuit": {
+      "en": {
+        "locale": "en",
+        "title": "From Siamese capitals to Lanna north",
+        "summary": "A land-focused route through Bangkok, Ayutthaya, Sukhothai, and Chiang Mai.",
+        "highlights": [
+          "Two UNESCO historic capitals",
+          "Overland progression",
+          "Chiang Mai finish"
+        ],
+        "tradeoffs": [
+          "More transfer time than a flight-led route",
+          "Heritage-heavy compared with beach routes"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Von Siams Hauptstädten in den Lanna-Norden",
+        "summary": "Eine landgebundene Route durch Bangkok, Ayutthaya, Sukhothai und Chiang Mai.",
+        "highlights": [
+          "Zwei historische UNESCO-Hauptstädte",
+          "Schrittweise Reise über Land",
+          "Abschluss in Chiang Mai"
+        ],
+        "tradeoffs": [
+          "Mehr Transferzeit als auf einer flugorientierten Route",
+          "Deutlich kulturhistorischer als Strandrouten"
+        ]
+      }
+    },
+    "th-chiang-mai-long-weekend": {
+      "en": {
+        "locale": "en",
+        "title": "Chiang Mai, old and new",
+        "summary": "Stay in one compact northern base and alternate Old City temples with food, markets, and contemporary Nimman.",
+        "highlights": [
+          "Walkable Old City",
+          "Northern Thai food",
+          "Nimman evening"
+        ],
+        "tradeoffs": [
+          "Mountain excursions need an extra day",
+          "Late dry-season air quality needs a current check"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Chiang Mai zwischen Alt und Neu",
+        "summary": "Bleib in einer kompakten Basis im Norden und wechsle zwischen Altstadt-Tempeln, Essen, Märkten und dem modernen Nimman.",
+        "highlights": [
+          "Altstadt zu Fuß",
+          "Nordthailändische Küche",
+          "Abend in Nimman"
+        ],
+        "tradeoffs": [
+          "Ausflüge in die Berge brauchen einen zusätzlichen Tag",
+          "Die Luftqualität am Ende der Trockenzeit muss aktuell geprüft werden"
+        ]
+      }
+    },
+    "th-phuket-city-and-beach": {
+      "en": {
+        "locale": "en",
+        "title": "Phuket beyond one beach",
+        "summary": "Use one island base to combine Phuket Old Town, a calmer south-coast beach, and an unhurried sunset day.",
+        "highlights": [
+          "Old Town food and architecture",
+          "South-coast beach time",
+          "Promthep sunset"
+        ],
+        "tradeoffs": [
+          "Island traffic makes careful area grouping important",
+          "Patong nightlife is not central to this route"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Phuket jenseits eines Strandes",
+        "summary": "Verbinde von einer Inselbasis aus Phukets Altstadt, einen ruhigeren Strand im Süden und einen entspannten Sonnenuntergangstag.",
+        "highlights": [
+          "Essen und Architektur in der Altstadt",
+          "Strandzeit an der Südküste",
+          "Sonnenuntergang am Promthep Cape"
+        ],
+        "tradeoffs": [
+          "Der Inselverkehr macht eine gute Gebietsplanung wichtig",
+          "Patongs Nachtleben steht bei dieser Route nicht im Mittelpunkt"
+        ]
+      }
+    },
+    "th-chiang-mai-inthanon-hub": {
+      "en": {
+        "locale": "en",
+        "title": "Chiang Mai base, mountain day",
+        "summary": "Keep one Chiang Mai hotel while mixing compact city days with a full Doi Inthanon nature excursion.",
+        "highlights": [
+          "No hotel change",
+          "Old City and markets",
+          "High-mountain day"
+        ],
+        "tradeoffs": [
+          "The national-park day starts early",
+          "Road travel takes a substantial part of the excursion"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Chiang Mai als Basis, ein Tag in den Bergen",
+        "summary": "Bleib in einem Hotel in Chiang Mai und kombiniere kompakte Stadttage mit einem ganzen Naturtag am Doi Inthanon.",
+        "highlights": [
+          "Kein Hotelwechsel",
+          "Altstadt und Märkte",
+          "Tag im Hochgebirge"
+        ],
+        "tradeoffs": [
+          "Der Nationalparktag beginnt früh",
+          "Die Fahrt nimmt einen großen Teil des Ausflugs ein"
+        ]
+      }
+    },
+    "th-koh-samui-ang-thong-hub": {
+      "en": {
+        "locale": "en",
+        "title": "Samui base, marine-park day",
+        "summary": "Unpack once on Koh Samui and reserve one weather-dependent day for Ang Thong's islands and viewpoints.",
+        "highlights": [
+          "One island hotel",
+          "Ang Thong boat day",
+          "Beach and village downtime"
+        ],
+        "tradeoffs": [
+          "Boat schedules depend on sea conditions",
+          "Samui road transfers vary by chosen coast"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Samui als Basis, ein Tag im Meerespark",
+        "summary": "Pack auf Koh Samui nur einmal aus und reserviere einen wetterabhängigen Tag für Ang Thongs Inseln und Aussichtspunkte.",
+        "highlights": [
+          "Ein Inselhotel",
+          "Bootstag in Ang Thong",
+          "Freie Zeit an Strand und im Dorf"
+        ],
+        "tradeoffs": [
+          "Bootsfahrpläne hängen vom Seegang ab",
+          "Straßentransfers auf Samui variieren je nach Küste"
+        ]
+      }
+    },
+    "th-pattaya-koh-larn-hub": {
+      "en": {
+        "locale": "en",
+        "title": "Pattaya base, Koh Larn escape",
+        "summary": "Use Pattaya's easy access and evening supply while setting aside one day for clearer water and beaches on Koh Larn.",
+        "highlights": [
+          "Simple single base",
+          "Koh Larn beach day",
+          "Flexible evening options"
+        ],
+        "tradeoffs": [
+          "The mainland base is busy",
+          "Ferry queues can compress the island day"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Pattaya als Basis, Auszeit auf Koh Larn",
+        "summary": "Nutze Pattayas einfache Erreichbarkeit und große Abendauswahl und reserviere einen Tag für klareres Wasser und Strände auf Koh Larn.",
+        "highlights": [
+          "Einfache einzelne Basis",
+          "Strandtag auf Koh Larn",
+          "Flexible Abendoptionen"
+        ],
+        "tradeoffs": [
+          "Die Basis auf dem Festland ist lebhaft",
+          "Warteschlangen an der Fähre können den Inseltag verkürzen"
+        ]
+      }
+    },
+    "th-kanchanaburi-erawan-hub": {
+      "en": {
+        "locale": "en",
+        "title": "Kanchanaburi base, Erawan day",
+        "summary": "Stay by the River Khwae and combine a reflective history block with a full waterfall and forest excursion.",
+        "highlights": [
+          "One riverside base",
+          "Erawan waterfall day",
+          "River Khwae history"
+        ],
+        "tradeoffs": [
+          "Erawan requires a long active outing",
+          "History sites need thoughtful context"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Kanchanaburi als Basis, ein Tag in Erawan",
+        "summary": "Bleib am River Khwae und verbinde einen reflektierten Geschichtsblock mit einem ganzen Ausflug zu Wasserfällen und Wald.",
+        "highlights": [
+          "Eine Basis am Fluss",
+          "Wasserfalltag in Erawan",
+          "Geschichte am River Khwae"
+        ],
+        "tradeoffs": [
+          "Erawan ist ein langer, aktiver Ausflug",
+          "Historische Orte brauchen sorgfältige Einordnung"
+        ]
+      }
+    }
+  }
+}

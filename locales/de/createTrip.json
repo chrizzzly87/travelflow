@@ -325,5 +325,127 @@
       "balanced": "Ausgewogen",
       "fast": "Schnell"
     }
+  },
+  "shapeLab": {
+    "badge": "Thailand-Routenlabor",
+    "title": "Erst die Route. Dann der Reiseplan.",
+    "intro": "Starte mit der Form deiner Reise, vergleiche drei fundierte Routen und öffne sofort einen bearbeitbaren Plan. Die Aktivitäten kommen danach – sobald sich die Route richtig anfühlt.",
+    "progressLabel": "Fortschritt der Reiseplanung",
+    "steps": {
+      "shape": "Reiseform",
+      "place": "Orte",
+      "timing": "Zeitraum",
+      "style": "Rhythmus",
+      "reveal": "Routen"
+    },
+    "shape": {
+      "eyebrow": "Mit Struktur starten",
+      "title": "Welche Form soll deine Reise haben?",
+      "description": "Diese eine Entscheidung bestimmt, wie viele Standorte, Transfers und Tagesausflüge sinnvoll sind.",
+      "options": {
+        "city_break": {
+          "title": "Eine Stadt, richtig erleben",
+          "description": "Bleib in einer Stadt und entdecke ihre Viertel – ganz ohne Hotelwechsel."
+        },
+        "hub_and_day_trips": {
+          "title": "Ein Standort, mehr entdecken",
+          "description": "Pack nur einmal aus und ergänze realistische Tagesausflüge rund um deinen Standort."
+        },
+        "single_country_circuit": {
+          "title": "Eine Thailand-Rundreise",
+          "description": "Verbinde mehrere Standorte und behalte die Transfers trotzdem im Griff."
+        }
+      }
+    },
+    "place": {
+      "eyebrow": "Orte mit klarer Identität",
+      "title": "Welcher Ort soll die Richtung vorgeben?",
+      "requiredDescription": "Wähle die Stadt, die deine Reise trägt. Für jede Option gibt es bereits eine passende Route.",
+      "optionalDescription": "Wähle eine Stadt, die unbedingt dabei sein soll – oder lass Dauer, Saison und Interessen entscheiden.",
+      "stayRange": "Meist {min}–{max} Nächte",
+      "popularity": "Beliebt {score}/100",
+      "hiddenGem": "Entdeckung {score}/100",
+      "neighborhoodTitle": "Gib der Stadt mehr Profil",
+      "neighborhoodHint": "Optional: Wähle bis zu drei Viertel. Sie bleiben als eindeutige Orte in deinem Reisebriefing erhalten."
+    },
+    "timing": {
+      "eyebrow": "Mit dem echten Rahmen planen",
+      "title": "Wie viel Zeit hast du?",
+      "description": "Mit einem flexiblen Zeitraum geht es am schnellsten. Feste Daten passen, wenn Transport oder Verfügbarkeit bereits stehen.",
+      "modeLabel": "Wie fest steht der Zeitraum?",
+      "modes": {
+        "flexible": "Flexibler Zeitraum",
+        "exact": "Feste Daten"
+      },
+      "durationLabel": "Reisedauer",
+      "nights": "Nächte",
+      "decreaseDuration": "Eine Nacht entfernen",
+      "increaseDuration": "Eine Nacht hinzufügen",
+      "monthLabel": "Wunschmonat",
+      "startDate": "Startdatum",
+      "endDate": "Enddatum",
+      "dateError": "Wähle ein Enddatum nach dem Startdatum, um Routen zu vergleichen."
+    },
+    "style": {
+      "eyebrow": "Nur Signale, die etwas ändern",
+      "title": "Worauf soll die Route optimiert werden?",
+      "description": "Für den ersten Vergleich reichen Rhythmus und Interessen. Die Feinabstimmung folgt direkt im Plan.",
+      "paceLabel": "Reiserhythmus",
+      "interestsLabel": "Mehr davon",
+      "advancedLabel": "Routenlimits anpassen",
+      "maxChanges": "Maximale Standortwechsel"
+    },
+    "reveal": {
+      "eyebrow": "Sofortiger Routenvergleich",
+      "titleOne": "Eine fundierte Route durch Thailand.",
+      "titleMany": "{count} fundierte Routen durch Thailand.",
+      "description": "Diese versionierten Routengerüste stammen aus dem Thailand-Wissenspaket – keine Reiseziele, die während des Wartens erfunden werden.",
+      "dataNote": "{templates} Vorlagen mit {entities} eindeutigen Orten verglichen · Datensatz {version}",
+      "fallback": "Offline verfügbare Daten",
+      "sources": {
+        "memory": "Aktueller Cache",
+        "bundled": "Lokale Reserve",
+        "supabase": "Supabase live"
+      },
+      "noMatchesTitle": "Die aktuellen Vorgaben sind zu eng.",
+      "noMatchesDescription": "Ändere die Ankerstadt, ergänze eine Nacht oder erlaube einen weiteren Standortwechsel.",
+      "adjustRoute": "Briefing anpassen",
+      "match": "{score}% Routen-Fit",
+      "selected": "Ausgewählt",
+      "tradeoff": "Vor der Auswahl wissen",
+      "keepSelected": "Route beibehalten",
+      "chooseRoute": "Diese Route wählen",
+      "readyTitle": "Dein Routengerüst ist bereit.",
+      "readyDescription": "Öffne es jetzt mit echten Städten, Koordinaten, Übernachtungen, Tagesausflügen und bearbeitbaren Kartenmarkern.",
+    "dayTripShort": "Tagesausflug",
+    "nightsShort": "{count} Nächte",
+    "brief": {
+      "title": "Mehr als nur die Route.",
+      "description": "Diese Stadt-Briefings stecken bereits im Plan. So bleiben die nächsten Antworten schnell und konsistent.",
+      "bestMonths": "Passende Monate",
+      "dishes": "Probieren",
+      "neighborhoods": "Viertel",
+      "activities": "Gute Ankerpunkte",
+      "stayRange": "{min}–{max} Nächte",
+      "source": "Quelle öffnen",
+      "audienceContext": "Kontext für Reisende",
+      "audienceSignals": {
+        "family_activity_supply": "Angebot für Familien",
+        "lgbtq_scene": "Dokumentierte LGBTQ+-Szene",
+        "solo_travel_interest": "Interesse bei Alleinreisenden"
+      }
+    },
+    "reasons": {
+        "duration_fit": "Passt zur Reisedauer",
+        "pace_fit": "Passt zum Rhythmus",
+        "season_fit": "Passt zur Saison",
+        "interest_fit": "Passt zu Interessen",
+        "selected_places_fit": "Enthält deine Orte"
+      }
+    },
+    "actions": {
+      "compare": "Routen vergleichen",
+      "openPlan": "Plan bearbeiten"
+    }
   }
 }

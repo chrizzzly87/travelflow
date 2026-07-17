@@ -56,6 +56,53 @@ const requiredPatterns = [
   },
 ];
 
+const travelKnowledgeTables = [
+  'travel_sources',
+  'travel_dataset_versions',
+  'travel_entities',
+  'travel_entity_names',
+  'travel_entity_facts',
+  'travel_tags',
+  'travel_entity_tags',
+  'travel_templates',
+  'travel_template_copy',
+  'travel_template_stops',
+  'travel_template_legs',
+  'travel_template_tags',
+];
+
+for (const table of travelKnowledgeTables) {
+  requiredPatterns.push(
+    {
+      label: `${table} table`,
+      pattern: new RegExp(`create\\s+table\\s+if\\s+not\\s+exists\\s+public\\.${table}\\s*\\(`, 'i'),
+    },
+    {
+      label: `${table} RLS`,
+      pattern: new RegExp(`alter table public\\.${table} enable row level security;`, 'i'),
+    },
+  );
+}
+
+requiredPatterns.push(
+  {
+    label: 'travel entity suggestions RPC',
+    pattern: /create\s+or\s+replace\s+function\s+public\.get_travel_entity_suggestions\(/i,
+  },
+  {
+    label: 'travel entity suggestions public grant',
+    pattern: /grant execute on function public\.get_travel_entity_suggestions\(text,\s*text,\s*text\[\],\s*integer\) to anon,\s*authenticated;/i,
+  },
+  {
+    label: 'travel destination pack RPC',
+    pattern: /create\s+or\s+replace\s+function\s+public\.get_travel_destination_pack\(/i,
+  },
+  {
+    label: 'travel destination pack public grant',
+    pattern: /grant execute on function public\.get_travel_destination_pack\(text,\s*text\) to anon,\s*authenticated;/i,
+  },
+);
+
 const fail = (message) => {
   console.error(`[supabase:validate] ${message}`);
   process.exit(1);

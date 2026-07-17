@@ -1,0 +1,1107 @@
+{
+  "manifest": {
+    "datasetKey": "thailand-core",
+    "countryCode": "TH",
+    "version": "2026.07.17-v5",
+    "generatedAt": "2026-07-17T00:30:00Z",
+    "notes": "Thailand-first planning dataset. Editorial summaries are paraphrased and must not be treated as live availability, safety, entry, or price guarantees."
+  },
+  "sources": [
+    {
+      "sourceKey": "geonames",
+      "name": "GeoNames",
+      "sourceKind": "open_data",
+      "baseUrl": "https://www.geonames.org/",
+      "termsUrl": "https://www.geonames.org/export/",
+      "licenseKey": "CC-BY-4.0",
+      "attributionText": "GeoNames geographical database",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "refreshIntervalDays": 365
+    },
+    {
+      "sourceKey": "wikidata",
+      "name": "Wikidata",
+      "sourceKind": "open_data",
+      "baseUrl": "https://www.wikidata.org/",
+      "termsUrl": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+      "licenseKey": "CC0-1.0",
+      "attributionText": "Wikidata contributors",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "refreshIntervalDays": 365
+    },
+    {
+      "sourceKey": "tat_official",
+      "name": "Tourism Authority of Thailand",
+      "sourceKind": "official",
+      "baseUrl": "https://www.tourismthailand.org/",
+      "termsUrl": "https://www.tourismthailand.org/",
+      "attributionText": "Tourism Authority of Thailand",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "refreshIntervalDays": 90,
+      "metadata": {
+        "usage": "Reference and paraphrase only; do not syndicate source copy or images."
+      }
+    },
+    {
+      "sourceKey": "unesco_whc",
+      "name": "UNESCO World Heritage Centre",
+      "sourceKind": "official",
+      "baseUrl": "https://whc.unesco.org/",
+      "termsUrl": "https://www.unesco.org/en/terms-use",
+      "attributionText": "UNESCO World Heritage Centre",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "refreshIntervalDays": 365,
+      "metadata": {
+        "usage": "Reference only; descriptions are original TravelFlow summaries."
+      }
+    },
+    {
+      "sourceKey": "bank_of_thailand",
+      "name": "Bank of Thailand",
+      "sourceKind": "official",
+      "baseUrl": "https://www.bot.or.th/",
+      "termsUrl": "https://www.bot.or.th/en/terms-and-conditions.html",
+      "attributionText": "Bank of Thailand",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "refreshIntervalDays": 30
+    },
+    {
+      "sourceKey": "iglta_thailand",
+      "name": "IGLTA Thailand travel guide",
+      "sourceKind": "community",
+      "baseUrl": "https://www.iglta.org/destinations/asia-middle-east/thailand/",
+      "termsUrl": "https://www.iglta.org/terms-conditions/",
+      "attributionText": "International LGBTQ+ Travel Association",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "refreshIntervalDays": 180,
+      "metadata": {
+        "usage": "Reference only; evidence does not represent a safety guarantee."
+      }
+    },
+    {
+      "sourceKey": "travelflow_editorial",
+      "name": "TravelFlow editorial",
+      "sourceKind": "editorial",
+      "baseUrl": "https://travelflowapp.netlify.app/",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "refreshIntervalDays": 180,
+      "metadata": {
+        "method": "Original summaries and planning judgments reviewed against the registered reference URLs."
+      }
+    }
+  ],
+  "tags": [
+    { "tagKey": "city_break", "tagGroup": "trip_shape", "label": "City break", "description": "Works well as a short city-focused trip." },
+    { "tagKey": "hub_and_day_trips", "tagGroup": "trip_shape", "label": "Base and day trips", "description": "Works as an overnight base with same-day excursions." },
+    { "tagKey": "single_country_circuit", "tagGroup": "trip_shape", "label": "Country circuit", "description": "Fits an overnight multi-base route within Thailand." },
+    { "tagKey": "food", "tagGroup": "experience", "label": "Food", "description": "Strong destination for local dishes, markets, or food-focused exploration." },
+    { "tagKey": "culture", "tagGroup": "experience", "label": "Culture", "description": "Strong cultural heritage, arts, customs, or contemporary creative life." },
+    { "tagKey": "temples", "tagGroup": "experience", "label": "Temples", "description": "Important Buddhist temples or religious architecture." },
+    { "tagKey": "beaches", "tagGroup": "experience", "label": "Beaches", "description": "Beach access is a meaningful reason to visit." },
+    { "tagKey": "nightlife", "tagGroup": "experience", "label": "Nightlife", "description": "Meaningful evening entertainment or social scene." },
+    { "tagKey": "nature", "tagGroup": "experience", "label": "Nature", "description": "Strong access to natural landscapes or wildlife habitats." },
+    { "tagKey": "hiking", "tagGroup": "experience", "label": "Hiking", "description": "Notable walking, trail, or mountain opportunities." },
+    { "tagKey": "diving", "tagGroup": "experience", "label": "Diving", "description": "Meaningful snorkeling or diving opportunities." },
+    { "tagKey": "wellness", "tagGroup": "experience", "label": "Wellness", "description": "Strong spa, retreat, yoga, or restorative travel supply." },
+    { "tagKey": "markets", "tagGroup": "experience", "label": "Markets", "description": "Markets are a major part of the visitor experience." },
+    { "tagKey": "history", "tagGroup": "experience", "label": "History", "description": "Historical sites or interpretation are a major reason to visit." },
+    { "tagKey": "essential", "tagGroup": "place_character", "label": "Essential", "description": "High-priority first-trip destination or sight." },
+    { "tagKey": "hidden_gem", "tagGroup": "place_character", "label": "Hidden gem", "description": "Offers meaningful discovery beyond the busiest first-time circuit." },
+    { "tagKey": "lively", "tagGroup": "place_character", "label": "Lively", "description": "Energetic atmosphere with substantial visitor activity." },
+    { "tagKey": "quiet", "tagGroup": "place_character", "label": "Quiet", "description": "Relatively calm base or experience compared with nearby alternatives." },
+    { "tagKey": "island", "tagGroup": "place_character", "label": "Island", "description": "An island destination where marine transport or geography affects planning." },
+    { "tagKey": "mountain", "tagGroup": "place_character", "label": "Mountain", "description": "Mountain landscape materially shapes the destination." },
+    { "tagKey": "heritage", "tagGroup": "place_character", "label": "Heritage", "description": "Protected or nationally significant heritage context." },
+    { "tagKey": "good_public_transport", "tagGroup": "practical", "label": "Good public transport", "description": "Useful public transport covers a meaningful share of visitor journeys." },
+    { "tagKey": "flight_hub", "tagGroup": "practical", "label": "Flight hub", "description": "Useful domestic or international air gateway." },
+    { "tagKey": "boat_required", "tagGroup": "practical", "label": "Boat required", "description": "Ferry or boat timing is important to arrival or activities." },
+    { "tagKey": "rainy_day_options", "tagGroup": "practical", "label": "Rainy-day options", "description": "Meaningful indoor or weather-resilient activity supply." },
+    { "tagKey": "walkable_core", "tagGroup": "practical", "label": "Walkable core", "description": "A useful central area can be explored substantially on foot." },
+    { "tagKey": "lgbtq_scene", "tagGroup": "audience_context", "label": "LGBTQ+ scene", "description": "Sourced evidence of LGBTQ+ venues, events, or travel community interest; not a safety guarantee.", "evidenceRequired": true, "sensitive": true },
+    { "tagKey": "solo_travel_interest", "tagGroup": "audience_context", "label": "Solo-travel interest", "description": "Substantial solo-traveler infrastructure or community interest; not a safety guarantee." },
+    { "tagKey": "family_activity_supply", "tagGroup": "audience_context", "label": "Family activity supply", "description": "Broad activity supply that may suit families; individual venues still require age and accessibility evidence.", "evidenceRequired": true }
+  ],
+  "entities": [
+    {
+      "canonicalSlug": "thailand",
+      "entityType": "country",
+      "countryCode": "TH",
+      "primaryName": "Thailand",
+      "localName": "ประเทศไทย",
+      "timezone": "Asia/Bangkok",
+      "latitude": 15.87,
+      "longitude": 100.9925,
+      "typicalMinDays": 7,
+      "typicalMaxDays": 28,
+      "popularityScore": 98,
+      "hiddenGemScore": 22,
+      "tourismIntensityScore": 88,
+      "attributes": { "isoAlpha2": "TH", "planningScope": "country" },
+      "names": [
+        { "locale": "en", "name": "Kingdom of Thailand", "nameKind": "alias" },
+        { "locale": "en", "name": "Siam", "nameKind": "historic" }
+      ],
+      "sourceUrls": ["https://www.tourismthailand.org/"],
+      "profile": {
+        "summary": "A diverse Southeast Asian destination combining major cities, historic capitals, northern mountain culture, national parks, and two distinct island coasts.",
+        "seasonalCaution": "Weather differs substantially between northern, Andaman, and Gulf destinations; route planning should use place-level seasons rather than one national rule.",
+        "transportSummary": "Bangkok is the main international and domestic hub; flights, intercity rail, buses, ferries, and road transfers connect the major visitor regions.",
+        "signatureFoods": ["pad kra pao", "som tam", "tom yum", "massaman curry", "mango sticky rice"],
+        "relativeCostLevel": 3
+      },
+      "tagKeys": ["single_country_circuit", "food", "culture", "temples", "beaches", "nature", "essential", "flight_hub"],
+      "evidenceTags": [
+        {
+          "tagKey": "lgbtq_scene",
+          "sourceKey": "iglta_thailand",
+          "evidenceLevel": "community",
+          "relevance": 0.72,
+          "evidenceNote": "IGLTA documents sustained LGBTQ+ traveler interest in Thailand while also noting conservative social context; this is not a safety guarantee.",
+          "sourceUrl": "https://www.iglta.org/destinations/asia-middle-east/thailand/",
+          "validUntil": "2027-01-16T00:00:00Z"
+        }
+      ],
+      "facts": [
+        { "factKey": "currency.code", "value": "THB", "sourceKey": "bank_of_thailand", "sourceUrl": "https://www.bot.or.th/en/our-roles/banknotes.html", "confidence": 0.99, "reviewStatus": "verified", "observedAt": "2026-07-16T12:00:00Z" },
+        { "factKey": "language.official", "value": ["Thai"], "sourceKey": "wikidata", "sourceUrl": "https://www.wikidata.org/wiki/Q869", "confidence": 0.98, "reviewStatus": "verified", "observedAt": "2026-07-16T12:00:00Z" },
+        { "factKey": "timezone.iana", "value": "Asia/Bangkok", "sourceKey": "geonames", "sourceUrl": "https://www.geonames.org/", "confidence": 0.99, "reviewStatus": "verified", "observedAt": "2026-07-16T12:00:00Z" }
+      ]
+    },
+    {
+      "canonicalSlug": "th-north",
+      "entityType": "region",
+      "parentSlug": "thailand",
+      "countryCode": "TH",
+      "primaryName": "Northern Thailand",
+      "localName": "ภาคเหนือ",
+      "timezone": "Asia/Bangkok",
+      "latitude": 18.75,
+      "longitude": 99.0,
+      "popularityScore": 88,
+      "hiddenGemScore": 62,
+      "tourismIntensityScore": 66,
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/North/1"],
+      "profile": { "summary": "Lanna cities, mountain landscapes, temples, food traditions, and cooler-season travel centered on Chiang Mai and Chiang Rai.", "bestMonths": [11, 12, 1, 2], "seasonalCaution": "Air quality can be poor during the late dry-season burning period; verify current conditions before outdoor-heavy plans." },
+      "tagKeys": ["culture", "temples", "food", "nature", "mountain", "single_country_circuit"]
+    },
+    {
+      "canonicalSlug": "th-central",
+      "entityType": "region",
+      "parentSlug": "thailand",
+      "countryCode": "TH",
+      "primaryName": "Central Thailand",
+      "localName": "ภาคกลาง",
+      "timezone": "Asia/Bangkok",
+      "latitude": 14.45,
+      "longitude": 100.45,
+      "popularityScore": 92,
+      "hiddenGemScore": 42,
+      "tourismIntensityScore": 82,
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Central/2"],
+      "profile": { "summary": "Bangkok, river landscapes, historic capitals, markets, and accessible rail or road day trips.", "bestMonths": [11, 12, 1, 2], "transportSummary": "Bangkok anchors rail, road, and river connections across the region." },
+      "tagKeys": ["city_break", "hub_and_day_trips", "history", "culture", "markets", "good_public_transport"]
+    },
+    {
+      "canonicalSlug": "th-east",
+      "entityType": "region",
+      "parentSlug": "thailand",
+      "countryCode": "TH",
+      "primaryName": "Eastern Thailand",
+      "localName": "ภาคตะวันออก",
+      "timezone": "Asia/Bangkok",
+      "latitude": 12.9,
+      "longitude": 101.2,
+      "popularityScore": 76,
+      "hiddenGemScore": 48,
+      "tourismIntensityScore": 72,
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/East/5"],
+      "profile": { "summary": "Gulf beaches, islands, and resort destinations reachable from Bangkok, with Pattaya as the largest visitor center." },
+      "tagKeys": ["beaches", "nightlife", "island", "hub_and_day_trips"]
+    },
+    {
+      "canonicalSlug": "th-south",
+      "entityType": "region",
+      "parentSlug": "thailand",
+      "countryCode": "TH",
+      "primaryName": "Southern Thailand",
+      "localName": "ภาคใต้",
+      "timezone": "Asia/Bangkok",
+      "latitude": 8.5,
+      "longitude": 99.2,
+      "popularityScore": 94,
+      "hiddenGemScore": 56,
+      "tourismIntensityScore": 82,
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/South/3"],
+      "profile": { "summary": "Andaman and Gulf islands, limestone landscapes, marine activities, national parks, and distinct regional food.", "seasonalCaution": "Andaman and Gulf coasts have different monsoon patterns; ferry and marine conditions must be checked for the selected islands." },
+      "tagKeys": ["beaches", "island", "nature", "diving", "food", "single_country_circuit", "boat_required"]
+    },
+    {
+      "canonicalSlug": "th-northeast",
+      "entityType": "region",
+      "parentSlug": "thailand",
+      "countryCode": "TH",
+      "primaryName": "Northeastern Thailand",
+      "localName": "ภาคอีสาน",
+      "timezone": "Asia/Bangkok",
+      "latitude": 16.4,
+      "longitude": 102.8,
+      "popularityScore": 54,
+      "hiddenGemScore": 86,
+      "tourismIntensityScore": 28,
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/North-East/4"],
+      "profile": { "summary": "A lower-tourism region with strong Isan food, Khmer-era heritage, Mekong landscapes, and national parks; detailed city coverage is deferred beyond the Thailand v1 route set." },
+      "tagKeys": ["hidden_gem", "food", "culture", "history", "quiet"]
+    },
+    {
+      "canonicalSlug": "th-bangkok",
+      "entityType": "city",
+      "parentSlug": "th-central",
+      "countryCode": "TH",
+      "primaryName": "Bangkok",
+      "localName": "กรุงเทพมหานคร",
+      "timezone": "Asia/Bangkok",
+      "latitude": 13.7563,
+      "longitude": 100.5018,
+      "typicalMinDays": 2,
+      "typicalMaxDays": 5,
+      "popularityScore": 100,
+      "hiddenGemScore": 24,
+      "tourismIntensityScore": 100,
+      "attributes": { "iataGateways": ["BKK", "DMK"], "planningRole": "national_gateway" },
+      "names": [{ "locale": "en", "name": "Krung Thep", "nameKind": "alias" }],
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"],
+      "profile": {
+        "summary": "Thailand's main gateway combines royal and religious heritage, river travel, large markets, contemporary dining, malls, museums, and distinct neighborhoods.",
+        "bestMonths": [11, 12, 1, 2],
+        "seasonalCaution": "Hot-season afternoons and monsoon downpours reward early starts, shaded breaks, and indoor alternatives.",
+        "transportSummary": "BTS, MRT, river boats, rail, taxis, and ride-hailing cover many visitor journeys, but cross-city travel time remains a major scheduling constraint.",
+        "signatureFoods": ["boat noodles", "pad kra pao", "tom yum", "mango sticky rice"],
+        "relativeCostLevel": 3
+      },
+      "tagKeys": ["city_break", "hub_and_day_trips", "food", "culture", "temples", "markets", "nightlife", "essential", "lively", "good_public_transport", "flight_hub", "rainy_day_options"],
+      "evidenceTags": [
+        { "tagKey": "lgbtq_scene", "sourceKey": "iglta_thailand", "evidenceLevel": "community", "relevance": 0.95, "evidenceNote": "IGLTA identifies Bangkok as Thailand's strongest LGBTQ+ travel scene; venue-level suitability and current legal context still require separate checks.", "sourceUrl": "https://www.iglta.org/destinations/asia-middle-east/thailand/", "validUntil": "2027-01-16T00:00:00Z" }
+      ]
+    },
+    {
+      "canonicalSlug": "th-chiang-mai",
+      "entityType": "city",
+      "parentSlug": "th-north",
+      "countryCode": "TH",
+      "primaryName": "Chiang Mai",
+      "localName": "เชียงใหม่",
+      "timezone": "Asia/Bangkok",
+      "latitude": 18.7883,
+      "longitude": 98.9853,
+      "typicalMinDays": 3,
+      "typicalMaxDays": 6,
+      "popularityScore": 96,
+      "hiddenGemScore": 42,
+      "tourismIntensityScore": 84,
+      "attributes": { "iataGateways": ["CNX"], "planningRole": "northern_hub" },
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"],
+      "profile": {
+        "summary": "A northern hub where Lanna temples and food sit alongside creative neighborhoods, markets, mountain excursions, and access to Doi Suthep and Doi Inthanon.",
+        "bestMonths": [11, 12, 1, 2],
+        "seasonalCaution": "Late dry-season smoke can materially reduce air quality and mountain visibility; verify current conditions.",
+        "transportSummary": "The Old City is walkable in sections; songthaews, taxis, ride-hailing, tours, and rental vehicles serve wider trips.",
+        "signatureFoods": ["khao soi", "sai ua", "nam prik ong", "gaeng hung lay"],
+        "relativeCostLevel": 2
+      },
+      "tagKeys": ["city_break", "hub_and_day_trips", "food", "culture", "temples", "markets", "nature", "wellness", "essential", "walkable_core", "flight_hub", "solo_travel_interest"]
+    },
+    {
+      "canonicalSlug": "th-chiang-rai",
+      "entityType": "city",
+      "parentSlug": "th-north",
+      "countryCode": "TH",
+      "primaryName": "Chiang Rai",
+      "localName": "เชียงราย",
+      "timezone": "Asia/Bangkok",
+      "latitude": 19.9105,
+      "longitude": 99.8406,
+      "typicalMinDays": 2,
+      "typicalMaxDays": 4,
+      "popularityScore": 79,
+      "hiddenGemScore": 64,
+      "tourismIntensityScore": 58,
+      "attributes": { "iataGateways": ["CEI"] },
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102"],
+      "profile": {
+        "summary": "A quieter northern base for contemporary temple art, Lanna culture, mountain scenery, Doi Tung, and Golden Triangle excursions.",
+        "bestMonths": [11, 12, 1, 2],
+        "seasonalCaution": "Mountain visibility and air quality can deteriorate during the late dry-season burning period.",
+        "transportSummary": "A compact center is complemented by taxis, tours, and private transport for dispersed regional sights.",
+        "signatureFoods": ["khao soi", "northern sausage", "nam ngiao"],
+        "relativeCostLevel": 2
+      },
+      "tagKeys": ["city_break", "hub_and_day_trips", "culture", "temples", "nature", "mountain", "hidden_gem", "quiet", "flight_hub"]
+    },
+    {
+      "canonicalSlug": "th-ayutthaya",
+      "entityType": "city",
+      "parentSlug": "th-central",
+      "countryCode": "TH",
+      "primaryName": "Ayutthaya",
+      "localName": "พระนครศรีอยุธยา",
+      "timezone": "Asia/Bangkok",
+      "latitude": 14.3532,
+      "longitude": 100.5689,
+      "typicalMinDays": 1,
+      "typicalMaxDays": 2,
+      "popularityScore": 89,
+      "hiddenGemScore": 40,
+      "tourismIntensityScore": 76,
+      "attributes": { "unescoWorldHeritageId": 576 },
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Phra-Nakhon-Si-Ayutthaya/229", "https://whc.unesco.org/en/list/576"],
+      "profile": {
+        "summary": "The former Siamese capital is centered on an island of temple and palace ruins and works as either a Bangkok day trip or a short overnight heritage stop.",
+        "bestMonths": [11, 12, 1, 2],
+        "transportSummary": "Rail and road connect it with Bangkok; bicycles, tuk-tuks, and boats help cover the dispersed historical zone.",
+        "signatureFoods": ["roti sai mai", "grilled river prawns", "boat noodles"],
+        "relativeCostLevel": 2
+      },
+      "tagKeys": ["hub_and_day_trips", "single_country_circuit", "history", "culture", "temples", "heritage", "essential", "walkable_core"]
+    },
+    {
+      "canonicalSlug": "th-sukhothai",
+      "entityType": "city",
+      "parentSlug": "th-north",
+      "countryCode": "TH",
+      "primaryName": "Sukhothai",
+      "localName": "สุโขทัย",
+      "timezone": "Asia/Bangkok",
+      "latitude": 17.0056,
+      "longitude": 99.8264,
+      "typicalMinDays": 1,
+      "typicalMaxDays": 3,
+      "popularityScore": 76,
+      "hiddenGemScore": 68,
+      "tourismIntensityScore": 48,
+      "attributes": { "unescoWorldHeritageId": 574 },
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Sukhothai/114", "https://whc.unesco.org/en/list/574"],
+      "profile": {
+        "summary": "A quieter heritage destination whose historical park preserves major monuments and the water-management landscape of the early Sukhothai kingdom.",
+        "bestMonths": [11, 12, 1, 2],
+        "transportSummary": "The historical park is well suited to cycling; bus or road transfers connect the modern town with other northern stops.",
+        "signatureFoods": ["Sukhothai noodles"],
+        "relativeCostLevel": 2
+      },
+      "tagKeys": ["single_country_circuit", "history", "culture", "temples", "heritage", "hidden_gem", "quiet"]
+    },
+    {
+      "canonicalSlug": "th-kanchanaburi",
+      "entityType": "city",
+      "parentSlug": "th-central",
+      "countryCode": "TH",
+      "primaryName": "Kanchanaburi",
+      "localName": "กาญจนบุรี",
+      "timezone": "Asia/Bangkok",
+      "latitude": 14.0228,
+      "longitude": 99.5328,
+      "typicalMinDays": 2,
+      "typicalMaxDays": 4,
+      "popularityScore": 78,
+      "hiddenGemScore": 60,
+      "tourismIntensityScore": 52,
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Kanchanaburi/222"],
+      "profile": {
+        "summary": "A riverside base west of Bangkok combining Second World War history, rail journeys, waterfalls, reservoirs, and forested national parks.",
+        "bestMonths": [11, 12, 1, 2],
+        "transportSummary": "Road and slower rail connections run from Bangkok; reaching waterfalls and parks generally requires additional local transport.",
+        "relativeCostLevel": 2
+      },
+      "tagKeys": ["hub_and_day_trips", "single_country_circuit", "history", "nature", "hiking", "hidden_gem", "quiet"]
+    },
+    {
+      "canonicalSlug": "th-phuket",
+      "entityType": "city",
+      "parentSlug": "th-south",
+      "countryCode": "TH",
+      "primaryName": "Phuket",
+      "localName": "ภูเก็ต",
+      "timezone": "Asia/Bangkok",
+      "latitude": 7.8804,
+      "longitude": 98.3923,
+      "typicalMinDays": 3,
+      "typicalMaxDays": 7,
+      "popularityScore": 98,
+      "hiddenGemScore": 24,
+      "tourismIntensityScore": 98,
+      "attributes": { "iataGateways": ["HKT"], "placeKind": "island_province" },
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Phuket/350"],
+      "profile": {
+        "summary": "Thailand's largest island combines international air access, developed beach towns, nightlife, Phuket Old Town, Chinese-Thai heritage, and boat excursions.",
+        "bestMonths": [11, 12, 1, 2, 3, 4],
+        "seasonalCaution": "Southwest-monsoon seas can affect beach conditions and boat trips; red flags and operator guidance take priority.",
+        "transportSummary": "The airport and dispersed beach towns make transfer planning important; taxis, buses, ride-hailing, tours, and rental vehicles fill different gaps.",
+        "signatureFoods": ["Hokkien noodles", "moo hong", "oh tao", "seafood"],
+        "relativeCostLevel": 4
+      },
+      "tagKeys": ["city_break", "hub_and_day_trips", "beaches", "nightlife", "food", "culture", "diving", "wellness", "island", "essential", "lively", "flight_hub", "rainy_day_options"],
+      "evidenceTags": [
+        { "tagKey": "lgbtq_scene", "sourceKey": "iglta_thailand", "evidenceLevel": "community", "relevance": 0.82, "evidenceNote": "IGLTA identifies Phuket as a major LGBTQ+ travel destination and event location; this does not establish venue-level suitability or safety.", "sourceUrl": "https://www.iglta.org/destinations/asia-middle-east/thailand/", "validUntil": "2027-01-16T00:00:00Z" }
+      ]
+    },
+    {
+      "canonicalSlug": "th-krabi",
+      "entityType": "city",
+      "parentSlug": "th-south",
+      "countryCode": "TH",
+      "primaryName": "Krabi",
+      "localName": "กระบี่",
+      "timezone": "Asia/Bangkok",
+      "latitude": 8.0863,
+      "longitude": 98.9063,
+      "typicalMinDays": 3,
+      "typicalMaxDays": 6,
+      "popularityScore": 93,
+      "hiddenGemScore": 38,
+      "tourismIntensityScore": 86,
+      "attributes": { "iataGateways": ["KBV"], "visitorBase": "Ao Nang" },
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Krabi/344"],
+      "profile": {
+        "summary": "An Andaman hub for limestone cliffs, Railay, island boat trips, beaches, hot springs, national parks, and rock climbing, with Ao Nang as the main visitor base.",
+        "bestMonths": [11, 12, 1, 2, 3, 4],
+        "seasonalCaution": "Boat schedules and marine conditions are weather-dependent, especially during the southwest monsoon.",
+        "transportSummary": "Krabi Airport feeds road transfers to Krabi Town and Ao Nang; long-tail boats and ferries connect Railay and islands.",
+        "signatureFoods": ["southern Thai curries", "seafood", "roti"],
+        "relativeCostLevel": 3
+      },
+      "tagKeys": ["hub_and_day_trips", "beaches", "nature", "diving", "hiking", "island", "essential", "flight_hub", "boat_required"]
+    },
+    {
+      "canonicalSlug": "th-koh-samui",
+      "entityType": "city",
+      "parentSlug": "th-south",
+      "countryCode": "TH",
+      "primaryName": "Koh Samui",
+      "localName": "เกาะสมุย",
+      "timezone": "Asia/Bangkok",
+      "latitude": 9.512,
+      "longitude": 100.0136,
+      "typicalMinDays": 3,
+      "typicalMaxDays": 7,
+      "popularityScore": 91,
+      "hiddenGemScore": 34,
+      "tourismIntensityScore": 84,
+      "attributes": { "iataGateways": ["USM"], "placeKind": "island" },
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Samui/360"],
+      "profile": {
+        "summary": "A developed Gulf island with beaches, resorts, wellness, nightlife, local food, its own airport, and access to Ang Thong Marine National Park.",
+        "bestMonths": [1, 2, 3, 4, 7, 8],
+        "seasonalCaution": "Gulf weather differs from the Andaman coast; verify local rain, wind, and marine conditions for the exact dates.",
+        "transportSummary": "Flights and ferries serve the island; local travel relies heavily on road transport and pre-arranged transfers.",
+        "signatureFoods": ["southern curries", "seafood", "khanom jeen"],
+        "relativeCostLevel": 4
+      },
+      "tagKeys": ["beaches", "wellness", "nightlife", "nature", "island", "flight_hub", "boat_required"],
+      "evidenceTags": [
+        { "tagKey": "lgbtq_scene", "sourceKey": "iglta_thailand", "evidenceLevel": "community", "relevance": 0.62, "evidenceNote": "IGLTA lists Koh Samui among Thai islands with LGBTQ+ traveler interest; the evidence is destination-level only.", "sourceUrl": "https://www.iglta.org/destinations/asia-middle-east/thailand/", "validUntil": "2027-01-16T00:00:00Z" }
+      ]
+    },
+    {
+      "canonicalSlug": "th-koh-phangan",
+      "entityType": "city",
+      "parentSlug": "th-south",
+      "countryCode": "TH",
+      "primaryName": "Koh Phangan",
+      "localName": "เกาะพะงัน",
+      "timezone": "Asia/Bangkok",
+      "latitude": 9.7319,
+      "longitude": 100.0136,
+      "typicalMinDays": 3,
+      "typicalMaxDays": 7,
+      "popularityScore": 84,
+      "hiddenGemScore": 48,
+      "tourismIntensityScore": 72,
+      "attributes": { "placeKind": "island" },
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358"],
+      "profile": {
+        "summary": "A Gulf island balancing major party events around Haad Rin with quieter beaches, yoga and wellness communities, diving access, and longer-stay areas.",
+        "bestMonths": [1, 2, 3, 4, 7, 8],
+        "seasonalCaution": "Event dates sharply change demand and atmosphere; ferry and weather conditions must be checked.",
+        "transportSummary": "Arrival is by ferry; local movement is primarily road-based and can be slow between coves.",
+        "relativeCostLevel": 3
+      },
+      "tagKeys": ["beaches", "nightlife", "wellness", "island", "boat_required", "lively"],
+      "evidenceTags": [
+        { "tagKey": "lgbtq_scene", "sourceKey": "iglta_thailand", "evidenceLevel": "community", "relevance": 0.55, "evidenceNote": "IGLTA identifies Koh Phangan as an island with LGBTQ+ community interest; this is not a safety or venue guarantee.", "sourceUrl": "https://www.iglta.org/destinations/asia-middle-east/thailand/", "validUntil": "2027-01-16T00:00:00Z" }
+      ]
+    },
+    {
+      "canonicalSlug": "th-koh-tao",
+      "entityType": "city",
+      "parentSlug": "th-south",
+      "countryCode": "TH",
+      "primaryName": "Koh Tao",
+      "localName": "เกาะเต่า",
+      "timezone": "Asia/Bangkok",
+      "latitude": 10.0956,
+      "longitude": 99.8404,
+      "typicalMinDays": 3,
+      "typicalMaxDays": 6,
+      "popularityScore": 82,
+      "hiddenGemScore": 46,
+      "tourismIntensityScore": 70,
+      "attributes": { "placeKind": "island" },
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"],
+      "profile": {
+        "summary": "A compact Gulf island best known for dive training, snorkeling, coves, viewpoints, and a social traveler scene.",
+        "bestMonths": [2, 3, 4, 7, 8],
+        "seasonalCaution": "Marine visibility, ferry reliability, and dive conditions vary; use current operator information.",
+        "transportSummary": "Ferry arrival and hilly local roads shape the plan; many visitors stay near their chosen beach or dive school.",
+        "relativeCostLevel": 3
+      },
+      "tagKeys": ["beaches", "diving", "island", "boat_required", "lively", "solo_travel_interest"]
+    },
+    {
+      "canonicalSlug": "th-pattaya",
+      "entityType": "city",
+      "parentSlug": "th-east",
+      "countryCode": "TH",
+      "primaryName": "Pattaya",
+      "localName": "พัทยา",
+      "timezone": "Asia/Bangkok",
+      "latitude": 12.9236,
+      "longitude": 100.8825,
+      "typicalMinDays": 2,
+      "typicalMaxDays": 4,
+      "popularityScore": 88,
+      "hiddenGemScore": 18,
+      "tourismIntensityScore": 94,
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Pattaya/469"],
+      "profile": {
+        "summary": "A high-intensity Gulf resort city near Bangkok with nightlife, water activities, international dining, and easy day trips to Koh Larn.",
+        "bestMonths": [11, 12, 1, 2],
+        "transportSummary": "Road transfers dominate from Bangkok; local songthaews and taxis cover the elongated urban area.",
+        "signatureFoods": ["seafood"],
+        "relativeCostLevel": 3
+      },
+      "tagKeys": ["city_break", "hub_and_day_trips", "beaches", "nightlife", "lively", "rainy_day_options"],
+      "evidenceTags": [
+        { "tagKey": "lgbtq_scene", "sourceKey": "iglta_thailand", "evidenceLevel": "community", "relevance": 0.86, "evidenceNote": "IGLTA identifies Pattaya as a major LGBTQ+ travel destination; venue and neighborhood evidence must still be evaluated separately.", "sourceUrl": "https://www.iglta.org/destinations/asia-middle-east/thailand/", "validUntil": "2027-01-16T00:00:00Z" }
+      ]
+    },
+    {
+      "canonicalSlug": "th-hua-hin",
+      "entityType": "city",
+      "parentSlug": "th-central",
+      "countryCode": "TH",
+      "primaryName": "Hua Hin",
+      "localName": "หัวหิน",
+      "timezone": "Asia/Bangkok",
+      "latitude": 12.5684,
+      "longitude": 99.9577,
+      "typicalMinDays": 2,
+      "typicalMaxDays": 5,
+      "popularityScore": 78,
+      "hiddenGemScore": 42,
+      "tourismIntensityScore": 60,
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Hua-Hin/240"],
+      "profile": {
+        "summary": "A long-established Gulf resort with beach time, seafood, markets, golf, spas, and inland nature excursions within reach of Bangkok.",
+        "bestMonths": [11, 12, 1, 2],
+        "transportSummary": "Train, bus, and road links connect Hua Hin with Bangkok; local taxis and transfers cover the spread-out coast.",
+        "signatureFoods": ["seafood"],
+        "relativeCostLevel": 3
+      },
+      "tagKeys": ["city_break", "hub_and_day_trips", "beaches", "wellness", "markets", "quiet"]
+    },
+    {
+      "canonicalSlug": "th-pai",
+      "entityType": "city",
+      "parentSlug": "th-north",
+      "countryCode": "TH",
+      "primaryName": "Pai",
+      "localName": "ปาย",
+      "timezone": "Asia/Bangkok",
+      "latitude": 19.358,
+      "longitude": 98.44,
+      "typicalMinDays": 2,
+      "typicalMaxDays": 4,
+      "popularityScore": 73,
+      "hiddenGemScore": 50,
+      "tourismIntensityScore": 62,
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Mae-Hong-Son/106"],
+      "profile": {
+        "summary": "A small northern mountain town known for scenic countryside, a social traveler community, cafes, hot springs, and canyon viewpoints.",
+        "bestMonths": [11, 12, 1, 2],
+        "seasonalCaution": "The winding road from Chiang Mai causes motion sickness for some travelers; late dry-season air quality also needs checking.",
+        "transportSummary": "Road transfer from Chiang Mai is the usual approach; local exploration commonly relies on scooters, drivers, or tours.",
+        "relativeCostLevel": 2
+      },
+      "tagKeys": ["nature", "mountain", "wellness", "nightlife", "lively", "solo_travel_interest"]
+    },
+    {
+      "canonicalSlug": "th-khao-sok",
+      "entityType": "region",
+      "parentSlug": "th-south",
+      "countryCode": "TH",
+      "primaryName": "Khao Sok",
+      "localName": "เขาสก",
+      "timezone": "Asia/Bangkok",
+      "latitude": 8.9167,
+      "longitude": 98.5308,
+      "typicalMinDays": 2,
+      "typicalMaxDays": 4,
+      "popularityScore": 77,
+      "hiddenGemScore": 72,
+      "tourismIntensityScore": 48,
+      "attributes": { "placeKind": "national_park_region" },
+      "sourceUrls": ["https://www.tourismthailand.org/Search-result/tagword/Khao%20Sok"],
+      "profile": {
+        "summary": "A rainforest and limestone national-park region centered on jungle activities and Cheow Lan Lake, best planned as a nature stop between Andaman and Gulf routes.",
+        "bestMonths": [12, 1, 2, 3, 4],
+        "seasonalCaution": "Rain is part of the rainforest climate; trails, caves, boats, and wildlife activities require current operator and park guidance.",
+        "transportSummary": "Road transfers connect from Surat Thani, Phuket, Krabi, and nearby transport hubs; lake stays require additional boat logistics.",
+        "relativeCostLevel": 3
+      },
+      "tagKeys": ["single_country_circuit", "nature", "hiking", "hidden_gem", "quiet"]
+    },
+    {
+      "canonicalSlug": "th-koh-lanta",
+      "entityType": "city",
+      "parentSlug": "th-south",
+      "countryCode": "TH",
+      "primaryName": "Koh Lanta",
+      "localName": "เกาะลันตา",
+      "timezone": "Asia/Bangkok",
+      "latitude": 7.6244,
+      "longitude": 99.0792,
+      "typicalMinDays": 3,
+      "typicalMaxDays": 7,
+      "popularityScore": 80,
+      "hiddenGemScore": 62,
+      "tourismIntensityScore": 58,
+      "attributes": { "placeKind": "island" },
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357"],
+      "profile": {
+        "summary": "A comparatively laid-back Andaman island with a long west coast of beaches, diving access, Lanta Old Town, and national-park landscapes.",
+        "bestMonths": [11, 12, 1, 2, 3, 4],
+        "seasonalCaution": "Smaller surrounding islands and marine-park areas commonly close during the May-to-October monsoon period.",
+        "transportSummary": "Road-and-ferry connections link the island with Krabi; local travel is spread along a long north-south road.",
+        "relativeCostLevel": 3
+      },
+      "tagKeys": ["beaches", "diving", "nature", "island", "hidden_gem", "quiet", "boat_required"]
+    },
+
+    { "canonicalSlug": "th-bangkok-rattanakosin", "entityType": "neighborhood", "parentSlug": "th-bangkok", "countryCode": "TH", "primaryName": "Rattanakosin / Old Town", "localName": "รัตนโกสินทร์", "timezone": "Asia/Bangkok", "latitude": 13.7567, "longitude": 100.493, "popularityScore": 96, "hiddenGemScore": 26, "tourismIntensityScore": 94, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"], "profile": { "summary": "Best for the Grand Palace, major temples, museums, and historic Bangkok; less convenient for the modern rail network late at night.", "relativeCostLevel": 3 }, "tagKeys": ["history", "culture", "temples", "essential", "walkable_core"] },
+    { "canonicalSlug": "th-bangkok-riverside", "entityType": "neighborhood", "parentSlug": "th-bangkok", "countryCode": "TH", "primaryName": "Bangkok Riverside", "timezone": "Asia/Bangkok", "latitude": 13.72, "longitude": 100.505, "popularityScore": 90, "hiddenGemScore": 34, "tourismIntensityScore": 82, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"], "profile": { "summary": "River views, temples, hotels, boats, and access to historic sights; exact convenience depends strongly on the nearest pier and rail connection.", "relativeCostLevel": 4 }, "tagKeys": ["culture", "temples", "quiet", "essential"] },
+    { "canonicalSlug": "th-bangkok-yaowarat", "entityType": "neighborhood", "parentSlug": "th-bangkok", "countryCode": "TH", "primaryName": "Yaowarat / Chinatown", "localName": "เยาวราช", "timezone": "Asia/Bangkok", "latitude": 13.739, "longitude": 100.51, "popularityScore": 94, "hiddenGemScore": 36, "tourismIntensityScore": 90, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"], "profile": { "summary": "Dense food streets, markets, Chinese-Thai heritage, temples, and strong evening energy near the old city.", "relativeCostLevel": 2 }, "tagKeys": ["food", "markets", "culture", "nightlife", "lively", "walkable_core"] },
+    { "canonicalSlug": "th-bangkok-ari", "entityType": "neighborhood", "parentSlug": "th-bangkok", "countryCode": "TH", "primaryName": "Ari", "timezone": "Asia/Bangkok", "latitude": 13.7797, "longitude": 100.5447, "popularityScore": 72, "hiddenGemScore": 62, "tourismIntensityScore": 52, "profile": { "summary": "A BTS-connected residential and cafe area that works for travelers who prefer a calmer base away from the largest visitor zones.", "relativeCostLevel": 3 }, "tagKeys": ["food", "hidden_gem", "quiet", "good_public_transport"] },
+    { "canonicalSlug": "th-bangkok-silom", "entityType": "neighborhood", "parentSlug": "th-bangkok", "countryCode": "TH", "primaryName": "Silom", "localName": "สีลม", "timezone": "Asia/Bangkok", "latitude": 13.7278, "longitude": 100.534, "popularityScore": 88, "hiddenGemScore": 28, "tourismIntensityScore": 86, "profile": { "summary": "Central business district access, strong rail links, restaurants, nightlife, and proximity to Lumphini Park.", "relativeCostLevel": 3 }, "tagKeys": ["nightlife", "food", "lively", "good_public_transport", "rainy_day_options"], "evidenceTags": [{ "tagKey": "lgbtq_scene", "sourceKey": "iglta_thailand", "evidenceLevel": "community", "relevance": 0.9, "evidenceNote": "Silom is a major part of Bangkok's documented LGBTQ+ visitor scene; individual venues require current verification.", "sourceUrl": "https://www.iglta.org/destinations/asia-middle-east/thailand/", "validUntil": "2027-01-16T00:00:00Z" }] },
+    { "canonicalSlug": "th-bangkok-sukhumvit", "entityType": "neighborhood", "parentSlug": "th-bangkok", "countryCode": "TH", "primaryName": "Sukhumvit / Asok", "timezone": "Asia/Bangkok", "latitude": 13.738, "longitude": 100.56, "popularityScore": 92, "hiddenGemScore": 18, "tourismIntensityScore": 96, "profile": { "summary": "Highly connected modern base with BTS/MRT interchange, malls, hotels, international dining, and nightlife, but heavy traffic and intense visitor activity.", "relativeCostLevel": 4 }, "tagKeys": ["nightlife", "food", "lively", "good_public_transport", "rainy_day_options"] },
+    { "canonicalSlug": "th-bangkok-thonglor", "entityType": "neighborhood", "parentSlug": "th-bangkok", "countryCode": "TH", "primaryName": "Thonglor / Ekkamai", "timezone": "Asia/Bangkok", "latitude": 13.731, "longitude": 100.586, "popularityScore": 78, "hiddenGemScore": 42, "tourismIntensityScore": 70, "profile": { "summary": "Contemporary dining, bars, cafes, and design-focused venues along the Sukhumvit corridor, generally at a higher local price point.", "relativeCostLevel": 4 }, "tagKeys": ["food", "nightlife", "lively", "good_public_transport"] },
+
+    { "canonicalSlug": "th-chiang-mai-old-city", "entityType": "neighborhood", "parentSlug": "th-chiang-mai", "countryCode": "TH", "primaryName": "Chiang Mai Old City", "localName": "เมืองเก่าเชียงใหม่", "timezone": "Asia/Bangkok", "latitude": 18.788, "longitude": 98.985, "popularityScore": 96, "hiddenGemScore": 30, "tourismIntensityScore": 88, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"], "profile": { "summary": "Best for temple density, walking access, guesthouses, and a first visit, though the busiest streets can feel highly touristic.", "relativeCostLevel": 2 }, "tagKeys": ["temples", "culture", "markets", "essential", "walkable_core"] },
+    { "canonicalSlug": "th-chiang-mai-nimman", "entityType": "neighborhood", "parentSlug": "th-chiang-mai", "countryCode": "TH", "primaryName": "Nimman", "localName": "นิมมาน", "timezone": "Asia/Bangkok", "latitude": 18.796, "longitude": 98.967, "popularityScore": 88, "hiddenGemScore": 32, "tourismIntensityScore": 82, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"], "profile": { "summary": "A contemporary cafe, dining, shopping, and nightlife district near the university and airport.", "relativeCostLevel": 3 }, "tagKeys": ["food", "nightlife", "lively", "rainy_day_options"] },
+    { "canonicalSlug": "th-chiang-mai-wat-ket", "entityType": "neighborhood", "parentSlug": "th-chiang-mai", "countryCode": "TH", "primaryName": "Wat Ket / Riverside", "timezone": "Asia/Bangkok", "latitude": 18.792, "longitude": 99.005, "popularityScore": 68, "hiddenGemScore": 70, "tourismIntensityScore": 42, "profile": { "summary": "A quieter riverside alternative with heritage houses, cafes, restaurants, and access to markets across the Ping River.", "relativeCostLevel": 3 }, "tagKeys": ["food", "culture", "hidden_gem", "quiet"] },
+    { "canonicalSlug": "th-chiang-mai-santitham", "entityType": "neighborhood", "parentSlug": "th-chiang-mai", "countryCode": "TH", "primaryName": "Santitham", "timezone": "Asia/Bangkok", "latitude": 18.8005, "longitude": 98.981, "popularityScore": 58, "hiddenGemScore": 78, "tourismIntensityScore": 34, "profile": { "summary": "A more residential food-and-cafe base between the Old City and Nimman, useful for longer stays and lower-key evenings.", "relativeCostLevel": 2 }, "tagKeys": ["food", "hidden_gem", "quiet"] },
+
+    { "canonicalSlug": "th-phuket-old-town", "entityType": "neighborhood", "parentSlug": "th-phuket", "countryCode": "TH", "primaryName": "Phuket Old Town", "localName": "เมืองเก่าภูเก็ต", "timezone": "Asia/Bangkok", "latitude": 7.884, "longitude": 98.387, "popularityScore": 88, "hiddenGemScore": 44, "tourismIntensityScore": 76, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Phuket/350"], "profile": { "summary": "Sino-Portuguese architecture, shrines, cafes, markets, and local food, but no direct beach access.", "relativeCostLevel": 3 }, "tagKeys": ["food", "culture", "markets", "history", "walkable_core", "rainy_day_options"] },
+    { "canonicalSlug": "th-phuket-patong", "entityType": "neighborhood", "parentSlug": "th-phuket", "countryCode": "TH", "primaryName": "Patong", "localName": "ป่าตอง", "timezone": "Asia/Bangkok", "latitude": 7.896, "longitude": 98.296, "popularityScore": 96, "hiddenGemScore": 8, "tourismIntensityScore": 100, "profile": { "summary": "The island's busiest beach and nightlife center with the widest visitor infrastructure and the highest intensity.", "relativeCostLevel": 4 }, "tagKeys": ["beaches", "nightlife", "lively", "essential", "rainy_day_options"], "evidenceTags": [{ "tagKey": "lgbtq_scene", "sourceKey": "iglta_thailand", "evidenceLevel": "community", "relevance": 0.82, "evidenceNote": "Patong is part of Phuket's documented LGBTQ+ visitor scene; individual venues require current verification.", "sourceUrl": "https://www.iglta.org/destinations/asia-middle-east/thailand/", "validUntil": "2027-01-16T00:00:00Z" }] },
+    { "canonicalSlug": "th-phuket-kata", "entityType": "neighborhood", "parentSlug": "th-phuket", "countryCode": "TH", "primaryName": "Kata", "timezone": "Asia/Bangkok", "latitude": 7.821, "longitude": 98.3, "popularityScore": 86, "hiddenGemScore": 30, "tourismIntensityScore": 78, "profile": { "summary": "A popular southwest-coast beach base that is generally calmer than Patong while retaining substantial restaurants and services.", "relativeCostLevel": 4 }, "tagKeys": ["beaches", "lively"] },
+    { "canonicalSlug": "th-phuket-karon", "entityType": "neighborhood", "parentSlug": "th-phuket", "countryCode": "TH", "primaryName": "Karon", "timezone": "Asia/Bangkok", "latitude": 7.847, "longitude": 98.294, "popularityScore": 82, "hiddenGemScore": 34, "tourismIntensityScore": 70, "profile": { "summary": "A long beach and resort base between Patong and Kata with a more spread-out layout and moderate evening activity.", "relativeCostLevel": 4 }, "tagKeys": ["beaches", "quiet"] },
+    { "canonicalSlug": "th-phuket-kamala", "entityType": "neighborhood", "parentSlug": "th-phuket", "countryCode": "TH", "primaryName": "Kamala", "timezone": "Asia/Bangkok", "latitude": 7.953, "longitude": 98.284, "popularityScore": 72, "hiddenGemScore": 52, "tourismIntensityScore": 56, "profile": { "summary": "A smaller west-coast beach base north of Patong with a comparatively relaxed atmosphere and resort supply.", "relativeCostLevel": 4 }, "tagKeys": ["beaches", "quiet", "hidden_gem"] },
+
+    { "canonicalSlug": "th-krabi-ao-nang", "entityType": "neighborhood", "parentSlug": "th-krabi", "countryCode": "TH", "primaryName": "Ao Nang", "localName": "อ่าวนาง", "timezone": "Asia/Bangkok", "latitude": 8.0323, "longitude": 98.822, "popularityScore": 94, "hiddenGemScore": 20, "tourismIntensityScore": 92, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Krabi/344"], "profile": { "summary": "Krabi's main visitor base for restaurants, hotels, nightlife, and boat departures to Railay and nearby islands.", "relativeCostLevel": 3 }, "tagKeys": ["beaches", "nightlife", "lively", "boat_required", "essential"] },
+    { "canonicalSlug": "th-krabi-railay", "entityType": "neighborhood", "parentSlug": "th-krabi", "countryCode": "TH", "primaryName": "Railay", "timezone": "Asia/Bangkok", "latitude": 8.011, "longitude": 98.837, "popularityScore": 91, "hiddenGemScore": 30, "tourismIntensityScore": 82, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Krabi/344"], "profile": { "summary": "A boat-access peninsula of limestone cliffs, beaches, climbing, and compact resort areas.", "relativeCostLevel": 4 }, "tagKeys": ["beaches", "hiking", "nature", "boat_required", "essential"] },
+
+    { "canonicalSlug": "th-koh-samui-chaweng", "entityType": "neighborhood", "parentSlug": "th-koh-samui", "countryCode": "TH", "primaryName": "Chaweng", "timezone": "Asia/Bangkok", "latitude": 9.53, "longitude": 100.063, "popularityScore": 92, "hiddenGemScore": 12, "tourismIntensityScore": 96, "profile": { "summary": "Samui's largest beach and nightlife base with dense visitor services and a high-energy atmosphere.", "relativeCostLevel": 4 }, "tagKeys": ["beaches", "nightlife", "lively"] },
+    { "canonicalSlug": "th-koh-samui-lamai", "entityType": "neighborhood", "parentSlug": "th-koh-samui", "countryCode": "TH", "primaryName": "Lamai", "timezone": "Asia/Bangkok", "latitude": 9.466, "longitude": 100.045, "popularityScore": 78, "hiddenGemScore": 42, "tourismIntensityScore": 68, "profile": { "summary": "A developed beach base that is generally calmer and more compact than Chaweng while retaining dining and nightlife.", "relativeCostLevel": 3 }, "tagKeys": ["beaches", "quiet"] },
+    { "canonicalSlug": "th-koh-samui-bophut", "entityType": "neighborhood", "parentSlug": "th-koh-samui", "countryCode": "TH", "primaryName": "Bophut / Fisherman's Village", "timezone": "Asia/Bangkok", "latitude": 9.559, "longitude": 100.031, "popularityScore": 84, "hiddenGemScore": 38, "tourismIntensityScore": 72, "profile": { "summary": "A dining, market, and boutique-resort base with a more polished evening atmosphere around Fisherman's Village.", "relativeCostLevel": 4 }, "tagKeys": ["food", "markets", "beaches", "walkable_core"] },
+
+    { "canonicalSlug": "th-koh-phangan-thong-sala", "entityType": "neighborhood", "parentSlug": "th-koh-phangan", "countryCode": "TH", "primaryName": "Thong Sala", "timezone": "Asia/Bangkok", "latitude": 9.708, "longitude": 99.995, "popularityScore": 76, "hiddenGemScore": 38, "tourismIntensityScore": 70, "profile": { "summary": "The main ferry, market, service, and transport hub, practical for arrivals and exploring multiple sides of the island.", "relativeCostLevel": 3 }, "tagKeys": ["markets", "food", "boat_required"] },
+    { "canonicalSlug": "th-koh-phangan-srithanu", "entityType": "neighborhood", "parentSlug": "th-koh-phangan", "countryCode": "TH", "primaryName": "Srithanu", "timezone": "Asia/Bangkok", "latitude": 9.754, "longitude": 99.965, "popularityScore": 68, "hiddenGemScore": 58, "tourismIntensityScore": 54, "profile": { "summary": "A west-coast base associated with yoga, wellness, cafes, longer stays, and quieter sunsets.", "relativeCostLevel": 3 }, "tagKeys": ["wellness", "quiet", "hidden_gem", "beaches"] },
+    { "canonicalSlug": "th-koh-phangan-haad-rin", "entityType": "neighborhood", "parentSlug": "th-koh-phangan", "countryCode": "TH", "primaryName": "Haad Rin", "timezone": "Asia/Bangkok", "latitude": 9.676, "longitude": 100.067, "popularityScore": 86, "hiddenGemScore": 8, "tourismIntensityScore": 98, "profile": { "summary": "The island's highest-intensity party area; event calendars materially change crowding, prices, and transport demand.", "relativeCostLevel": 4 }, "tagKeys": ["nightlife", "beaches", "lively"] },
+
+    { "canonicalSlug": "th-koh-tao-sairee", "entityType": "neighborhood", "parentSlug": "th-koh-tao", "countryCode": "TH", "primaryName": "Sairee Beach", "timezone": "Asia/Bangkok", "latitude": 10.0973, "longitude": 99.8278, "popularityScore": 90, "hiddenGemScore": 18, "tourismIntensityScore": 88, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"], "profile": { "summary": "Koh Tao's longest and most social visitor base, with dive schools, sunset bars, restaurants, and broad accommodation supply.", "relativeCostLevel": 3 }, "tagKeys": ["beaches", "diving", "nightlife", "lively", "solo_travel_interest"] },
+    { "canonicalSlug": "th-koh-tao-mae-haad", "entityType": "neighborhood", "parentSlug": "th-koh-tao", "countryCode": "TH", "primaryName": "Mae Haad", "timezone": "Asia/Bangkok", "latitude": 10.0845, "longitude": 99.8252, "popularityScore": 78, "hiddenGemScore": 34, "tourismIntensityScore": 72, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"], "profile": { "summary": "The practical ferry-arrival and service hub, useful for short stays, dive departures, shops, and easier onward logistics.", "relativeCostLevel": 3 }, "tagKeys": ["boat_required", "diving", "markets"] },
+    { "canonicalSlug": "th-koh-tao-chalok", "entityType": "neighborhood", "parentSlug": "th-koh-tao", "countryCode": "TH", "primaryName": "Chalok Baan Kao", "timezone": "Asia/Bangkok", "latitude": 10.0656, "longitude": 99.8272, "popularityScore": 66, "hiddenGemScore": 62, "tourismIntensityScore": 48, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"], "profile": { "summary": "A calmer southern base near sheltered bays, viewpoints, dive operators, and local restaurants, with fewer late-night options than Sairee.", "relativeCostLevel": 3 }, "tagKeys": ["beaches", "diving", "quiet", "hidden_gem"] },
+
+    { "canonicalSlug": "th-koh-lanta-saladan", "entityType": "neighborhood", "parentSlug": "th-koh-lanta", "countryCode": "TH", "primaryName": "Saladan", "timezone": "Asia/Bangkok", "latitude": 7.64, "longitude": 99.03, "popularityScore": 70, "hiddenGemScore": 36, "tourismIntensityScore": 62, "profile": { "summary": "The main arrival and service hub with ferries, markets, dive shops, transport, and practical facilities.", "relativeCostLevel": 3 }, "tagKeys": ["markets", "boat_required"] },
+    { "canonicalSlug": "th-koh-lanta-long-beach", "entityType": "neighborhood", "parentSlug": "th-koh-lanta", "countryCode": "TH", "primaryName": "Long Beach / Phra Ae", "timezone": "Asia/Bangkok", "latitude": 7.59, "longitude": 99.03, "popularityScore": 82, "hiddenGemScore": 48, "tourismIntensityScore": 62, "profile": { "summary": "A long west-coast beach with broad accommodation and dining supply, balancing convenience and a relaxed island feel.", "relativeCostLevel": 3 }, "tagKeys": ["beaches", "quiet"] },
+    { "canonicalSlug": "th-koh-lanta-old-town", "entityType": "neighborhood", "parentSlug": "th-koh-lanta", "countryCode": "TH", "primaryName": "Lanta Old Town", "timezone": "Asia/Bangkok", "latitude": 7.535, "longitude": 99.086, "popularityScore": 58, "hiddenGemScore": 78, "tourismIntensityScore": 32, "profile": { "summary": "A quieter east-coast heritage settlement with wooden houses, local food, and access to a different side of island life.", "relativeCostLevel": 2 }, "tagKeys": ["culture", "food", "hidden_gem", "quiet"] },
+
+    { "canonicalSlug": "th-bangkok-grand-palace", "entityType": "poi", "parentSlug": "th-bangkok-rattanakosin", "countryCode": "TH", "primaryName": "Grand Palace and Wat Phra Kaew", "timezone": "Asia/Bangkok", "latitude": 13.7501, "longitude": 100.4913, "typicalMinDays": 0.2, "typicalMaxDays": 0.4, "popularityScore": 100, "hiddenGemScore": 0, "tourismIntensityScore": 100, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"], "profile": { "summary": "Bangkok's highest-priority royal and religious complex; dress requirements, heat, crowds, and current opening information must be checked." }, "tagKeys": ["culture", "temples", "history", "essential"] },
+    { "canonicalSlug": "th-bangkok-wat-pho", "entityType": "poi", "parentSlug": "th-bangkok-rattanakosin", "countryCode": "TH", "primaryName": "Wat Pho", "timezone": "Asia/Bangkok", "latitude": 13.7465, "longitude": 100.493, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 96, "hiddenGemScore": 10, "tourismIntensityScore": 94, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"], "profile": { "summary": "Major temple complex known for the reclining Buddha and traditional massage heritage, easily combined with the Grand Palace area." }, "tagKeys": ["temples", "culture", "essential"] },
+    { "canonicalSlug": "th-bangkok-wat-arun", "entityType": "poi", "parentSlug": "th-bangkok-riverside", "countryCode": "TH", "primaryName": "Wat Arun", "timezone": "Asia/Bangkok", "latitude": 13.7437, "longitude": 100.4889, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 96, "hiddenGemScore": 8, "tourismIntensityScore": 92, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"], "profile": { "summary": "Landmark riverside temple whose visit fits naturally into a Chao Phraya boat and Old Town day." }, "tagKeys": ["temples", "culture", "essential"] },
+    { "canonicalSlug": "th-bangkok-chatuchak", "entityType": "poi", "parentSlug": "th-bangkok", "countryCode": "TH", "primaryName": "Chatuchak Weekend Market", "timezone": "Asia/Bangkok", "latitude": 13.7999, "longitude": 100.55, "typicalMinDays": 0.2, "typicalMaxDays": 0.5, "popularityScore": 92, "hiddenGemScore": 10, "tourismIntensityScore": 90, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"], "profile": { "summary": "A vast market best treated as a dedicated shopping and food block; operating days and heat materially affect planning." }, "tagKeys": ["markets", "food", "essential", "lively"] },
+    { "canonicalSlug": "th-ayutthaya-historical-park", "entityType": "poi", "parentSlug": "th-ayutthaya", "countryCode": "TH", "primaryName": "Ayutthaya Historical Park", "timezone": "Asia/Bangkok", "latitude": 14.3559, "longitude": 100.5586, "typicalMinDays": 0.5, "typicalMaxDays": 1, "popularityScore": 96, "hiddenGemScore": 20, "tourismIntensityScore": 84, "sourceUrls": ["https://whc.unesco.org/en/list/576"], "profile": { "summary": "UNESCO-listed remains of the former Siamese capital, spread across temple and palace sites within and around the river island." }, "tagKeys": ["history", "culture", "temples", "heritage", "essential"] },
+    { "canonicalSlug": "th-sukhothai-historical-park", "entityType": "poi", "parentSlug": "th-sukhothai", "countryCode": "TH", "primaryName": "Sukhothai Historical Park", "timezone": "Asia/Bangkok", "latitude": 17.0185, "longitude": 99.7036, "typicalMinDays": 0.5, "typicalMaxDays": 1, "popularityScore": 91, "hiddenGemScore": 38, "tourismIntensityScore": 64, "sourceUrls": ["https://whc.unesco.org/en/list/574"], "profile": { "summary": "The core UNESCO-listed historical town, with monuments, moats, reservoirs, and routes well suited to cycling." }, "tagKeys": ["history", "culture", "temples", "heritage", "essential", "quiet"] },
+    { "canonicalSlug": "th-chiang-mai-doi-suthep", "entityType": "poi", "parentSlug": "th-chiang-mai", "countryCode": "TH", "primaryName": "Wat Phra That Doi Suthep", "timezone": "Asia/Bangkok", "latitude": 18.8049, "longitude": 98.9216, "typicalMinDays": 0.2, "typicalMaxDays": 0.4, "popularityScore": 95, "hiddenGemScore": 16, "tourismIntensityScore": 88, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"], "profile": { "summary": "Major mountain temple and Chiang Mai landmark, normally requiring a dedicated uphill transfer from the city." }, "tagKeys": ["temples", "culture", "mountain", "essential"] },
+    { "canonicalSlug": "th-chiang-mai-doi-inthanon", "entityType": "poi", "parentSlug": "th-chiang-mai", "countryCode": "TH", "primaryName": "Doi Inthanon National Park", "timezone": "Asia/Bangkok", "latitude": 18.5883, "longitude": 98.4864, "typicalMinDays": 0.5, "typicalMaxDays": 1, "popularityScore": 88, "hiddenGemScore": 38, "tourismIntensityScore": 68, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"], "profile": { "summary": "Mountain national park containing Thailand's highest peak, viewpoints, waterfalls, trails, and high-elevation weather." }, "tagKeys": ["nature", "mountain", "hiking", "essential"] },
+    { "canonicalSlug": "th-chiang-rai-white-temple", "entityType": "poi", "parentSlug": "th-chiang-rai", "countryCode": "TH", "primaryName": "Wat Rong Khun / White Temple", "timezone": "Asia/Bangkok", "latitude": 19.8242, "longitude": 99.7633, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 94, "hiddenGemScore": 12, "tourismIntensityScore": 88, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102"], "profile": { "summary": "A highly visited contemporary art and temple complex south of Chiang Rai, best grouped with other dispersed regional sights." }, "tagKeys": ["culture", "temples", "essential"] },
+    { "canonicalSlug": "th-kanchanaburi-erawan-falls", "entityType": "poi", "parentSlug": "th-kanchanaburi", "countryCode": "TH", "primaryName": "Erawan Waterfall", "timezone": "Asia/Bangkok", "latitude": 14.3751, "longitude": 99.1449, "typicalMinDays": 0.5, "typicalMaxDays": 1, "popularityScore": 88, "hiddenGemScore": 36, "tourismIntensityScore": 68, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Kanchanaburi/222"], "profile": { "summary": "A multi-tier waterfall excursion requiring meaningful road time from Kanchanaburi; trail, water, and park conditions should be checked." }, "tagKeys": ["nature", "hiking", "essential"] },
+    { "canonicalSlug": "th-kanchanaburi-river-khwae-bridge", "entityType": "poi", "parentSlug": "th-kanchanaburi", "countryCode": "TH", "primaryName": "Bridge over the River Khwae", "timezone": "Asia/Bangkok", "latitude": 14.0409, "longitude": 99.5038, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 86, "hiddenGemScore": 14, "tourismIntensityScore": 76, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Kanchanaburi/222"], "profile": { "summary": "A central part of Kanchanaburi's Second World War history, best paired with museums or railway interpretation rather than treated as a standalone photo stop." }, "tagKeys": ["history", "essential"] },
+    { "canonicalSlug": "th-phuket-promthep-cape", "entityType": "poi", "parentSlug": "th-phuket", "countryCode": "TH", "primaryName": "Promthep Cape", "timezone": "Asia/Bangkok", "latitude": 7.7614, "longitude": 98.305, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 86, "hiddenGemScore": 12, "tourismIntensityScore": 86, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Phuket/350"], "profile": { "summary": "A major south-Phuket viewpoint whose sunset popularity creates crowding and road-traffic tradeoffs." }, "tagKeys": ["nature", "essential", "lively"] },
+    { "canonicalSlug": "th-krabi-tiger-cave-temple", "entityType": "poi", "parentSlug": "th-krabi", "countryCode": "TH", "primaryName": "Tiger Cave Temple", "timezone": "Asia/Bangkok", "latitude": 8.1236, "longitude": 98.9249, "typicalMinDays": 0.2, "typicalMaxDays": 0.5, "popularityScore": 78, "hiddenGemScore": 34, "tourismIntensityScore": 62, "profile": { "summary": "A temple and steep stair climb near Krabi Town; heat, fitness, weather, and respectful dress materially affect suitability." }, "tagKeys": ["temples", "hiking", "nature"] },
+    { "canonicalSlug": "th-koh-samui-ang-thong", "entityType": "poi", "parentSlug": "th-koh-samui", "countryCode": "TH", "primaryName": "Mu Ko Ang Thong Marine National Park", "timezone": "Asia/Bangkok", "latitude": 9.627, "longitude": 99.675, "typicalMinDays": 0.5, "typicalMaxDays": 1, "popularityScore": 88, "hiddenGemScore": 42, "tourismIntensityScore": 70, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Samui/360"], "profile": { "summary": "A boat-based marine-park excursion from Samui or Phangan whose route, landing, and activity options depend on current weather and operators." }, "tagKeys": ["nature", "island", "boat_required", "essential"] },
+    { "canonicalSlug": "th-pattaya-koh-larn", "entityType": "poi", "parentSlug": "th-pattaya", "countryCode": "TH", "primaryName": "Koh Larn", "timezone": "Asia/Bangkok", "latitude": 12.914, "longitude": 100.78, "typicalMinDays": 0.5, "typicalMaxDays": 1, "popularityScore": 82, "hiddenGemScore": 26, "tourismIntensityScore": 78, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Pattaya/469"], "profile": { "summary": "A popular same-day island escape from Pattaya with beaches and local transport after the ferry crossing." }, "tagKeys": ["beaches", "island", "boat_required", "hub_and_day_trips"] },
+    { "canonicalSlug": "th-hua-hin-night-market", "entityType": "poi", "parentSlug": "th-hua-hin", "countryCode": "TH", "primaryName": "Hua Hin Night Market", "timezone": "Asia/Bangkok", "latitude": 12.571, "longitude": 99.956, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 78, "hiddenGemScore": 24, "tourismIntensityScore": 66, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Hua-Hin/240"], "profile": { "summary": "An evening food and shopping stop in central Hua Hin; current operating days and hours should be verified." }, "tagKeys": ["markets", "food", "lively"] },
+    { "canonicalSlug": "th-pai-canyon", "entityType": "poi", "parentSlug": "th-pai", "countryCode": "TH", "primaryName": "Pai Canyon", "timezone": "Asia/Bangkok", "latitude": 19.3066, "longitude": 98.4521, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 78, "hiddenGemScore": 32, "tourismIntensityScore": 70, "profile": { "summary": "A popular ridge and sunset stop south of Pai; exposed paths, heat, rain, and crowding affect suitability." }, "tagKeys": ["nature", "hiking", "essential"] },
+    { "canonicalSlug": "th-koh-lanta-national-park", "entityType": "poi", "parentSlug": "th-koh-lanta", "countryCode": "TH", "primaryName": "Mu Ko Lanta National Park", "timezone": "Asia/Bangkok", "latitude": 7.493, "longitude": 99.075, "typicalMinDays": 0.3, "typicalMaxDays": 0.7, "popularityScore": 74, "hiddenGemScore": 56, "tourismIntensityScore": 46, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357"], "profile": { "summary": "The protected southern end of Koh Lanta combines forest, coastline, viewpoints, and a lighthouse; seasonal and park conditions require checking." }, "tagKeys": ["nature", "hiking", "hidden_gem", "quiet"] },
+    { "canonicalSlug": "th-koh-phangan-than-sadet", "entityType": "poi", "parentSlug": "th-koh-phangan", "countryCode": "TH", "primaryName": "Than Sadet National Waterfall", "localName": "น้ำตกธารเสด็จ", "timezone": "Asia/Bangkok", "latitude": 9.7456, "longitude": 100.0593, "typicalMinDays": 0.2, "typicalMaxDays": 0.5, "popularityScore": 72, "hiddenGemScore": 62, "tourismIntensityScore": 46, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358"], "profile": { "summary": "A forest-and-waterfall excursion on eastern Koh Phangan; water levels, trail conditions, and road access vary with weather." }, "tagKeys": ["nature", "hiking", "hidden_gem"] },
+    { "canonicalSlug": "th-koh-phangan-thong-nai-pan-yai", "entityType": "poi", "parentSlug": "th-koh-phangan", "countryCode": "TH", "primaryName": "Thong Nai Pan Yai Beach", "timezone": "Asia/Bangkok", "latitude": 9.7696, "longitude": 100.0552, "typicalMinDays": 0.3, "typicalMaxDays": 0.8, "popularityScore": 78, "hiddenGemScore": 52, "tourismIntensityScore": 54, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358"], "profile": { "summary": "A broad northeast-coast beach that offers a quieter counterpoint to Haad Rin and requires meaningful cross-island road time." }, "tagKeys": ["beaches", "quiet", "hidden_gem"] },
+    { "canonicalSlug": "th-koh-tao-nang-yuan", "entityType": "poi", "parentSlug": "th-koh-tao", "countryCode": "TH", "primaryName": "Ko Nang Yuan", "timezone": "Asia/Bangkok", "latitude": 10.1151, "longitude": 99.8141, "typicalMinDays": 0.3, "typicalMaxDays": 0.7, "popularityScore": 90, "hiddenGemScore": 18, "tourismIntensityScore": 88, "sourceUrls": ["https://www.tourismthailand.org/Attraction/ko-nang-yuan"], "profile": { "summary": "A nearby three-islet excursion known for its sandbar, viewpoint, snorkeling, and high daytime visitor intensity; boat and access conditions require checking." }, "tagKeys": ["beaches", "diving", "nature", "island", "boat_required", "essential"] },
+    { "canonicalSlug": "th-koh-tao-sairee-beach", "entityType": "poi", "parentSlug": "th-koh-tao-sairee", "countryCode": "TH", "primaryName": "Sairee Beach sunset", "timezone": "Asia/Bangkok", "latitude": 10.0973, "longitude": 99.8278, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 86, "hiddenGemScore": 14, "tourismIntensityScore": 86, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"], "profile": { "summary": "An easy west-coast sunset and swimming block close to Koh Tao's densest dining and social scene." }, "tagKeys": ["beaches", "nightlife", "lively"] },
+    { "canonicalSlug": "th-krabi-emerald-pool", "entityType": "poi", "parentSlug": "th-krabi", "countryCode": "TH", "primaryName": "Emerald Pool / Sa Morakot", "localName": "สระมรกต", "timezone": "Asia/Bangkok", "latitude": 7.9251, "longitude": 99.2682, "typicalMinDays": 0.4, "typicalMaxDays": 0.8, "popularityScore": 84, "hiddenGemScore": 38, "tourismIntensityScore": 72, "sourceUrls": ["https://www.tourismthailand.org/Articles/10-things-to-do-in-krabi"], "profile": { "summary": "A freshwater pool and forest walk inland from Krabi's beach bases; road time, heat, crowding, and current swimming conditions affect the day." }, "tagKeys": ["nature", "hiking", "essential"] },
+    { "canonicalSlug": "th-krabi-ko-hong", "entityType": "poi", "parentSlug": "th-krabi", "countryCode": "TH", "primaryName": "Ko Hong", "timezone": "Asia/Bangkok", "latitude": 8.0781, "longitude": 98.6773, "typicalMinDays": 0.5, "typicalMaxDays": 1, "popularityScore": 88, "hiddenGemScore": 34, "tourismIntensityScore": 76, "sourceUrls": ["https://www.tourismthailand.org/Articles/10-things-to-do-in-krabi"], "profile": { "summary": "A boat-based island and lagoon day with swimming and snorkeling; departure point, park access, and sea conditions must be checked." }, "tagKeys": ["beaches", "diving", "nature", "island", "boat_required", "essential"] },
+    { "canonicalSlug": "th-phuket-wat-chalong", "entityType": "poi", "parentSlug": "th-phuket", "countryCode": "TH", "primaryName": "Wat Chalong", "localName": "วัดไชยธาราราม", "timezone": "Asia/Bangkok", "latitude": 7.8463, "longitude": 98.3375, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 90, "hiddenGemScore": 12, "tourismIntensityScore": 84, "sourceUrls": ["https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/recommended-route-for-one-day-3"], "profile": { "summary": "Phuket's major Buddhist temple, best grouped into a south-island route with respectful dress and realistic road buffers." }, "tagKeys": ["temples", "culture", "essential"] },
+    { "canonicalSlug": "th-phuket-karon-viewpoint", "entityType": "poi", "parentSlug": "th-phuket-karon", "countryCode": "TH", "primaryName": "Karon Viewpoint", "timezone": "Asia/Bangkok", "latitude": 7.7973, "longitude": 98.3022, "typicalMinDays": 0.1, "typicalMaxDays": 0.2, "popularityScore": 82, "hiddenGemScore": 18, "tourismIntensityScore": 76, "sourceUrls": ["https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/recommended-route-for-one-day-3"], "profile": { "summary": "A roadside viewpoint over Kata Noi, Kata, and Karon bays that fits a south-coast route rather than a standalone cross-island journey." }, "tagKeys": ["nature", "beaches"] },
+    { "canonicalSlug": "th-chiang-rai-blue-temple", "entityType": "poi", "parentSlug": "th-chiang-rai", "countryCode": "TH", "primaryName": "Wat Rong Suea Ten / Blue Temple", "localName": "วัดร่องเสือเต้น", "timezone": "Asia/Bangkok", "latitude": 19.9234, "longitude": 99.8418, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 88, "hiddenGemScore": 28, "tourismIntensityScore": 76, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Chiang%20Rai/102"], "profile": { "summary": "A contemporary blue-and-gold temple north of central Chiang Rai, readily combined with other city sights while respecting active worship." }, "tagKeys": ["temples", "culture", "essential"] },
+    { "canonicalSlug": "th-chiang-rai-baan-dam", "entityType": "poi", "parentSlug": "th-chiang-rai", "countryCode": "TH", "primaryName": "Baan Dam Museum / Black House", "timezone": "Asia/Bangkok", "latitude": 19.9912, "longitude": 99.8611, "typicalMinDays": 0.2, "typicalMaxDays": 0.4, "popularityScore": 82, "hiddenGemScore": 42, "tourismIntensityScore": 62, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Chiang%20Rai/102"], "profile": { "summary": "An art-and-architecture museum complex north of Chiang Rai that contrasts with the region's temple circuit and requires a road transfer." }, "tagKeys": ["culture", "hidden_gem"] },
+    { "canonicalSlug": "th-ayutthaya-wat-mahathat", "entityType": "poi", "parentSlug": "th-ayutthaya", "countryCode": "TH", "primaryName": "Wat Mahathat", "localName": "วัดมหาธาตุ", "timezone": "Asia/Bangkok", "latitude": 14.3564, "longitude": 100.5685, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 94, "hiddenGemScore": 10, "tourismIntensityScore": 90, "sourceUrls": ["https://www.tourismthailand.org/Articles/slow-lane-in-ayutthaya"], "profile": { "summary": "One of Ayutthaya's central temple ruins, known for the Buddha head held by tree roots and easy inclusion in a bicycle or tuk-tuk circuit." }, "tagKeys": ["history", "culture", "temples", "heritage", "essential"] },
+    { "canonicalSlug": "th-sukhothai-si-satchanalai", "entityType": "poi", "parentSlug": "th-sukhothai", "countryCode": "TH", "primaryName": "Si Satchanalai Historical Park", "timezone": "Asia/Bangkok", "latitude": 17.4372, "longitude": 99.7819, "typicalMinDays": 0.5, "typicalMaxDays": 1, "popularityScore": 76, "hiddenGemScore": 68, "tourismIntensityScore": 44, "sourceUrls": ["https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/sukhothai-uttaradit-3-days"], "profile": { "summary": "A quieter World Heritage component north of Sukhothai with shaded temple ruins and cycling potential, requiring a dedicated road excursion." }, "tagKeys": ["history", "culture", "temples", "heritage", "hidden_gem", "quiet"] },
+    { "canonicalSlug": "th-chiang-mai-tha-phae", "entityType": "poi", "parentSlug": "th-chiang-mai-old-city", "countryCode": "TH", "primaryName": "Tha Phae Gate and Walking Street", "localName": "ประตูท่าแพ", "timezone": "Asia/Bangkok", "latitude": 18.7878, "longitude": 98.9933, "typicalMinDays": 0.1, "typicalMaxDays": 0.4, "popularityScore": 91, "hiddenGemScore": 12, "tourismIntensityScore": 88, "sourceUrls": ["https://www.tourismthailand.org/Promotions/78/4-most-visited-tourist-attractions-in-near-chiang-mai-moat-2"], "profile": { "summary": "An Old City landmark and entry point to the Sunday walking street; the market experience depends on the day and current event schedule." }, "tagKeys": ["history", "culture", "markets", "food", "lively", "essential"] },
+    { "canonicalSlug": "th-kanchanaburi-hellfire-pass", "entityType": "poi", "parentSlug": "th-kanchanaburi", "countryCode": "TH", "primaryName": "Hellfire Pass Interpretive Centre and Memorial Walking Trail", "timezone": "Asia/Bangkok", "latitude": 14.3535, "longitude": 98.9583, "typicalMinDays": 0.4, "typicalMaxDays": 0.8, "popularityScore": 78, "hiddenGemScore": 44, "tourismIntensityScore": 52, "sourceUrls": ["https://hellfire-pass.commemoration.gov.au/"], "profile": { "summary": "A memorial museum and walking trail interpreting the Thai–Burma Railway, requiring substantial road time and a respectful, weather-aware visit." }, "tagKeys": ["history", "hiking", "heritage"] }
+  ],
+  "templates": [
+    {
+      "templateKey": "th-bangkok-long-weekend",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 3,
+      "maxDays": 5,
+      "preferredPace": "balanced",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Bangkok in layers", "summary": "A focused first visit balancing the river and Old Town with markets, food, and one modern neighborhood.", "highlights": ["Historic river day", "Yaowarat food evening", "Flexible modern-Bangkok block"], "tradeoffs": ["Cross-city travel still needs careful grouping", "Three days requires selective sightseeing"] },
+        { "locale": "de", "title": "Bangkok in vielen Facetten", "summary": "Eine fokussierte erste Reise mit Fluss und Altstadt, Märkten, Essen und einem modernen Viertel.", "highlights": ["Historischer Tag am Fluss", "Food-Abend in Yaowarat", "Flexibler Block im modernen Bangkok"], "tradeoffs": ["Weite Wege müssen sinnvoll gebündelt werden", "Drei Tage verlangen eine klare Auswahl"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-bangkok", "role": "base", "minNights": 3, "maxNights": 5 },
+        { "entitySlug": "th-bangkok-rattanakosin", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-bangkok-yaowarat", "role": "must_visit", "minNights": 0, "maxNights": 0 }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "food", "weight": 0.9 }, { "tagKey": "culture", "weight": 0.9 }, { "tagKey": "markets", "weight": 0.7 }]
+    },
+    {
+      "templateKey": "th-bangkok-food-neighborhoods",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 3,
+      "maxDays": 5,
+      "preferredPace": "full",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Bangkok, one table at a time", "summary": "Build the city break around Yaowarat, neighborhood cafés, markets, and a lively late evening rather than a temple checklist.", "highlights": ["Yaowarat after dark", "Ari neighborhood food", "Market-led city rhythm"], "tradeoffs": ["A food-first route leaves less time for major monuments", "Popular dinner areas still benefit from a short list"] },
+        { "locale": "de", "title": "Bangkok, Teller für Teller", "summary": "Richte den Citytrip auf Yaowarat, Cafés in den Vierteln, Märkte und einen lebhaften späten Abend aus – statt auf eine Tempel-Checkliste.", "highlights": ["Yaowarat nach Einbruch der Dunkelheit", "Food-Spots in Ari", "Stadtrhythmus entlang der Märkte"], "tradeoffs": ["Der Food-Fokus lässt weniger Zeit für große Monumente", "Für beliebte Dinner-Viertel hilft weiterhin eine kurze Vorauswahl"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-bangkok", "role": "base", "minNights": 3, "maxNights": 5 },
+        { "entitySlug": "th-bangkok-yaowarat", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-bangkok-ari", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-bangkok-chatuchak", "role": "must_visit", "minNights": 0, "maxNights": 0 }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "food", "weight": 1 }, { "tagKey": "markets", "weight": 0.9 }, { "tagKey": "nightlife", "weight": 0.65 }, { "tagKey": "hidden_gem", "weight": 0.45 }]
+    },
+    {
+      "templateKey": "th-bangkok-river-slow",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 4,
+      "maxDays": 6,
+      "preferredPace": "relaxed",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Bangkok with breathing room", "summary": "Slow the capital down with river travel, one focused Old Town block, and calmer neighborhood time in Ari.", "highlights": ["River-led orientation", "Selective Old Town day", "Ari at an easier pace"], "tradeoffs": ["A slower rhythm deliberately skips some headline sights", "Cross-river journeys still need realistic buffers"] },
+        { "locale": "de", "title": "Bangkok mit Luft zum Atmen", "summary": "Nimm Tempo aus der Hauptstadt: mit Wegen auf dem Fluss, einem fokussierten Altstadt-Block und ruhiger Zeit in Ari.", "highlights": ["Orientierung entlang des Flusses", "Ausgewählter Altstadt-Tag", "Ari in ruhigerem Tempo"], "tradeoffs": ["Der langsamere Rhythmus lässt bewusst einige Top-Sehenswürdigkeiten aus", "Wege über den Fluss brauchen realistische Puffer"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-bangkok", "role": "base", "minNights": 4, "maxNights": 6 },
+        { "entitySlug": "th-bangkok-riverside", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-bangkok-rattanakosin", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-bangkok-ari", "role": "must_visit", "minNights": 0, "maxNights": 0 }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "culture", "weight": 0.9 }, { "tagKey": "temples", "weight": 0.75 }, { "tagKey": "quiet", "weight": 0.8 }, { "tagKey": "food", "weight": 0.55 }]
+    },
+    {
+      "templateKey": "th-bangkok-ayutthaya-hub",
+      "countryCode": "TH",
+      "journeyType": "hub_and_day_trips",
+      "minDays": 4,
+      "maxDays": 6,
+      "preferredPace": "balanced",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Bangkok base, Ayutthaya day", "summary": "Keep one Bangkok hotel while adding a full heritage day in the former Siamese capital.", "highlights": ["No hotel change", "Bangkok neighborhood contrast", "UNESCO heritage day"], "tradeoffs": ["Ayutthaya becomes a long active day", "Less evening time in Bangkok on excursion day"] },
+        { "locale": "de", "title": "Bangkok als Basis, Ayutthaya als Tagestrip", "summary": "Bleib in einem Hotel in Bangkok und ergänze einen ganzen Kulturerbe-Tag in der früheren Hauptstadt Siams.", "highlights": ["Kein Hotelwechsel", "Kontraste zwischen Bangkoks Vierteln", "UNESCO-Kulturerbe als Tagesausflug"], "tradeoffs": ["Ayutthaya wird ein langer, aktiver Tag", "Am Ausflugstag bleibt weniger Abendzeit in Bangkok"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-bangkok", "role": "base", "minNights": 4, "maxNights": 6 },
+        { "entitySlug": "th-ayutthaya", "role": "day_trip", "minNights": 0, "maxNights": 0 }
+      ],
+      "legs": [
+        { "fromEntitySlug": "th-bangkok", "toEntitySlug": "th-ayutthaya", "legRole": "day_trip", "transportModes": ["train", "car"], "durationMinMinutes": 180, "durationMaxMinutes": 300, "distanceKm": 160, "roundTrip": true, "sourceKey": "travelflow_editorial", "confidence": 0.72, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "round_trip_transport", "planningCaution": "Live rail or road timing and the Bangkok departure point must be checked." } }
+      ],
+      "tags": [{ "tagKey": "hub_and_day_trips", "weight": 1 }, { "tagKey": "history", "weight": 0.9 }, { "tagKey": "culture", "weight": 0.8 }]
+    },
+    {
+      "templateKey": "th-northern-culture-loop",
+      "countryCode": "TH",
+      "journeyType": "single_country_circuit",
+      "minDays": 7,
+      "maxDays": 10,
+      "preferredPace": "balanced",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Northern culture and mountains", "summary": "Use Chiang Mai as the main base, then add quieter Chiang Rai and an optional Pai mountain detour.", "highlights": ["Lanna food and temples", "Mountain day trips", "Quieter second city"], "tradeoffs": ["Pai adds a winding road transfer", "Late dry-season air quality can change the route"] },
+        { "locale": "de", "title": "Kultur und Berge im Norden", "summary": "Nutze Chiang Mai als Hauptbasis, ergänze das ruhigere Chiang Rai und optional einen Abstecher ins bergige Pai.", "highlights": ["Lanna-Küche und Tempel", "Tagesausflüge in die Berge", "Ruhigere zweite Stadt"], "tradeoffs": ["Pai bringt eine kurvenreiche Straßenetappe mit", "Die Luftqualität am Ende der Trockenzeit kann die Route verändern"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-chiang-mai", "role": "base", "minNights": 4, "maxNights": 5 },
+        { "entitySlug": "th-chiang-rai", "role": "base", "minNights": 2, "maxNights": 3 },
+        { "entitySlug": "th-pai", "role": "consider", "minNights": 1, "maxNights": 2, "isOptional": true }
+      ],
+      "legs": [
+        { "fromEntitySlug": "th-chiang-mai", "toEntitySlug": "th-chiang-rai", "legRole": "transfer", "transportModes": ["bus", "car"], "durationMinMinutes": 210, "durationMaxMinutes": 300, "distanceKm": 190, "sourceKey": "travelflow_editorial", "confidence": 0.74, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "terminal_to_terminal", "planningCaution": "Road conditions and intermediate stops change total time." } },
+        { "fromEntitySlug": "th-chiang-rai", "toEntitySlug": "th-pai", "legRole": "transfer", "transportModes": ["car", "bus"], "durationMinMinutes": 330, "durationMaxMinutes": 480, "distanceKm": 300, "sourceKey": "travelflow_editorial", "confidence": 0.66, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "terminal_to_terminal", "planningCaution": "This is a long, winding optional road transfer; returning through Chiang Mai may be more practical." } }
+      ],
+      "tags": [{ "tagKey": "single_country_circuit", "weight": 1 }, { "tagKey": "culture", "weight": 0.95 }, { "tagKey": "food", "weight": 0.8 }, { "tagKey": "mountain", "weight": 0.8 }]
+    },
+    {
+      "templateKey": "th-first-timer-bangkok-north-beach",
+      "countryCode": "TH",
+      "journeyType": "single_country_circuit",
+      "minDays": 11,
+      "maxDays": 15,
+      "preferredPace": "balanced",
+      "idealMonths": [11, 12, 1, 2, 3],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Thailand first-timer trio", "summary": "A high-contrast route through Bangkok, Chiang Mai, and one Andaman beach base.", "highlights": ["Capital-city energy", "Northern food and temples", "Beach finish"], "tradeoffs": ["Requires two domestic transfers", "Covers iconic places rather than quieter alternatives"] },
+        { "locale": "de", "title": "Thailands Klassiker für die erste Reise", "summary": "Eine kontrastreiche Route durch Bangkok, Chiang Mai und eine Strandbasis an der Andamanenküste.", "highlights": ["Energie der Hauptstadt", "Essen und Tempel im Norden", "Abschluss am Strand"], "tradeoffs": ["Zwei Inlandsverbindungen sind nötig", "Die Route zeigt Klassiker statt ruhigerer Alternativen"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-bangkok", "role": "base", "minNights": 3, "maxNights": 4 },
+        { "entitySlug": "th-chiang-mai", "role": "base", "minNights": 3, "maxNights": 5 },
+        { "entitySlug": "th-phuket", "role": "base", "minNights": 4, "maxNights": 6 }
+      ],
+      "legs": [
+        { "fromEntitySlug": "th-bangkok", "toEntitySlug": "th-chiang-mai", "legRole": "transfer", "transportModes": ["plane"], "durationMinMinutes": 70, "durationMaxMinutes": 90, "distanceKm": 600, "sourceKey": "travelflow_editorial", "confidence": 0.76, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "scheduled_flight_only", "planningCaution": "Add airport access, check-in, baggage, and arrival transfer time." } },
+        { "fromEntitySlug": "th-chiang-mai", "toEntitySlug": "th-phuket", "legRole": "transfer", "transportModes": ["plane"], "durationMinMinutes": 115, "durationMaxMinutes": 135, "distanceKm": 1200, "sourceKey": "travelflow_editorial", "confidence": 0.74, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "scheduled_flight_only", "planningCaution": "Direct availability is date-dependent; add airport and possible connection time." } }
+      ],
+      "tags": [{ "tagKey": "single_country_circuit", "weight": 1 }, { "tagKey": "essential", "weight": 1 }, { "tagKey": "culture", "weight": 0.8 }, { "tagKey": "beaches", "weight": 0.8 }]
+    },
+    {
+      "templateKey": "th-andaman-island-circuit",
+      "countryCode": "TH",
+      "journeyType": "single_country_circuit",
+      "minDays": 8,
+      "maxDays": 12,
+      "preferredPace": "relaxed",
+      "idealMonths": [11, 12, 1, 2, 3, 4],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Andaman beaches, two speeds", "summary": "Combine an easy flight gateway with Krabi's limestone coast and a quieter Koh Lanta finish.", "highlights": ["Phuket flight access", "Railay and island boats", "Slower Koh Lanta days"], "tradeoffs": ["Ferry and road connections need buffer", "Monsoon timing can invalidate the route"] },
+        { "locale": "de", "title": "Andamanenküste in zwei Tempi", "summary": "Verbinde einen einfachen Flugzugang mit Krabis Kalksteinküste und einem ruhigeren Abschluss auf Koh Lanta.", "highlights": ["Flugzugang über Phuket", "Railay und Inselboote", "Langsamere Tage auf Koh Lanta"], "tradeoffs": ["Fähren und Straßenverbindungen brauchen Puffer", "Die Monsunzeit kann diese Route unbrauchbar machen"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-phuket", "role": "base", "minNights": 2, "maxNights": 3 },
+        { "entitySlug": "th-krabi", "role": "base", "minNights": 3, "maxNights": 4 },
+        { "entitySlug": "th-koh-lanta", "role": "base", "minNights": 3, "maxNights": 5 }
+      ],
+      "legs": [
+        { "fromEntitySlug": "th-phuket", "toEntitySlug": "th-krabi", "legRole": "transfer", "transportModes": ["car", "boat"], "durationMinMinutes": 150, "durationMaxMinutes": 270, "distanceKm": 165, "sourceKey": "travelflow_editorial", "confidence": 0.7, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "point_to_point_estimate", "planningCaution": "Ferry availability and sea conditions are seasonal; road is the more resilient fallback." } },
+        { "fromEntitySlug": "th-krabi", "toEntitySlug": "th-koh-lanta", "legRole": "transfer", "transportModes": ["car", "boat"], "durationMinMinutes": 120, "durationMaxMinutes": 210, "distanceKm": 90, "sourceKey": "travelflow_editorial", "confidence": 0.7, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "point_to_point_estimate", "planningCaution": "Transfer time depends on pier, vehicle ferry, hotel location, and season." } }
+      ],
+      "tags": [{ "tagKey": "single_country_circuit", "weight": 1 }, { "tagKey": "beaches", "weight": 1 }, { "tagKey": "nature", "weight": 0.8 }, { "tagKey": "quiet", "weight": 0.6 }]
+    },
+    {
+      "templateKey": "th-gulf-island-circuit",
+      "countryCode": "TH",
+      "journeyType": "single_country_circuit",
+      "minDays": 9,
+      "maxDays": 13,
+      "preferredPace": "relaxed",
+      "idealMonths": [2, 3, 4, 7, 8],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Gulf islands, choose your rhythm", "summary": "Move from Samui's convenience through Phangan's mixed scenes to diving-focused Koh Tao.", "highlights": ["Three distinct island personalities", "Wellness and nightlife choices", "Diving and snorkeling"], "tradeoffs": ["Multiple ferry legs", "Weather and event dates can change the best sequence"] },
+        { "locale": "de", "title": "Golfinseln in deinem Rhythmus", "summary": "Reise von Samuis Komfort über Phangans unterschiedliche Szenen bis zum Tauchfokus auf Koh Tao.", "highlights": ["Drei eigenständige Inselcharaktere", "Wellness oder Nachtleben", "Tauchen und Schnorcheln"], "tradeoffs": ["Mehrere Fährverbindungen", "Wetter und Eventtermine können die beste Reihenfolge verändern"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-koh-samui", "role": "base", "minNights": 3, "maxNights": 4 },
+        { "entitySlug": "th-koh-phangan", "role": "base", "minNights": 3, "maxNights": 5 },
+        { "entitySlug": "th-koh-tao", "role": "base", "minNights": 3, "maxNights": 4 }
+      ],
+      "legs": [
+        { "fromEntitySlug": "th-koh-samui", "toEntitySlug": "th-koh-phangan", "legRole": "transfer", "transportModes": ["boat"], "durationMinMinutes": 30, "durationMaxMinutes": 90, "distanceKm": 25, "sourceKey": "travelflow_editorial", "confidence": 0.72, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "pier_to_pier", "planningCaution": "Pier pairing, operator, weather, and hotel transfers change the real travel block." } },
+        { "fromEntitySlug": "th-koh-phangan", "toEntitySlug": "th-koh-tao", "legRole": "transfer", "transportModes": ["boat"], "durationMinMinutes": 60, "durationMaxMinutes": 150, "distanceKm": 50, "sourceKey": "travelflow_editorial", "confidence": 0.7, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "pier_to_pier", "planningCaution": "Sea conditions and operator schedules can materially change or cancel this leg." } }
+      ],
+      "tags": [{ "tagKey": "single_country_circuit", "weight": 1 }, { "tagKey": "island", "weight": 1 }, { "tagKey": "beaches", "weight": 0.9 }, { "tagKey": "diving", "weight": 0.8 }, { "tagKey": "wellness", "weight": 0.6 }]
+    },
+    {
+      "templateKey": "th-heritage-to-north-circuit",
+      "countryCode": "TH",
+      "journeyType": "single_country_circuit",
+      "minDays": 9,
+      "maxDays": 13,
+      "preferredPace": "balanced",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "From Siamese capitals to Lanna north", "summary": "A land-focused route through Bangkok, Ayutthaya, Sukhothai, and Chiang Mai.", "highlights": ["Two UNESCO historic capitals", "Overland progression", "Chiang Mai finish"], "tradeoffs": ["More transfer time than a flight-led route", "Heritage-heavy compared with beach routes"] },
+        { "locale": "de", "title": "Von Siams Hauptstädten in den Lanna-Norden", "summary": "Eine landgebundene Route durch Bangkok, Ayutthaya, Sukhothai und Chiang Mai.", "highlights": ["Zwei historische UNESCO-Hauptstädte", "Schrittweise Reise über Land", "Abschluss in Chiang Mai"], "tradeoffs": ["Mehr Transferzeit als auf einer flugorientierten Route", "Deutlich kulturhistorischer als Strandrouten"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-bangkok", "role": "base", "minNights": 2, "maxNights": 3 },
+        { "entitySlug": "th-ayutthaya", "role": "base", "minNights": 1, "maxNights": 2 },
+        { "entitySlug": "th-sukhothai", "role": "base", "minNights": 2, "maxNights": 3 },
+        { "entitySlug": "th-chiang-mai", "role": "base", "minNights": 3, "maxNights": 5 }
+      ],
+      "legs": [
+        { "fromEntitySlug": "th-bangkok", "toEntitySlug": "th-ayutthaya", "legRole": "transfer", "transportModes": ["train", "car"], "durationMinMinutes": 60, "durationMaxMinutes": 150, "distanceKm": 80, "sourceKey": "travelflow_editorial", "confidence": 0.74, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "terminal_to_terminal", "planningCaution": "Bangkok origin, service type, and final hotel transfer affect the total." } },
+        { "fromEntitySlug": "th-ayutthaya", "toEntitySlug": "th-sukhothai", "legRole": "transfer", "transportModes": ["bus", "car"], "durationMinMinutes": 300, "durationMaxMinutes": 420, "distanceKm": 360, "sourceKey": "travelflow_editorial", "confidence": 0.68, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "terminal_to_terminal", "planningCaution": "This is a substantial overland travel block with schedule-dependent stops." } },
+        { "fromEntitySlug": "th-sukhothai", "toEntitySlug": "th-chiang-mai", "legRole": "transfer", "transportModes": ["bus", "car"], "durationMinMinutes": 240, "durationMaxMinutes": 360, "distanceKm": 300, "sourceKey": "travelflow_editorial", "confidence": 0.7, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "terminal_to_terminal", "planningCaution": "Old Sukhothai, New Sukhothai, and Chiang Mai hotel transfers add time." } }
+      ],
+      "tags": [{ "tagKey": "single_country_circuit", "weight": 1 }, { "tagKey": "history", "weight": 1 }, { "tagKey": "heritage", "weight": 1 }, { "tagKey": "culture", "weight": 0.9 }]
+    },
+    {
+      "templateKey": "th-chiang-mai-long-weekend",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 3,
+      "maxDays": 5,
+      "preferredPace": "balanced",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Chiang Mai, old and new", "summary": "Stay in one compact northern base and alternate Old City temples with food, markets, and contemporary Nimman.", "highlights": ["Walkable Old City", "Northern Thai food", "Nimman evening"], "tradeoffs": ["Mountain excursions need an extra day", "Late dry-season air quality needs a current check"] },
+        { "locale": "de", "title": "Chiang Mai zwischen Alt und Neu", "summary": "Bleib in einer kompakten Basis im Norden und wechsle zwischen Altstadt-Tempeln, Essen, Märkten und dem modernen Nimman.", "highlights": ["Altstadt zu Fuß", "Nordthailändische Küche", "Abend in Nimman"], "tradeoffs": ["Ausflüge in die Berge brauchen einen zusätzlichen Tag", "Die Luftqualität am Ende der Trockenzeit muss aktuell geprüft werden"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-chiang-mai", "role": "base", "minNights": 3, "maxNights": 5 },
+        { "entitySlug": "th-chiang-mai-old-city", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-chiang-mai-nimman", "role": "must_visit", "minNights": 0, "maxNights": 0 }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "culture", "weight": 0.95 }, { "tagKey": "food", "weight": 0.85 }, { "tagKey": "wellness", "weight": 0.55 }]
+    },
+    {
+      "templateKey": "th-phuket-city-and-beach",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 4,
+      "maxDays": 6,
+      "preferredPace": "balanced",
+      "idealMonths": [11, 12, 1, 2, 3, 4],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Phuket beyond one beach", "summary": "Use one island base to combine Phuket Old Town, a calmer south-coast beach, and an unhurried sunset day.", "highlights": ["Old Town food and architecture", "South-coast beach time", "Promthep sunset"], "tradeoffs": ["Island traffic makes careful area grouping important", "Patong nightlife is not central to this route"] },
+        { "locale": "de", "title": "Phuket jenseits eines Strandes", "summary": "Verbinde von einer Inselbasis aus Phukets Altstadt, einen ruhigeren Strand im Süden und einen entspannten Sonnenuntergangstag.", "highlights": ["Essen und Architektur in der Altstadt", "Strandzeit an der Südküste", "Sonnenuntergang am Promthep Cape"], "tradeoffs": ["Der Inselverkehr macht eine gute Gebietsplanung wichtig", "Patongs Nachtleben steht bei dieser Route nicht im Mittelpunkt"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-phuket", "role": "base", "minNights": 4, "maxNights": 6 },
+        { "entitySlug": "th-phuket-old-town", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-phuket-kata", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-phuket-promthep-cape", "role": "must_visit", "minNights": 0, "maxNights": 0 }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "beaches", "weight": 1 }, { "tagKey": "food", "weight": 0.75 }, { "tagKey": "culture", "weight": 0.55 }]
+    },
+    {
+      "templateKey": "th-chiang-mai-inthanon-hub",
+      "countryCode": "TH",
+      "journeyType": "hub_and_day_trips",
+      "minDays": 4,
+      "maxDays": 6,
+      "preferredPace": "balanced",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Chiang Mai base, mountain day", "summary": "Keep one Chiang Mai hotel while mixing compact city days with a full Doi Inthanon nature excursion.", "highlights": ["No hotel change", "Old City and markets", "High-mountain day"], "tradeoffs": ["The national-park day starts early", "Road travel takes a substantial part of the excursion"] },
+        { "locale": "de", "title": "Chiang Mai als Basis, ein Tag in den Bergen", "summary": "Bleib in einem Hotel in Chiang Mai und kombiniere kompakte Stadttage mit einem ganzen Naturtag am Doi Inthanon.", "highlights": ["Kein Hotelwechsel", "Altstadt und Märkte", "Tag im Hochgebirge"], "tradeoffs": ["Der Nationalparktag beginnt früh", "Die Fahrt nimmt einen großen Teil des Ausflugs ein"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-chiang-mai", "role": "base", "minNights": 4, "maxNights": 6 },
+        { "entitySlug": "th-chiang-mai-old-city", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-chiang-mai-doi-inthanon", "role": "day_trip", "minNights": 0, "maxNights": 0 }
+      ],
+      "legs": [
+        { "fromEntitySlug": "th-chiang-mai", "toEntitySlug": "th-chiang-mai-doi-inthanon", "legRole": "day_trip", "transportModes": ["car"], "durationMinMinutes": 240, "durationMaxMinutes": 360, "distanceKm": 210, "roundTrip": true, "sourceKey": "travelflow_editorial", "confidence": 0.7, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "round_trip_transport", "planningCaution": "Mountain stops, trail choices, weather, and pickup location materially change the day." } }
+      ],
+      "tags": [{ "tagKey": "hub_and_day_trips", "weight": 1 }, { "tagKey": "nature", "weight": 1 }, { "tagKey": "mountain", "weight": 0.9 }, { "tagKey": "culture", "weight": 0.7 }]
+    },
+    {
+      "templateKey": "th-koh-samui-ang-thong-hub",
+      "countryCode": "TH",
+      "journeyType": "hub_and_day_trips",
+      "minDays": 5,
+      "maxDays": 7,
+      "preferredPace": "relaxed",
+      "idealMonths": [2, 3, 4, 7, 8],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Samui base, marine-park day", "summary": "Unpack once on Koh Samui and reserve one weather-dependent day for Ang Thong's islands and viewpoints.", "highlights": ["One island hotel", "Ang Thong boat day", "Beach and village downtime"], "tradeoffs": ["Boat schedules depend on sea conditions", "Samui road transfers vary by chosen coast"] },
+        { "locale": "de", "title": "Samui als Basis, ein Tag im Meerespark", "summary": "Pack auf Koh Samui nur einmal aus und reserviere einen wetterabhängigen Tag für Ang Thongs Inseln und Aussichtspunkte.", "highlights": ["Ein Inselhotel", "Bootstag in Ang Thong", "Freie Zeit an Strand und im Dorf"], "tradeoffs": ["Bootsfahrpläne hängen vom Seegang ab", "Straßentransfers auf Samui variieren je nach Küste"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-koh-samui", "role": "base", "minNights": 5, "maxNights": 7 },
+        { "entitySlug": "th-koh-samui-bophut", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-koh-samui-ang-thong", "role": "day_trip", "minNights": 0, "maxNights": 0 }
+      ],
+      "legs": [
+        { "fromEntitySlug": "th-koh-samui", "toEntitySlug": "th-koh-samui-ang-thong", "legRole": "day_trip", "transportModes": ["boat"], "durationMinMinutes": 420, "durationMaxMinutes": 600, "distanceKm": 85, "roundTrip": true, "sourceKey": "travelflow_editorial", "confidence": 0.68, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "full_excursion_block", "planningCaution": "This includes a typical boat-day window, not a guaranteed schedule; sea conditions can cancel departures." } }
+      ],
+      "tags": [{ "tagKey": "hub_and_day_trips", "weight": 1 }, { "tagKey": "island", "weight": 1 }, { "tagKey": "beaches", "weight": 0.9 }, { "tagKey": "nature", "weight": 0.85 }, { "tagKey": "wellness", "weight": 0.55 }]
+    },
+    {
+      "templateKey": "th-pattaya-koh-larn-hub",
+      "countryCode": "TH",
+      "journeyType": "hub_and_day_trips",
+      "minDays": 3,
+      "maxDays": 5,
+      "preferredPace": "balanced",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Pattaya base, Koh Larn escape", "summary": "Use Pattaya's easy access and evening supply while setting aside one day for clearer water and beaches on Koh Larn.", "highlights": ["Simple single base", "Koh Larn beach day", "Flexible evening options"], "tradeoffs": ["The mainland base is busy", "Ferry queues can compress the island day"] },
+        { "locale": "de", "title": "Pattaya als Basis, Auszeit auf Koh Larn", "summary": "Nutze Pattayas einfache Erreichbarkeit und große Abendauswahl und reserviere einen Tag für klareres Wasser und Strände auf Koh Larn.", "highlights": ["Einfache einzelne Basis", "Strandtag auf Koh Larn", "Flexible Abendoptionen"], "tradeoffs": ["Die Basis auf dem Festland ist lebhaft", "Warteschlangen an der Fähre können den Inseltag verkürzen"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-pattaya", "role": "base", "minNights": 3, "maxNights": 5 },
+        { "entitySlug": "th-pattaya-koh-larn", "role": "day_trip", "minNights": 0, "maxNights": 0 }
+      ],
+      "legs": [
+        { "fromEntitySlug": "th-pattaya", "toEntitySlug": "th-pattaya-koh-larn", "legRole": "day_trip", "transportModes": ["boat"], "durationMinMinutes": 90, "durationMaxMinutes": 180, "distanceKm": 20, "roundTrip": true, "sourceKey": "travelflow_editorial", "confidence": 0.7, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "round_trip_pier_transport", "planningCaution": "Add queueing and island-side transport; schedules and sea conditions must be checked." } }
+      ],
+      "tags": [{ "tagKey": "hub_and_day_trips", "weight": 1 }, { "tagKey": "beaches", "weight": 0.9 }, { "tagKey": "nightlife", "weight": 0.75 }, { "tagKey": "lively", "weight": 0.65 }]
+    },
+    {
+      "templateKey": "th-kanchanaburi-erawan-hub",
+      "countryCode": "TH",
+      "journeyType": "hub_and_day_trips",
+      "minDays": 3,
+      "maxDays": 5,
+      "preferredPace": "balanced",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Kanchanaburi base, Erawan day", "summary": "Stay by the River Khwae and combine a reflective history block with a full waterfall and forest excursion.", "highlights": ["One riverside base", "Erawan waterfall day", "River Khwae history"], "tradeoffs": ["Erawan requires a long active outing", "History sites need thoughtful context"] },
+        { "locale": "de", "title": "Kanchanaburi als Basis, ein Tag in Erawan", "summary": "Bleib am River Khwae und verbinde einen reflektierten Geschichtsblock mit einem ganzen Ausflug zu Wasserfällen und Wald.", "highlights": ["Eine Basis am Fluss", "Wasserfalltag in Erawan", "Geschichte am River Khwae"], "tradeoffs": ["Erawan ist ein langer, aktiver Ausflug", "Historische Orte brauchen sorgfältige Einordnung"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-kanchanaburi", "role": "base", "minNights": 3, "maxNights": 5 },
+        { "entitySlug": "th-kanchanaburi-river-khwae-bridge", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-kanchanaburi-erawan-falls", "role": "day_trip", "minNights": 0, "maxNights": 0 }
+      ],
+      "legs": [
+        { "fromEntitySlug": "th-kanchanaburi", "toEntitySlug": "th-kanchanaburi-erawan-falls", "legRole": "day_trip", "transportModes": ["car", "bus"], "durationMinMinutes": 180, "durationMaxMinutes": 300, "distanceKm": 130, "roundTrip": true, "sourceKey": "travelflow_editorial", "confidence": 0.7, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "round_trip_transport", "planningCaution": "Public transport, park access, trail time, and seasonal conditions must be checked separately." } }
+      ],
+      "tags": [{ "tagKey": "hub_and_day_trips", "weight": 1 }, { "tagKey": "nature", "weight": 0.9 }, { "tagKey": "history", "weight": 0.85 }, { "tagKey": "hiking", "weight": 0.65 }, { "tagKey": "quiet", "weight": 0.55 }]
+    }
+  ]
+}

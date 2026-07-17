@@ -325,5 +325,127 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "shapeLab": {
+    "badge": "Laboratorio itinerari Thailandia",
+    "title": "Scegli il percorso prima dell’itinerario.",
+    "intro": "Parti dalla forma del viaggio, confronta tre percorsi ben fondati e apri subito un piano modificabile. Le attività dettagliate possono arrivare quando il percorso convince.",
+    "progressLabel": "Avanzamento della pianificazione",
+    "steps": {
+      "shape": "Formula",
+      "place": "Luoghi",
+      "timing": "Periodo",
+      "style": "Ritmo",
+      "reveal": "Percorsi"
+    },
+    "shape": {
+      "eyebrow": "Inizia dalla struttura",
+      "title": "Che forma dovrebbe avere questo viaggio?",
+      "description": "Questa scelta determina quante basi, coincidenze ed escursioni hanno davvero senso.",
+      "options": {
+        "city_break": {
+          "title": "Una città, per bene",
+          "description": "Resta in una sola città e scopri i suoi quartieri senza cambiare hotel."
+        },
+        "hub_and_day_trips": {
+          "title": "Una base, più possibilità",
+          "description": "Disfa le valigie una volta e aggiungi escursioni realistiche in giornata."
+        },
+        "single_country_circuit": {
+          "title": "Un circuito in Thailandia",
+          "description": "Collega più basi con pernottamento tenendo sotto controllo i trasferimenti."
+        }
+      }
+    },
+    "place": {
+      "eyebrow": "Luoghi di prima classe",
+      "title": "Quale luogo deve guidare il percorso?",
+      "requiredDescription": "Scegli la città che farà da base. Ogni opzione ha già un percorso compatibile.",
+      "optionalDescription": "Scegli una città irrinunciabile oppure lascia decidere durata, stagione e interessi.",
+      "stayRange": "Di solito {min}–{max} notti",
+      "popularity": "Popolarità {score}/100",
+      "hiddenGem": "Scoperta {score}/100",
+      "neighborhoodTitle": "Dai più carattere alla città",
+      "neighborhoodHint": "Facoltativo: scegli fino a tre quartieri. Resteranno luoghi canonici nel briefing."
+    },
+    "timing": {
+      "eyebrow": "Parti dal vero vincolo",
+      "title": "Quanto tempo abbiamo?",
+      "description": "Un periodo flessibile è più rapido. Usa date esatte quando trasporti e disponibilità sono già fissati.",
+      "modeLabel": "Flessibilità delle date",
+      "modes": {
+        "flexible": "Periodo flessibile",
+        "exact": "Date esatte"
+      },
+      "durationLabel": "Durata del viaggio",
+      "nights": "notti",
+      "decreaseDuration": "Togli una notte",
+      "increaseDuration": "Aggiungi una notte",
+      "monthLabel": "Mese preferito",
+      "startDate": "Data di inizio",
+      "endDate": "Data di fine",
+      "dateError": "Scegli una data di fine successiva all’inizio per confrontare i percorsi."
+    },
+    "style": {
+      "eyebrow": "Solo i segnali che contano",
+      "title": "Che cosa deve privilegiare il percorso?",
+      "description": "Ritmo e interessi bastano per il primo confronto. Potrai rifinire tutto nel piano.",
+      "paceLabel": "Ritmo di viaggio",
+      "interestsLabel": "Più spazio a",
+      "advancedLabel": "Regola i limiti del percorso",
+      "maxChanges": "Numero massimo di cambi base"
+    },
+    "reveal": {
+      "eyebrow": "Percorsi immediati",
+      "titleOne": "Un percorso ben fondato in Thailandia.",
+      "titleMany": "{count} percorsi ben fondati in Thailandia.",
+      "description": "Sono strutture versionate del pacchetto di conoscenze sulla Thailandia, non destinazioni inventate durante l’attesa.",
+      "dataNote": "{templates} modelli confrontati con {entities} luoghi canonici · dati {version}",
+      "fallback": "Dati disponibili offline",
+      "sources": {
+        "memory": "Cache aggiornata",
+        "bundled": "Riserva locale",
+        "supabase": "Supabase live"
+      },
+      "noMatchesTitle": "I vincoli attuali sono troppo stretti.",
+      "noMatchesDescription": "Cambia la città base, aggiungi una notte o consenti un cambio base in più.",
+      "adjustRoute": "Modifica le preferenze",
+      "match": "{score}% di compatibilità",
+      "selected": "Selezionato",
+      "tradeoff": "Da sapere prima di scegliere",
+      "keepSelected": "Mantieni questo percorso",
+      "chooseRoute": "Scegli questo percorso",
+      "readyTitle": "La struttura del percorso è pronta.",
+      "readyDescription": "Aprila con città, coordinate, notti, escursioni e indicatori modificabili reali.",
+    "dayTripShort": "escursione",
+    "nightsShort": "{count} notti",
+    "brief": {
+      "title": "Dai carattere all’itinerario.",
+      "description": "Queste schede città sono già nel piano, così le prossime risposte restano rapide e coerenti.",
+      "bestMonths": "Mesi più adatti",
+      "dishes": "Da provare",
+      "neighborhoods": "Quartieri",
+      "activities": "Buoni punti di partenza",
+      "stayRange": "{min}–{max} notti",
+      "source": "Vedi fonte",
+      "audienceContext": "Contesto per chi viaggia",
+      "audienceSignals": {
+        "family_activity_supply": "Offerta di attività per famiglie",
+        "lgbtq_scene": "Scena LGBTQ+ documentata",
+        "solo_travel_interest": "Interesse per i viaggi in solitaria"
+      }
+    },
+    "reasons": {
+        "duration_fit": "Adatto al tuo tempo",
+        "pace_fit": "Segue il tuo ritmo",
+        "season_fit": "Stagione adatta",
+        "interest_fit": "Rispecchia i tuoi interessi",
+        "selected_places_fit": "Include i tuoi luoghi"
+      }
+    },
+    "actions": {
+      "compare": "Confronta i percorsi",
+      "openPlan": "Apri il piano modificabile"
+    }
   }
 }
