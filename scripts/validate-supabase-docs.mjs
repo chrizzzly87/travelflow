@@ -69,6 +69,9 @@ const travelKnowledgeTables = [
   'travel_template_stops',
   'travel_template_legs',
   'travel_template_tags',
+  'travel_dataset_payloads',
+  'travel_active_datasets',
+  'travel_dataset_activations',
 ];
 
 for (const table of travelKnowledgeTables) {
@@ -100,6 +103,26 @@ requiredPatterns.push(
   {
     label: 'travel destination pack public grant',
     pattern: /grant execute on function public\.get_travel_destination_pack\(text,\s*text\) to anon,\s*authenticated;/i,
+  },
+  {
+    label: 'active travel destination pack RPC',
+    pattern: /create\s+or\s+replace\s+function\s+public\.get_active_travel_destination_pack\(/i,
+  },
+  {
+    label: 'active travel entity suggestions RPC',
+    pattern: /create\s+or\s+replace\s+function\s+public\.get_active_travel_entity_suggestions\(/i,
+  },
+  {
+    label: 'travel artifact staging RPC',
+    pattern: /create\s+or\s+replace\s+function\s+public\.admin_stage_travel_dataset_artifact\(/i,
+  },
+  {
+    label: 'travel artifact publish RPC',
+    pattern: /create\s+or\s+replace\s+function\s+public\.admin_publish_travel_dataset_artifact\(/i,
+  },
+  {
+    label: 'travel dataset rollback RPC',
+    pattern: /create\s+or\s+replace\s+function\s+public\.admin_rollback_travel_dataset\(/i,
   },
 );
 

@@ -9430,6 +9430,68 @@ create table if not exists public.travel_dataset_artifacts (
   unique (dataset_version_id, artifact_checksum)
 );
 
+alter table public.travel_dataset_artifacts add column if not exists review_candidate_ids uuid[] not null default '{}';
+alter table public.travel_dataset_artifacts add column if not exists review_decision_ids uuid[] not null default '{}';
+
+create table if not exists public.travel_dataset_payloads (
+  id uuid primary key default gen_random_uuid(),
+  dataset_version_id uuid not null references public.travel_dataset_versions(id) on delete restrict,
+  country_code text not null,
+  locale text not null default 'en',
+  pack_payload jsonb not null,
+  template_copy_payload jsonb not null default '{}'::jsonb,
+  pack_checksum text not null,
+  pack_byte_size bigint not null,
+  validation_report jsonb not null default '{}'::jsonb,
+  status text not null default 'staged',
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint travel_dataset_payloads_country_code_check check (country_code ~ '^[A-Z]{2}$'),
+  constraint travel_dataset_payloads_locale_check check (locale ~ '^[a-z]{2,3}(-[a-z0-9]+)*$'),
+  constraint travel_dataset_payloads_pack_object check (jsonb_typeof(pack_payload) = 'object'),
+  constraint travel_dataset_payloads_template_copy_object check (jsonb_typeof(template_copy_payload) = 'object'),
+  constraint travel_dataset_payloads_pack_checksum_check check (pack_checksum ~ '^[a-f0-9]{64}$'),
+  constraint travel_dataset_payloads_pack_size_check check (pack_byte_size > 0),
+  constraint travel_dataset_payloads_report_object check (jsonb_typeof(validation_report) = 'object'),
+  constraint travel_dataset_payloads_status_check check (status in ('staged', 'published', 'retired')),
+  unique (dataset_version_id, locale)
+);
+
+create table if not exists public.travel_active_datasets (
+  country_code text primary key,
+  dataset_version_id uuid not null references public.travel_dataset_versions(id) on delete restrict,
+  artifact_id uuid not null references public.travel_dataset_artifacts(id) on delete restrict,
+  activated_by uuid references auth.users(id) on delete set null,
+  activated_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint travel_active_datasets_country_code_check check (country_code ~ '^[A-Z]{2}$')
+);
+
+create table if not exists public.travel_dataset_activations (
+  id uuid primary key default gen_random_uuid(),
+  country_code text not null,
+  action text not null,
+  from_dataset_version_id uuid references public.travel_dataset_versions(id) on delete restrict,
+  from_artifact_id uuid references public.travel_dataset_artifacts(id) on delete restrict,
+  to_dataset_version_id uuid not null references public.travel_dataset_versions(id) on delete restrict,
+  to_artifact_id uuid not null references public.travel_dataset_artifacts(id) on delete restrict,
+  reason text not null,
+  activated_by uuid references auth.users(id) on delete set null,
+  actor_kind text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  constraint travel_dataset_activations_country_code_check check (country_code ~ '^[A-Z]{2}$'),
+  constraint travel_dataset_activations_action_check check (action in ('publish', 'rollback')),
+  constraint travel_dataset_activations_reason_check check (length(trim(reason)) > 0),
+  constraint travel_dataset_activations_actor_check check (actor_kind in ('admin', 'service_role')),
+  constraint travel_dataset_activations_metadata_object check (jsonb_typeof(metadata) = 'object'),
+  constraint travel_dataset_activations_transition_check check (
+    from_artifact_id is null
+    or from_artifact_id <> to_artifact_id
+  )
+);
+
 create index if not exists travel_sources_status_idx on public.travel_sources(status);
 create index if not exists travel_dataset_versions_country_status_idx on public.travel_dataset_versions(country_code, status, published_at desc);
 create index if not exists travel_entities_parent_idx on public.travel_entities(parent_id);
@@ -9462,6 +9524,9 @@ create index if not exists travel_review_decisions_reviewer_idx on public.travel
 create index if not exists travel_dataset_artifacts_dataset_status_idx on public.travel_dataset_artifacts(dataset_version_id, status, created_at desc);
 create index if not exists travel_dataset_artifacts_parent_idx on public.travel_dataset_artifacts(parent_dataset_version_id) where parent_dataset_version_id is not null;
 create index if not exists travel_dataset_artifacts_created_by_idx on public.travel_dataset_artifacts(created_by) where created_by is not null;
+create index if not exists travel_dataset_payloads_country_status_idx on public.travel_dataset_payloads(country_code, status, created_at desc);
+create index if not exists travel_dataset_activations_country_created_idx on public.travel_dataset_activations(country_code, created_at desc);
+create index if not exists travel_dataset_activations_to_artifact_idx on public.travel_dataset_activations(to_artifact_id, created_at desc);
 
 drop trigger if exists set_travel_sources_updated_at on public.travel_sources;
 create trigger set_travel_sources_updated_at before update on public.travel_sources
@@ -9515,6 +9580,14 @@ drop trigger if exists set_travel_dataset_artifacts_updated_at on public.travel_
 create trigger set_travel_dataset_artifacts_updated_at before update on public.travel_dataset_artifacts
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_travel_dataset_payloads_updated_at on public.travel_dataset_payloads;
+create trigger set_travel_dataset_payloads_updated_at before update on public.travel_dataset_payloads
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_travel_active_datasets_updated_at on public.travel_active_datasets;
+create trigger set_travel_active_datasets_updated_at before update on public.travel_active_datasets
+for each row execute function public.set_updated_at();
+
 alter table public.travel_sources enable row level security;
 alter table public.travel_dataset_versions enable row level security;
 alter table public.travel_entities enable row level security;
@@ -9532,6 +9605,9 @@ alter table public.travel_source_snapshots enable row level security;
 alter table public.travel_change_candidates enable row level security;
 alter table public.travel_review_decisions enable row level security;
 alter table public.travel_dataset_artifacts enable row level security;
+alter table public.travel_dataset_payloads enable row level security;
+alter table public.travel_active_datasets enable row level security;
+alter table public.travel_dataset_activations enable row level security;
 
 drop policy if exists "Travel sources public read" on public.travel_sources;
 create policy "Travel sources public read"
@@ -9677,7 +9753,9 @@ begin
   foreach table_name in array array[
     'travel_source_runs',
     'travel_change_candidates',
-    'travel_dataset_artifacts'
+    'travel_dataset_artifacts',
+    'travel_dataset_payloads',
+    'travel_active_datasets'
   ]
   loop
     execute format('drop policy if exists "Travel operations admin manage" on public.%I', table_name);
@@ -9688,6 +9766,32 @@ begin
   end loop;
 end
 $$;
+
+drop policy if exists "Travel active datasets public read" on public.travel_active_datasets;
+create policy "Travel active datasets public read"
+on public.travel_active_datasets for select
+using (true);
+
+drop policy if exists "Travel active payload public read" on public.travel_dataset_payloads;
+create policy "Travel active payload public read"
+on public.travel_dataset_payloads for select
+using (
+  status = 'published'
+  and exists (
+    select 1
+    from public.travel_active_datasets active_dataset
+    where active_dataset.dataset_version_id = travel_dataset_payloads.dataset_version_id
+      and active_dataset.country_code = travel_dataset_payloads.country_code
+  )
+);
+
+drop policy if exists "Travel dataset activations admin read" on public.travel_dataset_activations;
+create policy "Travel dataset activations admin read"
+on public.travel_dataset_activations for select to authenticated
+using (
+  not coalesce(((select auth.jwt()) ->> 'is_anonymous')::boolean, false)
+  and public.is_admin((select auth.uid()))
+);
 
 do $$
 declare
@@ -9725,14 +9829,24 @@ revoke all on table
   public.travel_source_snapshots,
   public.travel_change_candidates,
   public.travel_review_decisions,
-  public.travel_dataset_artifacts
+  public.travel_dataset_artifacts,
+  public.travel_dataset_payloads,
+  public.travel_active_datasets,
+  public.travel_dataset_activations
 from public, anon, authenticated;
 
 grant select, insert, update, delete on table
   public.travel_source_runs,
-  public.travel_change_candidates,
-  public.travel_dataset_artifacts
+  public.travel_change_candidates
 to authenticated;
+
+grant select on table
+  public.travel_dataset_artifacts,
+  public.travel_dataset_activations
+to authenticated;
+
+grant select (country_code, dataset_version_id) on table public.travel_active_datasets to anon, authenticated;
+grant select (dataset_version_id, country_code, locale, pack_payload, template_copy_payload, status) on table public.travel_dataset_payloads to anon, authenticated;
 
 grant select, insert on table
   public.travel_source_snapshots
@@ -9747,7 +9861,10 @@ grant all on table
   public.travel_source_snapshots,
   public.travel_change_candidates,
   public.travel_review_decisions,
-  public.travel_dataset_artifacts
+  public.travel_dataset_artifacts,
+  public.travel_dataset_payloads,
+  public.travel_active_datasets,
+  public.travel_dataset_activations
 to service_role;
 
 grant select on table
@@ -9767,7 +9884,6 @@ to anon, authenticated;
 
 grant insert, update, delete on table
   public.travel_sources,
-  public.travel_dataset_versions,
   public.travel_entities,
   public.travel_entity_names,
   public.travel_entity_facts,
@@ -9779,6 +9895,8 @@ grant insert, update, delete on table
   public.travel_template_legs,
   public.travel_template_tags
 to authenticated;
+
+revoke insert, update, delete on table public.travel_dataset_versions from authenticated;
 
 grant all on table
   public.travel_sources,
@@ -10104,6 +10222,486 @@ grant execute on function public.admin_list_travel_knowledge_candidates(text, te
 grant execute on function public.admin_get_travel_knowledge_review_summary(text) to authenticated;
 grant execute on function public.admin_review_travel_knowledge_candidate(uuid, text, text, jsonb, text) to authenticated;
 
+drop function if exists public.admin_stage_travel_dataset_artifact(
+  text, text, text, text, integer, integer, integer, jsonb, timestamptz, text,
+  text, uuid[], uuid[], uuid[], jsonb, jsonb, text, text, text, text, bigint, jsonb
+);
+create or replace function public.admin_stage_travel_dataset_artifact(
+  p_dataset_key text,
+  p_country_code text,
+  p_version text,
+  p_dataset_checksum text,
+  p_entity_count integer,
+  p_fact_count integer,
+  p_template_count integer,
+  p_source_snapshot jsonb,
+  p_generated_at timestamptz,
+  p_notes text,
+  p_repository_commit text,
+  p_source_run_ids uuid[],
+  p_review_candidate_ids uuid[],
+  p_review_decision_ids uuid[],
+  p_pack_payload jsonb,
+  p_template_copy_payload jsonb,
+  p_pack_checksum text,
+  p_seed_checksum text,
+  p_artifact_checksum text,
+  p_storage_object_key text,
+  p_pack_byte_size bigint,
+  p_validation_report jsonb
+)
+returns table(
+  dataset_version_id uuid,
+  payload_id uuid,
+  artifact_id uuid,
+  artifact_status text,
+  already_staged boolean
+)
+language plpgsql
+security definer
+set search_path = ''
+set row_security = off
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_service_role boolean := coalesce(auth.jwt() ->> 'role', '') = 'service_role';
+  v_country_code text := upper(trim(coalesce(p_country_code, '')));
+  v_dataset_key text := trim(coalesce(p_dataset_key, ''));
+  v_version text := trim(coalesce(p_version, ''));
+  v_dataset_version public.travel_dataset_versions%rowtype;
+  v_payload public.travel_dataset_payloads%rowtype;
+  v_artifact public.travel_dataset_artifacts%rowtype;
+  v_parent_dataset_version_id uuid;
+  v_pack_entity_count integer;
+  v_pack_fact_count integer;
+  v_pack_template_count integer;
+begin
+  if not v_service_role and (
+    v_uid is null
+    or coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+    or not public.is_admin(v_uid)
+  ) then
+    raise exception 'Admin or service-role access required.';
+  end if;
+
+  if v_dataset_key !~ '^[a-z0-9][a-z0-9_-]*$'
+    or v_country_code !~ '^[A-Z]{2}$'
+    or v_version = '' then
+    raise exception 'Dataset key, country code, or version is invalid.';
+  end if;
+  if p_dataset_checksum !~ '^[a-f0-9]{64}$'
+    or p_pack_checksum !~ '^[a-f0-9]{64}$'
+    or p_seed_checksum !~ '^[a-f0-9]{64}$'
+    or p_artifact_checksum !~ '^[a-f0-9]{64}$' then
+    raise exception 'Dataset artifact checksums must be lowercase SHA-256 values.';
+  end if;
+  if p_repository_commit !~ '^[a-f0-9]{7,64}$' then
+    raise exception 'Repository commit is invalid.';
+  end if;
+  if nullif(trim(coalesce(p_storage_object_key, '')), '') is null or coalesce(p_pack_byte_size, 0) <= 0 then
+    raise exception 'A storage object key and positive pack byte size are required.';
+  end if;
+  if jsonb_typeof(p_source_snapshot) <> 'array'
+    or jsonb_typeof(p_pack_payload) <> 'object'
+    or jsonb_typeof(p_template_copy_payload) <> 'object'
+    or jsonb_typeof(p_validation_report) <> 'object'
+    or not coalesce((p_validation_report ->> 'passed')::boolean, false) then
+    raise exception 'Only a validated object payload can be staged.';
+  end if;
+  if p_pack_payload ->> 'countryCode' <> v_country_code
+    or p_pack_payload #>> '{dataset,datasetKey}' <> v_dataset_key
+    or p_pack_payload #>> '{dataset,version}' <> v_version
+    or p_pack_payload #>> '{dataset,checksum}' <> p_dataset_checksum then
+    raise exception 'Pack identity does not match the staged dataset manifest.';
+  end if;
+
+  v_pack_entity_count := jsonb_array_length(coalesce(p_pack_payload -> 'entities', '[]'::jsonb));
+  v_pack_template_count := jsonb_array_length(coalesce(p_pack_payload -> 'templates', '[]'::jsonb));
+  select coalesce(sum(jsonb_array_length(coalesce(entity -> 'facts', '[]'::jsonb))), 0)::integer
+    into v_pack_fact_count
+  from jsonb_array_elements(coalesce(p_pack_payload -> 'entities', '[]'::jsonb)) entity;
+  if p_entity_count <> v_pack_entity_count
+    or p_fact_count <> v_pack_fact_count
+    or p_template_count <> v_pack_template_count then
+    raise exception 'Pack counts do not match the staged dataset manifest.';
+  end if;
+
+  if coalesce(cardinality(p_source_run_ids), 0) > 0 and exists (
+    select 1
+    from unnest(p_source_run_ids) source_run_id
+    left join public.travel_source_runs source_run on source_run.id = source_run_id
+    where source_run.id is null or source_run.status not in ('succeeded', 'partial')
+  ) then
+    raise exception 'Every artifact source run must exist and be complete.';
+  end if;
+
+  if coalesce(cardinality(p_review_candidate_ids), 0) <> coalesce(cardinality(p_review_decision_ids), 0) then
+    raise exception 'Review candidate and decision provenance arrays must have equal length.';
+  end if;
+  if coalesce(cardinality(p_review_candidate_ids), 0) > 0 and exists (
+    select 1
+    from unnest(p_review_candidate_ids, p_review_decision_ids) provenance(candidate_id, decision_id)
+    left join public.travel_change_candidates candidate on candidate.id = provenance.candidate_id
+    left join public.travel_review_decisions decision
+      on decision.id = provenance.decision_id
+      and decision.candidate_id = provenance.candidate_id
+    where candidate.id is null
+      or candidate.status <> 'accepted'
+      or decision.id is null
+      or decision.decision not in ('accept', 'accept_with_edit')
+  ) then
+    raise exception 'Review provenance must resolve to accepted candidates and terminal accept decisions.';
+  end if;
+
+  select dataset.*
+    into v_dataset_version
+  from public.travel_dataset_versions dataset
+  where dataset.dataset_key = v_dataset_key and dataset.version = v_version
+  for update;
+
+  if found then
+    if v_dataset_version.country_code <> v_country_code
+      or v_dataset_version.checksum <> p_dataset_checksum
+      or v_dataset_version.entity_count <> p_entity_count
+      or v_dataset_version.fact_count <> p_fact_count
+      or v_dataset_version.template_count <> p_template_count then
+      raise exception 'An existing dataset version cannot be restaged with different content.';
+    end if;
+  else
+    insert into public.travel_dataset_versions (
+      dataset_key, country_code, version, status, checksum,
+      entity_count, fact_count, template_count, source_snapshot,
+      generated_at, notes
+    ) values (
+      v_dataset_key, v_country_code, v_version, 'draft', p_dataset_checksum,
+      p_entity_count, p_fact_count, p_template_count, p_source_snapshot,
+      p_generated_at, nullif(trim(coalesce(p_notes, '')), '')
+    )
+    returning * into v_dataset_version;
+  end if;
+
+  select payload.*
+    into v_payload
+  from public.travel_dataset_payloads payload
+  where payload.dataset_version_id = v_dataset_version.id and payload.locale = 'en'
+  for update;
+  if found then
+    if v_payload.pack_checksum <> p_pack_checksum or v_payload.pack_payload <> p_pack_payload then
+      raise exception 'An immutable dataset payload already exists with different content.';
+    end if;
+  else
+    insert into public.travel_dataset_payloads (
+      dataset_version_id, country_code, locale, pack_payload,
+      template_copy_payload, pack_checksum, pack_byte_size,
+      validation_report, status, created_by
+    ) values (
+      v_dataset_version.id, v_country_code, 'en', p_pack_payload,
+      p_template_copy_payload, p_pack_checksum, p_pack_byte_size,
+      p_validation_report, 'staged', v_uid
+    )
+    returning * into v_payload;
+  end if;
+
+  select active_dataset.dataset_version_id
+    into v_parent_dataset_version_id
+  from public.travel_active_datasets active_dataset
+  where active_dataset.country_code = v_country_code;
+  if v_parent_dataset_version_id = v_dataset_version.id then
+    v_parent_dataset_version_id := null;
+  end if;
+
+  select artifact.*
+    into v_artifact
+  from public.travel_dataset_artifacts artifact
+  where artifact.dataset_version_id = v_dataset_version.id
+    and artifact.artifact_checksum = p_artifact_checksum
+  for update;
+  if found then
+    return query
+    select v_dataset_version.id, v_payload.id, v_artifact.id, v_artifact.status, true;
+    return;
+  end if;
+
+  insert into public.travel_dataset_artifacts (
+    dataset_version_id, parent_dataset_version_id, repository_commit,
+    source_run_ids, review_candidate_ids, review_decision_ids,
+    pack_checksum, seed_checksum, artifact_checksum, storage_object_key,
+    validation_report, status, created_by
+  ) values (
+    v_dataset_version.id, v_parent_dataset_version_id, p_repository_commit,
+    coalesce(p_source_run_ids, '{}'), coalesce(p_review_candidate_ids, '{}'), coalesce(p_review_decision_ids, '{}'),
+    p_pack_checksum, p_seed_checksum, p_artifact_checksum, trim(p_storage_object_key),
+    p_validation_report, 'staged', v_uid
+  )
+  returning * into v_artifact;
+
+  return query
+  select v_dataset_version.id, v_payload.id, v_artifact.id, v_artifact.status, false;
+end;
+$$;
+
+drop function if exists public.admin_publish_travel_dataset_artifact(uuid, text);
+create or replace function public.admin_publish_travel_dataset_artifact(
+  p_artifact_id uuid,
+  p_reason text
+)
+returns table(
+  country_code text,
+  dataset_version_id uuid,
+  artifact_id uuid,
+  activation_id uuid,
+  activated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = ''
+set row_security = off
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_service_role boolean := coalesce(auth.jwt() ->> 'role', '') = 'service_role';
+  v_actor_kind text;
+  v_artifact public.travel_dataset_artifacts%rowtype;
+  v_dataset public.travel_dataset_versions%rowtype;
+  v_payload public.travel_dataset_payloads%rowtype;
+  v_previous public.travel_active_datasets%rowtype;
+  v_activation_id uuid;
+  v_activated_at timestamptz := now();
+begin
+  if not v_service_role and (
+    v_uid is null
+    or coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+    or not public.is_admin(v_uid)
+  ) then
+    raise exception 'Admin or service-role access required.';
+  end if;
+  v_actor_kind := case when v_service_role then 'service_role' else 'admin' end;
+  if nullif(trim(coalesce(p_reason, '')), '') is null then
+    raise exception 'A publish reason is required.';
+  end if;
+
+  select artifact.* into v_artifact
+  from public.travel_dataset_artifacts artifact
+  where artifact.id = p_artifact_id;
+  if not found then raise exception 'Travel dataset artifact not found.'; end if;
+  select dataset.* into v_dataset
+  from public.travel_dataset_versions dataset
+  where dataset.id = v_artifact.dataset_version_id;
+
+  perform pg_advisory_xact_lock(hashtextextended('travel-dataset:' || v_dataset.country_code, 0));
+  select artifact.* into v_artifact
+  from public.travel_dataset_artifacts artifact
+  where artifact.id = p_artifact_id
+  for update;
+  select dataset.* into v_dataset
+  from public.travel_dataset_versions dataset
+  where dataset.id = v_artifact.dataset_version_id
+  for update;
+  select payload.* into v_payload
+  from public.travel_dataset_payloads payload
+  where payload.dataset_version_id = v_dataset.id and payload.locale = 'en'
+  for update;
+
+  if v_artifact.status <> 'staged' then
+    raise exception 'Only a staged artifact can be published.';
+  end if;
+  if v_payload.id is null
+    or v_payload.pack_checksum <> v_artifact.pack_checksum
+    or not coalesce((v_payload.validation_report ->> 'passed')::boolean, false) then
+    raise exception 'The staged payload is missing or failed validation.';
+  end if;
+
+  select active_dataset.* into v_previous
+  from public.travel_active_datasets active_dataset
+  where active_dataset.country_code = v_dataset.country_code
+  for update;
+
+  if v_previous.artifact_id is not null and v_previous.artifact_id <> v_artifact.id then
+    if v_artifact.parent_dataset_version_id is not null
+      and v_artifact.parent_dataset_version_id <> v_previous.dataset_version_id then
+      raise exception 'The staged artifact was built from a stale active dataset.';
+    end if;
+    update public.travel_dataset_artifacts
+       set status = 'superseded', superseded_at = v_activated_at
+     where id = v_previous.artifact_id and status = 'published';
+    update public.travel_dataset_payloads
+       set status = 'retired'
+     where dataset_version_id = v_previous.dataset_version_id;
+    update public.travel_dataset_versions
+       set status = 'retired'
+     where id = v_previous.dataset_version_id;
+  end if;
+
+  update public.travel_dataset_versions
+     set status = 'published', published_at = coalesce(published_at, v_activated_at)
+   where id = v_dataset.id;
+  update public.travel_dataset_payloads
+     set status = 'published'
+   where id = v_payload.id;
+  update public.travel_dataset_artifacts
+     set status = 'published', published_at = v_activated_at,
+         superseded_at = null, rolled_back_at = null
+   where id = v_artifact.id;
+
+  insert into public.travel_active_datasets (
+    country_code, dataset_version_id, artifact_id, activated_by, activated_at
+  ) values (
+    v_dataset.country_code, v_dataset.id, v_artifact.id, v_uid, v_activated_at
+  )
+  on conflict (country_code) do update
+  set dataset_version_id = excluded.dataset_version_id,
+      artifact_id = excluded.artifact_id,
+      activated_by = excluded.activated_by,
+      activated_at = excluded.activated_at;
+
+  insert into public.travel_dataset_activations (
+    country_code, action, from_dataset_version_id, from_artifact_id,
+    to_dataset_version_id, to_artifact_id, reason, activated_by, actor_kind,
+    metadata
+  ) values (
+    v_dataset.country_code, 'publish', v_previous.dataset_version_id, v_previous.artifact_id,
+    v_dataset.id, v_artifact.id, trim(p_reason), v_uid, v_actor_kind,
+    jsonb_build_object('repositoryCommit', v_artifact.repository_commit)
+  )
+  returning id into v_activation_id;
+
+  return query
+  select v_dataset.country_code, v_dataset.id, v_artifact.id, v_activation_id, v_activated_at;
+end;
+$$;
+
+drop function if exists public.admin_rollback_travel_dataset(text, uuid, text);
+create or replace function public.admin_rollback_travel_dataset(
+  p_country_code text,
+  p_target_artifact_id uuid,
+  p_reason text
+)
+returns table(
+  country_code text,
+  dataset_version_id uuid,
+  artifact_id uuid,
+  activation_id uuid,
+  activated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = ''
+set row_security = off
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_service_role boolean := coalesce(auth.jwt() ->> 'role', '') = 'service_role';
+  v_actor_kind text;
+  v_country_code text := upper(trim(coalesce(p_country_code, '')));
+  v_current public.travel_active_datasets%rowtype;
+  v_target_artifact public.travel_dataset_artifacts%rowtype;
+  v_target_dataset public.travel_dataset_versions%rowtype;
+  v_target_payload public.travel_dataset_payloads%rowtype;
+  v_activation_id uuid;
+  v_activated_at timestamptz := now();
+begin
+  if not v_service_role and (
+    v_uid is null
+    or coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+    or not public.is_admin(v_uid)
+  ) then
+    raise exception 'Admin or service-role access required.';
+  end if;
+  v_actor_kind := case when v_service_role then 'service_role' else 'admin' end;
+  if v_country_code !~ '^[A-Z]{2}$' or nullif(trim(coalesce(p_reason, '')), '') is null then
+    raise exception 'A valid country code and rollback reason are required.';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended('travel-dataset:' || v_country_code, 0));
+  select active_dataset.* into v_current
+  from public.travel_active_datasets active_dataset
+  where active_dataset.country_code = v_country_code
+  for update;
+  if v_current.artifact_id is null then raise exception 'No active dataset exists for this country.'; end if;
+  if v_current.artifact_id = p_target_artifact_id then raise exception 'The target artifact is already active.'; end if;
+
+  select artifact.* into v_target_artifact
+  from public.travel_dataset_artifacts artifact
+  where artifact.id = p_target_artifact_id
+  for update;
+  if found then
+    select dataset.* into v_target_dataset
+    from public.travel_dataset_versions dataset
+    where dataset.id = v_target_artifact.dataset_version_id
+      and dataset.country_code = v_country_code
+    for update;
+  end if;
+  if not found then raise exception 'Rollback artifact not found for this country.'; end if;
+  if v_target_artifact.status not in ('superseded', 'rolled_back') then
+    raise exception 'Only a previously published artifact can be restored.';
+  end if;
+
+  select payload.* into v_target_payload
+  from public.travel_dataset_payloads payload
+  where payload.dataset_version_id = v_target_dataset.id and payload.locale = 'en'
+  for update;
+  if v_target_payload.id is null
+    or v_target_payload.pack_checksum <> v_target_artifact.pack_checksum
+    or not coalesce((v_target_payload.validation_report ->> 'passed')::boolean, false) then
+    raise exception 'The rollback payload is missing or failed validation.';
+  end if;
+
+  update public.travel_dataset_artifacts
+     set status = 'rolled_back', rolled_back_at = v_activated_at
+   where id = v_current.artifact_id and status = 'published';
+  update public.travel_dataset_payloads
+     set status = 'retired'
+   where dataset_version_id = v_current.dataset_version_id;
+  update public.travel_dataset_versions
+     set status = 'retired'
+   where id = v_current.dataset_version_id;
+
+  update public.travel_dataset_artifacts
+     set status = 'published', superseded_at = null, rolled_back_at = null
+   where id = v_target_artifact.id;
+  update public.travel_dataset_payloads
+     set status = 'published'
+   where id = v_target_payload.id;
+  update public.travel_dataset_versions
+     set status = 'published', published_at = coalesce(published_at, v_activated_at)
+   where id = v_target_dataset.id;
+  update public.travel_active_datasets
+     set dataset_version_id = v_target_dataset.id,
+         artifact_id = v_target_artifact.id,
+         activated_by = v_uid,
+         activated_at = v_activated_at
+   where country_code = v_country_code;
+
+  insert into public.travel_dataset_activations (
+    country_code, action, from_dataset_version_id, from_artifact_id,
+    to_dataset_version_id, to_artifact_id, reason, activated_by, actor_kind,
+    metadata
+  ) values (
+    v_country_code, 'rollback', v_current.dataset_version_id, v_current.artifact_id,
+    v_target_dataset.id, v_target_artifact.id, trim(p_reason), v_uid, v_actor_kind,
+    jsonb_build_object('restoredRepositoryCommit', v_target_artifact.repository_commit)
+  )
+  returning id into v_activation_id;
+
+  return query
+  select v_country_code, v_target_dataset.id, v_target_artifact.id, v_activation_id, v_activated_at;
+end;
+$$;
+
+revoke all on function public.admin_stage_travel_dataset_artifact(
+  text, text, text, text, integer, integer, integer, jsonb, timestamptz, text,
+  text, uuid[], uuid[], uuid[], jsonb, jsonb, text, text, text, text, bigint, jsonb
+) from public, anon;
+revoke all on function public.admin_publish_travel_dataset_artifact(uuid, text) from public, anon;
+revoke all on function public.admin_rollback_travel_dataset(text, uuid, text) from public, anon;
+
+grant execute on function public.admin_stage_travel_dataset_artifact(
+  text, text, text, text, integer, integer, integer, jsonb, timestamptz, text,
+  text, uuid[], uuid[], uuid[], jsonb, jsonb, text, text, text, text, bigint, jsonb
+) to authenticated, service_role;
+grant execute on function public.admin_publish_travel_dataset_artifact(uuid, text) to authenticated, service_role;
+grant execute on function public.admin_rollback_travel_dataset(text, uuid, text) to authenticated, service_role;
+
 drop function if exists public.get_travel_entity_suggestions(text, text, text[], integer);
 create or replace function public.get_travel_entity_suggestions(
   p_query text,
@@ -10333,6 +10931,183 @@ as $$
 $$;
 
 grant execute on function public.get_travel_destination_pack(text, text) to anon, authenticated;
+
+drop function if exists public.get_active_travel_destination_pack(text, text);
+create or replace function public.get_active_travel_destination_pack(
+  p_country_code text,
+  p_locale text default 'en'
+)
+returns jsonb
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with requested as (
+    select
+      upper(trim(p_country_code)) as country_code,
+      lower(coalesce(nullif(trim(p_locale), ''), 'en')) as locale,
+      split_part(lower(coalesce(nullif(trim(p_locale), ''), 'en')), '-', 1) as primary_locale
+  ),
+  active_payload as (
+    select payload.pack_payload, payload.template_copy_payload
+    from public.travel_active_datasets active_dataset
+    join public.travel_dataset_payloads payload
+      on payload.dataset_version_id = active_dataset.dataset_version_id
+     and payload.country_code = active_dataset.country_code
+     and payload.locale = 'en'
+     and payload.status = 'published'
+    cross join requested
+    where active_dataset.country_code = requested.country_code
+    limit 1
+  ),
+  localized_payload as (
+    select
+      jsonb_set(
+        jsonb_set(
+          active_payload.pack_payload,
+          '{locale}',
+          to_jsonb(requested.locale),
+          true
+        ),
+        '{templates}',
+        coalesce(
+          (
+            select jsonb_agg(
+              template.value || jsonb_build_object(
+                'copy',
+                coalesce(
+                  active_payload.template_copy_payload #> array['templates', template.value ->> 'templateKey', requested.locale],
+                  active_payload.template_copy_payload #> array['templates', template.value ->> 'templateKey', requested.primary_locale],
+                  active_payload.template_copy_payload #> array['templates', template.value ->> 'templateKey', 'en'],
+                  template.value -> 'copy'
+                )
+              )
+              order by template.ordinality
+            )
+            from jsonb_array_elements(coalesce(active_payload.pack_payload -> 'templates', '[]'::jsonb))
+              with ordinality as template(value, ordinality)
+          ),
+          '[]'::jsonb
+        ),
+        true
+      ) as pack_payload
+    from active_payload
+    cross join requested
+  )
+  select coalesce(
+    (select localized_payload.pack_payload from localized_payload),
+    public.get_travel_destination_pack(p_country_code, p_locale)
+  );
+$$;
+
+drop function if exists public.get_active_travel_entity_suggestions(text, text, text[], integer);
+create or replace function public.get_active_travel_entity_suggestions(
+  p_query text,
+  p_country_code text default null,
+  p_entity_types text[] default array['city', 'neighborhood']::text[],
+  p_limit integer default 20
+)
+returns table(
+  id uuid,
+  canonical_slug text,
+  entity_type text,
+  country_code text,
+  primary_name text,
+  local_name text,
+  parent_id uuid,
+  parent_slug text,
+  latitude double precision,
+  longitude double precision,
+  popularity_score numeric
+)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with requested as (
+    select
+      lower(trim(coalesce(p_query, ''))) as query,
+      case when p_country_code is null then null else upper(trim(p_country_code)) end as country_code
+  ),
+  active_entities as (
+    select
+      entity.value as entity,
+      payload.pack_payload -> 'entities' as all_entities
+    from public.travel_active_datasets active_dataset
+    join public.travel_dataset_payloads payload
+      on payload.dataset_version_id = active_dataset.dataset_version_id
+     and payload.country_code = active_dataset.country_code
+     and payload.locale = 'en'
+     and payload.status = 'published'
+    cross join requested
+    cross join lateral jsonb_array_elements(coalesce(payload.pack_payload -> 'entities', '[]'::jsonb)) entity(value)
+    where requested.country_code is null or active_dataset.country_code = requested.country_code
+  ),
+  matches as (
+    select active_entities.*
+    from active_entities
+    cross join requested
+    where (
+      coalesce(array_length(p_entity_types, 1), 0) = 0
+      or active_entities.entity ->> 'entityType' = any(p_entity_types)
+    )
+    and (
+      requested.query = ''
+      or lower(active_entities.entity ->> 'name') like '%' || requested.query || '%'
+      or lower(coalesce(active_entities.entity ->> 'localName', '')) like '%' || requested.query || '%'
+      or exists (
+        select 1
+        from jsonb_array_elements(coalesce(active_entities.entity -> 'names', '[]'::jsonb)) entity_name
+        where lower(entity_name ->> 'name') like '%' || requested.query || '%'
+      )
+    )
+  )
+  select active_matches.*
+  from (
+    select
+      (matches.entity ->> 'entityId')::uuid as id,
+      matches.entity ->> 'canonicalSlug' as canonical_slug,
+      matches.entity ->> 'entityType' as entity_type,
+      matches.entity ->> 'countryCode' as country_code,
+      matches.entity ->> 'name' as primary_name,
+      nullif(matches.entity ->> 'localName', '') as local_name,
+      nullif(matches.entity ->> 'parentId', '')::uuid as parent_id,
+      (
+        select parent ->> 'canonicalSlug'
+        from jsonb_array_elements(coalesce(matches.all_entities, '[]'::jsonb)) parent
+        where parent ->> 'entityId' = matches.entity ->> 'parentId'
+        limit 1
+      ) as parent_slug,
+      nullif(matches.entity ->> 'latitude', '')::double precision as latitude,
+      nullif(matches.entity ->> 'longitude', '')::double precision as longitude,
+      coalesce(nullif(matches.entity ->> 'popularityScore', '')::numeric, 0) as popularity_score
+    from matches
+    order by
+      coalesce(nullif(matches.entity ->> 'popularityScore', '')::numeric, 0) desc,
+      matches.entity ->> 'name' asc
+    limit least(greatest(coalesce(p_limit, 20), 1), 50)
+  ) active_matches
+
+  union all
+
+  select legacy_matches.*
+  from public.get_travel_entity_suggestions(
+    p_query,
+    p_country_code,
+    p_entity_types,
+    p_limit
+  ) legacy_matches
+  where not exists (select 1 from active_entities)
+  order by popularity_score desc, primary_name asc
+  limit least(greatest(coalesce(p_limit, 20), 1), 50);
+$$;
+
+revoke all on function public.get_active_travel_destination_pack(text, text) from public;
+revoke all on function public.get_active_travel_entity_suggestions(text, text, text[], integer) from public;
+grant execute on function public.get_active_travel_destination_pack(text, text) to anon, authenticated;
+grant execute on function public.get_active_travel_entity_suggestions(text, text, text[], integer) to anon, authenticated;
 
 -- Final RLS sweep so any public table that exists outside the explicit table list
 -- still gets locked down when this source-of-truth SQL is re-applied.

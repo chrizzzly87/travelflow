@@ -9,6 +9,9 @@ const operationalTables = [
   'travel_change_candidates',
   'travel_review_decisions',
   'travel_dataset_artifacts',
+  'travel_dataset_payloads',
+  'travel_active_datasets',
+  'travel_dataset_activations',
 ];
 
 describe('travel knowledge operations schema', () => {
@@ -65,5 +68,31 @@ describe('travel knowledge operations schema', () => {
     expect(sql).toContain('create policy "Travel knowledge bucket deny non-service access"');
     expect(sql).toContain('create policy "Travel knowledge objects deny non-service access"');
     expect(sql).not.toContain('bucket_id = \'travel-knowledge-snapshots\'');
+  });
+
+  it('stages immutable payloads and switches active versions atomically', () => {
+    expect(sql).toContain('create or replace function public.admin_stage_travel_dataset_artifact');
+    expect(sql).toContain('create or replace function public.admin_publish_travel_dataset_artifact');
+    expect(sql).toContain('create or replace function public.admin_rollback_travel_dataset');
+    expect(sql).toContain("perform pg_advisory_xact_lock(hashtextextended('travel-dataset:'");
+    expect(sql).toContain("set status = 'superseded', superseded_at = v_activated_at");
+    expect(sql).toContain("set status = 'rolled_back', rolled_back_at = v_activated_at");
+    expect(sql).toContain("action in ('publish', 'rollback')");
+    expect(sql).toContain('revoke insert, update, delete on table public.travel_dataset_versions from authenticated;');
+  });
+
+  it('serves only the active immutable payload with normalized-table fallback', () => {
+    const activePackStart = sql.indexOf('create or replace function public.get_active_travel_destination_pack');
+    const activeSearchStart = sql.indexOf('create or replace function public.get_active_travel_entity_suggestions');
+    const activePackFunction = sql.slice(activePackStart, activeSearchStart);
+    expect(activePackStart).toBeGreaterThan(-1);
+    expect(activePackFunction).toContain('security invoker');
+    expect(activePackFunction).toContain('public.travel_active_datasets');
+    expect(activePackFunction).toContain('public.travel_dataset_payloads');
+    expect(activePackFunction).toContain('public.get_travel_destination_pack(p_country_code, p_locale)');
+    const activeSearchFunction = sql.slice(activeSearchStart, sql.indexOf('revoke all on function', activeSearchStart));
+    expect(activeSearchFunction).toContain('public.get_travel_entity_suggestions(');
+    expect(activeSearchFunction).toContain('where not exists (select 1 from active_entities)');
+    expect(sql).toContain('grant execute on function public.get_active_travel_destination_pack');
   });
 });

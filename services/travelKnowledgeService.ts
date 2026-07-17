@@ -388,7 +388,7 @@ export const refreshTravelDestinationPack = async (
       throw new Error(`Travel knowledge is unavailable for ${normalizedCountryCode}.`);
     }
 
-    const { data, error } = await supabase.rpc('get_travel_destination_pack', {
+    const { data, error } = await supabase.rpc('get_active_travel_destination_pack', {
       p_country_code: normalizedCountryCode,
       p_locale: normalizedLocale,
     });
