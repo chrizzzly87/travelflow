@@ -3,7 +3,7 @@ import {
   type TravelDestinationPack,
   type TravelEntityCatalogItem,
   type TravelEntityType,
-} from './travelKnowledge';
+} from './travelKnowledge.ts';
 
 export interface TravelKnowledgeIndex {
   byId: ReadonlyMap<string, TravelEntityCatalogItem>;

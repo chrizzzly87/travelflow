@@ -1,9 +1,9 @@
-import type { CreateTripPreferenceSignals } from './createTripPreferences';
+import type { CreateTripPreferenceSignals } from './createTripPreferences.ts';
 import {
   TRAVEL_ENTITY_TYPE_VALUES,
   createLegacyTravelEntityReference,
   type TravelEntityReference,
-} from './travelKnowledge';
+} from './travelKnowledge.ts';
 
 export const JOURNEY_SPEC_VERSION = 1 as const;
 

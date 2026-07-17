@@ -1,4 +1,4 @@
-import type { TransportMode } from './transportModes';
+import type { TransportMode } from './transportModes.ts';
 
 export const TRAVEL_ENTITY_TYPE_VALUES = [
   'country',

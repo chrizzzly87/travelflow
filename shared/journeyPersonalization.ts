@@ -1,18 +1,18 @@
-import type { StructuredOutputJsonSchema } from './aiTripItinerarySchema';
+import type { StructuredOutputJsonSchema } from './aiTripItinerarySchema.ts';
 import {
   JOURNEY_PACE_VALUES,
   normalizeJourneySpec,
   validateJourneySpec,
   type JourneyPace,
   type JourneySpec,
-} from './journeySpec';
+} from './journeySpec.ts';
 import type {
   TravelDestinationPack,
   TravelEntityCatalogItem,
   TravelEntityReference,
-} from './travelKnowledge';
-import { getTravelKnowledgeIndex } from './travelKnowledgeIndex';
-import { MODEL_TRANSPORT_MODE_VALUES } from './transportModes';
+} from './travelKnowledge.ts';
+import { getTravelKnowledgeIndex } from './travelKnowledgeIndex.ts';
+import { MODEL_TRANSPORT_MODE_VALUES } from './transportModes.ts';
 
 export const JOURNEY_PERSONALIZATION_VERSION = 1 as const;
 export const JOURNEY_PERSONALIZATION_MAX_REQUEST_CHARS = 1_000;
