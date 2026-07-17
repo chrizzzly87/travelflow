@@ -29,6 +29,14 @@ vi.mock('../../services/travelKnowledgeService', async (importOriginal) => {
   };
 });
 
+vi.mock('../../services/travelPlanningContextService', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../services/travelPlanningContextService')>();
+  return {
+    ...actual,
+    loadTravelPlanningContext: vi.fn(),
+  };
+});
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, options?: Record<string, unknown>) => {
@@ -37,6 +45,7 @@ vi.mock('react-i18next', () => ({
       if (key === 'shapeLab.place.hiddenGem') return `Discovery ${options?.score}`;
       if (key === 'shapeLab.reveal.match') return `${options?.score}% route fit`;
       if (key === 'shapeLab.reveal.nightsShort') return `${options?.count} nights`;
+      if (key === 'shapeLab.reveal.engine.milliseconds') return `${options?.value} ms`;
       return key;
     },
     i18n: { language: 'en', resolvedLanguage: 'en' },
@@ -50,6 +59,8 @@ import {
   loadTravelDestinationPack,
   type TravelKnowledgeLoadResult,
 } from '../../services/travelKnowledgeService';
+import { loadTravelPlanningContext } from '../../services/travelPlanningContextService';
+import { buildTravelPlanningContext } from '../../shared/travelPlanningContext';
 
 const renderPage = (onTripGenerated = vi.fn()) => {
   render(React.createElement(
@@ -69,12 +80,21 @@ beforeEach(() => {
     source: 'bundled',
     loadDurationMs: 0.25,
   }));
+  vi.mocked(loadTravelPlanningContext).mockImplementation(async (options) => {
+    const contextPack = getBundledTravelDestinationPack('TH', options.locale)!;
+    return {
+      context: buildTravelPlanningContext(contextPack, options.spec, options),
+      source: 'bundled',
+      loadDurationMs: options.templateKeys?.length ? 7.25 : 12.5,
+    };
+  });
 });
 
 afterEach(() => {
   cleanup();
   vi.mocked(trackEvent).mockClear();
   vi.mocked(loadTravelDestinationPack).mockReset();
+  vi.mocked(loadTravelPlanningContext).mockReset();
 });
 
 describe('pages/CreateTripShapeLabPage', () => {
@@ -87,7 +107,7 @@ describe('pages/CreateTripShapeLabPage', () => {
       expect.objectContaining({
         source: 'bundled',
         load_duration_ms: 0.25,
-        dataset_version: '2026.07.17-v5',
+        dataset_version: '2026.07.17-v6',
       }),
     ));
 
@@ -140,6 +160,8 @@ describe('pages/CreateTripShapeLabPage', () => {
     await user.click(screen.getByRole('button', { name: /shapeLab\.actions\.compare/i }));
 
     expect(await screen.findByText('Bangkok in layers')).toBeInTheDocument();
+    expect(screen.getByText('shapeLab.reveal.engine.noAi')).toBeInTheDocument();
+    expect(screen.getByText('13 ms')).toBeInTheDocument();
     expect(trackEvent).toHaveBeenCalledWith(
       'create_trip_shape__concepts--prepare',
       expect.objectContaining({
@@ -148,7 +170,7 @@ describe('pages/CreateTripShapeLabPage', () => {
         attempted_template_count: 2,
         failed_template_count: 0,
         knowledge_source: 'bundled',
-        dataset_version: '2026.07.17-v5',
+        dataset_version: '2026.07.17-v6',
       }),
     );
     await waitFor(() => expect(trackEvent).toHaveBeenCalledWith(
@@ -157,10 +179,16 @@ describe('pages/CreateTripShapeLabPage', () => {
         journey_type: 'city_break',
         concept_count: 2,
         knowledge_source: 'bundled',
-        dataset_version: '2026.07.17-v5',
+        dataset_version: '2026.07.17-v6',
       }),
     ));
     await user.click(screen.getAllByRole('button', { name: /shapeLab\.reveal\.chooseRoute/i })[0]!);
+    await waitFor(() => expect(loadTravelPlanningContext).toHaveBeenLastCalledWith(expect.objectContaining({
+      templateKeys: ['th-bangkok-long-weekend'],
+      neighborhoodLimitPerCity: 4,
+      poiLimitPerCity: 6,
+    })));
+    await waitFor(() => expect(screen.getByRole('button', { name: /shapeLab\.actions\.openPlan/i })).toBeEnabled());
     expect(screen.getByText(/boat noodles/i)).toBeInTheDocument();
     expect(screen.getByText(/Yaowarat \/ Chinatown/i)).toHaveAttribute('data-selected', 'true');
     expect(screen.getAllByRole('link', { name: /shapeLab\.reveal\.brief\.source/i }).some((link) => (
@@ -181,12 +209,18 @@ describe('pages/CreateTripShapeLabPage', () => {
     const trip = onTripGenerated.mock.calls[0]?.[0];
     expect(trip.planningMeta).toMatchObject({
       routeStage: 'enriched',
-      datasetVersion: '2026.07.17-v5',
+      datasetVersion: '2026.07.17-v6',
       templateKey: 'th-bangkok-long-weekend',
       trace: {
         skeletonCompilerVersion: 'journey-skeleton-v1',
         templateRankerVersion: 'travel-template-ranker-v1',
         knowledgeEnricherVersion: 'journey-knowledge-enricher-v1',
+        planningContext: {
+          version: 1,
+          retrieverVersion: 'structured-pack-v1',
+          source: 'bundled',
+          aiCallCount: 0,
+        },
       },
     });
     expect(trip.planningMeta.destinationBriefs[0]).toMatchObject({
@@ -214,6 +248,7 @@ describe('pages/CreateTripShapeLabPage', () => {
     await user.click(screen.getByRole('button', { name: /wizard\.actions\.continue/i }));
     await user.click(screen.getByRole('button', { name: /shapeLab\.actions\.compare/i }));
     await user.click(screen.getAllByRole('button', { name: /shapeLab\.reveal\.chooseRoute/i })[0]!);
+    await waitFor(() => expect(screen.getByRole('button', { name: /shapeLab\.actions\.openPlan/i })).toBeEnabled());
 
     const bundledPack = getBundledTravelDestinationPack('TH', 'en')!;
     await act(async () => {
@@ -237,6 +272,6 @@ describe('pages/CreateTripShapeLabPage', () => {
 
     await user.click(screen.getByRole('button', { name: /shapeLab\.actions\.openPlan/i }));
     await waitFor(() => expect(onTripGenerated).toHaveBeenCalledTimes(1));
-    expect(onTripGenerated.mock.calls[0]?.[0].planningMeta.datasetVersion).toBe('2026.07.17-v5');
+    expect(onTripGenerated.mock.calls[0]?.[0].planningMeta.datasetVersion).toBe('2026.07.17-v6');
   });
 });

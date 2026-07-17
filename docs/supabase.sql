@@ -11112,10 +11112,388 @@ as $$
   limit least(greatest(coalesce(p_limit, 20), 1), 50);
 $$;
 
+drop function if exists public.get_active_travel_planning_context(
+  text, text, text, integer, integer[], text, text[], text[], text[], text[],
+  integer, text[], integer, integer, integer
+);
+create or replace function public.get_active_travel_planning_context(
+  p_country_code text,
+  p_locale text default 'en',
+  p_journey_type text default 'single_country_circuit',
+  p_duration_days integer default 7,
+  p_months integer[] default array[]::integer[],
+  p_pace text default 'balanced',
+  p_interest_tags text[] default array[]::text[],
+  p_selected_place_slugs text[] default array[]::text[],
+  p_locked_place_slugs text[] default array[]::text[],
+  p_avoided_place_slugs text[] default array[]::text[],
+  p_max_base_changes integer default null,
+  p_template_keys text[] default array[]::text[],
+  p_template_limit integer default 3,
+  p_neighborhood_limit_per_city integer default 2,
+  p_poi_limit_per_city integer default 2
+)
+returns jsonb
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with recursive requested as (
+    select
+      upper(trim(p_country_code)) as country_code,
+      lower(coalesce(nullif(trim(p_locale), ''), 'en')) as locale,
+      trim(p_journey_type) as journey_type,
+      greatest(1, least(coalesce(p_duration_days, 7), 365)) as duration_days,
+      case when trim(p_pace) in ('relaxed', 'balanced', 'full') then trim(p_pace) else 'balanced' end as pace,
+      array(select distinct value from unnest(coalesce(p_months, array[]::integer[])) value where value between 1 and 12) as months,
+      array(select distinct lower(trim(value)) from unnest(coalesce(p_interest_tags, array[]::text[])) value where trim(value) <> '') as interest_tags,
+      array(select distinct lower(trim(value)) from unnest(coalesce(p_selected_place_slugs, array[]::text[])) value where trim(value) <> '') as selected_slugs,
+      array(select distinct lower(trim(value)) from unnest(coalesce(p_locked_place_slugs, array[]::text[])) value where trim(value) <> '') as locked_slugs,
+      array(select distinct lower(trim(value)) from unnest(coalesce(p_avoided_place_slugs, array[]::text[])) value where trim(value) <> '') as avoided_slugs,
+      case when p_max_base_changes is null then null else greatest(0, p_max_base_changes) end as max_base_changes,
+      array(select distinct lower(trim(value)) from unnest(coalesce(p_template_keys, array[]::text[])) value where trim(value) <> '') as template_keys,
+      greatest(1, least(coalesce(p_template_limit, 3), 10)) as template_limit,
+      greatest(1, least(coalesce(p_neighborhood_limit_per_city, 2), 10)) as neighborhood_limit,
+      greatest(1, least(coalesce(p_poi_limit_per_city, 2), 12)) as poi_limit
+  ),
+  source_pack as (
+    select public.get_active_travel_destination_pack(requested.country_code, requested.locale) as pack
+    from requested
+  ),
+  entity_rows as (
+    select entity.value as entity, entity.ordinality
+    from source_pack
+    cross join lateral jsonb_array_elements(coalesce(source_pack.pack -> 'entities', '[]'::jsonb))
+      with ordinality as entity(value, ordinality)
+  ),
+  template_rows as (
+    select template.value as template, template.ordinality
+    from source_pack
+    cross join lateral jsonb_array_elements(coalesce(source_pack.pack -> 'templates', '[]'::jsonb))
+      with ordinality as template(value, ordinality)
+  ),
+  template_metrics as (
+    select
+      template_rows.*,
+      array(
+        select stop ->> 'entitySlug'
+        from jsonb_array_elements(coalesce(template_rows.template -> 'stops', '[]'::jsonb)) stop
+      ) as stop_slugs,
+      greatest(
+        0,
+        (
+          select count(distinct stop ->> 'entitySlug')::integer
+          from jsonb_array_elements(coalesce(template_rows.template -> 'stops', '[]'::jsonb)) stop
+          where stop ->> 'stopRole' = 'base'
+            and coalesce((stop ->> 'isOptional')::boolean, false) = false
+        ) - 1
+      ) as base_changes,
+      case
+        when (template_rows.template ->> 'minDays')::integer > requested.duration_days
+          then (template_rows.template ->> 'minDays')::integer - requested.duration_days
+        when (template_rows.template ->> 'maxDays')::integer < requested.duration_days
+          then requested.duration_days - (template_rows.template ->> 'maxDays')::integer
+        else 0
+      end as duration_delta,
+      coalesce(
+        (
+          select sum((tag ->> 'weight')::numeric)
+          from jsonb_array_elements(coalesce(template_rows.template -> 'tags', '[]'::jsonb)) tag
+          where tag ->> 'tagKey' = any(requested.interest_tags)
+        ),
+        0
+      ) as matching_tag_weight,
+      coalesce(
+        (
+          select count(*)::numeric
+          from unnest(requested.selected_slugs) selected_slug
+          where selected_slug = any(array(
+            select stop ->> 'entitySlug'
+            from jsonb_array_elements(coalesce(template_rows.template -> 'stops', '[]'::jsonb)) stop
+          ))
+        ),
+        0
+      ) as selected_match_count,
+      coalesce(
+        (
+          select count(*)::numeric
+          from unnest(requested.months) month
+          where month = any(array(
+            select (ideal_month)::integer
+            from jsonb_array_elements_text(coalesce(template_rows.template -> 'idealMonths', '[]'::jsonb)) ideal_month
+          ))
+        ),
+        0
+      ) as month_match_count
+    from template_rows
+    cross join requested
+  ),
+  eligible_templates as (
+    select
+      template_metrics.*,
+      (
+        greatest(0, 35 - (template_metrics.duration_delta * 6))
+        + case
+            when template_metrics.template ->> 'preferredPace' = requested.pace then 15
+            when abs(
+              array_position(array['relaxed', 'balanced', 'full']::text[], template_metrics.template ->> 'preferredPace')
+              - array_position(array['relaxed', 'balanced', 'full']::text[], requested.pace)
+            ) = 1 then 8
+            else 2
+          end
+        + case
+            when cardinality(requested.months) = 0 then 8
+            else 15 * (template_metrics.month_match_count / greatest(1, cardinality(requested.months)))
+          end
+        + case
+            when cardinality(requested.interest_tags) = 0 then 12
+            else least(25, template_metrics.matching_tag_weight * 10)
+          end
+        + case
+            when cardinality(requested.selected_slugs) = 0 then 5
+            else 10 * (template_metrics.selected_match_count / greatest(1, cardinality(requested.selected_slugs)))
+          end
+      )::numeric as retrieval_score
+    from template_metrics
+    cross join requested
+    where template_metrics.template ->> 'journeyType' = requested.journey_type
+      and (requested.max_base_changes is null or template_metrics.base_changes <= requested.max_base_changes)
+      and (
+        cardinality(requested.template_keys) = 0
+        or template_metrics.template ->> 'templateKey' = any(requested.template_keys)
+      )
+      and not exists (
+        select 1
+        from unnest(requested.avoided_slugs) avoided_slug
+        where avoided_slug = any(template_metrics.stop_slugs)
+      )
+      and not exists (
+        select 1
+        from unnest(requested.locked_slugs) locked_slug
+        where not locked_slug = any(template_metrics.stop_slugs)
+      )
+  ),
+  ranked_templates as (
+    select
+      eligible_templates.*,
+      row_number() over (
+        order by
+          case
+            when cardinality(requested.template_keys) > 0
+              then array_position(requested.template_keys, eligible_templates.template ->> 'templateKey')
+            else null
+          end asc nulls last,
+          eligible_templates.retrieval_score desc,
+          eligible_templates.duration_delta asc,
+          eligible_templates.template ->> 'templateKey' asc
+      ) as retrieval_rank
+    from eligible_templates
+    cross join requested
+  ),
+  selected_templates as (
+    select ranked_templates.*
+    from ranked_templates
+    cross join requested
+    where ranked_templates.retrieval_rank <= case
+      when cardinality(requested.template_keys) > 0 then cardinality(requested.template_keys)
+      else requested.template_limit
+    end
+  ),
+  selected_stop_slugs as (
+    select distinct stop ->> 'entitySlug' as canonical_slug
+    from selected_templates
+    cross join lateral jsonb_array_elements(coalesce(selected_templates.template -> 'stops', '[]'::jsonb)) stop
+  ),
+  seed_slugs as (
+    select canonical_slug from selected_stop_slugs
+    union
+    select unnest(requested.selected_slugs) from requested
+    union
+    select unnest(requested.locked_slugs) from requested
+    union
+    select entity_rows.entity ->> 'canonicalSlug'
+    from entity_rows
+    cross join requested
+    where entity_rows.entity ->> 'entityType' = 'country'
+      and entity_rows.entity ->> 'countryCode' = requested.country_code
+  ),
+  ancestry(entity, ordinality, depth) as (
+    select entity_rows.entity, entity_rows.ordinality, 0
+    from entity_rows
+    join seed_slugs on seed_slugs.canonical_slug = entity_rows.entity ->> 'canonicalSlug'
+    union
+    select parent.entity, parent.ordinality, ancestry.depth + 1
+    from ancestry
+    join entity_rows parent on parent.entity ->> 'entityId' = ancestry.entity ->> 'parentId'
+    where ancestry.depth < 8
+  ),
+  city_anchors as (
+    select distinct ancestry.entity, ancestry.ordinality
+    from ancestry
+    where ancestry.entity ->> 'entityType' = 'city'
+  ),
+  descendants(entity, ordinality, root_city_id, depth) as (
+    select city_anchors.entity, city_anchors.ordinality, city_anchors.entity ->> 'entityId', 0
+    from city_anchors
+    union all
+    select child.entity, child.ordinality, descendants.root_city_id, descendants.depth + 1
+    from descendants
+    join entity_rows child on child.entity ->> 'parentId' = descendants.entity ->> 'entityId'
+    where descendants.depth < 8
+  ),
+  ranked_descendants as (
+    select
+      descendants.*,
+      row_number() over (
+        partition by descendants.root_city_id, descendants.entity ->> 'entityType'
+        order by
+          ((descendants.entity ->> 'canonicalSlug') in (select canonical_slug from seed_slugs)) desc,
+          coalesce(
+            (
+              select sum(coalesce((tag ->> 'relevance')::numeric, 0))
+              from jsonb_array_elements(coalesce(descendants.entity -> 'tags', '[]'::jsonb)) tag
+              cross join requested
+              where tag ->> 'tagKey' = any(requested.interest_tags)
+            ),
+            0
+          ) desc,
+          coalesce((descendants.entity ->> 'popularityScore')::numeric, 0) desc,
+          coalesce((descendants.entity ->> 'hiddenGemScore')::numeric, 0) desc,
+          descendants.entity ->> 'canonicalSlug' asc
+      ) as type_rank
+    from descendants
+  ),
+  selected_entity_slugs as (
+    select distinct ancestry.entity ->> 'canonicalSlug' as canonical_slug from ancestry
+    union
+    select distinct ranked_descendants.entity ->> 'canonicalSlug'
+    from ranked_descendants
+    cross join requested
+    where (
+      ranked_descendants.entity ->> 'entityType' = 'neighborhood'
+      and ranked_descendants.type_rank <= requested.neighborhood_limit
+    ) or (
+      ranked_descendants.entity ->> 'entityType' = 'poi'
+      and ranked_descendants.type_rank <= requested.poi_limit
+    )
+  ),
+  compact_entities as (
+    select
+      entity_rows.ordinality,
+      (entity_rows.entity - 'attributes' - 'names' - 'facts' - 'tags')
+      || jsonb_build_object(
+        'attributes', coalesce(entity_rows.entity -> 'attributes', '{}'::jsonb) - 'sourceUrls',
+        'names', coalesce(
+          (
+            select jsonb_agg(name order by name ->> 'locale', name ->> 'name')
+            from jsonb_array_elements(coalesce(entity_rows.entity -> 'names', '[]'::jsonb)) name
+            where coalesce((name ->> 'isPreferred')::boolean, false) = true
+          ),
+          '[]'::jsonb
+        ),
+        'facts', coalesce(
+          (
+            select jsonb_agg(
+              (fact - 'metadata') || jsonb_build_object(
+                'metadata', case
+                  when jsonb_typeof(fact #> '{metadata,sourceUrl}') = 'string'
+                    then jsonb_build_object('sourceUrl', fact #>> '{metadata,sourceUrl}')
+                  else '{}'::jsonb
+                end
+              )
+              order by fact ->> 'factKey', fact ->> 'observedAt' desc
+            )
+            from jsonb_array_elements(coalesce(entity_rows.entity -> 'facts', '[]'::jsonb)) fact
+          ),
+          '[]'::jsonb
+        ),
+        'tags', coalesce(
+          (
+            select jsonb_agg(
+              case
+                when tag ->> 'tagKey' = any(array['family_activity_supply', 'lgbtq_scene', 'solo_travel_interest']::text[])
+                  then tag
+                else (tag - 'evidenceNote' - 'metadata') || jsonb_build_object('metadata', '{}'::jsonb)
+              end
+              order by coalesce((tag ->> 'relevance')::numeric, 0) desc, tag ->> 'tagKey'
+            )
+            from jsonb_array_elements(coalesce(entity_rows.entity -> 'tags', '[]'::jsonb)) tag
+          ),
+          '[]'::jsonb
+        )
+      ) as entity
+    from entity_rows
+    join selected_entity_slugs on selected_entity_slugs.canonical_slug = entity_rows.entity ->> 'canonicalSlug'
+  ),
+  selected_stats as (
+    select
+      count(*)::integer as entity_count,
+      count(*) filter (where compact_entities.entity ->> 'entityType' = 'city')::integer as city_count,
+      count(*) filter (where compact_entities.entity ->> 'entityType' = 'neighborhood')::integer as neighborhood_count,
+      count(*) filter (where compact_entities.entity ->> 'entityType' = 'poi')::integer as poi_count
+    from compact_entities
+  )
+  select jsonb_build_object(
+    'version', 1,
+    'retrieverVersion', 'structured-pack-v1',
+    'query', jsonb_build_object(
+      'countryCode', requested.country_code,
+      'locale', requested.locale,
+      'journeyType', requested.journey_type,
+      'durationDays', requested.duration_days,
+      'months', to_jsonb(requested.months),
+      'pace', requested.pace,
+      'interestTags', to_jsonb(requested.interest_tags),
+      'selectedPlaceSlugs', to_jsonb(requested.selected_slugs),
+      'lockedPlaceSlugs', to_jsonb(requested.locked_slugs),
+      'avoidedPlaceSlugs', to_jsonb(requested.avoided_slugs),
+      'maxBaseChanges', requested.max_base_changes,
+      'templateKeys', to_jsonb(requested.template_keys),
+      'templateLimit', requested.template_limit,
+      'neighborhoodLimitPerCity', requested.neighborhood_limit,
+      'poiLimitPerCity', requested.poi_limit
+    ),
+    'pack', jsonb_build_object(
+      'countryCode', requested.country_code,
+      'locale', requested.locale,
+      'dataset', coalesce(source_pack.pack -> 'dataset', '{}'::jsonb),
+      'entities', coalesce(
+        (select jsonb_agg(compact_entities.entity order by compact_entities.ordinality) from compact_entities),
+        '[]'::jsonb
+      ),
+      'templates', coalesce(
+        (select jsonb_agg(selected_templates.template order by selected_templates.retrieval_rank) from selected_templates),
+        '[]'::jsonb
+      )
+    ),
+    'stats', jsonb_build_object(
+      'sourceEntityCount', jsonb_array_length(coalesce(source_pack.pack -> 'entities', '[]'::jsonb)),
+      'sourceTemplateCount', jsonb_array_length(coalesce(source_pack.pack -> 'templates', '[]'::jsonb)),
+      'selectedEntityCount', selected_stats.entity_count,
+      'selectedTemplateCount', (select count(*)::integer from selected_templates),
+      'selectedCityCount', selected_stats.city_count,
+      'selectedNeighborhoodCount', selected_stats.neighborhood_count,
+      'selectedPoiCount', selected_stats.poi_count
+    )
+  )
+  from requested
+  cross join source_pack
+  cross join selected_stats;
+$$;
+
 revoke all on function public.get_active_travel_destination_pack(text, text) from public;
 revoke all on function public.get_active_travel_entity_suggestions(text, text, text[], integer) from public;
+revoke all on function public.get_active_travel_planning_context(
+  text, text, text, integer, integer[], text, text[], text[], text[], text[],
+  integer, text[], integer, integer, integer
+) from public;
 grant execute on function public.get_active_travel_destination_pack(text, text) to anon, authenticated;
 grant execute on function public.get_active_travel_entity_suggestions(text, text, text[], integer) to anon, authenticated;
+grant execute on function public.get_active_travel_planning_context(
+  text, text, text, integer, integer[], text, text[], text[], text[], text[],
+  integer, text[], integer, integer, integer
+) to anon, authenticated;
 
 -- Final RLS sweep so any public table that exists outside the explicit table list
 -- still gets locked down when this source-of-truth SQL is re-applied.

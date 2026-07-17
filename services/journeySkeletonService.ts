@@ -1,10 +1,17 @@
-import type { ITimelineItem, ITrip, TimelineKnowledgeOrigin } from '../types';
+import type {
+  ITimelineItem,
+  ITrip,
+  JourneyKnowledgeSource,
+  JourneyPlanningContextTrace,
+  TimelineKnowledgeOrigin,
+} from '../types';
 import {
   TRAVEL_TEMPLATE_RANKER_VERSION,
   type AppliedTravelTemplate,
   type TravelTemplateMatch,
 } from '../shared/travelTemplateMatcher';
 import type { JourneySpec } from '../shared/journeySpec';
+import { buildTravelActivityKnowledge } from '../shared/travelActivityKnowledge';
 import type { TravelDestinationPack, TravelEntityCatalogItem } from '../shared/travelKnowledge';
 import { getTravelKnowledgeIndex } from '../shared/travelKnowledgeIndex';
 import {
@@ -29,7 +36,8 @@ export const JOURNEY_SKELETON_COMPILER_VERSION = 'journey-skeleton-v1' as const;
 export interface JourneySkeletonBuildOptions {
   now?: Date;
   tripId?: string;
-  knowledgeSource?: 'bundled' | 'remote';
+  knowledgeSource?: JourneyKnowledgeSource;
+  planningContext?: JourneyPlanningContextTrace;
   match?: Pick<TravelTemplateMatch, 'score' | 'reasons' | 'tradeoffs'>;
 }
 
@@ -77,6 +85,7 @@ export const buildTripSkeletonFromTemplate = (
   options: JourneySkeletonBuildOptions = {},
 ): ITrip => {
   const index = getTravelKnowledgeIndex(pack);
+  const now = options.now ?? new Date();
   const places = applied.spec.places.filter((place) => place.role !== 'country_scope' && place.role !== 'avoid');
   const items: ITimelineItem[] = [];
   const baseEntries: Array<{
@@ -194,6 +203,7 @@ export const buildTripSkeletonFromTemplate = (
       countryCode: entity.countryCode,
       countryName: 'Thailand',
       activityType: activityTypes,
+      activityKnowledge: buildTravelActivityKnowledge(entity, now),
       knowledgeMeta: knowledgeMetaForEntity(
         entity,
         datasetVersion,
@@ -205,7 +215,6 @@ export const buildTripSkeletonFromTemplate = (
     detailIndexWithinBase += 1;
   }
 
-  const now = options.now ?? new Date();
   const knowledge = applied.spec.knowledgeContext;
   if (!knowledge?.templateKey || !knowledge.templateVersion) {
     throw new Error('A route skeleton requires a template-backed JourneySpec.');
@@ -236,6 +245,7 @@ export const buildTripSkeletonFromTemplate = (
         skeletonCompilerVersion: JOURNEY_SKELETON_COMPILER_VERSION,
         templateRankerVersion: TRAVEL_TEMPLATE_RANKER_VERSION,
         knowledgeSource: options.knowledgeSource,
+        planningContext: options.planningContext,
         matchedTemplateScore: options.match?.score,
         matchedTemplateReasons: options.match ? [...options.match.reasons] : undefined,
         matchedTemplateTradeoffs: options.match ? [...options.match.tradeoffs] : undefined,

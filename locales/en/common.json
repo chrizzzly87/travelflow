@@ -507,6 +507,28 @@
       "aiRetry": "Try again"
     }
   },
+  "tripActivityKnowledge": {
+    "title": "Source-backed visitor details",
+    "description": "Structured catalogue fields, not generated activity copy.",
+    "currentUntil": "Current until {date}",
+    "freshness": { "current": "Current", "expired": "Check again", "undated": "Review date unavailable" },
+    "duration": "Recommended duration",
+    "bestTime": "Best time",
+    "hours": "Opening hours",
+    "lastEntry": "last entry {time}",
+    "admission": "Admission",
+    "free": "Free",
+    "booking": "Booking",
+    "bookingModes": { "walk_in": "Walk in", "optional_advance": "Advance booking optional", "recommended_advance": "Book ahead", "required_advance": "Advance booking required" },
+    "audience": "Traveler fit",
+    "audienceLabels": { "family": "Families", "lgbtq": "LGBTQ+", "solo": "Solo", "mobility": "Mobility" },
+    "fitLabels": { "good": "Good fit", "conditional": "Check the notes", "limited": "Limited fit", "unknown": "Not yet verified" },
+    "dressCode": "Dress code",
+    "accessibility": "Accessibility",
+    "practicalNotes": "Good to know",
+    "sources": "Sources",
+    "verifyLive": "Hours, prices, and availability can change. Check the linked source before visiting."
+  },
   "tripRouteShell": {
     "loadingTrip": "Loading trip",
     "preparingPlanner": "Preparing planner",

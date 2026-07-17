@@ -106,4 +106,20 @@ describe('travel knowledge operations schema', () => {
     expect(activeSearchFunction).toContain('where not exists (select 1 from active_entities)');
     expect(sql).toContain('grant execute on function public.get_active_travel_destination_pack');
   });
+
+  it('projects bounded planning contexts from the public active pack without exposing operations data', () => {
+    const contextStart = sql.indexOf('create or replace function public.get_active_travel_planning_context');
+    const contextEnd = sql.indexOf('revoke all on function public.get_active_travel_destination_pack', contextStart);
+    const contextFunction = sql.slice(contextStart, contextEnd);
+
+    expect(contextStart).toBeGreaterThan(-1);
+    expect(contextFunction).toContain('security invoker');
+    expect(contextFunction).toContain("'retrieverVersion', 'structured-pack-v1'");
+    expect(contextFunction).toContain('public.get_active_travel_destination_pack');
+    expect(contextFunction).toContain('requested.neighborhood_limit');
+    expect(contextFunction).toContain('requested.poi_limit');
+    expect(contextFunction).not.toContain('travel_source_snapshots');
+    expect(contextFunction).not.toContain('travel_change_candidates');
+    expect(sql).toContain('grant execute on function public.get_active_travel_planning_context');
+  });
 });

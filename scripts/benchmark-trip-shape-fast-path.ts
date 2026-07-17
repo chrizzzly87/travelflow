@@ -7,6 +7,7 @@ import {
   type JourneyShapeWizardDraft,
 } from '../shared/journeyShapeWizard';
 import type { TravelDestinationPack } from '../shared/travelKnowledge';
+import { buildTravelPlanningContext } from '../shared/travelPlanningContext';
 import { buildJourneyRouteConcepts } from '../services/journeyRouteConceptService';
 import { buildTripSkeletonFromTemplate } from '../services/journeySkeletonService';
 import { enrichTripSkeletonFromKnowledge } from '../services/journeyKnowledgeEnrichmentService';
@@ -17,9 +18,11 @@ const fixedNow = new Date('2026-07-17T00:00:00.000Z');
 
 const METRIC_KEYS = [
   'spec_build',
+  'comparison_context',
   'template_rank',
   'template_apply',
   'route_concept',
+  'selected_context',
   'skeleton_compile',
   'knowledge_enrichment',
   'trip_compile',
@@ -56,6 +59,8 @@ interface ScenarioBenchmarkResult {
   templateKey: string;
   cityCount: number;
   activityCount: number;
+  comparisonContextBytes: number;
+  selectedContextBytes: number;
 }
 
 const scenarios: BenchmarkScenario[] = [
@@ -165,24 +170,39 @@ const runScenarioOnce = (
   pack: TravelDestinationPack,
   scenario: BenchmarkScenario,
   iteration: number,
-): { durations: Record<MetricKey, number>; templateKey: string; cityCount: number; activityCount: number } => {
+): {
+  durations: Record<MetricKey, number>;
+  templateKey: string;
+  cityCount: number;
+  activityCount: number;
+  comparisonContextBytes: number;
+  selectedContextBytes: number;
+} => {
   const startedAt = performance.now();
   const spec = buildJourneySpecFromShapeWizard(scenario.draft, pack);
   const specCompletedAt = performance.now();
 
-  const prepared = buildJourneyRouteConcepts(spec, pack, { limit: 3 });
+  const comparisonContext = buildTravelPlanningContext(pack, spec);
+  const comparisonContextCompletedAt = performance.now();
+  const prepared = buildJourneyRouteConcepts(spec, comparisonContext.pack, { limit: 3 });
   const applyCompletedAt = performance.now();
   const concept = prepared.concepts[0];
   if (!concept) throw new Error(`${scenario.label} did not match a published route template.`);
   const { applied, match } = concept;
-  const skeleton = buildTripSkeletonFromTemplate(applied, pack, {
+  const selectedContext = buildTravelPlanningContext(pack, spec, {
+    templateKeys: [match.template.templateKey],
+    neighborhoodLimitPerCity: 4,
+    poiLimitPerCity: 6,
+  });
+  const selectedContextCompletedAt = performance.now();
+  const skeleton = buildTripSkeletonFromTemplate(applied, selectedContext.pack, {
     now: fixedNow,
     tripId: `benchmark-${scenario.key}-${iteration}`,
     knowledgeSource: 'bundled',
     match,
   });
   const skeletonCompletedAt = performance.now();
-  const trip = enrichTripSkeletonFromKnowledge(skeleton, pack, { now: fixedNow });
+  const trip = enrichTripSkeletonFromKnowledge(skeleton, selectedContext.pack, { now: fixedNow });
   const completedAt = performance.now();
 
   if (trip.planningMeta?.routeStage !== 'enriched') {
@@ -197,17 +217,21 @@ const runScenarioOnce = (
   return {
     durations: {
       spec_build: specCompletedAt - startedAt,
+      comparison_context: comparisonContextCompletedAt - specCompletedAt,
       template_rank: prepared.rankDurationMs,
       template_apply: prepared.applyDurationMs,
       route_concept: applyCompletedAt - startedAt,
-      skeleton_compile: skeletonCompletedAt - applyCompletedAt,
+      selected_context: selectedContextCompletedAt - applyCompletedAt,
+      skeleton_compile: skeletonCompletedAt - selectedContextCompletedAt,
       knowledge_enrichment: completedAt - skeletonCompletedAt,
-      trip_compile: completedAt - applyCompletedAt,
+      trip_compile: completedAt - selectedContextCompletedAt,
       end_to_end: completedAt - startedAt,
     },
     templateKey: match.template.templateKey,
     cityCount,
     activityCount,
+    comparisonContextBytes: new TextEncoder().encode(JSON.stringify(comparisonContext)).byteLength,
+    selectedContextBytes: new TextEncoder().encode(JSON.stringify(selectedContext)).byteLength,
   };
 };
 
@@ -236,6 +260,8 @@ const benchmarkScenario = (
     templateKey: latestResult.templateKey,
     cityCount: latestResult.cityCount,
     activityCount: latestResult.activityCount,
+    comparisonContextBytes: latestResult.comparisonContextBytes,
+    selectedContextBytes: latestResult.selectedContextBytes,
   };
 };
 
@@ -244,6 +270,7 @@ const formatMs = (value: number): string => value.toFixed(value < 1 ? 3 : 2).pad
 const printScenario = (result: ScenarioBenchmarkResult): void => {
   process.stdout.write(`\n${result.scenario.label}\n`);
   process.stdout.write(`  template: ${result.templateKey}; ${result.cityCount} cities; ${result.activityCount} activities\n`);
+  process.stdout.write(`  contexts: ${result.comparisonContextBytes.toLocaleString('en-US')} B comparison; ${result.selectedContextBytes.toLocaleString('en-US')} B selected-route\n`);
   process.stdout.write('  stage                    p50 (ms)  p95 (ms)  mean (ms)\n');
   for (const key of METRIC_KEYS) {
     const summary = result.metrics[key];
@@ -287,6 +314,16 @@ const run = async (): Promise<void> => {
         maximum: 100,
       },
       {
+        label: `${result.scenario.key} comparison context p95`,
+        measured: result.metrics.comparison_context.p95,
+        maximum: 50,
+      },
+      {
+        label: `${result.scenario.key} selected context p95`,
+        measured: result.metrics.selected_context.p95,
+        maximum: 50,
+      },
+      {
         label: `${result.scenario.key} end-to-end p95`,
         measured: result.metrics.end_to_end.p95,
         maximum: 250,
@@ -302,8 +339,20 @@ const run = async (): Promise<void> => {
       `  ${status} ${budget.label}: ${formatMs(budget.measured)} ms <= ${budget.maximum} ms\n`,
     );
   }
-  if (options.enforceBudgets && failures.length > 0) {
-    throw new Error(`${failures.length} deterministic trip-shape performance budget${failures.length === 1 ? '' : 's'} failed.`);
+  const payloadFailures = results.flatMap((result) => [
+    { label: `${result.scenario.key} comparison context`, bytes: result.comparisonContextBytes },
+    { label: `${result.scenario.key} selected context`, bytes: result.selectedContextBytes },
+  ]).filter((budget) => budget.bytes >= 100_000);
+  for (const payload of results.flatMap((result) => [
+    { label: `${result.scenario.key} comparison context`, bytes: result.comparisonContextBytes },
+    { label: `${result.scenario.key} selected context`, bytes: result.selectedContextBytes },
+  ])) {
+    const status = payload.bytes < 100_000 ? 'PASS' : 'FAIL';
+    process.stdout.write(`  ${status} ${payload.label}: ${payload.bytes.toLocaleString('en-US')} B < 100,000 B\n`);
+  }
+  if (options.enforceBudgets && (failures.length > 0 || payloadFailures.length > 0)) {
+    const failureCount = failures.length + payloadFailures.length;
+    throw new Error(`${failureCount} deterministic trip-shape performance budget${failureCount === 1 ? '' : 's'} failed.`);
   }
 };
 

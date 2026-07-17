@@ -75,7 +75,7 @@ describe('travel knowledge artifact tooling', () => {
       passed: true,
       reviewedCandidateCount: 0,
       sourceRunCount: 2,
-      counts: { entities: 84, facts: 244, templates: 15 },
+      counts: { entities: 84, facts: 277, templates: 15 },
     });
     expect(first.storageObjectKey).toContain(first.artifactChecksum);
     expect(first.bundle.packPayload.dataset?.checksum).toBe(first.datasetChecksum);

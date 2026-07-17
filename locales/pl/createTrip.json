@@ -406,6 +406,19 @@
       "titleMany": "{count} sprawdzone trasy przez Tajlandię.",
       "description": "To wersjonowane szkielety tras z pakietu wiedzy o Tajlandii, a nie miejsca wymyślone podczas oczekiwania.",
       "dataNote": "Porównano {templates} szablonów z {entities} kanonicznymi miejscami · dane {version}",
+      "engine": {
+        "label": "Dowód szybkiego planera",
+        "title": "Szybka ścieżka oparta na źródłach",
+        "description": "Te opcje pobrano i złożono z katalogu Tajlandii przed jakąkolwiek personalizacją AI.",
+        "noAi": "0 wywołań AI",
+        "retrieval": "Pobieranie",
+        "milliseconds": "{value} ms",
+        "places": "Wybrane miejsca",
+        "templates": "Wybrane szablony",
+        "payload": "Kontekst",
+        "loadingSelected": "Ładowanie rozszerzonego kontekstu katalogu dla tej trasy…",
+        "selectedReady": "Trasa gotowa z {neighborhoods} dzielnicami i {pois} POI w kontekście {size}."
+      },
       "fallback": "Dane dostępne offline",
       "sources": {
         "memory": "Aktualna pamięć podręczna",
@@ -450,7 +463,8 @@
     },
     "actions": {
       "compare": "Porównaj trasy",
-      "openPlan": "Otwórz edytowalny plan"
+      "preparing": "Pobieranie tras…",
+      "openPlan": "Otwórz natychmiastową bazę"
     }
   },
   "journeyLab": {

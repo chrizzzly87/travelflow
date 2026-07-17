@@ -2,8 +2,8 @@
   "manifest": {
     "datasetKey": "thailand-core",
     "countryCode": "TH",
-    "version": "2026.07.17-v5",
-    "generatedAt": "2026-07-17T00:30:00Z",
+    "version": "2026.07.17-v6",
+    "generatedAt": "2026-07-17T13:45:00Z",
     "notes": "Thailand-first planning dataset. Editorial summaries are paraphrased and must not be treated as live availability, safety, entry, or price guarantees."
   },
   "sources": [
@@ -43,6 +43,62 @@
       "refreshIntervalDays": 90,
       "metadata": {
         "usage": "Reference and paraphrase only; do not syndicate source copy or images."
+      }
+    },
+    {
+      "sourceKey": "grand_palace_official",
+      "name": "The Grand Palace",
+      "sourceKind": "official",
+      "baseUrl": "https://www.royalgrandpalace.th/",
+      "termsUrl": "https://www.royalgrandpalace.th/en/visit/practical-information",
+      "attributionText": "Bureau of the Royal Household",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "refreshIntervalDays": 30,
+      "metadata": {
+        "usage": "Manual fact confirmation only; store paraphrased structured values and source URLs, never source prose or images."
+      }
+    },
+    {
+      "sourceKey": "wat_pho_official",
+      "name": "Wat Pho",
+      "sourceKind": "official",
+      "baseUrl": "https://www.watpho.com/",
+      "termsUrl": "https://www.watpho.com/en/contact/plan",
+      "attributionText": "Wat Phra Chetuphon Wimon Mangkhalaram",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "refreshIntervalDays": 30,
+      "metadata": {
+        "usage": "Manual fact confirmation only; store paraphrased structured values and source URLs, never source prose or images."
+      }
+    },
+    {
+      "sourceKey": "bma_official",
+      "name": "Bangkok Metropolitan Administration",
+      "sourceKind": "official",
+      "baseUrl": "https://www.bangkok.go.th/",
+      "termsUrl": "https://gov.bangkok.go.th/Policy/Terms",
+      "attributionText": "Bangkok Metropolitan Administration",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "refreshIntervalDays": 30,
+      "metadata": {
+        "usage": "Manual fact confirmation from BMA public-information pages; store structured values and source URLs only."
+      }
+    },
+    {
+      "sourceKey": "wat_arun_community",
+      "name": "Wat Arun visitor guide",
+      "sourceKind": "community",
+      "baseUrl": "https://www.wat-arun.com/",
+      "termsUrl": "https://www.wat-arun.com/",
+      "attributionText": "Wat Arun community visitor guide",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "refreshIntervalDays": 30,
+      "metadata": {
+        "usage": "Community reference for time-sensitive visitor facts; verify against on-site information before travel."
       }
     },
     {
@@ -731,10 +787,119 @@
     { "canonicalSlug": "th-koh-lanta-long-beach", "entityType": "neighborhood", "parentSlug": "th-koh-lanta", "countryCode": "TH", "primaryName": "Long Beach / Phra Ae", "timezone": "Asia/Bangkok", "latitude": 7.59, "longitude": 99.03, "popularityScore": 82, "hiddenGemScore": 48, "tourismIntensityScore": 62, "profile": { "summary": "A long west-coast beach with broad accommodation and dining supply, balancing convenience and a relaxed island feel.", "relativeCostLevel": 3 }, "tagKeys": ["beaches", "quiet"] },
     { "canonicalSlug": "th-koh-lanta-old-town", "entityType": "neighborhood", "parentSlug": "th-koh-lanta", "countryCode": "TH", "primaryName": "Lanta Old Town", "timezone": "Asia/Bangkok", "latitude": 7.535, "longitude": 99.086, "popularityScore": 58, "hiddenGemScore": 78, "tourismIntensityScore": 32, "profile": { "summary": "A quieter east-coast heritage settlement with wooden houses, local food, and access to a different side of island life.", "relativeCostLevel": 2 }, "tagKeys": ["culture", "food", "hidden_gem", "quiet"] },
 
-    { "canonicalSlug": "th-bangkok-grand-palace", "entityType": "poi", "parentSlug": "th-bangkok-rattanakosin", "countryCode": "TH", "primaryName": "Grand Palace and Wat Phra Kaew", "timezone": "Asia/Bangkok", "latitude": 13.7501, "longitude": 100.4913, "typicalMinDays": 0.2, "typicalMaxDays": 0.4, "popularityScore": 100, "hiddenGemScore": 0, "tourismIntensityScore": 100, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"], "profile": { "summary": "Bangkok's highest-priority royal and religious complex; dress requirements, heat, crowds, and current opening information must be checked." }, "tagKeys": ["culture", "temples", "history", "essential"] },
-    { "canonicalSlug": "th-bangkok-wat-pho", "entityType": "poi", "parentSlug": "th-bangkok-rattanakosin", "countryCode": "TH", "primaryName": "Wat Pho", "timezone": "Asia/Bangkok", "latitude": 13.7465, "longitude": 100.493, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 96, "hiddenGemScore": 10, "tourismIntensityScore": 94, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"], "profile": { "summary": "Major temple complex known for the reclining Buddha and traditional massage heritage, easily combined with the Grand Palace area." }, "tagKeys": ["temples", "culture", "essential"] },
-    { "canonicalSlug": "th-bangkok-wat-arun", "entityType": "poi", "parentSlug": "th-bangkok-riverside", "countryCode": "TH", "primaryName": "Wat Arun", "timezone": "Asia/Bangkok", "latitude": 13.7437, "longitude": 100.4889, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 96, "hiddenGemScore": 8, "tourismIntensityScore": 92, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"], "profile": { "summary": "Landmark riverside temple whose visit fits naturally into a Chao Phraya boat and Old Town day." }, "tagKeys": ["temples", "culture", "essential"] },
-    { "canonicalSlug": "th-bangkok-chatuchak", "entityType": "poi", "parentSlug": "th-bangkok", "countryCode": "TH", "primaryName": "Chatuchak Weekend Market", "timezone": "Asia/Bangkok", "latitude": 13.7999, "longitude": 100.55, "typicalMinDays": 0.2, "typicalMaxDays": 0.5, "popularityScore": 92, "hiddenGemScore": 10, "tourismIntensityScore": 90, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"], "profile": { "summary": "A vast market best treated as a dedicated shopping and food block; operating days and heat materially affect planning." }, "tagKeys": ["markets", "food", "essential", "lively"] },
+    {
+      "canonicalSlug": "th-bangkok-grand-palace",
+      "entityType": "poi",
+      "parentSlug": "th-bangkok-rattanakosin",
+      "countryCode": "TH",
+      "primaryName": "Grand Palace and Wat Phra Kaew",
+      "timezone": "Asia/Bangkok",
+      "latitude": 13.7501,
+      "longitude": 100.4913,
+      "typicalMinDays": 0.2,
+      "typicalMaxDays": 0.4,
+      "popularityScore": 100,
+      "hiddenGemScore": 0,
+      "tourismIntensityScore": 100,
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"],
+      "profile": { "summary": "Bangkok's highest-priority royal and religious complex; dress requirements, heat, crowds, and current opening information must be checked." },
+      "tagKeys": ["culture", "temples", "history", "essential"],
+      "facts": [
+        { "factKey": "visit.duration_minutes", "value": { "min": 120, "max": 180 }, "unit": "minutes", "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.royalgrandpalace.th/en/visit/practical-information", "confidence": 0.82, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2027-01-13T13:45:00Z", "metadata": { "method": "TravelFlow planning estimate for a focused palace and temple visit." } },
+        { "factKey": "visit.best_time", "value": ["Arrive near opening for lower heat and more planning buffer", "Allow extra time for security, dress checks, and ceremonial closures"], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.royalgrandpalace.th/en/visit/practical-information", "confidence": 0.78, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2027-01-13T13:45:00Z" },
+        { "factKey": "opening_hours.regular", "value": { "timezone": "Asia/Bangkok", "schedule": [{ "days": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], "opens": "08:30", "closes": "16:30" }], "lastEntry": "15:30", "notes": ["Ticket sales end at 15:30", "Ceremonial closures can override regular hours"], "checkBeforeVisit": true }, "sourceKey": "grand_palace_official", "sourceUrl": "https://www.royalgrandpalace.th/en/visit/practical-information", "confidence": 0.98, "reviewStatus": "verified", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-08-16T13:45:00Z" },
+        { "factKey": "pricing.admission", "value": { "currency": "THB", "adultForeign": 500, "notes": ["Children under 120 cm enter free", "Ticket includes Wat Phra Kaew and the Queen Sirikit Museum of Textiles"], "checkBeforeVisit": true }, "sourceKey": "grand_palace_official", "sourceUrl": "https://www.royalgrandpalace.th/en/visit/practical-information", "confidence": 0.98, "reviewStatus": "verified", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-08-16T13:45:00Z" },
+        { "factKey": "visit.booking", "value": { "mode": "optional_advance", "bookingUrl": "https://www.royalgrandpalace.th/en/visit/practical-information", "notes": ["Tickets are also sold at the entrance", "Official online tickets can be bought up to one month ahead"] }, "sourceKey": "grand_palace_official", "sourceUrl": "https://www.royalgrandpalace.th/en/visit/faq", "confidence": 0.96, "reviewStatus": "verified", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-08-16T13:45:00Z" },
+        { "factKey": "visit.dress_code", "value": ["Shoulders and midriff covered", "No short, torn, tight, or see-through clothing", "Wear respectful clothing suitable for a royal and religious site"], "sourceKey": "grand_palace_official", "sourceUrl": "https://www.royalgrandpalace.th/en/visit/practical-information", "confidence": 0.99, "reviewStatus": "verified", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-10-15T13:45:00Z" },
+        { "factKey": "audience.family_fit", "value": { "fit": "conditional", "notes": ["Children under 120 cm enter free", "Heat, crowds, security queues, and strict dress requirements may make a long visit demanding"] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.royalgrandpalace.th/en/visit/practical-information", "confidence": 0.78, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-10-15T13:45:00Z" },
+        { "factKey": "visit.practical_notes", "value": ["Check the official site on the visit day for ceremonial closures", "The site is a no-drone zone", "Combine with Wat Pho only if the group can handle heat and sustained walking"], "sourceKey": "grand_palace_official", "sourceUrl": "https://www.royalgrandpalace.th/en/visit/practical-information", "confidence": 0.94, "reviewStatus": "verified", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-08-16T13:45:00Z" }
+      ]
+    },
+    {
+      "canonicalSlug": "th-bangkok-wat-pho",
+      "entityType": "poi",
+      "parentSlug": "th-bangkok-rattanakosin",
+      "countryCode": "TH",
+      "primaryName": "Wat Pho",
+      "timezone": "Asia/Bangkok",
+      "latitude": 13.7465,
+      "longitude": 100.493,
+      "typicalMinDays": 0.1,
+      "typicalMaxDays": 0.3,
+      "popularityScore": 96,
+      "hiddenGemScore": 10,
+      "tourismIntensityScore": 94,
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"],
+      "profile": { "summary": "Major temple complex known for the reclining Buddha and traditional massage heritage, easily combined with the Grand Palace area." },
+      "tagKeys": ["temples", "culture", "essential"],
+      "facts": [
+        { "factKey": "visit.duration_minutes", "value": { "min": 60, "max": 120 }, "unit": "minutes", "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.watpho.com/en/contact/plan", "confidence": 0.84, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2027-01-13T13:45:00Z" },
+        { "factKey": "visit.best_time", "value": ["Visit early for a cooler temple circuit", "Pair with the Grand Palace only with enough heat and walking buffer"], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.watpho.com/en/contact/plan", "confidence": 0.78, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2027-01-13T13:45:00Z" },
+        { "factKey": "opening_hours.regular", "value": { "timezone": "Asia/Bangkok", "schedule": [{ "days": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], "opens": "08:00", "closes": "19:30" }], "notes": ["The official English visit-plan page lists 08:00–19:30; recheck before travel"], "checkBeforeVisit": true }, "sourceKey": "wat_pho_official", "sourceUrl": "https://www.watpho.com/en/contact/plan", "confidence": 0.96, "reviewStatus": "verified", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-08-16T13:45:00Z" },
+        { "factKey": "pricing.admission", "value": { "currency": "THB", "adultForeign": 300, "notes": ["Children under 120 cm enter free"], "checkBeforeVisit": true }, "sourceKey": "wat_pho_official", "sourceUrl": "https://www.watpho.com/en/contact/plan", "confidence": 0.98, "reviewStatus": "verified", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-08-16T13:45:00Z" },
+        { "factKey": "visit.booking", "value": { "mode": "walk_in", "notes": ["The official visit-plan page presents on-site admission; massage services are separate"] }, "sourceKey": "wat_pho_official", "sourceUrl": "https://www.watpho.com/en/contact/plan", "confidence": 0.9, "reviewStatus": "verified", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-08-16T13:45:00Z" },
+        { "factKey": "visit.dress_code", "value": ["Dress politely and cover knees", "Remove shoes before entering religious buildings", "Respect areas reserved for monks and active worship"], "sourceKey": "wat_pho_official", "sourceUrl": "https://www.watpho.com/en/contact/plan", "confidence": 0.98, "reviewStatus": "verified", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-10-15T13:45:00Z" },
+        { "factKey": "audience.family_fit", "value": { "fit": "conditional", "notes": ["Children under 120 cm enter free", "The large compound, heat, and religious etiquette require supervision and breaks"] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.watpho.com/en/contact/plan", "confidence": 0.78, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-10-15T13:45:00Z" },
+        { "factKey": "visit.practical_notes", "value": ["The temple is an active sacred place", "Massage services have separate rates and queues", "Keep voices low and follow photography restrictions around sacred images"], "sourceKey": "wat_pho_official", "sourceUrl": "https://www.watpho.com/en/contact/plan", "confidence": 0.94, "reviewStatus": "verified", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-08-16T13:45:00Z" }
+      ]
+    },
+    {
+      "canonicalSlug": "th-bangkok-wat-arun",
+      "entityType": "poi",
+      "parentSlug": "th-bangkok-riverside",
+      "countryCode": "TH",
+      "primaryName": "Wat Arun",
+      "timezone": "Asia/Bangkok",
+      "latitude": 13.7437,
+      "longitude": 100.4889,
+      "typicalMinDays": 0.1,
+      "typicalMaxDays": 0.3,
+      "popularityScore": 96,
+      "hiddenGemScore": 8,
+      "tourismIntensityScore": 92,
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"],
+      "profile": { "summary": "Landmark riverside temple whose visit fits naturally into a Chao Phraya boat and Old Town day." },
+      "tagKeys": ["temples", "culture", "essential"],
+      "facts": [
+        { "factKey": "visit.duration_minutes", "value": { "min": 60, "max": 90 }, "unit": "minutes", "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.wat-arun.com/", "confidence": 0.82, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2027-01-13T13:45:00Z" },
+        { "factKey": "visit.best_time", "value": ["Morning gives a cooler temple visit", "Late afternoon suits river views but requires more crowd and closing-time buffer"], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.wat-arun.com/", "confidence": 0.76, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2027-01-13T13:45:00Z" },
+        { "factKey": "opening_hours.regular", "value": { "timezone": "Asia/Bangkok", "schedule": [{ "days": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], "opens": "08:00", "closes": "18:00" }], "notes": ["Community-maintained visitor information; verify at the temple before travel"], "checkBeforeVisit": true }, "sourceKey": "wat_arun_community", "sourceUrl": "https://www.wat-arun.com/", "confidence": 0.76, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-08-16T13:45:00Z" },
+        { "factKey": "pricing.admission", "value": { "currency": "THB", "adultForeign": 200, "notes": ["Small children are listed as free", "Community-maintained visitor information; verify current price"], "checkBeforeVisit": true }, "sourceKey": "wat_arun_community", "sourceUrl": "https://www.wat-arun.com/", "confidence": 0.76, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-08-16T13:45:00Z" },
+        { "factKey": "visit.booking", "value": { "mode": "walk_in", "notes": ["No advance-booking requirement is documented in the current visitor guide"] }, "sourceKey": "wat_arun_community", "sourceUrl": "https://www.wat-arun.com/", "confidence": 0.7, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-08-16T13:45:00Z" },
+        { "factKey": "visit.dress_code", "value": ["Conservative temple dress is required", "Cover-up clothing may be available to rent on site", "Behave respectfully because Wat Arun is an active place of worship"], "sourceKey": "wat_arun_community", "sourceUrl": "https://www.wat-arun.com/", "confidence": 0.8, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-10-15T13:45:00Z" },
+        { "factKey": "audience.family_fit", "value": { "fit": "conditional", "notes": ["Small children are listed as free", "Steep steps, heat, and river transfers require supervision and realistic pacing"] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.wat-arun.com/", "confidence": 0.72, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-10-15T13:45:00Z" },
+        { "factKey": "audience.mobility_fit", "value": { "fit": "limited", "notes": ["The central prang has steep stairs", "A ground-level temple visit is possible, but the main climb is not step-free"] }, "sourceKey": "wat_arun_community", "sourceUrl": "https://www.wat-arun.com/", "confidence": 0.72, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-10-15T13:45:00Z" },
+        { "factKey": "visit.practical_notes", "value": ["The cross-river ferry from Tha Tien is the natural connection from Wat Pho", "Do not rely on street claims that the temple is closed", "Keep a closing-time buffer for the ferry and onward transport"], "sourceKey": "wat_arun_community", "sourceUrl": "https://www.wat-arun.com/gettingthere", "confidence": 0.76, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-08-16T13:45:00Z" }
+      ]
+    },
+    {
+      "canonicalSlug": "th-bangkok-chatuchak",
+      "entityType": "poi",
+      "parentSlug": "th-bangkok",
+      "countryCode": "TH",
+      "primaryName": "Chatuchak Weekend Market",
+      "timezone": "Asia/Bangkok",
+      "latitude": 13.7999,
+      "longitude": 100.55,
+      "typicalMinDays": 0.2,
+      "typicalMaxDays": 0.5,
+      "popularityScore": 92,
+      "hiddenGemScore": 10,
+      "tourismIntensityScore": 90,
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"],
+      "profile": { "summary": "A vast market best treated as a dedicated shopping and food block; operating days and heat materially affect planning." },
+      "tagKeys": ["markets", "food", "essential", "lively"],
+      "facts": [
+        { "factKey": "visit.duration_minutes", "value": { "min": 180, "max": 300 }, "unit": "minutes", "sourceKey": "travelflow_editorial", "sourceUrl": "https://publicspace.bangkok.go.th/Spaces/Info/2FBD1377-1BC8-4565-86CA-2C647E59F18A", "confidence": 0.86, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2027-01-13T13:45:00Z" },
+        { "factKey": "visit.best_time", "value": ["Use a weekend morning for the broadest market experience and lower heat", "Treat weekday plant-market and wholesale periods as different experiences"], "sourceKey": "travelflow_editorial", "sourceUrl": "https://publicspace.bangkok.go.th/Spaces/Info/2FBD1377-1BC8-4565-86CA-2C647E59F18A", "confidence": 0.84, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-10-15T13:45:00Z" },
+        { "factKey": "opening_hours.regular", "value": { "timezone": "Asia/Bangkok", "schedule": [{ "days": ["friday", "saturday", "sunday"], "opens": "05:00", "closes": "18:00", "scope": "general market" }, { "days": ["tuesday", "wednesday", "thursday"], "opens": "05:00", "closes": "18:00", "scope": "plant market" }], "notes": ["Individual stall and section hours vary", "The BMA page distinguishes the general and plant markets"], "checkBeforeVisit": true }, "sourceKey": "bma_official", "sourceUrl": "https://publicspace.bangkok.go.th/Spaces/Info/2FBD1377-1BC8-4565-86CA-2C647E59F18A", "confidence": 0.9, "reviewStatus": "verified", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-08-16T13:45:00Z" },
+        { "factKey": "pricing.admission", "value": { "currency": "THB", "free": true, "notes": ["Market entry is free; purchases, food, and services are separate"], "checkBeforeVisit": true }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://publicspace.bangkok.go.th/Spaces/Info/2FBD1377-1BC8-4565-86CA-2C647E59F18A", "confidence": 0.86, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-10-15T13:45:00Z" },
+        { "factKey": "visit.booking", "value": { "mode": "walk_in", "notes": ["No visitor admission booking is required"] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://publicspace.bangkok.go.th/Spaces/Info/2FBD1377-1BC8-4565-86CA-2C647E59F18A", "confidence": 0.9, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-10-15T13:45:00Z" },
+        { "factKey": "audience.family_fit", "value": { "fit": "conditional", "notes": ["Food, shopping, and visual variety can work well for families", "Heat, dense crowds, long walking distances, and easy separation require close supervision"] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://publicspace.bangkok.go.th/Spaces/Info/2FBD1377-1BC8-4565-86CA-2C647E59F18A", "confidence": 0.76, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-10-15T13:45:00Z" },
+        { "factKey": "audience.mobility_fit", "value": { "fit": "conditional", "notes": ["The market is extensive and can be densely crowded", "Plan short sections, frequent rest stops, and an agreed exit point"] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://publicspace.bangkok.go.th/Spaces/Info/2FBD1377-1BC8-4565-86CA-2C647E59F18A", "confidence": 0.68, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-10-15T13:45:00Z" },
+        { "factKey": "visit.practical_notes", "value": ["Use Mo Chit BTS or Chatuchak Park MRT to avoid road traffic", "Set a meeting point before entering", "Carry water and plan shaded breaks"], "sourceKey": "travelflow_editorial", "sourceUrl": "https://publicspace.bangkok.go.th/Spaces/Info/2FBD1377-1BC8-4565-86CA-2C647E59F18A", "confidence": 0.8, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-17T13:45:00Z", "validUntil": "2026-10-15T13:45:00Z" }
+      ]
+    },
     { "canonicalSlug": "th-ayutthaya-historical-park", "entityType": "poi", "parentSlug": "th-ayutthaya", "countryCode": "TH", "primaryName": "Ayutthaya Historical Park", "timezone": "Asia/Bangkok", "latitude": 14.3559, "longitude": 100.5586, "typicalMinDays": 0.5, "typicalMaxDays": 1, "popularityScore": 96, "hiddenGemScore": 20, "tourismIntensityScore": 84, "sourceUrls": ["https://whc.unesco.org/en/list/576"], "profile": { "summary": "UNESCO-listed remains of the former Siamese capital, spread across temple and palace sites within and around the river island." }, "tagKeys": ["history", "culture", "temples", "heritage", "essential"] },
     { "canonicalSlug": "th-sukhothai-historical-park", "entityType": "poi", "parentSlug": "th-sukhothai", "countryCode": "TH", "primaryName": "Sukhothai Historical Park", "timezone": "Asia/Bangkok", "latitude": 17.0185, "longitude": 99.7036, "typicalMinDays": 0.5, "typicalMaxDays": 1, "popularityScore": 91, "hiddenGemScore": 38, "tourismIntensityScore": 64, "sourceUrls": ["https://whc.unesco.org/en/list/574"], "profile": { "summary": "The core UNESCO-listed historical town, with monuments, moats, reservoirs, and routes well suited to cycling." }, "tagKeys": ["history", "culture", "temples", "heritage", "essential", "quiet"] },
     { "canonicalSlug": "th-chiang-mai-doi-suthep", "entityType": "poi", "parentSlug": "th-chiang-mai", "countryCode": "TH", "primaryName": "Wat Phra That Doi Suthep", "timezone": "Asia/Bangkok", "latitude": 18.8049, "longitude": 98.9216, "typicalMinDays": 0.2, "typicalMaxDays": 0.4, "popularityScore": 95, "hiddenGemScore": 16, "tourismIntensityScore": 88, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"], "profile": { "summary": "Major mountain temple and Chiang Mai landmark, normally requiring a dedicated uphill transfer from the city." }, "tagKeys": ["temples", "culture", "mountain", "essential"] },

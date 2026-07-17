@@ -406,6 +406,19 @@
       "titleMany": "{count} grounded ways through Thailand.",
       "description": "These are versioned route skeletons from the Thailand knowledge pack—not destinations invented while you wait.",
       "dataNote": "Compared {templates} templates against {entities} canonical places · dataset {version}",
+      "engine": {
+        "label": "Fast planner evidence",
+        "title": "Source-backed fast path",
+        "description": "These options were retrieved and compiled from the Thailand catalogue before any AI personalization.",
+        "noAi": "0 AI calls",
+        "retrieval": "Retrieval",
+        "milliseconds": "{value} ms",
+        "places": "Places selected",
+        "templates": "Templates selected",
+        "payload": "Context payload",
+        "loadingSelected": "Loading the deeper catalogue context for this route…",
+        "selectedReady": "Selected route ready with {neighborhoods} neighborhoods and {pois} POIs in a {size} context."
+      },
       "fallback": "Offline-ready data",
       "sources": {
         "memory": "Fresh cache",
@@ -450,7 +463,8 @@
     },
     "actions": {
       "compare": "Compare routes",
-      "openPlan": "Open editable plan"
+      "preparing": "Retrieving routes…",
+      "openPlan": "Open instant base"
     }
   },
   "journeyLab": {

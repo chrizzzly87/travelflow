@@ -102,7 +102,7 @@ describe('journey knowledge enrichment service', () => {
       coordinates: { lat: expect.any(Number), lng: expect.any(Number) },
       knowledgeMeta: {
         entity: { entityType: 'poi', resolution: 'canonical' },
-        datasetVersion: '2026.07.17-v5',
+        datasetVersion: '2026.07.17-v6',
         origin: 'knowledge_ranker',
         matchScore: expect.any(Number),
         sourceKeys: expect.arrayContaining(['tat_official']),
@@ -110,6 +110,19 @@ describe('journey knowledge enrichment service', () => {
     });
     expect(new Set(rankedActivities.map((item) => item.knowledgeMeta?.entity.canonicalSlug)).size)
       .toBe(rankedActivities.length);
+    const grandPalace = result.trip.items.find((item) => (
+      item.knowledgeMeta?.entity.canonicalSlug === 'th-bangkok-grand-palace'
+    ));
+    expect(grandPalace?.activityKnowledge).toMatchObject({
+      version: 1,
+      recommendedDuration: { value: { min: 120, max: 180, unit: 'minutes' } },
+      openingHours: { support: { sourceKey: 'grand_palace_official' } },
+      admission: { value: { currency: 'THB', adultForeign: 500 } },
+      audience: [expect.objectContaining({
+        value: expect.objectContaining({ audience: 'family', fit: 'conditional' }),
+      })],
+    });
+    expect(grandPalace?.duration).toBeCloseTo(150 / 1_440, 6);
   });
 
   it('is idempotent once a skeleton has been enriched', () => {

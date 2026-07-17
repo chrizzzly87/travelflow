@@ -447,6 +447,102 @@
 
 .shape-data-note small { font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; }
 
+.shape-engine-proof {
+  display: grid;
+  gap: 1rem;
+  margin-block-end: 2.5rem;
+  padding: clamp(1rem, 2vw, 1.4rem);
+  border: 1px solid color-mix(in oklch, var(--shape-rule) 82%, var(--shape-ink));
+  background: color-mix(in oklch, var(--shape-paper) 90%, white);
+  box-shadow: 0 0.7rem 2rem oklch(25% 0.02 75 / 0.05);
+}
+
+.shape-engine-proof__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.shape-engine-proof__header > span:nth-child(2) { display: grid; gap: 0.2rem; }
+.shape-engine-proof__header strong { font-size: 0.95rem; }
+.shape-engine-proof__header small { color: var(--shape-muted); line-height: 1.45; }
+
+.shape-engine-proof__icon {
+  display: inline-flex;
+  width: 2.6rem;
+  height: 2.6rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--shape-rule);
+  border-radius: 0.7rem;
+  color: oklch(37% 0.1 175);
+  background: color-mix(in oklch, var(--shape-lagoon) 22%, white);
+}
+
+.shape-engine-proof__ai {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  padding-inline: 0.75rem;
+  border: 1px solid oklch(72% 0.09 170);
+  border-radius: 999px;
+  color: oklch(35% 0.09 170);
+  background: oklch(96% 0.025 170);
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.shape-engine-proof__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  border-block: 1px solid var(--shape-rule);
+}
+
+.shape-engine-proof__metrics > div {
+  display: grid;
+  gap: 0.25rem;
+  padding-block: 0.85rem;
+  padding-inline: 0.9rem;
+}
+
+.shape-engine-proof__metrics > div + div { border-inline-start: 1px solid var(--shape-rule); }
+.shape-engine-proof__metrics dt { color: var(--shape-muted); font-size: 0.68rem; font-weight: 750; letter-spacing: 0.06em; text-transform: uppercase; }
+.shape-engine-proof__metrics dd { margin: 0; font-size: 1.15rem; font-weight: 780; font-variant-numeric: tabular-nums; }
+
+.shape-engine-proof__provenance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.shape-engine-proof__provenance span {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.35rem;
+  color: var(--shape-muted);
+  background: oklch(94% 0.01 82);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.68rem;
+}
+
+.shape-engine-proof__selected {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-block-start: 0.85rem;
+  border-block-start: 1px dashed var(--shape-rule);
+  color: oklch(36% 0.09 170);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.shape-engine-proof__spinner { animation: shape-engine-spin 700ms linear infinite; }
+
+@keyframes shape-engine-spin { to { transform: rotate(360deg); } }
+
 .shape-template-card {
   --tf-playful-selected-lift: -0.55rem;
   display: flex;
@@ -622,6 +718,8 @@
   font-weight: 800;
 }
 
+.shape-open-route > button:disabled { cursor: wait; opacity: 0.5; }
+
 .shape-lab-actions {
   display: flex;
   align-items: center;
@@ -675,6 +773,11 @@
   .shape-advanced input { grid-column: 1 / -1; grid-row: 2; }
   .shape-data-note { grid-template-columns: auto 1fr; }
   .shape-data-note small { grid-column: 2; }
+  .shape-engine-proof__header { grid-template-columns: auto minmax(0, 1fr); }
+  .shape-engine-proof__ai { grid-column: 2; justify-self: start; }
+  .shape-engine-proof__metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .shape-engine-proof__metrics > div:nth-child(3) { border-inline-start: 0; border-block-start: 1px solid var(--shape-rule); }
+  .shape-engine-proof__metrics > div:nth-child(4) { border-block-start: 1px solid var(--shape-rule); }
   .shape-open-route { align-items: stretch; flex-direction: column; }
   .shape-open-route > button { width: 100%; }
   .shape-brief-card__facts > div { grid-template-columns: 1fr; gap: 0.3rem; }
@@ -689,4 +792,5 @@
   .shape-choice:focus-visible,
   .shape-choice[data-selected="true"],
   .shape-template-card[data-selected="true"] { transform: none; }
+  .shape-engine-proof__spinner { animation: none; }
 }

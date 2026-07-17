@@ -406,6 +406,19 @@
       "titleMany": "근거 있는 태국 루트 {count}가지.",
       "description": "대기 중 만들어 낸 목적지가 아니라 버전이 관리되는 태국 지식 팩의 루트 구조입니다.",
       "dataNote": "템플릿 {templates}개와 고유 장소 {entities}곳 비교 · 데이터 {version}",
+      "engine": {
+        "label": "빠른 플래너 근거",
+        "title": "출처 기반 빠른 경로",
+        "description": "AI 개인화 전에 태국 카탈로그에서 옵션을 검색하고 구성했습니다.",
+        "noAi": "AI 호출 0회",
+        "retrieval": "검색",
+        "milliseconds": "{value}ms",
+        "places": "선택한 장소",
+        "templates": "선택한 템플릿",
+        "payload": "컨텍스트",
+        "loadingSelected": "이 경로의 상세 카탈로그 컨텍스트를 불러오는 중…",
+        "selectedReady": "{size} 컨텍스트에 동네 {neighborhoods}곳과 POI {pois}곳을 준비했습니다."
+      },
       "fallback": "오프라인 사용 가능 데이터",
       "sources": {
         "memory": "최신 캐시",
@@ -450,7 +463,8 @@
     },
     "actions": {
       "compare": "루트 비교",
-      "openPlan": "편집 가능한 플랜 열기"
+      "preparing": "경로 검색 중…",
+      "openPlan": "즉시 기본안 열기"
     }
   },
   "journeyLab": {

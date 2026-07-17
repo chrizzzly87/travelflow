@@ -406,6 +406,19 @@
       "titleMany": "{count} percorsi ben fondati in Thailandia.",
       "description": "Sono strutture versionate del pacchetto di conoscenze sulla Thailandia, non destinazioni inventate durante l’attesa.",
       "dataNote": "{templates} modelli confrontati con {entities} luoghi canonici · dati {version}",
+      "engine": {
+        "label": "Prova del pianificatore rapido",
+        "title": "Percorso rapido basato su fonti",
+        "description": "Queste opzioni sono state recuperate e compilate dal catalogo della Thailandia prima di qualsiasi personalizzazione IA.",
+        "noAi": "0 chiamate IA",
+        "retrieval": "Recupero",
+        "milliseconds": "{value} ms",
+        "places": "Luoghi selezionati",
+        "templates": "Modelli selezionati",
+        "payload": "Contesto",
+        "loadingSelected": "Caricamento del contesto esteso del catalogo per questo percorso…",
+        "selectedReady": "Percorso pronto con {neighborhoods} quartieri e {pois} POI in un contesto di {size}."
+      },
       "fallback": "Dati disponibili offline",
       "sources": {
         "memory": "Cache aggiornata",
@@ -450,7 +463,8 @@
     },
     "actions": {
       "compare": "Confronta i percorsi",
-      "openPlan": "Apri il piano modificabile"
+      "preparing": "Recupero dei percorsi…",
+      "openPlan": "Apri base istantanea"
     }
   },
   "journeyLab": {

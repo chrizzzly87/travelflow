@@ -140,7 +140,7 @@ Publishable dataset manifests with version, checksum, source snapshot, entity co
 
 ## 6. Thailand dataset scope
 
-The current `2026.07.17-v5` seed contains 84 canonical entities, 244 sourced facts, 405 evidence-aware tags, 15 route templates, and 16 sourced route legs. It includes activity coverage for every required template base, including the Gulf-island circuit across Ko Samui, Ko Phangan, and Ko Tao. It remains a broad planning foundation rather than a claim of complete destination coverage; deeper food, audience, accessibility, and live-operational data remains additive work.
+The current `2026.07.17-v6` pack contains 84 canonical entities, 277 sourced facts, 405 evidence-aware tags, 15 route templates, and 16 sourced route legs. It includes activity coverage for every required template base, including the Gulf-island circuit across Ko Samui, Ko Phangan, and Ko Tao. Bangkok's Grand Palace, Wat Pho, Wat Arun, and Chatuchak Market now prove a richer per-activity contract: duration, best time, opening hours, price, booking guidance, dress rules where relevant, audience fit, practical notes, freshness, and per-field provenance. Sparse POIs remain valid but do not invent fields that have not been researched.
 
 ### 6.1 Canonical places
 
@@ -276,18 +276,20 @@ These accept data and callbacks only. Product-specific permissions, AI state, tr
 ## 11. Generation and performance plan
 
 1. Resolve `JourneySpec` selections to canonical entities.
-2. Fetch one versioned Thailand destination pack.
-3. Apply hard filters and choose matching templates.
+2. Retrieve a bounded, versioned Thailand planning context from the active Supabase pack, with a bundled fallback.
+3. Apply hard filters and choose matching templates from that compact context.
 4. Return up to three route skeletons immediately.
 5. Compile the selected skeleton into normalized cities, route legs, and day budgets.
 6. Enrich cities and activities in parallel.
-7. Ask the LLM to select only known candidate IDs and write concise explanations.
+7. Optionally ask the LLM to propose a constrained patch using only known candidate IDs and write concise explanations.
 8. Validate entity IDs, duplicate activities, transfer budgets, and unsupported claims.
 9. Persist dataset, template, ranker, prompt, and model versions.
 
 The deterministic path builds one immutable lookup index per loaded destination pack and reuses it across wizard resolution, template ranking, destination briefs, skeleton compilation, and activity enrichment. This avoids repeatedly scanning the same country dataset as coverage grows.
 
-The wizard prepares and applies route concepts only when the traveler asks to compare them. Browser telemetry records destination-pack loading, template ranking/application, route-reveal readiness after paint, and skeleton/enrichment compilation separately. A revealed comparison remains bound to the exact dataset version and source that produced it, so a later remote refresh cannot silently mix versions or invalidate the selected route.
+The wizard prepares and applies route concepts only when the traveler asks to compare them. Its comparison request retrieves at most three templates plus two neighborhoods and two POIs per city. Selecting a concept retrieves a deeper pinned context with up to four neighborhoods and six POIs per city. The route reveal shows the source, dataset version, retriever version, payload size, selected/source counts, retrieval time, and `0 AI calls`, so a tester can distinguish this path from classic generation without developer tooling. Browser telemetry records destination-pack loading, context retrieval, template ranking/application, route-reveal readiness after paint, selected-route retrieval, and skeleton/enrichment compilation separately. A revealed comparison remains bound to the exact dataset version and source that produced it, so a later remote refresh cannot silently mix versions or invalidate the selected route.
+
+This is the first structured retrieval/RAG foundation, not a finished semantic RAG or personalized AI planner. The deterministic fast base is implemented. The constrained AI patch step, embeddings for free-text wishes, traveler-profile expansion, and live operational providers remain explicit follow-up work.
 
 Initial targets:
 
@@ -301,15 +303,15 @@ Initial targets:
 
 Run `pnpm travel-knowledge:benchmark` to measure the local, cached planning engine independently from network, browser rendering, persistence, and optional AI enrichment. The command benchmarks `JourneySpec` creation, template ranking, template application, skeleton compilation, and knowledge enrichment for every initial trip shape. It fails when pack parsing exceeds 50 ms p95, a route concept exceeds 100 ms p95, or an enriched trip exceeds 250 ms p95.
 
-Baseline recorded on 2026-07-17 with 300 measured iterations and 30 warmups per scenario:
+Baseline recorded on 2026-07-17 with the v6 pack, 300 measured iterations and 30 warmups per scenario:
 
-| Scenario | Route concept p95 | Knowledge-enriched trip p95 |
-| --- | ---: | ---: |
-| Bangkok four-day city break | 0.037 ms | 0.078 ms |
-| Bangkok five-day hub and day trips | 0.013 ms | 0.038 ms |
-| Thailand twelve-day circuit | 0.049 ms | 0.154 ms |
+| Scenario | Comparison context | Selected context | End-to-end p95 |
+| --- | ---: | ---: | ---: |
+| Bangkok four-day city break | 38,372 bytes | 45,994 bytes | 0.299 ms |
+| Bangkok five-day hub and day trips | 39,103 bytes | 54,397 bytes | 0.272 ms |
+| Thailand twelve-day circuit | 98,760 bytes | 84,654 bytes | 0.384 ms |
 
-The `2026.07.17-v5` English pack is 445,767 bytes raw and 39,185 bytes gzip; localized template copy is 16,394 bytes raw and 4,794 bytes gzip. Pack JSON parsing measured 0.762 ms p95. These are machine-specific engineering baselines, not end-user latency claims. Product rollout continues to use the full response-time targets above.
+Pack JSON parsing measured 0.808 ms p95. The benchmark includes compact context compilation, ranking, template application, skeleton compilation, and knowledge enrichment, but excludes network, browser rendering, persistence, and optional AI. These are machine-specific engineering baselines, not end-user latency claims. Product rollout continues to use the full response-time targets above.
 
 ## 12. Rollout phases
 
@@ -337,6 +339,8 @@ The `2026.07.17-v5` English pack is 445,767 bytes raw and 39,185 bytes gzip; loc
 
 ### Phase D — progressive planner
 
+- two-stage compact planning-context retrieval from the active Supabase artifact, with version-safe bundled fallback
+- visible fast-path receipt with source, version, counts, payload, retrieval time, and AI-call count
 - route skeleton compiler
 - compact, source-backed destination briefs persisted with each skeleton
 - ranked neighborhood and activity candidates that preserve traveler selections and preference matches
@@ -346,6 +350,8 @@ The `2026.07.17-v5` English pack is 445,767 bytes raw and 39,185 bytes gzip; loc
 - parallel destination enrichment for live and long-tail details
 - normalized adapter into the existing TripView
 - latency, factual support, and constraint telemetry
+
+Implemented checkpoint: the first useful Thailand route and editable plan require no OpenAI request. The compiled trip preserves a planning-context receipt and attaches the typed activity contract to researched Bangkok POIs. The admin workspace exposes the published entity, fact, source, freshness, tag, and template catalogue next to the existing review queue. Constrained AI personalization remains open and must apply validated patches to this base instead of generating a replacement trip JSON.
 
 ### Phase E — visual system and reusable primitives
 
@@ -358,6 +364,7 @@ Baseline implemented on the feature branch: the route-first wizard uses a produc
 
 ### Later bucket
 
+- constrained AI personalization of a selected canonical route
 - detailed family and individual traveler profiles
 - accessibility and dietary constraint expansion
 - group voting and preference negotiation

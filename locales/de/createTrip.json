@@ -406,6 +406,19 @@
       "titleMany": "{count} fundierte Routen durch Thailand.",
       "description": "Diese versionierten Routengerüste stammen aus dem Thailand-Wissenspaket – keine Reiseziele, die während des Wartens erfunden werden.",
       "dataNote": "{templates} Vorlagen mit {entities} eindeutigen Orten verglichen · Datensatz {version}",
+      "engine": {
+        "label": "Nachweis des Schnellplaners",
+        "title": "Schneller Weg mit geprüften Quellen",
+        "description": "Diese Optionen wurden vor jeder KI-Personalisierung aus dem Thailand-Katalog abgerufen und zusammengestellt.",
+        "noAi": "0 KI-Aufrufe",
+        "retrieval": "Abruf",
+        "milliseconds": "{value} ms",
+        "places": "Ausgewählte Orte",
+        "templates": "Ausgewählte Vorlagen",
+        "payload": "Kontextumfang",
+        "loadingSelected": "Der ausführliche Katalogkontext für diese Route wird geladen…",
+        "selectedReady": "Die Route ist mit {neighborhoods} Vierteln und {pois} POIs in einem {size}-Kontext bereit."
+      },
       "fallback": "Offline verfügbare Daten",
       "sources": {
         "memory": "Aktueller Cache",
@@ -450,7 +463,8 @@
     },
     "actions": {
       "compare": "Routen vergleichen",
-      "openPlan": "Plan bearbeiten"
+      "preparing": "Routen werden abgerufen…",
+      "openPlan": "Sofortplan öffnen"
     }
   },
   "journeyLab": {

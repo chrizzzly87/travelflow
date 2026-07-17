@@ -1,6 +1,6 @@
 # Travel knowledge operations plan
 
-Status: operational foundation, GeoNames/Wikidata identity ingestion, admin review, deterministic artifact staging, and atomic activation/rollback deployed for Thailand; broader source adapters remain gated work
+Status: operational foundation, GeoNames/Wikidata identity ingestion, admin review, deterministic artifact staging, atomic activation/rollback, compact planning-context retrieval, and a published-catalogue admin surface implemented for Thailand; broader source adapters remain gated work
 
 Owner: TravelFlow product/data engineering with explicit editorial review
 
@@ -279,6 +279,9 @@ Track these per country and dataset version:
 - [x] Deploy the additive schema and Thailand v5 seed.
 - [x] Keep bundled fallback enabled until production counts, RLS, and the pack RPC pass.
 - [x] Record and activate the first immutable database artifact; future publishes now retain the prior artifact as a rollback target.
+- [x] Prepare Thailand v6 with 277 facts and richer operational metadata for four Bangkok activities.
+- [x] Add a bounded, version-safe planning-context RPC and expose retrieval provenance in the route-first wizard.
+- [x] Add a searchable published-catalogue view to the admin workspace while preserving the separate review queue.
 
 ### Stage 2 — freshness and source registry
 

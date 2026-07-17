@@ -162,6 +162,16 @@
       }
     }
   },
+  "tripActivityKnowledge": {
+    "title": "حوالہ شدہ وزیٹر معلومات", "description": "منظم کیٹلاگ ڈیٹا، تیار کردہ متن نہیں۔", "currentUntil": "{date} تک موجودہ",
+    "freshness": { "current": "موجودہ", "expired": "دوبارہ چیک کریں", "undated": "جائزے کی تاریخ دستیاب نہیں" },
+    "duration": "تجویز کردہ دورانیہ", "bestTime": "بہترین وقت", "hours": "اوقات", "lastEntry": "آخری داخلہ {time}", "admission": "داخلہ", "free": "مفت", "booking": "بکنگ",
+    "bookingModes": { "walk_in": "بغیر بکنگ", "optional_advance": "پیشگی بکنگ اختیاری", "recommended_advance": "پہلے بک کریں", "required_advance": "پیشگی بکنگ ضروری" },
+    "audience": "مسافر موزونیت", "audienceLabels": { "family": "خاندان", "lgbtq": "+LGBTQ", "solo": "تنہا", "mobility": "نقل و حرکت" },
+    "fitLabels": { "good": "موزوں", "conditional": "نوٹس دیکھیں", "limited": "محدود", "unknown": "ابھی تصدیق نہیں" },
+    "dressCode": "لباس", "accessibility": "رسائی", "practicalNotes": "جاننا مفید ہے", "sources": "ذرائع",
+    "verifyLive": "اوقات، قیمتیں اور دستیابی بدل سکتی ہیں۔ جانے سے پہلے منسلک ذریعہ چیک کریں۔"
+  },
   "tripRouteShell": {
     "loadingTrip": "Loading trip",
     "preparingPlanner": "Preparing planner",

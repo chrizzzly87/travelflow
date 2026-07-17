@@ -4,6 +4,7 @@ import type { CreateTripPrefillDraft } from './shared/createTripPreferences';
 import type { JourneySpec } from './shared/journeySpec';
 import type { JourneyDestinationBrief } from './shared/journeyDestinationBrief';
 import type { TravelEntityReference } from './shared/travelKnowledge';
+import type { TravelActivityKnowledge } from './shared/travelActivityKnowledge';
 
 export type ItemType = 'city' | 'activity' | 'travel' | 'travel-empty';
 export type TransportMode = CanonicalTransportMode;
@@ -176,11 +177,27 @@ export interface ITripPlanningMeta {
     trace?: JourneyPlanningTrace;
 }
 
+export type JourneyKnowledgeSource = 'memory' | 'bundled' | 'supabase' | 'remote';
+
+export interface JourneyPlanningContextTrace {
+    version: number;
+    retrieverVersion: string;
+    source: 'memory' | 'bundled' | 'supabase';
+    loadDurationMs: number;
+    rawBytes: number;
+    selectedEntityCount: number;
+    selectedTemplateCount: number;
+    selectedNeighborhoodCount: number;
+    selectedPoiCount: number;
+    aiCallCount: number;
+}
+
 export interface JourneyPlanningTrace {
     skeletonCompilerVersion: string;
     templateRankerVersion: string;
     knowledgeEnricherVersion?: string;
-    knowledgeSource?: 'bundled' | 'remote';
+    knowledgeSource?: JourneyKnowledgeSource;
+    planningContext?: JourneyPlanningContextTrace;
     matchedTemplateScore?: number;
     matchedTemplateReasons?: string[];
     matchedTemplateTradeoffs?: string[];
@@ -245,6 +262,7 @@ export interface ITimelineItem {
   aiInsights?: IAiInsights;
   hotels?: IHotel[];
   knowledgeMeta?: ITimelineItemKnowledgeMeta;
+  activityKnowledge?: TravelActivityKnowledge;
   
   // Travel Specifics
   bufferBefore?: number; // Minutes

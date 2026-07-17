@@ -171,6 +171,7 @@ describe('pages/AdminTravelKnowledgePage', () => {
   });
 
   it('loads the summary and focuses the queue on open candidates', async () => {
+    const user = userEvent.setup();
     renderPage();
 
     await waitFor(() => {
@@ -179,6 +180,7 @@ describe('pages/AdminTravelKnowledgePage', () => {
     });
 
     expect(screen.getByRole('heading', { name: 'Travel Knowledge' })).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Review queue' }));
     expect(screen.getByText('Bangkok')).toBeInTheDocument();
     expect(screen.queryByText('Chiang Mai')).not.toBeInTheDocument();
     expect(screen.getByText('4')).toBeInTheDocument();
@@ -190,6 +192,7 @@ describe('pages/AdminTravelKnowledgePage', () => {
     const user = userEvent.setup();
     renderPage();
 
+    await user.click(await screen.findByRole('tab', { name: 'Review queue' }));
     await screen.findByText('Bangkok');
     await user.click(screen.getByRole('button', { name: 'Accept' }));
 
@@ -220,6 +223,7 @@ describe('pages/AdminTravelKnowledgePage', () => {
       .mockResolvedValueOnce('Corrected after checking the current source record.');
     renderPage();
 
+    await user.click(await screen.findByRole('tab', { name: 'Review queue' }));
     await screen.findByText('Bangkok');
     await user.click(screen.getByRole('button', { name: 'Edit & accept' }));
 
@@ -235,10 +239,21 @@ describe('pages/AdminTravelKnowledgePage', () => {
   it('can include terminal candidates through the status filter', async () => {
     const user = userEvent.setup();
     renderPage();
+    await user.click(await screen.findByRole('tab', { name: 'Review queue' }));
     await screen.findByText('Bangkok');
 
     await user.click(screen.getByRole('button', { name: 'Status:Accepted' }));
 
     expect(screen.getByText('Chiang Mai')).toBeInTheDocument();
+  });
+
+  it('opens on a searchable published catalogue with dataset provenance', async () => {
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'Published catalogue' })).toBeInTheDocument();
+    expect(screen.getAllByText('2026.07.17-v6').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('84').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Thailand').length).toBeGreaterThan(0);
+    expect(screen.getByRole('tab', { name: 'Published catalogue' })).toHaveAttribute('aria-selected', 'true');
   });
 });
