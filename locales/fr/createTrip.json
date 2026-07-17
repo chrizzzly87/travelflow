@@ -458,6 +458,7 @@
     "title": "Voyez tout le voyage, pas seulement les repères.",
     "intro": "Trois structures transforment le même séjour en récit clair : étapes, charge des transferts, quartiers, cuisine, activités, affinités et sources.",
     "prototypeNote": "Ce laboratoire de concepts est isolé. Le planificateur actuel reste inchangé.",
+    "live": { "close": "Fermer la vue d’ensemble du voyage" },
     "conceptsLabel": "Comparez trois façons de comprendre un voyage",
     "concepts": {
       "lens": { "title": "Journey Lens", "description": "Une vue d’ensemble permanente à côté de l’espace de planification.", "bestFor": "Choix recommandé" },

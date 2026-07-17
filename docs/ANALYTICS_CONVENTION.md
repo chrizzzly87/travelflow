@@ -170,6 +170,10 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `trip_view__timeline_city--open` | — | `{ trip_id, city_id }` | `TripTimelineListView.tsx` |
 | `trip_view__timeline_activity--open` | — | `{ trip_id, item_id, city_id }` | `TripTimelineListView.tsx` |
 | `trip_view__timeline_transfer--open` | — | `{ trip_id, item_id, city_id, mode }` | `TripTimelineListView.tsx` |
+| `trip_view__journey_overview--view` | — | `{ trip_id, model_version, model_source, dataset_version? }` | `TripJourneyOverviewRail.tsx` |
+| `trip_view__journey_overview--chapter_select` | — | `{ trip_id, surface, item_id, chapter }` | `TripJourneyOverviewRail.tsx` |
+| `trip_view__journey_overview--transfer_select` | — | `{ trip_id, surface, item_id, leg, load }` | `TripJourneyOverviewRail.tsx` |
+| `trip_view__journey_overview--toggle` | `open`, `closed` | `{ trip_id, surface, state }` | `TripJourneyOverviewRail.tsx` |
 | `trip_view__calendar_export--activity` | — | `{ trip_id, source, item_id, event_count }` | `TripView.tsx` |
 | `trip_view__calendar_export--activities` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
 | `trip_view__calendar_export--cities` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |

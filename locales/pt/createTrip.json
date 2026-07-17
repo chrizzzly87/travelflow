@@ -458,6 +458,7 @@
     "title": "Veja a viagem inteira, não apenas os pontos.",
     "intro": "Três estruturas transformam a mesma viagem numa história clara: bases, carga dos deslocamentos, bairros, comida, atividades, afinidade e fontes.",
     "prototypeNote": "Este é um laboratório de conceitos isolado. O planeador atual não muda.",
+    "live": { "close": "Fechar a visão geral da viagem" },
     "conceptsLabel": "Compare três formas de entender uma viagem",
     "concepts": {
       "lens": { "title": "Journey Lens", "description": "Uma visão geral permanente junto à área de planeamento.", "bestFor": "Opção recomendada" },

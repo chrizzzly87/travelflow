@@ -458,6 +458,7 @@
     "title": "Die ganze Reise sehen – nicht nur Pins.",
     "intro": "Drei Strukturen machen aus derselben Reise eine klare Routengeschichte – mit Standorten, Transferbelastung, Vierteln, Essen, Aktivitäten, Reise-Fit und Quellen.",
     "prototypeNote": "Dies ist ein eigenständiges Konzeptlabor. Der aktuelle Reiseplaner bleibt unverändert.",
+    "live": { "close": "Reiseübersicht schließen" },
     "conceptsLabel": "Drei Arten, eine Reise zu verstehen",
     "concepts": {
       "lens": {

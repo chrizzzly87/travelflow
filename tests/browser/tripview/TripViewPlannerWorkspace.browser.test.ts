@@ -137,6 +137,24 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(mapPane.compareDocumentPosition(timelinePane) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('reserves a responsive journey rail and compacts it when details are visible', () => {
+    const props = baseProps();
+    props.journeyOverviewRail = React.createElement('div', { 'data-testid': 'journey-overview-content' }, 'journey');
+
+    const { rerender } = render(React.createElement(TripViewPlannerWorkspace, props));
+
+    const rail = screen.getByTestId('planner-journey-overview-rail');
+    expect(rail).toHaveAttribute('data-compact', 'false');
+    expect(screen.getByTestId('journey-overview-content')).toBeInTheDocument();
+    expect(screen.getByTestId('timeline-canvas')).toBeInTheDocument();
+
+    rerender(React.createElement(TripViewPlannerWorkspace, {
+      ...props,
+      detailsPanelVisible: true,
+    }));
+    expect(screen.getByTestId('planner-journey-overview-rail')).toHaveAttribute('data-compact', 'true');
+  });
+
   it('minimizes map into floating mode when toggle is clicked', () => {
     const props = baseProps();
     render(React.createElement(TripViewPlannerWorkspace, props));
