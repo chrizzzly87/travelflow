@@ -354,7 +354,7 @@ The `2026.07.17-v5` English pack is 445,767 bytes raw and 39,185 bytes gzip; loc
 - extracted map/route/timeline primitives
 - responsive, RTL, keyboard, and reduced-motion validation
 
-Baseline implemented on the feature branch: the route-first wizard and Journey Lens now share one product-neutral travel-experience token layer plus accessible decision-button and decision-surface primitives. The shared layer owns the warm editorial palette, squircle geometry, interaction states, focus treatment, and reduced-motion behavior without importing `JourneySpec`, AI, persistence, or map concerns. Deeper map-renderer and timeline extraction remains the next Phase E boundary.
+Baseline implemented on the feature branch: the route-first wizard uses a product-neutral travel-experience token layer plus accessible decision-button and decision-surface primitives for high-level examples and route choices. The working TripView rail is deliberately independent from that playful layer and remains default-off while its structure is evaluated. The live TripView map now also enters through the provider-neutral presentation adapter and a validated scene compiler that resolves marker, route, selection, and viewport layers. Direct provider consumption and the timeline presentation contract remain the next Phase E boundaries.
 
 ### Later bucket
 

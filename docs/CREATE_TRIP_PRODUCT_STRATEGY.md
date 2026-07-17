@@ -35,7 +35,7 @@ The additive foundation changes that boundary:
 - `data/travelKnowledge/` contains a validated Thailand pack with stable entity IDs, facts, tags, activities, neighborhoods, templates, and route legs.
 - `services/travelKnowledgeService.ts`, `services/travelTemplateMatcher.ts`, and the journey compiler services return useful concepts without waiting for AI.
 - `pages/CreateTripShapeLabPage.tsx` proves the five-step shape flow and route reveal behind a default-off rollout.
-- `shared/tripMapPresentation.ts` keeps the map/route presentation layer independent from wizard and AI state.
+- `shared/mapPresentation.ts` and `shared/mapPresentationScene.ts` keep the map/route presentation layer independent from wizard and AI state.
 - `docs/supabase.sql` separates published travel knowledge from immutable sources, snapshots, candidates, reviews, and dataset artifacts.
 
 The current foundation is intentionally Thailand-first. It is not yet the finished public creator, a full family/group preference system, or a global knowledge catalog.

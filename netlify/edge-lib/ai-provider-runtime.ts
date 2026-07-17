@@ -586,6 +586,22 @@ const isOpenAiDefaultTemperatureOnlyError = (details: string): boolean => {
   );
 };
 
+const isOpenAiQuotaFailure = (details: string): boolean => {
+  const normalized = details.toLowerCase();
+  return normalized.includes('insufficient_quota')
+    || normalized.includes('exceeded your current quota');
+};
+
+const buildOpenAiRequestFailure = (details: string): ProviderGenerationResult => ({
+  ok: false,
+  status: isOpenAiQuotaFailure(details) ? 429 : 502,
+  value: {
+    error: "OpenAI generation request failed.",
+    code: isOpenAiQuotaFailure(details) ? "OPENAI_QUOTA_EXHAUSTED" : "OPENAI_REQUEST_FAILED",
+    details: clipText(details),
+  },
+});
+
 export const ensureModelAllowed = (
   provider: string,
   model: string,
@@ -945,15 +961,7 @@ const generateWithOpenAi = async (
   const chatFailure = chatResult;
   const chatDetails = chatFailure.details;
   if (!isOpenAiChatEndpointModelMismatch(chatDetails) && !isOpenAiDefaultTemperatureOnlyError(chatDetails)) {
-    return {
-      ok: false,
-      status: 502,
-      value: {
-        error: "OpenAI generation request failed.",
-        code: "OPENAI_REQUEST_FAILED",
-        details: clipText(chatDetails),
-      },
-    };
+    return buildOpenAiRequestFailure(chatDetails);
   }
 
   let retryPrompt = prompt;
@@ -976,7 +984,7 @@ const generateWithOpenAi = async (
 
     let responsesEndpointResult:
       | { ok: true; payload: unknown }
-      | { ok: false; details: string };
+      | { ok: false; status: number; details: string };
 
     try {
       responsesEndpointResult = await fetchWithTimeout(
@@ -1007,6 +1015,7 @@ const generateWithOpenAi = async (
           if (!response.ok) {
             return {
               ok: false as const,
+              status: response.status,
               details: await response.text(),
             };
           }
@@ -1030,15 +1039,9 @@ const generateWithOpenAi = async (
 
     if (!responsesEndpointResult.ok) {
       const responsesFailure = responsesEndpointResult;
-      return {
-        ok: false,
-        status: 502,
-        value: {
-          error: "OpenAI generation request failed.",
-          code: "OPENAI_REQUEST_FAILED",
-          details: clipText(`chat_completions: ${chatDetails}\nresponses: ${responsesFailure.details}`),
-        },
-      };
+      return buildOpenAiRequestFailure(
+        `chat_completions: ${chatDetails}\nresponses: ${responsesFailure.details}`,
+      );
     }
 
     const responsesPayload = responsesEndpointResult.payload as Record<string, unknown>;

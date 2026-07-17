@@ -23,6 +23,7 @@ const trip: ITrip = {
     { id: 'to-chiang-mai', type: 'travel', title: 'Train north', startDateOffset: 2.9, duration: 0.1, color: '#64748b', transportMode: 'train', routeDistanceKm: 685, routeDurationHours: 11 },
     { id: 'chiang-mai', type: 'city', title: 'Chiang Mai', startDateOffset: 3, duration: 4, color: '#14b8a6', coordinates: { lat: 18.7883, lng: 98.9853 } },
     { id: 'old-city', type: 'activity', title: 'Old City', startDateOffset: 3.4, duration: 0.2, color: '#a855f7', activityType: ['culture'], coordinates: { lat: 18.7878, lng: 98.9817 } },
+    { id: 'night-market', type: 'activity', title: 'Night Market', startDateOffset: 4.2, duration: 0.2, color: '#f59e0b', activityType: ['food'] },
   ],
 };
 
@@ -31,7 +32,7 @@ describe('trip map presentation adapter', () => {
     const presentation = buildTripMapPresentation(trip, { selectedItemId: 'chiang-mai' });
 
     expect(validateMapPresentation(presentation)).toEqual({ valid: true, errors: [] });
-    expect(presentation.markers).toHaveLength(3);
+    expect(presentation.markers).toHaveLength(4);
     expect(presentation.routeLegs).toEqual([
       expect.objectContaining({
         fromMarkerId: 'city:bangkok',
@@ -43,6 +44,10 @@ describe('trip map presentation adapter', () => {
       }),
     ]);
     expect(presentation.selection.markerId).toBe('city:chiang-mai');
+    expect(presentation.markers.find((marker) => marker.sourceItemId === 'night-market')).toMatchObject({
+      position: { lat: 18.7883, lng: 98.9853 },
+      metadata: { coordinateSource: 'city' },
+    });
     expect(presentation.context).toMatchObject({
       source: 'travelflow_trip',
       datasetVersion: '2026.07.16-v3',
@@ -63,6 +68,10 @@ describe('trip map presentation adapter', () => {
       transportMode: 'train',
       routeDistanceKm: 685,
       routeDurationHours: 11,
+    });
+    expect(items.find((item) => item.id === 'night-market')).toMatchObject({
+      type: 'activity',
+      coordinates: undefined,
     });
   });
 

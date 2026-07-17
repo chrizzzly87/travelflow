@@ -3,9 +3,22 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
-import { TripViewPlannerWorkspace } from '../../../components/tripview/TripViewPlannerWorkspace';
+import {
+  TripViewPlannerWorkspace,
+  type TripMapRendererProps,
+} from '../../../components/tripview/TripViewPlannerWorkspace';
+import { MAP_PRESENTATION_VERSION, type MapPresentationModel } from '../../../shared/mapPresentation';
 
 type PlannerProps = React.ComponentProps<typeof TripViewPlannerWorkspace>;
+
+const mapPresentation: MapPresentationModel = {
+  version: MAP_PRESENTATION_VERSION,
+  markers: [],
+  routeLegs: [],
+  selection: {},
+  viewport: { fitMarkerIds: [] },
+  context: { source: 'planner_workspace_test', metadata: {} },
+};
 
 const baseProps = (): PlannerProps => ({
   isPaywallLocked: false,
@@ -31,7 +44,7 @@ const baseProps = (): PlannerProps => ({
   ItineraryMapComponent: () => React.createElement('div', { 'data-testid': 'map-component' }),
   mapLoadingFallback: React.createElement('div', null, 'loading-map'),
   mapDeferredFallback: React.createElement('div', { 'data-testid': 'map-deferred-fallback' }, 'deferred-map'),
-  displayItems: [],
+  mapPresentation,
   selectedItemId: null,
   layoutMode: 'horizontal',
   effectiveLayoutMode: 'horizontal',
@@ -135,6 +148,21 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(mapPane.className).toContain('h-[26vh]');
     expect(mapPane.className).toContain('min-h-[180px]');
     expect(mapPane.compareDocumentPosition(timelinePane) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('forwards only the provider-neutral presentation contract to the map renderer', () => {
+    let capturedProps: TripMapRendererProps | null = null;
+    const props = baseProps();
+    props.isMapBootstrapEnabled = true;
+    props.ItineraryMapComponent = (rendererProps) => {
+      capturedProps = rendererProps;
+      return React.createElement('div', { 'data-testid': 'map-component' }, 'map');
+    };
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    expect(capturedProps?.presentation).toBe(mapPresentation);
+    expect(capturedProps).not.toHaveProperty('items');
   });
 
   it('reserves a responsive journey rail and compacts it when details are visible', () => {
@@ -270,7 +298,7 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     const props = baseProps();
     props.isMapBootstrapEnabled = true;
     props.mapViewTransitionName = null;
-    props.ItineraryMapComponent = ({ viewTransitionName }: { viewTransitionName?: string }) => {
+    props.ItineraryMapComponent = ({ viewTransitionName }) => {
       capturedViewTransitionNames.push(viewTransitionName);
       return React.createElement('div', { 'data-testid': 'map-component' }, 'map');
     };
@@ -284,11 +312,7 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     const props = baseProps();
     props.isMapBootstrapEnabled = true;
     props.onMapActivitySelect = vi.fn();
-    props.ItineraryMapComponent = ({
-      onActivityMarkerSelect,
-    }: {
-      onActivityMarkerSelect?: (activityId: string) => void;
-    }) => React.createElement(
+    props.ItineraryMapComponent = ({ onActivityMarkerSelect }) => React.createElement(
       'button',
       {
         type: 'button',

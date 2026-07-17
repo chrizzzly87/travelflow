@@ -6,6 +6,7 @@ import {
   type MapPresentationModel,
   type MapPresentationRouteLeg,
 } from '../shared/mapPresentation';
+import { buildMapPresentationScene } from '../shared/mapPresentationScene';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { findTravelBetweenCities, TRAVEL_COLOR } from '../utils';
 
@@ -42,10 +43,15 @@ const hasCoordinates = (item: ITimelineItem): item is ITimelineItem & {
 
 const markerIdForItem = (item: ITimelineItem): string => `${item.type}:${item.id}`;
 
-const markerFromItem = (item: ITimelineItem, order: number): MapPresentationMarker => ({
+const markerFromItem = (
+  item: ITimelineItem,
+  order: number,
+  position: MapPresentationMarker['position'],
+  coordinateSource: 'item' | 'city',
+): MapPresentationMarker => ({
   id: markerIdForItem(item),
   kind: item.type === 'city' ? 'city' : 'activity',
-  position: item.coordinates!,
+  position,
   label: item.title,
   secondaryLabel: item.location && item.location !== item.title ? item.location : undefined,
   order,
@@ -61,8 +67,23 @@ const markerFromItem = (item: ITimelineItem, order: number): MapPresentationMark
     countryCode: item.countryCode ?? null,
     countryName: item.countryName ?? null,
     cost: item.cost ?? null,
+    coordinateSource,
   },
 });
+
+const resolveActivityOwnerCity = (
+  activity: ITimelineItem,
+  cityItems: Array<ITimelineItem & { coordinates: { lat: number; lng: number } }>,
+): (ITimelineItem & { coordinates: { lat: number; lng: number } }) | undefined => {
+  const directOwner = cityItems.find((city) => (
+    activity.startDateOffset >= city.startDateOffset
+    && activity.startDateOffset < city.startDateOffset + Math.max(city.duration, 0)
+  ));
+  if (directOwner) return directOwner;
+
+  return [...cityItems].reverse().find((city) => city.startDateOffset <= activity.startDateOffset)
+    ?? cityItems[0];
+};
 
 const asPositiveNumber = (value: number | undefined, multiplier: number): number | undefined => (
   typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value * multiplier : undefined
@@ -78,13 +99,23 @@ export const buildTripMapPresentation = (
     .sort((left, right) => left.startDateOffset - right.startDateOffset || left.id.localeCompare(right.id));
   const activityItems = includeActivities
     ? trip.items
-      .filter((item) => item.type === 'activity' && hasCoordinates(item))
+      .filter((item) => item.type === 'activity')
       .sort((left, right) => left.startDateOffset - right.startDateOffset || left.id.localeCompare(right.id))
     : [];
   const mappedCities = cityItems.filter(hasCoordinates);
+  const activityMarkers: MapPresentationMarker[] = [];
+  activityItems.forEach((item, index) => {
+    if (hasCoordinates(item)) {
+      activityMarkers.push(markerFromItem(item, mappedCities.length + index, item.coordinates, 'item'));
+      return;
+    }
+    const ownerCity = resolveActivityOwnerCity(item, mappedCities);
+    if (!ownerCity) return;
+    activityMarkers.push(markerFromItem(item, mappedCities.length + index, ownerCity.coordinates, 'city'));
+  });
   const markers = [
-    ...mappedCities.map((item, index) => markerFromItem(item, index)),
-    ...activityItems.map((item, index) => markerFromItem(item, mappedCities.length + index)),
+    ...mappedCities.map((item, index) => markerFromItem(item, index, item.coordinates, 'item')),
+    ...activityMarkers,
   ];
   const markerIdBySourceItemId = new Map(markers.map((marker) => [marker.sourceItemId!, marker.id]));
   const routeLegs: MapPresentationRouteLeg[] = [];
@@ -167,11 +198,10 @@ const activityTypesFromCategories = (categories: string[]): ActivityType[] => {
 };
 
 export const mapPresentationToTimelineItems = (presentation: MapPresentationModel): ITimelineItem[] => {
-  const validation = validateMapPresentation(presentation);
-  if (!validation.valid) throw new Error(`Map presentation is invalid: ${validation.errors.join(' ')}`);
+  const scene = buildMapPresentationScene(presentation);
 
-  const markerOrder = new Map(presentation.markers.map((marker, index) => [marker.id, marker.order ?? index]));
-  const markerItems: ITimelineItem[] = presentation.markers.map((marker, index) => ({
+  const markerOrder = new Map(scene.markers.map(({ marker }, index) => [marker.id, marker.order ?? index]));
+  const markerItems: ITimelineItem[] = scene.markers.map(({ marker }, index) => ({
     id: marker.sourceItemId ?? marker.id,
     type: marker.kind === 'city' ? 'city' : 'activity',
     title: marker.label,
@@ -180,14 +210,16 @@ export const mapPresentationToTimelineItems = (presentation: MapPresentationMode
     color: marker.color ?? '#4f46e5',
     description: metadataString(marker.metadata, 'description'),
     location: metadataString(marker.metadata, 'location') ?? marker.secondaryLabel ?? marker.label,
-    coordinates: marker.position,
+    coordinates: metadataString(marker.metadata, 'coordinateSource') === 'city'
+      ? undefined
+      : marker.position,
     imageUrl: marker.imageUrl,
     countryCode: metadataString(marker.metadata, 'countryCode'),
     countryName: metadataString(marker.metadata, 'countryName'),
     cost: metadataString(marker.metadata, 'cost'),
     activityType: marker.kind === 'city' ? undefined : activityTypesFromCategories(marker.categoryKeys),
   }));
-  const routeItems: ITimelineItem[] = presentation.routeLegs.map((route) => {
+  const routeItems: ITimelineItem[] = scene.routeLegs.map(({ routeLeg: route }) => {
     const toOrder = markerOrder.get(route.toMarkerId) ?? 1;
     return {
       id: route.sourceItemId ?? route.id,
