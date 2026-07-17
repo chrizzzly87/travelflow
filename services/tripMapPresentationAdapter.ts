@@ -119,6 +119,7 @@ export const buildTripMapPresentation = (
   ];
   const markerIdBySourceItemId = new Map(markers.map((marker) => [marker.sourceItemId!, marker.id]));
   const routeLegs: MapPresentationRouteLeg[] = [];
+  const routeLegIds = new Set<string>();
 
   for (let index = 0; index < cityItems.length - 1; index += 1) {
     const fromCity = cityItems[index]!;
@@ -129,8 +130,16 @@ export const buildTripMapPresentation = (
     const travelItem = findTravelBetweenCities(trip.items, fromCity, toCity);
     const parsedMode = normalizeTransportMode(travelItem?.transportMode);
     const hasCachedMetrics = Boolean(travelItem?.routeDistanceKm || travelItem?.routeDurationHours);
+    const baseRouteLegId = `route:${travelItem?.id ?? `${fromCity.id}:${toCity.id}`}`;
+    // Older planners could reuse one generated travel-item id for multiple
+    // transfers. Keep the first legacy id stable and disambiguate collisions so
+    // strict presentation validation does not make those trips unloadable.
+    const routeLegId = routeLegIds.has(baseRouteLegId)
+      ? `${baseRouteLegId}:leg-${index}`
+      : baseRouteLegId;
+    routeLegIds.add(routeLegId);
     routeLegs.push({
-      id: `route:${travelItem?.id ?? `${fromCity.id}:${toCity.id}`}`,
+      id: routeLegId,
       fromMarkerId,
       toMarkerId,
       mode: parsedMode,

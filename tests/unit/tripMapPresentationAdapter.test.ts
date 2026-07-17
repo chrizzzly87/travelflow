@@ -75,6 +75,29 @@ describe('trip map presentation adapter', () => {
     });
   });
 
+  it('keeps legacy trips with reused travel item ids renderable', () => {
+    const legacyTrip: ITrip = {
+      ...trip,
+      id: 'legacy-duplicate-travel-ids',
+      planningMeta: undefined,
+      items: [
+        { id: 'bangkok', type: 'city', title: 'Bangkok', startDateOffset: 0, duration: 3, color: '#f59e0b', coordinates: { lat: 13.7563, lng: 100.5018 } },
+        { id: 'travel-5-1773407232863', type: 'travel', title: 'Travel', startDateOffset: 2.9, duration: 0.1, color: '#64748b', transportMode: 'train' },
+        { id: 'ayutthaya', type: 'city', title: 'Ayutthaya', startDateOffset: 3, duration: 2, color: '#f97316', coordinates: { lat: 14.3532, lng: 100.5689 } },
+        { id: 'travel-5-1773407232863', type: 'travel', title: 'Travel', startDateOffset: 4.9, duration: 0.1, color: '#64748b', transportMode: 'bus' },
+        { id: 'sukhothai', type: 'city', title: 'Sukhothai', startDateOffset: 5, duration: 2, color: '#d97706', coordinates: { lat: 17.0056, lng: 99.8264 } },
+      ],
+    };
+
+    const presentation = buildTripMapPresentation(legacyTrip);
+
+    expect(validateMapPresentation(presentation)).toEqual({ valid: true, errors: [] });
+    expect(presentation.routeLegs.map((leg) => leg.id)).toEqual([
+      'route:travel-5-1773407232863',
+      'route:travel-5-1773407232863:leg-1',
+    ]);
+  });
+
   it('rejects duplicate markers and dangling route references', () => {
     const presentation = buildTripMapPresentation(trip);
     const invalid: MapPresentationModel = {

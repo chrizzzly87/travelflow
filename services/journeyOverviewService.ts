@@ -283,6 +283,7 @@ export const buildJourneyOverviewModel = (trip: ITrip): JourneyOverviewModel => 
 
   const toleranceMinutes = spec?.constraints.maxTransferMinutes;
   const legs: JourneyOverviewLeg[] = [];
+  const legIds = new Set<string>();
   for (let order = 0; order < chapters.length - 1; order += 1) {
     const fromChapter = chapters[order]!;
     const toChapter = chapters[order + 1]!;
@@ -293,8 +294,11 @@ export const buildJourneyOverviewModel = (trip: ITrip): JourneyOverviewModel => 
       ? undefined
       : Math.round(travelItem!.routeDurationHours! * 60);
     const distanceKm = asPositiveNumber(travelItem?.routeDistanceKm);
+    const baseLegId = `leg:${travelItem?.id ?? `${fromCity.id}:${toCity.id}`}`;
+    const legId = legIds.has(baseLegId) ? `${baseLegId}:leg-${order}` : baseLegId;
+    legIds.add(legId);
     legs.push({
-      id: `leg:${travelItem?.id ?? `${fromCity.id}:${toCity.id}`}`,
+      id: legId,
       order,
       sourceItemId: travelItem?.id,
       fromChapterId: fromChapter.id,

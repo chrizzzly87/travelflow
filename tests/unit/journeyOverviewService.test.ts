@@ -143,6 +143,30 @@ describe('journeyOverviewService', () => {
     ]));
   });
 
+  it('gives reused legacy travel item ids unique overview leg ids', () => {
+    const legacyTrip: ITrip = {
+      id: 'legacy-duplicate-travel-ids',
+      title: 'Legacy Thailand route',
+      startDate: '2026-12-01',
+      createdAt: 1,
+      updatedAt: 1,
+      items: [
+        { id: 'bangkok', type: 'city', title: 'Bangkok', startDateOffset: 0, duration: 3, color: '#f59e0b', coordinates: { lat: 13.7563, lng: 100.5018 } },
+        { id: 'travel-5-1773407232863', type: 'travel', title: 'Travel', startDateOffset: 2.9, duration: 0.1, color: '#64748b', transportMode: 'train' },
+        { id: 'ayutthaya', type: 'city', title: 'Ayutthaya', startDateOffset: 3, duration: 2, color: '#f97316', coordinates: { lat: 14.3532, lng: 100.5689 } },
+        { id: 'travel-5-1773407232863', type: 'travel', title: 'Travel', startDateOffset: 4.9, duration: 0.1, color: '#64748b', transportMode: 'bus' },
+        { id: 'sukhothai', type: 'city', title: 'Sukhothai', startDateOffset: 5, duration: 2, color: '#d97706', coordinates: { lat: 17.0056, lng: 99.8264 } },
+      ],
+    };
+
+    const model = buildJourneyOverviewModel(legacyTrip);
+
+    expect(model.legs.map((leg) => leg.id)).toEqual([
+      'leg:travel-5-1773407232863',
+      'leg:travel-5-1773407232863:leg-1',
+    ]);
+  });
+
   it('flags transfers that exceed the JourneySpec tolerance', () => {
     const trip = buildTemplateTrip(
       'th-first-timer-bangkok-north-beach',
