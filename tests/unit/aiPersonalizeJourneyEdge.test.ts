@@ -113,10 +113,10 @@ describe('journey personalization edge endpoint', () => {
       code: 'GEMINI_REQUEST_FAILED',
       meta: {
         provider: 'gemini',
-        model: 'gemini-2.5-flash-lite',
+        model: 'gemini-3.1-flash-lite',
       },
     });
-    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/models/gemini-2.5-flash-lite:generateContent');
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/models/gemini-3.1-flash-lite:generateContent');
     const providerRequest = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
     const providerBody = JSON.parse(String(providerRequest?.body)) as {
       generationConfig?: { responseMimeType?: string; responseJsonSchema?: Record<string, unknown> };

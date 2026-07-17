@@ -46,7 +46,7 @@ const json = (status: number, payload: unknown, extraHeaders?: Record<string, st
 
 const configuredTarget = (): { provider: string; model: string } => ({
   provider: readEnv('AI_JOURNEY_PERSONALIZATION_PROVIDER').trim().toLowerCase() || 'gemini',
-  model: readEnv('AI_JOURNEY_PERSONALIZATION_MODEL').trim() || 'gemini-2.5-flash-lite',
+  model: readEnv('AI_JOURNEY_PERSONALIZATION_MODEL').trim() || 'gemini-3.1-flash-lite',
 });
 
 export default async (request: Request, context?: { ip?: string }) => {

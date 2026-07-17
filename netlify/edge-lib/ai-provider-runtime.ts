@@ -45,6 +45,7 @@ export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
   gemini: new Set([
     "gemini-2.5-flash",
     "gemini-2.5-flash-lite",
+    "gemini-3.1-flash-lite",
     "gemini-2.5-pro",
     "gemini-3-flash-preview",
     "gemini-3-pro-preview",
@@ -135,6 +136,7 @@ const ANTHROPIC_MODEL_MAP: Record<string, string> = {
 const GEMINI_PRICING_PER_MILLION: Record<string, { input: number; output: number }> = {
   "gemini-2.5-flash": { input: 0.35, output: 1.05 },
   "gemini-2.5-flash-lite": { input: 0.1, output: 0.4 },
+  "gemini-3.1-flash-lite": { input: 0.25, output: 1.5 },
   "gemini-2.5-pro": { input: 3.5, output: 10.5 },
   "gemini-3-flash-preview": { input: 0.35, output: 1.05 },
   "gemini-3-pro-preview": { input: 3.5, output: 10.5 },
