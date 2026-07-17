@@ -36,6 +36,13 @@ export interface JourneyShapeWizardDraft {
   selectedNeighborhoodSlugs: string[];
 }
 
+export interface JourneyShapePlaceSearchResult {
+  entity: TravelEntityCatalogItem;
+  city: TravelEntityCatalogItem;
+  matchKind: 'city' | 'neighborhood';
+  score: number;
+}
+
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const toEntitySelection = (
@@ -98,6 +105,74 @@ export const getJourneyShapeNeighborhoods = (
   if (city?.entityType !== 'city' || !city.entityId) return [];
   return [...getTravelKnowledgeChildren(index, city.entityId, 'neighborhood')]
     .sort((left, right) => right.popularityScore - left.popularityScore || left.name.localeCompare(right.name));
+};
+
+const normalizePlaceSearchText = (value: string): string => value
+  .normalize('NFKD')
+  .replace(/\p{M}/gu, '')
+  .toLocaleLowerCase()
+  .replace(/[^\p{L}\p{N}]+/gu, ' ')
+  .trim();
+
+const placeSearchScore = (entity: TravelEntityCatalogItem, query: string): number | null => {
+  const names = [entity.name, entity.localName, ...entity.names.map((name) => name.name)]
+    .filter((name): name is string => Boolean(name?.trim()))
+    .map(normalizePlaceSearchText);
+  let bestScore: number | null = null;
+  for (const name of names) {
+    const score = name === query
+      ? 0
+      : name.startsWith(query)
+        ? 1
+        : name.split(' ').some((word) => word.startsWith(query))
+          ? 2
+          : name.includes(query)
+            ? 3
+            : null;
+    if (score !== null && (bestScore === null || score < bestScore)) bestScore = score;
+  }
+  return bestScore;
+};
+
+export const searchJourneyShapePlaces = (
+  pack: TravelDestinationPack,
+  journeyType: JourneyShapeWizardType,
+  rawQuery: string,
+  limit = 8,
+): JourneyShapePlaceSearchResult[] => {
+  const query = normalizePlaceSearchText(rawQuery);
+  if (!query) return [];
+  const index = getTravelKnowledgeIndex(pack);
+  const supportedCities = getJourneyShapeAnchorCities(pack, journeyType);
+  const matches: JourneyShapePlaceSearchResult[] = [];
+
+  for (const city of supportedCities) {
+    const cityScore = placeSearchScore(city, query);
+    if (cityScore !== null) {
+      matches.push({ entity: city, city, matchKind: 'city', score: cityScore });
+    }
+    if (!city.entityId) continue;
+    for (const neighborhood of getTravelKnowledgeChildren(index, city.entityId, 'neighborhood')) {
+      const neighborhoodScore = placeSearchScore(neighborhood, query);
+      if (neighborhoodScore !== null) {
+        matches.push({
+          entity: neighborhood,
+          city,
+          matchKind: 'neighborhood',
+          score: neighborhoodScore,
+        });
+      }
+    }
+  }
+
+  return matches
+    .sort((left, right) => (
+      left.score - right.score
+      || (left.matchKind === right.matchKind ? 0 : left.matchKind === 'city' ? -1 : 1)
+      || right.entity.popularityScore - left.entity.popularityScore
+      || left.entity.name.localeCompare(right.entity.name)
+    ))
+    .slice(0, Math.max(1, Math.min(20, Math.round(limit))));
 };
 
 export const buildJourneySpecFromShapeWizard = (

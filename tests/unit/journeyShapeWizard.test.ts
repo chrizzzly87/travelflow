@@ -4,6 +4,7 @@ import {
   buildJourneySpecFromShapeWizard,
   getJourneyShapeAnchorCities,
   getJourneyShapeNeighborhoods,
+  searchJourneyShapePlaces,
   type JourneyShapeWizardDraft,
 } from '../../shared/journeyShapeWizard';
 
@@ -35,6 +36,24 @@ describe('journey shape wizard contract', () => {
     expect(neighborhoods.length).toBeGreaterThan(5);
     expect(neighborhoods.every((entity) => entity.entityType === 'neighborhood')).toBe(true);
     expect(neighborhoods.some((entity) => entity.canonicalSlug === 'th-bangkok-yaowarat')).toBe(true);
+  });
+
+  it('searches supported canonical cities and neighborhoods by primary, alias, and local names', () => {
+    expect(searchJourneyShapePlaces(pack, 'city_break', 'Bang', 8)[0]).toMatchObject({
+      matchKind: 'city',
+      entity: { canonicalSlug: 'th-bangkok' },
+      city: { canonicalSlug: 'th-bangkok' },
+    });
+    expect(searchJourneyShapePlaces(pack, 'city_break', 'Chinatown', 8)[0]).toMatchObject({
+      matchKind: 'neighborhood',
+      entity: { canonicalSlug: 'th-bangkok-yaowarat' },
+      city: { canonicalSlug: 'th-bangkok' },
+    });
+    expect(searchJourneyShapePlaces(pack, 'city_break', 'เยาวราช', 8)[0]).toMatchObject({
+      matchKind: 'neighborhood',
+      entity: { canonicalSlug: 'th-bangkok-yaowarat' },
+    });
+    expect(searchJourneyShapePlaces(pack, 'city_break', 'not a place', 8)).toEqual([]);
   });
 
   it('builds canonical city and neighborhood intent instead of free-text place data', () => {
