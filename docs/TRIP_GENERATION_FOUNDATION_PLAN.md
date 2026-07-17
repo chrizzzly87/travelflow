@@ -381,3 +381,4 @@ The `2026.07.17-v5` English pack is 445,767 bytes raw and 39,185 bytes gzip; loc
 - Publishing a dataset requires a new version, validation output, source diff, and rollback version.
 - Volatile facts require explicit refresh cadence; expired facts are not silently presented as current.
 - No production database migration is applied without a successful remote backup or verified platform snapshot.
+- `docs/TRAVEL_KNOWLEDGE_OPERATIONS_PLAN.md` defines the source tiers, crawl rules, review pipeline, additive operational tables, refresh cadence, publish gates, and rollback model for continuous country-pack maintenance.
