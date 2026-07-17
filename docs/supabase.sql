@@ -9525,8 +9525,16 @@ create index if not exists travel_dataset_artifacts_dataset_status_idx on public
 create index if not exists travel_dataset_artifacts_parent_idx on public.travel_dataset_artifacts(parent_dataset_version_id) where parent_dataset_version_id is not null;
 create index if not exists travel_dataset_artifacts_created_by_idx on public.travel_dataset_artifacts(created_by) where created_by is not null;
 create index if not exists travel_dataset_payloads_country_status_idx on public.travel_dataset_payloads(country_code, status, created_at desc);
+create index if not exists travel_dataset_payloads_created_by_idx on public.travel_dataset_payloads(created_by) where created_by is not null;
+create index if not exists travel_active_datasets_dataset_version_idx on public.travel_active_datasets(dataset_version_id);
+create index if not exists travel_active_datasets_artifact_idx on public.travel_active_datasets(artifact_id);
+create index if not exists travel_active_datasets_activated_by_idx on public.travel_active_datasets(activated_by) where activated_by is not null;
 create index if not exists travel_dataset_activations_country_created_idx on public.travel_dataset_activations(country_code, created_at desc);
 create index if not exists travel_dataset_activations_to_artifact_idx on public.travel_dataset_activations(to_artifact_id, created_at desc);
+create index if not exists travel_dataset_activations_from_artifact_idx on public.travel_dataset_activations(from_artifact_id) where from_artifact_id is not null;
+create index if not exists travel_dataset_activations_from_dataset_version_idx on public.travel_dataset_activations(from_dataset_version_id) where from_dataset_version_id is not null;
+create index if not exists travel_dataset_activations_to_dataset_version_idx on public.travel_dataset_activations(to_dataset_version_id);
+create index if not exists travel_dataset_activations_activated_by_idx on public.travel_dataset_activations(activated_by) where activated_by is not null;
 
 drop trigger if exists set_travel_sources_updated_at on public.travel_sources;
 create trigger set_travel_sources_updated_at before update on public.travel_sources
@@ -10548,7 +10556,7 @@ begin
   ) values (
     v_dataset.country_code, v_dataset.id, v_artifact.id, v_uid, v_activated_at
   )
-  on conflict (country_code) do update
+  on conflict on constraint travel_active_datasets_pkey do update
   set dataset_version_id = excluded.dataset_version_id,
       artifact_id = excluded.artifact_id,
       activated_by = excluded.activated_by,
@@ -10665,12 +10673,12 @@ begin
   update public.travel_dataset_versions
      set status = 'published', published_at = coalesce(published_at, v_activated_at)
    where id = v_target_dataset.id;
-  update public.travel_active_datasets
+  update public.travel_active_datasets active_dataset
      set dataset_version_id = v_target_dataset.id,
          artifact_id = v_target_artifact.id,
          activated_by = v_uid,
          activated_at = v_activated_at
-   where country_code = v_country_code;
+   where active_dataset.country_code = v_country_code;
 
   insert into public.travel_dataset_activations (
     country_code, action, from_dataset_version_id, from_artifact_id,

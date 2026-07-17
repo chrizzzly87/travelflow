@@ -3,6 +3,10 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const sql = readFileSync(path.resolve(process.cwd(), 'docs/supabase.sql'), 'utf8');
+const activationCli = readFileSync(
+  path.resolve(process.cwd(), 'scripts/activate-travel-knowledge-artifact.ts'),
+  'utf8',
+);
 const operationalTables = [
   'travel_source_runs',
   'travel_source_snapshots',
@@ -78,7 +82,14 @@ describe('travel knowledge operations schema', () => {
     expect(sql).toContain("set status = 'superseded', superseded_at = v_activated_at");
     expect(sql).toContain("set status = 'rolled_back', rolled_back_at = v_activated_at");
     expect(sql).toContain("action in ('publish', 'rollback')");
+    expect(sql).toContain('on conflict on constraint travel_active_datasets_pkey do update');
     expect(sql).toContain('revoke insert, update, delete on table public.travel_dataset_versions from authenticated;');
+  });
+
+  it('disambiguates the artifact dataset relationship before activation', () => {
+    expect(activationCli).toContain(
+      'travel_dataset_versions!travel_dataset_artifacts_dataset_version_id_fkey!inner',
+    );
   });
 
   it('serves only the active immutable payload with normalized-table fallback', () => {

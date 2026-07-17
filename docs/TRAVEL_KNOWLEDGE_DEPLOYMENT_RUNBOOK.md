@@ -1,6 +1,6 @@
 # Travel knowledge deployment runbook
 
-Status: schema and Thailand v5 seed applied and verified in production on 2026-07-17.
+Status: schema, Thailand v5 seed, immutable baseline artifact, and atomic active pointer applied and verified in production on 2026-07-17.
 
 This runbook deploys the additive travel-knowledge schema and Thailand v5 dataset without deleting or replacing existing TravelFlow tables.
 
@@ -20,13 +20,18 @@ Applied migrations:
 - `20260717085205 backup_travel_knowledge_before_admin_review_20260717t085112z`
 - `20260717085505 add_travel_knowledge_admin_review`
 - `20260717085716 harden_travel_knowledge_review_reads`
+- `20260717091246 backup_travel_knowledge_before_atomic_publish_20260717t091156z`
+- `20260717092846 add_travel_knowledge_atomic_artifact_publish`
+- `20260717093321 add_active_travel_suggestion_fallback`
+- `20260717093516 fix_travel_dataset_activation_column_resolution`
+- `20260717093707 index_travel_dataset_artifact_foreign_keys`
 
 The initial foundation applied only the isolated travel-knowledge section of `docs/supabase.sql`, followed by the exact generated Thailand seed. Later operations and private-bucket migrations were also narrow and additive; the rest of the documented schema was not replayed.
 
 Final verification:
 
 - all 35 pre-existing public tables remain present
-- 12 additive travel-knowledge tables have RLS enabled and explicit policies
+- 20 additive travel-knowledge tables have RLS enabled and explicit policies
 - the published Thailand v5 pack contains 84 entities, 244 facts, 405 entity tags, 15 templates, and 16 route legs
 - an anonymous database-role insert probe was denied with `42501` and left zero rows
 - an anonymous PostgREST RPC returned HTTP 200 with country `TH`, locale `en`, version `2026.07.17-v5`, 84 entities, and 15 templates
@@ -50,6 +55,9 @@ The first active identity ingestion completed after the bucket migration:
 - the two read RPCs use caller/RLS permissions; only the atomic write RPC uses fixed-search-path elevated execution
 - authenticated direct inserts into `travel_review_decisions` are revoked, while admin read remains available
 - all 32 candidates remain `needs_review`, the review ledger remains empty, and published Thailand counts were unchanged after deployment verification
+- one immutable 445,767-byte Thailand v5 payload and artifact are published, with one active-country pointer and one activation-ledger row
+- the active payload checksum is `14da2b73ac605b86a5535da6e17e3e288a714b4570350e888979dc020a418142`; its source dataset checksum remains `8fa5070d25447f66e48705382ef23b4fefaa52ab2f672d3436a00cd367f0782e`
+- an anonymous active-pack read returned 84 entities, 244 facts, 15 templates, and localized German template copy; active city/neighborhood suggestions returned Bangkok and Bangkok Riverside
 
 ## Sources of truth
 
@@ -103,6 +111,16 @@ Before deploying the admin review workflow, a second travel-only checkpoint capt
 - `public`, `anon`, and `authenticated` have no usage permission on the backup schema
 - external non-secret manifest: `/Users/chrizzzly/.codex/backups/travelflow/travelflow-supabase-travel-knowledge-pre-admin-review-20260717T085112Z.manifest.json`
 - manifest SHA-256: `d66057c78c1677c3b6be3bc9b0630019cbfe1fc10eadf348816813a88ffc66d3`
+
+Before deploying the atomic artifact workflow, a third travel-only checkpoint was created and independently recomputed through the Supabase connector:
+
+- backup schema: `tf_bak_tk_20260717t091156z`
+- 17 `public.travel_*` tables and 1,112 rows copied under repeatable-read
+- zero row-count or deterministic JSON-row checksum mismatches across 17/17 copied tables
+- five travel-function definitions and complete per-table catalog metadata captured
+- `public`, `anon`, and `authenticated` have no usage permission on the backup schema; `service_role` has read access
+- external non-secret manifest: `/Users/chrizzzly/.codex/backups/travelflow/travelflow-supabase-travel-knowledge-pre-atomic-publish-20260717T091156Z.manifest.json`
+- manifest SHA-256: `ed4f2056d404b363e50cd5f829ae4132ab291bc24d4c54c9501a1a20c0ee3e69`
 
 ## Apply or update
 
@@ -176,6 +194,22 @@ pnpm travel-knowledge:verify-snapshots
 
 The persist command does not publish candidates. It may insert only source runs, immutable snapshot ledger rows, immutable Storage objects, and `needs_review` candidates. Published rows change only through the separate reviewed artifact/publish workflow.
 
+After accepted decisions are materialized into a new repository dataset version and committed, build and stage the deterministic artifact. Both commands are dry-run by default:
+
+```bash
+pnpm travel-knowledge:stage-artifact
+TRAVEL_KNOWLEDGE_WRITE_MODE=stage_artifact_only \
+  pnpm travel-knowledge:stage-artifact -- --persist
+
+pnpm travel-knowledge:activate-artifact -- \
+  --publish <artifact-id> --reason "Reviewed country-pack release"
+TRAVEL_KNOWLEDGE_WRITE_MODE=activate_artifact_only \
+  pnpm travel-knowledge:activate-artifact -- \
+  --publish <artifact-id> --reason "Reviewed country-pack release" --execute
+```
+
+The stage command refuses accepted decisions that are not already materialized in the repository. The publish RPC validates the staged payload and checksum, takes a country-level advisory lock, switches the active pointer, and writes the activation ledger in one transaction.
+
 ## Activate remote reads
 
 The remote flag is enabled only for the `codex/journey-spec-thailand-foundation` Netlify branch while the feature is tested. Production remains on the bundled fallback. After branch QA and copy sign-off, enable:
@@ -198,13 +232,16 @@ Before the published travel tables receive material authenticated read volume, a
 
 Fresh unused-index notices are expected while the operational tables are empty and should be reassessed after representative traffic rather than removed immediately. The security advisor reports only the intentional anonymous public-read warnings for the published projection; no operational table is included in those warnings.
 
+The three artifact mutation RPCs intentionally remain authenticated `SECURITY DEFINER` functions. Public and anonymous execution is revoked; each has an empty `search_path`, disables caller RLS only inside the guarded transaction, and repeats an admin-or-service-role authorization check. Supabase therefore reports the expected authenticated-definer warnings. Public pack and entity-suggestion RPCs remain `SECURITY INVOKER`. The foreign-key indexes reported immediately after the activation migration were added before rollout.
+
 The admin review write RPC intentionally remains an authenticated `SECURITY DEFINER` function because direct decision-table inserts are revoked and decision plus candidate status must commit atomically. It has an empty `search_path`, explicit authenticated-only execution, non-null/non-anonymous identity checks, and an internal admin-role check. The candidate-list and review-summary RPCs use `SECURITY INVOKER` so reads continue through table grants and RLS.
 
 ## Rollback without deletion
 
 Do not drop the new tables or delete Thailand data as the first rollback action.
 
-1. Set `VITE_TRAVEL_KNOWLEDGE_REMOTE_ENABLED=false`.
-2. Redeploy the application so all reads use the bundled pack.
-3. Leave the additive schema and seeded rows in place while investigating.
-4. Restore the database dump only if an unrelated pre-existing object was unexpectedly changed and the impact has been reviewed.
+1. Set `VITE_TRAVEL_KNOWLEDGE_REMOTE_ENABLED=false` and redeploy so all reads use the bundled pack while investigating.
+2. For a prior published artifact, dry-run `pnpm travel-knowledge:activate-artifact -- --rollback <artifact-id> --country TH --reason <reason>`.
+3. Execute only after verifying the target checksum, using `TRAVEL_KNOWLEDGE_WRITE_MODE=activate_artifact_only` and `--execute`.
+4. Leave the additive schema and immutable artifacts in place; rollback switches the pointer and writes a ledger row without deleting data.
+5. Restore the private backup only if an unrelated pre-existing object was unexpectedly changed and the impact has been reviewed.
