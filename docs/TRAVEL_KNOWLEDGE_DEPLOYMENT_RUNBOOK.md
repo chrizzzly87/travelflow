@@ -13,6 +13,8 @@ Applied migrations:
 - `20260717071342 backup_public_before_travel_knowledge_20260717t071235z`
 - `20260717071510 add_travel_knowledge_foundation`
 - `20260717071632 seed_travel_knowledge_thailand_v5`
+- `20260717074656 add_travel_knowledge_operations`
+- `20260717074708 register_travel_knowledge_sources_v1`
 
 Only the isolated 751-line travel-knowledge section of `docs/supabase.sql` was applied, followed by the exact generated Thailand seed. The rest of the documented schema was not replayed.
 
@@ -23,6 +25,9 @@ Final verification:
 - the published Thailand v5 pack contains 84 entities, 244 facts, 405 entity tags, 15 templates, and 16 route legs
 - an anonymous database-role insert probe was denied with `42501` and left zero rows
 - an anonymous PostgREST RPC returned HTTP 200 with country `TH`, locale `en`, version `2026.07.17-v5`, 84 entities, and 15 templates
+- five admin-only operational tables now quarantine source runs, snapshots, candidates, review decisions, and dataset artifacts from the public projection
+- 13 sources have explicit ingestion modes, automation gates, license-review dates, storage policies, and LLM-processing rules; two individually licensed source families remain blocked from automation
+- RLS is enabled on all five operational tables, anonymous table reads are revoked, and the public pack RPC does not reference operational history
 - final database size was 242 MB
 
 ## Sources of truth
@@ -136,12 +141,13 @@ Deploy this flag separately from the schema change. The read service remains ver
 
 No travel-specific missing-RLS, missing-policy, or mutable-function-search-path security issue remains. The security advisor reports the intentional anonymous public-read policies.
 
-Before the travel tables receive material write volume, address these performance findings in a separate additive migration:
+The operations migration added the five previously missing foreign-key indexes and changed travel admin policies to use init-plan-safe auth expressions. Supabase no longer reports those two finding classes for the travel tables.
 
-- five uncovered foreign-key indexes
-- admin-policy `auth.uid()` initplan warnings on the 12 travel tables
+Before the published travel tables receive material authenticated read volume, address this remaining performance finding in a separate policy migration:
+
 - duplicate permissive `SELECT` policies for the `authenticated` role
-- newly created unused-index notices, which should be reassessed after representative traffic rather than removed immediately
+
+Fresh unused-index notices are expected while the operational tables are empty and should be reassessed after representative traffic rather than removed immediately. The security advisor reports only the intentional anonymous public-read warnings for the published projection; no operational table is included in those warnings.
 
 ## Rollback without deletion
 

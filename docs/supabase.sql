@@ -8944,6 +8944,12 @@ create table if not exists public.travel_sources (
   redistribution_allowed boolean not null default false,
   refresh_interval_days integer,
   status text not null default 'active',
+  ingestion_mode text not null default 'manual_reference',
+  automation_status text not null default 'manual_only',
+  license_reviewed_at timestamptz,
+  license_review_interval_days integer,
+  raw_storage_policy text not null default 'metadata_only',
+  allow_llm_processing boolean not null default false,
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -8951,8 +8957,40 @@ create table if not exists public.travel_sources (
   constraint travel_sources_kind_check check (source_kind in ('official', 'open_data', 'commercial', 'editorial', 'community')),
   constraint travel_sources_status_check check (status in ('active', 'inactive', 'restricted')),
   constraint travel_sources_refresh_check check (refresh_interval_days is null or refresh_interval_days > 0),
+  constraint travel_sources_ingestion_mode_check check (ingestion_mode in ('automated_bulk', 'automated_api', 'manual_reference', 'licensed_runtime', 'editorial')),
+  constraint travel_sources_automation_status_check check (automation_status in ('active', 'planned', 'blocked_license', 'manual_only', 'runtime_only')),
+  constraint travel_sources_license_review_interval_check check (license_review_interval_days is null or license_review_interval_days > 0),
+  constraint travel_sources_raw_storage_policy_check check (raw_storage_policy in ('private_snapshot', 'metadata_only', 'prohibited', 'runtime_cache')),
   constraint travel_sources_metadata_object check (jsonb_typeof(metadata) = 'object')
 );
+
+alter table public.travel_sources add column if not exists ingestion_mode text not null default 'manual_reference';
+alter table public.travel_sources add column if not exists automation_status text not null default 'manual_only';
+alter table public.travel_sources add column if not exists license_reviewed_at timestamptz;
+alter table public.travel_sources add column if not exists license_review_interval_days integer;
+alter table public.travel_sources add column if not exists raw_storage_policy text not null default 'metadata_only';
+alter table public.travel_sources add column if not exists allow_llm_processing boolean not null default false;
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'travel_sources_ingestion_mode_check') then
+    alter table public.travel_sources add constraint travel_sources_ingestion_mode_check
+      check (ingestion_mode in ('automated_bulk', 'automated_api', 'manual_reference', 'licensed_runtime', 'editorial'));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'travel_sources_automation_status_check') then
+    alter table public.travel_sources add constraint travel_sources_automation_status_check
+      check (automation_status in ('active', 'planned', 'blocked_license', 'manual_only', 'runtime_only'));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'travel_sources_license_review_interval_check') then
+    alter table public.travel_sources add constraint travel_sources_license_review_interval_check
+      check (license_review_interval_days is null or license_review_interval_days > 0);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'travel_sources_raw_storage_policy_check') then
+    alter table public.travel_sources add constraint travel_sources_raw_storage_policy_check
+      check (raw_storage_policy in ('private_snapshot', 'metadata_only', 'prohibited', 'runtime_cache'));
+  end if;
+end
+$$;
 
 create table if not exists public.travel_dataset_versions (
   id uuid primary key default gen_random_uuid(),
@@ -9199,6 +9237,160 @@ create table if not exists public.travel_template_tags (
   constraint travel_template_tags_weight_check check (weight between 0 and 1)
 );
 
+-- Operational history is intentionally separate from the published projection.
+-- These rows are admin/service-role only and are never returned by the public pack RPC.
+create table if not exists public.travel_source_runs (
+  id uuid primary key default gen_random_uuid(),
+  source_id uuid not null references public.travel_sources(id) on delete restrict,
+  country_code text not null,
+  run_kind text not null,
+  status text not null default 'queued',
+  started_at timestamptz,
+  finished_at timestamptz,
+  fetcher_version text not null,
+  configuration_hash text not null,
+  terms_fingerprint text,
+  robots_fingerprint text,
+  http_summary jsonb not null default '{}'::jsonb,
+  raw_item_count integer not null default 0,
+  candidate_count integer not null default 0,
+  warning_count integer not null default 0,
+  error_count integer not null default 0,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint travel_source_runs_country_code_check check (country_code ~ '^[A-Z]{2}$'),
+  constraint travel_source_runs_kind_check check (run_kind in ('fetch', 'editorial_refresh', 'license_audit', 'freshness_audit')),
+  constraint travel_source_runs_status_check check (status in ('queued', 'running', 'succeeded', 'partial', 'failed', 'canceled')),
+  constraint travel_source_runs_hash_check check (configuration_hash ~ '^[a-f0-9]{64}$'),
+  constraint travel_source_runs_terms_fingerprint_check check (terms_fingerprint is null or terms_fingerprint ~ '^[a-f0-9]{64}$'),
+  constraint travel_source_runs_robots_fingerprint_check check (robots_fingerprint is null or robots_fingerprint ~ '^[a-f0-9]{64}$'),
+  constraint travel_source_runs_counts_check check (raw_item_count >= 0 and candidate_count >= 0 and warning_count >= 0 and error_count >= 0),
+  constraint travel_source_runs_timeline_check check (
+    (status = 'queued' and started_at is null and finished_at is null)
+    or (status = 'running' and started_at is not null and finished_at is null)
+    or (status in ('succeeded', 'partial', 'failed', 'canceled') and started_at is not null and finished_at is not null and finished_at >= started_at)
+  ),
+  constraint travel_source_runs_http_summary_object check (jsonb_typeof(http_summary) = 'object'),
+  constraint travel_source_runs_metadata_object check (jsonb_typeof(metadata) = 'object')
+);
+
+create table if not exists public.travel_source_snapshots (
+  id uuid primary key default gen_random_uuid(),
+  source_run_id uuid not null references public.travel_source_runs(id) on delete restrict,
+  source_url text not null,
+  dataset_id text,
+  retrieved_at timestamptz not null,
+  etag text,
+  last_modified text,
+  checksum text not null,
+  content_type text not null,
+  byte_size bigint not null,
+  storage_object_key text not null,
+  license_key text,
+  terms_url text,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  constraint travel_source_snapshots_url_check check (source_url ~ '^https://'),
+  constraint travel_source_snapshots_checksum_check check (checksum ~ '^[a-f0-9]{64}$'),
+  constraint travel_source_snapshots_byte_size_check check (byte_size >= 0),
+  constraint travel_source_snapshots_storage_key_check check (length(trim(storage_object_key)) > 0),
+  constraint travel_source_snapshots_terms_url_check check (terms_url is null or terms_url ~ '^https://'),
+  constraint travel_source_snapshots_metadata_object check (jsonb_typeof(metadata) = 'object'),
+  unique (source_run_id, checksum, storage_object_key)
+);
+
+create table if not exists public.travel_change_candidates (
+  id uuid primary key default gen_random_uuid(),
+  source_snapshot_id uuid not null references public.travel_source_snapshots(id) on delete restrict,
+  country_code text not null,
+  target_kind text not null,
+  target_key text not null,
+  target_entity_id uuid references public.travel_entities(id) on delete restrict,
+  target_template_id uuid references public.travel_templates(id) on delete restrict,
+  field_path text not null,
+  change_kind text not null,
+  previous_value jsonb,
+  proposed_value jsonb,
+  extraction_method text not null,
+  confidence numeric(4, 3) not null default 0.5,
+  severity text not null default 'moderate',
+  validation_findings jsonb not null default '[]'::jsonb,
+  status text not null default 'new',
+  superseded_by_candidate_id uuid references public.travel_change_candidates(id) on delete restrict,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint travel_change_candidates_country_code_check check (country_code ~ '^[A-Z]{2}$'),
+  constraint travel_change_candidates_target_kind_check check (target_kind in ('source', 'entity', 'entity_name', 'fact', 'entity_tag', 'template', 'template_copy', 'template_stop', 'template_leg', 'dataset')),
+  constraint travel_change_candidates_target_key_check check (length(trim(target_key)) > 0),
+  constraint travel_change_candidates_field_path_check check (field_path ~ '^[A-Za-z0-9_.\[\]-]+$'),
+  constraint travel_change_candidates_change_kind_check check (change_kind in ('add', 'update', 'remove')),
+  constraint travel_change_candidates_value_check check (previous_value is not null or proposed_value is not null),
+  constraint travel_change_candidates_extraction_check check (extraction_method in ('structured_import', 'deterministic_transform', 'llm_assisted', 'manual_editorial', 'traveler_correction')),
+  constraint travel_change_candidates_confidence_check check (confidence between 0 and 1),
+  constraint travel_change_candidates_severity_check check (severity in ('low', 'moderate', 'high', 'critical')),
+  constraint travel_change_candidates_findings_array check (jsonb_typeof(validation_findings) = 'array'),
+  constraint travel_change_candidates_status_check check (status in ('new', 'needs_review', 'accepted', 'rejected', 'superseded')),
+  constraint travel_change_candidates_no_self_supersede check (superseded_by_candidate_id is null or superseded_by_candidate_id <> id),
+  constraint travel_change_candidates_metadata_object check (jsonb_typeof(metadata) = 'object')
+);
+
+create table if not exists public.travel_review_decisions (
+  id uuid primary key default gen_random_uuid(),
+  candidate_id uuid not null references public.travel_change_candidates(id) on delete restrict,
+  reviewer_id uuid not null references auth.users(id) on delete restrict,
+  decision text not null,
+  reason text not null,
+  accepted_value jsonb,
+  review_policy_version text not null,
+  reviewed_at timestamptz not null default now(),
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  constraint travel_review_decisions_decision_check check (decision in ('accept', 'accept_with_edit', 'reject', 'request_changes')),
+  constraint travel_review_decisions_reason_check check (length(trim(reason)) > 0),
+  constraint travel_review_decisions_edit_value_check check (decision <> 'accept_with_edit' or accepted_value is not null),
+  constraint travel_review_decisions_policy_check check (length(trim(review_policy_version)) > 0),
+  constraint travel_review_decisions_metadata_object check (jsonb_typeof(metadata) = 'object')
+);
+
+create table if not exists public.travel_dataset_artifacts (
+  id uuid primary key default gen_random_uuid(),
+  dataset_version_id uuid not null references public.travel_dataset_versions(id) on delete restrict,
+  parent_dataset_version_id uuid references public.travel_dataset_versions(id) on delete restrict,
+  repository_commit text not null,
+  source_run_ids uuid[] not null default '{}',
+  pack_checksum text not null,
+  seed_checksum text not null,
+  artifact_checksum text not null,
+  storage_object_key text not null,
+  validation_report jsonb not null default '{}'::jsonb,
+  status text not null default 'staged',
+  staged_at timestamptz not null default now(),
+  published_at timestamptz,
+  superseded_at timestamptz,
+  rolled_back_at timestamptz,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint travel_dataset_artifacts_commit_check check (repository_commit ~ '^[a-f0-9]{7,64}$'),
+  constraint travel_dataset_artifacts_pack_checksum_check check (pack_checksum ~ '^[a-f0-9]{64}$'),
+  constraint travel_dataset_artifacts_seed_checksum_check check (seed_checksum ~ '^[a-f0-9]{64}$'),
+  constraint travel_dataset_artifacts_checksum_check check (artifact_checksum ~ '^[a-f0-9]{64}$'),
+  constraint travel_dataset_artifacts_storage_key_check check (length(trim(storage_object_key)) > 0),
+  constraint travel_dataset_artifacts_report_object check (jsonb_typeof(validation_report) = 'object'),
+  constraint travel_dataset_artifacts_status_check check (status in ('staged', 'published', 'superseded', 'rolled_back', 'failed')),
+  constraint travel_dataset_artifacts_parent_check check (parent_dataset_version_id is null or parent_dataset_version_id <> dataset_version_id),
+  constraint travel_dataset_artifacts_timeline_check check (
+    (status = 'staged' and published_at is null and superseded_at is null and rolled_back_at is null)
+    or (status = 'published' and published_at is not null and superseded_at is null and rolled_back_at is null)
+    or (status = 'superseded' and published_at is not null and superseded_at is not null and rolled_back_at is null)
+    or (status = 'rolled_back' and published_at is not null and rolled_back_at is not null)
+    or status = 'failed'
+  ),
+  unique (dataset_version_id, artifact_checksum)
+);
+
 create index if not exists travel_sources_status_idx on public.travel_sources(status);
 create index if not exists travel_dataset_versions_country_status_idx on public.travel_dataset_versions(country_code, status, published_at desc);
 create index if not exists travel_entities_parent_idx on public.travel_entities(parent_id);
@@ -9206,12 +9398,31 @@ create index if not exists travel_entities_country_type_status_idx on public.tra
 create index if not exists travel_entities_popularity_idx on public.travel_entities(country_code, popularity_score desc);
 create index if not exists travel_entity_names_search_idx on public.travel_entity_names(lower(name));
 create index if not exists travel_entity_facts_entity_key_idx on public.travel_entity_facts(entity_id, fact_key);
+create index if not exists travel_entity_facts_source_idx on public.travel_entity_facts(source_id);
 create index if not exists travel_entity_facts_public_validity_idx on public.travel_entity_facts(is_public, valid_until);
 create index if not exists travel_entity_tags_tag_idx on public.travel_entity_tags(tag_key, relevance desc);
+create index if not exists travel_entity_tags_source_idx on public.travel_entity_tags(source_id);
 create index if not exists travel_templates_country_shape_status_idx on public.travel_templates(country_code, journey_type, status, min_days, max_days);
 create index if not exists travel_template_stops_entity_idx on public.travel_template_stops(entity_id);
 create index if not exists travel_template_legs_entities_idx on public.travel_template_legs(from_entity_id, to_entity_id);
+create index if not exists travel_template_legs_to_entity_idx on public.travel_template_legs(to_entity_id);
+create index if not exists travel_template_legs_source_idx on public.travel_template_legs(source_id);
 create index if not exists travel_template_legs_validity_idx on public.travel_template_legs(valid_until);
+create index if not exists travel_template_tags_tag_idx on public.travel_template_tags(tag_key);
+create index if not exists travel_source_runs_source_started_idx on public.travel_source_runs(source_id, started_at desc);
+create index if not exists travel_source_runs_country_status_idx on public.travel_source_runs(country_code, status, created_at desc);
+create index if not exists travel_source_snapshots_run_idx on public.travel_source_snapshots(source_run_id, retrieved_at desc);
+create index if not exists travel_source_snapshots_checksum_idx on public.travel_source_snapshots(checksum);
+create index if not exists travel_change_candidates_snapshot_idx on public.travel_change_candidates(source_snapshot_id);
+create index if not exists travel_change_candidates_status_idx on public.travel_change_candidates(country_code, status, severity, created_at);
+create index if not exists travel_change_candidates_entity_idx on public.travel_change_candidates(target_entity_id) where target_entity_id is not null;
+create index if not exists travel_change_candidates_template_idx on public.travel_change_candidates(target_template_id) where target_template_id is not null;
+create index if not exists travel_change_candidates_superseded_by_idx on public.travel_change_candidates(superseded_by_candidate_id) where superseded_by_candidate_id is not null;
+create index if not exists travel_review_decisions_candidate_idx on public.travel_review_decisions(candidate_id, reviewed_at desc);
+create index if not exists travel_review_decisions_reviewer_idx on public.travel_review_decisions(reviewer_id, reviewed_at desc);
+create index if not exists travel_dataset_artifacts_dataset_status_idx on public.travel_dataset_artifacts(dataset_version_id, status, created_at desc);
+create index if not exists travel_dataset_artifacts_parent_idx on public.travel_dataset_artifacts(parent_dataset_version_id) where parent_dataset_version_id is not null;
+create index if not exists travel_dataset_artifacts_created_by_idx on public.travel_dataset_artifacts(created_by) where created_by is not null;
 
 drop trigger if exists set_travel_sources_updated_at on public.travel_sources;
 create trigger set_travel_sources_updated_at before update on public.travel_sources
@@ -9253,6 +9464,18 @@ drop trigger if exists set_travel_template_legs_updated_at on public.travel_temp
 create trigger set_travel_template_legs_updated_at before update on public.travel_template_legs
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_travel_source_runs_updated_at on public.travel_source_runs;
+create trigger set_travel_source_runs_updated_at before update on public.travel_source_runs
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_travel_change_candidates_updated_at on public.travel_change_candidates;
+create trigger set_travel_change_candidates_updated_at before update on public.travel_change_candidates
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_travel_dataset_artifacts_updated_at on public.travel_dataset_artifacts;
+create trigger set_travel_dataset_artifacts_updated_at before update on public.travel_dataset_artifacts
+for each row execute function public.set_updated_at();
+
 alter table public.travel_sources enable row level security;
 alter table public.travel_dataset_versions enable row level security;
 alter table public.travel_entities enable row level security;
@@ -9265,6 +9488,11 @@ alter table public.travel_template_copy enable row level security;
 alter table public.travel_template_stops enable row level security;
 alter table public.travel_template_legs enable row level security;
 alter table public.travel_template_tags enable row level security;
+alter table public.travel_source_runs enable row level security;
+alter table public.travel_source_snapshots enable row level security;
+alter table public.travel_change_candidates enable row level security;
+alter table public.travel_review_decisions enable row level security;
+alter table public.travel_dataset_artifacts enable row level security;
 
 drop policy if exists "Travel sources public read" on public.travel_sources;
 create policy "Travel sources public read"
@@ -9396,12 +9624,81 @@ begin
   loop
     execute format('drop policy if exists "Travel knowledge admin manage" on public.%I', table_name);
     execute format(
-      'create policy "Travel knowledge admin manage" on public.%I for all to authenticated using (not coalesce((auth.jwt() ->> ''is_anonymous'')::boolean, false) and public.is_admin(auth.uid())) with check (not coalesce((auth.jwt() ->> ''is_anonymous'')::boolean, false) and public.is_admin(auth.uid()))',
+      'create policy "Travel knowledge admin manage" on public.%I for all to authenticated using (not coalesce(((select auth.jwt()) ->> ''is_anonymous'')::boolean, false) and public.is_admin((select auth.uid()))) with check (not coalesce(((select auth.jwt()) ->> ''is_anonymous'')::boolean, false) and public.is_admin((select auth.uid())))',
       table_name
     );
   end loop;
 end
 $$;
+
+do $$
+declare
+  table_name text;
+begin
+  foreach table_name in array array[
+    'travel_source_runs',
+    'travel_change_candidates',
+    'travel_dataset_artifacts'
+  ]
+  loop
+    execute format('drop policy if exists "Travel operations admin manage" on public.%I', table_name);
+    execute format(
+      'create policy "Travel operations admin manage" on public.%I for all to authenticated using (not coalesce(((select auth.jwt()) ->> ''is_anonymous'')::boolean, false) and public.is_admin((select auth.uid()))) with check (not coalesce(((select auth.jwt()) ->> ''is_anonymous'')::boolean, false) and public.is_admin((select auth.uid())))',
+      table_name
+    );
+  end loop;
+end
+$$;
+
+do $$
+declare
+  table_name text;
+begin
+  foreach table_name in array array[
+    'travel_source_snapshots',
+    'travel_review_decisions'
+  ]
+  loop
+    execute format('drop policy if exists "Travel operations admin read" on public.%I', table_name);
+    execute format('drop policy if exists "Travel operations admin insert" on public.%I', table_name);
+    execute format(
+      'create policy "Travel operations admin read" on public.%I for select to authenticated using (not coalesce(((select auth.jwt()) ->> ''is_anonymous'')::boolean, false) and public.is_admin((select auth.uid())))',
+      table_name
+    );
+    execute format(
+      'create policy "Travel operations admin insert" on public.%I for insert to authenticated with check (not coalesce(((select auth.jwt()) ->> ''is_anonymous'')::boolean, false) and public.is_admin((select auth.uid())))',
+      table_name
+    );
+  end loop;
+end
+$$;
+
+revoke all on table
+  public.travel_source_runs,
+  public.travel_source_snapshots,
+  public.travel_change_candidates,
+  public.travel_review_decisions,
+  public.travel_dataset_artifacts
+from public, anon, authenticated;
+
+grant select, insert, update, delete on table
+  public.travel_source_runs,
+  public.travel_change_candidates,
+  public.travel_dataset_artifacts
+to authenticated;
+
+grant select, insert on table
+  public.travel_source_snapshots,
+  public.travel_review_decisions
+to authenticated;
+
+grant all on table
+  public.travel_source_runs,
+  public.travel_source_snapshots,
+  public.travel_change_candidates,
+  public.travel_review_decisions,
+  public.travel_dataset_artifacts
+to service_role;
 
 grant select on table
   public.travel_sources,
