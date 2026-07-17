@@ -1,26 +1,29 @@
 # Travel knowledge deployment runbook
 
-Status: schema and Thailand seed are ready; production DDL is not yet applied.
+Status: schema and Thailand v5 seed applied and verified in production on 2026-07-17.
 
 This runbook deploys the additive travel-knowledge schema and Thailand v5 dataset without deleting or replacing existing TravelFlow tables.
 
-## Current production probe
+## Production deployment record
 
-On 2026-07-17, the configured Supabase project returned `PGRST205` for each of these tables:
+The target was verified as the TravelFlow Supabase project before every mutation. HabitFlow uses a different project and was not touched.
 
-- `travel_sources`
-- `travel_dataset_versions`
-- `travel_entities`
-- `travel_entity_names`
-- `travel_entity_facts`
-- `travel_tags`
-- `travel_entity_tags`
-- `travel_templates`
-- `travel_template_copy`
-- `travel_template_stops`
-- `travel_template_legs`
+Applied migrations:
 
-That response means the travel-knowledge schema is not present in the PostgREST schema cache. There are therefore no existing travel-knowledge rows to preserve before the first deployment. The rest of the production database remains out of scope and must not be modified or reset.
+- `20260717071342 backup_public_before_travel_knowledge_20260717t071235z`
+- `20260717071510 add_travel_knowledge_foundation`
+- `20260717071632 seed_travel_knowledge_thailand_v5`
+
+Only the isolated 751-line travel-knowledge section of `docs/supabase.sql` was applied, followed by the exact generated Thailand seed. The rest of the documented schema was not replayed.
+
+Final verification:
+
+- all 35 pre-existing public tables remain present
+- 12 additive travel-knowledge tables have RLS enabled and explicit policies
+- the published Thailand v5 pack contains 84 entities, 244 facts, 405 entity tags, 15 templates, and 16 route legs
+- an anonymous database-role insert probe was denied with `42501` and left zero rows
+- an anonymous PostgREST RPC returned HTTP 200 with country `TH`, locale `en`, version `2026.07.17-v5`, 84 entities, and 15 templates
+- final database size was 242 MB
 
 ## Sources of truth
 
@@ -47,29 +50,32 @@ Use one of these approved paths:
 
 The anon key and service-role key are application credentials. They do not authorize schema DDL and must not be treated as a database backup or migration credential.
 
-## Backup before the first apply
+## Verified pre-change backup
 
-Even though the new tables do not exist yet, take a public-schema backup before changing production:
+Because the free Supabase tier did not provide a managed snapshot, the migration created a private logical backup schema before applying DDL:
 
-```bash
-pg_dump "$SUPABASE_DB_URL" \
-  --schema=public \
-  --format=custom \
-  --file="output/backups/travelflow-public-before-travel-knowledge-$(date -u +%Y%m%dT%H%M%SZ).dump"
-```
+- backup schema: `tf_bak_20260717t071235z`
+- 35 tables and 204,227 rows copied under repeatable-read
+- zero row-count mismatches
+- zero content-checksum mismatches
+- 90 public function definitions captured
+- per-table columns, constraints, indexes, policies, triggers, and privileges captured
+- `public`, `anon`, and `authenticated` have no usage permission on the backup schema
+- external non-secret manifest: `/Users/chrizzzly/.codex/backups/travelflow/travelflow-supabase-pre-travel-knowledge-20260717T071235Z.manifest.json`
+- manifest SHA-256: `7bfcd3ef4ab30df5f634b7ae542b43b3e6af49e4352817a741f306c22ffc84dd`
 
-Confirm the dump exists and is non-empty before continuing. Store it outside the repository after verification.
+This protects against mistakes in the additive migration. It is not a substitute for an independent physical database backup. Keep the private schema until the feature has completed its rollout and a separate retention decision is approved.
 
-## Apply
+## Apply or update
 
-The SQL is designed to be additive and idempotent. Apply the schema first, then the generated seed:
+The SQL is designed to be additive and idempotent. For a new environment, apply the isolated travel-knowledge schema first, then the generated seed. Do not replay unrelated sections of `docs/supabase.sql` merely to install this feature.
 
 ```bash
 psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f docs/supabase.sql
 psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f docs/travel-knowledge-thailand.seed.generated.sql
 ```
 
-For the Dashboard path, run the complete contents of those files in the same order. Stop immediately on the first error; do not drop existing objects to make the script pass.
+For the Dashboard path, extract and run only the travel-knowledge section of `docs/supabase.sql`, then run the complete generated seed. Stop immediately on the first error; do not drop existing objects to make the script pass.
 
 ## Verify
 
@@ -118,13 +124,24 @@ Also verify that the public read RPC returns the published pack and that an anon
 
 ## Activate remote reads
 
-Keep the app on its bundled, versioned fallback until all counts and policies pass. Then enable:
+The remote flag is enabled only for the `codex/journey-spec-thailand-foundation` Netlify branch while the feature is tested. Production remains on the bundled fallback. After branch QA and copy sign-off, enable:
 
 ```env
 VITE_TRAVEL_KNOWLEDGE_REMOTE_ENABLED=true
 ```
 
 Deploy this flag separately from the schema change. The read service remains version-aware and can fall back to the bundled Thailand pack when the network or remote dataset is unavailable.
+
+## Advisor follow-ups
+
+No travel-specific missing-RLS, missing-policy, or mutable-function-search-path security issue remains. The security advisor reports the intentional anonymous public-read policies.
+
+Before the travel tables receive material write volume, address these performance findings in a separate additive migration:
+
+- five uncovered foreign-key indexes
+- admin-policy `auth.uid()` initplan warnings on the 12 travel tables
+- duplicate permissive `SELECT` policies for the `authenticated` role
+- newly created unused-index notices, which should be reassessed after representative traffic rather than removed immediately
 
 ## Rollback without deletion
 
