@@ -10532,9 +10532,9 @@ begin
     update public.travel_dataset_artifacts
        set status = 'superseded', superseded_at = v_activated_at
      where id = v_previous.artifact_id and status = 'published';
-    update public.travel_dataset_payloads
+    update public.travel_dataset_payloads as previous_payload
        set status = 'retired'
-     where dataset_version_id = v_previous.dataset_version_id;
+     where previous_payload.dataset_version_id = v_previous.dataset_version_id;
     update public.travel_dataset_versions
        set status = 'retired'
      where id = v_previous.dataset_version_id;
@@ -10657,9 +10657,9 @@ begin
   update public.travel_dataset_artifacts
      set status = 'rolled_back', rolled_back_at = v_activated_at
    where id = v_current.artifact_id and status = 'published';
-  update public.travel_dataset_payloads
+  update public.travel_dataset_payloads as current_payload
      set status = 'retired'
-   where dataset_version_id = v_current.dataset_version_id;
+   where current_payload.dataset_version_id = v_current.dataset_version_id;
   update public.travel_dataset_versions
      set status = 'retired'
    where id = v_current.dataset_version_id;

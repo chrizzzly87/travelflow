@@ -81,6 +81,8 @@ describe('travel knowledge operations schema', () => {
     expect(sql).toContain("perform pg_advisory_xact_lock(hashtextextended('travel-dataset:'");
     expect(sql).toContain("set status = 'superseded', superseded_at = v_activated_at");
     expect(sql).toContain("set status = 'rolled_back', rolled_back_at = v_activated_at");
+    expect(sql).toContain('where previous_payload.dataset_version_id = v_previous.dataset_version_id;');
+    expect(sql).toContain('where current_payload.dataset_version_id = v_current.dataset_version_id;');
     expect(sql).toContain("action in ('publish', 'rollback')");
     expect(sql).toContain('on conflict on constraint travel_active_datasets_pkey do update');
     expect(sql).toContain('revoke insert, update, delete on table public.travel_dataset_versions from authenticated;');
