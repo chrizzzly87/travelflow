@@ -452,5 +452,25 @@
       "compare": "Comparar rotas",
       "openPlan": "Abrir plano editável"
     }
+  },
+  "journeyLab": {
+    "badge": "Laboratório de visualização da viagem",
+    "title": "Veja a viagem inteira, não apenas os pontos.",
+    "intro": "Três estruturas transformam a mesma viagem numa história clara: bases, carga dos deslocamentos, bairros, comida, atividades, afinidade e fontes.",
+    "prototypeNote": "Este é um laboratório de conceitos isolado. O planeador atual não muda.",
+    "conceptsLabel": "Compare três formas de entender uma viagem",
+    "concepts": {
+      "lens": { "title": "Journey Lens", "description": "Uma visão geral permanente junto à área de planeamento.", "bestFor": "Opção recomendada" },
+      "storyboard": { "title": "Route Storyboard", "description": "Uma vista editorial por capítulos com um percurso forte.", "bestFor": "Apresentar e partilhar" },
+      "inspector": { "title": "Adaptive Inspector", "description": "Um índice compacto com detalhes apenas quando necessário.", "bestFor": "Edição focada" }
+    },
+    "labels": {
+      "tripExample": "Exemplo da Tailândia", "tripCharacter": "Caráter da viagem", "routeOverview": "Visão interativa da viagem", "focusHint": "Escolha uma cidade ou deslocamento", "chapters": "Capítulos da rota", "chapter": "Capítulo", "transfer": "Deslocamento", "routeStory": "A história da rota", "compactIndex": "Índice dos capítulos", "selected": "Contexto selecionado", "compare": "Primeiro, a estrutura", "evidence": "Criado com dados conhecidos", "whyFits": "Porque esta rota combina", "neighborhoods": "Bairros", "dishes": "Comece por", "activities": "Bons pontos de partida"
+    },
+    "summary": { "days": "{count} dias", "bases": "Bases", "transfers": "Deslocamentos", "transferTime": "Tempo de viagem", "activities": "Planeadas" },
+    "chapter": { "nights": "{count} noites", "days": "Dias {range}" },
+    "transfer": { "ariaLabel": "Deslocamento de {from} para {to}, {duration}", "duration": "Duração", "distance": "Distância", "load": "Carga da viagem", "toleranceWarning": "Este trecho excede o limite de deslocamento do briefing.", "light": "Trecho leve", "balanced": "Trecho equilibrado", "heavy": "Trecho exigente", "unknown": "Faltam dados da rota" },
+    "empty": { "neighborhoods": "Escolha uma zona base", "dishes": "Adicione comida local", "activities": "Deixe tempo livre" },
+    "evidence": { "title": "Respostas rápidas com uma base visível.", "description": "A vista usa a mesma JourneySpec versionada, lugares canónicos, guias de destino e métricas de rota que podem alimentar o planeador.", "dataset": "Conjunto de dados", "template": "Modelo de rota", "routeFit": "Afinidade da rota" }
   }
 }

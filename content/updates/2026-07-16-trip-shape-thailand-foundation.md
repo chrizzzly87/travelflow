@@ -29,3 +29,4 @@ summary: "A hidden route-first planner now compares trusted Thailand trip concep
 - [ ] [Internal] 🚦 Added a default-off rollout that can promote the route-first planner on the wizard surface first, then on both production creator entries without changing their URLs.
 - [ ] [Internal] 🔍 Added canonical city and neighborhood search across primary, local, and alternate place names in every active language.
 - [ ] [Internal] 🧵 Defined three low-risk JourneySpec sidebar concepts and a shared Journey Ribbon visualization before changing the main trip workspace.
+- [ ] [Internal] 🎛️ Added an isolated comparison lab for the Journey Lens, Route Storyboard, and Adaptive Inspector with synchronized city and transfer focus.

@@ -435,5 +435,25 @@
       "compare": "مقایسه مسیرها",
       "openPlan": "بازکردن برنامه قابل ویرایش"
     }
+  },
+  "journeyLab": {
+    "badge": "آزمایشگاه نمایش سفر",
+    "title": "کل سفر را ببینید، نه فقط نقطه‌ها را.",
+    "intro": "سه ساختار، یک سفر را به روایتی روشن تبدیل می‌کنند: پایگاه‌ها، فشار جابه‌جایی، محله‌ها، غذا، فعالیت‌ها، تناسب با مسافر و منابع.",
+    "prototypeNote": "این یک آزمایشگاه مستقل مفهومی است. برنامه‌ریز فعلی بدون تغییر می‌ماند.",
+    "conceptsLabel": "سه روش برای درک یک سفر را مقایسه کنید",
+    "concepts": {
+      "lens": { "title": "Journey Lens", "description": "نمایی همیشگی در کنار فضای برنامه‌ریزی.", "bestFor": "پیشنهاد پیش‌فرض" },
+      "storyboard": { "title": "Route Storyboard", "description": "نمای فصل‌بندی‌شده با خط سیر پررنگ سفر.", "bestFor": "نمایش و اشتراک‌گذاری" },
+      "inspector": { "title": "Adaptive Inspector", "description": "فهرست فشرده فصل‌ها با جزئیات در زمان نیاز.", "bestFor": "ویرایش متمرکز" }
+    },
+    "labels": {
+      "tripExample": "نمونه تایلند", "tripCharacter": "حال‌وهوای سفر", "routeOverview": "نمای تعاملی سفر", "focusHint": "یک شهر یا جابه‌جایی را انتخاب کنید", "chapters": "فصل‌های مسیر", "chapter": "فصل", "transfer": "جابه‌جایی", "routeStory": "داستان مسیر", "compactIndex": "فهرست فصل‌های سفر", "selected": "زمینه انتخاب‌شده", "compare": "ابتدا ساختار", "evidence": "ساخته‌شده از داده‌های معتبر", "whyFits": "چرا این مسیر مناسب است", "neighborhoods": "محله‌ها", "dishes": "برای شروع", "activities": "نقاط شروع خوب"
+    },
+    "summary": { "days": "{count} روز", "bases": "پایگاه‌ها", "transfers": "جابه‌جایی‌ها", "transferTime": "زمان سفر", "activities": "برنامه‌ریزی‌شده" },
+    "chapter": { "nights": "{count} شب", "days": "روزهای {range}" },
+    "transfer": { "ariaLabel": "جابه‌جایی از {from} به {to}، {duration}", "duration": "مدت", "distance": "فاصله", "load": "فشار سفر", "toleranceWarning": "این بخش از حد جابه‌جایی تعیین‌شده در شرح سفر بیشتر است.", "light": "بخش سبک", "balanced": "بخش متعادل", "heavy": "بخش سنگین", "unknown": "نیازمند داده مسیر" },
+    "empty": { "neighborhoods": "یک محله پایه انتخاب کنید", "dishes": "غذای محلی اضافه کنید", "activities": "زمانی را آزاد بگذارید" },
+    "evidence": { "title": "پاسخ‌های سریع با پایه‌ای شفاف.", "description": "این نما از همان JourneySpec نسخه‌بندی‌شده، مکان‌های استاندارد، راهنمای مقصد و معیارهای مسیر قابل استفاده در برنامه‌ریز ساخته می‌شود.", "dataset": "مجموعه‌داده", "template": "الگوی مسیر", "routeFit": "تناسب مسیر" }
   }
 }

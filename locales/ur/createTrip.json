@@ -435,5 +435,25 @@
       "compare": "راستوں کا موازنہ",
       "openPlan": "قابلِ ترمیم منصوبہ کھولیں"
     }
+  },
+  "journeyLab": {
+    "badge": "سفر کی منظرکشی کی تجربہ گاہ",
+    "title": "صرف پن نہیں، پورا سفر دیکھیں۔",
+    "intro": "تین ساختیں ایک ہی سفر کو واضح کہانی بناتی ہیں: قیام، منتقلی کا بوجھ، علاقے، کھانا، سرگرمیاں، مسافر سے مطابقت اور ذرائع۔",
+    "prototypeNote": "یہ ایک الگ تصوراتی تجربہ گاہ ہے۔ موجودہ ٹرپ پلانر تبدیل نہیں ہوا۔",
+    "conceptsLabel": "سفر سمجھنے کے تین طریقوں کا موازنہ کریں",
+    "concepts": {
+      "lens": { "title": "Journey Lens", "description": "منصوبہ بندی کے ساتھ ہمیشہ نظر آنے والا خلاصہ۔", "bestFor": "تجویز کردہ بنیادی انتخاب" },
+      "storyboard": { "title": "Route Storyboard", "description": "نمایاں سفری لکیر کے ساتھ باب وار اداریاتی منظر۔", "bestFor": "پیشکش اور اشتراک" },
+      "inspector": { "title": "Adaptive Inspector", "description": "ضرورت کے وقت تفصیل دکھانے والا مختصر باب اشاریہ۔", "bestFor": "مرکوز ترمیم" }
+    },
+    "labels": {
+      "tripExample": "تھائی لینڈ کی مثال", "tripCharacter": "سفر کا مزاج", "routeOverview": "تفاعلی سفری جائزہ", "focusHint": "شہر یا منتقلی منتخب کریں", "chapters": "راستے کے ابواب", "chapter": "باب", "transfer": "منتقلی", "routeStory": "راستے کی کہانی", "compactIndex": "سفری ابواب کا اشاریہ", "selected": "منتخب سیاق", "compare": "پہلے ساخت", "evidence": "معلوم ڈیٹا سے تیار", "whyFits": "یہ راستہ کیوں موزوں ہے", "neighborhoods": "علاقے", "dishes": "یہاں سے شروع کریں", "activities": "اچھی بنیادی سرگرمیاں"
+    },
+    "summary": { "days": "{count} دن", "bases": "قیام", "transfers": "منتقلیاں", "transferTime": "سفر کا وقت", "activities": "منصوبہ بند" },
+    "chapter": { "nights": "{count} راتیں", "days": "دن {range}" },
+    "transfer": { "ariaLabel": "{from} سے {to} منتقلی، {duration}", "duration": "دورانیہ", "distance": "فاصلہ", "load": "سفری بوجھ", "toleranceWarning": "یہ حصہ ٹرپ بریف کی منتقلی حد سے زیادہ ہے۔", "light": "ہلکا حصہ", "balanced": "متوازن حصہ", "heavy": "بھاری حصہ", "unknown": "راستے کا ڈیٹا درکار" },
+    "empty": { "neighborhoods": "بنیادی علاقہ منتخب کریں", "dishes": "مقامی کھانا شامل کریں", "activities": "وقت خالی رکھیں" },
+    "evidence": { "title": "واضح بنیاد کے ساتھ تیز جواب۔", "description": "یہ منظر اسی ورژن شدہ JourneySpec، معیاری مقامات، منزل بریف اور راستے کے اعداد سے تیار ہوتا ہے جو پلانر کو بھی طاقت دے سکتے ہیں۔", "dataset": "ڈیٹا سیٹ", "template": "راستے کا سانچہ", "routeFit": "راستے کی مطابقت" }
   }
 }

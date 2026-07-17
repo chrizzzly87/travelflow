@@ -311,6 +311,9 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `create_trip_shape__template--select` | — | `{ template, score, dataset_version }` | `CreateTripShapeLabPage.tsx` |
 | `create_trip_shape__brief_source--open` | — | `{ city, dataset_version }` | `CreateTripShapeLabPage.tsx` |
 | `create_trip_shape__skeleton--open` | — | `{ template, city_count, activity_count, knowledge_activity_count, skeleton_duration_ms, enrichment_duration_ms, compile_duration_ms, route_stage, dataset_version }` | `CreateTripShapeLabPage.tsx` |
+| `journey_lab__concept--select` | — | `{ concept }` | `JourneyOverviewLabPage.tsx` |
+| `journey_lab__chapter--select` | — | `{ chapter, concept, surface }` | `JourneyOverviewLabPage.tsx` |
+| `journey_lab__transfer--select` | — | `{ leg, concept, surface }` | `JourneyOverviewLabPage.tsx` |
 
 ### Create Trip
 | Event | Detail | Payload | File |

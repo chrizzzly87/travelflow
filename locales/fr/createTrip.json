@@ -452,5 +452,25 @@
       "compare": "Comparer les routes",
       "openPlan": "Ouvrir le plan modifiable"
     }
+  },
+  "journeyLab": {
+    "badge": "Laboratoire de visualisation du voyage",
+    "title": "Voyez tout le voyage, pas seulement les repères.",
+    "intro": "Trois structures transforment le même séjour en récit clair : étapes, charge des transferts, quartiers, cuisine, activités, affinités et sources.",
+    "prototypeNote": "Ce laboratoire de concepts est isolé. Le planificateur actuel reste inchangé.",
+    "conceptsLabel": "Comparez trois façons de comprendre un voyage",
+    "concepts": {
+      "lens": { "title": "Journey Lens", "description": "Une vue d’ensemble permanente à côté de l’espace de planification.", "bestFor": "Choix recommandé" },
+      "storyboard": { "title": "Route Storyboard", "description": "Une vue éditoriale en chapitres avec un fil de voyage fort.", "bestFor": "Révéler et partager" },
+      "inspector": { "title": "Adaptive Inspector", "description": "Un index compact avec des détails uniquement au besoin.", "bestFor": "Édition ciblée" }
+    },
+    "labels": {
+      "tripExample": "Exemple en Thaïlande", "tripCharacter": "Caractère du voyage", "routeOverview": "Vue interactive du voyage", "focusHint": "Choisissez une ville ou un transfert", "chapters": "Chapitres de l’itinéraire", "chapter": "Chapitre", "transfer": "Transfert", "routeStory": "Le récit de l’itinéraire", "compactIndex": "Index des chapitres", "selected": "Contexte sélectionné", "compare": "La structure d’abord", "evidence": "Fondé sur des données connues", "whyFits": "Pourquoi cet itinéraire convient", "neighborhoods": "Quartiers", "dishes": "À goûter", "activities": "Bons points d’ancrage"
+    },
+    "summary": { "days": "{count} jours", "bases": "Étapes", "transfers": "Transferts", "transferTime": "Temps de trajet", "activities": "Planifiées" },
+    "chapter": { "nights": "{count} nuits", "days": "Jours {range}" },
+    "transfer": { "ariaLabel": "Transfert de {from} à {to}, {duration}", "duration": "Durée", "distance": "Distance", "load": "Charge du voyage", "toleranceWarning": "Ce trajet dépasse la limite de transfert du brief.", "light": "Trajet léger", "balanced": "Trajet équilibré", "heavy": "Trajet exigeant", "unknown": "Données d’itinéraire requises" },
+    "empty": { "neighborhoods": "Choisissez un quartier", "dishes": "Ajoutez la cuisine locale", "activities": "Gardez du temps libre" },
+    "evidence": { "title": "Des réponses rapides sur une base visible.", "description": "La vue s’appuie sur la même JourneySpec versionnée, les lieux canoniques, les fiches destination et les mesures d’itinéraire que le planificateur.", "dataset": "Jeu de données", "template": "Modèle d’itinéraire", "routeFit": "Affinité de l’itinéraire" }
   }
 }

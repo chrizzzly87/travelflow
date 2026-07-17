@@ -452,5 +452,25 @@
       "compare": "루트 비교",
       "openPlan": "편집 가능한 플랜 열기"
     }
+  },
+  "journeyLab": {
+    "badge": "여행 시각화 실험실",
+    "title": "핀만 보지 말고 여행 전체를 보세요.",
+    "intro": "세 가지 구조가 같은 여행을 명확한 이야기로 바꿉니다. 거점, 이동 부담, 동네, 음식, 활동, 여행자 적합도와 출처까지 함께 보여 줍니다.",
+    "prototypeNote": "현재 플래너와 분리된 콘셉트 실험실입니다. 기존 플래너는 변경되지 않습니다.",
+    "conceptsLabel": "여행을 이해하는 세 가지 방식 비교",
+    "concepts": {
+      "lens": { "title": "Journey Lens", "description": "계획 화면 옆에 항상 보이는 여행 개요입니다.", "bestFor": "추천 기본안" },
+      "storyboard": { "title": "Route Storyboard", "description": "선명한 여정 축을 가진 에디토리얼 챕터 뷰입니다.", "bestFor": "공개 및 공유" },
+      "inspector": { "title": "Adaptive Inspector", "description": "필요할 때만 세부 정보를 여는 간결한 챕터 색인입니다.", "bestFor": "집중 편집" }
+    },
+    "labels": {
+      "tripExample": "태국 예시", "tripCharacter": "여행 성격", "routeOverview": "인터랙티브 여행 개요", "focusHint": "도시나 이동 구간을 선택해 살펴보세요", "chapters": "경로 챕터", "chapter": "챕터", "transfer": "이동", "routeStory": "경로 이야기", "compactIndex": "여행 챕터 색인", "selected": "선택한 맥락", "compare": "구조부터", "evidence": "확인된 데이터 기반", "whyFits": "이 경로가 맞는 이유", "neighborhoods": "동네", "dishes": "먼저 맛볼 음식", "activities": "좋은 핵심 활동"
+    },
+    "summary": { "days": "{count}일", "bases": "거점", "transfers": "이동", "transferTime": "이동 시간", "activities": "계획됨" },
+    "chapter": { "nights": "{count}박", "days": "{range}일차" },
+    "transfer": { "ariaLabel": "{from}에서 {to}까지 이동, {duration}", "duration": "소요 시간", "distance": "거리", "load": "여행 부담", "toleranceWarning": "이 구간은 여행 브리프의 이동 한도를 초과합니다.", "light": "가벼운 구간", "balanced": "균형 잡힌 구간", "heavy": "부담 큰 구간", "unknown": "경로 데이터 필요" },
+    "empty": { "neighborhoods": "거점 동네 선택", "dishes": "현지 음식 추가", "activities": "빈 시간 남기기" },
+    "evidence": { "title": "근거가 보이는 빠른 답변.", "description": "플래너에 활용할 수 있는 동일한 버전의 JourneySpec, 표준 장소, 목적지 브리프와 경로 지표로 이 화면을 구성했습니다.", "dataset": "데이터셋", "template": "경로 템플릿", "routeFit": "경로 적합도" }
   }
 }

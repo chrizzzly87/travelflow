@@ -452,5 +452,81 @@
       "compare": "Routen vergleichen",
       "openPlan": "Plan bearbeiten"
     }
+  },
+  "journeyLab": {
+    "badge": "Labor für Reisevisualisierung",
+    "title": "Die ganze Reise sehen – nicht nur Pins.",
+    "intro": "Drei Strukturen machen aus derselben Reise eine klare Routengeschichte – mit Standorten, Transferbelastung, Vierteln, Essen, Aktivitäten, Reise-Fit und Quellen.",
+    "prototypeNote": "Dies ist ein eigenständiges Konzeptlabor. Der aktuelle Reiseplaner bleibt unverändert.",
+    "conceptsLabel": "Drei Arten, eine Reise zu verstehen",
+    "concepts": {
+      "lens": {
+        "title": "Journey Lens",
+        "description": "Eine dauerhafte Übersicht neben der Planungsfläche.",
+        "bestFor": "Empfohlener Standard"
+      },
+      "storyboard": {
+        "title": "Route Storyboard",
+        "description": "Eine redaktionelle Kapitelansicht mit starkem Reiseverlauf.",
+        "bestFor": "Enthüllung und Teilen"
+      },
+      "inspector": {
+        "title": "Adaptive Inspector",
+        "description": "Ein kompakter Kapitelindex mit Details bei Bedarf.",
+        "bestFor": "Fokussiertes Bearbeiten"
+      }
+    },
+    "labels": {
+      "tripExample": "Thailand-Beispiel",
+      "tripCharacter": "Reisecharakter",
+      "routeOverview": "Interaktive Reiseübersicht",
+      "focusHint": "Wähle eine Stadt oder einen Transfer für Details",
+      "chapters": "Routenkapitel",
+      "chapter": "Kapitel",
+      "transfer": "Transfer",
+      "routeStory": "Die Routengeschichte",
+      "compactIndex": "Index der Reisekapitel",
+      "selected": "Ausgewählter Kontext",
+      "compare": "Erst die Struktur",
+      "evidence": "Aus bekannten Daten gebaut",
+      "whyFits": "Darum passt die Route",
+      "neighborhoods": "Viertel",
+      "dishes": "Probieren",
+      "activities": "Gute Ankerpunkte"
+    },
+    "summary": {
+      "days": "{count} Tage",
+      "bases": "Standorte",
+      "transfers": "Transfers",
+      "transferTime": "Reisezeit",
+      "activities": "Geplant"
+    },
+    "chapter": {
+      "nights": "{count} Nächte",
+      "days": "Tage {range}"
+    },
+    "transfer": {
+      "ariaLabel": "Transfer von {from} nach {to}, {duration}",
+      "duration": "Dauer",
+      "distance": "Distanz",
+      "load": "Reisebelastung",
+      "toleranceWarning": "Dieser Abschnitt überschreitet das Transferlimit im Reisebriefing.",
+      "light": "Leichter Abschnitt",
+      "balanced": "Ausgewogener Abschnitt",
+      "heavy": "Anspruchsvoller Abschnitt",
+      "unknown": "Routendaten fehlen"
+    },
+    "empty": {
+      "neighborhoods": "Standort auswählen",
+      "dishes": "Lokales Essen ergänzen",
+      "activities": "Zeit offen lassen"
+    },
+    "evidence": {
+      "title": "Schnelle Antworten auf sichtbarer Grundlage.",
+      "description": "Die Ansicht entsteht aus derselben versionierten JourneySpec, eindeutigen Orten, Stadt-Briefings und Routenwerten, die auch den Planer versorgen können.",
+      "dataset": "Datensatz",
+      "template": "Routenvorlage",
+      "routeFit": "Routen-Fit"
+    }
   }
 }

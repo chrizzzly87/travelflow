@@ -452,5 +452,25 @@
       "compare": "Porównaj trasy",
       "openPlan": "Otwórz edytowalny plan"
     }
+  },
+  "journeyLab": {
+    "badge": "Laboratorium wizualizacji podróży",
+    "title": "Zobacz całą podróż, nie tylko punkty.",
+    "intro": "Trzy układy zamieniają tę samą podróż w czytelną opowieść: bazy, obciążenie przejazdami, dzielnice, jedzenie, atrakcje, dopasowanie i źródła.",
+    "prototypeNote": "To odizolowane laboratorium koncepcji. Obecny planer pozostaje bez zmian.",
+    "conceptsLabel": "Porównaj trzy sposoby rozumienia podróży",
+    "concepts": {
+      "lens": { "title": "Journey Lens", "description": "Stały panel podsumowania obok obszaru planowania.", "bestFor": "Zalecany domyślnie" },
+      "storyboard": { "title": "Route Storyboard", "description": "Redakcyjny widok rozdziałów z wyraźną osią podróży.", "bestFor": "Prezentacja i udostępnianie" },
+      "inspector": { "title": "Adaptive Inspector", "description": "Kompaktowy indeks z detalami tylko wtedy, gdy są potrzebne.", "bestFor": "Skupiona edycja" }
+    },
+    "labels": {
+      "tripExample": "Przykład: Tajlandia", "tripCharacter": "Charakter podróży", "routeOverview": "Interaktywny przegląd podróży", "focusHint": "Wybierz miasto lub przejazd", "chapters": "Rozdziały trasy", "chapter": "Rozdział", "transfer": "Przejazd", "routeStory": "Opowieść o trasie", "compactIndex": "Indeks rozdziałów", "selected": "Wybrany kontekst", "compare": "Najpierw struktura", "evidence": "Na podstawie znanych danych", "whyFits": "Dlaczego ta trasa pasuje", "neighborhoods": "Dzielnice", "dishes": "Warto spróbować", "activities": "Dobre punkty programu"
+    },
+    "summary": { "days": "{count} dni", "bases": "Bazy", "transfers": "Przejazdy", "transferTime": "Czas w drodze", "activities": "Zaplanowane" },
+    "chapter": { "nights": "{count} nocy", "days": "Dni {range}" },
+    "transfer": { "ariaLabel": "Przejazd z {from} do {to}, {duration}", "duration": "Czas", "distance": "Dystans", "load": "Obciążenie podróży", "toleranceWarning": "Ten odcinek przekracza limit przejazdu w briefie.", "light": "Lekki odcinek", "balanced": "Zrównoważony odcinek", "heavy": "Wymagający odcinek", "unknown": "Brak danych trasy" },
+    "empty": { "neighborhoods": "Wybierz dzielnicę bazową", "dishes": "Dodaj lokalne jedzenie", "activities": "Zostaw wolny czas" },
+    "evidence": { "title": "Szybkie odpowiedzi z widoczną podstawą.", "description": "Widok korzysta z tej samej wersjonowanej JourneySpec, kanonicznych miejsc, opisów kierunków i metryk trasy co planer.", "dataset": "Zbiór danych", "template": "Szablon trasy", "routeFit": "Dopasowanie trasy" }
   }
 }
