@@ -489,6 +489,8 @@
       "chooseRoute": "Choose this route",
       "readyTitle": "Your route skeleton is ready.",
       "readyDescription": "Open it now with real cities, coordinates, nights, day trips, and editable map markers.",
+      "readyAdaptedTitle": "Your adapted route is ready.",
+      "readyAdaptedDescription": "Open the catalogue-backed plan with your approved AI changes already applied.",
     "dayTripShort": "day trip",
     "nightsShort": "{count} nights",
     "brief": {
@@ -518,7 +520,8 @@
     "actions": {
       "compare": "Compare routes",
       "preparing": "Retrieving routes…",
-      "openPlan": "Open instant base"
+      "openPlan": "Open instant base",
+      "openAdaptedPlan": "Open adapted plan"
     }
   },
   "journeyLab": {

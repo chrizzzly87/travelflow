@@ -489,6 +489,8 @@
       "chooseRoute": "Wybierz tę trasę",
       "readyTitle": "Szkielet trasy jest gotowy.",
       "readyDescription": "Otwórz go z prawdziwymi miastami, współrzędnymi, nocami, wycieczkami i edytowalnymi znacznikami.",
+      "readyAdaptedTitle": "Dostosowana trasa jest gotowa.",
+      "readyAdaptedDescription": "Otwórz plan oparty na katalogu z zatwierdzonymi zmianami AI już zastosowanymi.",
     "dayTripShort": "wycieczka",
     "nightsShort": "{count} nocy",
     "brief": {
@@ -518,7 +520,8 @@
     "actions": {
       "compare": "Porównaj trasy",
       "preparing": "Pobieranie tras…",
-      "openPlan": "Otwórz natychmiastową bazę"
+      "openPlan": "Otwórz natychmiastową bazę",
+      "openAdaptedPlan": "Otwórz dostosowany plan"
     }
   },
   "journeyLab": {

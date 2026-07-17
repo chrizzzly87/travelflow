@@ -489,6 +489,8 @@
       "chooseRoute": "이 루트 선택",
       "readyTitle": "루트 구조가 준비되었습니다.",
       "readyDescription": "실제 도시, 좌표, 숙박일, 당일치기, 편집 가능한 지도 마커와 함께 여세요.",
+      "readyAdaptedTitle": "맞춤 루트가 준비되었습니다.",
+      "readyAdaptedDescription": "승인한 AI 조정이 적용된 카탈로그 기반 플랜을 여세요.",
     "dayTripShort": "당일치기",
     "nightsShort": "{count}박",
     "brief": {
@@ -518,7 +520,8 @@
     "actions": {
       "compare": "루트 비교",
       "preparing": "경로 검색 중…",
-      "openPlan": "즉시 기본안 열기"
+      "openPlan": "즉시 기본안 열기",
+      "openAdaptedPlan": "맞춤 플랜 열기"
     }
   },
   "journeyLab": {

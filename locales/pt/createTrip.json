@@ -489,6 +489,8 @@
       "chooseRoute": "Escolher esta rota",
       "readyTitle": "O esqueleto da sua rota está pronto.",
       "readyDescription": "Abra agora com cidades, coordenadas, noites, passeios e marcadores editáveis reais.",
+      "readyAdaptedTitle": "Sua rota adaptada está pronta.",
+      "readyAdaptedDescription": "Abra o plano baseado no catálogo com os ajustes de IA que você aprovou já aplicados.",
     "dayTripShort": "passeio de um dia",
     "nightsShort": "{count} noites",
     "brief": {
@@ -518,7 +520,8 @@
     "actions": {
       "compare": "Comparar rotas",
       "preparing": "A recuperar rotas…",
-      "openPlan": "Abrir base instantânea"
+      "openPlan": "Abrir base instantânea",
+      "openAdaptedPlan": "Abrir plano adaptado"
     }
   },
   "journeyLab": {

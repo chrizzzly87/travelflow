@@ -489,6 +489,8 @@
       "chooseRoute": "Diese Route wählen",
       "readyTitle": "Dein Routengerüst ist bereit.",
       "readyDescription": "Öffne es jetzt mit echten Städten, Koordinaten, Übernachtungen, Tagesausflügen und bearbeitbaren Kartenmarkern.",
+      "readyAdaptedTitle": "Deine angepasste Route ist bereit.",
+      "readyAdaptedDescription": "Öffne den katalogbasierten Plan mit deinen bereits übernommenen KI-Anpassungen.",
     "dayTripShort": "Tagesausflug",
     "nightsShort": "{count} Nächte",
     "brief": {
@@ -518,7 +520,8 @@
     "actions": {
       "compare": "Routen vergleichen",
       "preparing": "Routen werden abgerufen…",
-      "openPlan": "Sofortplan öffnen"
+      "openPlan": "Sofortplan öffnen",
+      "openAdaptedPlan": "Angepassten Plan öffnen"
     }
   },
   "journeyLab": {

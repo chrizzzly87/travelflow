@@ -489,6 +489,8 @@
       "chooseRoute": "Choisir cette route",
       "readyTitle": "Le squelette de votre route est prêt.",
       "readyDescription": "Ouvrez-le avec de vraies villes, coordonnées, nuits, excursions et épingles modifiables.",
+      "readyAdaptedTitle": "Votre itinéraire adapté est prêt.",
+      "readyAdaptedDescription": "Ouvrez le plan issu du catalogue avec les ajustements IA que vous avez approuvés.",
     "dayTripShort": "excursion",
     "nightsShort": "{count} nuits",
     "brief": {
@@ -518,7 +520,8 @@
     "actions": {
       "compare": "Comparer les routes",
       "preparing": "Récupération des itinéraires…",
-      "openPlan": "Ouvrir la base instantanée"
+      "openPlan": "Ouvrir la base instantanée",
+      "openAdaptedPlan": "Ouvrir le plan adapté"
     }
   },
   "journeyLab": {
