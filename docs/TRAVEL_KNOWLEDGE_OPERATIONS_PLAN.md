@@ -1,6 +1,6 @@
 # Travel knowledge operations plan
 
-Status: proposed operating model for Thailand and later country packs
+Status: operational foundation deployed for Thailand; scheduled fetchers, review UI, and artifact publishing remain staged work
 
 Owner: TravelFlow product/data engineering with explicit editorial review
 
@@ -130,9 +130,9 @@ These services may later be integrated as clearly separated live providers when 
 
 Refreshing does not automatically mean publishing. A source run produces candidates; material changes still require review.
 
-## 7. Proposed additive operational tables
+## 7. Deployed additive operational tables
 
-The existing `travel_*` catalog remains the published projection. Add these tables before automating crawlers:
+The existing `travel_*` catalog remains the published projection. The following admin-only tables were deployed on 2026-07-17 before any crawler was enabled:
 
 ### `travel_source_runs`
 
@@ -184,6 +184,8 @@ Immutable output records:
 - staged, published, superseded, and rolled-back times
 
 RLS must keep snapshots, candidates, and review data admin-only. Public clients can read only the published projection through the versioned pack RPC.
+
+Production verification confirms that all five tables have RLS enabled, anonymous table access is revoked, and none of the operational tables are referenced by the public destination-pack RPC. Raw snapshots and review decisions are append-only for authenticated admins; the service role retains controlled retention access.
 
 ## 8. Fetcher contract
 
@@ -254,9 +256,20 @@ Track these per country and dataset version:
 
 ### Stage 2 — freshness and source registry
 
-- Add the operational tables above.
-- Register Wikidata, GeoNames, IANA, Wikimedia Analytics, OSM/Geofabrik, data.go.th, TMD Open Data, and Wikimedia Commons with explicit ingestion modes.
-- Add a weekly freshness/license audit before adding any crawler.
+- [x] Add the operational tables above.
+- [x] Register Wikidata, GeoNames, IANA, Wikimedia Analytics, OSM/Geofabrik, data.go.th, TMD Open Data, Wikimedia Commons, and the current manual/editorial sources with explicit ingestion modes and storage rules.
+- [x] Add a deterministic freshness/license audit to the repository quality gate before adding any crawler.
+- [ ] Schedule that audit weekly and persist its run summary after the first source-run worker is available.
+
+The current commands are:
+
+```bash
+pnpm travel-knowledge:audit
+pnpm travel-knowledge:generate-source-registry
+pnpm travel-knowledge:check-source-registry
+```
+
+`pnpm travel-knowledge:check` runs the dataset validator, Thailand artifact reproducibility checks, registry reproducibility check, and freshness/license audit together. It fails on expired evidence, overdue source content, overdue license reviews, source/registry drift, or an unregistered published source. Warnings surface upcoming reviews and missing directly dated evidence without silently blocking an unrelated application build.
 
 ### Stage 3 — safe automated ingestion
 
