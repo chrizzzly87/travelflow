@@ -29,4 +29,11 @@ describe('admin navigation config', () => {
     expect(airports?.path).toBe('/admin/airports');
     expect(airports?.section).toBe('operations');
   });
+
+  it('includes travel knowledge review in operations', () => {
+    const travelKnowledge = ADMIN_NAV_ITEMS.find((item) => item.id === 'travel_knowledge');
+    expect(travelKnowledge).toBeTruthy();
+    expect(travelKnowledge?.path).toBe('/admin/travel-knowledge');
+    expect(travelKnowledge?.section).toBe('operations');
+  });
 });

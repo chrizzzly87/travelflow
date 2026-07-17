@@ -33,10 +33,30 @@ describe('travel knowledge operations schema', () => {
     for (const table of operationalTables) expect(packFunction).not.toContain(table);
   });
 
-  it('makes raw snapshots and review decisions append-only for authenticated admins', () => {
+  it('keeps raw snapshots append-only and review decisions atomic', () => {
     expect(sql).toContain('"Travel operations admin read"');
     expect(sql).toContain('"Travel operations admin insert"');
-    expect(sql).toContain('grant select, insert on table\n  public.travel_source_snapshots,\n  public.travel_review_decisions\nto authenticated;');
+    expect(sql).toContain('grant select, insert on table\n  public.travel_source_snapshots\nto authenticated;');
+    expect(sql).toContain('grant select on table\n  public.travel_review_decisions\nto authenticated;');
+    expect(sql).not.toContain('grant select, insert on table\n  public.travel_review_decisions');
+    expect(sql).toContain('create or replace function public.admin_review_travel_knowledge_candidate');
+    expect(sql).toContain("if v_candidate.status not in ('new', 'needs_review') then");
+    expect(sql).toContain("when p_decision in ('accept', 'accept_with_edit') then 'accepted'");
+    expect(sql).toContain('for update;');
+  });
+
+  it('exposes admin-only review reads without publishing candidate data', () => {
+    expect(sql).toContain('create or replace function public.admin_list_travel_knowledge_candidates');
+    expect(sql).toContain('create or replace function public.admin_get_travel_knowledge_review_summary');
+    expect(sql).toContain('or not public.is_admin(v_uid) then');
+    expect(sql).toContain('revoke all on function public.admin_list_travel_knowledge_candidates');
+    expect(sql).toContain('grant execute on function public.admin_review_travel_knowledge_candidate');
+    const listFunctionStart = sql.indexOf('create or replace function public.admin_list_travel_knowledge_candidates');
+    const summaryFunctionStart = sql.indexOf('create or replace function public.admin_get_travel_knowledge_review_summary');
+    const reviewFunctionStart = sql.indexOf('create or replace function public.admin_review_travel_knowledge_candidate');
+    expect(sql.slice(listFunctionStart, summaryFunctionStart)).toContain('security invoker');
+    expect(sql.slice(summaryFunctionStart, reviewFunctionStart)).toContain('security invoker');
+    expect(sql.slice(reviewFunctionStart, sql.indexOf('revoke all on function', reviewFunctionStart))).toContain('security definer');
   });
 
   it('creates a conflict-checked private snapshot bucket with defense-in-depth denial', () => {

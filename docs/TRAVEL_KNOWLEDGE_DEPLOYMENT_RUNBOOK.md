@@ -17,6 +17,9 @@ Applied migrations:
 - `20260717074708 register_travel_knowledge_sources_v1`
 - `20260717081752 add_private_travel_knowledge_snapshot_bucket`
 - `20260717082244 activate_geonames_wikidata_ingestion_v1`
+- `20260717085205 backup_travel_knowledge_before_admin_review_20260717t085112z`
+- `20260717085505 add_travel_knowledge_admin_review`
+- `20260717085716 harden_travel_knowledge_review_reads`
 
 The initial foundation applied only the isolated travel-knowledge section of `docs/supabase.sql`, followed by the exact generated Thailand seed. Later operations and private-bucket migrations were also narrow and additive; the rest of the documented schema was not replayed.
 
@@ -42,6 +45,11 @@ The first active identity ingestion completed after the bucket migration:
 - a repeat run reused unchanged content and created zero duplicate candidates
 - Thailand remained at 84 published entities and 15 published templates
 - an anonymous Storage client saw zero objects, could not resolve the private bucket, and could not upload the probe object
+- a fresh 17-table travel-only backup captured 1,112 rows with zero count or checksum mismatches before the review migration
+- three admin review RPCs are available only to authenticated callers and reject non-admin sessions internally
+- the two read RPCs use caller/RLS permissions; only the atomic write RPC uses fixed-search-path elevated execution
+- authenticated direct inserts into `travel_review_decisions` are revoked, while admin read remains available
+- all 32 candidates remain `needs_review`, the review ledger remains empty, and published Thailand counts were unchanged after deployment verification
 
 ## Sources of truth
 
@@ -85,6 +93,16 @@ Because the free Supabase tier did not provide a managed snapshot, the migration
 - manifest SHA-256: `7bfcd3ef4ab30df5f634b7ae542b43b3e6af49e4352817a741f306c22ffc84dd`
 
 This protects against mistakes in the additive migration. It is not a substitute for an independent physical database backup. Keep the private schema until the feature has completed its rollout and a separate retention decision is approved.
+
+Before deploying the admin review workflow, a second travel-only checkpoint captured the operations tables that did not exist in the original baseline:
+
+- backup schema: `tf_bak_tk_20260717t085112z`
+- 17 `public.travel_*` tables and 1,112 rows copied under repeatable-read
+- zero row-count or deterministic JSON-row checksum mismatches
+- 17/17 backup tables recomputed successfully from copied rows
+- `public`, `anon`, and `authenticated` have no usage permission on the backup schema
+- external non-secret manifest: `/Users/chrizzzly/.codex/backups/travelflow/travelflow-supabase-travel-knowledge-pre-admin-review-20260717T085112Z.manifest.json`
+- manifest SHA-256: `d66057c78c1677c3b6be3bc9b0630019cbfe1fc10eadf348816813a88ffc66d3`
 
 ## Apply or update
 
@@ -179,6 +197,8 @@ Before the published travel tables receive material authenticated read volume, a
 - duplicate permissive `SELECT` policies for the `authenticated` role
 
 Fresh unused-index notices are expected while the operational tables are empty and should be reassessed after representative traffic rather than removed immediately. The security advisor reports only the intentional anonymous public-read warnings for the published projection; no operational table is included in those warnings.
+
+The admin review write RPC intentionally remains an authenticated `SECURITY DEFINER` function because direct decision-table inserts are revoked and decision plus candidate status must commit atomically. It has an empty `search_path`, explicit authenticated-only execution, non-null/non-anonymous identity checks, and an internal admin-role check. The candidate-list and review-summary RPCs use `SECURITY INVOKER` so reads continue through table grants and RLS.
 
 ## Rollback without deletion
 

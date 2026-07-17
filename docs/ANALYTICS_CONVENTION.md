@@ -148,6 +148,9 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `admin__design_playground--open` | — | — | `AdminDesignSystemPlaygroundPage.tsx` |
 | `admin__design_playground_component_group--view` | — | `{ group_id }` | `AdminDesignSystemPlaygroundPage.tsx` |
 | `admin__design_playground_toast--trigger` | — | `{ scenario_id }` | `AdminDesignSystemPlaygroundPage.tsx` |
+| `admin__travel_knowledge--reload` | — | — | `AdminTravelKnowledgePage.tsx` |
+| `admin__travel_knowledge_source--open` | — | `{ source_key }` | `AdminTravelKnowledgePage.tsx` |
+| `admin__travel_knowledge_review--{decision}` | `accept`, `accept_with_edit`, `reject`, `request_changes` | `{ candidate_id, source_key, country_code, field_path }` | `AdminTravelKnowledgePage.tsx` |
 
 ### Trip View
 | Event | Detail | Payload | File |
