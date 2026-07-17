@@ -489,6 +489,8 @@
       "chooseRoute": "Scegli questo percorso",
       "readyTitle": "La struttura del percorso è pronta.",
       "readyDescription": "Aprila con città, coordinate, notti, escursioni e indicatori modificabili reali.",
+      "readyAdaptedTitle": "Il tuo itinerario adattato è pronto.",
+      "readyAdaptedDescription": "Apri il piano basato sul catalogo con le modifiche IA che hai approvato già applicate.",
     "dayTripShort": "escursione",
     "nightsShort": "{count} notti",
     "brief": {
@@ -518,7 +520,8 @@
     "actions": {
       "compare": "Confronta i percorsi",
       "preparing": "Recupero dei percorsi…",
-      "openPlan": "Apri base istantanea"
+      "openPlan": "Apri base istantanea",
+      "openAdaptedPlan": "Apri piano adattato"
     }
   },
   "journeyLab": {

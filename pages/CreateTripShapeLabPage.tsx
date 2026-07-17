@@ -1123,12 +1123,18 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
             <div>
               <Sparkle size={22} weight="fill" />
               <span>
-                <strong>{t('shapeLab.reveal.readyTitle')}</strong>
-                <small>{t('shapeLab.reveal.readyDescription')}</small>
+                <strong>{t(personalizedSpec
+                  ? 'shapeLab.reveal.readyAdaptedTitle'
+                  : 'shapeLab.reveal.readyTitle')}</strong>
+                <small>{t(personalizedSpec
+                  ? 'shapeLab.reveal.readyAdaptedDescription'
+                  : 'shapeLab.reveal.readyDescription')}</small>
               </span>
             </div>
             <button type="button" onClick={openSelectedSkeleton} disabled={isPreparingSelectedRoute}>
-              {t('shapeLab.actions.openPlan')}
+              {t(personalizedSpec
+                ? 'shapeLab.actions.openAdaptedPlan'
+                : 'shapeLab.actions.openPlan')}
               <ArrowRight className="shape-next-icon" size={18} weight="bold" />
             </button>
           </div>

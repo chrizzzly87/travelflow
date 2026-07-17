@@ -326,7 +326,16 @@ describe('pages/CreateTripShapeLabPage', () => {
       }),
     );
     await user.click(screen.getByRole('button', { name: /wizard\.personalize\.apply/i }));
-    await user.click(screen.getByRole('button', { name: /shapeLab\.actions\.openPlan/i }));
+    expect(screen.getByText(/shapeLab\.reveal\.readyAdaptedTitle/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /shapeLab\.actions\.openAdaptedPlan/i })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /shapeLab\.actions\.openPlan/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /wizard\.personalize\.undo/i }));
+    expect(screen.getByText(/shapeLab\.reveal\.readyTitle/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /shapeLab\.actions\.openPlan/i })).toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: /wizard\.personalize\.apply/i }));
+    await user.click(screen.getByRole('button', { name: /shapeLab\.actions\.openAdaptedPlan/i }));
 
     await waitFor(() => expect(onTripGenerated).toHaveBeenCalledTimes(1));
     const trip = onTripGenerated.mock.calls[0]?.[0];
