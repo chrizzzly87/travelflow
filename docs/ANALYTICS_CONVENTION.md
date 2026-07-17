@@ -290,11 +290,24 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `create_trip__notifications--not_now` | — | — | `CreateTripClassicLabPage.tsx` |
 | `create_trip__notifications--permission` | — | `{ permission }` | `CreateTripClassicLabPage.tsx` |
 | `create_trip__notifications--sent` | — | — | `CreateTripClassicLabPage.tsx` |
+| `create_trip__experience--view` | — | `{ surface, experience, rollout }` | `AppRoutes.tsx`, `DeferredAppRoutes.tsx` |
 | `create_trip_wizard__branch--select` | — | `{ branch }` | `CreateTripV3Page.tsx` |
 | `create_trip_wizard__date_mode--select` | — | `{ mode }` | `CreateTripV3Page.tsx` |
 | `create_trip_wizard__traveler--select` | — | `{ traveler_type }` | `CreateTripV3Page.tsx` |
 | `create_trip_wizard__transport--toggle` | — | `{ mode, enabled }` | `CreateTripV3Page.tsx` |
 | `create_trip_wizard__cta--generate` | — | `{ branch, destination_count, date_mode, traveler_type, transport_override }` | `CreateTripV3Page.tsx` |
+| `create_trip_shape__shape--select` | — | `{ journey_type }` | `CreateTripShapeLabPage.tsx` |
+| `create_trip_shape__step--back` | — | `{ from, to }` | `CreateTripShapeLabPage.tsx` |
+| `create_trip_shape__step--continue` | — | `{ from, to }` | `CreateTripShapeLabPage.tsx` |
+| `create_trip_shape__city--select` | — | `{ city, journey_type }` | `CreateTripShapeLabPage.tsx` |
+| `create_trip_shape__neighborhood--toggle` | — | `{ neighborhood, enabled }` | `CreateTripShapeLabPage.tsx` |
+| `create_trip_shape__interest--toggle` | — | `{ tag, enabled }` | `CreateTripShapeLabPage.tsx` |
+| `create_trip_shape__knowledge--load` | — | `{ source, load_duration_ms, dataset_version, entity_count, template_count }` | `CreateTripShapeLabPage.tsx` |
+| `create_trip_shape__concepts--prepare` | — | `{ journey_type, concept_count, attempted_template_count, failed_template_count, rank_duration_ms, apply_duration_ms, total_duration_ms, knowledge_source, dataset_version }` | `CreateTripShapeLabPage.tsx` |
+| `create_trip_shape__reveal--ready` | — | `{ journey_type, concept_count, duration_ms, knowledge_source, dataset_version }` | `CreateTripShapeLabPage.tsx` |
+| `create_trip_shape__template--select` | — | `{ template, score, dataset_version }` | `CreateTripShapeLabPage.tsx` |
+| `create_trip_shape__brief_source--open` | — | `{ city, dataset_version }` | `CreateTripShapeLabPage.tsx` |
+| `create_trip_shape__skeleton--open` | — | `{ template, city_count, activity_count, knowledge_activity_count, skeleton_duration_ms, enrichment_duration_ms, compile_duration_ms, route_stage, dataset_version }` | `CreateTripShapeLabPage.tsx` |
 
 ### Create Trip
 | Event | Detail | Payload | File |

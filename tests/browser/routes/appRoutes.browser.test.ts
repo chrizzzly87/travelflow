@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 
 const mocks = vi.hoisted(() => ({
   pendingModules: new Set<string>(['TripLoaderRoute']),
+  trackEvent: vi.fn(),
 }));
 
 vi.mock('../../../services/lazyImportRecovery', () => ({
@@ -17,10 +18,24 @@ vi.mock('../../../services/lazyImportRecovery', () => ({
   },
 }));
 
+vi.mock('../../../hooks/useDbSync', () => ({ useDbSync: vi.fn() }));
+vi.mock('../../../services/analyticsService', () => ({ trackEvent: mocks.trackEvent }));
+vi.mock('../../../pages/CreateTripClassicLabPage', () => ({
+  CreateTripClassicLabPage: () => React.createElement('div', { 'data-testid': 'classic-creator' }),
+}));
+vi.mock('../../../pages/CreateTripV3Page', () => ({
+  CreateTripV3Page: () => React.createElement('div', { 'data-testid': 'wizard-v3-creator' }),
+}));
+vi.mock('../../../pages/CreateTripShapeLabPage', () => ({
+  CreateTripShapeLabPage: () => React.createElement('div', { 'data-testid': 'shape-creator' }),
+}));
+
 import { AppRoutes } from '../../../app/routes/AppRoutes';
 
 afterEach(() => {
   mocks.pendingModules.clear();
+  mocks.trackEvent.mockClear();
+  vi.unstubAllEnvs();
 });
 
 describe('app/routes/AppRoutes suspense fallbacks', () => {
@@ -88,5 +103,68 @@ describe('app/routes/AppRoutes suspense fallbacks', () => {
     expect(shell.querySelector('.tf-boot-control-flag')).toBeTruthy();
     expect(shell.querySelector('.tf-boot-control-skeleton--cta')).toBeTruthy();
     view.unmount();
+  });
+});
+
+describe('app/routes/AppRoutes create-trip rollout', () => {
+  const warmCreatorModules = () => Promise.all([
+    import('../../../pages/CreateTripClassicLabPage'),
+    import('../../../pages/CreateTripV3Page'),
+    import('../../../pages/CreateTripShapeLabPage'),
+  ]);
+
+  const renderRoutes = (path: string) => render(
+    React.createElement(
+      MemoryRouter,
+      { initialEntries: [path] },
+      React.createElement(AppRoutes, {
+        trip: null,
+        appLanguage: 'en',
+        onAppLanguageLoaded: vi.fn(),
+        onTripGenerated: vi.fn(),
+        onTripLoaded: vi.fn(),
+        onUpdateTrip: vi.fn(),
+        onCommitState: vi.fn(),
+        onViewSettingsChange: vi.fn(),
+        onOpenManager: vi.fn(),
+        onOpenSettings: vi.fn(),
+      })
+    )
+  );
+
+  it('keeps the current creators when the route-first rollout is off', async () => {
+    await warmCreatorModules();
+    vi.stubEnv('VITE_CREATE_TRIP_SHAPE_ROLLOUT', 'off');
+
+    const primary = renderRoutes('/create-trip');
+    expect(await primary.findByTestId('classic-creator')).toBeTruthy();
+    primary.unmount();
+
+    const wizard = renderRoutes('/create-trip/wizard');
+    expect(await wizard.findByTestId('wizard-v3-creator')).toBeTruthy();
+    wizard.unmount();
+  });
+
+  it('can promote the route-first planner on the wizard or both creator surfaces', async () => {
+    await warmCreatorModules();
+    vi.stubEnv('VITE_CREATE_TRIP_SHAPE_ROLLOUT', 'wizard');
+
+    const primary = renderRoutes('/create-trip');
+    expect(await primary.findByTestId('classic-creator')).toBeTruthy();
+    primary.unmount();
+
+    const wizard = renderRoutes('/create-trip/wizard');
+    expect(await wizard.findByTestId('shape-creator')).toBeTruthy();
+    wizard.unmount();
+
+    vi.stubEnv('VITE_CREATE_TRIP_SHAPE_ROLLOUT', 'primary');
+    const promoted = renderRoutes('/create-trip');
+    expect(await promoted.findByTestId('shape-creator')).toBeTruthy();
+    expect(mocks.trackEvent).toHaveBeenCalledWith('create_trip__experience--view', {
+      surface: 'primary',
+      experience: 'shape_thailand',
+      rollout: 'primary',
+    });
+    promoted.unmount();
   });
 });

@@ -8,6 +8,9 @@ import { MarketingRouteLoadingShell } from '../../components/bootstrap/Marketing
 import { TripRouteLoadingShell } from '../../components/tripview/TripRouteLoadingShell';
 import { DeferredAppRoutes } from './DeferredAppRoutes';
 import { markInitialRouteHandoffCompleted } from '../../services/marketingRouteShellState';
+import type { CreateTripSurface } from '../../config/createTripExperience';
+import { getCreateTripShapeRollout, resolveCreateTripExperience } from '../../config/createTripExperience';
+import { trackEvent } from '../../services/analyticsService';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -19,6 +22,7 @@ const SharedTripLoaderRoute = lazyWithRecovery('SharedTripLoaderRoute', () => im
 const ExampleTripLoaderRoute = lazyWithRecovery('ExampleTripLoaderRoute', () => import('../../routes/ExampleTripLoaderRoute').then((module) => ({ default: module.ExampleTripLoaderRoute })));
 const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
 const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
+const CreateTripShapeLabPage = lazyWithRecovery('CreateTripShapeLabPage', () => import('../../pages/CreateTripShapeLabPage').then((module) => ({ default: module.CreateTripShapeLabPage })));
 
 export const RouteLoadingFallback: React.FC = () => (
     <MarketingRouteLoadingShell />
@@ -68,29 +72,32 @@ const ScrollToTop: React.FC = () => {
     return null;
 };
 
-const CreateTripClassicRoute: React.FC<{
+const CreateTripExperienceRoute: React.FC<{
+    surface: CreateTripSurface;
     onTripGenerated: (t: ITrip) => void;
     onOpenManager: () => void;
     onLanguageLoaded?: (lang: AppLanguage) => void;
-}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
+}> = ({ surface, onTripGenerated, onOpenManager, onLanguageLoaded }) => {
     useDbSync(onLanguageLoaded);
+    const rollout = getCreateTripShapeRollout();
+    const experience = resolveCreateTripExperience(surface, rollout);
+
+    useEffect(() => {
+        trackEvent('create_trip__experience--view', { surface, experience, rollout });
+    }, [experience, rollout, surface]);
+
+    if (experience === 'shape_thailand') {
+        return <CreateTripShapeLabPage onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />;
+    }
+    if (experience === 'wizard_v3') {
+        return <CreateTripV3Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />;
+    }
     return (
         <CreateTripClassicLabPage
             onTripGenerated={onTripGenerated}
             onOpenManager={onOpenManager}
             onLanguageLoaded={onLanguageLoaded}
         />
-    );
-};
-
-const CreateTripWizardRoute: React.FC<{
-    onTripGenerated: (t: ITrip) => void;
-    onOpenManager: () => void;
-    onLanguageLoaded?: (lang: AppLanguage) => void;
-}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
-    useDbSync(onLanguageLoaded);
-    return (
-        <CreateTripV3Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
     );
 };
 
@@ -131,7 +138,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                     <Route
                         path="/create-trip"
                         element={renderWithHandoff(
-                            <CreateTripClassicRoute
+                            <CreateTripExperienceRoute
+                                surface="primary"
                                 onTripGenerated={onTripGenerated}
                                 onOpenManager={onOpenManager}
                                 onLanguageLoaded={onAppLanguageLoaded}
@@ -143,7 +151,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                             key={`tool:${locale}:create-trip`}
                             path={`/${locale}/create-trip`}
                             element={renderWithHandoff(
-                                <CreateTripClassicRoute
+                                <CreateTripExperienceRoute
+                                    surface="primary"
                                     onTripGenerated={onTripGenerated}
                                     onOpenManager={onOpenManager}
                                     onLanguageLoaded={onAppLanguageLoaded}
@@ -154,7 +163,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                     <Route
                         path="/create-trip/wizard"
                         element={renderWithHandoff(
-                            <CreateTripWizardRoute
+                            <CreateTripExperienceRoute
+                                surface="wizard"
                                 onTripGenerated={onTripGenerated}
                                 onOpenManager={onOpenManager}
                                 onLanguageLoaded={onAppLanguageLoaded}
@@ -166,7 +176,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                             key={`tool:${locale}:create-trip-wizard`}
                             path={`/${locale}/create-trip/wizard`}
                             element={renderWithHandoff(
-                                <CreateTripWizardRoute
+                                <CreateTripExperienceRoute
+                                    surface="wizard"
                                     onTripGenerated={onTripGenerated}
                                     onOpenManager={onOpenManager}
                                     onLanguageLoaded={onAppLanguageLoaded}

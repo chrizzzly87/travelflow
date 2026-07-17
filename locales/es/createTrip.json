@@ -325,5 +325,127 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "shapeLab": {
+    "badge": "Laboratorio de rutas por Tailandia",
+    "title": "Elige la ruta antes del itinerario.",
+    "intro": "Empieza por la forma del viaje, compara tres rutas fundamentadas y abre un plan editable al instante. Las actividades detalladas pueden llegar cuando la ruta ya encaje.",
+    "progressLabel": "Progreso de la planificación",
+    "steps": {
+      "shape": "Formato",
+      "place": "Lugares",
+      "timing": "Fechas",
+      "style": "Ritmo",
+      "reveal": "Rutas"
+    },
+    "shape": {
+      "eyebrow": "Empieza por la estructura",
+      "title": "¿Qué forma debería tener este viaje?",
+      "description": "Esta decisión determina cuántas bases, conexiones y excursiones tienen sentido.",
+      "options": {
+        "city_break": {
+          "title": "Una ciudad, de verdad",
+          "description": "Quédate en una sola ciudad y descubre sus barrios sin cambiar de hotel."
+        },
+        "hub_and_day_trips": {
+          "title": "Una base, más alcance",
+          "description": "Deshaz la maleta una vez y añade excursiones realistas desde tu base."
+        },
+        "single_country_circuit": {
+          "title": "Un circuito por Tailandia",
+          "description": "Conecta varias bases con pernocta sin perder de vista los traslados."
+        }
+      }
+    },
+    "place": {
+      "eyebrow": "Lugares con identidad propia",
+      "title": "¿Qué lugar debería marcar el rumbo?",
+      "requiredDescription": "Elige la ciudad que servirá de base. Cada opción ya tiene una ruta compatible.",
+      "optionalDescription": "Elige una ciudad imprescindible o deja que decidan la duración, la temporada y tus intereses.",
+      "stayRange": "Normalmente {min}–{max} noches",
+      "popularity": "Popularidad {score}/100",
+      "hiddenGem": "Descubrimiento {score}/100",
+      "neighborhoodTitle": "Dale más carácter a la ciudad",
+      "neighborhoodHint": "Opcional: elige hasta tres barrios. Se conservarán como lugares canónicos en el briefing."
+    },
+    "timing": {
+      "eyebrow": "Trabaja con el límite real",
+      "title": "¿De cuánto tiempo disponemos?",
+      "description": "Un periodo flexible es lo más rápido. Usa fechas exactas si el transporte o la disponibilidad ya están fijados.",
+      "modeLabel": "Flexibilidad de fechas",
+      "modes": {
+        "flexible": "Periodo flexible",
+        "exact": "Fechas exactas"
+      },
+      "durationLabel": "Duración del viaje",
+      "nights": "noches",
+      "decreaseDuration": "Quitar una noche",
+      "increaseDuration": "Añadir una noche",
+      "monthLabel": "Mes preferido",
+      "startDate": "Fecha de inicio",
+      "endDate": "Fecha de fin",
+      "dateError": "Elige una fecha de fin posterior al inicio para comparar rutas."
+    },
+    "style": {
+      "eyebrow": "Solo las señales que importan",
+      "title": "¿Qué debería optimizar la ruta?",
+      "description": "Para la primera comparación bastan el ritmo y los intereses. Podrás afinar el resto dentro del plan.",
+      "paceLabel": "Ritmo de viaje",
+      "interestsLabel": "Quiero más de",
+      "advancedLabel": "Ajustar límites de ruta",
+      "maxChanges": "Máximo de cambios de base"
+    },
+    "reveal": {
+      "eyebrow": "Rutas al instante",
+      "titleOne": "Una ruta fundamentada por Tailandia.",
+      "titleMany": "{count} rutas fundamentadas por Tailandia.",
+      "description": "Son esqueletos versionados del paquete de conocimiento de Tailandia, no destinos inventados durante la espera.",
+      "dataNote": "{templates} plantillas comparadas con {entities} lugares canónicos · datos {version}",
+      "fallback": "Datos disponibles sin conexión",
+      "sources": {
+        "memory": "Caché actual",
+        "bundled": "Reserva local",
+        "supabase": "Supabase en directo"
+      },
+      "noMatchesTitle": "Las condiciones actuales son demasiado estrictas.",
+      "noMatchesDescription": "Cambia la ciudad base, añade una noche o permite un cambio de base más.",
+      "adjustRoute": "Ajustar preferencias",
+      "match": "{score}% de encaje",
+      "selected": "Seleccionada",
+      "tradeoff": "Antes de elegir",
+      "keepSelected": "Mantener esta ruta",
+      "chooseRoute": "Elegir esta ruta",
+      "readyTitle": "El esqueleto de tu ruta está listo.",
+      "readyDescription": "Ábrelo con ciudades, coordenadas, noches, excursiones y marcadores editables reales.",
+    "dayTripShort": "excursión",
+    "nightsShort": "{count} noches",
+    "brief": {
+      "title": "Dale textura a la ruta.",
+      "description": "Estas guías urbanas ya forman parte del plan, para que las próximas respuestas sean rápidas y coherentes.",
+      "bestMonths": "Meses ideales",
+      "dishes": "Para probar",
+      "neighborhoods": "Barrios",
+      "activities": "Buenos puntos de partida",
+      "stayRange": "{min}–{max} noches",
+      "source": "Ver fuente",
+      "audienceContext": "Contexto para viajeros",
+      "audienceSignals": {
+        "family_activity_supply": "Oferta de actividades familiares",
+        "lgbtq_scene": "Escena LGBTQ+ documentada",
+        "solo_travel_interest": "Interés para viajar en solitario"
+      }
+    },
+    "reasons": {
+        "duration_fit": "Encaja con tu tiempo",
+        "pace_fit": "Encaja con tu ritmo",
+        "season_fit": "Buena temporada",
+        "interest_fit": "Encaja con tus intereses",
+        "selected_places_fit": "Incluye tus lugares"
+      }
+    },
+    "actions": {
+      "compare": "Comparar rutas",
+      "openPlan": "Abrir plan editable"
+    }
   }
 }

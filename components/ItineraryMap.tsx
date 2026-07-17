@@ -55,9 +55,12 @@ import {
 import { GOOGLE_ROUTES_COMPUTE_FIELDS, computeGoogleRouteLeg, loadGoogleRouteRuntime } from '../services/routeService';
 import { isFiniteLatLngLiteral } from '../shared/coordinateUtils';
 import type { MapImplementation } from '../shared/mapRuntime';
+import type { MapPresentationModel } from '../shared/mapPresentation';
+import { mapPresentationToTimelineItems } from '../services/tripMapPresentationAdapter';
 
-interface ItineraryMapProps {
-    items: ITimelineItem[];
+export interface ItineraryMapProps {
+    items?: ITimelineItem[];
+    presentation?: MapPresentationModel;
     selectedItemId?: string | null;
     onCityMarkerSelect?: (cityId: string) => void;
     onActivityMarkerSelect?: (activityId: string) => void;
@@ -1407,8 +1410,9 @@ const ItineraryMapInstanceBridge: React.FC<ItineraryMapInstanceBridgeProps> = ({
 };
 
 export const ItineraryMap: React.FC<ItineraryMapProps> = ({ 
-    items, 
-    selectedItemId, 
+    items: timelineItems,
+    presentation,
+    selectedItemId: controlledSelectedItemId,
     onCityMarkerSelect,
     onActivityMarkerSelect,
     layoutMode, 
@@ -1433,6 +1437,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     isPaywalled = false,
     viewTransitionName
 }) => {
+    const items = useMemo(
+        () => presentation ? mapPresentationToTimelineItems(presentation) : timelineItems ?? [],
+        [presentation, timelineItems]
+    );
+    const selectedItemId = controlledSelectedItemId
+        ?? presentation?.markers.find((marker) => marker.id === presentation.selection.markerId)?.sourceItemId
+        ?? presentation?.routeLegs.find((route) => route.id === presentation.selection.routeLegId)?.sourceItemId
+        ?? null;
     const mapInstanceIdRef = useRef(`tf-itinerary-map-${Math.random().toString(36).slice(2, 10)}`);
     const mapInstanceId = mapInstanceIdRef.current;
     const mapContainerRef = useRef<HTMLDivElement | null>(null);

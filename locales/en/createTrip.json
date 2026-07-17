@@ -325,5 +325,127 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "shapeLab": {
+    "badge": "Thailand route lab",
+    "title": "Choose the route before the itinerary.",
+    "intro": "Start with the shape of the trip, compare three grounded route concepts, then open an editable plan immediately. Detailed activities can arrive after the route feels right.",
+    "progressLabel": "Trip planning progress",
+    "steps": {
+      "shape": "Shape",
+      "place": "Places",
+      "timing": "Timing",
+      "style": "Rhythm",
+      "reveal": "Routes"
+    },
+    "shape": {
+      "eyebrow": "Start with structure",
+      "title": "What shape should this trip take?",
+      "description": "This one decision changes how many bases, transfers, and day trips make sense.",
+      "options": {
+        "city_break": {
+          "title": "One city, properly",
+          "description": "Stay in one city and explore its neighborhoods without changing hotels."
+        },
+        "hub_and_day_trips": {
+          "title": "One base, wider reach",
+          "description": "Unpack once and add realistic same-day excursions around your base."
+        },
+        "single_country_circuit": {
+          "title": "A Thailand circuit",
+          "description": "Connect several overnight bases while keeping transfers under control."
+        }
+      }
+    },
+    "place": {
+      "eyebrow": "First-class places",
+      "title": "Where should the route take its cue from?",
+      "requiredDescription": "Choose the city that will anchor this trip shape. Every option already has a matching route concept.",
+      "optionalDescription": "Choose a must-visit city, or leave this open and let duration, season, and interests decide.",
+      "stayRange": "Usually {min}–{max} nights",
+      "popularity": "Popular {score}/100",
+      "hiddenGem": "Discovery {score}/100",
+      "neighborhoodTitle": "Give the city more texture",
+      "neighborhoodHint": "Optional: select up to three neighborhoods. They stay as named, canonical places in the brief."
+    },
+    "timing": {
+      "eyebrow": "Use the real constraint",
+      "title": "How much time do we have?",
+      "description": "Flexible timing is fastest. Exact dates are there when transport and availability are already fixed.",
+      "modeLabel": "Timing certainty",
+      "modes": {
+        "flexible": "Flexible window",
+        "exact": "Exact dates"
+      },
+      "durationLabel": "Trip length",
+      "nights": "nights",
+      "decreaseDuration": "Remove one night",
+      "increaseDuration": "Add one night",
+      "monthLabel": "Best-fit month",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "dateError": "Choose an end date after the start date to compare routes."
+    },
+    "style": {
+      "eyebrow": "Only the signals that matter",
+      "title": "What should the route optimize for?",
+      "description": "A quick rhythm and interest pass is enough for the first comparison. Fine-tuning can happen inside the plan.",
+      "paceLabel": "Travel rhythm",
+      "interestsLabel": "Turn up",
+      "advancedLabel": "Tune route limits",
+      "maxChanges": "Maximum base changes"
+    },
+    "reveal": {
+      "eyebrow": "Instant route reveal",
+      "titleOne": "One grounded way through Thailand.",
+      "titleMany": "{count} grounded ways through Thailand.",
+      "description": "These are versioned route skeletons from the Thailand knowledge pack—not destinations invented while you wait.",
+      "dataNote": "Compared {templates} templates against {entities} canonical places · dataset {version}",
+      "fallback": "Offline-ready data",
+      "sources": {
+        "memory": "Fresh cache",
+        "bundled": "Bundled fallback",
+        "supabase": "Supabase live"
+      },
+      "noMatchesTitle": "The current constraints are too tight.",
+      "noMatchesDescription": "Change the anchor city, add a night, or allow one more base change to unlock a route.",
+      "adjustRoute": "Adjust the brief",
+      "match": "{score}% route fit",
+      "selected": "Selected",
+      "tradeoff": "Know before choosing",
+      "keepSelected": "Keep this route",
+      "chooseRoute": "Choose this route",
+      "readyTitle": "Your route skeleton is ready.",
+      "readyDescription": "Open it now with real cities, coordinates, nights, day trips, and editable map markers.",
+    "dayTripShort": "day trip",
+    "nightsShort": "{count} nights",
+    "brief": {
+      "title": "Get the texture, not just the route.",
+      "description": "These city briefs are already in the plan, so the next answers can stay fast and consistent.",
+      "bestMonths": "Best-fit months",
+      "dishes": "Start with",
+      "neighborhoods": "Neighborhoods",
+      "activities": "Good anchors",
+      "stayRange": "{min}–{max} nights",
+      "source": "View source",
+      "audienceContext": "Traveler context",
+      "audienceSignals": {
+        "family_activity_supply": "Family activity supply",
+        "lgbtq_scene": "Documented LGBTQ+ scene",
+        "solo_travel_interest": "Solo-travel interest"
+      }
+    },
+    "reasons": {
+        "duration_fit": "Fits your time",
+        "pace_fit": "Matches your rhythm",
+        "season_fit": "Season fit",
+        "interest_fit": "Interest match",
+        "selected_places_fit": "Includes your places"
+      }
+    },
+    "actions": {
+      "compare": "Compare routes",
+      "openPlan": "Open editable plan"
+    }
   }
 }

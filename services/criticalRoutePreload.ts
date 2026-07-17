@@ -1,4 +1,6 @@
 import { stripLocalePrefix } from '../config/routes';
+import type { CreateTripShapeRollout } from '../config/createTripExperience';
+import { getCreateTripShapeRollout, resolveCreateTripExperience } from '../config/createTripExperience';
 
 type CriticalRouteModuleKey =
   | 'DeferredAppRoutes'
@@ -16,6 +18,7 @@ type CriticalRouteModuleKey =
   | 'CookiesPage'
   | 'CreateTripClassicLabPage'
   | 'CreateTripV3Page'
+  | 'CreateTripShapeLabPage'
   | 'TripLoaderRoute'
   | 'SharedTripLoaderRoute'
   | 'ExampleTripLoaderRoute';
@@ -51,12 +54,16 @@ const ROUTE_IMPORTERS: Record<CriticalRouteModuleKey, () => Promise<unknown>> = 
   CookiesPage: () => import('../pages/CookiesPage'),
   CreateTripClassicLabPage: () => import('../pages/CreateTripClassicLabPage'),
   CreateTripV3Page: () => import('../pages/CreateTripV3Page'),
+  CreateTripShapeLabPage: () => import('../pages/CreateTripShapeLabPage'),
   TripLoaderRoute: () => import('../routes/TripLoaderRoute'),
   SharedTripLoaderRoute: () => import('../routes/SharedTripLoaderRoute'),
   ExampleTripLoaderRoute: () => import('../routes/ExampleTripLoaderRoute'),
 };
 
-export const getCriticalRouteModuleKeys = (pathname: string): CriticalRouteModuleKey[] => {
+export const getCriticalRouteModuleKeys = (
+  pathname: string,
+  rollout: CreateTripShapeRollout = getCreateTripShapeRollout(),
+): CriticalRouteModuleKey[] => {
   const normalizedPath = stripLocalePrefix(pathname || '/');
 
   if (/^\/trip\/[^/]+$/.test(normalizedPath)) {
@@ -72,11 +79,22 @@ export const getCriticalRouteModuleKeys = (pathname: string): CriticalRouteModul
   }
 
   if (normalizedPath === '/create-trip/wizard' || normalizedPath === '/create-trip/v3') {
-    return ['CreateTripV3Page'];
+    return [resolveCreateTripExperience('wizard', rollout) === 'shape_thailand'
+      ? 'CreateTripShapeLabPage'
+      : 'CreateTripV3Page'];
+  }
+
+  if (normalizedPath === '/create-trip') {
+    return [resolveCreateTripExperience('primary', rollout) === 'shape_thailand'
+      ? 'CreateTripShapeLabPage'
+      : 'CreateTripClassicLabPage'];
+  }
+
+  if (normalizedPath === '/create-trip/labs/shape') {
+    return ['CreateTripShapeLabPage'];
   }
 
   if (
-    normalizedPath === '/create-trip' ||
     normalizedPath === '/create-trip/labs/classic-card' ||
     normalizedPath === '/create-trip/labs/design-v3' ||
     normalizedPath === '/create-trip/v1' ||

@@ -325,5 +325,127 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "shapeLab": {
+    "badge": "Laboratório de rotas da Tailândia",
+    "title": "Escolha a rota antes do roteiro.",
+    "intro": "Comece pelo formato da viagem, compare três rotas bem fundamentadas e abra imediatamente um plano editável. As atividades detalhadas podem vir depois de a rota fazer sentido.",
+    "progressLabel": "Progresso do planejamento",
+    "steps": {
+      "shape": "Formato",
+      "place": "Lugares",
+      "timing": "Período",
+      "style": "Ritmo",
+      "reveal": "Rotas"
+    },
+    "shape": {
+      "eyebrow": "Comece pela estrutura",
+      "title": "Que formato esta viagem deve ter?",
+      "description": "Esta decisão define quantas bases, conexões e excursões fazem sentido.",
+      "options": {
+        "city_break": {
+          "title": "Uma cidade, de verdade",
+          "description": "Fique em uma só cidade e explore os bairros sem trocar de hotel."
+        },
+        "hub_and_day_trips": {
+          "title": "Uma base, mais alcance",
+          "description": "Desfaça as malas uma vez e acrescente passeios realistas de um dia."
+        },
+        "single_country_circuit": {
+          "title": "Um circuito pela Tailândia",
+          "description": "Conecte várias bases com pernoite sem perder o controle dos traslados."
+        }
+      }
+    },
+    "place": {
+      "eyebrow": "Lugares em primeiro plano",
+      "title": "Qual lugar deve orientar a rota?",
+      "requiredDescription": "Escolha a cidade que será a base desta viagem. Cada opção já tem uma rota compatível.",
+      "optionalDescription": "Escolha uma cidade obrigatória ou deixe a duração, a estação e os interesses decidirem.",
+      "stayRange": "Normalmente {min}–{max} noites",
+      "popularity": "Popularidade {score}/100",
+      "hiddenGem": "Descoberta {score}/100",
+      "neighborhoodTitle": "Dê mais personalidade à cidade",
+      "neighborhoodHint": "Opcional: escolha até três bairros. Eles continuam como lugares canônicos no briefing."
+    },
+    "timing": {
+      "eyebrow": "Use a restrição real",
+      "title": "Quanto tempo temos?",
+      "description": "Um período flexível é mais rápido. Use datas exatas se transporte e disponibilidade já estiverem definidos.",
+      "modeLabel": "Flexibilidade de datas",
+      "modes": {
+        "flexible": "Período flexível",
+        "exact": "Datas exatas"
+      },
+      "durationLabel": "Duração da viagem",
+      "nights": "noites",
+      "decreaseDuration": "Remover uma noite",
+      "increaseDuration": "Adicionar uma noite",
+      "monthLabel": "Mês preferido",
+      "startDate": "Data de início",
+      "endDate": "Data de fim",
+      "dateError": "Escolha uma data final posterior ao início para comparar rotas."
+    },
+    "style": {
+      "eyebrow": "Só os sinais que importam",
+      "title": "O que a rota deve priorizar?",
+      "description": "Ritmo e interesses bastam para a primeira comparação. Os detalhes podem ser ajustados dentro do plano.",
+      "paceLabel": "Ritmo de viagem",
+      "interestsLabel": "Quero mais",
+      "advancedLabel": "Ajustar limites da rota",
+      "maxChanges": "Máximo de mudanças de base"
+    },
+    "reveal": {
+      "eyebrow": "Rotas instantâneas",
+      "titleOne": "Uma rota bem fundamentada pela Tailândia.",
+      "titleMany": "{count} rotas bem fundamentadas pela Tailândia.",
+      "description": "São esqueletos versionados do pacote de conhecimento da Tailândia, não destinos inventados durante a espera.",
+      "dataNote": "{templates} modelos comparados com {entities} lugares canônicos · dados {version}",
+      "fallback": "Dados disponíveis offline",
+      "sources": {
+        "memory": "Cache atualizado",
+        "bundled": "Reserva local",
+        "supabase": "Supabase ao vivo"
+      },
+      "noMatchesTitle": "As restrições atuais estão apertadas demais.",
+      "noMatchesDescription": "Troque a cidade-base, acrescente uma noite ou permita mais uma mudança de base.",
+      "adjustRoute": "Ajustar preferências",
+      "match": "{score}% de compatibilidade",
+      "selected": "Selecionada",
+      "tradeoff": "Saiba antes de escolher",
+      "keepSelected": "Manter esta rota",
+      "chooseRoute": "Escolher esta rota",
+      "readyTitle": "O esqueleto da sua rota está pronto.",
+      "readyDescription": "Abra agora com cidades, coordenadas, noites, passeios e marcadores editáveis reais.",
+    "dayTripShort": "passeio de um dia",
+    "nightsShort": "{count} noites",
+    "brief": {
+      "title": "Dê textura à rota.",
+      "description": "Estes resumos das cidades já fazem parte do plano, para que as próximas respostas sejam rápidas e consistentes.",
+      "bestMonths": "Meses mais indicados",
+      "dishes": "Comece por",
+      "neighborhoods": "Bairros",
+      "activities": "Bons pontos de partida",
+      "stayRange": "{min}–{max} noites",
+      "source": "Ver fonte",
+      "audienceContext": "Contexto para viajantes",
+      "audienceSignals": {
+        "family_activity_supply": "Oferta de atividades para famílias",
+        "lgbtq_scene": "Cena LGBTQ+ documentada",
+        "solo_travel_interest": "Interesse para viagens a solo"
+      }
+    },
+    "reasons": {
+        "duration_fit": "Cabe no seu tempo",
+        "pace_fit": "Combina com seu ritmo",
+        "season_fit": "Boa estação",
+        "interest_fit": "Combina com seus interesses",
+        "selected_places_fit": "Inclui seus lugares"
+      }
+    },
+    "actions": {
+      "compare": "Comparar rotas",
+      "openPlan": "Abrir plano editável"
+    }
   }
 }

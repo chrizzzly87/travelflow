@@ -8927,6 +8927,757 @@ $$;
 revoke all on function public.admin_replace_airports_reference(jsonb, jsonb, text) from public, anon, authenticated;
 grant execute on function public.admin_replace_airports_reference(jsonb, jsonb, text) to service_role;
 
+-- =============================================================================
+-- Travel knowledge foundation (JourneySpec + Thailand-first destination packs)
+-- =============================================================================
+
+create table if not exists public.travel_sources (
+  id uuid primary key default gen_random_uuid(),
+  source_key text not null unique,
+  name text not null,
+  source_kind text not null,
+  base_url text not null,
+  terms_url text,
+  license_key text,
+  attribution_text text,
+  commercial_use_allowed boolean not null default false,
+  redistribution_allowed boolean not null default false,
+  refresh_interval_days integer,
+  status text not null default 'active',
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint travel_sources_key_format check (source_key ~ '^[a-z0-9][a-z0-9_-]*$'),
+  constraint travel_sources_kind_check check (source_kind in ('official', 'open_data', 'commercial', 'editorial', 'community')),
+  constraint travel_sources_status_check check (status in ('active', 'inactive', 'restricted')),
+  constraint travel_sources_refresh_check check (refresh_interval_days is null or refresh_interval_days > 0),
+  constraint travel_sources_metadata_object check (jsonb_typeof(metadata) = 'object')
+);
+
+create table if not exists public.travel_dataset_versions (
+  id uuid primary key default gen_random_uuid(),
+  dataset_key text not null,
+  country_code text not null,
+  version text not null,
+  status text not null default 'draft',
+  checksum text not null,
+  entity_count integer not null default 0,
+  fact_count integer not null default 0,
+  template_count integer not null default 0,
+  source_snapshot jsonb not null default '[]'::jsonb,
+  generated_at timestamptz not null,
+  published_at timestamptz,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint travel_dataset_versions_key_format check (dataset_key ~ '^[a-z0-9][a-z0-9_-]*$'),
+  constraint travel_dataset_versions_country_code check (country_code ~ '^[A-Z]{2}$'),
+  constraint travel_dataset_versions_status_check check (status in ('draft', 'published', 'retired')),
+  constraint travel_dataset_versions_counts_check check (entity_count >= 0 and fact_count >= 0 and template_count >= 0),
+  constraint travel_dataset_versions_snapshot_array check (jsonb_typeof(source_snapshot) = 'array'),
+  unique (dataset_key, version)
+);
+
+create table if not exists public.travel_entities (
+  id uuid primary key default gen_random_uuid(),
+  canonical_slug text not null unique,
+  entity_type text not null,
+  parent_id uuid references public.travel_entities(id) on delete restrict,
+  country_code text not null,
+  primary_name text not null,
+  local_name text,
+  timezone text,
+  latitude double precision,
+  longitude double precision,
+  geo_bounds jsonb,
+  status text not null default 'draft',
+  dataset_version text not null,
+  typical_min_days numeric(5, 2),
+  typical_max_days numeric(5, 2),
+  popularity_score numeric(5, 2) not null default 0,
+  hidden_gem_score numeric(5, 2) not null default 0,
+  tourism_intensity_score numeric(5, 2) not null default 0,
+  attributes jsonb not null default '{}'::jsonb,
+  published_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint travel_entities_slug_format check (canonical_slug ~ '^[a-z0-9][a-z0-9-]*$'),
+  constraint travel_entities_type_check check (entity_type in ('country', 'region', 'city', 'neighborhood', 'poi', 'port', 'campground')),
+  constraint travel_entities_country_code check (country_code ~ '^[A-Z]{2}$'),
+  constraint travel_entities_status_check check (status in ('draft', 'published', 'archived')),
+  constraint travel_entities_latitude_check check (latitude is null or latitude between -90 and 90),
+  constraint travel_entities_longitude_check check (longitude is null or longitude between -180 and 180),
+  constraint travel_entities_coordinates_pair check ((latitude is null) = (longitude is null)),
+  constraint travel_entities_stay_range check (
+    (typical_min_days is null or typical_min_days >= 0)
+    and (typical_max_days is null or typical_max_days >= 0)
+    and (typical_min_days is null or typical_max_days is null or typical_min_days <= typical_max_days)
+  ),
+  constraint travel_entities_scores_check check (
+    popularity_score between 0 and 100
+    and hidden_gem_score between 0 and 100
+    and tourism_intensity_score between 0 and 100
+  ),
+  constraint travel_entities_no_self_parent check (parent_id is null or parent_id <> id),
+  constraint travel_entities_bounds_object check (geo_bounds is null or jsonb_typeof(geo_bounds) = 'object'),
+  constraint travel_entities_attributes_object check (jsonb_typeof(attributes) = 'object')
+);
+
+create table if not exists public.travel_entity_names (
+  id uuid primary key default gen_random_uuid(),
+  entity_id uuid not null references public.travel_entities(id) on delete cascade,
+  locale text not null,
+  name text not null,
+  name_kind text not null default 'primary',
+  is_preferred boolean not null default false,
+  created_at timestamptz not null default now(),
+  constraint travel_entity_names_locale_check check (locale ~ '^[a-z]{2,3}(-[A-Za-z0-9]+)*$'),
+  constraint travel_entity_names_kind_check check (name_kind in ('primary', 'local', 'alias', 'historic')),
+  unique (entity_id, locale, name, name_kind)
+);
+
+create table if not exists public.travel_entity_facts (
+  id uuid primary key default gen_random_uuid(),
+  entity_id uuid not null references public.travel_entities(id) on delete cascade,
+  fact_key text not null,
+  value_json jsonb not null,
+  unit text,
+  locale text,
+  source_id uuid not null references public.travel_sources(id) on delete restrict,
+  confidence numeric(4, 3) not null default 0.8,
+  review_status text not null default 'imported',
+  is_public boolean not null default false,
+  observed_at timestamptz not null,
+  valid_from timestamptz,
+  valid_until timestamptz,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint travel_entity_facts_key_format check (fact_key ~ '^[a-z0-9][a-z0-9_.-]*$'),
+  constraint travel_entity_facts_locale_check check (locale is null or locale ~ '^[a-z]{2,3}(-[A-Za-z0-9]+)*$'),
+  constraint travel_entity_facts_confidence_check check (confidence between 0 and 1),
+  constraint travel_entity_facts_review_check check (review_status in ('imported', 'editorial_reviewed', 'verified', 'deprecated')),
+  constraint travel_entity_facts_validity_check check (valid_from is null or valid_until is null or valid_from <= valid_until),
+  constraint travel_entity_facts_metadata_object check (jsonb_typeof(metadata) = 'object')
+);
+
+create table if not exists public.travel_tags (
+  tag_key text primary key,
+  tag_group text not null,
+  label text not null,
+  description text not null,
+  evidence_required boolean not null default false,
+  sensitive boolean not null default false,
+  status text not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint travel_tags_key_format check (tag_key ~ '^[a-z0-9][a-z0-9_]*$'),
+  constraint travel_tags_group_check check (tag_group in ('trip_shape', 'experience', 'place_character', 'practical', 'audience_context')),
+  constraint travel_tags_status_check check (status in ('active', 'inactive'))
+);
+
+create table if not exists public.travel_entity_tags (
+  entity_id uuid not null references public.travel_entities(id) on delete cascade,
+  tag_key text not null references public.travel_tags(tag_key) on delete restrict,
+  source_id uuid not null references public.travel_sources(id) on delete restrict,
+  relevance numeric(4, 3) not null default 0.5,
+  evidence_level text not null,
+  evidence_note text,
+  valid_until timestamptz,
+  is_public boolean not null default false,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (entity_id, tag_key, source_id),
+  constraint travel_entity_tags_relevance_check check (relevance between 0 and 1),
+  constraint travel_entity_tags_evidence_check check (evidence_level in ('official', 'editorial', 'community', 'self_attested', 'inferred')),
+  constraint travel_entity_tags_metadata_object check (jsonb_typeof(metadata) = 'object')
+);
+
+create table if not exists public.travel_templates (
+  id uuid primary key default gen_random_uuid(),
+  template_key text not null unique,
+  country_code text not null,
+  journey_type text not null,
+  min_days integer not null,
+  max_days integer not null,
+  preferred_pace text not null default 'balanced',
+  ideal_months smallint[] not null default '{}',
+  dataset_version text not null,
+  version integer not null default 1,
+  status text not null default 'draft',
+  attributes jsonb not null default '{}'::jsonb,
+  published_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint travel_templates_key_format check (template_key ~ '^[a-z0-9][a-z0-9_-]*$'),
+  constraint travel_templates_country_code check (country_code ~ '^[A-Z]{2}$'),
+  constraint travel_templates_journey_type_check check (journey_type in ('city_break', 'hub_and_day_trips', 'single_country_circuit', 'multi_country', 'road_trip', 'camper', 'cruise_shore', 'inspiration')),
+  constraint travel_templates_duration_check check (min_days > 0 and max_days >= min_days),
+  constraint travel_templates_pace_check check (preferred_pace in ('relaxed', 'balanced', 'full')),
+  constraint travel_templates_months_check check (ideal_months <@ array[1,2,3,4,5,6,7,8,9,10,11,12]::smallint[]),
+  constraint travel_templates_version_check check (version > 0),
+  constraint travel_templates_status_check check (status in ('draft', 'published', 'archived')),
+  constraint travel_templates_attributes_object check (jsonb_typeof(attributes) = 'object')
+);
+
+create table if not exists public.travel_template_copy (
+  template_id uuid not null references public.travel_templates(id) on delete cascade,
+  locale text not null,
+  title text not null,
+  summary text not null,
+  highlights jsonb not null default '[]'::jsonb,
+  tradeoffs jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (template_id, locale),
+  constraint travel_template_copy_locale_check check (locale ~ '^[a-z]{2,3}(-[A-Za-z0-9]+)*$'),
+  constraint travel_template_copy_highlights_array check (jsonb_typeof(highlights) = 'array'),
+  constraint travel_template_copy_tradeoffs_array check (jsonb_typeof(tradeoffs) = 'array')
+);
+
+create table if not exists public.travel_template_stops (
+  template_id uuid not null references public.travel_templates(id) on delete cascade,
+  sequence integer not null,
+  entity_id uuid not null references public.travel_entities(id) on delete restrict,
+  stop_role text not null,
+  min_nights integer not null default 0,
+  max_nights integer not null default 0,
+  is_optional boolean not null default false,
+  notes jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (template_id, sequence),
+  constraint travel_template_stops_sequence_check check (sequence >= 0),
+  constraint travel_template_stops_role_check check (stop_role in ('entry', 'exit', 'base', 'must_visit', 'day_trip', 'consider')),
+  constraint travel_template_stops_nights_check check (min_nights >= 0 and max_nights >= min_nights),
+  constraint travel_template_stops_notes_object check (jsonb_typeof(notes) = 'object')
+);
+
+create table if not exists public.travel_template_legs (
+  template_id uuid not null references public.travel_templates(id) on delete cascade,
+  sequence integer not null,
+  from_entity_id uuid not null references public.travel_entities(id) on delete restrict,
+  to_entity_id uuid not null references public.travel_entities(id) on delete restrict,
+  leg_role text not null,
+  transport_modes text[] not null default '{}',
+  duration_min_minutes integer not null,
+  duration_max_minutes integer not null,
+  distance_km numeric(9, 2),
+  round_trip boolean not null default false,
+  source_id uuid not null references public.travel_sources(id) on delete restrict,
+  confidence numeric(4, 3) not null default 0.72,
+  observed_at timestamptz not null,
+  valid_until timestamptz,
+  notes jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (template_id, sequence),
+  constraint travel_template_legs_sequence_check check (sequence >= 0),
+  constraint travel_template_legs_entities_check check (from_entity_id <> to_entity_id),
+  constraint travel_template_legs_role_check check (leg_role in ('transfer', 'day_trip')),
+  constraint travel_template_legs_modes_check check (
+    cardinality(transport_modes) > 0
+    and transport_modes <@ array['plane', 'train', 'bus', 'boat', 'car', 'walk', 'bicycle', 'motorcycle']::text[]
+  ),
+  constraint travel_template_legs_duration_check check (
+    duration_min_minutes > 0
+    and duration_max_minutes >= duration_min_minutes
+  ),
+  constraint travel_template_legs_distance_check check (distance_km is null or distance_km > 0),
+  constraint travel_template_legs_confidence_check check (confidence between 0 and 1),
+  constraint travel_template_legs_validity_check check (valid_until is null or valid_until > observed_at),
+  constraint travel_template_legs_notes_object check (jsonb_typeof(notes) = 'object')
+);
+
+create table if not exists public.travel_template_tags (
+  template_id uuid not null references public.travel_templates(id) on delete cascade,
+  tag_key text not null references public.travel_tags(tag_key) on delete restrict,
+  weight numeric(4, 3) not null default 0.5,
+  created_at timestamptz not null default now(),
+  primary key (template_id, tag_key),
+  constraint travel_template_tags_weight_check check (weight between 0 and 1)
+);
+
+create index if not exists travel_sources_status_idx on public.travel_sources(status);
+create index if not exists travel_dataset_versions_country_status_idx on public.travel_dataset_versions(country_code, status, published_at desc);
+create index if not exists travel_entities_parent_idx on public.travel_entities(parent_id);
+create index if not exists travel_entities_country_type_status_idx on public.travel_entities(country_code, entity_type, status);
+create index if not exists travel_entities_popularity_idx on public.travel_entities(country_code, popularity_score desc);
+create index if not exists travel_entity_names_search_idx on public.travel_entity_names(lower(name));
+create index if not exists travel_entity_facts_entity_key_idx on public.travel_entity_facts(entity_id, fact_key);
+create index if not exists travel_entity_facts_public_validity_idx on public.travel_entity_facts(is_public, valid_until);
+create index if not exists travel_entity_tags_tag_idx on public.travel_entity_tags(tag_key, relevance desc);
+create index if not exists travel_templates_country_shape_status_idx on public.travel_templates(country_code, journey_type, status, min_days, max_days);
+create index if not exists travel_template_stops_entity_idx on public.travel_template_stops(entity_id);
+create index if not exists travel_template_legs_entities_idx on public.travel_template_legs(from_entity_id, to_entity_id);
+create index if not exists travel_template_legs_validity_idx on public.travel_template_legs(valid_until);
+
+drop trigger if exists set_travel_sources_updated_at on public.travel_sources;
+create trigger set_travel_sources_updated_at before update on public.travel_sources
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_travel_dataset_versions_updated_at on public.travel_dataset_versions;
+create trigger set_travel_dataset_versions_updated_at before update on public.travel_dataset_versions
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_travel_entities_updated_at on public.travel_entities;
+create trigger set_travel_entities_updated_at before update on public.travel_entities
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_travel_entity_facts_updated_at on public.travel_entity_facts;
+create trigger set_travel_entity_facts_updated_at before update on public.travel_entity_facts
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_travel_tags_updated_at on public.travel_tags;
+create trigger set_travel_tags_updated_at before update on public.travel_tags
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_travel_entity_tags_updated_at on public.travel_entity_tags;
+create trigger set_travel_entity_tags_updated_at before update on public.travel_entity_tags
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_travel_templates_updated_at on public.travel_templates;
+create trigger set_travel_templates_updated_at before update on public.travel_templates
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_travel_template_copy_updated_at on public.travel_template_copy;
+create trigger set_travel_template_copy_updated_at before update on public.travel_template_copy
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_travel_template_stops_updated_at on public.travel_template_stops;
+create trigger set_travel_template_stops_updated_at before update on public.travel_template_stops
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_travel_template_legs_updated_at on public.travel_template_legs;
+create trigger set_travel_template_legs_updated_at before update on public.travel_template_legs
+for each row execute function public.set_updated_at();
+
+alter table public.travel_sources enable row level security;
+alter table public.travel_dataset_versions enable row level security;
+alter table public.travel_entities enable row level security;
+alter table public.travel_entity_names enable row level security;
+alter table public.travel_entity_facts enable row level security;
+alter table public.travel_tags enable row level security;
+alter table public.travel_entity_tags enable row level security;
+alter table public.travel_templates enable row level security;
+alter table public.travel_template_copy enable row level security;
+alter table public.travel_template_stops enable row level security;
+alter table public.travel_template_legs enable row level security;
+alter table public.travel_template_tags enable row level security;
+
+drop policy if exists "Travel sources public read" on public.travel_sources;
+create policy "Travel sources public read"
+on public.travel_sources for select
+using (status = 'active');
+
+drop policy if exists "Travel dataset versions public read" on public.travel_dataset_versions;
+create policy "Travel dataset versions public read"
+on public.travel_dataset_versions for select
+using (status = 'published');
+
+drop policy if exists "Travel entities public read" on public.travel_entities;
+create policy "Travel entities public read"
+on public.travel_entities for select
+using (status = 'published');
+
+drop policy if exists "Travel entity names public read" on public.travel_entity_names;
+create policy "Travel entity names public read"
+on public.travel_entity_names for select
+using (
+  exists (
+    select 1 from public.travel_entities entity
+    where entity.id = travel_entity_names.entity_id
+      and entity.status = 'published'
+  )
+);
+
+drop policy if exists "Travel entity facts public read" on public.travel_entity_facts;
+create policy "Travel entity facts public read"
+on public.travel_entity_facts for select
+using (
+  is_public = true
+  and review_status in ('editorial_reviewed', 'verified')
+  and (valid_until is null or valid_until > now())
+  and exists (
+    select 1 from public.travel_entities entity
+    where entity.id = travel_entity_facts.entity_id
+      and entity.status = 'published'
+  )
+);
+
+drop policy if exists "Travel tags public read" on public.travel_tags;
+create policy "Travel tags public read"
+on public.travel_tags for select
+using (status = 'active');
+
+drop policy if exists "Travel entity tags public read" on public.travel_entity_tags;
+create policy "Travel entity tags public read"
+on public.travel_entity_tags for select
+using (
+  is_public = true
+  and evidence_level in ('official', 'editorial', 'community', 'self_attested')
+  and (valid_until is null or valid_until > now())
+  and exists (
+    select 1 from public.travel_entities entity
+    where entity.id = travel_entity_tags.entity_id
+      and entity.status = 'published'
+  )
+);
+
+drop policy if exists "Travel templates public read" on public.travel_templates;
+create policy "Travel templates public read"
+on public.travel_templates for select
+using (status = 'published');
+
+drop policy if exists "Travel template copy public read" on public.travel_template_copy;
+create policy "Travel template copy public read"
+on public.travel_template_copy for select
+using (
+  exists (
+    select 1 from public.travel_templates template
+    where template.id = travel_template_copy.template_id
+      and template.status = 'published'
+  )
+);
+
+drop policy if exists "Travel template stops public read" on public.travel_template_stops;
+create policy "Travel template stops public read"
+on public.travel_template_stops for select
+using (
+  exists (
+    select 1 from public.travel_templates template
+    where template.id = travel_template_stops.template_id
+      and template.status = 'published'
+  )
+);
+
+drop policy if exists "Travel template legs public read" on public.travel_template_legs;
+create policy "Travel template legs public read"
+on public.travel_template_legs for select
+using (
+  (valid_until is null or valid_until > now())
+  and exists (
+    select 1 from public.travel_templates template
+    where template.id = travel_template_legs.template_id
+      and template.status = 'published'
+  )
+);
+
+drop policy if exists "Travel template tags public read" on public.travel_template_tags;
+create policy "Travel template tags public read"
+on public.travel_template_tags for select
+using (
+  exists (
+    select 1 from public.travel_templates template
+    where template.id = travel_template_tags.template_id
+      and template.status = 'published'
+  )
+);
+
+do $$
+declare
+  table_name text;
+begin
+  foreach table_name in array array[
+    'travel_sources',
+    'travel_dataset_versions',
+    'travel_entities',
+    'travel_entity_names',
+    'travel_entity_facts',
+    'travel_tags',
+    'travel_entity_tags',
+    'travel_templates',
+    'travel_template_copy',
+    'travel_template_stops',
+    'travel_template_legs',
+    'travel_template_tags'
+  ]
+  loop
+    execute format('drop policy if exists "Travel knowledge admin manage" on public.%I', table_name);
+    execute format(
+      'create policy "Travel knowledge admin manage" on public.%I for all to authenticated using (not coalesce((auth.jwt() ->> ''is_anonymous'')::boolean, false) and public.is_admin(auth.uid())) with check (not coalesce((auth.jwt() ->> ''is_anonymous'')::boolean, false) and public.is_admin(auth.uid()))',
+      table_name
+    );
+  end loop;
+end
+$$;
+
+grant select on table
+  public.travel_sources,
+  public.travel_dataset_versions,
+  public.travel_entities,
+  public.travel_entity_names,
+  public.travel_entity_facts,
+  public.travel_tags,
+  public.travel_entity_tags,
+  public.travel_templates,
+  public.travel_template_copy,
+  public.travel_template_stops,
+  public.travel_template_legs,
+  public.travel_template_tags
+to anon, authenticated;
+
+grant insert, update, delete on table
+  public.travel_sources,
+  public.travel_dataset_versions,
+  public.travel_entities,
+  public.travel_entity_names,
+  public.travel_entity_facts,
+  public.travel_tags,
+  public.travel_entity_tags,
+  public.travel_templates,
+  public.travel_template_copy,
+  public.travel_template_stops,
+  public.travel_template_legs,
+  public.travel_template_tags
+to authenticated;
+
+grant all on table
+  public.travel_sources,
+  public.travel_dataset_versions,
+  public.travel_entities,
+  public.travel_entity_names,
+  public.travel_entity_facts,
+  public.travel_tags,
+  public.travel_entity_tags,
+  public.travel_templates,
+  public.travel_template_copy,
+  public.travel_template_stops,
+  public.travel_template_legs,
+  public.travel_template_tags
+to service_role;
+
+drop function if exists public.get_travel_entity_suggestions(text, text, text[], integer);
+create or replace function public.get_travel_entity_suggestions(
+  p_query text,
+  p_country_code text default null,
+  p_entity_types text[] default array['city', 'neighborhood']::text[],
+  p_limit integer default 20
+)
+returns table(
+  id uuid,
+  canonical_slug text,
+  entity_type text,
+  country_code text,
+  primary_name text,
+  local_name text,
+  parent_id uuid,
+  parent_slug text,
+  latitude double precision,
+  longitude double precision,
+  popularity_score numeric
+)
+language sql
+stable
+set search_path = public
+as $$
+  with normalized as (
+    select lower(trim(coalesce(p_query, ''))) as query
+  ),
+  matched as (
+    select distinct entity.id
+    from public.travel_entities entity
+    cross join normalized
+    left join public.travel_entity_names entity_name on entity_name.entity_id = entity.id
+    where entity.status = 'published'
+      and (p_country_code is null or entity.country_code = upper(trim(p_country_code)))
+      and (coalesce(array_length(p_entity_types, 1), 0) = 0 or entity.entity_type = any(p_entity_types))
+      and (
+        normalized.query = ''
+        or lower(entity.primary_name) like '%' || normalized.query || '%'
+        or lower(coalesce(entity.local_name, '')) like '%' || normalized.query || '%'
+        or lower(coalesce(entity_name.name, '')) like '%' || normalized.query || '%'
+      )
+  )
+  select
+    entity.id,
+    entity.canonical_slug,
+    entity.entity_type,
+    entity.country_code,
+    entity.primary_name,
+    entity.local_name,
+    entity.parent_id,
+    parent.canonical_slug as parent_slug,
+    entity.latitude,
+    entity.longitude,
+    entity.popularity_score
+  from matched
+  join public.travel_entities entity on entity.id = matched.id
+  left join public.travel_entities parent on parent.id = entity.parent_id
+  order by entity.popularity_score desc, entity.primary_name asc
+  limit least(greatest(coalesce(p_limit, 20), 1), 50);
+$$;
+
+grant execute on function public.get_travel_entity_suggestions(text, text, text[], integer) to anon, authenticated;
+
+drop function if exists public.get_travel_destination_pack(text, text);
+create or replace function public.get_travel_destination_pack(
+  p_country_code text,
+  p_locale text default 'en'
+)
+returns jsonb
+language sql
+stable
+set search_path = public
+as $$
+  with selected_entities as (
+    select entity.*
+    from public.travel_entities entity
+    where entity.country_code = upper(trim(p_country_code))
+      and entity.status = 'published'
+  ),
+  selected_templates as (
+    select template.*
+    from public.travel_templates template
+    where template.country_code = upper(trim(p_country_code))
+      and template.status = 'published'
+  )
+  select jsonb_build_object(
+    'countryCode', upper(trim(p_country_code)),
+    'locale', coalesce(nullif(trim(p_locale), ''), 'en'),
+    'dataset', coalesce(
+      (
+        select to_jsonb(dataset) - 'created_at' - 'updated_at'
+        from public.travel_dataset_versions dataset
+        where dataset.country_code = upper(trim(p_country_code))
+          and dataset.status = 'published'
+        order by dataset.published_at desc nulls last, dataset.generated_at desc
+        limit 1
+      ),
+      '{}'::jsonb
+    ),
+    'entities', coalesce(
+      (
+        select jsonb_agg(
+          (to_jsonb(entity) - 'created_at' - 'updated_at')
+          || jsonb_build_object(
+            'names', coalesce(
+              (
+                select jsonb_agg(to_jsonb(entity_name) - 'id' - 'entity_id' - 'created_at' order by entity_name.is_preferred desc, entity_name.name asc)
+                from public.travel_entity_names entity_name
+                where entity_name.entity_id = entity.id
+              ),
+              '[]'::jsonb
+            ),
+            'facts', coalesce(
+              (
+                select jsonb_agg(
+                  (to_jsonb(fact) - 'entity_id' - 'created_at' - 'updated_at')
+                  || jsonb_build_object('sourceKey', source.source_key)
+                  order by fact.fact_key asc, fact.observed_at desc
+                )
+                from public.travel_entity_facts fact
+                join public.travel_sources source on source.id = fact.source_id
+                where fact.entity_id = entity.id
+                  and fact.is_public = true
+                  and fact.review_status in ('editorial_reviewed', 'verified')
+                  and (fact.valid_until is null or fact.valid_until > now())
+                  and (fact.locale is null or fact.locale = coalesce(nullif(trim(p_locale), ''), 'en'))
+              ),
+              '[]'::jsonb
+            ),
+            'tags', coalesce(
+              (
+                select jsonb_agg(
+                  (to_jsonb(entity_tag) - 'entity_id' - 'source_id' - 'created_at' - 'updated_at')
+                  || jsonb_build_object('sourceKey', source.source_key)
+                  order by entity_tag.relevance desc, entity_tag.tag_key asc
+                )
+                from public.travel_entity_tags entity_tag
+                join public.travel_sources source on source.id = entity_tag.source_id
+                where entity_tag.entity_id = entity.id
+                  and entity_tag.is_public = true
+                  and entity_tag.evidence_level in ('official', 'editorial', 'community', 'self_attested')
+                  and (entity_tag.valid_until is null or entity_tag.valid_until > now())
+              ),
+              '[]'::jsonb
+            )
+          )
+          order by entity.entity_type asc, entity.popularity_score desc, entity.primary_name asc
+        )
+        from selected_entities entity
+      ),
+      '[]'::jsonb
+    ),
+    'templates', coalesce(
+      (
+        select jsonb_agg(
+          (to_jsonb(template) - 'created_at' - 'updated_at')
+          || jsonb_build_object(
+            'copy', coalesce(
+              (
+                select to_jsonb(template_copy) - 'template_id' - 'created_at' - 'updated_at'
+                from public.travel_template_copy template_copy
+                where template_copy.template_id = template.id
+                order by (template_copy.locale = coalesce(nullif(trim(p_locale), ''), 'en')) desc,
+                         (template_copy.locale = 'en') desc
+                limit 1
+              ),
+              '{}'::jsonb
+            ),
+            'stops', coalesce(
+              (
+                select jsonb_agg(
+                  (to_jsonb(template_stop) - 'template_id' - 'entity_id' - 'created_at' - 'updated_at')
+                  || jsonb_build_object(
+                    'entityId', entity.id,
+                    'entitySlug', entity.canonical_slug,
+                    'entityName', entity.primary_name,
+                    'entityType', entity.entity_type
+                  )
+                  order by template_stop.sequence asc
+                )
+                from public.travel_template_stops template_stop
+                join public.travel_entities entity on entity.id = template_stop.entity_id
+                where template_stop.template_id = template.id
+              ),
+              '[]'::jsonb
+            ),
+            'legs', coalesce(
+              (
+                select jsonb_agg(
+                  (to_jsonb(template_leg) - 'template_id' - 'from_entity_id' - 'to_entity_id' - 'source_id' - 'created_at' - 'updated_at')
+                  || jsonb_build_object(
+                    'fromEntityId', from_entity.id,
+                    'fromEntitySlug', from_entity.canonical_slug,
+                    'fromEntityName', from_entity.primary_name,
+                    'toEntityId', to_entity.id,
+                    'toEntitySlug', to_entity.canonical_slug,
+                    'toEntityName', to_entity.primary_name,
+                    'sourceKey', source.source_key
+                  )
+                  order by template_leg.sequence asc
+                )
+                from public.travel_template_legs template_leg
+                join public.travel_entities from_entity on from_entity.id = template_leg.from_entity_id
+                join public.travel_entities to_entity on to_entity.id = template_leg.to_entity_id
+                join public.travel_sources source on source.id = template_leg.source_id
+                where template_leg.template_id = template.id
+                  and (template_leg.valid_until is null or template_leg.valid_until > now())
+              ),
+              '[]'::jsonb
+            ),
+            'tags', coalesce(
+              (
+                select jsonb_agg(to_jsonb(template_tag) - 'template_id' - 'created_at' order by template_tag.weight desc, template_tag.tag_key asc)
+                from public.travel_template_tags template_tag
+                where template_tag.template_id = template.id
+              ),
+              '[]'::jsonb
+            )
+          )
+          order by template.min_days asc, template.template_key asc
+        )
+        from selected_templates template
+      ),
+      '[]'::jsonb
+    )
+  );
+$$;
+
+grant execute on function public.get_travel_destination_pack(text, text) to anon, authenticated;
+
 -- Final RLS sweep so any public table that exists outside the explicit table list
 -- still gets locked down when this source-of-truth SQL is re-applied.
 do $$
