@@ -1,8 +1,8 @@
 # Travel knowledge deployment runbook
 
-Status: schema, Thailand v6 source-backed fast-path dataset, immutable artifact, and atomic active pointer applied and verified in production on 2026-07-17.
+Status: schema, Thailand v7 source-backed fast-path dataset, immutable artifact, and atomic active pointer applied and verified in production on 2026-07-17.
 
-This runbook deploys the additive travel-knowledge schema and versioned Thailand datasets without deleting or replacing existing TravelFlow tables. Thailand v5 remains the verified rollback target for the active v6 release.
+This runbook deploys the additive travel-knowledge schema and versioned Thailand datasets without deleting or replacing existing TravelFlow tables. Thailand v6 remains the verified immediate rollback target for the active v7 release; v5 is also retained.
 
 ## Production deployment record
 
@@ -28,6 +28,8 @@ Applied migrations:
 - `20260717131934 add_travel_planning_context_rpc`
 - `20260717140854 update_travel_knowledge_source_registry_v2`
 - `20260717141224 fix_travel_dataset_payload_column_resolution`
+- `20260717160009 compact_travel_planning_context_v2`
+- `20260717160441 preserve_travel_planning_summary_sources_v2`
 
 The initial foundation applied only the isolated travel-knowledge section of `docs/supabase.sql`, followed by the exact generated Thailand seed. Later operations and private-bucket migrations were also narrow and additive; the rest of the documented schema was not replayed.
 
@@ -80,6 +82,30 @@ Thailand v6 was staged and published as an immutable artifact after the v5 basel
 - v5 rollback target: artifact `e2ba3eda-43f6-473f-924d-ece8a721c744`, dataset `8e015658-aae7-5a67-9d92-9eb0c026200f`; both the private bundle and validated payload remain retained
 
 The private backup `tf_bak_tk_20260717t091156z` was independently rechecked immediately before the v6 writes: 17/17 tables, 1,112 rows, and zero count or checksum mismatches. Anonymous callers can execute only the public read projections; they cannot call artifact mutation RPCs or write the operational tables. No new blocking advisor finding was introduced. The remaining duplicate authenticated read-policy warning is a low-priority cleanup item.
+
+### Thailand v7 activity-knowledge activation
+
+Thailand v7 extends the same immutable artifact and atomic-pointer workflow with category-aware activity profiles, richer operational facts, and explicit coverage gaps. The planning RPC was compacted separately so the route generator retrieves only route-relevant fields while the admin catalogue and trip activity detail retain the complete record.
+
+- repository commit: `a8b303548e72f4111be9808ac222b2291d687733`
+- dataset version: `0a0a3396-f7b5-481a-9607-2665aee0074f`
+- payload: `3337cda1-26ca-4dc0-9c1b-9b9185902773`
+- artifact: `5edc0857-984f-445a-ae35-439bf81929b9`
+- activation: `6e882791-e629-4591-ae46-3f52b4f546ad` at `2026-07-17T16:08:39.262525Z`
+- dataset checksum: `1f938c858155e7240f52489a94b536bc8c421eadc9438a5ab83638e07f99d2ce`
+- pack checksum: `c49f7330329695e50cf520f85a5557be12d51b6ba68b764be8382a2f2c22d45f`
+- artifact checksum: `5a3ab7d35cb0da914cdf04affe6183e9241dafecda9a04fb48a337be1ad17b8f`
+- active payload: 524,236 bytes; 84 entities, 321 facts, 420 entity tags, 15 templates, and 16 route legs
+- activity coverage: 32 POIs, 8 rich, 0 usable, 24 starter, 36% average coverage
+- anonymous city-break context: `structured-pack-v2`, 31,187 compact JSON bytes, 9 selected entities, 3 templates
+- anonymous hub-and-day-trips context: 66,247 compact JSON bytes, 19 selected entities, 3 templates
+- anonymous single-country-circuit context: 94,542 compact JSON bytes, 30 selected entities, 3 templates
+- warm anonymous city-break RPC median: 68.9 ms across five post-warmup samples
+- public RPC posture: `SECURITY INVOKER`, fixed empty `search_path`, anonymous and authenticated execute grants
+- activation ledger: three Thailand entries covering v5, v6, and v7
+- immediate rollback target: v6 artifact `664097c5-baab-486c-9abf-9c448a79a4be`; the superseded artifact and payload remain retained and checksum-addressable
+
+The v7 activation changed only the active dataset pointer and activation ledger after staging the immutable payload. The pre-existing private backups remain verified; no destructive restore or table rewrite was required.
 
 ## Sources of truth
 
@@ -157,7 +183,7 @@ For the Dashboard path, extract and run only the travel-knowledge section of `do
 
 ## Verify
 
-Expected active Thailand v6 counts:
+Expected active Thailand v7 counts:
 
 ```sql
 select dataset_key, version, entity_count, fact_count, template_count
@@ -166,35 +192,35 @@ where dataset_key = 'thailand-core';
 
 select entity_type, count(*)
 from public.travel_entities
-where dataset_version = '2026.07.17-v6'
+where dataset_version = '2026.07.17-v7'
 group by entity_type
 order by entity_type;
 
 select count(*) as fact_count
 from public.travel_entity_facts fact
 join public.travel_entities entity on entity.id = fact.entity_id
-where entity.dataset_version = '2026.07.17-v6';
+where entity.dataset_version = '2026.07.17-v7';
 
 select count(*) as tag_count
 from public.travel_entity_tags tag
 join public.travel_entities entity on entity.id = tag.entity_id
-where entity.dataset_version = '2026.07.17-v6';
+where entity.dataset_version = '2026.07.17-v7';
 
 select count(*) as template_count
 from public.travel_templates
-where dataset_version = '2026.07.17-v6';
+where dataset_version = '2026.07.17-v7';
 
 select count(*) as route_leg_count
 from public.travel_template_legs leg
 join public.travel_templates template on template.id = leg.template_id
-where template.dataset_version = '2026.07.17-v6';
+where template.dataset_version = '2026.07.17-v7';
 ```
 
 The repository validator expects:
 
 - 84 entities: 1 country, 6 regions, 15 cities, 30 neighborhoods, and 32 POIs
-- 277 facts
-- 405 tags
+- 321 facts
+- 420 tags
 - 15 templates
 - 16 route legs
 
