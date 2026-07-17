@@ -19,7 +19,7 @@ summary: "A hidden route-first planner now compares trusted Thailand trip concep
 - [ ] [Internal] 📚 Added compact destination briefs and an instant route preview with sourced city guidance, ranked neighborhoods and activities, signature dishes, seasonal context, and evidence-aware audience signals.
 - [ ] [Internal] 🔎 Preserved canonical entity IDs, recommendation origin, source keys, rank scores, and compiler versions on the editable plan for reproducible planning and quality diagnostics.
 - [ ] [Internal] 🔄 Defined the licensed source, crawl, review, versioning, publish, freshness, and rollback pipeline for continuously maintained country knowledge.
-- [ ] [Internal] 🧾 Deployed an admin-only source-run and review ledger, registered 13 governed sources, and added build-blocking freshness, expiry, license, and registry-drift checks before enabling crawlers.
+- [ ] [Internal] 🧾 Deployed an admin-only source-run and review ledger, registered 13 governed sources, and added build-blocking plus weekly freshness, expiry, license, and registry-drift checks before enabling crawlers.
 - [ ] [Internal] 🛡️ Backed up the existing production data, deployed the isolated travel-knowledge schema and Thailand pack, verified row parity and RLS, and enabled remote reads only on the test branch.
 - [ ] [Internal] 🧩 Added a reusable map presentation contract that separates markers, route legs, selection, and viewport data from product state.
 - [ ] [Internal] 🚦 Added a default-off rollout that can promote the route-first planner on the wizard surface first, then on both production creator entries without changing their URLs.
