@@ -1,8 +1,8 @@
 # Travel knowledge deployment runbook
 
-Status: schema, Thailand v13 source-backed fast-path dataset, immutable artifact, provenance guards, and atomic active pointer applied and verified in production on 2026-07-18.
+Status: schema, Thailand v14 source-backed fast-path dataset, immutable artifact, provenance guards, and atomic active pointer applied and verified in production on 2026-07-18.
 
-This runbook deploys the additive travel-knowledge schema and versioned Thailand datasets without deleting or replacing existing TravelFlow tables. Thailand v12 remains the verified immediate rollback target for the active v13 release; earlier artifacts are also retained.
+This runbook deploys the additive travel-knowledge schema and versioned Thailand datasets without deleting or replacing existing TravelFlow tables. Thailand v13 remains the verified immediate rollback target for the active v14 release; earlier artifacts are also retained.
 
 ## Production deployment record
 
@@ -203,7 +203,7 @@ Thailand v12 adds twelve city-break concepts so every one of the fifteen support
 
 The v12 activation changed only immutable content and the atomic active pointer. The live pointer, published payload, activation ledger, representative planning contexts, and retained v11 rollback artifact were verified through the TravelFlow Supabase project after publication.
 
-### Current TravelFlow production knowledge activation — Thailand v13 (2026-07-18)
+### Previous TravelFlow production knowledge activation — Thailand v13 (2026-07-18)
 
 Thailand v13 adds fifteen candid, source-backed planning areas across the seven cities that previously had no directly selectable neighborhoods. Every supported city now has at least two base-area choices. The new records explicitly identify themselves as editorial travel areas rather than administrative boundaries and carry base fit, walkability, evening energy, tradeoffs, official Tourism Authority of Thailand references, and curated OpenStreetMap location references.
 
@@ -225,6 +225,36 @@ Thailand v13 adds fifteen candid, source-backed planning areas across the seven 
 - immediate rollback target: v12 artifact `026b9500-899b-46e1-beda-4def58fadfd3`; its superseded payload and checksum-addressable private bundle remain retained
 
 The v13 activation changed only immutable content and the atomic active pointer. A later narrow function migration made selected neighborhoods refine their parent city's route templates in live retrieval, matching the bundled client behavior. The staged repository commit, payload checksums, active pointer, anonymous RPC, catalogue counts, selected-neighborhood route retrieval, and retained v12 rollback artifact were verified after publication.
+
+### Current TravelFlow production knowledge activation — Thailand v14 (2026-07-18)
+
+Thailand v14 adds fourteen researched activities to close the minimum-depth gap in Ayutthaya, Sukhothai, Koh Samui, Koh Phangan, Koh Tao, Pattaya, Hua Hin, Pai, and Koh Lanta. All fifteen supported cities now have at least three activity anchors that pass the category-specific rich contract. The bounded selected-route projection returns at most three rich POIs per city and abbreviates internal fact references so even the largest tested circuit remains below the raw 100 KB context guardrail.
+
+- repository commit: `1b352f5ff8626fc662440f1a5dbcf11fb7012da0`
+- dataset version: `24a6c3dc-85ae-4c31-bcdd-f59ead21b2d6`
+- payload: `56009697-f0e4-465a-8a26-85d24174d322`
+- artifact: `322a3650-a3b7-4723-bb23-41e0a65fdd6a`
+- activation: `d4f97aad-4055-4351-ad74-a7cf59143d59` at `2026-07-18T13:38:06.364754Z`
+- dataset checksum: `a6316088cb93b1165e3a7cbab9faf36e9cfad8871ffd985ef15bf1059c2dcfb2`
+- pack checksum: `2c241b140350df1edd64f2d7fe6029b2e2a34e7eabb6b3af5797b7bfe91ce208`
+- seed checksum: `ae5429bd2cca4c42826de4e0b5f90b4920c89087747a0441fa3727b62c555001`
+- artifact checksum: `b11e67f0c6ac468f9d4ecef81cb3490d8065147ae0d78bc6783c474ed0d6fbd1`
+- active payload: 999,808 bytes; 113 entities, 735 facts, 539 entity tags, 27 templates, and 16 route legs
+- hierarchy: 1 country, 6 regions, 15 cities, 45 neighborhoods, and 46 activity POIs
+- activity coverage: 46 POIs, 46 rich, 0 usable, 0 starter, 99% average coverage; every city has at least three rich anchors
+- deterministic benchmark: Bangkok city-break comparison 27,797 bytes and selected route 29,307 bytes; Thailand circuit comparison 81,341 bytes and selected route 99,539 bytes
+- anonymous active-pack read: HTTP 200, version `2026.07.18-v14`, 113 entities, 46 POIs, and 27 templates
+- immediate rollback target: v13 artifact `c5ee4fc0-0984-4329-a604-bbd3b9d7f1e5`; its superseded payload and checksum-addressable private bundle remain retained
+
+Immediately before v14 staging, a fresh private TravelFlow checkpoint captured and recomputed all twenty `public.travel_*` tables:
+
+- backup schema: `tf_bak_tk_20260718t130610z`
+- migration: `20260718130833`
+- 1,154 source rows and 1,154 backup rows across 20/20 tables
+- zero row-count or deterministic row-checksum mismatches
+- `public`, `anon`, and `authenticated` have no access; `service_role` has read-only access
+
+The v14 activation changed only immutable content and the atomic active pointer; no normalized catalogue table or schema definition was modified. Repository validation, the private checkpoint, artifact checksums, active database pointer, service-role verification, and anonymous public RPC were verified after publication. Supabase advisors reported only pre-existing informational backup-schema notices and existing project-wide policy/index performance warnings; this data-only activation introduced no schema advisory change.
 
 ## Sources of truth
 
@@ -324,7 +354,7 @@ For the Dashboard path, extract and run only the travel-knowledge section of `do
 
 ## Verify
 
-Expected active Thailand v13 counts:
+Expected active Thailand v14 counts:
 
 ```sql
 select
@@ -350,9 +380,9 @@ select public.get_active_travel_destination_pack('TH', 'en') #>> '{dataset,versi
 
 The repository validator expects:
 
-- 99 entities: 1 country, 6 regions, 15 cities, 45 neighborhoods, and 32 POIs
-- 601 facts
-- 487 tags
+- 113 entities: 1 country, 6 regions, 15 cities, 45 neighborhoods, and 46 POIs
+- 735 facts
+- 539 tags
 - 27 templates
 - 16 route legs
 
