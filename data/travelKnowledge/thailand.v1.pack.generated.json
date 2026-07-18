@@ -4,13 +4,13 @@
   "dataset": {
     "datasetKey": "thailand-core",
     "countryCode": "TH",
-    "version": "2026.07.17-v7",
-    "checksum": "1f938c858155e7240f52489a94b536bc8c421eadc9438a5ab83638e07f99d2ce",
+    "version": "2026.07.18-v8",
+    "checksum": "63f0dd9992eff79fd25a9994368af4e2d035c7731658ca4ef8cfac9f8dff9ae6",
     "entityCount": 84,
-    "factCount": 321,
+    "factCount": 388,
     "templateCount": 15,
-    "generatedAt": "2026-07-17T15:46:00Z",
-    "publishedAt": "2026-07-17T15:46:00Z"
+    "generatedAt": "2026-07-18T10:30:00Z",
+    "publishedAt": "2026-07-18T10:30:00Z"
   },
   "entities": [
     {
@@ -26,7 +26,7 @@
       "latitude": 15.87,
       "longitude": 100.9925,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 7,
       "typicalMaxDays": 28,
       "popularityScore": 98,
@@ -74,7 +74,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/"
           }
@@ -87,7 +87,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/"
           }
@@ -100,7 +100,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/"
           }
@@ -119,7 +119,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/"
           }
@@ -132,7 +132,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/"
@@ -149,7 +149,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/"
           }
@@ -317,7 +317,7 @@
       "latitude": 18.75,
       "longitude": 99,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 88,
       "hiddenGemScore": 62,
       "tourismIntensityScore": 66,
@@ -349,7 +349,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/North/1"
           }
@@ -366,7 +366,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/North/1"
           }
@@ -379,7 +379,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/North/1"
           }
@@ -473,7 +473,7 @@
       "latitude": 14.45,
       "longitude": 100.45,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 92,
       "hiddenGemScore": 42,
       "tourismIntensityScore": 82,
@@ -505,7 +505,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Central/2"
           }
@@ -522,7 +522,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Central/2"
           }
@@ -535,7 +535,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Central/2"
           }
@@ -629,7 +629,7 @@
       "latitude": 12.9,
       "longitude": 101.2,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 76,
       "hiddenGemScore": 48,
       "tourismIntensityScore": 72,
@@ -661,7 +661,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/East/5"
           }
@@ -731,7 +731,7 @@
       "latitude": 8.5,
       "longitude": 99.2,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 94,
       "hiddenGemScore": 56,
       "tourismIntensityScore": 82,
@@ -763,7 +763,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/South/3"
           }
@@ -776,7 +776,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/South/3"
           }
@@ -882,7 +882,7 @@
       "latitude": 16.4,
       "longitude": 102.8,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 54,
       "hiddenGemScore": 86,
       "tourismIntensityScore": 28,
@@ -914,7 +914,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/North-East/4"
           }
@@ -996,7 +996,7 @@
       "latitude": 13.7563,
       "longitude": 100.5018,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 2,
       "typicalMaxDays": 5,
       "popularityScore": 100,
@@ -1041,7 +1041,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -1058,7 +1058,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -1071,7 +1071,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -1084,7 +1084,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -1102,7 +1102,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -1115,7 +1115,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
@@ -1132,7 +1132,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -1310,7 +1310,7 @@
       "latitude": 18.7883,
       "longitude": 98.9853,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 3,
       "typicalMaxDays": 6,
       "popularityScore": 96,
@@ -1348,7 +1348,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
           }
@@ -1365,7 +1365,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
           }
@@ -1378,7 +1378,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
           }
@@ -1391,7 +1391,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
           }
@@ -1409,7 +1409,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
           }
@@ -1422,7 +1422,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
@@ -1439,7 +1439,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
           }
@@ -1605,7 +1605,7 @@
       "latitude": 19.9105,
       "longitude": 99.8406,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 2,
       "typicalMaxDays": 4,
       "popularityScore": 79,
@@ -1642,7 +1642,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102"
           }
@@ -1659,7 +1659,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102"
           }
@@ -1672,7 +1672,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102"
           }
@@ -1685,7 +1685,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102"
           }
@@ -1702,7 +1702,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102"
           }
@@ -1715,7 +1715,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102"
@@ -1732,7 +1732,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102"
           }
@@ -1862,7 +1862,7 @@
       "latitude": 14.3532,
       "longitude": 100.5689,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 1,
       "typicalMaxDays": 2,
       "popularityScore": 89,
@@ -1898,7 +1898,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phra-Nakhon-Si-Ayutthaya/229"
           }
@@ -1915,7 +1915,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phra-Nakhon-Si-Ayutthaya/229"
           }
@@ -1928,7 +1928,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phra-Nakhon-Si-Ayutthaya/229"
           }
@@ -1945,7 +1945,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phra-Nakhon-Si-Ayutthaya/229"
           }
@@ -1958,7 +1958,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phra-Nakhon-Si-Ayutthaya/229"
@@ -1975,7 +1975,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phra-Nakhon-Si-Ayutthaya/229"
           }
@@ -2101,7 +2101,7 @@
       "latitude": 17.0056,
       "longitude": 99.8264,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 1,
       "typicalMaxDays": 3,
       "popularityScore": 76,
@@ -2137,7 +2137,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Sukhothai/114"
           }
@@ -2154,7 +2154,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Sukhothai/114"
           }
@@ -2167,7 +2167,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Sukhothai/114"
           }
@@ -2182,7 +2182,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Sukhothai/114"
           }
@@ -2195,7 +2195,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Sukhothai/114"
@@ -2212,7 +2212,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Sukhothai/114"
           }
@@ -2325,7 +2325,7 @@
       "latitude": 14.0228,
       "longitude": 99.5328,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 2,
       "typicalMaxDays": 4,
       "popularityScore": 78,
@@ -2359,7 +2359,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Kanchanaburi/222"
           }
@@ -2376,7 +2376,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Kanchanaburi/222"
           }
@@ -2389,7 +2389,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Kanchanaburi/222"
           }
@@ -2402,7 +2402,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Kanchanaburi/222"
@@ -2419,7 +2419,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Kanchanaburi/222"
           }
@@ -2525,7 +2525,7 @@
       "latitude": 7.8804,
       "longitude": 98.3923,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 3,
       "typicalMaxDays": 7,
       "popularityScore": 98,
@@ -2563,7 +2563,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phuket/350"
           }
@@ -2582,7 +2582,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phuket/350"
           }
@@ -2595,7 +2595,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phuket/350"
           }
@@ -2608,7 +2608,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phuket/350"
           }
@@ -2626,7 +2626,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phuket/350"
           }
@@ -2639,7 +2639,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phuket/350"
@@ -2656,7 +2656,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phuket/350"
           }
@@ -2846,7 +2846,7 @@
       "latitude": 8.0863,
       "longitude": 98.9063,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 3,
       "typicalMaxDays": 6,
       "popularityScore": 93,
@@ -2884,7 +2884,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Krabi/344"
           }
@@ -2903,7 +2903,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Krabi/344"
           }
@@ -2916,7 +2916,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Krabi/344"
           }
@@ -2929,7 +2929,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Krabi/344"
           }
@@ -2946,7 +2946,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Krabi/344"
           }
@@ -2959,7 +2959,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Krabi/344"
@@ -2976,7 +2976,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Krabi/344"
           }
@@ -3106,7 +3106,7 @@
       "latitude": 9.512,
       "longitude": 100.0136,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 3,
       "typicalMaxDays": 7,
       "popularityScore": 91,
@@ -3144,7 +3144,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Samui/360"
           }
@@ -3163,7 +3163,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Samui/360"
           }
@@ -3176,7 +3176,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Samui/360"
           }
@@ -3189,7 +3189,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Samui/360"
           }
@@ -3206,7 +3206,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Samui/360"
           }
@@ -3219,7 +3219,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Samui/360"
@@ -3236,7 +3236,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Samui/360"
           }
@@ -3354,7 +3354,7 @@
       "latitude": 9.7319,
       "longitude": 100.0136,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 3,
       "typicalMaxDays": 7,
       "popularityScore": 84,
@@ -3389,7 +3389,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358"
           }
@@ -3408,7 +3408,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358"
           }
@@ -3421,7 +3421,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358"
           }
@@ -3434,7 +3434,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358"
           }
@@ -3447,7 +3447,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358"
@@ -3464,7 +3464,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358"
           }
@@ -3570,7 +3570,7 @@
       "latitude": 10.0956,
       "longitude": 99.8404,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 3,
       "typicalMaxDays": 6,
       "popularityScore": 82,
@@ -3605,7 +3605,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"
           }
@@ -3623,7 +3623,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"
           }
@@ -3636,7 +3636,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"
           }
@@ -3649,7 +3649,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"
           }
@@ -3662,7 +3662,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"
@@ -3679,7 +3679,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"
           }
@@ -3773,7 +3773,7 @@
       "latitude": 12.9236,
       "longitude": 100.8825,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 2,
       "typicalMaxDays": 4,
       "popularityScore": 88,
@@ -3807,7 +3807,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Pattaya/469"
           }
@@ -3824,7 +3824,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Pattaya/469"
           }
@@ -3837,7 +3837,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Pattaya/469"
           }
@@ -3852,7 +3852,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Pattaya/469"
           }
@@ -3865,7 +3865,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Pattaya/469"
@@ -3882,7 +3882,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Pattaya/469"
           }
@@ -3988,7 +3988,7 @@
       "latitude": 12.5684,
       "longitude": 99.9577,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 2,
       "typicalMaxDays": 5,
       "popularityScore": 78,
@@ -4022,7 +4022,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Hua-Hin/240"
           }
@@ -4039,7 +4039,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Hua-Hin/240"
           }
@@ -4052,7 +4052,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Hua-Hin/240"
           }
@@ -4067,7 +4067,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Hua-Hin/240"
           }
@@ -4080,7 +4080,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Hua-Hin/240"
@@ -4097,7 +4097,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Hua-Hin/240"
           }
@@ -4191,7 +4191,7 @@
       "latitude": 19.358,
       "longitude": 98.44,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 2,
       "typicalMaxDays": 4,
       "popularityScore": 73,
@@ -4225,7 +4225,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Mae-Hong-Son/106"
           }
@@ -4242,7 +4242,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Mae-Hong-Son/106"
           }
@@ -4255,7 +4255,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Mae-Hong-Son/106"
           }
@@ -4268,7 +4268,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Mae-Hong-Son/106"
           }
@@ -4281,7 +4281,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Mae-Hong-Son/106"
@@ -4298,7 +4298,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Mae-Hong-Son/106"
           }
@@ -4392,7 +4392,7 @@
       "latitude": 8.9167,
       "longitude": 98.5308,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 2,
       "typicalMaxDays": 4,
       "popularityScore": 77,
@@ -4427,7 +4427,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Search-result/tagword/Khao%20Sok"
           }
@@ -4445,7 +4445,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Search-result/tagword/Khao%20Sok"
           }
@@ -4458,7 +4458,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Search-result/tagword/Khao%20Sok"
           }
@@ -4471,7 +4471,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Search-result/tagword/Khao%20Sok"
           }
@@ -4484,7 +4484,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Search-result/tagword/Khao%20Sok"
@@ -4501,7 +4501,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Search-result/tagword/Khao%20Sok"
           }
@@ -4583,7 +4583,7 @@
       "latitude": 7.6244,
       "longitude": 99.0792,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 3,
       "typicalMaxDays": 7,
       "popularityScore": 80,
@@ -4618,7 +4618,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357"
           }
@@ -4637,7 +4637,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357"
           }
@@ -4650,7 +4650,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357"
           }
@@ -4663,7 +4663,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.82,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357"
           }
@@ -4676,7 +4676,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357"
@@ -4693,7 +4693,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357"
           }
@@ -4799,7 +4799,7 @@
       "latitude": 13.7567,
       "longitude": 100.493,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 96,
       "hiddenGemScore": 26,
       "tourismIntensityScore": 94,
@@ -4831,7 +4831,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -4844,7 +4844,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
@@ -4926,7 +4926,7 @@
       "latitude": 13.72,
       "longitude": 100.505,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 90,
       "hiddenGemScore": 34,
       "tourismIntensityScore": 82,
@@ -4952,7 +4952,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -4965,7 +4965,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
@@ -5036,7 +5036,7 @@
       "latitude": 13.739,
       "longitude": 100.51,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 94,
       "hiddenGemScore": 36,
       "tourismIntensityScore": 90,
@@ -5068,7 +5068,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -5081,7 +5081,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
@@ -5175,7 +5175,7 @@
       "latitude": 13.7797,
       "longitude": 100.5447,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 72,
       "hiddenGemScore": 62,
       "tourismIntensityScore": 52,
@@ -5199,7 +5199,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -5212,7 +5212,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -5275,7 +5275,7 @@
       "latitude": 13.7278,
       "longitude": 100.534,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 88,
       "hiddenGemScore": 28,
       "tourismIntensityScore": 86,
@@ -5305,7 +5305,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -5318,7 +5318,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -5402,7 +5402,7 @@
       "latitude": 13.738,
       "longitude": 100.56,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 92,
       "hiddenGemScore": 18,
       "tourismIntensityScore": 96,
@@ -5426,7 +5426,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -5439,7 +5439,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -5511,7 +5511,7 @@
       "latitude": 13.731,
       "longitude": 100.586,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 78,
       "hiddenGemScore": 42,
       "tourismIntensityScore": 70,
@@ -5535,7 +5535,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -5548,7 +5548,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -5611,7 +5611,7 @@
       "latitude": 18.788,
       "longitude": 98.985,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 96,
       "hiddenGemScore": 30,
       "tourismIntensityScore": 88,
@@ -5643,7 +5643,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
           }
@@ -5656,7 +5656,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
@@ -5739,7 +5739,7 @@
       "latitude": 18.796,
       "longitude": 98.967,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 88,
       "hiddenGemScore": 32,
       "tourismIntensityScore": 82,
@@ -5771,7 +5771,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
           }
@@ -5784,7 +5784,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
@@ -5854,7 +5854,7 @@
       "latitude": 18.792,
       "longitude": 99.005,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 68,
       "hiddenGemScore": 70,
       "tourismIntensityScore": 42,
@@ -5878,7 +5878,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -5891,7 +5891,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -5953,7 +5953,7 @@
       "latitude": 18.8005,
       "longitude": 98.981,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 58,
       "hiddenGemScore": 78,
       "tourismIntensityScore": 34,
@@ -5977,7 +5977,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -5990,7 +5990,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -6043,7 +6043,7 @@
       "latitude": 7.884,
       "longitude": 98.387,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 88,
       "hiddenGemScore": 44,
       "tourismIntensityScore": 76,
@@ -6075,7 +6075,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phuket/350"
           }
@@ -6088,7 +6088,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phuket/350"
@@ -6183,7 +6183,7 @@
       "latitude": 7.896,
       "longitude": 98.296,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 96,
       "hiddenGemScore": 8,
       "tourismIntensityScore": 100,
@@ -6213,7 +6213,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -6226,7 +6226,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -6310,7 +6310,7 @@
       "latitude": 7.821,
       "longitude": 98.3,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 86,
       "hiddenGemScore": 30,
       "tourismIntensityScore": 78,
@@ -6334,7 +6334,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -6347,7 +6347,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -6389,7 +6389,7 @@
       "latitude": 7.847,
       "longitude": 98.294,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 82,
       "hiddenGemScore": 34,
       "tourismIntensityScore": 70,
@@ -6413,7 +6413,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -6426,7 +6426,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -6468,7 +6468,7 @@
       "latitude": 7.953,
       "longitude": 98.284,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 72,
       "hiddenGemScore": 52,
       "tourismIntensityScore": 56,
@@ -6492,7 +6492,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -6505,7 +6505,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -6558,7 +6558,7 @@
       "latitude": 8.0323,
       "longitude": 98.822,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 94,
       "hiddenGemScore": 20,
       "tourismIntensityScore": 92,
@@ -6590,7 +6590,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Krabi/344"
           }
@@ -6603,7 +6603,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Krabi/344"
@@ -6685,7 +6685,7 @@
       "latitude": 8.011,
       "longitude": 98.837,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 91,
       "hiddenGemScore": 30,
       "tourismIntensityScore": 82,
@@ -6711,7 +6711,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Krabi/344"
           }
@@ -6724,7 +6724,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Krabi/344"
@@ -6806,7 +6806,7 @@
       "latitude": 9.53,
       "longitude": 100.063,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 92,
       "hiddenGemScore": 12,
       "tourismIntensityScore": 96,
@@ -6830,7 +6830,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -6843,7 +6843,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -6895,7 +6895,7 @@
       "latitude": 9.466,
       "longitude": 100.045,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 78,
       "hiddenGemScore": 42,
       "tourismIntensityScore": 68,
@@ -6919,7 +6919,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -6932,7 +6932,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -6974,7 +6974,7 @@
       "latitude": 9.559,
       "longitude": 100.031,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 84,
       "hiddenGemScore": 38,
       "tourismIntensityScore": 72,
@@ -6998,7 +6998,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -7011,7 +7011,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -7073,7 +7073,7 @@
       "latitude": 9.708,
       "longitude": 99.995,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 76,
       "hiddenGemScore": 38,
       "tourismIntensityScore": 70,
@@ -7097,7 +7097,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -7110,7 +7110,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -7162,7 +7162,7 @@
       "latitude": 9.754,
       "longitude": 99.965,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 68,
       "hiddenGemScore": 58,
       "tourismIntensityScore": 54,
@@ -7186,7 +7186,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -7199,7 +7199,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -7261,7 +7261,7 @@
       "latitude": 9.676,
       "longitude": 100.067,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 86,
       "hiddenGemScore": 8,
       "tourismIntensityScore": 98,
@@ -7285,7 +7285,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -7298,7 +7298,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -7350,7 +7350,7 @@
       "latitude": 10.0973,
       "longitude": 99.8278,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 90,
       "hiddenGemScore": 18,
       "tourismIntensityScore": 88,
@@ -7376,7 +7376,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"
           }
@@ -7389,7 +7389,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"
@@ -7471,7 +7471,7 @@
       "latitude": 10.0845,
       "longitude": 99.8252,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 78,
       "hiddenGemScore": 34,
       "tourismIntensityScore": 72,
@@ -7497,7 +7497,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"
           }
@@ -7510,7 +7510,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"
@@ -7568,7 +7568,7 @@
       "latitude": 10.0656,
       "longitude": 99.8272,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 66,
       "hiddenGemScore": 62,
       "tourismIntensityScore": 48,
@@ -7594,7 +7594,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"
           }
@@ -7607,7 +7607,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"
@@ -7677,7 +7677,7 @@
       "latitude": 7.64,
       "longitude": 99.03,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 70,
       "hiddenGemScore": 36,
       "tourismIntensityScore": 62,
@@ -7701,7 +7701,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -7714,7 +7714,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -7756,7 +7756,7 @@
       "latitude": 7.59,
       "longitude": 99.03,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 82,
       "hiddenGemScore": 48,
       "tourismIntensityScore": 62,
@@ -7780,7 +7780,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -7793,7 +7793,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -7835,7 +7835,7 @@
       "latitude": 7.535,
       "longitude": 99.086,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "popularityScore": 58,
       "hiddenGemScore": 78,
       "tourismIntensityScore": 32,
@@ -7859,7 +7859,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -7872,7 +7872,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "interpretation": "Relative planning estimate within Thailand; not a live price.",
             "sourceUrl": null
@@ -7934,7 +7934,7 @@
       "latitude": 13.7501,
       "longitude": 100.4913,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.2,
       "typicalMaxDays": 0.4,
       "popularityScore": 100,
@@ -7971,7 +7971,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -7987,7 +7987,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -8220,7 +8220,7 @@
       "latitude": 13.7465,
       "longitude": 100.493,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.1,
       "typicalMaxDays": 0.3,
       "popularityScore": 96,
@@ -8255,7 +8255,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -8271,7 +8271,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -8486,7 +8486,7 @@
       "latitude": 13.7437,
       "longitude": 100.4889,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.1,
       "typicalMaxDays": 0.3,
       "popularityScore": 96,
@@ -8521,7 +8521,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -8537,7 +8537,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -8772,7 +8772,7 @@
       "latitude": 13.7999,
       "longitude": 100.55,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.2,
       "typicalMaxDays": 0.5,
       "popularityScore": 92,
@@ -8807,7 +8807,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -8823,7 +8823,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219"
           }
@@ -9060,7 +9060,7 @@
       "latitude": 14.3559,
       "longitude": 100.5586,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.5,
       "typicalMaxDays": 1,
       "popularityScore": 96,
@@ -9098,7 +9098,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://whc.unesco.org/en/list/576"
           }
@@ -9114,7 +9114,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://whc.unesco.org/en/list/576"
           }
@@ -9404,7 +9404,7 @@
       "latitude": 17.0185,
       "longitude": 99.7036,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.5,
       "typicalMaxDays": 1,
       "popularityScore": 91,
@@ -9442,7 +9442,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://whc.unesco.org/en/list/574"
           }
@@ -9458,7 +9458,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://whc.unesco.org/en/list/574"
           }
@@ -9796,7 +9796,7 @@
       "latitude": 18.8049,
       "longitude": 98.9216,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.2,
       "typicalMaxDays": 0.4,
       "popularityScore": 95,
@@ -9813,7 +9813,8 @@
           "derivedFromTags": true
         },
         "sourceUrls": [
-          "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
+          "https://www.tourismthailand.org/Attraction/wat-phra-that-doi-suthep",
+          "https://www.thailandtravel.or.jp/wat-phra-that-doi-suthep/"
         ]
       },
       "names": [
@@ -9833,9 +9834,9 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
-            "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
+            "sourceUrl": "https://www.tourismthailand.org/Attraction/wat-phra-that-doi-suthep"
           }
         },
         {
@@ -9849,9 +9850,243 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
-            "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
+            "sourceUrl": "https://www.tourismthailand.org/Attraction/wat-phra-that-doi-suthep"
+          }
+        },
+        {
+          "id": "30dd0015-1a0a-5966-8971-dfccedf71556",
+          "factKey": "visit.duration_minutes",
+          "valueJson": {
+            "min": 90,
+            "max": 150
+          },
+          "unit": "minutes",
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "method": "Planning range for the temple, viewpoint, stairs or funicular, excluding the city transfer.",
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-phra-that-doi-suthep/"
+          }
+        },
+        {
+          "id": "a2e2c651-345f-5d04-8941-86e4c870be12",
+          "factKey": "visit.best_time",
+          "valueJson": [
+            "Go early for cooler temperatures, clearer city views, and a calmer worship environment.",
+            "Late afternoon can be atmospheric, but preserve a transport buffer before the funicular stops operating."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.82,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-phra-that-doi-suthep/"
+          }
+        },
+        {
+          "id": "78ad3f88-9156-56c8-9fe3-0bb88bb32f00",
+          "factKey": "opening_hours.regular",
+          "valueJson": {
+            "timezone": "Asia/Bangkok",
+            "schedule": [
+              {
+                "days": [
+                  "monday",
+                  "tuesday",
+                  "wednesday",
+                  "thursday",
+                  "friday",
+                  "saturday",
+                  "sunday"
+                ],
+                "opens": "05:00",
+                "closes": "21:00",
+                "scope": "Temple visitor hours"
+              },
+              {
+                "days": [
+                  "monday",
+                  "tuesday",
+                  "wednesday",
+                  "thursday",
+                  "friday",
+                  "saturday",
+                  "sunday"
+                ],
+                "opens": "06:00",
+                "closes": "18:00",
+                "scope": "Approximate paid funicular operating hours"
+              }
+            ],
+            "checkBeforeVisit": true,
+            "notes": [
+              "The funicular may stop before the temple closes; verify current operation on the day."
+            ]
+          },
+          "sourceKey": "tat_official",
+          "confidence": 0.94,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-phra-that-doi-suthep/"
+          }
+        },
+        {
+          "id": "ea22615d-a222-5819-b35d-154158144bb1",
+          "factKey": "pricing.admission",
+          "valueJson": {
+            "currency": "THB",
+            "adultForeign": 30,
+            "notes": [
+              "The paid funicular is listed separately at THB 50 per person.",
+              "Offerings and other purchases are separate."
+            ],
+            "checkBeforeVisit": true
+          },
+          "unit": "THB",
+          "sourceKey": "tat_official",
+          "confidence": 0.94,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-phra-that-doi-suthep/"
+          }
+        },
+        {
+          "id": "4aa5d9a8-0cd2-5ab9-8201-3dfb142b406b",
+          "factKey": "visit.booking",
+          "valueJson": {
+            "mode": "walk_in",
+            "notes": [
+              "Normal temple entry is walk-in; a private driver or tour can simplify the mountain transfer."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-phra-that-doi-suthep/"
+          }
+        },
+        {
+          "id": "bbac6a2d-9f32-5493-8c0f-d8df1487e4d0",
+          "factKey": "visit.dress_code",
+          "valueJson": [
+            "Cover shoulders and knees inside the sacred compound.",
+            "Remove shoes where directed and keep voices low around worshippers.",
+            "Do not pose disrespectfully with Buddha images or interrupt religious activity."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.tourismthailand.org/Attraction/wat-phra-that-doi-suthep"
+          }
+        },
+        {
+          "id": "7463da84-28e9-5f48-8063-3283783f0114",
+          "factKey": "visit.practical_notes",
+          "valueJson": [
+            "Allow roughly 40 minutes each way by road from central Chiang Mai before traffic or waiting time.",
+            "Choose between the 306-step naga staircase and the paid funicular based on mobility and heat.",
+            "Bring a light layer in cooler or rainy weather at elevation."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-phra-that-doi-suthep/"
+          }
+        },
+        {
+          "id": "1b753189-3d37-5d05-bece-dbf83bad8c06",
+          "factKey": "visit.physical_intensity",
+          "valueJson": {
+            "level": "variable",
+            "notes": [
+              "The staircase is a substantial climb; the funicular makes the main temple level much easier but does not remove every step or uneven surface."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-phra-that-doi-suthep/"
+          }
+        },
+        {
+          "id": "2888af74-c92d-519e-95a8-b783a8168792",
+          "factKey": "access.transport",
+          "valueJson": {
+            "modes": [
+              "shared_songthaew",
+              "private_driver",
+              "taxi",
+              "guided_tour"
+            ],
+            "notes": [
+              "The temple is about 15 km west of central Chiang Mai on a winding mountain road; agree return arrangements when using flexible transport."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-phra-that-doi-suthep/"
+          }
+        },
+        {
+          "id": "f9e85860-fa02-53a7-8cd6-4b1ce1a7f331",
+          "factKey": "audience.mobility_fit",
+          "valueJson": {
+            "fit": "conditional",
+            "notes": [
+              "The funicular avoids the 306-step approach, but thresholds, crowds, and uneven temple surfaces still need individual assessment."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.78,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-phra-that-doi-suthep/"
+          }
+        },
+        {
+          "id": "6d1f9d72-2952-588c-86f2-ed15f0ceb70e",
+          "factKey": "audience.family_fit",
+          "valueJson": {
+            "fit": "good",
+            "notes": [
+              "The funicular and compact upper compound can work well for families when temple etiquette, mountain-road motion, and crowd supervision are planned."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.78,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-phra-that-doi-suthep/"
           }
         }
       ],
@@ -9864,7 +10099,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
+              "https://www.tourismthailand.org/Attraction/wat-phra-that-doi-suthep",
+              "https://www.thailandtravel.or.jp/wat-phra-that-doi-suthep/"
             ]
           }
         },
@@ -9876,7 +10112,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
+              "https://www.tourismthailand.org/Attraction/wat-phra-that-doi-suthep",
+              "https://www.thailandtravel.or.jp/wat-phra-that-doi-suthep/"
             ]
           }
         },
@@ -9888,7 +10125,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
+              "https://www.tourismthailand.org/Attraction/wat-phra-that-doi-suthep",
+              "https://www.thailandtravel.or.jp/wat-phra-that-doi-suthep/"
             ]
           }
         },
@@ -9900,7 +10138,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"
+              "https://www.tourismthailand.org/Attraction/wat-phra-that-doi-suthep",
+              "https://www.thailandtravel.or.jp/wat-phra-that-doi-suthep/"
             ]
           }
         }
@@ -9918,7 +10157,7 @@
       "latitude": 18.5883,
       "longitude": 98.4864,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.5,
       "typicalMaxDays": 1,
       "popularityScore": 88,
@@ -9957,7 +10196,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Articles/mountain-savouring-the-greens-at-doi-inthanon"
           }
@@ -9973,7 +10212,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Articles/mountain-savouring-the-greens-at-doi-inthanon"
           }
@@ -10303,7 +10542,7 @@
       "latitude": 19.8242,
       "longitude": 99.7633,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.1,
       "typicalMaxDays": 0.3,
       "popularityScore": 94,
@@ -10318,6 +10557,7 @@
           "derivedFromTags": true
         },
         "sourceUrls": [
+          "https://www.thailandtravel.or.jp/white-temple/",
           "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102"
         ]
       },
@@ -10338,9 +10578,9 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
-            "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102"
+            "sourceUrl": "https://www.thailandtravel.or.jp/white-temple/"
           }
         },
         {
@@ -10354,9 +10594,227 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
-            "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102"
+            "sourceUrl": "https://www.thailandtravel.or.jp/white-temple/"
+          }
+        },
+        {
+          "id": "30374e73-8b1c-5ae2-b2d8-d7210a1af46e",
+          "factKey": "visit.duration_minutes",
+          "valueJson": {
+            "min": 75,
+            "max": 120
+          },
+          "unit": "minutes",
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/white-temple/"
+          }
+        },
+        {
+          "id": "9ab9dc7a-7090-5c93-9dc9-000ccb7d0fff",
+          "factKey": "visit.best_time",
+          "valueJson": [
+            "Arrive near opening for cooler conditions and a better chance of moving through the main approach before peak tour traffic.",
+            "Use it as the first or last anchor in a road-based Chiang Rai temple circuit rather than crossing the city repeatedly."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.84,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/white-temple/"
+          }
+        },
+        {
+          "id": "16744078-b783-5c80-8f06-7942c4ee54f2",
+          "factKey": "opening_hours.regular",
+          "valueJson": {
+            "timezone": "Asia/Bangkok",
+            "schedule": [
+              {
+                "days": [
+                  "monday",
+                  "tuesday",
+                  "wednesday",
+                  "thursday",
+                  "friday",
+                  "saturday",
+                  "sunday"
+                ],
+                "opens": "08:00",
+                "closes": "17:00"
+              }
+            ],
+            "checkBeforeVisit": true,
+            "notes": [
+              "Special ceremonies or maintenance can change access; confirm before a long transfer."
+            ]
+          },
+          "sourceKey": "tat_official",
+          "confidence": 0.94,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/white-temple/"
+          }
+        },
+        {
+          "id": "d24b0ad0-7da4-5a2b-b841-740422c89fe7",
+          "factKey": "pricing.admission",
+          "valueJson": {
+            "currency": "THB",
+            "adultForeign": 200,
+            "notes": [
+              "The current TAT visitor page lists THB 200; verify before travel because older guides may show a previous price."
+            ],
+            "checkBeforeVisit": true
+          },
+          "unit": "THB",
+          "sourceKey": "tat_official",
+          "confidence": 0.95,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/white-temple/"
+          }
+        },
+        {
+          "id": "73191c40-dc42-5da3-a80d-ca7c637d49e5",
+          "factKey": "visit.booking",
+          "valueJson": {
+            "mode": "walk_in",
+            "notes": [
+              "Normal individual admission is walk-in; groups should confirm current arrangements separately."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.84,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/white-temple/"
+          }
+        },
+        {
+          "id": "d9f83694-2e85-55c0-8fd5-710aea567902",
+          "factKey": "visit.dress_code",
+          "valueJson": [
+            "Wear clothing that covers shoulders and knees.",
+            "Follow staff directions for shoes, photography, and access inside sacred spaces.",
+            "Treat the complex as an active Buddhist site as well as a contemporary artwork."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/white-temple/"
+          }
+        },
+        {
+          "id": "269c8738-acda-59b4-bb91-7470b830003a",
+          "factKey": "visit.practical_notes",
+          "valueJson": [
+            "The complex is about 14 km south of central Chiang Rai, so group it with southbound or airport-side travel.",
+            "Expect tour-group pulses at the narrow main approach and allow time for the wider art complex.",
+            "Do not plan from older ticket prices without rechecking the official visitor page."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.9,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/white-temple/"
+          }
+        },
+        {
+          "id": "87dc4e57-f8a7-5b0b-b066-6b94a03a40d6",
+          "factKey": "access.transport",
+          "valueJson": {
+            "modes": [
+              "car",
+              "private_driver",
+              "taxi",
+              "guided_tour",
+              "local_bus"
+            ],
+            "notes": [
+              "A car, driver, or organized circuit is the most efficient way to combine the dispersed Chiang Rai sights; local transport needs extra timetable buffer."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/white-temple/"
+          }
+        },
+        {
+          "id": "d59a2ac2-ca48-55d2-a9bc-1337d767aa65",
+          "factKey": "visit.physical_intensity",
+          "valueJson": {
+            "level": "low",
+            "notes": [
+              "The standard visit is relatively compact, but queues, sun exposure, and standing time can increase effort."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.84,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/white-temple/"
+          }
+        },
+        {
+          "id": "7e830422-54cd-54f2-97b1-baf76ea62b64",
+          "factKey": "audience.mobility_fit",
+          "valueJson": {
+            "fit": "conditional",
+            "notes": [
+              "A shorter exterior-focused visit may reduce effort, but bridges, thresholds, queues, and crowded circulation need current site-specific checking."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.74,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/white-temple/"
+          }
+        },
+        {
+          "id": "6e3b94a4-3e2c-59a6-9c6d-3eb919b669f1",
+          "factKey": "audience.family_fit",
+          "valueJson": {
+            "fit": "good",
+            "notes": [
+              "The visual art and compact route can engage families; supervise children around crowds, sacred areas, and unusual imagery."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.78,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/white-temple/"
           }
         }
       ],
@@ -10369,6 +10827,7 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
+              "https://www.thailandtravel.or.jp/white-temple/",
               "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102"
             ]
           }
@@ -10381,6 +10840,7 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
+              "https://www.thailandtravel.or.jp/white-temple/",
               "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102"
             ]
           }
@@ -10393,6 +10853,7 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
+              "https://www.thailandtravel.or.jp/white-temple/",
               "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102"
             ]
           }
@@ -10411,7 +10872,7 @@
       "latitude": 14.3751,
       "longitude": 99.1449,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.5,
       "typicalMaxDays": 1,
       "popularityScore": 88,
@@ -10450,7 +10911,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Attraction/erawan-waterfall"
           }
@@ -10466,7 +10927,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Attraction/erawan-waterfall"
           }
@@ -10792,7 +11253,7 @@
       "latitude": 14.0409,
       "longitude": 99.5038,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.1,
       "typicalMaxDays": 0.3,
       "popularityScore": 86,
@@ -10829,7 +11290,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Kanchanaburi/222"
           }
@@ -10845,7 +11306,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Kanchanaburi/222"
           }
@@ -10902,7 +11363,7 @@
       "latitude": 7.7614,
       "longitude": 98.305,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.1,
       "typicalMaxDays": 0.3,
       "popularityScore": 86,
@@ -10939,7 +11400,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phuket/350"
           }
@@ -10955,7 +11416,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phuket/350"
           }
@@ -11024,7 +11485,7 @@
       "latitude": 8.1236,
       "longitude": 98.9249,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.2,
       "typicalMaxDays": 0.5,
       "popularityScore": 78,
@@ -11059,7 +11520,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -11075,7 +11536,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -11126,7 +11587,7 @@
       "latitude": 9.627,
       "longitude": 99.675,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.5,
       "typicalMaxDays": 1,
       "popularityScore": 88,
@@ -11164,7 +11625,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Samui/360"
           }
@@ -11180,7 +11641,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Samui/360"
           }
@@ -11261,7 +11722,7 @@
       "latitude": 12.914,
       "longitude": 100.78,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.5,
       "typicalMaxDays": 1,
       "popularityScore": 82,
@@ -11298,7 +11759,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Pattaya/469"
           }
@@ -11314,7 +11775,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Pattaya/469"
           }
@@ -11383,7 +11844,7 @@
       "latitude": 12.571,
       "longitude": 99.956,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.1,
       "typicalMaxDays": 0.3,
       "popularityScore": 78,
@@ -11418,7 +11879,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Hua-Hin/240"
           }
@@ -11434,7 +11895,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Hua-Hin/240"
           }
@@ -11491,7 +11952,7 @@
       "latitude": 19.3066,
       "longitude": 98.4521,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.1,
       "typicalMaxDays": 0.3,
       "popularityScore": 78,
@@ -11526,7 +11987,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.8,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -11542,7 +12003,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": null
           }
@@ -11603,7 +12064,7 @@
       "latitude": 7.493,
       "longitude": 99.075,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.3,
       "typicalMaxDays": 0.7,
       "popularityScore": 74,
@@ -11640,7 +12101,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357"
           }
@@ -11656,7 +12117,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357"
           }
@@ -11738,7 +12199,7 @@
       "latitude": 9.7456,
       "longitude": 100.0593,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.2,
       "typicalMaxDays": 0.5,
       "popularityScore": 72,
@@ -11782,7 +12243,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358"
           }
@@ -11798,7 +12259,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358"
           }
@@ -11879,7 +12340,7 @@
       "latitude": 9.7696,
       "longitude": 100.0552,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.3,
       "typicalMaxDays": 0.8,
       "popularityScore": 78,
@@ -11914,7 +12375,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358"
           }
@@ -11930,7 +12391,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358"
           }
@@ -11987,7 +12448,7 @@
       "latitude": 10.1151,
       "longitude": 99.8141,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.3,
       "typicalMaxDays": 0.7,
       "popularityScore": 90,
@@ -12026,7 +12487,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Attraction/ko-nang-yuan"
           }
@@ -12042,7 +12503,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Attraction/ko-nang-yuan"
           }
@@ -12147,7 +12608,7 @@
       "latitude": 10.0973,
       "longitude": 99.8278,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.1,
       "typicalMaxDays": 0.3,
       "popularityScore": 86,
@@ -12182,7 +12643,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"
           }
@@ -12198,7 +12659,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"
           }
@@ -12256,7 +12717,7 @@
       "latitude": 7.9251,
       "longitude": 99.2682,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.4,
       "typicalMaxDays": 0.8,
       "popularityScore": 84,
@@ -12297,7 +12758,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Articles/10-things-to-do-in-krabi"
           }
@@ -12313,7 +12774,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Articles/10-things-to-do-in-krabi"
           }
@@ -12370,7 +12831,7 @@
       "latitude": 8.0781,
       "longitude": 98.6773,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.5,
       "typicalMaxDays": 1,
       "popularityScore": 88,
@@ -12408,7 +12869,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Articles/10-things-to-do-in-krabi"
           }
@@ -12424,7 +12885,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Articles/10-things-to-do-in-krabi"
           }
@@ -12518,7 +12979,7 @@
       "latitude": 7.8463,
       "longitude": 98.3375,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.1,
       "typicalMaxDays": 0.3,
       "popularityScore": 90,
@@ -12559,7 +13020,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/recommended-route-for-one-day-3"
           }
@@ -12575,7 +13036,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/recommended-route-for-one-day-3"
           }
@@ -12632,7 +13093,7 @@
       "latitude": 7.7973,
       "longitude": 98.3022,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.1,
       "typicalMaxDays": 0.2,
       "popularityScore": 82,
@@ -12670,7 +13131,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/recommended-route-for-one-day-3"
           }
@@ -12686,7 +13147,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/recommended-route-for-one-day-3"
           }
@@ -12744,7 +13205,7 @@
       "latitude": 19.9234,
       "longitude": 99.8418,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.1,
       "typicalMaxDays": 0.3,
       "popularityScore": 88,
@@ -12759,7 +13220,8 @@
           "derivedFromTags": true
         },
         "sourceUrls": [
-          "https://www.tourismthailand.org/Destinations/Provinces/Chiang%20Rai/102"
+          "https://www.thailandtravel.or.jp/wat-rong-sua-ten/",
+          "https://www.tourismthailand.org/Attraction/wat-rong-suea-ten"
         ]
       },
       "names": [
@@ -12785,9 +13247,9 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
-            "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang%20Rai/102"
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-rong-sua-ten/"
           }
         },
         {
@@ -12801,9 +13263,226 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
-            "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang%20Rai/102"
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-rong-sua-ten/"
+          }
+        },
+        {
+          "id": "1eb0e120-dec1-52d5-a4c2-0dd0b8c27025",
+          "factKey": "visit.duration_minutes",
+          "valueJson": {
+            "min": 45,
+            "max": 75
+          },
+          "unit": "minutes",
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-rong-sua-ten/"
+          }
+        },
+        {
+          "id": "818fdedf-21a8-5913-96d3-d49bfd51d444",
+          "factKey": "visit.best_time",
+          "valueJson": [
+            "Visit early for calmer photography and worship space.",
+            "Because it is close to the city, use it as a flexible first or final stop around a broader Chiang Rai circuit."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.84,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-rong-sua-ten/"
+          }
+        },
+        {
+          "id": "0cb9c6a3-4799-52e1-be6a-72701dbbaadf",
+          "factKey": "opening_hours.regular",
+          "valueJson": {
+            "timezone": "Asia/Bangkok",
+            "schedule": [
+              {
+                "days": [
+                  "monday",
+                  "tuesday",
+                  "wednesday",
+                  "thursday",
+                  "friday",
+                  "saturday",
+                  "sunday"
+                ],
+                "opens": "07:00",
+                "closes": "20:00"
+              }
+            ],
+            "checkBeforeVisit": true,
+            "notes": [
+              "The current TAT page notes holiday closures; confirm the date before travel."
+            ]
+          },
+          "sourceKey": "tat_official",
+          "confidence": 0.94,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-rong-sua-ten/"
+          }
+        },
+        {
+          "id": "96f6c5bc-b7eb-5d51-abf8-6e9331f8416f",
+          "factKey": "pricing.admission",
+          "valueJson": {
+            "currency": "THB",
+            "free": true,
+            "notes": [
+              "The current TAT visitor page lists free temple entry; offerings and purchases are separate."
+            ],
+            "checkBeforeVisit": true
+          },
+          "sourceKey": "tat_official",
+          "confidence": 0.95,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-rong-sua-ten/"
+          }
+        },
+        {
+          "id": "eb3608ed-eea9-5542-8370-c316b353bee7",
+          "factKey": "visit.booking",
+          "valueJson": {
+            "mode": "walk_in",
+            "notes": [
+              "Normal individual temple entry is walk-in."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-rong-sua-ten/"
+          }
+        },
+        {
+          "id": "add75e82-e020-56d0-9d1c-d9895791b178",
+          "factKey": "visit.dress_code",
+          "valueJson": [
+            "Cover shoulders and knees.",
+            "Remove shoes where directed and keep voices low around worshippers.",
+            "Follow on-site photography directions inside the main hall."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-rong-sua-ten/"
+          }
+        },
+        {
+          "id": "8199d3b4-7e4f-5fbf-b20e-a46f2c3cffb8",
+          "factKey": "visit.practical_notes",
+          "valueJson": [
+            "The temple is about 4 km north of central Chiang Rai and is easier to combine with Baan Dam or airport-side stops than the White Temple.",
+            "Preserve room for active worship instead of treating the main hall only as a photo set.",
+            "Check holiday access because the current visitor page flags closures."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.9,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-rong-sua-ten/"
+          }
+        },
+        {
+          "id": "376f8443-2f8c-5783-ba7c-2fc378d95de1",
+          "factKey": "access.transport",
+          "valueJson": {
+            "modes": [
+              "taxi",
+              "ride_hail",
+              "tuk_tuk",
+              "private_driver",
+              "guided_tour"
+            ],
+            "notes": [
+              "The short distance from central Chiang Rai makes a taxi or ride-hail practical; a driver is more efficient when continuing to dispersed regional sights."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-rong-sua-ten/"
+          }
+        },
+        {
+          "id": "57af6ca4-585f-5ac6-b87f-30e30eef87c9",
+          "factKey": "visit.physical_intensity",
+          "valueJson": {
+            "level": "low",
+            "notes": [
+              "The usual visit is compact, though heat, standing, and temple thresholds can still affect comfort."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-rong-sua-ten/"
+          }
+        },
+        {
+          "id": "9dcf3c7c-a271-5ec8-bfc6-fa5b75533da9",
+          "factKey": "audience.mobility_fit",
+          "valueJson": {
+            "fit": "conditional",
+            "notes": [
+              "The compact layout can reduce distance, but current step-free access, thresholds, and crowd conditions should be checked for specific needs."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.74,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-rong-sua-ten/"
+          }
+        },
+        {
+          "id": "e5cbde90-1640-586d-9a0e-a21f0651fbbf",
+          "factKey": "audience.family_fit",
+          "valueJson": {
+            "fit": "good",
+            "notes": [
+              "The compact, visually distinctive complex can work well for families when temple etiquette and crowd supervision are clear."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.8,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/wat-rong-sua-ten/"
           }
         }
       ],
@@ -12816,7 +13495,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Destinations/Provinces/Chiang%20Rai/102"
+              "https://www.thailandtravel.or.jp/wat-rong-sua-ten/",
+              "https://www.tourismthailand.org/Attraction/wat-rong-suea-ten"
             ]
           }
         },
@@ -12828,7 +13508,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Destinations/Provinces/Chiang%20Rai/102"
+              "https://www.thailandtravel.or.jp/wat-rong-sua-ten/",
+              "https://www.tourismthailand.org/Attraction/wat-rong-suea-ten"
             ]
           }
         },
@@ -12840,7 +13521,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Destinations/Provinces/Chiang%20Rai/102"
+              "https://www.thailandtravel.or.jp/wat-rong-sua-ten/",
+              "https://www.tourismthailand.org/Attraction/wat-rong-suea-ten"
             ]
           }
         }
@@ -12858,7 +13540,7 @@
       "latitude": 19.9912,
       "longitude": 99.8611,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.2,
       "typicalMaxDays": 0.4,
       "popularityScore": 82,
@@ -12893,7 +13575,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang%20Rai/102"
           }
@@ -12909,7 +13591,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Chiang%20Rai/102"
           }
@@ -12967,7 +13649,7 @@
       "latitude": 14.3564,
       "longitude": 100.5685,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.1,
       "typicalMaxDays": 0.3,
       "popularityScore": 94,
@@ -12976,15 +13658,16 @@
       "attributes": {
         "activityProfile": {
           "version": 1,
-          "primaryCategory": "temple",
+          "primaryCategory": "heritage_site",
           "secondaryCategories": [
-            "heritage_site"
+            "temple"
           ],
           "planningTier": "anchor",
-          "derivedFromTags": true
+          "derivedFromTags": false
         },
         "sourceUrls": [
-          "https://www.tourismthailand.org/Articles/slow-lane-in-ayutthaya"
+          "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05",
+          "https://www.finearts.go.th/main/search?page=48"
         ]
       },
       "names": [
@@ -13010,9 +13693,9 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
-            "sourceUrl": "https://www.tourismthailand.org/Articles/slow-lane-in-ayutthaya"
+            "sourceUrl": "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05"
           }
         },
         {
@@ -13026,9 +13709,229 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
-            "sourceUrl": "https://www.tourismthailand.org/Articles/slow-lane-in-ayutthaya"
+            "sourceUrl": "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05"
+          }
+        },
+        {
+          "id": "075c9db6-cf9f-53b5-bd78-ea6ab6af5fcf",
+          "factKey": "visit.duration_minutes",
+          "valueJson": {
+            "min": 45,
+            "max": 75
+          },
+          "unit": "minutes",
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05"
+          }
+        },
+        {
+          "id": "f46536af-4875-5387-bf34-32aba98a0058",
+          "factKey": "visit.best_time",
+          "valueJson": [
+            "Arrive close to opening for lower heat and fewer tour-group pulses around the Buddha head.",
+            "Use Wat Mahathat inside a compact central-island circuit instead of crossing the river repeatedly."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.84,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05"
+          }
+        },
+        {
+          "id": "bb92de9e-4830-5483-bd14-23a300ac26b2",
+          "factKey": "opening_hours.regular",
+          "valueJson": {
+            "timezone": "Asia/Bangkok",
+            "schedule": [
+              {
+                "days": [
+                  "monday",
+                  "tuesday",
+                  "wednesday",
+                  "thursday",
+                  "friday",
+                  "saturday",
+                  "sunday"
+                ],
+                "opens": "08:00",
+                "closes": "18:00",
+                "scope": "Regular Ayutthaya Historical Park service hours"
+              }
+            ],
+            "checkBeforeVisit": true,
+            "notes": [
+              "Special evening openings and temporary closures can override regular hours; check the park's current notices."
+            ]
+          },
+          "sourceKey": "fine_arts_department",
+          "confidence": 0.92,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.finearts.go.th/main/view/8209-"
+          }
+        },
+        {
+          "id": "b36589cf-dbff-5c4c-b377-ed8a2d27408a",
+          "factKey": "pricing.admission",
+          "valueJson": {
+            "currency": "THB",
+            "adultForeign": 80,
+            "adultLocal": 10,
+            "notes": [
+              "A combined ticket is listed at THB 300 for foreign visitors and THB 40 for Thai visitors across seven named monuments.",
+              "Choose the combined ticket only when the planned circuit makes it worthwhile."
+            ],
+            "checkBeforeVisit": true
+          },
+          "unit": "THB",
+          "sourceKey": "fine_arts_department",
+          "confidence": 0.96,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.finearts.go.th/main/search?page=48"
+          }
+        },
+        {
+          "id": "fad79ed2-35fa-524d-a71c-0e6688365b0e",
+          "factKey": "visit.booking",
+          "valueJson": {
+            "mode": "walk_in",
+            "notes": [
+              "Normal monument admission is walk-in; guides and group services should be arranged separately."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05"
+          }
+        },
+        {
+          "id": "0cdbbbc5-87b2-524a-8042-a2d402aa1aa5",
+          "factKey": "visit.dress_code",
+          "valueJson": [
+            "Wear respectful clothing suitable for a Buddhist archaeological site.",
+            "Do not climb protected ruins or touch the Buddha head and tree roots.",
+            "When photographing the Buddha head, keep your own head lower than the image."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05"
+          }
+        },
+        {
+          "id": "c5552067-3688-5110-a9ab-c9072caccf51",
+          "factKey": "visit.practical_notes",
+          "valueJson": [
+            "The site is exposed and has uneven archaeological surfaces; carry water and sun protection.",
+            "Pair it with nearby Wat Ratchaburana and reserve longer transfers for a separate circuit block.",
+            "Use the official park notices for current extended hours rather than assuming every evening opening applies."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.9,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05"
+          }
+        },
+        {
+          "id": "c0773a9a-4ef2-566d-8b8d-264801b59677",
+          "factKey": "visit.physical_intensity",
+          "valueJson": {
+            "level": "low",
+            "notes": [
+              "The visit is compact, but heat, uneven ground, and standing around narrow photo points can increase effort."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05"
+          }
+        },
+        {
+          "id": "d77edf60-0a62-501d-9288-5de6c8d3bb10",
+          "factKey": "access.transport",
+          "valueJson": {
+            "modes": [
+              "walk",
+              "bicycle",
+              "tuk_tuk",
+              "car"
+            ],
+            "notes": [
+              "The monument sits in the central island cluster and is easy to combine on foot, bicycle, or tuk-tuk with nearby ruins."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05"
+          }
+        },
+        {
+          "id": "c17756cb-1eac-5a30-a689-47770e53f895",
+          "factKey": "audience.mobility_fit",
+          "valueJson": {
+            "fit": "conditional",
+            "notes": [
+              "The route can be short, but uneven ruins, thresholds, heat, and limited shade require a site-specific accessibility check."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.76,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05"
+          }
+        },
+        {
+          "id": "b9f429af-6811-5b13-afa8-4e6e573f3e27",
+          "factKey": "audience.family_fit",
+          "valueJson": {
+            "fit": "good",
+            "notes": [
+              "The compact site can work well for families when children are supervised around fragile ruins, uneven ground, and heat."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.8,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05"
           }
         }
       ],
@@ -13041,7 +13944,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Articles/slow-lane-in-ayutthaya"
+              "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05",
+              "https://www.finearts.go.th/main/search?page=48"
             ]
           }
         },
@@ -13053,7 +13957,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Articles/slow-lane-in-ayutthaya"
+              "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05",
+              "https://www.finearts.go.th/main/search?page=48"
             ]
           }
         },
@@ -13065,7 +13970,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Articles/slow-lane-in-ayutthaya"
+              "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05",
+              "https://www.finearts.go.th/main/search?page=48"
             ]
           }
         },
@@ -13077,7 +13983,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Articles/slow-lane-in-ayutthaya"
+              "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05",
+              "https://www.finearts.go.th/main/search?page=48"
             ]
           }
         },
@@ -13089,7 +13996,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Articles/slow-lane-in-ayutthaya"
+              "https://qrcode.finearts.go.th/index.php/th/historicalpark/phranakhonsriayutthaya/ayutthaya-05",
+              "https://www.finearts.go.th/main/search?page=48"
             ]
           }
         }
@@ -13107,7 +14015,7 @@
       "latitude": 17.4372,
       "longitude": 99.7819,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.5,
       "typicalMaxDays": 1,
       "popularityScore": 76,
@@ -13116,15 +14024,16 @@
       "attributes": {
         "activityProfile": {
           "version": 1,
-          "primaryCategory": "temple",
+          "primaryCategory": "heritage_site",
           "secondaryCategories": [
-            "heritage_site"
+            "temple"
           ],
           "planningTier": "discovery",
-          "derivedFromTags": true
+          "derivedFromTags": false
         },
         "sourceUrls": [
-          "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/sukhothai-uttaradit-3-days"
+          "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html",
+          "https://www.thailandtravel.or.jp/common/pdf/thailand_tourist2025.pdf"
         ]
       },
       "names": [
@@ -13144,9 +14053,9 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
-            "sourceUrl": "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/sukhothai-uttaradit-3-days"
+            "sourceUrl": "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html"
           }
         },
         {
@@ -13160,9 +14069,230 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
-            "sourceUrl": "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/sukhothai-uttaradit-3-days"
+            "sourceUrl": "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html"
+          }
+        },
+        {
+          "id": "ce966d44-ce4d-5f71-b714-8264a6b27ec3",
+          "factKey": "visit.duration_minutes",
+          "valueJson": {
+            "min": 180,
+            "max": 300
+          },
+          "unit": "minutes",
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "method": "Planning range for the main walled-park circuit, excluding the road transfer from Sukhothai.",
+            "sourceUrl": "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html"
+          }
+        },
+        {
+          "id": "d123e0e1-f1c5-5cf1-97df-a55f416c37b5",
+          "factKey": "visit.best_time",
+          "valueJson": [
+            "Start early enough to cycle or walk before the strongest heat.",
+            "Treat the park as a dedicated half-day excursion from Sukhothai rather than a quick add-on after a full central-zone visit."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.84,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html"
+          }
+        },
+        {
+          "id": "88b8d4d9-34ee-501f-afbb-322478e8357f",
+          "factKey": "opening_hours.regular",
+          "valueJson": {
+            "timezone": "Asia/Bangkok",
+            "schedule": [
+              {
+                "days": [
+                  "monday",
+                  "tuesday",
+                  "wednesday",
+                  "thursday",
+                  "friday",
+                  "saturday",
+                  "sunday"
+                ],
+                "opens": "08:00",
+                "closes": "17:00"
+              }
+            ],
+            "checkBeforeVisit": true,
+            "notes": [
+              "The current official TAT visitor guide lists daily hours; confirm temporary closures and event access with the park before the long transfer."
+            ]
+          },
+          "sourceKey": "tat_official",
+          "confidence": 0.9,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/common/pdf/thailand_tourist2025.pdf"
+          }
+        },
+        {
+          "id": "d10bccbb-7191-5afe-bcb0-fb7ce85185e0",
+          "factKey": "pricing.admission",
+          "valueJson": {
+            "currency": "THB",
+            "adultForeign": 150,
+            "notes": [
+              "The current official TAT visitor guide lists THB 150 per archaeological area and THB 20 for the park tram.",
+              "Older official fee documents show different amounts, so confirm the current ticket before travel."
+            ],
+            "checkBeforeVisit": true
+          },
+          "unit": "THB",
+          "sourceKey": "tat_official",
+          "confidence": 0.88,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/common/pdf/thailand_tourist2025.pdf"
+          }
+        },
+        {
+          "id": "142358b5-2db1-51df-b90e-33c998c33cc6",
+          "factKey": "visit.booking",
+          "valueJson": {
+            "mode": "walk_in",
+            "notes": [
+              "Normal park admission is walk-in; confirm rental, tram, or guide availability if those are essential to the visit."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.84,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html"
+          }
+        },
+        {
+          "id": "8a4de847-20bd-50ae-aef9-3f921ad99722",
+          "factKey": "visit.practical_notes",
+          "valueJson": [
+            "The park is roughly 55 km north of Sukhothai, so include meaningful road time and avoid double-booking another major ruins circuit.",
+            "Prioritize Wat Chang Lom, Wat Chedi Chet Thaeo, and Wat Nang Phaya before adding more distant sites.",
+            "Carry water, sun protection, and offline navigation; local transport frequency is limited compared with Sukhothai's central park."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.9,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html"
+          }
+        },
+        {
+          "id": "ab7e007c-7e5d-5e1e-9897-297c874082c7",
+          "factKey": "visit.physical_intensity",
+          "valueJson": {
+            "level": "moderate",
+            "notes": [
+              "The main circuit is relatively flat and cycle-friendly, but distance, heat, repeated stops, and temple steps add effort."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html"
+          }
+        },
+        {
+          "id": "31432c7a-a80e-5e75-8252-9e0330bd9b6d",
+          "factKey": "access.transport",
+          "valueJson": {
+            "modes": [
+              "car",
+              "private_driver",
+              "guided_tour",
+              "bicycle",
+              "park_tram"
+            ],
+            "notes": [
+              "A car or driver is the practical default from Sukhothai; bicycle or tram-style transport can reduce distance inside the park."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/common/pdf/thailand_tourist2025.pdf"
+          }
+        },
+        {
+          "id": "2c716862-abff-5397-8a27-a122386fca44",
+          "factKey": "visit.facilities",
+          "valueJson": [
+            "Visitor information at the main park area",
+            "Bicycle or local transport options subject to availability",
+            "Toilets and refreshments at selected visitor areas",
+            "Parking near the main entrance"
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.76,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://www.thailandtravel.or.jp/common/pdf/thailand_tourist2025.pdf"
+          }
+        },
+        {
+          "id": "300e4f22-f78f-5596-9035-66b78c1dde54",
+          "factKey": "audience.mobility_fit",
+          "valueJson": {
+            "fit": "conditional",
+            "notes": [
+              "Motorized transport can shorten the circuit, but ruins, thresholds, uneven ground, and limited site-by-site accessibility information require advance checking."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.74,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html"
+          }
+        },
+        {
+          "id": "3c6a29ea-62c8-5c8d-a855-745b61a76539",
+          "factKey": "audience.family_fit",
+          "valueJson": {
+            "fit": "good",
+            "notes": [
+              "Open space and cycling can work well for families when road time, heat, bicycle safety, and the number of temple stops are kept realistic."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.8,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html"
           }
         }
       ],
@@ -13175,7 +14305,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/sukhothai-uttaradit-3-days"
+              "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html",
+              "https://www.thailandtravel.or.jp/common/pdf/thailand_tourist2025.pdf"
             ]
           }
         },
@@ -13187,7 +14318,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/sukhothai-uttaradit-3-days"
+              "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html",
+              "https://www.thailandtravel.or.jp/common/pdf/thailand_tourist2025.pdf"
             ]
           }
         },
@@ -13199,7 +14331,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/sukhothai-uttaradit-3-days"
+              "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html",
+              "https://www.thailandtravel.or.jp/common/pdf/thailand_tourist2025.pdf"
             ]
           }
         },
@@ -13211,7 +14344,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/sukhothai-uttaradit-3-days"
+              "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html",
+              "https://www.thailandtravel.or.jp/common/pdf/thailand_tourist2025.pdf"
             ]
           }
         },
@@ -13223,7 +14357,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/sukhothai-uttaradit-3-days"
+              "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html",
+              "https://www.thailandtravel.or.jp/common/pdf/thailand_tourist2025.pdf"
             ]
           }
         },
@@ -13235,7 +14370,8 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/sukhothai-uttaradit-3-days"
+              "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html",
+              "https://www.thailandtravel.or.jp/common/pdf/thailand_tourist2025.pdf"
             ]
           }
         }
@@ -13254,7 +14390,7 @@
       "latitude": 18.7878,
       "longitude": 98.9933,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.1,
       "typicalMaxDays": 0.4,
       "popularityScore": 91,
@@ -13297,7 +14433,7 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Promotions/78/4-most-visited-tourist-attractions-in-near-chiang-mai-moat-2"
           }
@@ -13313,7 +14449,7 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
             "sourceUrl": "https://www.tourismthailand.org/Promotions/78/4-most-visited-tourist-attractions-in-near-chiang-mai-moat-2"
           }
@@ -13406,7 +14542,7 @@
       "latitude": 14.3535,
       "longitude": 98.9583,
       "status": "published",
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "typicalMinDays": 0.4,
       "typicalMaxDays": 0.8,
       "popularityScore": 78,
@@ -13424,7 +14560,9 @@
           "derivedFromTags": true
         },
         "sourceUrls": [
-          "https://hellfire-pass.commemoration.gov.au/"
+          "https://hellfirepass.dva.gov.au/",
+          "https://hellfirepass.dva.gov.au/planning-your-trip/",
+          "https://hellfirepass.dva.gov.au/faq/"
         ]
       },
       "names": [
@@ -13444,9 +14582,9 @@
           "sourceKey": "tat_official",
           "confidence": 0.9,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
-            "sourceUrl": "https://hellfire-pass.commemoration.gov.au/"
+            "sourceUrl": "https://hellfirepass.dva.gov.au/"
           }
         },
         {
@@ -13460,9 +14598,252 @@
           "sourceKey": "travelflow_editorial",
           "confidence": 0.78,
           "reviewStatus": "editorial_reviewed",
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "metadata": {
-            "sourceUrl": "https://hellfire-pass.commemoration.gov.au/"
+            "sourceUrl": "https://hellfirepass.dva.gov.au/"
+          }
+        },
+        {
+          "id": "82d442a9-7867-57ee-894a-05b5df8bc3cb",
+          "factKey": "visit.duration_minutes",
+          "valueJson": {
+            "min": 90,
+            "max": 240
+          },
+          "unit": "minutes",
+          "sourceKey": "australian_dva_hellfire_pass",
+          "confidence": 0.94,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-10-16T10:30:00Z",
+          "metadata": {
+            "method": "Range covers the centre plus the 485 m memorial walk through the optional 2.6 km return trail.",
+            "sourceUrl": "https://hellfirepass.dva.gov.au/planning-your-trip/"
+          }
+        },
+        {
+          "id": "dd50b707-5549-5087-8559-de1f713a392b",
+          "factKey": "visit.best_time",
+          "valueJson": [
+            "Arrive in the morning to preserve enough time before the 16:00 closure and reduce the hottest trail exposure.",
+            "Choose the short or long walk before leaving Kanchanaburi so transport and fitness assumptions match the day."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://hellfirepass.dva.gov.au/planning-your-trip/"
+          }
+        },
+        {
+          "id": "5daa2855-b01f-5174-bf82-a62fb37e0969",
+          "factKey": "opening_hours.regular",
+          "valueJson": {
+            "timezone": "Asia/Bangkok",
+            "schedule": [
+              {
+                "days": [
+                  "monday",
+                  "tuesday",
+                  "wednesday",
+                  "thursday",
+                  "friday",
+                  "saturday",
+                  "sunday"
+                ],
+                "opens": "09:00",
+                "closes": "16:00"
+              }
+            ],
+            "lastEntry": "15:00",
+            "checkBeforeVisit": true,
+            "notes": [
+              "Audio-guide devices are issued until 15:00.",
+              "Annual closures include 1 January, 13–15 April, roughly the first three weeks of May, 5 December, 24–27 December, and 31 December; verify exact dates before travel."
+            ]
+          },
+          "sourceKey": "australian_dva_hellfire_pass",
+          "confidence": 0.99,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://hellfirepass.dva.gov.au/contact-us/"
+          }
+        },
+        {
+          "id": "78975e66-536a-5fa5-a7c5-9e0ee2f9fd1d",
+          "factKey": "pricing.admission",
+          "valueJson": {
+            "currency": "THB",
+            "free": true,
+            "notes": [
+              "Entry to the centre and memorial walking trail is free.",
+              "The audio guide and required long-trail safety radio are also free; identification is held as a deposit for the audio device."
+            ],
+            "checkBeforeVisit": true
+          },
+          "sourceKey": "australian_dva_hellfire_pass",
+          "confidence": 0.99,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://hellfirepass.dva.gov.au/faq/"
+          }
+        },
+        {
+          "id": "694715a5-1046-52fe-b73f-c3d0220d0246",
+          "factKey": "visit.booking",
+          "valueJson": {
+            "mode": "walk_in",
+            "notes": [
+              "Individuals can walk in; groups larger than 20 should book in advance.",
+              "Audio devices cannot be reserved and are issued first come, first served."
+            ]
+          },
+          "sourceKey": "australian_dva_hellfire_pass",
+          "confidence": 0.98,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://hellfirepass.dva.gov.au/faq/"
+          }
+        },
+        {
+          "id": "30088012-f358-59de-bc01-884edf237c17",
+          "factKey": "visit.practical_notes",
+          "valueJson": [
+            "The centre is about 80 km from Kanchanaburi; allow roughly one hour by car or 1.5–2 hours by bus each way.",
+            "Carry water and wear sturdy covered shoes, sunscreen, and insect repellent for either trail.",
+            "The site is a place of remembrance; keep the pace and behavior respectful rather than treating it as a generic hiking stop."
+          ],
+          "sourceKey": "australian_dva_hellfire_pass",
+          "confidence": 0.96,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-10-16T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://hellfirepass.dva.gov.au/planning-your-trip/"
+          }
+        },
+        {
+          "id": "3b3cbb6c-e27e-568e-9dbf-fdddabd27540",
+          "factKey": "visit.weather_dependency",
+          "valueJson": {
+            "level": "high",
+            "notes": [
+              "Rain can make the trail slippery, while heat and sun exposure materially raise the effort; the long trail has little shelter and running water can create wet-season hazards."
+            ]
+          },
+          "sourceKey": "australian_dva_hellfire_pass",
+          "confidence": 0.98,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-10-16T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://hellfirepass.dva.gov.au/planning-your-trip/"
+          }
+        },
+        {
+          "id": "e19f7e7f-a9ba-5357-b4a0-634088127f90",
+          "factKey": "visit.physical_intensity",
+          "valueJson": {
+            "level": "variable",
+            "notes": [
+              "The 485 m memorial walk takes about 40–50 minutes return and needs moderate fitness.",
+              "The 2.6 km return trail can take up to three hours, includes steep climbs and descents, and requires high fitness plus a safety radio."
+            ]
+          },
+          "sourceKey": "australian_dva_hellfire_pass",
+          "confidence": 0.99,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-10-16T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://hellfirepass.dva.gov.au/planning-your-trip/"
+          }
+        },
+        {
+          "id": "af1446b5-9885-5c5c-a7e8-efb6b8ff5da7",
+          "factKey": "access.transport",
+          "valueJson": {
+            "modes": [
+              "car",
+              "private_driver",
+              "public_bus",
+              "guided_tour"
+            ],
+            "notes": [
+              "A car or driver gives the most reliable timing; public buses take longer and schedules may not be precise.",
+              "Nam Tok railway station is about 20 km away and there is no taxi service from the centre to the station, so rail connections require separate planning."
+            ]
+          },
+          "sourceKey": "australian_dva_hellfire_pass",
+          "confidence": 0.97,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://hellfirepass.dva.gov.au/faq/"
+          }
+        },
+        {
+          "id": "cb1a2a22-1a2f-582d-946b-c06a1c4058e0",
+          "factKey": "visit.facilities",
+          "valueJson": [
+            "Interpretive centre",
+            "Free Thai, English, and Dutch audio guide subject to availability",
+            "Visitor-service counter and safety radios",
+            "Free golf buggy for eligible visitors with mobility or health needs"
+          ],
+          "sourceKey": "australian_dva_hellfire_pass",
+          "confidence": 0.98,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://hellfirepass.dva.gov.au/faq/"
+          }
+        },
+        {
+          "id": "9833b114-1ebf-5ec2-9e02-09ffaa54133b",
+          "factKey": "audience.mobility_fit",
+          "valueJson": {
+            "fit": "conditional",
+            "notes": [
+              "A free golf buggy can take eligible visitors with physical limitations or health needs to and from the Hellfire Pass cutting in about 30–40 minutes, with one minder.",
+              "The walking trail itself includes steps and uneven ground; contact the centre for individual access planning."
+            ]
+          },
+          "sourceKey": "australian_dva_hellfire_pass",
+          "confidence": 0.98,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2026-08-17T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://hellfirepass.dva.gov.au/faq/"
+          }
+        },
+        {
+          "id": "d5eabcaf-e10e-5c94-bdb8-32002e2a8a7c",
+          "factKey": "audience.family_fit",
+          "valueJson": {
+            "fit": "conditional",
+            "notes": [
+              "The centre and short memorial walk can suit older children with preparation, but the subject matter, heat, steps, and long trail require age-sensitive judgment."
+            ]
+          },
+          "sourceKey": "travelflow_editorial",
+          "confidence": 0.8,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T10:30:00Z",
+          "validUntil": "2027-01-14T10:30:00Z",
+          "metadata": {
+            "sourceUrl": "https://hellfirepass.dva.gov.au/planning-your-trip/"
           }
         }
       ],
@@ -13475,7 +14856,9 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://hellfire-pass.commemoration.gov.au/"
+              "https://hellfirepass.dva.gov.au/",
+              "https://hellfirepass.dva.gov.au/planning-your-trip/",
+              "https://hellfirepass.dva.gov.au/faq/"
             ]
           }
         },
@@ -13487,7 +14870,9 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://hellfire-pass.commemoration.gov.au/"
+              "https://hellfirepass.dva.gov.au/",
+              "https://hellfirepass.dva.gov.au/planning-your-trip/",
+              "https://hellfirepass.dva.gov.au/faq/"
             ]
           }
         },
@@ -13499,7 +14884,9 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://hellfire-pass.commemoration.gov.au/"
+              "https://hellfirepass.dva.gov.au/",
+              "https://hellfirepass.dva.gov.au/planning-your-trip/",
+              "https://hellfirepass.dva.gov.au/faq/"
             ]
           }
         },
@@ -13511,7 +14898,9 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://hellfire-pass.commemoration.gov.au/"
+              "https://hellfirepass.dva.gov.au/",
+              "https://hellfirepass.dva.gov.au/planning-your-trip/",
+              "https://hellfirepass.dva.gov.au/faq/"
             ]
           }
         },
@@ -13523,7 +14912,9 @@
           "evidenceNote": "TravelFlow editorial classification; not a safety or availability guarantee.",
           "metadata": {
             "sourceUrls": [
-              "https://hellfire-pass.commemoration.gov.au/"
+              "https://hellfirepass.dva.gov.au/",
+              "https://hellfirepass.dva.gov.au/planning-your-trip/",
+              "https://hellfirepass.dva.gov.au/faq/"
             ]
           }
         }
@@ -13545,7 +14936,7 @@
         1,
         2
       ],
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "version": 1,
       "copy": {
         "locale": "en",
@@ -13634,7 +15025,7 @@
         1,
         2
       ],
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "version": 1,
       "copy": {
         "locale": "en",
@@ -13739,7 +15130,7 @@
         1,
         2
       ],
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "version": 1,
       "copy": {
         "locale": "en",
@@ -13844,7 +15235,7 @@
         1,
         2
       ],
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "version": 1,
       "copy": {
         "locale": "en",
@@ -13906,7 +15297,7 @@
           "roundTrip": true,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "round_trip_transport",
@@ -13944,7 +15335,7 @@
         1,
         2
       ],
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "version": 1,
       "copy": {
         "locale": "en",
@@ -14018,7 +15409,7 @@
           "roundTrip": false,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.74,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "terminal_to_terminal",
@@ -14044,7 +15435,7 @@
           "roundTrip": false,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.66,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "terminal_to_terminal",
@@ -14087,7 +15478,7 @@
         2,
         3
       ],
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "version": 1,
       "copy": {
         "locale": "en",
@@ -14160,7 +15551,7 @@
           "roundTrip": false,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.76,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "scheduled_flight_only",
@@ -14185,7 +15576,7 @@
           "roundTrip": false,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.74,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "scheduled_flight_only",
@@ -14229,7 +15620,7 @@
         3,
         4
       ],
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "version": 1,
       "copy": {
         "locale": "en",
@@ -14303,7 +15694,7 @@
           "roundTrip": false,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.7,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "point_to_point_estimate",
@@ -14329,7 +15720,7 @@
           "roundTrip": false,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.7,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "point_to_point_estimate",
@@ -14372,7 +15763,7 @@
         7,
         8
       ],
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "version": 1,
       "copy": {
         "locale": "en",
@@ -14445,7 +15836,7 @@
           "roundTrip": false,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.72,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "pier_to_pier",
@@ -14470,7 +15861,7 @@
           "roundTrip": false,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.7,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "pier_to_pier",
@@ -14516,7 +15907,7 @@
         1,
         2
       ],
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "version": 1,
       "copy": {
         "locale": "en",
@@ -14602,7 +15993,7 @@
           "roundTrip": false,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.74,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "terminal_to_terminal",
@@ -14628,7 +16019,7 @@
           "roundTrip": false,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.68,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "terminal_to_terminal",
@@ -14654,7 +16045,7 @@
           "roundTrip": false,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.7,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "terminal_to_terminal",
@@ -14696,7 +16087,7 @@
         1,
         2
       ],
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "version": 1,
       "copy": {
         "locale": "en",
@@ -14787,7 +16178,7 @@
         3,
         4
       ],
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "version": 1,
       "copy": {
         "locale": "en",
@@ -14888,7 +16279,7 @@
         1,
         2
       ],
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "version": 1,
       "copy": {
         "locale": "en",
@@ -14961,7 +16352,7 @@
           "roundTrip": true,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.7,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "round_trip_transport",
@@ -15004,7 +16395,7 @@
         7,
         8
       ],
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "version": 1,
       "copy": {
         "locale": "en",
@@ -15077,7 +16468,7 @@
           "roundTrip": true,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.68,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "full_excursion_block",
@@ -15123,7 +16514,7 @@
         1,
         2
       ],
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "version": 1,
       "copy": {
         "locale": "en",
@@ -15184,7 +16575,7 @@
           "roundTrip": true,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.7,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "round_trip_pier_transport",
@@ -15226,7 +16617,7 @@
         1,
         2
       ],
-      "datasetVersion": "2026.07.17-v7",
+      "datasetVersion": "2026.07.18-v8",
       "version": 1,
       "copy": {
         "locale": "en",
@@ -15300,7 +16691,7 @@
           "roundTrip": true,
           "sourceKey": "travelflow_editorial",
           "confidence": 0.7,
-          "observedAt": "2026-07-17T15:46:00Z",
+          "observedAt": "2026-07-18T10:30:00Z",
           "validUntil": "2027-07-16T00:00:00Z",
           "notes": {
             "durationBasis": "round_trip_transport",

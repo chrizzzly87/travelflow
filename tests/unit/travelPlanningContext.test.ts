@@ -38,7 +38,7 @@ describe('travel planning context', () => {
 
     expect(context.version).toBe(TRAVEL_PLANNING_CONTEXT_VERSION);
     expect(context.retrieverVersion).toBe(TRAVEL_PLANNING_RETRIEVER_VERSION);
-    expect(context.pack.dataset?.version).toBe('2026.07.17-v7');
+    expect(context.pack.dataset?.version).toBe('2026.07.18-v8');
     expect(context.pack.locale).toBe('de');
     expect(context.pack.templates).toHaveLength(2);
     expect(context.pack.templates.map((template) => template.templateKey)).toEqual([
@@ -52,6 +52,11 @@ describe('travel planning context', () => {
       'th-bangkok-yaowarat',
     ]));
     expect(context.stats.selectedPoiCount).toBeLessThanOrEqual(4);
+    expect(context.pack.entities
+      .filter((entity) => entity.entityType === 'poi')
+      .every((entity) => entity.facts.every((fact) => (
+        fact.factKey === 'summary' || fact.factKey === 'visit.duration_minutes'
+      )))).toBe(true);
     expect(context.stats.selectedEntityCount).toBeLessThan(context.stats.sourceEntityCount);
     expect(validateTravelPlanningContext(context)).toEqual({ valid: true, errors: [] });
   });
@@ -149,6 +154,9 @@ describe('travel planning context', () => {
       selectedTemplate.templateKey,
     ]);
     expect(deepContext.stats.selectedPoiCount).toBeGreaterThan(comparison.stats.selectedPoiCount / 3);
+    expect(deepContext.pack.entities
+      .filter((entity) => entity.entityType === 'poi')
+      .some((entity) => entity.facts.some((fact) => fact.factKey === 'visit.best_time'))).toBe(true);
     expect(new TextEncoder().encode(JSON.stringify(deepContext)).byteLength).toBeLessThan(100_000);
   });
 

@@ -202,6 +202,11 @@ const PLANNING_CONTEXT_FACT_KEYS = new Set([
   'audience.mobility_fit',
 ]);
 
+const COMPARISON_CONTEXT_POI_FACT_KEYS = new Set([
+  'summary',
+  'visit.duration_minutes',
+]);
+
 const compactPlanningFact = (fact: TravelEntityFact): TravelEntityFact => {
   const sourceUrl = fact.factKey === 'summary' && typeof fact.metadata.sourceUrl === 'string'
     ? fact.metadata.sourceUrl
@@ -212,14 +217,22 @@ const compactPlanningFact = (fact: TravelEntityFact): TravelEntityFact => {
   };
 };
 
-const compactContextEntity = (entity: TravelEntityCatalogItem): TravelEntityCatalogItem => ({
+const compactContextEntity = (
+  entity: TravelEntityCatalogItem,
+  includeDetailedPoiFacts: boolean,
+): TravelEntityCatalogItem => ({
   ...entity,
   attributes: Object.fromEntries(
     Object.entries(entity.attributes).filter(([key]) => key !== 'sourceUrls'),
   ),
   names: entity.names.filter((name) => name.isPreferred),
   facts: entity.facts
-    .filter((fact) => PLANNING_CONTEXT_FACT_KEYS.has(fact.factKey))
+    .filter((fact) => (
+      entity.entityType !== 'poi'
+      || includeDetailedPoiFacts
+        ? PLANNING_CONTEXT_FACT_KEYS.has(fact.factKey)
+        : COMPARISON_CONTEXT_POI_FACT_KEYS.has(fact.factKey)
+    ))
     .map(compactPlanningFact),
   tags: entity.tags.map((tag) => (
     AUDIENCE_TAG_KEYS.has(tag.tagKey)
@@ -296,7 +309,7 @@ const selectRelevantEntities = (
 
   return pack.entities
     .filter((entity) => selectedSlugs.has(entity.canonicalSlug))
-    .map(compactContextEntity);
+    .map((entity) => compactContextEntity(entity, query.templateKeys.length > 0));
 };
 
 export const buildTravelPlanningContext = (

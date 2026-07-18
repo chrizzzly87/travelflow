@@ -75,14 +75,40 @@ describe('travel activity knowledge', () => {
 
   it('keeps sparse POIs usable without inventing unavailable operational fields', () => {
     const knowledge = buildTravelActivityKnowledge(
-      poi('th-chiang-mai-doi-suthep'),
+      poi('th-koh-samui-ang-thong'),
       new Date('2026-07-18T00:00:00Z'),
     );
 
-    expect(knowledge?.summary?.value).toContain('mountain temple');
+    expect(knowledge?.summary?.value).toContain('marine-park excursion');
     expect(knowledge?.recommendedDuration).toBeUndefined();
     expect(knowledge?.openingHours).toBeUndefined();
     expect(knowledge?.admission).toBeUndefined();
+  });
+
+  it('projects current official visitor facts for the expanded Thailand route anchors', () => {
+    const doiSuthep = buildTravelActivityKnowledge(
+      poi('th-chiang-mai-doi-suthep'),
+      new Date('2026-07-18T12:00:00Z'),
+    );
+    const hellfirePass = buildTravelActivityKnowledge(
+      poi('th-kanchanaburi-hellfire-pass'),
+      new Date('2026-07-18T12:00:00Z'),
+    );
+
+    expect(doiSuthep).toMatchObject({
+      openingHours: { value: { timezone: 'Asia/Bangkok', checkBeforeVisit: true } },
+      admission: { value: { currency: 'THB', adultForeign: 30 } },
+      booking: { value: { mode: 'walk_in' } },
+      coverage: { status: 'rich' },
+    });
+    expect(hellfirePass).toMatchObject({
+      openingHours: { value: { lastEntry: '15:00', checkBeforeVisit: true } },
+      admission: { value: { free: true } },
+      physicalIntensity: { value: { level: 'variable' } },
+      weatherDependency: { value: { level: 'high' } },
+      coverage: { status: 'rich' },
+    });
+    expect(hellfirePass?.sourceKeys).toContain('australian_dva_hellfire_pass');
   });
 
   it('persists a category and planning tier for every Thailand POI', () => {
@@ -104,10 +130,26 @@ describe('travel activity knowledge', () => {
       'th-bangkok-wat-pho',
       'th-bangkok-wat-arun',
       'th-bangkok-chatuchak',
+      'th-ayutthaya-historical-park',
+      'th-sukhothai-historical-park',
+      'th-chiang-mai-doi-inthanon',
+      'th-kanchanaburi-erawan-falls',
+      'th-chiang-mai-doi-suthep',
+      'th-chiang-rai-white-temple',
+      'th-chiang-rai-blue-temple',
+      'th-ayutthaya-wat-mahathat',
+      'th-sukhothai-si-satchanalai',
+      'th-kanchanaburi-hellfire-pass',
     ];
     richSlugs.forEach((slug) => {
       expect(getTravelActivityKnowledgeCoverage(poi(slug))?.status).toBe('rich');
     });
+
+    const statuses = pack.entities
+      .filter((entity) => entity.entityType === 'poi')
+      .map((entity) => getTravelActivityKnowledgeCoverage(entity)?.status);
+    expect(statuses.filter((status) => status === 'rich')).toHaveLength(14);
+    expect(statuses.filter((status) => status === 'starter')).toHaveLength(18);
 
     expect(getTravelActivityKnowledgeCoverage(poi('th-koh-samui-ang-thong'))).toMatchObject({
       category: 'national_park',
