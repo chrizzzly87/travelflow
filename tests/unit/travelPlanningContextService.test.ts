@@ -35,10 +35,11 @@ describe('travel planning context service', () => {
 
     expect(result.source).toBe('bundled');
     expect(result.loadDurationMs).toBeGreaterThanOrEqual(0);
-    expect(result.context.pack.dataset?.version).toBe('2026.07.18-v11');
+    expect(result.context.pack.dataset?.version).toBe('2026.07.18-v13');
     expect(result.context.pack.locale).toBe('de');
     expect(result.context.pack.templates.map((template) => template.templateKey)).toEqual([
       'th-bangkok-long-weekend',
+      'th-bangkok-river-slow',
       'th-bangkok-food-neighborhoods',
     ]);
   });

@@ -95,6 +95,36 @@ const scenarios: BenchmarkScenario[] = [
     },
   },
   {
+    key: 'chiang_rai_city_break',
+    label: 'Chiang Rai 3-day culture break',
+    draft: {
+      journeyType: 'city_break',
+      dateMode: 'flexible',
+      durationDays: 3,
+      month: 12,
+      pace: 'balanced',
+      interestTags: ['culture', 'temples'],
+      maxBaseChanges: 0,
+      selectedCitySlug: 'th-chiang-rai',
+      selectedNeighborhoodSlugs: [],
+    },
+  },
+  {
+    key: 'krabi_city_break',
+    label: 'Krabi 5-day coast break',
+    draft: {
+      journeyType: 'city_break',
+      dateMode: 'flexible',
+      durationDays: 5,
+      month: 2,
+      pace: 'balanced',
+      interestTags: ['beaches', 'nature'],
+      maxBaseChanges: 0,
+      selectedCitySlug: 'th-krabi',
+      selectedNeighborhoodSlugs: ['th-krabi-ao-nang'],
+    },
+  },
+  {
     key: 'thailand_country_circuit',
     label: 'Thailand 12-day country circuit',
     draft: {

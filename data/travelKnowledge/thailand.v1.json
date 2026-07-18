@@ -2,8 +2,8 @@
   "manifest": {
     "datasetKey": "thailand-core",
     "countryCode": "TH",
-    "version": "2026.07.18-v11",
-    "generatedAt": "2026-07-18T08:10:00Z",
+    "version": "2026.07.18-v13",
+    "generatedAt": "2026-07-18T10:58:00Z",
     "notes": "Thailand-first planning dataset. Editorial summaries are paraphrased and must not be treated as live availability, safety, entry, or price guarantees."
   },
   "sources": [
@@ -30,6 +30,22 @@
       "commercialUseAllowed": true,
       "redistributionAllowed": true,
       "refreshIntervalDays": 365
+    },
+    {
+      "sourceKey": "osm_geofabrik",
+      "name": "OpenStreetMap Thailand extract by Geofabrik",
+      "sourceKind": "open_data",
+      "baseUrl": "https://download.geofabrik.de/asia/thailand.html",
+      "termsUrl": "https://www.openstreetmap.org/copyright",
+      "licenseKey": "ODbL-1.0",
+      "attributionText": "OpenStreetMap contributors",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "refreshIntervalDays": 7,
+      "metadata": {
+        "usage": "Curated geographic references and future offline Thailand extract ingestion; never bulk-query public Nominatim or Overpass endpoints.",
+        "separationRequired": "Keep OSM-derived database artifacts separable for ODbL compliance."
+      }
     },
     {
       "sourceKey": "tat_official",
@@ -833,6 +849,28 @@
     { "canonicalSlug": "th-koh-lanta-saladan", "entityType": "neighborhood", "parentSlug": "th-koh-lanta", "countryCode": "TH", "primaryName": "Saladan", "timezone": "Asia/Bangkok", "latitude": 7.64, "longitude": 99.03, "popularityScore": 70, "hiddenGemScore": 36, "tourismIntensityScore": 62, "profile": { "summary": "The main arrival and service hub with ferries, markets, dive shops, transport, and practical facilities.", "relativeCostLevel": 3 }, "tagKeys": ["markets", "boat_required"] },
     { "canonicalSlug": "th-koh-lanta-long-beach", "entityType": "neighborhood", "parentSlug": "th-koh-lanta", "countryCode": "TH", "primaryName": "Long Beach / Phra Ae", "timezone": "Asia/Bangkok", "latitude": 7.59, "longitude": 99.03, "popularityScore": 82, "hiddenGemScore": 48, "tourismIntensityScore": 62, "profile": { "summary": "A long west-coast beach with broad accommodation and dining supply, balancing convenience and a relaxed island feel.", "relativeCostLevel": 3 }, "tagKeys": ["beaches", "quiet"] },
     { "canonicalSlug": "th-koh-lanta-old-town", "entityType": "neighborhood", "parentSlug": "th-koh-lanta", "countryCode": "TH", "primaryName": "Lanta Old Town", "timezone": "Asia/Bangkok", "latitude": 7.535, "longitude": 99.086, "popularityScore": 58, "hiddenGemScore": 78, "tourismIntensityScore": 32, "profile": { "summary": "A quieter east-coast heritage settlement with wooden houses, local food, and access to a different side of island life.", "relativeCostLevel": 2 }, "tagKeys": ["culture", "food", "hidden_gem", "quiet"] },
+
+    { "canonicalSlug": "th-chiang-rai-city-centre", "entityType": "neighborhood", "parentSlug": "th-chiang-rai", "countryCode": "TH", "primaryName": "City Centre / Clock Tower", "localName": "ใจกลางเมืองเชียงราย / หอนาฬิกา", "timezone": "Asia/Bangkok", "latitude": 19.907, "longitude": 99.832, "popularityScore": 84, "hiddenGemScore": 38, "tourismIntensityScore": 68, "attributes": { "planningArea": { "classification": "editorial_travel_area", "baseFit": "primary", "walkability": "high", "eveningEnergy": "lively", "tradeoffs": ["Best for central food and market access, but major outlying temples still require transport.", "The clock-tower area is busier and noisier in the evening than residential alternatives."], "scopeNote": "A practical visitor-planning area centered on the Clock Tower, night bazaar, and walkable central streets; not an administrative boundary." } }, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102", "https://www.openstreetmap.org/?mlat=19.907&mlon=99.832#map=15/19.907/99.832"], "profile": { "summary": "The most practical first-time Chiang Rai base for the Clock Tower, night bazaar, restaurants, and local transport, while the White Temple and Baan Dam remain separate excursions.", "relativeCostLevel": 2 }, "tagKeys": ["food", "markets", "culture", "lively", "walkable_core"] },
+    { "canonicalSlug": "th-chiang-rai-rim-kok", "entityType": "neighborhood", "parentSlug": "th-chiang-rai", "countryCode": "TH", "primaryName": "Rim Kok Riverside", "localName": "ริมกก", "timezone": "Asia/Bangkok", "latitude": 19.919, "longitude": 99.837, "popularityScore": 62, "hiddenGemScore": 66, "tourismIntensityScore": 42, "attributes": { "planningArea": { "classification": "editorial_travel_area", "baseFit": "alternative", "walkability": "medium", "eveningEnergy": "quiet", "tradeoffs": ["Calmer river setting and easier northern-road access come with fewer walkable evening choices.", "Central markets and the bus terminal usually require a short ride."], "scopeNote": "A practical riverside visitor-planning area north of central Chiang Rai; not an administrative boundary." } }, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Chiang-Rai/102", "https://www.openstreetmap.org/?mlat=19.919&mlon=99.837#map=15/19.919/99.837"], "profile": { "summary": "A quieter Kok River base with resorts, riverside atmosphere, and useful access toward northern sights, traded against fewer walkable restaurants and markets.", "relativeCostLevel": 3 }, "tagKeys": ["nature", "quiet", "hidden_gem"] },
+
+    { "canonicalSlug": "th-ayutthaya-historical-island", "entityType": "neighborhood", "parentSlug": "th-ayutthaya", "countryCode": "TH", "primaryName": "Historical Island", "localName": "เกาะเมืองอยุธยา", "timezone": "Asia/Bangkok", "latitude": 14.355, "longitude": 100.56, "popularityScore": 94, "hiddenGemScore": 26, "tourismIntensityScore": 86, "attributes": { "planningArea": { "classification": "editorial_travel_area", "baseFit": "primary", "walkability": "medium", "eveningEnergy": "quiet", "tradeoffs": ["The core ruins are close, but heat and the park's scale make bicycles or short rides useful.", "Evening dining is more dispersed than in a major city center."], "scopeNote": "A visitor-planning area covering the river-bounded historic island and central park zone; not an administrative boundary." } }, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Phra-Nakhon-Si-Ayutthaya/229", "https://www.openstreetmap.org/?mlat=14.355&mlon=100.560#map=14/14.355/100.560"], "profile": { "summary": "The strongest heritage base for Ayutthaya Historical Park, major ruins, bicycle access, and sunrise or late-afternoon visits within the river-bounded old city.", "relativeCostLevel": 2 }, "tagKeys": ["history", "heritage", "culture", "temples", "essential"] },
+    { "canonicalSlug": "th-ayutthaya-hua-ro-riverside", "entityType": "neighborhood", "parentSlug": "th-ayutthaya", "countryCode": "TH", "primaryName": "Hua Ro / Riverside", "localName": "หัวรอ / ริมแม่น้ำ", "timezone": "Asia/Bangkok", "latitude": 14.367, "longitude": 100.577, "popularityScore": 68, "hiddenGemScore": 58, "tourismIntensityScore": 48, "attributes": { "planningArea": { "classification": "editorial_travel_area", "baseFit": "alternative", "walkability": "medium", "eveningEnergy": "balanced", "tradeoffs": ["More local market and riverside character, but the western historical-park core is less immediate.", "Bridge crossings and traffic can add time to repeated ruin visits."], "scopeNote": "A practical visitor-planning area around Hua Ro market and the northeastern riverside; not an administrative boundary." } }, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Phra-Nakhon-Si-Ayutthaya/229", "https://www.openstreetmap.org/?mlat=14.367&mlon=100.577#map=15/14.367/100.577"], "profile": { "summary": "A more local-feeling market and riverside alternative near the northeastern edge of the old city, useful for food and station access but less central to the western ruins.", "relativeCostLevel": 2 }, "tagKeys": ["markets", "food", "culture", "hidden_gem"] },
+
+    { "canonicalSlug": "th-sukhothai-old-city", "entityType": "neighborhood", "parentSlug": "th-sukhothai", "countryCode": "TH", "primaryName": "Old Sukhothai", "localName": "เมืองเก่าสุโขทัย", "timezone": "Asia/Bangkok", "latitude": 17.019, "longitude": 99.703, "popularityScore": 90, "hiddenGemScore": 38, "tourismIntensityScore": 74, "attributes": { "planningArea": { "classification": "editorial_travel_area", "baseFit": "primary", "walkability": "medium", "eveningEnergy": "quiet", "tradeoffs": ["Excellent early and late access to the historical park, but fewer evening and rainy-day choices.", "New-town transport connections and services are about twelve kilometers away."], "scopeNote": "A visitor-planning area around Sukhothai Historical Park and its entrance village; not an administrative boundary." } }, "sourceUrls": ["https://www.tourismthailand.org/Articles/ride-through-time-sukhothai-en", "https://www.openstreetmap.org/?mlat=17.019&mlon=99.703#map=15/17.019/99.703"], "profile": { "summary": "The best base for cycling Sukhothai Historical Park at cooler hours, with guesthouses and restaurants near the entrance but a deliberately quiet evening scene.", "relativeCostLevel": 2 }, "tagKeys": ["history", "heritage", "culture", "quiet", "essential"] },
+    { "canonicalSlug": "th-sukhothai-new-city", "entityType": "neighborhood", "parentSlug": "th-sukhothai", "countryCode": "TH", "primaryName": "New Sukhothai", "localName": "เมืองใหม่สุโขทัย", "timezone": "Asia/Bangkok", "latitude": 17.007, "longitude": 99.825, "popularityScore": 64, "hiddenGemScore": 54, "tourismIntensityScore": 44, "attributes": { "planningArea": { "classification": "editorial_travel_area", "baseFit": "alternative", "walkability": "medium", "eveningEnergy": "balanced", "tradeoffs": ["Broader services and transport access require a transfer to the historical park.", "Repeated park visits lose the sunrise and late-afternoon convenience of Old Sukhothai."], "scopeNote": "A practical visitor-planning area in modern Sukhothai around central services and transport; not an administrative boundary." } }, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Sukhothai/123", "https://www.openstreetmap.org/?mlat=17.007&mlon=99.825#map=15/17.007/99.825"], "profile": { "summary": "The practical modern-town base for transport, local food, and everyday services, with the historical park reached by a separate road transfer.", "relativeCostLevel": 2 }, "tagKeys": ["food", "markets", "hidden_gem"] },
+
+    { "canonicalSlug": "th-kanchanaburi-river-khwae-road", "entityType": "neighborhood", "parentSlug": "th-kanchanaburi", "countryCode": "TH", "primaryName": "River Khwae Road", "localName": "ถนนแม่น้ำแคว", "timezone": "Asia/Bangkok", "latitude": 14.035, "longitude": 99.522, "popularityScore": 86, "hiddenGemScore": 32, "tourismIntensityScore": 74, "attributes": { "planningArea": { "classification": "editorial_travel_area", "baseFit": "primary", "walkability": "medium", "eveningEnergy": "lively", "tradeoffs": ["Convenient for visitor services and the bridge corridor, but the strip can feel touristic.", "War cemetery, old town, and bus connections are not all within one compact walk."], "scopeNote": "A visitor-planning corridor along River Khwae Road between central lodging and the bridge; not an administrative boundary." } }, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Kanchanaburi/222", "https://www.openstreetmap.org/?mlat=14.035&mlon=99.522#map=15/14.035/99.522"], "profile": { "summary": "Kanchanaburi's easiest visitor base for guesthouses, restaurants, river access, and the bridge corridor, with a busier and more touristic evening atmosphere.", "relativeCostLevel": 2 }, "tagKeys": ["history", "food", "nightlife", "lively"] },
+    { "canonicalSlug": "th-kanchanaburi-pak-phraek", "entityType": "neighborhood", "parentSlug": "th-kanchanaburi", "countryCode": "TH", "primaryName": "Pak Phraek Old Quarter", "localName": "ปากแพรก", "timezone": "Asia/Bangkok", "latitude": 14.02, "longitude": 99.526, "popularityScore": 66, "hiddenGemScore": 72, "tourismIntensityScore": 40, "attributes": { "planningArea": { "classification": "editorial_travel_area", "baseFit": "alternative", "walkability": "high", "eveningEnergy": "quiet", "tradeoffs": ["Strong heritage atmosphere and local access come with fewer conventional visitor services.", "The River Khwae bridge corridor requires a ride or a long walk."], "scopeNote": "A visitor-planning area around the historic Pak Phraek road and old-town streets; not an administrative boundary." } }, "sourceUrls": ["https://www.tourismthailand.org/Articles/pak-prak-historic-road-of-kanchanaburi", "https://www.openstreetmap.org/?mlat=14.020&mlon=99.526#map=16/14.020/99.526"], "profile": { "summary": "A lower-key heritage base around Kanchanaburi's historic Pak Phraek road, rewarding for architecture and local texture but less convenient for bridge-area nightlife.", "relativeCostLevel": 2 }, "tagKeys": ["history", "heritage", "culture", "hidden_gem", "quiet", "walkable_core"] },
+
+    { "canonicalSlug": "th-pattaya-central", "entityType": "neighborhood", "parentSlug": "th-pattaya", "countryCode": "TH", "primaryName": "Central Pattaya", "localName": "พัทยากลาง", "timezone": "Asia/Bangkok", "latitude": 12.934, "longitude": 100.883, "popularityScore": 94, "hiddenGemScore": 10, "tourismIntensityScore": 98, "attributes": { "planningArea": { "classification": "editorial_travel_area", "baseFit": "primary", "walkability": "high", "eveningEnergy": "lively", "tradeoffs": ["Maximum convenience and entertainment come with crowding, traffic, and substantial nightlife noise.", "Travelers seeking a calm beach stay may prefer Jomtien or Wong Amat."], "scopeNote": "A visitor-planning area spanning the central beach, shopping, and entertainment grid; not an administrative boundary." } }, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Pattaya/469", "https://www.openstreetmap.org/?mlat=12.934&mlon=100.883#map=15/12.934/100.883"], "profile": { "summary": "The highest-convenience Pattaya base for beach-road access, malls, dining, transport, and nightlife, paired with the city's greatest visitor intensity.", "relativeCostLevel": 3 }, "tagKeys": ["beaches", "nightlife", "food", "lively", "walkable_core", "rainy_day_options"] },
+    { "canonicalSlug": "th-pattaya-jomtien", "entityType": "neighborhood", "parentSlug": "th-pattaya", "countryCode": "TH", "primaryName": "Jomtien", "localName": "จอมเทียน", "timezone": "Asia/Bangkok", "latitude": 12.89, "longitude": 100.876, "popularityScore": 84, "hiddenGemScore": 34, "tourismIntensityScore": 72, "attributes": { "planningArea": { "classification": "editorial_travel_area", "baseFit": "alternative", "walkability": "medium", "eveningEnergy": "balanced", "tradeoffs": ["A more relaxed beachfront base requires regular transport to central Pattaya attractions.", "The long linear layout makes exact accommodation location important."], "scopeNote": "A practical visitor-planning area along Jomtien Beach and its immediate inland streets; not an administrative boundary." } }, "sourceUrls": ["https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/chon-buri-pattaya-3-days", "https://www.openstreetmap.org/?mlat=12.890&mlon=100.876#map=15/12.890/100.876"], "profile": { "summary": "A calmer, more spacious beach base south of central Pattaya with dining and visitor services, best when nightlife is not the trip's main priority.", "relativeCostLevel": 3 }, "tagKeys": ["beaches", "food", "quiet"] },
+    { "canonicalSlug": "th-pattaya-naklua-wong-amat", "entityType": "neighborhood", "parentSlug": "th-pattaya", "countryCode": "TH", "primaryName": "Naklua / Wong Amat", "localName": "นาเกลือ / วงศ์อมาตย์", "timezone": "Asia/Bangkok", "latitude": 12.968, "longitude": 100.894, "popularityScore": 78, "hiddenGemScore": 48, "tourismIntensityScore": 62, "attributes": { "planningArea": { "classification": "editorial_travel_area", "baseFit": "alternative", "walkability": "medium", "eveningEnergy": "quiet", "tradeoffs": ["Quieter beaches and northern sights come with less central nightlife and shopping access.", "The area is spread out, so exact hotel position changes walkability."], "scopeNote": "A visitor-planning area combining the northern Naklua and Wong Amat coastal zone; not an administrative boundary." } }, "sourceUrls": ["https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/chon-buri-pattaya-3-days", "https://www.openstreetmap.org/?mlat=12.968&mlon=100.894#map=15/12.968/100.894"], "profile": { "summary": "A quieter northern Pattaya base for Wong Amat beach and access toward the Sanctuary of Truth, with fewer walkable central entertainment options.", "relativeCostLevel": 4 }, "tagKeys": ["beaches", "culture", "quiet", "hidden_gem"] },
+
+    { "canonicalSlug": "th-hua-hin-centre", "entityType": "neighborhood", "parentSlug": "th-hua-hin", "countryCode": "TH", "primaryName": "Hua Hin Centre / Night Market", "localName": "ใจกลางหัวหิน / ตลาดโต้รุ่ง", "timezone": "Asia/Bangkok", "latitude": 12.57, "longitude": 99.958, "popularityScore": 88, "hiddenGemScore": 28, "tourismIntensityScore": 78, "attributes": { "planningArea": { "classification": "editorial_travel_area", "baseFit": "primary", "walkability": "high", "eveningEnergy": "lively", "tradeoffs": ["Central food, rail, and market convenience come with denser traffic and evening activity.", "The best beach frontage may be a longer walk depending on the exact base."], "scopeNote": "A visitor-planning area around the railway station, central streets, and night market; not an administrative boundary." } }, "sourceUrls": ["https://www.tourismthailand.org/Articles/vibrant-night-in-hua-hin", "https://www.openstreetmap.org/?mlat=12.570&mlon=99.958#map=15/12.570/99.958"], "profile": { "summary": "The practical Hua Hin base for the railway station, night market, restaurants, and a walkable town center, with more evening energy than the southern beach zones.", "relativeCostLevel": 3 }, "tagKeys": ["food", "markets", "lively", "walkable_core", "good_public_transport"] },
+    { "canonicalSlug": "th-hua-hin-khao-takiab", "entityType": "neighborhood", "parentSlug": "th-hua-hin", "countryCode": "TH", "primaryName": "Khao Takiab", "localName": "เขาตะเกียบ", "timezone": "Asia/Bangkok", "latitude": 12.515, "longitude": 99.976, "popularityScore": 76, "hiddenGemScore": 52, "tourismIntensityScore": 58, "attributes": { "planningArea": { "classification": "editorial_travel_area", "baseFit": "alternative", "walkability": "medium", "eveningEnergy": "quiet", "tradeoffs": ["Beach and hill access are stronger, but central Hua Hin markets and rail services require transport.", "The coastal strip is elongated, so restaurant access varies by accommodation."], "scopeNote": "A visitor-planning area around Khao Takiab hill and the southern Hua Hin beach strip; not an administrative boundary." } }, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Hua-Hin/240", "https://www.openstreetmap.org/?mlat=12.515&mlon=99.976#map=15/12.515/99.976"], "profile": { "summary": "A lower-key southern Hua Hin base for beach time, Khao Takiab hill, and seafood, traded against regular rides into the central night-market area.", "relativeCostLevel": 3 }, "tagKeys": ["beaches", "nature", "quiet", "hidden_gem"] },
+
+    { "canonicalSlug": "th-pai-town-centre", "entityType": "neighborhood", "parentSlug": "th-pai", "countryCode": "TH", "primaryName": "Pai Town Centre / Walking Street", "localName": "ใจกลางปาย / ถนนคนเดิน", "timezone": "Asia/Bangkok", "latitude": 19.358, "longitude": 98.44, "popularityScore": 90, "hiddenGemScore": 30, "tourismIntensityScore": 84, "attributes": { "planningArea": { "classification": "editorial_travel_area", "baseFit": "primary", "walkability": "high", "eveningEnergy": "lively", "tradeoffs": ["The best food and transport convenience comes with the town's busiest evening crowds and music.", "Waterfalls, canyon, hot springs, and rural viewpoints still require wheels or a tour."], "scopeNote": "A visitor-planning area around Pai Walking Street, bus station, and compact central grid; not an administrative boundary." } }, "sourceUrls": ["https://www.tourismthailand.org/Articles/mae-hong-son", "https://www.openstreetmap.org/?mlat=19.358&mlon=98.440#map=16/19.358/98.440"], "profile": { "summary": "Pai's most convenient base for Walking Street, food, cafes, transport, and evening atmosphere, while the valley's nature sights remain day excursions.", "relativeCostLevel": 2 }, "tagKeys": ["food", "markets", "nightlife", "lively", "walkable_core", "solo_travel_interest"] },
+    { "canonicalSlug": "th-pai-mae-yen", "entityType": "neighborhood", "parentSlug": "th-pai", "countryCode": "TH", "primaryName": "Mae Yen", "localName": "แม่เย็น", "timezone": "Asia/Bangkok", "latitude": 19.344, "longitude": 98.453, "popularityScore": 64, "hiddenGemScore": 68, "tourismIntensityScore": 44, "attributes": { "planningArea": { "classification": "editorial_travel_area", "baseFit": "alternative", "walkability": "low", "eveningEnergy": "quiet", "tradeoffs": ["Rice-field calm and viewpoint access come with limited walkable evening choices.", "A scooter, bicycle, taxi, or longer walk is usually needed for central Pai."], "scopeNote": "A visitor-planning area southeast of Pai town around Mae Yen and the White Buddha approach; not an administrative boundary." } }, "sourceUrls": ["https://www.tourismthailand.org/Articles/mae-hong-son", "https://www.openstreetmap.org/?mlat=19.344&mlon=98.453#map=15/19.344/98.453"], "profile": { "summary": "A quiet valley-edge alternative near the Mae Yen viewpoint approach, better for scenery and retreat than for car-free access to Pai's evening center.", "relativeCostLevel": 2 }, "tagKeys": ["nature", "viewpoint", "quiet", "hidden_gem"] },
 
     {
       "canonicalSlug": "th-bangkok-grand-palace",
@@ -3236,6 +3274,249 @@
         { "fromEntitySlug": "th-kanchanaburi", "toEntitySlug": "th-kanchanaburi-erawan-falls", "legRole": "day_trip", "transportModes": ["car", "bus"], "durationMinMinutes": 180, "durationMaxMinutes": 300, "distanceKm": 130, "roundTrip": true, "sourceKey": "travelflow_editorial", "confidence": 0.7, "validUntil": "2027-07-16T00:00:00Z", "notes": { "durationBasis": "round_trip_transport", "planningCaution": "Public transport, park access, trail time, and seasonal conditions must be checked separately." } }
       ],
       "tags": [{ "tagKey": "hub_and_day_trips", "weight": 1 }, { "tagKey": "nature", "weight": 0.9 }, { "tagKey": "history", "weight": 0.85 }, { "tagKey": "hiking", "weight": 0.65 }, { "tagKey": "quiet", "weight": 0.55 }]
+    },
+    {
+      "templateKey": "th-chiang-rai-art-temples",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 2,
+      "maxDays": 4,
+      "preferredPace": "balanced",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Chiang Rai in three colors", "summary": "Use a quiet northern base to compare Chiang Rai's white and blue temple art with the darker Baan Dam collection.", "highlights": ["White Temple detail", "Blue Temple color", "Baan Dam art and architecture"], "tradeoffs": ["The headline sites are dispersed", "Late dry-season air quality needs a current check"] },
+        { "locale": "de", "title": "Chiang Rai in drei Farben", "summary": "Nutze eine ruhige Basis im Norden und vergleiche Chiang Rais weiße und blaue Tempelkunst mit der dunkleren Sammlung von Baan Dam.", "highlights": ["Details am White Temple", "Farben des Blue Temple", "Kunst und Architektur in Baan Dam"], "tradeoffs": ["Die wichtigsten Orte liegen auseinander", "Die Luftqualität am Ende der Trockenzeit muss aktuell geprüft werden"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-chiang-rai", "role": "base", "minNights": 2, "maxNights": 4 },
+        { "entitySlug": "th-chiang-rai-white-temple", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-chiang-rai-blue-temple", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-chiang-rai-baan-dam", "role": "consider", "minNights": 0, "maxNights": 0 }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "culture", "weight": 1 }, { "tagKey": "temples", "weight": 0.9 }, { "tagKey": "hidden_gem", "weight": 0.7 }, { "tagKey": "quiet", "weight": 0.7 }]
+    },
+    {
+      "templateKey": "th-ayutthaya-overnight-heritage",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 1,
+      "maxDays": 3,
+      "preferredPace": "relaxed",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Ayutthaya after the day trips leave", "summary": "Stay overnight to spread the former capital's ruins across cooler hours and leave space for its food traditions.", "highlights": ["Historical Park at an easier pace", "Wat Mahathat", "An evening beyond the excursion rush"], "tradeoffs": ["One night still requires a selective temple list", "The monuments are more dispersed than a single compact sight"] },
+        { "locale": "de", "title": "Ayutthaya, wenn die Tagesgäste gehen", "summary": "Bleib über Nacht, verteile die Ruinen der ehemaligen Hauptstadt auf kühlere Stunden und lass Raum für ihre Esskultur.", "highlights": ["Historical Park in ruhigerem Tempo", "Wat Mahathat", "Ein Abend nach dem Ausflugsandrang"], "tradeoffs": ["Auch eine Nacht verlangt eine klare Tempelauswahl", "Die Monumente liegen weiter auseinander als eine einzelne Sehenswürdigkeit"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-ayutthaya", "role": "base", "minNights": 1, "maxNights": 3 },
+        { "entitySlug": "th-ayutthaya-historical-park", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-ayutthaya-wat-mahathat", "role": "must_visit", "minNights": 0, "maxNights": 0 }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "history", "weight": 1 }, { "tagKey": "heritage", "weight": 1 }, { "tagKey": "culture", "weight": 0.9 }, { "tagKey": "food", "weight": 0.55 }]
+    },
+    {
+      "templateKey": "th-sukhothai-cycling-heritage",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 2,
+      "maxDays": 3,
+      "preferredPace": "relaxed",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Sukhothai at bicycle pace", "summary": "Give the early capital two unhurried days for its landscaped historical park and an optional quieter heritage extension.", "highlights": ["Cycling-scale historical park", "Temples and water landscapes", "Optional Si Satchanalai context"], "tradeoffs": ["The quieter setting offers little big-city evening energy", "Si Satchanalai needs a separate transport plan"] },
+        { "locale": "de", "title": "Sukhothai im Fahrradrhythmus", "summary": "Gib der frühen Hauptstadt zwei ruhige Tage für ihren landschaftlich geprägten Historical Park und eine optionale, stillere Kulturerbe-Erweiterung.", "highlights": ["Historical Park im Fahrradrhythmus", "Tempel und Wasserlandschaften", "Optionaler Kontext in Si Satchanalai"], "tradeoffs": ["Die ruhige Umgebung bietet wenig großstädtisches Abendleben", "Si Satchanalai braucht eine eigene Transportplanung"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-sukhothai", "role": "base", "minNights": 2, "maxNights": 3 },
+        { "entitySlug": "th-sukhothai-historical-park", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-sukhothai-si-satchanalai", "role": "consider", "minNights": 0, "maxNights": 0, "isOptional": true }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "history", "weight": 1 }, { "tagKey": "heritage", "weight": 1 }, { "tagKey": "quiet", "weight": 0.9 }, { "tagKey": "hidden_gem", "weight": 0.8 }]
+    },
+    {
+      "templateKey": "th-kanchanaburi-river-history",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 2,
+      "maxDays": 4,
+      "preferredPace": "balanced",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Kanchanaburi, river and remembrance", "summary": "Build a reflective riverside stay around the River Khwae story, with Hellfire Pass only when time, transport, and energy allow.", "highlights": ["Riverside base", "River Khwae history", "Optional memorial walking trail"], "tradeoffs": ["The subject matter deserves time and context", "Hellfire Pass consumes a substantial travel block"] },
+        { "locale": "de", "title": "Kanchanaburi zwischen Fluss und Erinnerung", "summary": "Plane einen reflektierten Aufenthalt am Fluss rund um die Geschichte des River Khwae und nimm Hellfire Pass nur dazu, wenn Zeit, Transport und Energie passen.", "highlights": ["Basis am Fluss", "Geschichte des River Khwae", "Optionaler Erinnerungsweg"], "tradeoffs": ["Das Thema verdient Zeit und Einordnung", "Hellfire Pass beansprucht einen großen Reiseblock"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-kanchanaburi", "role": "base", "minNights": 2, "maxNights": 4 },
+        { "entitySlug": "th-kanchanaburi-river-khwae-bridge", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-kanchanaburi-hellfire-pass", "role": "consider", "minNights": 0, "maxNights": 0, "isOptional": true }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "history", "weight": 1 }, { "tagKey": "memorial", "weight": 0.9 }, { "tagKey": "quiet", "weight": 0.7 }, { "tagKey": "hiking", "weight": 0.45 }]
+    },
+    {
+      "templateKey": "th-krabi-beach-and-limestone",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 3,
+      "maxDays": 6,
+      "preferredPace": "balanced",
+      "idealMonths": [11, 12, 1, 2, 3, 4],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Krabi between cliffs and sea", "summary": "Use Ao Nang as the practical base, give Railay a full block, and keep one boat day conditional on marine weather.", "highlights": ["Ao Nang base", "Railay limestone coast", "Optional Ko Hong boat day"], "tradeoffs": ["Boat access makes the plan weather-sensitive", "Ao Nang is convenient rather than secluded"] },
+        { "locale": "de", "title": "Krabi zwischen Felsen und Meer", "summary": "Nutze Ao Nang als praktische Basis, gib Railay einen ganzen Block und mache einen Bootstag vom Meereswetter abhängig.", "highlights": ["Basis in Ao Nang", "Kalksteinküste von Railay", "Optionaler Bootstag nach Ko Hong"], "tradeoffs": ["Die Bootswege machen den Plan wetterabhängig", "Ao Nang ist praktisch, aber nicht abgeschieden"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-krabi", "role": "base", "minNights": 3, "maxNights": 6 },
+        { "entitySlug": "th-krabi-ao-nang", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-krabi-railay", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-krabi-ko-hong", "role": "consider", "minNights": 0, "maxNights": 0, "isOptional": true }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "beaches", "weight": 1 }, { "tagKey": "nature", "weight": 0.9 }, { "tagKey": "boat_required", "weight": 0.8 }, { "tagKey": "hiking", "weight": 0.55 }]
+    },
+    {
+      "templateKey": "th-koh-samui-beach-villages",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 3,
+      "maxDays": 6,
+      "preferredPace": "relaxed",
+      "idealMonths": [1, 2, 3, 4, 7, 8],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Samui, choose your coast", "summary": "Anchor the island stay around Bophut's walkable evenings and pair it with either lively Chaweng or calmer Lamai.", "highlights": ["Bophut food and market evenings", "A coast matched to your rhythm", "Unscheduled beach time"], "tradeoffs": ["Island road transfers add up quickly", "The best coast depends on nightlife and quiet preferences"] },
+        { "locale": "de", "title": "Samui, wähle deine Küste", "summary": "Richte den Inselaufenthalt auf Bophuts gut begehbare Abende aus und kombiniere ihn entweder mit dem lebhaften Chaweng oder dem ruhigeren Lamai.", "highlights": ["Essen und Märkte in Bophut", "Eine Küste im passenden Rhythmus", "Unverplante Strandzeit"], "tradeoffs": ["Straßentransfers auf der Insel summieren sich schnell", "Die beste Küste hängt von Nachtleben und Ruhebedürfnis ab"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-koh-samui", "role": "base", "minNights": 3, "maxNights": 6 },
+        { "entitySlug": "th-koh-samui-bophut", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-koh-samui-chaweng", "role": "consider", "minNights": 0, "maxNights": 0, "isOptional": true },
+        { "entitySlug": "th-koh-samui-lamai", "role": "consider", "minNights": 0, "maxNights": 0, "isOptional": true }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "beaches", "weight": 1 }, { "tagKey": "food", "weight": 0.75 }, { "tagKey": "wellness", "weight": 0.7 }, { "tagKey": "nightlife", "weight": 0.55 }]
+    },
+    {
+      "templateKey": "th-koh-phangan-wellness-and-beaches",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 3,
+      "maxDays": 6,
+      "preferredPace": "relaxed",
+      "idealMonths": [1, 2, 3, 4, 7, 8],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Phangan beyond the party calendar", "summary": "Keep the island slow with a Srithanu wellness base, a Thong Sala food stop, and a weather-aware nature option.", "highlights": ["Srithanu wellness rhythm", "Thong Sala food and markets", "Optional Than Sadet nature day"], "tradeoffs": ["Event dates can transform prices and atmosphere", "Cove-to-cove road travel is slower than the map suggests"] },
+        { "locale": "de", "title": "Phangan jenseits des Partykalenders", "summary": "Halte den Inselrhythmus mit einer Wellness-Basis in Srithanu, einem Food-Stopp in Thong Sala und einer wetterabhängigen Naturoption langsam.", "highlights": ["Wellness-Rhythmus in Srithanu", "Essen und Märkte in Thong Sala", "Optionaler Naturtag in Than Sadet"], "tradeoffs": ["Eventtermine können Preise und Atmosphäre stark verändern", "Straßenwege zwischen den Buchten dauern länger als die Karte vermuten lässt"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-koh-phangan", "role": "base", "minNights": 3, "maxNights": 6 },
+        { "entitySlug": "th-koh-phangan-srithanu", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-koh-phangan-thong-sala", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-koh-phangan-than-sadet", "role": "consider", "minNights": 0, "maxNights": 0, "isOptional": true }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "wellness", "weight": 1 }, { "tagKey": "beaches", "weight": 0.9 }, { "tagKey": "quiet", "weight": 0.8 }, { "tagKey": "nature", "weight": 0.6 }]
+    },
+    {
+      "templateKey": "th-koh-tao-dive-and-slow",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 3,
+      "maxDays": 6,
+      "preferredPace": "balanced",
+      "idealMonths": [2, 3, 4, 7, 8],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Koh Tao above and below water", "summary": "Balance Sairee's social energy with a quieter southern base option and one condition-dependent island or snorkeling day.", "highlights": ["Sairee sunset", "Quieter Chalok option", "Optional Ko Nang Yuan day"], "tradeoffs": ["Ferries and marine activities depend on conditions", "Hilly roads make base choice unusually important"] },
+        { "locale": "de", "title": "Koh Tao über und unter Wasser", "summary": "Verbinde Sairees gesellige Energie mit einer ruhigeren Option im Süden und einem wetterabhängigen Insel- oder Schnorcheltag.", "highlights": ["Sonnenuntergang in Sairee", "Ruhigere Option in Chalok", "Optionaler Tag auf Ko Nang Yuan"], "tradeoffs": ["Fähren und Meeresaktivitäten hängen von den Bedingungen ab", "Die hügeligen Straßen machen die Wahl der Basis besonders wichtig"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-koh-tao", "role": "base", "minNights": 3, "maxNights": 6 },
+        { "entitySlug": "th-koh-tao-sairee", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-koh-tao-chalok", "role": "consider", "minNights": 0, "maxNights": 0, "isOptional": true },
+        { "entitySlug": "th-koh-tao-nang-yuan", "role": "consider", "minNights": 0, "maxNights": 0, "isOptional": true }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "diving", "weight": 1 }, { "tagKey": "beaches", "weight": 0.9 }, { "tagKey": "solo_travel_interest", "weight": 0.75 }, { "tagKey": "quiet", "weight": 0.45 }]
+    },
+    {
+      "templateKey": "th-pattaya-city-and-island",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 2,
+      "maxDays": 4,
+      "preferredPace": "full",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Pattaya with an island counterpoint", "summary": "Use the resort city's evening supply but reserve the clearest day for a deliberate Koh Larn beach escape.", "highlights": ["Flexible city evenings", "Koh Larn beach block", "Short break from Bangkok"], "tradeoffs": ["The mainland atmosphere is high intensity", "Ferry queues and island transport reduce usable beach time"] },
+        { "locale": "de", "title": "Pattaya mit Inselkontrast", "summary": "Nutze die große Abendauswahl der Resortstadt, reserviere aber den klarsten Tag bewusst für einen Strandausflug nach Koh Larn.", "highlights": ["Flexible Abende in der Stadt", "Strandblock auf Koh Larn", "Kurze Auszeit von Bangkok"], "tradeoffs": ["Die Atmosphäre auf dem Festland ist sehr intensiv", "Fährschlangen und Inseltransport verkürzen die nutzbare Strandzeit"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-pattaya", "role": "base", "minNights": 2, "maxNights": 4 },
+        { "entitySlug": "th-pattaya-koh-larn", "role": "must_visit", "minNights": 0, "maxNights": 0 }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "beaches", "weight": 1 }, { "tagKey": "nightlife", "weight": 0.85 }, { "tagKey": "lively", "weight": 0.8 }]
+    },
+    {
+      "templateKey": "th-hua-hin-beach-and-market",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 2,
+      "maxDays": 5,
+      "preferredPace": "relaxed",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Hua Hin without a checklist", "summary": "Keep the Gulf break simple: beach downtime, seafood, wellness, and one lively night-market anchor.", "highlights": ["Low-change beach rhythm", "Hua Hin Night Market", "Wellness and seafood time"], "tradeoffs": ["The spread-out coast rewards a well-chosen hotel", "This route prioritizes rest over headline sightseeing"] },
+        { "locale": "de", "title": "Hua Hin ohne Checkliste", "summary": "Halte die Auszeit am Golf einfach: Strandpausen, Seafood, Wellness und ein lebhafter Abend auf dem Nachtmarkt.", "highlights": ["Strandrhythmus ohne viele Wechsel", "Hua Hin Night Market", "Zeit für Wellness und Seafood"], "tradeoffs": ["An der langen Küste lohnt sich eine gut gewählte Unterkunft", "Diese Route priorisiert Erholung vor großen Sehenswürdigkeiten"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-hua-hin", "role": "base", "minNights": 2, "maxNights": 5 },
+        { "entitySlug": "th-hua-hin-night-market", "role": "must_visit", "minNights": 0, "maxNights": 0 }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "beaches", "weight": 0.9 }, { "tagKey": "wellness", "weight": 0.85 }, { "tagKey": "food", "weight": 0.8 }, { "tagKey": "quiet", "weight": 0.7 }]
+    },
+    {
+      "templateKey": "th-pai-mountain-reset",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 2,
+      "maxDays": 4,
+      "preferredPace": "relaxed",
+      "idealMonths": [11, 12, 1, 2],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Pai, slow mountain reset", "summary": "Use the small northern town for café time, countryside pauses, and one carefully timed canyon outing rather than constant touring.", "highlights": ["Unhurried town rhythm", "Pai Canyon viewpoint", "Mountain and wellness time"], "tradeoffs": ["The winding transfer is a real constraint", "Scooter-dependent plans need an alternative for inexperienced riders"] },
+        { "locale": "de", "title": "Pai als langsame Berg-Auszeit", "summary": "Nutze die kleine Stadt im Norden für Cafés, Pausen im Umland und einen gut getimten Ausflug zum Canyon statt für ständiges Sightseeing.", "highlights": ["Ruhiger Rhythmus im Ort", "Aussicht am Pai Canyon", "Zeit für Berge und Wellness"], "tradeoffs": ["Die kurvenreiche Anreise ist eine echte Einschränkung", "Für rollerabhängige Pläne braucht es eine Alternative für unerfahrene Fahrer"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-pai", "role": "base", "minNights": 2, "maxNights": 4 },
+        { "entitySlug": "th-pai-canyon", "role": "must_visit", "minNights": 0, "maxNights": 0 }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "mountain", "weight": 1 }, { "tagKey": "wellness", "weight": 0.85 }, { "tagKey": "nature", "weight": 0.8 }, { "tagKey": "solo_travel_interest", "weight": 0.65 }]
+    },
+    {
+      "templateKey": "th-koh-lanta-slow-island",
+      "countryCode": "TH",
+      "journeyType": "city_break",
+      "minDays": 3,
+      "maxDays": 7,
+      "preferredPace": "relaxed",
+      "idealMonths": [11, 12, 1, 2, 3, 4],
+      "version": 1,
+      "copy": [
+        { "locale": "en", "title": "Koh Lanta, room to slow down", "summary": "Base near Long Beach, preserve a cultural half-day for Lanta Old Town, and keep the national park conditional on weather and road tolerance.", "highlights": ["Long Beach base", "Lanta Old Town", "Optional national-park day"], "tradeoffs": ["The long island road makes location important", "Marine and park access changes with the monsoon season"] },
+        { "locale": "de", "title": "Koh Lanta mit Raum zum Langsamerwerden", "summary": "Wähle eine Basis nahe Long Beach, halte einen kulturellen Halbtag für Lanta Old Town frei und mache den Nationalpark von Wetter und Straßentoleranz abhängig.", "highlights": ["Basis am Long Beach", "Lanta Old Town", "Optionaler Nationalparktag"], "tradeoffs": ["Die lange Inselstraße macht die Lage wichtig", "Meeres- und Parkzugänge verändern sich mit der Monsunzeit"] }
+      ],
+      "stops": [
+        { "entitySlug": "th-koh-lanta", "role": "base", "minNights": 3, "maxNights": 7 },
+        { "entitySlug": "th-koh-lanta-long-beach", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-koh-lanta-old-town", "role": "must_visit", "minNights": 0, "maxNights": 0 },
+        { "entitySlug": "th-koh-lanta-national-park", "role": "consider", "minNights": 0, "maxNights": 0, "isOptional": true }
+      ],
+      "tags": [{ "tagKey": "city_break", "weight": 1 }, { "tagKey": "beaches", "weight": 1 }, { "tagKey": "quiet", "weight": 0.95 }, { "tagKey": "nature", "weight": 0.8 }, { "tagKey": "hidden_gem", "weight": 0.7 }]
     }
   ]
 }

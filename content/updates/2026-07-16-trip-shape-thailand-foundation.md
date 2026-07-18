@@ -13,7 +13,7 @@ summary: "A route-first Thailand planner compares trusted trip concepts before o
 ## Changes
 - [ ] [Internal] 🧭 Added a five-step trip-shape flow for city breaks, one-base day trips, and Thailand circuits.
 - [ ] [Internal] 🗺️ Added canonical cities and neighborhoods with immediate, explainable route comparison and an editable plan handoff.
-- [ ] [Internal] 🇹🇭 Added a versioned Thailand knowledge pack with 84 canonical places, 571 sourced facts, 420 evidence-aware tags, localized route templates, and activity coverage for every required route base.
+- [ ] [Internal] 🇹🇭 Added a versioned Thailand knowledge pack with 99 canonical places, 601 sourced facts, 487 evidence-aware tags, localized route templates, and activity coverage for every required route base.
 - [ ] [Internal] ⚡ Added deterministic route matching, sourced transfer ranges, and instant knowledge-enriched trips so the first useful answer no longer waits for itinerary generation.
 - [ ] [Internal] 🧾 Added a visible fast-path receipt with retrieval time, payload size, dataset version, selected catalogue counts, and AI-call count.
 - [ ] [Internal] 🏛️ Added category-aware hours, pricing, duration, booking, weather, effort, access, facilities, audience, freshness, and source fields for all thirty-two researched activities without inventing missing data.
@@ -48,3 +48,6 @@ summary: "A route-first Thailand planner compares trusted trip concepts before o
 - [ ] [Internal] 🧬 Persisted JourneySpec v1 intent and trip-shape provenance for new classic and legacy-wizard generations across authentication queues, retries, workers, and diagnostics without changing their existing AI prompts.
 - [ ] [Internal] 🔐 Restored the guarded Travel Knowledge admin reads without exposing normalized catalogue tables to signed-in or anonymous clients.
 - [ ] [Internal] 🧩 Recovered safe neighbourhood personalization suggestions when an AI treated an area as one schedulable activity, while retaining catalogue validation for invented data.
+- [ ] [Internal] 🧭 Expanded the zero-AI Thailand catalogue to twenty-seven route templates so every supported city has a directly selectable city-break concept with explicit highlights and tradeoffs.
+- [ ] [Internal] 🏘️ Added source-backed, candid base-area choices for every supported Thailand city, including walkability, evening energy, fit, and explicit tradeoffs.
+- [ ] [Internal] 🧭 Kept a selected neighborhood as a city-level route refinement in both local and live catalogue retrieval instead of incorrectly filtering out that city's premade routes.

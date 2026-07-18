@@ -141,7 +141,7 @@ describe('pages/CreateTripShapeLabPage', () => {
       expect.objectContaining({
         source: 'bundled',
         load_duration_ms: 0.25,
-        dataset_version: '2026.07.18-v11',
+        dataset_version: '2026.07.18-v13',
       }),
     ));
 
@@ -200,20 +200,20 @@ describe('pages/CreateTripShapeLabPage', () => {
       'create_trip_shape__concepts--prepare',
       expect.objectContaining({
         journey_type: 'city_break',
-        concept_count: 2,
-        attempted_template_count: 2,
+        concept_count: 3,
+        attempted_template_count: 3,
         failed_template_count: 0,
         knowledge_source: 'bundled',
-        dataset_version: '2026.07.18-v11',
+        dataset_version: '2026.07.18-v13',
       }),
     );
     await waitFor(() => expect(trackEvent).toHaveBeenCalledWith(
       'create_trip_shape__reveal--ready',
       expect.objectContaining({
         journey_type: 'city_break',
-        concept_count: 2,
+        concept_count: 3,
         knowledge_source: 'bundled',
-        dataset_version: '2026.07.18-v11',
+        dataset_version: '2026.07.18-v13',
       }),
     ));
     await user.click(screen.getAllByRole('button', { name: /shapeLab\.reveal\.chooseRoute/i })[0]!);
@@ -243,7 +243,7 @@ describe('pages/CreateTripShapeLabPage', () => {
     const trip = onTripGenerated.mock.calls[0]?.[0];
     expect(trip.planningMeta).toMatchObject({
       routeStage: 'enriched',
-      datasetVersion: '2026.07.18-v11',
+      datasetVersion: '2026.07.18-v13',
       templateKey: 'th-bangkok-long-weekend',
       trace: {
         skeletonCompilerVersion: 'journey-skeleton-v1',
@@ -348,7 +348,7 @@ describe('pages/CreateTripShapeLabPage', () => {
       expect.objectContaining({
         request_id: 'personalization-request-1',
         change_count: 3,
-        dataset_version: '2026.07.18-v11',
+        dataset_version: '2026.07.18-v13',
       }),
     );
     await user.click(screen.getByRole('button', { name: /wizard\.personalize\.apply/i }));
@@ -375,7 +375,7 @@ describe('pages/CreateTripShapeLabPage', () => {
           model: 'gemini-3.1-flash-lite',
           operationCount: 3,
           applied: true,
-          datasetVersion: '2026.07.18-v11',
+          datasetVersion: '2026.07.18-v13',
         },
       },
     });
@@ -420,6 +420,6 @@ describe('pages/CreateTripShapeLabPage', () => {
 
     await user.click(screen.getByRole('button', { name: /shapeLab\.actions\.openPlan/i }));
     await waitFor(() => expect(onTripGenerated).toHaveBeenCalledTimes(1));
-    expect(onTripGenerated.mock.calls[0]?.[0].planningMeta.datasetVersion).toBe('2026.07.18-v11');
+    expect(onTripGenerated.mock.calls[0]?.[0].planningMeta.datasetVersion).toBe('2026.07.18-v13');
   });
 });

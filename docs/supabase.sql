@@ -11172,6 +11172,20 @@ as $$
     cross join lateral jsonb_array_elements(coalesce(source_pack.pack -> 'templates', '[]'::jsonb))
       with ordinality as template(value, ordinality)
   ),
+  route_place_ancestry(place_slug, entity, depth) as (
+    select route_place.canonical_slug, entity_rows.entity, 0
+    from requested
+    cross join lateral (
+      select distinct canonical_slug
+      from unnest(requested.selected_slugs || requested.locked_slugs) as route_slug(canonical_slug)
+    ) route_place
+    join entity_rows on entity_rows.entity ->> 'canonicalSlug' = route_place.canonical_slug
+    union all
+    select route_place_ancestry.place_slug, parent.entity, route_place_ancestry.depth + 1
+    from route_place_ancestry
+    join entity_rows parent on parent.entity ->> 'entityId' = route_place_ancestry.entity ->> 'parentId'
+    where route_place_ancestry.depth < 8
+  ),
   template_metrics as (
     select
       template_rows.*,
@@ -11206,11 +11220,20 @@ as $$
       coalesce(
         (
           select count(*)::numeric
-          from unnest(requested.selected_slugs) selected_slug
-          where selected_slug = any(array(
-            select stop ->> 'entitySlug'
-            from jsonb_array_elements(coalesce(template_rows.template -> 'stops', '[]'::jsonb)) stop
-          ))
+          from unnest(requested.selected_slugs) as selected_place(canonical_slug)
+          where exists (
+            select 1
+            from route_place_ancestry
+            where route_place_ancestry.place_slug = selected_place.canonical_slug
+              and (
+                route_place_ancestry.depth = 0
+                or route_place_ancestry.entity ->> 'entityType' = 'city'
+              )
+              and route_place_ancestry.entity ->> 'canonicalSlug' = any(array(
+                select stop ->> 'entitySlug'
+                from jsonb_array_elements(coalesce(template_rows.template -> 'stops', '[]'::jsonb)) stop
+              ))
+          )
         ),
         0
       ) as selected_match_count,
@@ -11269,8 +11292,17 @@ as $$
       )
       and not exists (
         select 1
-        from unnest(requested.locked_slugs) locked_slug
-        where not locked_slug = any(template_metrics.stop_slugs)
+        from unnest(requested.locked_slugs) as locked_place(canonical_slug)
+        where not exists (
+          select 1
+          from route_place_ancestry
+          where route_place_ancestry.place_slug = locked_place.canonical_slug
+            and (
+              route_place_ancestry.depth = 0
+              or route_place_ancestry.entity ->> 'entityType' = 'city'
+            )
+            and route_place_ancestry.entity ->> 'canonicalSlug' = any(template_metrics.stop_slugs)
+        )
       )
   ),
   ranked_templates as (

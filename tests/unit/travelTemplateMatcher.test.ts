@@ -89,6 +89,66 @@ describe('travel template matcher', () => {
     ]));
   });
 
+  it('uses a selected neighborhood to refine its city without excluding city-level routes', () => {
+    const chiangRai = pack.entities.find((entity) => entity.canonicalSlug === 'th-chiang-rai');
+    const cityCentre = pack.entities.find((entity) => entity.canonicalSlug === 'th-chiang-rai-city-centre');
+    if (!chiangRai || !cityCentre) throw new Error('Chiang Rai planning-area fixtures are unavailable.');
+    const cityBreak = buildIntent({
+      journeyType: 'city_break',
+      durationDays: 4,
+      dateWindow: { mode: 'flexible', durationDays: 4, months: [12] },
+      places: [
+        ...buildIntent().places,
+        {
+          entity: {
+            entityId: chiangRai.entityId,
+            canonicalSlug: chiangRai.canonicalSlug,
+            entityType: chiangRai.entityType,
+            countryCode: chiangRai.countryCode,
+            name: chiangRai.name,
+            resolution: 'canonical',
+          },
+          role: 'base',
+          order: 1,
+          locked: true,
+        },
+        {
+          entity: {
+            entityId: cityCentre.entityId,
+            canonicalSlug: cityCentre.canonicalSlug,
+            entityType: cityCentre.entityType,
+            countryCode: cityCentre.countryCode,
+            name: cityCentre.name,
+            resolution: 'canonical',
+          },
+          role: 'must_visit',
+          order: 2,
+          locked: true,
+        },
+      ],
+      preferences: { pace: 'balanced', interestTags: ['culture', 'food'], vibeTags: [] },
+    });
+
+    const matches = matchTravelTemplates(cityBreak, pack, { limit: 3 });
+
+    expect(matches.length).toBeGreaterThan(0);
+    expect(matches[0]).toMatchObject({
+      selectedPlaceCoverage: 1,
+      reasons: expect.arrayContaining(['selected_places_fit']),
+    });
+    expect(matches.every((match) => (
+      match.template.stops.some((stop) => stop.entitySlug === 'th-chiang-rai')
+    ))).toBe(true);
+    const applied = applyTravelTemplateToJourneySpec(cityBreak, pack, matches[0]!.template);
+    expect(applied.spec.places).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        entity: expect.objectContaining({ canonicalSlug: 'th-chiang-rai-city-centre' }),
+        role: 'consider',
+        locked: true,
+      }),
+    ]));
+  });
+
   it('lets explicit route constraints exclude otherwise strong templates', () => {
     const chiangMai = pack.entities.find((entity) => entity.canonicalSlug === 'th-chiang-mai');
     if (!chiangMai) throw new Error('Chiang Mai test entity is unavailable.');
@@ -164,7 +224,7 @@ describe('travel template matcher', () => {
     expect(applied.overflowNights).toBe(0);
     expect(applied.spec.knowledgeContext).toEqual({
       datasetKey: 'thailand-core',
-      datasetVersion: '2026.07.18-v11',
+      datasetVersion: '2026.07.18-v13',
       templateKey: match.template.templateKey,
       templateVersion: match.template.version,
     });

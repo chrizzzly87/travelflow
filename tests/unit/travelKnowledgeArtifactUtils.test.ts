@@ -24,12 +24,12 @@ describe('travel knowledge artifact tooling', () => {
     const result = materializeTravelKnowledgeReviewedChanges(
       dataset,
       [reviewedChange],
-      '2026.07.18-v11-test',
+      '2026.07.18-v12-test',
       '2026-07-18T08:15:00Z',
     );
 
     expect(result.applied).toEqual([reviewedChange]);
-    expect(result.dataset.manifest.version).toBe('2026.07.18-v11-test');
+    expect(result.dataset.manifest.version).toBe('2026.07.18-v12-test');
     expect(result.dataset.entities.find((entity) => entity.canonicalSlug === 'th-bangkok')?.attributes)
       .toMatchObject({ externalIds: { wikidata: 'Q1861' } });
     expect(dataset.entities.find((entity) => entity.canonicalSlug === 'th-bangkok')?.attributes)
@@ -49,7 +49,7 @@ describe('travel knowledge artifact tooling', () => {
     expect(() => materializeTravelKnowledgeReviewedChanges(
       dataset,
       [{ ...reviewedChange, fieldPath: 'attributes.safety.universal' }],
-      '2026.07.18-v11-test',
+      '2026.07.18-v12-test',
       '2026-07-18T08:15:00Z',
     )).toThrow('outside the reviewed v1 materializer');
   });
@@ -75,7 +75,7 @@ describe('travel knowledge artifact tooling', () => {
       passed: true,
       reviewedCandidateCount: 0,
       sourceRunCount: 2,
-      counts: { entities: 84, facts: 571, templates: 15 },
+      counts: { entities: 99, facts: 601, templates: 27 },
     });
     expect(first.storageObjectKey).toContain(first.artifactChecksum);
     expect(first.bundle.packPayload.dataset?.checksum).toBe(first.datasetChecksum);

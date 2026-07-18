@@ -1,8 +1,8 @@
 # Travel knowledge deployment runbook
 
-Status: schema, Thailand v11 source-backed fast-path dataset, immutable artifact, provenance guards, and atomic active pointer applied and verified in production on 2026-07-18.
+Status: schema, Thailand v13 source-backed fast-path dataset, immutable artifact, provenance guards, and atomic active pointer applied and verified in production on 2026-07-18.
 
-This runbook deploys the additive travel-knowledge schema and versioned Thailand datasets without deleting or replacing existing TravelFlow tables. Thailand v10 remains the verified immediate rollback target for the active v11 release; earlier artifacts are also retained.
+This runbook deploys the additive travel-knowledge schema and versioned Thailand datasets without deleting or replacing existing TravelFlow tables. Thailand v12 remains the verified immediate rollback target for the active v13 release; earlier artifacts are also retained.
 
 ## Production deployment record
 
@@ -36,6 +36,8 @@ Applied migrations:
 - `20260718072555 backup_travel_knowledge_post_v9_20260718t072025z`
 - `20260718074101 guard_travel_dataset_provenance_v10`
 - `20260718084324 backup_travel_knowledge_pre_v11_20260718t084050z`
+- `20260718092925 guard_travel_knowledge_admin_reads`
+- `20260718113618 travel_planning_context_neighborhood_city_coverage`
 
 The initial foundation applied only the isolated travel-knowledge section of `docs/supabase.sql`, followed by the exact generated Thailand seed. Later operations and private-bucket migrations were also narrow and additive; the rest of the documented schema was not replayed.
 
@@ -181,6 +183,49 @@ Thailand v11 completes the rich structured contract for all 32 Thailand activity
 
 The v11 release is content-only. It used the existing staged-artifact validation and atomic publish transaction after the new private checkpoint was independently checksum-verified. Both production retrieval budgets remain below 100 KB even though the complete catalogue gained 107 sourced facts.
 
+### Thailand v12 complete city-template coverage activation
+
+Thailand v12 adds twelve city-break concepts so every one of the fifteen supported Thailand cities has a directly selectable zero-AI route. It composes only existing reviewed entities and facts, keeps the 32 rich activity profiles unchanged, and leaves the optional personalization request outside the deterministic route reveal.
+
+- repository commit: `627577693843133ebb61852af5854d337426c251`
+- dataset version: `0b98a5ed-b3ec-4da3-b2e5-8d517c1fe16a`
+- payload: `910f0b87-e37b-4d78-9894-2e8153d369b2`
+- artifact: `026b9500-899b-46e1-beda-4def58fadfd3`
+- activation: `340f3d38-22f8-4240-97c9-a1e9856f8ff2` at `2026-07-18T10:15:40.934727Z`
+- dataset checksum: `d905245108edb07295322d71e96fa5e80e7d1bbfac55663f43aebdfcf5d6c5a4`
+- pack checksum: `7db5cc296448d435b68d27d4daf66e209f7ef480a0a3398ef81c57dbf9a45d71`
+- seed checksum: `2d2678362be79637ab653a0f43955a2ab9a2672a8bd01bdebf40d10e856e7d9a`
+- artifact checksum: `ab6b41441f79d14ef39e65dd9a5ab67c6641801b74a0659db42828eb72f7e908`
+- active payload: 771,893 bytes; 84 entities, 571 facts, 420 entity tags, 27 templates, and 16 route legs
+- live Chiang Rai city-break context: 53,148 bytes, 17 selected entities, 3 templates, with **Chiang Rai in three colors** ranked first
+- live Krabi city-break context: 48,356 bytes, 16 selected entities, 3 templates, with **Krabi between cliffs and sea** ranked first
+- immediate rollback target: v11 artifact `f6a9a4c5-3274-4ff0-a319-c3afbd21f312`; its retired payload and checksum-addressable private bundle remain retained
+
+The v12 activation changed only immutable content and the atomic active pointer. The live pointer, published payload, activation ledger, representative planning contexts, and retained v11 rollback artifact were verified through the TravelFlow Supabase project after publication.
+
+### Current TravelFlow production knowledge activation — Thailand v13 (2026-07-18)
+
+Thailand v13 adds fifteen candid, source-backed planning areas across the seven cities that previously had no directly selectable neighborhoods. Every supported city now has at least two base-area choices. The new records explicitly identify themselves as editorial travel areas rather than administrative boundaries and carry base fit, walkability, evening energy, tradeoffs, official Tourism Authority of Thailand references, and curated OpenStreetMap location references.
+
+- repository commit: `5ffa3290b071908a85e470628c976392beb414f5`
+- dataset version: `23545764-61d9-4eaf-9d76-994ac2b678ca`
+- payload: `5395b74a-5013-449e-820e-8d71f779d61f`
+- artifact: `c5ee4fc0-0984-4329-a604-bbd3b9d7f1e5`
+- activation: `e57ad68e-b070-4089-922b-bc78d521920d` at `2026-07-18T11:08:42.027415Z`
+- dataset checksum: `826db616f79c98cfd91011661e647b09b0b7c145783cc3d851055cbeea8689b0`
+- pack checksum: `7c35221ab4e71e562396a82d9f0e48cfafc3280a76956bc34b5c87c9e0eca834`
+- seed checksum: `f28b3405136f84f0d24b82eea9fd64fb030b250edac566bf20d459ad736f7598`
+- artifact checksum: `6c43c8c4487e9307e3f40a70d4b049dd9cc460aae707060b9c906cfa53976e4a`
+- active payload: 853,095 bytes; 99 entities, 601 facts, 487 entity tags, 27 templates, and 16 route legs
+- hierarchy: 1 country, 6 regions, 15 cities, 45 neighborhoods, and 32 activity POIs
+- deterministic benchmark: Chiang Rai comparison 23,091 bytes and selected route 31,494 bytes; Thailand circuit comparison 79,981 bytes and selected route 99,518 bytes
+- anonymous active-pack read: HTTP 200, version `2026.07.18-v13`, 99 entities, 45 neighborhoods, and 27 templates
+- selected Chiang Rai City Centre context: `structured-pack-v2`, 8 selected entities, 1 city-level route template, and no AI call required
+- named-preview browser verification: live Supabase receipt in 334 ms, 23 KB comparison context, 31 KB selected-route context, one valid optional personalization response in 1,755 ms, and a successfully opened editable trip
+- immediate rollback target: v12 artifact `026b9500-899b-46e1-beda-4def58fadfd3`; its superseded payload and checksum-addressable private bundle remain retained
+
+The v13 activation changed only immutable content and the atomic active pointer. A later narrow function migration made selected neighborhoods refine their parent city's route templates in live retrieval, matching the bundled client behavior. The staged repository commit, payload checksums, active pointer, anonymous RPC, catalogue counts, selected-neighborhood route retrieval, and retained v12 rollback artifact were verified after publication.
+
 ## Sources of truth
 
 - Additive schema and policies: `docs/supabase.sql`
@@ -279,45 +324,36 @@ For the Dashboard path, extract and run only the travel-knowledge section of `do
 
 ## Verify
 
-Expected active Thailand v11 counts:
+Expected active Thailand v13 counts:
 
 ```sql
-select dataset_key, version, entity_count, fact_count, template_count
-from public.travel_dataset_versions
-where dataset_key = 'thailand-core';
+select
+  active.country_code,
+  dataset.version,
+  dataset.status as dataset_status,
+  artifact.status as artifact_status,
+  payload.status as payload_status,
+  jsonb_array_length(payload.pack_payload -> 'entities') as entity_count,
+  (payload.pack_payload #>> '{dataset,factCount}')::integer as fact_count,
+  jsonb_array_length(payload.pack_payload -> 'templates') as template_count,
+  payload.pack_byte_size
+from public.travel_active_datasets active
+join public.travel_dataset_versions dataset on dataset.id = active.dataset_version_id
+join public.travel_dataset_artifacts artifact on artifact.id = active.artifact_id
+join public.travel_dataset_payloads payload
+  on payload.dataset_version_id = active.dataset_version_id
+ and payload.locale = 'en'
+where active.country_code = 'TH';
 
-select entity_type, count(*)
-from public.travel_entities
-where dataset_version = '2026.07.18-v11'
-group by entity_type
-order by entity_type;
-
-select count(*) as fact_count
-from public.travel_entity_facts fact
-join public.travel_entities entity on entity.id = fact.entity_id
-where entity.dataset_version = '2026.07.18-v11';
-
-select count(*) as tag_count
-from public.travel_entity_tags tag
-join public.travel_entities entity on entity.id = tag.entity_id
-where entity.dataset_version = '2026.07.18-v11';
-
-select count(*) as template_count
-from public.travel_templates
-where dataset_version = '2026.07.18-v11';
-
-select count(*) as route_leg_count
-from public.travel_template_legs leg
-join public.travel_templates template on template.id = leg.template_id
-where template.dataset_version = '2026.07.18-v11';
+select public.get_active_travel_destination_pack('TH', 'en') #>> '{dataset,version}' as active_version;
 ```
 
 The repository validator expects:
 
-- 84 entities: 1 country, 6 regions, 15 cities, 30 neighborhoods, and 32 POIs
-- 571 facts
-- 420 tags
-- 15 templates
+- 99 entities: 1 country, 6 regions, 15 cities, 45 neighborhoods, and 32 POIs
+- 601 facts
+- 487 tags
+- 27 templates
 - 16 route legs
 
 Also verify that the public read RPC returns the published pack and that an anonymous client cannot write any travel-knowledge row.
@@ -366,7 +402,7 @@ Deploy this flag separately from the schema change. The read service remains ver
 
 ## Advisor follow-ups
 
-No travel-serving advisor error, missing-RLS issue, missing-policy issue, or mutable-function-search-path issue remains after v11. Direct public, anonymous, and authenticated grants on the legacy normalized travel tables remain revoked; external reads go through the current immutable active payload projections. The two restrictive Storage denial policies remain defense-in-depth denials, not grants, and their predicates explicitly exclude the snapshot bucket.
+No travel-serving advisor error, missing-RLS issue, missing-policy issue, or mutable-function-search-path issue remains after v12. Direct public, anonymous, and authenticated grants on the legacy normalized travel tables remain revoked; external reads go through the current immutable active payload projections. The two restrictive Storage denial policies remain defense-in-depth denials, not grants, and their predicates explicitly exclude the snapshot bucket.
 
 The operations migration added the five previously missing foreign-key indexes and changed travel admin policies to use init-plan-safe auth expressions. Supabase no longer reports those two finding classes for the travel tables.
 

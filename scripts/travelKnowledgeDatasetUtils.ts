@@ -175,6 +175,13 @@ const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 const KEY_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 const FACT_KEY_PATTERN = /^[a-z0-9][a-z0-9_.-]*$/;
 const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
+const PLANNING_AREA_BASE_FITS = new Set(['primary', 'alternative', 'visit_only']);
+const PLANNING_AREA_WALKABILITY_LEVELS = new Set(['high', 'medium', 'low']);
+const PLANNING_AREA_EVENING_ENERGY_LEVELS = new Set(['quiet', 'balanced', 'lively']);
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+);
 
 const uuidToBytes = (uuid: string): Buffer => Buffer.from(uuid.replace(/-/g, ''), 'hex');
 
@@ -352,6 +359,45 @@ export const validateTravelKnowledgeDataset = (
       && entity.typicalMinDays > entity.typicalMaxDays
     ) {
       errors.push(`Entity ${entity.canonicalSlug} has an inverted stay range.`);
+    }
+
+    const planningArea = entity.attributes?.planningArea;
+    if (planningArea !== undefined) {
+      if (entity.entityType !== 'neighborhood') {
+        errors.push(`Entity ${entity.canonicalSlug} can only define planningArea metadata as a neighborhood.`);
+      }
+      if (!isRecord(planningArea)) {
+        errors.push(`Entity ${entity.canonicalSlug} planningArea must be an object.`);
+      } else {
+        if (planningArea.classification !== 'editorial_travel_area') {
+          errors.push(`Entity ${entity.canonicalSlug} planningArea must be classified as editorial_travel_area.`);
+        }
+        if (typeof planningArea.baseFit !== 'string' || !PLANNING_AREA_BASE_FITS.has(planningArea.baseFit)) {
+          errors.push(`Entity ${entity.canonicalSlug} planningArea has invalid baseFit.`);
+        }
+        if (
+          typeof planningArea.walkability !== 'string'
+          || !PLANNING_AREA_WALKABILITY_LEVELS.has(planningArea.walkability)
+        ) {
+          errors.push(`Entity ${entity.canonicalSlug} planningArea has invalid walkability.`);
+        }
+        if (
+          typeof planningArea.eveningEnergy !== 'string'
+          || !PLANNING_AREA_EVENING_ENERGY_LEVELS.has(planningArea.eveningEnergy)
+        ) {
+          errors.push(`Entity ${entity.canonicalSlug} planningArea has invalid eveningEnergy.`);
+        }
+        if (
+          !Array.isArray(planningArea.tradeoffs)
+          || planningArea.tradeoffs.length === 0
+          || planningArea.tradeoffs.some((tradeoff) => typeof tradeoff !== 'string' || !tradeoff.trim())
+        ) {
+          errors.push(`Entity ${entity.canonicalSlug} planningArea requires non-empty tradeoffs.`);
+        }
+        if (typeof planningArea.scopeNote !== 'string' || !planningArea.scopeNote.trim()) {
+          errors.push(`Entity ${entity.canonicalSlug} planningArea requires a scopeNote.`);
+        }
+      }
     }
 
     const entityFacts = compileEntityFacts(dataset, entity);
