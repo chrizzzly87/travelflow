@@ -20,6 +20,7 @@ summary: "A hidden route-first planner now compares trusted Thailand trip concep
 - [ ] [Internal] 🗂️ Added a searchable admin catalogue for published places, facts, tags, templates, source evidence, freshness, and honest rich/usable/starter coverage gaps alongside the review queue.
 - [ ] [Internal] ⏱️ Added cached country-knowledge indexes, browser-visible stage latency telemetry, dataset-safe route reveals, compact initial comparison payloads, and repeatable CPU performance guardrails for every supported trip shape.
 - [ ] [Internal] 📚 Added compact destination briefs and an instant route preview with sourced city guidance, ranked neighborhoods and activities, signature dishes, seasonal context, and evidence-aware audience signals.
+- [ ] [Internal] 🛡️ Serialized concurrent saves for the same newly opened trip so the instant-plan handoff cannot race itself into a duplicate write.
 - [ ] [Internal] 🔎 Preserved canonical entity IDs, recommendation origin, source keys, rank scores, and compiler versions on the editable plan for reproducible planning and quality diagnostics.
 - [ ] [Internal] 🔄 Defined the licensed source, crawl, review, versioning, publish, freshness, and rollback pipeline for continuously maintained country knowledge.
 - [ ] [Internal] 🧾 Deployed an admin-only source-run and review ledger, registered 19 governed sources, and added build-blocking plus weekly freshness, expiry, license, and registry-drift checks before enabling crawlers.
