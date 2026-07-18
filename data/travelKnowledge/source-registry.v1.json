@@ -1,8 +1,8 @@
 {
   "manifest": {
     "registryKey": "travel-knowledge-sources",
-    "version": "2026.07.17-v3",
-    "generatedAt": "2026-07-17T15:46:00Z",
+    "version": "2026.07.18-v4",
+    "generatedAt": "2026-07-18T10:30:00Z",
     "defaultCountryCodes": ["TH"]
   },
   "sources": [
@@ -226,6 +226,27 @@
       "countryCodes": ["TH"],
       "metadata": {
         "usage": "Manual confirmation of structured historical-park visitor facts only; do not crawl or store source prose or images."
+      }
+    },
+    {
+      "sourceKey": "australian_dva_hellfire_pass",
+      "name": "Australian Government Department of Veterans' Affairs — Hellfire Pass",
+      "sourceKind": "official",
+      "baseUrl": "https://hellfirepass.dva.gov.au/",
+      "termsUrl": "https://www.dva.gov.au/copyright-and-disclaimer",
+      "attributionText": "Australian Government Department of Veterans' Affairs",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-18T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Manual confirmation of structured visitor facts only; do not crawl or store source prose or images."
       }
     },
     {

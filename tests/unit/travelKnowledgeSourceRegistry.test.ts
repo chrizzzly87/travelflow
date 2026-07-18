@@ -25,7 +25,7 @@ describe('travel knowledge source registry and freshness audit', () => {
 
     expect(result.valid).toBe(true);
     expect(result.counts).toMatchObject({
-      sources: 18,
+      sources: 19,
       automated: 7,
       blocked: 2,
     });
@@ -33,14 +33,14 @@ describe('travel knowledge source registry and freshness audit', () => {
 
   it('keeps the current Thailand pack publishable at its review date', () => {
     const result = auditTravelKnowledgeFreshness(dataset, registry, {
-      asOf: '2026-07-17T08:00:00Z',
+      asOf: '2026-07-18T12:00:00Z',
       warningWindowDays: 30,
     });
 
     expect(result.valid).toBe(true);
     expect(result.counts.errors).toBe(0);
-    expect(result.counts.registeredSources).toBe(18);
-    expect(result.counts.datasetSources).toBe(12);
+    expect(result.counts.registeredSources).toBe(19);
+    expect(result.counts.datasetSources).toBe(13);
     expect(result.counts.observations).toBeGreaterThan(20);
   });
 
