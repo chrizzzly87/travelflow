@@ -222,7 +222,7 @@ const runScenarioOnce = (
   const selectedContext = buildTravelPlanningContext(pack, spec, {
     templateKeys: [match.template.templateKey],
     neighborhoodLimitPerCity: 4,
-    poiLimitPerCity: 6,
+    poiLimitPerCity: 3,
   });
   const selectedContextCompletedAt = performance.now();
   const skeleton = buildTripSkeletonFromTemplate(applied, selectedContext.pack, {

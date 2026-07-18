@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import datasetJson from '../../data/travelKnowledge/thailand.v1.json';
-import type { TravelKnowledgeDataset } from '../../scripts/travelKnowledgeDatasetUtils';
+import {
+  compileTravelDestinationPack,
+  type TravelKnowledgeDataset,
+} from '../../scripts/travelKnowledgeDatasetUtils';
+import { getTravelActivityKnowledgeCoverage } from '../../shared/travelActivityKnowledge';
 
 const dataset = datasetJson as TravelKnowledgeDataset;
 
@@ -37,5 +41,43 @@ describe('Thailand route-template coverage', () => {
 
       expect(requiredCityBases, template.templateKey).toHaveLength(1);
     }
+  });
+
+  it('provides at least three rich activity anchors for every supported city', () => {
+    const entitiesBySlug = new Map(dataset.entities.map((entity) => [entity.canonicalSlug, entity]));
+    const compiledEntitiesBySlug = new Map(
+      compileTravelDestinationPack(dataset).entities.map((entity) => [entity.canonicalSlug, entity]),
+    );
+    const citySlugs = dataset.entities
+      .filter((entity) => entity.entityType === 'city')
+      .map((entity) => entity.canonicalSlug);
+
+    const resolveCitySlug = (entitySlug: string): string | undefined => {
+      let current = entitiesBySlug.get(entitySlug);
+      while (current) {
+        if (current.entityType === 'city') return current.canonicalSlug;
+        current = current.parentSlug ? entitiesBySlug.get(current.parentSlug) : undefined;
+      }
+      return undefined;
+    };
+
+    const richActivityCountByCity = new Map(citySlugs.map((citySlug) => [citySlug, 0]));
+    for (const entity of dataset.entities.filter((candidate) => candidate.entityType === 'poi')) {
+      const citySlug = resolveCitySlug(entity.canonicalSlug);
+      const compiledEntity = compiledEntitiesBySlug.get(entity.canonicalSlug);
+      if (!citySlug || !compiledEntity) continue;
+
+      const coverage = getTravelActivityKnowledgeCoverage(
+        compiledEntity,
+        new Date('2026-07-18T13:30:00Z'),
+      );
+      if (coverage?.status === 'rich') {
+        richActivityCountByCity.set(citySlug, (richActivityCountByCity.get(citySlug) ?? 0) + 1);
+      }
+    }
+
+    expect(
+      [...richActivityCountByCity.entries()].filter(([, richActivityCount]) => richActivityCount < 3),
+    ).toEqual([]);
   });
 });

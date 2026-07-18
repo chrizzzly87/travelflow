@@ -102,7 +102,7 @@ describe('journey knowledge enrichment service', () => {
       coordinates: { lat: expect.any(Number), lng: expect.any(Number) },
       knowledgeMeta: {
         entity: { entityType: 'poi', resolution: 'canonical' },
-        datasetVersion: '2026.07.18-v13',
+        datasetVersion: '2026.07.18-v14',
         origin: 'knowledge_ranker',
         matchScore: expect.any(Number),
         sourceKeys: expect.arrayContaining(['tat_official']),

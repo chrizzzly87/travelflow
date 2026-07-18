@@ -38,7 +38,7 @@ describe('travel planning context', () => {
 
     expect(context.version).toBe(TRAVEL_PLANNING_CONTEXT_VERSION);
     expect(context.retrieverVersion).toBe(TRAVEL_PLANNING_RETRIEVER_VERSION);
-    expect(context.pack.dataset?.version).toBe('2026.07.18-v13');
+    expect(context.pack.dataset?.version).toBe('2026.07.18-v14');
     expect(context.pack.locale).toBe('de');
     expect(context.pack.templates).toHaveLength(3);
     expect(context.pack.templates.map((template) => template.templateKey)).toEqual([
@@ -99,7 +99,7 @@ describe('travel planning context', () => {
     const detailedContext = buildTravelPlanningContext(pack, spec, {
       templateKeys: [selectedTemplate.templateKey],
       neighborhoodLimitPerCity: 4,
-      poiLimitPerCity: 6,
+      poiLimitPerCity: 3,
     });
     expect(detailedContext.pack.entities
       .find((entity) => entity.canonicalSlug === 'th-chiang-rai-city-centre')
@@ -195,7 +195,7 @@ describe('travel planning context', () => {
     const deepContext = buildTravelPlanningContext(pack, spec, {
       templateKeys: [selectedTemplate.templateKey],
       neighborhoodLimitPerCity: 4,
-      poiLimitPerCity: 6,
+      poiLimitPerCity: 3,
     });
 
     expect(deepContext.query.templateKeys).toEqual([selectedTemplate.templateKey]);

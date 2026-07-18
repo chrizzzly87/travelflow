@@ -251,12 +251,12 @@ describe('pages/AdminTravelKnowledgePage', () => {
     renderPage();
 
     expect(await screen.findByRole('heading', { name: 'Published catalogue' })).toBeInTheDocument();
-    expect(screen.getAllByText('2026.07.18-v13').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('99').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('2026.07.18-v14').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('113').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Thailand').length).toBeGreaterThan(0);
     expect(screen.getByText('Activity POIs')).toBeInTheDocument();
-    expect(screen.getAllByText('32').length).toBeGreaterThan(0);
-    expect(screen.getByText('Rich').parentElement).toHaveTextContent('32');
+    expect(screen.getAllByText('46').length).toBeGreaterThan(0);
+    expect(screen.getByText('Rich').parentElement).toHaveTextContent('46');
     expect(screen.getByText('Needs work').parentElement).toHaveTextContent('0');
     expect(screen.getByText('0 usable · 0 starter')).toBeInTheDocument();
     expect(screen.getByText('99%')).toBeInTheDocument();
@@ -270,8 +270,8 @@ describe('pages/AdminTravelKnowledgePage', () => {
     await screen.findByRole('heading', { name: 'Published catalogue' });
 
     expect(screen.getByRole('combobox', { name: 'Activity coverage' })).toHaveTextContent('All coverage levels');
-    expect(screen.getByText('Rich').parentElement).toHaveTextContent('32');
+    expect(screen.getByText('Rich').parentElement).toHaveTextContent('46');
     expect(screen.queryByRole('button', { name: /Open enrichment queue/ })).not.toBeInTheDocument();
-    expect(screen.getByText('Showing 99 entities. Search covers names, aliases, facts, tags, source keys, and route stops.')).toBeInTheDocument();
+    expect(screen.getByText('Showing 113 entities. Search covers names, aliases, facts, tags, source keys, and route stops.')).toBeInTheDocument();
   });
 });

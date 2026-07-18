@@ -492,7 +492,7 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
       templateKeys: [match.template.templateKey],
       templateLimit: 1,
       neighborhoodLimitPerCity: 4,
-      poiLimitPerCity: 6,
+      poiLimitPerCity: 3,
     }).then((retrieval) => {
       if (selectedRouteRequestRef.current !== requestId) return;
       const rawBytes = serializedByteLength(retrieval.context);

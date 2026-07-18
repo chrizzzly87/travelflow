@@ -120,7 +120,7 @@ describe('travel activity knowledge', () => {
     const pois = pack.entities.filter((entity) => entity.entityType === 'poi');
     const profiles = pois.map((entity) => getTravelActivityProfile(entity));
 
-    expect(pois).toHaveLength(32);
+    expect(pois).toHaveLength(46);
     expect(profiles.every(Boolean)).toBe(true);
     expect(getTravelActivityProfile(poi('th-phuket-karon-viewpoint'))).toMatchObject({
       primaryCategory: 'viewpoint',
@@ -157,7 +157,7 @@ describe('travel activity knowledge', () => {
     const statuses = pack.entities
       .filter((entity) => entity.entityType === 'poi')
       .map((entity) => getTravelActivityKnowledgeCoverage(entity)?.status);
-    expect(statuses.filter((status) => status === 'rich')).toHaveLength(32);
+    expect(statuses.filter((status) => status === 'rich')).toHaveLength(46);
     expect(statuses.filter((status) => status === 'usable')).toHaveLength(0);
     expect(statuses.filter((status) => status === 'starter')).toHaveLength(0);
 

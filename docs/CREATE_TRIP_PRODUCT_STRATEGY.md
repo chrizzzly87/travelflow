@@ -167,12 +167,12 @@ This is faster than putting every fact into a vector database, produces stable a
 ### Implemented Thailand checkpoint
 
 - The comparison step retrieves at most three templates, two neighborhoods per city, and two POIs per city.
-- Selecting one route retrieves a deeper, template-pinned context with up to four neighborhoods and six POIs per city.
+- Selecting one route retrieves a deeper, template-pinned context with up to four neighborhoods and three rich POIs per city, keeping the v14 catalogue below its raw context budget while preserving the minimum useful activity set.
 - The route reveal visibly reports source, dataset/retriever version, retrieval time, payload size, selected/source counts, and zero AI calls.
 - Opening the base compiles an editable trip locally and preserves the retrieval receipt plus canonical entity IDs.
 - The optional free-text adaptation sends one bounded request after route selection, accepts only allowlisted preference and known-place patches, validates the result twice, and supports review, apply, and undo before opening the trip.
-- All 32 current Thailand activity POIs expose the category-relevant structured duration, hours or operating context, pricing, booking, weather/effort, access, facilities, audience, practical, freshness, and source fields; absent or inapplicable data stays absent.
-- All 15 supported Thailand cities have at least one directly selectable city-break template; the v13 catalogue contains 27 templates spanning city breaks, one-base day trips, and country circuits.
+- All 46 current Thailand activity POIs expose the category-relevant structured duration, hours or operating context, pricing, booking, weather/effort, access, facilities, audience, practical, freshness, and source fields; absent or inapplicable data stays absent. Every supported city has at least three rich activity anchors.
+- All 15 supported Thailand cities have at least one directly selectable city-break template; the v14 catalogue contains 27 templates spanning city breaks, one-base day trips, and country circuits.
 - Every supported city has at least two selectable neighborhoods or editorial travel areas. The 15 newly covered areas explicitly label their non-administrative scope and carry base fit, walkability, evening energy, and concrete tradeoffs.
 - The admin travel-knowledge workspace opens on a searchable published catalogue and keeps ingestion candidates in a separate review queue.
 

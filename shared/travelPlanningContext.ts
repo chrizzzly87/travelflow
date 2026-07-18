@@ -213,6 +213,7 @@ const compactPlanningFact = (fact: TravelEntityFact): TravelEntityFact => {
     : undefined;
   return {
     ...fact,
+    id: fact.id.slice(0, 8),
     metadata: sourceUrl ? { sourceUrl } : {},
   };
 };

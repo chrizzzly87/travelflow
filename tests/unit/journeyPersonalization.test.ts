@@ -99,7 +99,7 @@ describe('JourneySpec personalization', () => {
     };
 
     expect(validateJourneyPersonalizationRequest(request)).toEqual({ valid: true, errors: [] });
-    expect(context.datasetVersion).toBe('2026.07.18-v13');
+    expect(context.datasetVersion).toBe('2026.07.18-v14');
     expect(context.templateKey).toBe('th-bangkok-long-weekend');
     expect(context.retrieverVersion).toBe(TRAVEL_PLANNING_RETRIEVER_VERSION);
     expect(context.entities.length).toBeLessThanOrEqual(48);
