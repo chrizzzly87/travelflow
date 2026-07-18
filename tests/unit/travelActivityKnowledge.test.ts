@@ -75,11 +75,11 @@ describe('travel activity knowledge', () => {
 
   it('keeps sparse POIs usable without inventing unavailable operational fields', () => {
     const knowledge = buildTravelActivityKnowledge(
-      poi('th-koh-samui-ang-thong'),
+      poi('th-hua-hin-night-market'),
       new Date('2026-07-18T00:00:00Z'),
     );
 
-    expect(knowledge?.summary?.value).toContain('marine-park excursion');
+    expect(knowledge?.summary?.value).toContain('evening food and shopping stop');
     expect(knowledge?.recommendedDuration).toBeUndefined();
     expect(knowledge?.openingHours).toBeUndefined();
     expect(knowledge?.admission).toBeUndefined();
@@ -140,6 +140,10 @@ describe('travel activity knowledge', () => {
       'th-ayutthaya-wat-mahathat',
       'th-sukhothai-si-satchanalai',
       'th-kanchanaburi-hellfire-pass',
+      'th-kanchanaburi-river-khwae-bridge',
+      'th-phuket-promthep-cape',
+      'th-koh-samui-ang-thong',
+      'th-pattaya-koh-larn',
     ];
     richSlugs.forEach((slug) => {
       expect(getTravelActivityKnowledgeCoverage(poi(slug))?.status).toBe('rich');
@@ -148,17 +152,17 @@ describe('travel activity knowledge', () => {
     const statuses = pack.entities
       .filter((entity) => entity.entityType === 'poi')
       .map((entity) => getTravelActivityKnowledgeCoverage(entity)?.status);
-    expect(statuses.filter((status) => status === 'rich')).toHaveLength(14);
-    expect(statuses.filter((status) => status === 'starter')).toHaveLength(18);
+    expect(statuses.filter((status) => status === 'rich')).toHaveLength(18);
+    expect(statuses.filter((status) => status === 'starter')).toHaveLength(14);
 
-    expect(getTravelActivityKnowledgeCoverage(poi('th-koh-samui-ang-thong'))).toMatchObject({
-      category: 'national_park',
-      planningTier: 'anchor',
+    expect(getTravelActivityKnowledgeCoverage(poi('th-hua-hin-night-market'))).toMatchObject({
+      category: 'market',
+      planningTier: 'supporting',
       status: 'starter',
       missingRequiredFactKeys: expect.arrayContaining([
+        'opening_hours.regular',
         'visit.duration_minutes',
-        'visit.weather_dependency',
-        'visit.physical_intensity',
+        'visit.practical_notes',
       ]),
     });
   });

@@ -5,14 +5,37 @@ import {
   loadTravelDestinationPack,
   normalizeTravelDestinationPack,
 } from '../../services/travelKnowledgeService';
+import { getTravelActivityKnowledgeCoverage } from '../../shared/travelActivityKnowledge';
 
 describe('travel knowledge service', () => {
   it('provides the versioned Thailand bundle immediately', () => {
     const pack = getBundledTravelDestinationPack('th');
-    expect(pack?.dataset?.version).toBe('2026.07.18-v8');
+    expect(pack?.dataset?.version).toBe('2026.07.18-v9');
     expect(pack?.entities).toHaveLength(84);
     expect(pack?.templates).toHaveLength(15);
     expect(pack?.entities.find((entity) => entity.canonicalSlug === 'th-bangkok')?.resolution).toBe('canonical');
+  });
+
+  it('keeps every route-template POI on the rich activity contract', () => {
+    const pack = getBundledTravelDestinationPack('th');
+    expect(pack).toBeDefined();
+
+    const poiSlugs = new Set(
+      pack?.templates.flatMap((template) => template.stops)
+        .filter((stop) => stop.entityType === 'poi')
+        .map((stop) => stop.entitySlug),
+    );
+    const routePois = pack?.entities.filter((entity) => poiSlugs.has(entity.canonicalSlug)) ?? [];
+
+    expect(routePois.map((entity) => entity.canonicalSlug)).toEqual(expect.arrayContaining([
+      'th-kanchanaburi-river-khwae-bridge',
+      'th-koh-samui-ang-thong',
+      'th-pattaya-koh-larn',
+      'th-phuket-promthep-cape',
+    ]));
+    routePois.forEach((entity) => {
+      expect(getTravelActivityKnowledgeCoverage(entity)).toMatchObject({ status: 'rich' });
+    });
   });
 
   it('keeps remote reads feature-gated until the additive schema is deployed', () => {
@@ -28,7 +51,7 @@ describe('travel knowledge service', () => {
 
     expect(result.source).toBe('bundled');
     expect(result.loadDurationMs).toBeGreaterThanOrEqual(0);
-    expect(result.pack.dataset?.version).toBe('2026.07.18-v8');
+    expect(result.pack.dataset?.version).toBe('2026.07.18-v9');
     expect(result.pack.locale).toBe('de-de');
   });
 

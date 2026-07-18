@@ -77,7 +77,7 @@ describe('pages/JourneyOverviewLabPage', () => {
 
     await user.click(screen.getAllByRole('button', { name: /Bangkok to Chiang Mai/i })[0]!);
     expect(screen.getByText('journeyLab.transfer.duration')).toBeInTheDocument();
-    expect(screen.getByText('2026.07.18-v8')).toBeInTheDocument();
+    expect(screen.getByText('2026.07.18-v9')).toBeInTheDocument();
     expect(screen.getByText('th-first-timer-bangkok-north-beach')).toBeInTheDocument();
     expect(trackEvent).toHaveBeenCalledWith(
       'journey_lab__transfer--select',
