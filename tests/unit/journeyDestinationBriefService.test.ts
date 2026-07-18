@@ -58,7 +58,7 @@ const spec: JourneySpec = {
   },
   knowledgeContext: {
     datasetKey: 'thailand-v1',
-    datasetVersion: '2026.07.18-v11',
+    datasetVersion: '2026.07.18-v12',
     templateKey: 'th-bangkok-long-weekend',
     templateVersion: 1,
   },
@@ -76,7 +76,7 @@ describe('journey destination brief service', () => {
         support: {
           sourceKey: 'tat_official',
           confidence: 0.9,
-          observedAt: '2026-07-18T08:10:00Z',
+          observedAt: '2026-07-18T10:04:00Z',
         },
       },
       relativeCostLevel: { value: 3, unit: '1_to_5' },

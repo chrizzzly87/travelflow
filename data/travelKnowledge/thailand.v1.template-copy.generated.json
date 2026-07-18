@@ -1,5 +1,5 @@
 {
-  "datasetVersion": "2026.07.18-v11",
+  "datasetVersion": "2026.07.18-v12",
   "templates": {
     "th-bangkok-long-weekend": {
       "en": {
@@ -448,6 +448,366 @@
         "tradeoffs": [
           "Erawan ist ein langer, aktiver Ausflug",
           "Historische Orte brauchen sorgfältige Einordnung"
+        ]
+      }
+    },
+    "th-chiang-rai-art-temples": {
+      "en": {
+        "locale": "en",
+        "title": "Chiang Rai in three colors",
+        "summary": "Use a quiet northern base to compare Chiang Rai's white and blue temple art with the darker Baan Dam collection.",
+        "highlights": [
+          "White Temple detail",
+          "Blue Temple color",
+          "Baan Dam art and architecture"
+        ],
+        "tradeoffs": [
+          "The headline sites are dispersed",
+          "Late dry-season air quality needs a current check"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Chiang Rai in drei Farben",
+        "summary": "Nutze eine ruhige Basis im Norden und vergleiche Chiang Rais weiße und blaue Tempelkunst mit der dunkleren Sammlung von Baan Dam.",
+        "highlights": [
+          "Details am White Temple",
+          "Farben des Blue Temple",
+          "Kunst und Architektur in Baan Dam"
+        ],
+        "tradeoffs": [
+          "Die wichtigsten Orte liegen auseinander",
+          "Die Luftqualität am Ende der Trockenzeit muss aktuell geprüft werden"
+        ]
+      }
+    },
+    "th-ayutthaya-overnight-heritage": {
+      "en": {
+        "locale": "en",
+        "title": "Ayutthaya after the day trips leave",
+        "summary": "Stay overnight to spread the former capital's ruins across cooler hours and leave space for its food traditions.",
+        "highlights": [
+          "Historical Park at an easier pace",
+          "Wat Mahathat",
+          "An evening beyond the excursion rush"
+        ],
+        "tradeoffs": [
+          "One night still requires a selective temple list",
+          "The monuments are more dispersed than a single compact sight"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Ayutthaya, wenn die Tagesgäste gehen",
+        "summary": "Bleib über Nacht, verteile die Ruinen der ehemaligen Hauptstadt auf kühlere Stunden und lass Raum für ihre Esskultur.",
+        "highlights": [
+          "Historical Park in ruhigerem Tempo",
+          "Wat Mahathat",
+          "Ein Abend nach dem Ausflugsandrang"
+        ],
+        "tradeoffs": [
+          "Auch eine Nacht verlangt eine klare Tempelauswahl",
+          "Die Monumente liegen weiter auseinander als eine einzelne Sehenswürdigkeit"
+        ]
+      }
+    },
+    "th-sukhothai-cycling-heritage": {
+      "en": {
+        "locale": "en",
+        "title": "Sukhothai at bicycle pace",
+        "summary": "Give the early capital two unhurried days for its landscaped historical park and an optional quieter heritage extension.",
+        "highlights": [
+          "Cycling-scale historical park",
+          "Temples and water landscapes",
+          "Optional Si Satchanalai context"
+        ],
+        "tradeoffs": [
+          "The quieter setting offers little big-city evening energy",
+          "Si Satchanalai needs a separate transport plan"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Sukhothai im Fahrradrhythmus",
+        "summary": "Gib der frühen Hauptstadt zwei ruhige Tage für ihren landschaftlich geprägten Historical Park und eine optionale, stillere Kulturerbe-Erweiterung.",
+        "highlights": [
+          "Historical Park im Fahrradrhythmus",
+          "Tempel und Wasserlandschaften",
+          "Optionaler Kontext in Si Satchanalai"
+        ],
+        "tradeoffs": [
+          "Die ruhige Umgebung bietet wenig großstädtisches Abendleben",
+          "Si Satchanalai braucht eine eigene Transportplanung"
+        ]
+      }
+    },
+    "th-kanchanaburi-river-history": {
+      "en": {
+        "locale": "en",
+        "title": "Kanchanaburi, river and remembrance",
+        "summary": "Build a reflective riverside stay around the River Khwae story, with Hellfire Pass only when time, transport, and energy allow.",
+        "highlights": [
+          "Riverside base",
+          "River Khwae history",
+          "Optional memorial walking trail"
+        ],
+        "tradeoffs": [
+          "The subject matter deserves time and context",
+          "Hellfire Pass consumes a substantial travel block"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Kanchanaburi zwischen Fluss und Erinnerung",
+        "summary": "Plane einen reflektierten Aufenthalt am Fluss rund um die Geschichte des River Khwae und nimm Hellfire Pass nur dazu, wenn Zeit, Transport und Energie passen.",
+        "highlights": [
+          "Basis am Fluss",
+          "Geschichte des River Khwae",
+          "Optionaler Erinnerungsweg"
+        ],
+        "tradeoffs": [
+          "Das Thema verdient Zeit und Einordnung",
+          "Hellfire Pass beansprucht einen großen Reiseblock"
+        ]
+      }
+    },
+    "th-krabi-beach-and-limestone": {
+      "en": {
+        "locale": "en",
+        "title": "Krabi between cliffs and sea",
+        "summary": "Use Ao Nang as the practical base, give Railay a full block, and keep one boat day conditional on marine weather.",
+        "highlights": [
+          "Ao Nang base",
+          "Railay limestone coast",
+          "Optional Ko Hong boat day"
+        ],
+        "tradeoffs": [
+          "Boat access makes the plan weather-sensitive",
+          "Ao Nang is convenient rather than secluded"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Krabi zwischen Felsen und Meer",
+        "summary": "Nutze Ao Nang als praktische Basis, gib Railay einen ganzen Block und mache einen Bootstag vom Meereswetter abhängig.",
+        "highlights": [
+          "Basis in Ao Nang",
+          "Kalksteinküste von Railay",
+          "Optionaler Bootstag nach Ko Hong"
+        ],
+        "tradeoffs": [
+          "Die Bootswege machen den Plan wetterabhängig",
+          "Ao Nang ist praktisch, aber nicht abgeschieden"
+        ]
+      }
+    },
+    "th-koh-samui-beach-villages": {
+      "en": {
+        "locale": "en",
+        "title": "Samui, choose your coast",
+        "summary": "Anchor the island stay around Bophut's walkable evenings and pair it with either lively Chaweng or calmer Lamai.",
+        "highlights": [
+          "Bophut food and market evenings",
+          "A coast matched to your rhythm",
+          "Unscheduled beach time"
+        ],
+        "tradeoffs": [
+          "Island road transfers add up quickly",
+          "The best coast depends on nightlife and quiet preferences"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Samui, wähle deine Küste",
+        "summary": "Richte den Inselaufenthalt auf Bophuts gut begehbare Abende aus und kombiniere ihn entweder mit dem lebhaften Chaweng oder dem ruhigeren Lamai.",
+        "highlights": [
+          "Essen und Märkte in Bophut",
+          "Eine Küste im passenden Rhythmus",
+          "Unverplante Strandzeit"
+        ],
+        "tradeoffs": [
+          "Straßentransfers auf der Insel summieren sich schnell",
+          "Die beste Küste hängt von Nachtleben und Ruhebedürfnis ab"
+        ]
+      }
+    },
+    "th-koh-phangan-wellness-and-beaches": {
+      "en": {
+        "locale": "en",
+        "title": "Phangan beyond the party calendar",
+        "summary": "Keep the island slow with a Srithanu wellness base, a Thong Sala food stop, and a weather-aware nature option.",
+        "highlights": [
+          "Srithanu wellness rhythm",
+          "Thong Sala food and markets",
+          "Optional Than Sadet nature day"
+        ],
+        "tradeoffs": [
+          "Event dates can transform prices and atmosphere",
+          "Cove-to-cove road travel is slower than the map suggests"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Phangan jenseits des Partykalenders",
+        "summary": "Halte den Inselrhythmus mit einer Wellness-Basis in Srithanu, einem Food-Stopp in Thong Sala und einer wetterabhängigen Naturoption langsam.",
+        "highlights": [
+          "Wellness-Rhythmus in Srithanu",
+          "Essen und Märkte in Thong Sala",
+          "Optionaler Naturtag in Than Sadet"
+        ],
+        "tradeoffs": [
+          "Eventtermine können Preise und Atmosphäre stark verändern",
+          "Straßenwege zwischen den Buchten dauern länger als die Karte vermuten lässt"
+        ]
+      }
+    },
+    "th-koh-tao-dive-and-slow": {
+      "en": {
+        "locale": "en",
+        "title": "Koh Tao above and below water",
+        "summary": "Balance Sairee's social energy with a quieter southern base option and one condition-dependent island or snorkeling day.",
+        "highlights": [
+          "Sairee sunset",
+          "Quieter Chalok option",
+          "Optional Ko Nang Yuan day"
+        ],
+        "tradeoffs": [
+          "Ferries and marine activities depend on conditions",
+          "Hilly roads make base choice unusually important"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Koh Tao über und unter Wasser",
+        "summary": "Verbinde Sairees gesellige Energie mit einer ruhigeren Option im Süden und einem wetterabhängigen Insel- oder Schnorcheltag.",
+        "highlights": [
+          "Sonnenuntergang in Sairee",
+          "Ruhigere Option in Chalok",
+          "Optionaler Tag auf Ko Nang Yuan"
+        ],
+        "tradeoffs": [
+          "Fähren und Meeresaktivitäten hängen von den Bedingungen ab",
+          "Die hügeligen Straßen machen die Wahl der Basis besonders wichtig"
+        ]
+      }
+    },
+    "th-pattaya-city-and-island": {
+      "en": {
+        "locale": "en",
+        "title": "Pattaya with an island counterpoint",
+        "summary": "Use the resort city's evening supply but reserve the clearest day for a deliberate Koh Larn beach escape.",
+        "highlights": [
+          "Flexible city evenings",
+          "Koh Larn beach block",
+          "Short break from Bangkok"
+        ],
+        "tradeoffs": [
+          "The mainland atmosphere is high intensity",
+          "Ferry queues and island transport reduce usable beach time"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Pattaya mit Inselkontrast",
+        "summary": "Nutze die große Abendauswahl der Resortstadt, reserviere aber den klarsten Tag bewusst für einen Strandausflug nach Koh Larn.",
+        "highlights": [
+          "Flexible Abende in der Stadt",
+          "Strandblock auf Koh Larn",
+          "Kurze Auszeit von Bangkok"
+        ],
+        "tradeoffs": [
+          "Die Atmosphäre auf dem Festland ist sehr intensiv",
+          "Fährschlangen und Inseltransport verkürzen die nutzbare Strandzeit"
+        ]
+      }
+    },
+    "th-hua-hin-beach-and-market": {
+      "en": {
+        "locale": "en",
+        "title": "Hua Hin without a checklist",
+        "summary": "Keep the Gulf break simple: beach downtime, seafood, wellness, and one lively night-market anchor.",
+        "highlights": [
+          "Low-change beach rhythm",
+          "Hua Hin Night Market",
+          "Wellness and seafood time"
+        ],
+        "tradeoffs": [
+          "The spread-out coast rewards a well-chosen hotel",
+          "This route prioritizes rest over headline sightseeing"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Hua Hin ohne Checkliste",
+        "summary": "Halte die Auszeit am Golf einfach: Strandpausen, Seafood, Wellness und ein lebhafter Abend auf dem Nachtmarkt.",
+        "highlights": [
+          "Strandrhythmus ohne viele Wechsel",
+          "Hua Hin Night Market",
+          "Zeit für Wellness und Seafood"
+        ],
+        "tradeoffs": [
+          "An der langen Küste lohnt sich eine gut gewählte Unterkunft",
+          "Diese Route priorisiert Erholung vor großen Sehenswürdigkeiten"
+        ]
+      }
+    },
+    "th-pai-mountain-reset": {
+      "en": {
+        "locale": "en",
+        "title": "Pai, slow mountain reset",
+        "summary": "Use the small northern town for café time, countryside pauses, and one carefully timed canyon outing rather than constant touring.",
+        "highlights": [
+          "Unhurried town rhythm",
+          "Pai Canyon viewpoint",
+          "Mountain and wellness time"
+        ],
+        "tradeoffs": [
+          "The winding transfer is a real constraint",
+          "Scooter-dependent plans need an alternative for inexperienced riders"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Pai als langsame Berg-Auszeit",
+        "summary": "Nutze die kleine Stadt im Norden für Cafés, Pausen im Umland und einen gut getimten Ausflug zum Canyon statt für ständiges Sightseeing.",
+        "highlights": [
+          "Ruhiger Rhythmus im Ort",
+          "Aussicht am Pai Canyon",
+          "Zeit für Berge und Wellness"
+        ],
+        "tradeoffs": [
+          "Die kurvenreiche Anreise ist eine echte Einschränkung",
+          "Für rollerabhängige Pläne braucht es eine Alternative für unerfahrene Fahrer"
+        ]
+      }
+    },
+    "th-koh-lanta-slow-island": {
+      "en": {
+        "locale": "en",
+        "title": "Koh Lanta, room to slow down",
+        "summary": "Base near Long Beach, preserve a cultural half-day for Lanta Old Town, and keep the national park conditional on weather and road tolerance.",
+        "highlights": [
+          "Long Beach base",
+          "Lanta Old Town",
+          "Optional national-park day"
+        ],
+        "tradeoffs": [
+          "The long island road makes location important",
+          "Marine and park access changes with the monsoon season"
+        ]
+      },
+      "de": {
+        "locale": "de",
+        "title": "Koh Lanta mit Raum zum Langsamerwerden",
+        "summary": "Wähle eine Basis nahe Long Beach, halte einen kulturellen Halbtag für Lanta Old Town frei und mache den Nationalpark von Wetter und Straßentoleranz abhängig.",
+        "highlights": [
+          "Basis am Long Beach",
+          "Lanta Old Town",
+          "Optionaler Nationalparktag"
+        ],
+        "tradeoffs": [
+          "Die lange Inselstraße macht die Lage wichtig",
+          "Meeres- und Parkzugänge verändern sich mit der Monsunzeit"
         ]
       }
     }
