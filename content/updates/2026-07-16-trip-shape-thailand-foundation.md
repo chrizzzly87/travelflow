@@ -13,10 +13,10 @@ summary: "A hidden route-first planner now compares trusted Thailand trip concep
 ## Changes
 - [ ] [Internal] 🧭 Added a hidden five-step trip-shape flow for city breaks, one-base day trips, and Thailand circuits.
 - [ ] [Internal] 🗺️ Added canonical cities and neighborhoods with immediate, explainable route comparison and an editable plan handoff.
-- [ ] [Internal] 🇹🇭 Added a versioned Thailand knowledge pack with 84 canonical places, 388 sourced facts, 420 evidence-aware tags, localized route templates, and activity coverage for every required route base.
+- [ ] [Internal] 🇹🇭 Added a versioned Thailand knowledge pack with 84 canonical places, 427 sourced facts, 420 evidence-aware tags, localized route templates, and activity coverage for every required route base.
 - [ ] [Internal] ⚡ Added deterministic route matching, sourced transfer ranges, and instant knowledge-enriched trips so the first useful answer no longer waits for itinerary generation.
 - [ ] [Internal] 🧾 Added a visible fast-path receipt with retrieval time, payload size, dataset version, selected catalogue counts, and AI-call count.
-- [ ] [Internal] 🏛️ Added category-aware hours, pricing, duration, booking, weather, effort, access, facilities, audience, freshness, and source fields for fourteen researched activities without inventing missing data.
+- [ ] [Internal] 🏛️ Added category-aware hours, pricing, duration, booking, weather, effort, access, facilities, audience, freshness, and source fields for eighteen researched activities without inventing missing data.
 - [ ] [Internal] 🗂️ Added a searchable admin catalogue for published places, facts, tags, templates, source evidence, freshness, and honest rich/usable/starter coverage gaps alongside the review queue.
 - [ ] [Internal] ⏱️ Added cached country-knowledge indexes, browser-visible stage latency telemetry, dataset-safe route reveals, compact initial comparison payloads, and repeatable CPU performance guardrails for every supported trip shape.
 - [ ] [Internal] 📚 Added compact destination briefs and an instant route preview with sourced city guidance, ranked neighborhoods and activities, signature dishes, seasonal context, and evidence-aware audience signals.

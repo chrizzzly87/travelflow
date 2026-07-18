@@ -38,7 +38,7 @@ describe('travel planning context', () => {
 
     expect(context.version).toBe(TRAVEL_PLANNING_CONTEXT_VERSION);
     expect(context.retrieverVersion).toBe(TRAVEL_PLANNING_RETRIEVER_VERSION);
-    expect(context.pack.dataset?.version).toBe('2026.07.18-v8');
+    expect(context.pack.dataset?.version).toBe('2026.07.18-v9');
     expect(context.pack.locale).toBe('de');
     expect(context.pack.templates).toHaveLength(2);
     expect(context.pack.templates.map((template) => template.templateKey)).toEqual([
