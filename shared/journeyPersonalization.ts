@@ -111,6 +111,11 @@ export interface JourneyPersonalizationValidationResult {
   errors: string[];
 }
 
+export interface JourneyPersonalizationNormalizationResult {
+  value: unknown;
+  repairs: string[];
+}
+
 const PACE_SET = new Set<string>(JOURNEY_PACE_VALUES);
 const PLACE_ROLE_SET = new Set<string>(JOURNEY_PERSONALIZATION_PLACE_ROLE_VALUES);
 const TRANSPORT_SET = new Set<string>(MODEL_TRANSPORT_MODE_VALUES);
@@ -398,6 +403,35 @@ export const validateJourneyPersonalizationProposal = (
   }
 
   return { valid: errors.length === 0, errors };
+};
+
+export const normalizeJourneyPersonalizationProposalForContext = (
+  value: unknown,
+  context: JourneyPersonalizationContextV1,
+): JourneyPersonalizationNormalizationResult => {
+  if (!isRecord(value) || !Array.isArray(value.placeDecisions)) {
+    return { value, repairs: [] };
+  }
+
+  const entitiesById = new Map(context.entities.map((entity) => [entity.entityId, entity]));
+  const repairs: string[] = [];
+  const placeDecisions = value.placeDecisions.map((rawDecision) => {
+    if (!isRecord(rawDecision)
+      || typeof rawDecision.entityId !== 'string'
+      || rawDecision.role !== 'must_visit') {
+      return rawDecision;
+    }
+    const entity = entitiesById.get(rawDecision.entityId);
+    if (entity?.entityType !== 'neighborhood') return rawDecision;
+
+    repairs.push(`neighborhood_must_visit_to_consider:${entity.entityId}`);
+    return { ...rawDecision, role: 'consider' };
+  });
+
+  return {
+    value: { ...value, placeDecisions },
+    repairs,
+  };
 };
 
 export const applyJourneyPersonalizationProposal = (
