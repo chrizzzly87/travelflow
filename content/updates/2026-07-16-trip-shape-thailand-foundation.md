@@ -50,4 +50,4 @@ summary: "A route-first Thailand planner compares trusted trip concepts before o
 - [ ] [Internal] 🧩 Recovered safe neighbourhood personalization suggestions when an AI treated an area as one schedulable activity, while retaining catalogue validation for invented data.
 - [ ] [Internal] 🧭 Expanded the zero-AI Thailand catalogue to twenty-seven route templates so every supported city has a directly selectable city-break concept with explicit highlights and tradeoffs.
 - [ ] [Internal] 🏘️ Added source-backed, candid base-area choices for every supported Thailand city, including walkability, evening energy, fit, and explicit tradeoffs.
-- [ ] [Internal] 🧭 Kept a selected neighborhood as a city-level route refinement instead of incorrectly filtering out that city's premade routes.
+- [ ] [Internal] 🧭 Kept a selected neighborhood as a city-level route refinement in both local and live catalogue retrieval instead of incorrectly filtering out that city's premade routes.

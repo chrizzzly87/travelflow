@@ -128,6 +128,9 @@ describe('travel knowledge operations schema', () => {
     expect(contextFunction).toContain('public.get_active_travel_destination_pack');
     expect(contextFunction).toContain('requested.neighborhood_limit');
     expect(contextFunction).toContain('requested.poi_limit');
+    expect(contextFunction).toContain('route_place_ancestry(place_slug, entity, depth)');
+    expect(contextFunction).toContain('route_place_ancestry.place_slug = locked_place.canonical_slug');
+    expect(contextFunction).toContain("route_place_ancestry.entity ->> 'entityType' = 'city'");
     expect(contextFunction).not.toContain('travel_source_snapshots');
     expect(contextFunction).not.toContain('travel_change_candidates');
     expect(sql).toContain('grant execute on function public.get_active_travel_planning_context');
