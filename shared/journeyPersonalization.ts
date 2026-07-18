@@ -378,8 +378,13 @@ export const validateJourneyPersonalizationProposal = (
       }
     }
     if (Array.isArray(value.placeDecisions)) {
+      const decidedEntityIds = new Set<string>();
       for (const rawDecision of value.placeDecisions) {
         if (!isRecord(rawDecision) || typeof rawDecision.entityId !== 'string') continue;
+        if (decidedEntityIds.has(rawDecision.entityId)) {
+          errors.push(`Personalization entity ${rawDecision.entityId} has duplicate decisions.`);
+        }
+        decidedEntityIds.add(rawDecision.entityId);
         const entity = entitiesById.get(rawDecision.entityId);
         if (!entity) {
           errors.push(`Personalization entity ${rawDecision.entityId} is outside the retrieved context.`);

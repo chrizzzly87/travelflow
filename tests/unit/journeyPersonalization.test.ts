@@ -164,6 +164,23 @@ describe('JourneySpec personalization', () => {
     ]));
   });
 
+  it('rejects conflicting duplicate decisions for the same catalogue entity', () => {
+    const { context } = fixture();
+    const poi = context.entities.find((entity) => entity.entityType === 'poi');
+    if (!poi) throw new Error('Bangkok POI fixture is unavailable.');
+    const proposal = proposalFor(context.datasetVersion, context.templateKey, [
+      { entityId: poi.entityId, role: 'must_visit', reason: 'Keep this anchor.' },
+      { entityId: poi.entityId, role: 'avoid', reason: 'Conflicting duplicate.' },
+    ]);
+
+    expect(validateJourneyPersonalizationProposal(proposal, context)).toMatchObject({
+      valid: false,
+      errors: expect.arrayContaining([
+        `Personalization entity ${poi.entityId} has duplicate decisions.`,
+      ]),
+    });
+  });
+
   it('requires the zero sentinel when the transfer-time constraint is unchanged', () => {
     const { context } = fixture();
     const proposal = proposalFor(context.datasetVersion, context.templateKey);

@@ -39,4 +39,5 @@ summary: "A route-first Thailand planner compares trusted trip concepts before o
 - [ ] [Internal] 🎨 Scoped the editorial decision-card system to route examples and high-level choices while keeping the working planner visually restrained.
 - [ ] [Internal] 🩺 Distinguished exhausted AI-provider quota from generic request failures in generation telemetry and retry diagnostics.
 - [ ] [Internal] 🪄 Added optional one-call route adaptation with schema-constrained output, catalogue-only place decisions, review, apply, undo, an explicit adapted-plan state, and a visible model receipt without regenerating the full itinerary.
+- [ ] [Internal] 🧯 Rejected conflicting duplicate catalogue decisions before an AI personalization proposal can reach the trip.
 - [ ] [Internal] 🧰 Kept legacy trips with reused transfer identifiers loadable by assigning collision-safe route and journey leg identifiers at the presentation boundary.
