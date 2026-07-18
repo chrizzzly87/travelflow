@@ -1,8 +1,8 @@
 # Travel knowledge deployment runbook
 
-Status: schema, Thailand v10 source-backed fast-path dataset, immutable artifact, provenance guards, and atomic active pointer applied and verified in production on 2026-07-18.
+Status: schema, Thailand v11 source-backed fast-path dataset, immutable artifact, provenance guards, and atomic active pointer applied and verified in production on 2026-07-18.
 
-This runbook deploys the additive travel-knowledge schema and versioned Thailand datasets without deleting or replacing existing TravelFlow tables. Thailand v9 remains the verified immediate rollback target for the active v10 release; earlier artifacts are also retained.
+This runbook deploys the additive travel-knowledge schema and versioned Thailand datasets without deleting or replacing existing TravelFlow tables. Thailand v10 remains the verified immediate rollback target for the active v11 release; earlier artifacts are also retained.
 
 ## Production deployment record
 
@@ -35,6 +35,7 @@ Applied migrations:
 - `20260718061621 serialize_legacy_concurrent_trip_upserts`
 - `20260718072555 backup_travel_knowledge_post_v9_20260718t072025z`
 - `20260718074101 guard_travel_dataset_provenance_v10`
+- `20260718084324 backup_travel_knowledge_pre_v11_20260718t084050z`
 
 The initial foundation applied only the isolated travel-knowledge section of `docs/supabase.sql`, followed by the exact generated Thailand seed. Later operations and private-bucket migrations were also narrow and additive; the rest of the documented schema was not replayed.
 
@@ -157,6 +158,29 @@ Thailand v10 enriches four more high-value POIs, adds a coverage-prioritized adm
 
 The v10 publish passed staged count, checksum, timestamp, private-object, source-run, and review-candidate checks before activation. Both representative planning contexts stayed below the 100 KB guardrail. The schema migration removed direct public, anonymous, and authenticated access to all twelve legacy normalized travel tables and their legacy read RPCs while preserving the public active-pack and suggestion projections.
 
+### Thailand v11 complete activity-catalogue activation
+
+Thailand v11 completes the rich structured contract for all 32 Thailand activity POIs. The full immutable catalogue retains source-backed hours or operating context, pricing, booking guidance, weather and effort, access and facilities, audience fit, practical notes, freshness, and per-field provenance. The comparison and selected-route RPCs still project only route-relevant fields so the richer catalogue does not turn trip creation back into a large prompt.
+
+- repository commit: `57b71adb3ce530e84ec368d19e35c9fe6377bb7d`
+- dataset version: `9f25f4d9-3c00-4902-b574-d7f7c81a714c`
+- payload: `07c58f48-820a-461e-b913-462f63cdce7f`
+- artifact: `f6a9a4c5-3274-4ff0-a319-c3afbd21f312`
+- activation: `af4809f6-3dfd-4b7c-82b2-6da7a93ad818` at `2026-07-18T08:44:53.784058Z`
+- dataset checksum: `fa904d7d53f100e32132b97bb94678972effc80758243c207bc97f48b0325adf`
+- pack checksum: `facf4a6b00ec0d7f600a8a21fdeaec33b274037ecb55400437a3e0796cb1b73b`
+- seed checksum: `4bb4f95f469da9501bfff34ec46ad2471dd475ebff5b43d05885ff52def82b08`
+- artifact checksum: `5dde5fd858dc504d8a35946447cec1beaed8e2833ff9ed5bf3fd1730a41d6f20`
+- active payload: 740,547 bytes; 84 entities, 571 facts, 420 entity tags, 15 templates, and 16 route legs
+- activity coverage: 32 POIs, 32 rich, 0 usable, 0 starter, 99% average coverage; remaining gaps are optional or honestly inapplicable
+- anonymous production-budget circuit comparison context: 94,153 compact JSON bytes, 30 selected entities, 3 templates
+- anonymous selected heritage-route context: 95,932 compact JSON bytes, 26 selected entities, 1 template
+- anonymous active-pack read: version `2026.07.18-v11`, 84 entities, 15 templates
+- public mutation posture: anonymous callers cannot select or mutate artifact tables and cannot execute the publication RPC
+- immediate rollback target: v10 artifact `38122ce8-4187-433f-b0c3-f94dcccdb46e`; its superseded dataset, retired payload, and checksum-addressable bundle remain retained
+
+The v11 release is content-only. It used the existing staged-artifact validation and atomic publish transaction after the new private checkpoint was independently checksum-verified. Both production retrieval budgets remain below 100 KB even though the complete catalogue gained 107 sourced facts.
+
 ## Sources of truth
 
 - Additive schema and policies: `docs/supabase.sql`
@@ -230,6 +254,18 @@ Immediately before the v10 provenance and access migration, a fourth private tra
 - `public`, `anon`, and `authenticated` have no access to the backup schema; `service_role` has read access
 - source tables were unchanged after the checkpoint verification completed
 
+Immediately before the v11 artifact was staged, a fifth private checkpoint captured the active v10 state through the Supabase connector:
+
+- backup schema: `tf_bak_tk_20260718t084050z`
+- migration: `20260718084324 backup_travel_knowledge_pre_v11_20260718t084050z`
+- 20 `public.travel_*` tables and 1,142 rows copied in one migration transaction
+- zero row-count or deterministic JSON-row checksum mismatches across 20/20 copied tables
+- 13 relevant function definitions plus policy, grant, trigger, constraint, index, default-privilege, and private Storage metadata captured
+- the private snapshot bucket contained 11 objects and retained its two restrictive policies
+- all 29 checkpoint tables have RLS enabled with no public policies
+- `public`, `anon`, and `authenticated` have no usage permission on the backup schema; `service_role` has read-only table access
+- active v10 artifact `38122ce8-4187-433f-b0c3-f94dcccdb46e` was recorded before the v11 write
+
 ## Apply or update
 
 The SQL is designed to be additive and idempotent. For a new environment, apply the isolated travel-knowledge schema first, then the generated seed. Do not replay unrelated sections of `docs/supabase.sql` merely to install this feature.
@@ -243,7 +279,7 @@ For the Dashboard path, extract and run only the travel-knowledge section of `do
 
 ## Verify
 
-Expected active Thailand v10 counts:
+Expected active Thailand v11 counts:
 
 ```sql
 select dataset_key, version, entity_count, fact_count, template_count
@@ -252,34 +288,34 @@ where dataset_key = 'thailand-core';
 
 select entity_type, count(*)
 from public.travel_entities
-where dataset_version = '2026.07.18-v10'
+where dataset_version = '2026.07.18-v11'
 group by entity_type
 order by entity_type;
 
 select count(*) as fact_count
 from public.travel_entity_facts fact
 join public.travel_entities entity on entity.id = fact.entity_id
-where entity.dataset_version = '2026.07.18-v10';
+where entity.dataset_version = '2026.07.18-v11';
 
 select count(*) as tag_count
 from public.travel_entity_tags tag
 join public.travel_entities entity on entity.id = tag.entity_id
-where entity.dataset_version = '2026.07.18-v10';
+where entity.dataset_version = '2026.07.18-v11';
 
 select count(*) as template_count
 from public.travel_templates
-where dataset_version = '2026.07.18-v10';
+where dataset_version = '2026.07.18-v11';
 
 select count(*) as route_leg_count
 from public.travel_template_legs leg
 join public.travel_templates template on template.id = leg.template_id
-where template.dataset_version = '2026.07.18-v10';
+where template.dataset_version = '2026.07.18-v11';
 ```
 
 The repository validator expects:
 
 - 84 entities: 1 country, 6 regions, 15 cities, 30 neighborhoods, and 32 POIs
-- 464 facts
+- 571 facts
 - 420 tags
 - 15 templates
 - 16 route legs
@@ -330,7 +366,7 @@ Deploy this flag separately from the schema change. The read service remains ver
 
 ## Advisor follow-ups
 
-No travel-specific advisor error, missing-RLS issue, missing-policy issue, or mutable-function-search-path issue remains after v10. Direct public, anonymous, and authenticated grants on the legacy normalized travel tables were revoked; external reads now go through the current immutable active payload projections. The two restrictive Storage denial policies remain defense-in-depth denials, not grants, and their predicates explicitly exclude the snapshot bucket.
+No travel-specific advisor error, missing-RLS issue, missing-policy issue, or mutable-function-search-path issue remains after v11. Direct public, anonymous, and authenticated grants on the legacy normalized travel tables remain revoked; external reads go through the current immutable active payload projections. The two restrictive Storage denial policies remain defense-in-depth denials, not grants, and their predicates explicitly exclude the snapshot bucket.
 
 The operations migration added the five previously missing foreign-key indexes and changed travel admin policies to use init-plan-safe auth expressions. Supabase no longer reports those two finding classes for the travel tables.
 
@@ -342,7 +378,7 @@ Fresh unused-index notices are expected while the operational tables are empty a
 
 The four guarded admin write RPCs for staging, publishing, rollback, and review intentionally remain authenticated `SECURITY DEFINER` functions. Public and anonymous execution is revoked; each has an empty `search_path`, disables caller RLS only inside the guarded transaction, and repeats an admin-or-service-role authorization check. Supabase therefore reports four expected authenticated-definer warnings. Public pack and entity-suggestion RPCs remain `SECURITY INVOKER`. The foreign-key indexes reported immediately after the activation migration were added before rollout.
 
-The advisor also reports anonymous-sign-in warnings whose matched text is stored policy metadata inside the private backup schema. Those are snapshot false positives rather than enabled authentication behavior. Backup snapshot tables intentionally have no primary keys and account for most of the informational performance notices; they are immutable recovery copies, not query-serving application tables.
+The advisor also reports anonymous-sign-in warnings whose matched text is stored policy metadata inside private backup schemas. Those are snapshot false positives rather than enabled authentication behavior. The v11 checkpoint additionally produces informational `RLS enabled, no policy` notices by design: its schema is unavailable to public, anonymous, and authenticated roles, and the immutable tables intentionally have no public policies. Backup snapshot tables intentionally have no primary keys and account for most informational performance notices; they are recovery copies, not query-serving application tables.
 
 The admin review write RPC intentionally remains an authenticated `SECURITY DEFINER` function because direct decision-table inserts are revoked and decision plus candidate status must commit atomically. It has an empty `search_path`, explicit authenticated-only execution, non-null/non-anonymous identity checks, and an internal admin-role check. The candidate-list and review-summary RPCs use `SECURITY INVOKER` so reads continue through table grants and RLS.
 

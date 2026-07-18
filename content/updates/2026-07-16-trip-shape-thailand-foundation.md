@@ -44,3 +44,4 @@ summary: "A route-first Thailand planner compares trusted trip concepts before o
 - [ ] [Internal] 🔐 Made the immutable active artifact the sole public Thailand catalogue, removed stale normalized-table fallbacks, and rejected future or internally inconsistent source timestamps before staging.
 - [ ] [Internal] 💾 Captured and checksum-verified a private post-v9 checkpoint of all travel tables, functions, policies, grants, triggers, indexes, and knowledge storage metadata before the v10 database changes.
 - [ ] [Internal] 🧹 Hid the admin enrichment-queue action when every activity already meets the rich contract while continuing to surface honest optional-field gaps.
+- [ ] [Internal] 🚀 Published the complete v11 Thailand activity catalogue through an atomic active pointer after a private 20-table checksum checkpoint, retaining v10 as the immediate rollback target.
