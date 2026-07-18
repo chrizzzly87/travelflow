@@ -201,6 +201,27 @@ Thailand v12 adds twelve city-break concepts so every one of the fifteen support
 
 The v12 activation changed only immutable content and the atomic active pointer. The live pointer, published payload, activation ledger, representative planning contexts, and retained v11 rollback artifact were verified through the TravelFlow Supabase project after publication.
 
+### Current TravelFlow production knowledge activation — Thailand v13 (2026-07-18)
+
+Thailand v13 adds fifteen candid, source-backed planning areas across the seven cities that previously had no directly selectable neighborhoods. Every supported city now has at least two base-area choices. The new records explicitly identify themselves as editorial travel areas rather than administrative boundaries and carry base fit, walkability, evening energy, tradeoffs, official Tourism Authority of Thailand references, and curated OpenStreetMap location references.
+
+- repository commit: `5ffa3290b071908a85e470628c976392beb414f5`
+- dataset version: `23545764-61d9-4eaf-9d76-994ac2b678ca`
+- payload: `5395b74a-5013-449e-820e-8d71f779d61f`
+- artifact: `c5ee4fc0-0984-4329-a604-bbd3b9d7f1e5`
+- activation: `e57ad68e-b070-4089-922b-bc78d521920d` at `2026-07-18T11:08:42.027415Z`
+- dataset checksum: `826db616f79c98cfd91011661e647b09b0b7c145783cc3d851055cbeea8689b0`
+- pack checksum: `7c35221ab4e71e562396a82d9f0e48cfafc3280a76956bc34b5c87c9e0eca834`
+- seed checksum: `f28b3405136f84f0d24b82eea9fd64fb030b250edac566bf20d459ad736f7598`
+- artifact checksum: `6c43c8c4487e9307e3f40a70d4b049dd9cc460aae707060b9c906cfa53976e4a`
+- active payload: 853,095 bytes; 99 entities, 601 facts, 487 entity tags, 27 templates, and 16 route legs
+- hierarchy: 1 country, 6 regions, 15 cities, 45 neighborhoods, and 32 activity POIs
+- deterministic benchmark: Chiang Rai comparison 23,091 bytes and selected route 31,494 bytes; Thailand circuit comparison 79,981 bytes and selected route 99,518 bytes
+- anonymous active-pack read: HTTP 200, version `2026.07.18-v13`, 99 entities, 45 neighborhoods, and 27 templates
+- immediate rollback target: v12 artifact `026b9500-899b-46e1-beda-4def58fadfd3`; its superseded payload and checksum-addressable private bundle remain retained
+
+The v13 activation changed only immutable content and the atomic active pointer. The staged repository commit, payload checksums, active pointer, anonymous RPC, catalogue counts, and retained v12 rollback artifact were verified after publication.
+
 ## Sources of truth
 
 - Additive schema and policies: `docs/supabase.sql`
