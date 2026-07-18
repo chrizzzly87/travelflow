@@ -3794,6 +3794,8 @@ begin
     raise exception 'Not authenticated';
   end if;
 
+  perform pg_advisory_xact_lock(hashtextextended('trip-upsert:' || coalesce(p_id, ''), 0));
+
   v_source := nullif(current_setting('app.trip_update_source', true), '');
 
   v_status := case
@@ -8185,6 +8187,8 @@ begin
   if v_owner is null then
     raise exception 'Not authenticated';
   end if;
+
+  perform pg_advisory_xact_lock(hashtextextended('trip-upsert:' || coalesce(p_id, ''), 0));
 
   v_source := nullif(current_setting('app.trip_update_source', true), '');
 
