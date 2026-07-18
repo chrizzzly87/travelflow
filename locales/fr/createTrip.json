@@ -382,6 +382,8 @@
   },
   "shapeLab": {
     "badge": "Laboratoire d’itinéraires en Thaïlande",
+    "badgePrimary": "Planificateur rapide pour la Thaïlande",
+    "classicFallback": "Vous préparez une autre destination ? Utilisez le planificateur classique.",
     "title": "Choisissez la route avant l’itinéraire.",
     "intro": "Commencez par la forme du voyage, comparez trois routes solides, puis ouvrez immédiatement un plan modifiable. Les activités détaillées viendront une fois la route validée.",
     "progressLabel": "Progression de la planification",

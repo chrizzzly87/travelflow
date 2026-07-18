@@ -382,6 +382,8 @@
   },
   "shapeLab": {
     "badge": "Thailand route lab",
+    "badgePrimary": "Thailand fast planner",
+    "classicFallback": "Planning somewhere else? Use the classic creator.",
     "title": "Choose the route before the itinerary.",
     "intro": "Start with the shape of the trip, compare three grounded route concepts, then open an editable plan immediately. Detailed activities can arrive after the route feels right.",
     "progressLabel": "Trip planning progress",

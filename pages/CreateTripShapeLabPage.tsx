@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
   ArrowRight,
@@ -63,11 +64,15 @@ import {
 import type { JourneyPace, JourneySpec } from '../shared/journeySpec';
 import type { TravelDestinationPack, TravelEntityCatalogItem } from '../shared/travelKnowledge';
 import type { ITrip } from '../types';
+import { buildPath } from '../config/routes';
 import '../styles/create-trip-shape-lab.css';
+
+type CreateTripShapeSurface = 'lab' | 'primary' | 'wizard';
 
 interface CreateTripShapeLabPageProps {
   onTripGenerated: (trip: ITrip) => void;
   onOpenManager: () => void;
+  surface?: CreateTripShapeSurface;
 }
 
 interface PreparedRouteComparison {
@@ -186,6 +191,7 @@ const TemplateRouteStrip: React.FC<{ applied: AppliedTravelTemplate }> = ({ appl
 export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
   onTripGenerated,
   onOpenManager,
+  surface = 'lab',
 }) => {
   const { t, i18n } = useTranslation('createTrip');
   const bundledPack = getBundledTravelDestinationPack('TH', i18n.language);
@@ -1164,10 +1170,25 @@ export const CreateTripShapeLabPage: React.FC<CreateTripShapeLabPageProps> = ({
       <main id="main-content" className="shape-lab-main">
         <header className="shape-lab-hero">
           <div>
-            <span><Sparkle size={15} weight="fill" /> {t('shapeLab.badge')}</span>
+            <span>
+              <Sparkle size={15} weight="fill" />
+              {t(surface === 'lab' ? 'shapeLab.badge' : 'shapeLab.badgePrimary')}
+            </span>
             <h1>{t('shapeLab.title')}</h1>
           </div>
-          <p>{t('shapeLab.intro')}</p>
+          <div className="shape-lab-hero__aside">
+            <p>{t('shapeLab.intro')}</p>
+            {surface !== 'lab' ? (
+              <Link
+                to={buildPath('createTripClassicLab')}
+                onClick={() => trackEvent('create_trip_shape__classic_fallback--open', { surface })}
+                {...getAnalyticsDebugAttributes('create_trip_shape__classic_fallback--open', { surface })}
+              >
+                {t('shapeLab.classicFallback')}
+                <ArrowRight size={16} weight="bold" aria-hidden="true" />
+              </Link>
+            ) : null}
+          </div>
         </header>
 
         <nav ref={progressRef} className="shape-progress" aria-label={t('shapeLab.progressLabel')}>

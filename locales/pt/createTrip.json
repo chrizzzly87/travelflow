@@ -382,6 +382,8 @@
   },
   "shapeLab": {
     "badge": "Laboratório de rotas da Tailândia",
+    "badgePrimary": "Planejador rápido da Tailândia",
+    "classicFallback": "Vai planejar outro destino? Use o planejador clássico.",
     "title": "Escolha a rota antes do roteiro.",
     "intro": "Comece pelo formato da viagem, compare três rotas bem fundamentadas e abra imediatamente um plano editável. As atividades detalhadas podem vir depois de a rota fazer sentido.",
     "progressLabel": "Progresso do planejamento",

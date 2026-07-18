@@ -382,6 +382,8 @@
   },
   "shapeLab": {
     "badge": "Thailand-Routenlabor",
+    "badgePrimary": "Thailand-Schnellplaner",
+    "classicFallback": "Du planst ein anderes Reiseziel? Nutze den klassischen Planer.",
     "title": "Erst die Route. Dann der Reiseplan.",
     "intro": "Starte mit der Form deiner Reise, vergleiche drei fundierte Routen und öffne sofort einen bearbeitbaren Plan. Die Aktivitäten kommen danach – sobald sich die Route richtig anfühlt.",
     "progressLabel": "Fortschritt der Reiseplanung",

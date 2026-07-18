@@ -1,4 +1,9 @@
 import { stripLocalePrefix } from './routes';
+import {
+    getCreateTripShapeRollout,
+    resolveCreateTripExperience,
+    type CreateTripShapeRollout,
+} from './createTripExperience';
 
 export interface PrefetchTarget {
     key: string;
@@ -23,6 +28,7 @@ const deferredAppRoutesTarget = target('route:deferred-app-routes', () => import
 
 const createTripClassicLabTarget = target('route:create-trip-lab-classic', () => import('../pages/CreateTripClassicLabPage'));
 const createTripWizardTarget = target('route:create-trip-wizard', () => import('../pages/CreateTripV3Page'));
+const createTripShapeTarget = target('route:create-trip-shape', () => import('../pages/CreateTripShapeLabPage'));
 const checkoutTarget = target('route:checkout', () => import('../pages/CheckoutPage'));
 
 const featuresTarget = target('route:features', () => import('../pages/FeaturesPage'));
@@ -58,16 +64,8 @@ const rules: PrefetchRule[] = [
         targets: [homeTarget],
     },
     {
-        match: (pathname) => pathname === '/create-trip',
-        targets: [createTripClassicLabTarget, tripViewTarget],
-    },
-    {
         match: (pathname) => pathname === '/create-trip/labs/classic-card',
         targets: [createTripClassicLabTarget, tripViewTarget],
-    },
-    {
-        match: (pathname) => pathname === '/create-trip/wizard',
-        targets: [createTripWizardTarget, tripViewTarget],
     },
     {
         match: (pathname) => startsWithSegment(pathname, '/create-trip'),
@@ -183,8 +181,30 @@ const rules: PrefetchRule[] = [
     },
 ];
 
-export const resolvePrefetchTargets = (pathname: string): PrefetchTarget[] => {
+export const resolvePrefetchTargets = (
+    pathname: string,
+    rollout: CreateTripShapeRollout = getCreateTripShapeRollout(),
+): PrefetchTarget[] => {
     const normalizedPathname = stripLocalePrefix(pathname || '/');
+
+    if (normalizedPathname === '/create-trip') {
+        return [
+            resolveCreateTripExperience('primary', rollout) === 'shape_thailand'
+                ? createTripShapeTarget
+                : createTripClassicLabTarget,
+            tripViewTarget,
+        ];
+    }
+
+    if (normalizedPathname === '/create-trip/wizard') {
+        return [
+            resolveCreateTripExperience('wizard', rollout) === 'shape_thailand'
+                ? createTripShapeTarget
+                : createTripWizardTarget,
+            tripViewTarget,
+        ];
+    }
+
     const matched: PrefetchTarget[] = [];
     const seen = new Set<string>();
 

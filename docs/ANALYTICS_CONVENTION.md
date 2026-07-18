@@ -298,6 +298,7 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `create_trip__notifications--permission` | — | `{ permission }` | `CreateTripClassicLabPage.tsx` |
 | `create_trip__notifications--sent` | — | — | `CreateTripClassicLabPage.tsx` |
 | `create_trip__experience--view` | — | `{ surface, experience, rollout }` | `AppRoutes.tsx`, `DeferredAppRoutes.tsx` |
+| `create_trip_shape__classic_fallback--open` | — | `{ surface }` | `CreateTripShapeLabPage.tsx` |
 | `create_trip_wizard__branch--select` | — | `{ branch }` | `CreateTripV3Page.tsx` |
 | `create_trip_wizard__date_mode--select` | — | `{ mode }` | `CreateTripV3Page.tsx` |
 | `create_trip_wizard__traveler--select` | — | `{ traveler_type }` | `CreateTripV3Page.tsx` |

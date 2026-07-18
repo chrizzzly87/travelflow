@@ -77,13 +77,17 @@ import {
 } from '../../shared/journeyPersonalization';
 import { buildTravelPlanningContext } from '../../shared/travelPlanningContext';
 
-const renderPage = (onTripGenerated = vi.fn()) => {
+const renderPage = (
+  onTripGenerated = vi.fn(),
+  options: { surface?: 'lab' | 'primary' | 'wizard'; initialEntry?: string } = {},
+) => {
   render(React.createElement(
     MemoryRouter,
-    { initialEntries: ['/create-trip/labs/shape'] },
+    { initialEntries: [options.initialEntry ?? '/create-trip/labs/shape'] },
     React.createElement(CreateTripShapeLabPage, {
       onTripGenerated,
       onOpenManager: vi.fn(),
+      surface: options.surface,
     }),
   ));
   return { onTripGenerated };
@@ -114,6 +118,20 @@ afterEach(() => {
 });
 
 describe('pages/CreateTripShapeLabPage', () => {
+  it('offers a measured classic fallback only when promoted to a creator surface', async () => {
+    const user = userEvent.setup();
+    renderPage(vi.fn(), { surface: 'primary', initialEntry: '/create-trip' });
+
+    expect(screen.getByText('shapeLab.badgePrimary')).toBeInTheDocument();
+    const fallback = screen.getByRole('link', { name: /shapeLab\.classicFallback/i });
+    expect(fallback).toHaveAttribute('href', '/create-trip/labs/classic-card');
+    await user.click(fallback);
+    expect(trackEvent).toHaveBeenCalledWith(
+      'create_trip_shape__classic_fallback--open',
+      { surface: 'primary' },
+    );
+  });
+
   it('moves from trip shape to a canonical city and neighborhood selection', async () => {
     const user = userEvent.setup();
     renderPage();

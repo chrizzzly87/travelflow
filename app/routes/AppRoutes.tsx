@@ -87,7 +87,13 @@ const CreateTripExperienceRoute: React.FC<{
     }, [experience, rollout, surface]);
 
     if (experience === 'shape_thailand') {
-        return <CreateTripShapeLabPage onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />;
+        return (
+            <CreateTripShapeLabPage
+                onTripGenerated={onTripGenerated}
+                onOpenManager={onOpenManager}
+                surface={surface}
+            />
+        );
     }
     if (experience === 'wizard_v3') {
         return <CreateTripV3Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />;

@@ -382,6 +382,8 @@
   },
   "shapeLab": {
     "badge": "Laboratorium tras po Tajlandii",
+    "badgePrimary": "Szybki planer Tajlandii",
+    "classicFallback": "Planujesz inny kierunek? Użyj klasycznego planera.",
     "title": "Najpierw wybierz trasę, potem plan dnia.",
     "intro": "Zacznij od formy podróży, porównaj trzy sprawdzone koncepcje tras i od razu otwórz edytowalny plan. Szczegółowe atrakcje mogą pojawić się, gdy trasa będzie już właściwa.",
     "progressLabel": "Postęp planowania podróży",

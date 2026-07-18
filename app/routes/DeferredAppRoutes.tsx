@@ -174,7 +174,13 @@ const CreateTripWizardRoute: React.FC<{
     }, [experience, rollout]);
 
     if (experience === 'shape_thailand') {
-        return <CreateTripShapeLabPage onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />;
+        return (
+            <CreateTripShapeLabPage
+                onTripGenerated={onTripGenerated}
+                onOpenManager={onOpenManager}
+                surface="wizard"
+            />
+        );
     }
     return (
         <CreateTripV3Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
