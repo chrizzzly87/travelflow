@@ -251,13 +251,26 @@ describe('pages/AdminTravelKnowledgePage', () => {
     renderPage();
 
     expect(await screen.findByRole('heading', { name: 'Published catalogue' })).toBeInTheDocument();
-    expect(screen.getAllByText('2026.07.18-v9').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('2026.07.18-v10').length).toBeGreaterThan(0);
     expect(screen.getAllByText('84').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Thailand').length).toBeGreaterThan(0);
     expect(screen.getByText('Activity POIs')).toBeInTheDocument();
     expect(screen.getAllByText('32').length).toBeGreaterThan(0);
-    expect(screen.getByText('0 / 14')).toBeInTheDocument();
-    expect(screen.getByText('62%')).toBeInTheDocument();
+    expect(screen.getByText('Needs work').parentElement).toHaveTextContent('10');
+    expect(screen.getByText('0 usable · 10 starter')).toBeInTheDocument();
+    expect(screen.getByText('73%')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Published catalogue' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('opens the enrichment queue with coverage-priority sorting', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Open enrichment queue (10)' }));
+
+    expect(screen.getByRole('combobox', { name: 'Entity type' })).toHaveTextContent('Poi (32)');
+    expect(screen.getByRole('combobox', { name: 'Catalogue sort' })).toHaveTextContent('Coverage priority');
+    expect(screen.getByRole('combobox', { name: 'Activity coverage' })).toHaveTextContent('Needs work (10)');
+    expect(screen.getByText('Showing 10 entities. Search covers names, aliases, facts, tags, source keys, and route stops.')).toBeInTheDocument();
   });
 });

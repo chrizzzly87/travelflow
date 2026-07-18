@@ -140,6 +140,47 @@ describe('travel knowledge dataset tooling', () => {
     expect(result.counts.templateLegs).toBe(1);
   });
 
+  it('rejects future dataset and evidence provenance', () => {
+    const futureDataset: TravelKnowledgeDataset = {
+      ...dataset,
+      manifest: {
+        ...dataset.manifest,
+        generatedAt: '2026-07-16T11:00:00Z',
+      },
+    };
+    const lateEvidenceDataset: TravelKnowledgeDataset = {
+      ...dataset,
+      entities: dataset.entities.map((entity) => (
+        entity.canonicalSlug === 'th-bangkok-grand-palace'
+          ? {
+              ...entity,
+              facts: [{
+                factKey: 'visit.duration_minutes',
+                value: { min: 60, max: 120 },
+                sourceKey: 'travelflow_editorial',
+                observedAt: '2026-07-16T10:00:01Z',
+              }],
+            }
+          : entity
+      )),
+      templates: dataset.templates.map((template) => ({
+        ...template,
+        legs: template.legs.map((leg) => ({
+          ...leg,
+          observedAt: '2026-07-16T10:00:01Z',
+        })),
+      })),
+    };
+
+    expect(validateTravelKnowledgeDataset(futureDataset, new Date('2026-07-16T10:00:00Z')).errors)
+      .toContain('Manifest generatedAt cannot be in the future.');
+    expect(validateTravelKnowledgeDataset(lateEvidenceDataset, new Date('2026-07-16T11:00:00Z')).errors)
+      .toEqual(expect.arrayContaining([
+        'Entity th-bangkok-grand-palace fact visit.duration_minutes was observed after the dataset was generated.',
+        'Template th-bangkok-weekend leg 1 was observed after the dataset was generated.',
+      ]));
+  });
+
   it('rejects a template whose required base has no descendant POI candidate', () => {
     const invalid: TravelKnowledgeDataset = {
       ...dataset,

@@ -13,11 +13,11 @@ summary: "A route-first Thailand planner compares trusted trip concepts before o
 ## Changes
 - [ ] [Internal] 🧭 Added a five-step trip-shape flow for city breaks, one-base day trips, and Thailand circuits.
 - [ ] [Internal] 🗺️ Added canonical cities and neighborhoods with immediate, explainable route comparison and an editable plan handoff.
-- [ ] [Internal] 🇹🇭 Added a versioned Thailand knowledge pack with 84 canonical places, 427 sourced facts, 420 evidence-aware tags, localized route templates, and activity coverage for every required route base.
+- [ ] [Internal] 🇹🇭 Added a versioned Thailand knowledge pack with 84 canonical places, 464 sourced facts, 420 evidence-aware tags, localized route templates, and activity coverage for every required route base.
 - [ ] [Internal] ⚡ Added deterministic route matching, sourced transfer ranges, and instant knowledge-enriched trips so the first useful answer no longer waits for itinerary generation.
 - [ ] [Internal] 🧾 Added a visible fast-path receipt with retrieval time, payload size, dataset version, selected catalogue counts, and AI-call count.
-- [ ] [Internal] 🏛️ Added category-aware hours, pricing, duration, booking, weather, effort, access, facilities, audience, freshness, and source fields for eighteen researched activities without inventing missing data.
-- [ ] [Internal] 🗂️ Added a searchable admin catalogue for published places, facts, tags, templates, source evidence, freshness, and honest rich/usable/starter coverage gaps alongside the review queue.
+- [ ] [Internal] 🏛️ Added category-aware hours, pricing, duration, booking, weather, effort, access, facilities, audience, freshness, and source fields for twenty-two researched activities without inventing missing data.
+- [ ] [Internal] 🗂️ Added a searchable admin catalogue with a one-click enrichment queue, coverage-priority sorting, published places, facts, tags, templates, source evidence, freshness, and honest rich/usable/starter gaps alongside the review queue.
 - [ ] [Internal] ⏱️ Added cached country-knowledge indexes, browser-visible stage latency telemetry, dataset-safe route reveals, compact initial comparison payloads, and repeatable CPU performance guardrails for every supported trip shape.
 - [ ] [Internal] 📚 Added compact destination briefs and an instant route preview with sourced city guidance, ranked neighborhoods and activities, signature dishes, seasonal context, and evidence-aware audience signals.
 - [ ] [Internal] 🛡️ Serialized concurrent saves for the same newly opened trip so the instant-plan handoff cannot race itself into a duplicate write.
@@ -41,3 +41,5 @@ summary: "A route-first Thailand planner compares trusted trip concepts before o
 - [ ] [Internal] 🪄 Added optional one-call route adaptation with schema-constrained output, catalogue-only place decisions, review, apply, undo, an explicit adapted-plan state, and a visible model receipt without regenerating the full itinerary.
 - [ ] [Internal] 🧯 Rejected conflicting duplicate catalogue decisions before an AI personalization proposal can reach the trip.
 - [ ] [Internal] 🧰 Kept legacy trips with reused transfer identifiers loadable by assigning collision-safe route and journey leg identifiers at the presentation boundary.
+- [ ] [Internal] 🔐 Made the immutable active artifact the sole public Thailand catalogue, removed stale normalized-table fallbacks, and rejected future or internally inconsistent source timestamps before staging.
+- [ ] [Internal] 💾 Captured and checksum-verified a private post-v9 checkpoint of all travel tables, functions, policies, grants, triggers, indexes, and knowledge storage metadata before the v10 database changes.
