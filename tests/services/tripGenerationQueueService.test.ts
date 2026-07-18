@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ITrip } from '../../types';
+import { buildJourneySpecFromLegacyCreateTrip } from '../../shared/journeySpec';
 
 const claimRpcMock = vi.fn();
 const fromSelectMaybeSingleMock = vi.fn().mockResolvedValue({ data: null, error: null });
@@ -145,6 +146,48 @@ describe('processQueuedTripGenerationAfterAuth', () => {
     expect(startAttemptLogMock).toHaveBeenCalledWith(expect.objectContaining({
       state: 'queued',
       source: 'queue_claim_async',
+    }));
+  });
+
+  it('preserves JourneySpec provenance through a pending-auth queue claim', async () => {
+    const journeySpec = buildJourneySpecFromLegacyCreateTrip({
+      countries: [{ name: 'Thailand', code: 'TH' }],
+      startDate: '2026-04-10',
+      endDate: '2026-04-14',
+      durationDays: 4,
+      createdFrom: 'classic',
+    });
+    claimRpcMock.mockImplementation((fn: string) => {
+      if (fn === 'claim_trip_generation_request') {
+        return Promise.resolve({
+          data: {
+            request_id: 'request-1',
+            flow: 'classic',
+            payload: {
+              version: 1,
+              flow: 'classic',
+              destinationLabel: 'Thailand',
+              destinationPrompt: 'Thailand',
+              startDate: '2026-04-10',
+              endDate: '2026-04-14',
+              journeySpec,
+              options: {},
+            },
+            status: 'queued',
+            owner_user_id: 'owner-1',
+            expires_at: new Date(Date.now() + 60_000).toISOString(),
+          },
+          error: null,
+        });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+
+    const result = await processQueuedTripGenerationAfterAuth('request-1');
+
+    expect(result.trip.aiMeta?.generation?.inputSnapshot?.journeySpec).toEqual(journeySpec);
+    expect(enqueueAsyncTripGenerationJobMock).toHaveBeenCalledWith(expect.objectContaining({
+      inputSnapshot: expect.objectContaining({ journeySpec }),
     }));
   });
 

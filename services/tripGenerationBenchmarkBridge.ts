@@ -1,4 +1,5 @@
 import type { TripGenerationInputSnapshot } from '../types';
+import { isJourneySpec } from '../shared/journeySpec';
 import {
     DEFAULT_BENCHMARK_MASK_SCENARIO,
     normalizeBenchmarkMaskScenario,
@@ -175,6 +176,9 @@ export const decodeBenchmarkScenarioImportPayload = (
             destinationLabel: asText(rawInputSnapshot?.destinationLabel) || undefined,
             startDate: asDateOnly(rawInputSnapshot?.startDate) || undefined,
             endDate: asDateOnly(rawInputSnapshot?.endDate) || undefined,
+            journeySpec: isJourneySpec(rawInputSnapshot?.journeySpec, { phase: 'intent' })
+                ? rawInputSnapshot.journeySpec
+                : undefined,
             payload: parsedSnapshotPayload,
             createdAt: parsedSnapshotCreatedAt || new Date().toISOString(),
         } : null;

@@ -9948,8 +9948,9 @@ returns table(
   latest_reviewed_at timestamptz
 )
 language plpgsql
-security invoker
+security definer
 set search_path = ''
+set row_security = off
 as $$
 declare
   v_uid uuid := auth.uid();
@@ -10047,8 +10048,9 @@ returns table(
   latest_source_run_at timestamptz
 )
 language plpgsql
-security invoker
+security definer
 set search_path = ''
+set row_security = off
 as $$
 declare
   v_uid uuid := auth.uid();

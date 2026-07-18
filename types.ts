@@ -103,6 +103,7 @@ export interface TripGenerationInputSnapshot {
     destinationLabel?: string;
     startDate?: string;
     endDate?: string;
+    journeySpec?: JourneySpec;
     payload: Record<string, unknown>;
     createdAt: string;
 }

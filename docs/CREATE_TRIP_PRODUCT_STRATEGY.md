@@ -174,7 +174,7 @@ This is faster than putting every fact into a vector database, produces stable a
 - All 32 current Thailand activity POIs expose the category-relevant structured duration, hours or operating context, pricing, booking, weather/effort, access, facilities, audience, practical, freshness, and source fields; absent or inapplicable data stays absent.
 - The admin travel-knowledge workspace opens on a searchable published catalogue and keeps ingestion candidates in a separate review queue.
 
-This is a structured retrieval/RAG system with constrained model-assisted personalization, but it is not yet semantic/vector retrieval or a complete traveler model. The selected route and most planning data are retrieved and compiled without AI; a single fast-model call can optionally interpret free text into a validated patch. The existing classic generator still uses the large-prompt generation path and remains useful as the comparison baseline.
+This is a structured retrieval/RAG system with constrained model-assisted personalization, but it is not yet semantic/vector retrieval or a complete traveler model. The selected route and most planning data are retrieved and compiled without AI; a single fast-model call can optionally interpret free text into a validated patch. The existing classic generator still uses the large-prompt generation path and remains useful as the comparison baseline, but new classic and V3 wizard attempts now preserve the same versioned JourneySpec intent in their generation provenance.
 
 ## 9. Continuous update plan
 

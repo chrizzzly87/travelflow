@@ -344,6 +344,7 @@ export const createTripGenerationInputSnapshot = (params: {
     destinationLabel?: string;
     startDate?: string;
     endDate?: string;
+    journeySpec?: TripGenerationInputSnapshot['journeySpec'];
     payload: Record<string, unknown>;
 }): TripGenerationInputSnapshot => {
     return {
@@ -351,6 +352,7 @@ export const createTripGenerationInputSnapshot = (params: {
         destinationLabel: params.destinationLabel,
         startDate: params.startDate,
         endDate: params.endDate,
+        journeySpec: params.journeySpec,
         payload: params.payload,
         createdAt: getNowIso(),
     };

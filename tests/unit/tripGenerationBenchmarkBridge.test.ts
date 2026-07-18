@@ -5,12 +5,22 @@ import {
   buildBenchmarkScenarioImportUrl,
   decodeBenchmarkScenarioImportPayload,
 } from '../../services/tripGenerationBenchmarkBridge';
+import { buildJourneySpecFromLegacyCreateTrip } from '../../shared/journeySpec';
+
+const CLASSIC_JOURNEY_SPEC = buildJourneySpecFromLegacyCreateTrip({
+  countries: [{ name: 'Germany', code: 'DE' }],
+  startDate: '2026-04-10',
+  endDate: '2026-04-14',
+  durationDays: 4,
+  createdFrom: 'classic',
+});
 
 const CLASSIC_SNAPSHOT = {
   flow: 'classic' as const,
   destinationLabel: 'Berlin, Germany',
   startDate: '2026-04-10',
   endDate: '2026-04-14',
+  journeySpec: CLASSIC_JOURNEY_SPEC,
   createdAt: '2026-03-04T09:00:00.000Z',
   payload: {
     destinationPrompt: 'Berlin, Germany',
@@ -56,6 +66,7 @@ describe('services/tripGenerationBenchmarkBridge', () => {
     expect(decoded?.scenario.destinations).toBe('Berlin, Germany');
     expect(decoded?.inputPayload).toEqual(CLASSIC_SNAPSHOT.payload);
     expect(decoded?.inputSnapshot).toEqual(CLASSIC_SNAPSHOT);
+    expect(decoded?.inputSnapshot?.journeySpec?.version).toBe(1);
   });
 
   it('rejects invalid import payload tokens', () => {
