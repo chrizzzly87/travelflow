@@ -1,8 +1,8 @@
 {
   "manifest": {
     "registryKey": "travel-knowledge-sources",
-    "version": "2026.07.18-v4",
-    "generatedAt": "2026-07-18T10:30:00Z",
+    "version": "2026.07.18-v5",
+    "generatedAt": "2026-07-18T08:10:00Z",
     "defaultCountryCodes": ["TH"]
   },
   "sources": [
@@ -205,6 +205,27 @@
       "countryCodes": ["TH"],
       "metadata": {
         "usage": "Manual fact confirmation and original TravelFlow summaries only; do not crawl or syndicate source prose or images."
+      }
+    },
+    {
+      "sourceKey": "thailand_dnp",
+      "name": "Thailand Department of National Parks, Wildlife and Plant Conservation",
+      "sourceKind": "official",
+      "baseUrl": "https://www.dnp.go.th/",
+      "termsUrl": "https://www.dnp.go.th/",
+      "attributionText": "Department of National Parks, Wildlife and Plant Conservation, Thailand",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-18T08:10:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Manual confirmation of structured park fees, closures, facilities, and visitor notices only; do not crawl or reproduce source prose or images."
       }
     },
     {

@@ -73,16 +73,21 @@ describe('travel activity knowledge', () => {
     expect(knowledge?.freshness.status).toBe('expired');
   });
 
-  it('keeps sparse POIs usable without inventing unavailable operational fields', () => {
+  it('projects source-backed operational fields for the final enriched market POI', () => {
     const knowledge = buildTravelActivityKnowledge(
       poi('th-hua-hin-night-market'),
       new Date('2026-07-18T00:00:00Z'),
     );
 
     expect(knowledge?.summary?.value).toContain('evening food and shopping stop');
-    expect(knowledge?.recommendedDuration).toBeUndefined();
-    expect(knowledge?.openingHours).toBeUndefined();
-    expect(knowledge?.admission).toBeUndefined();
+    expect(knowledge?.recommendedDuration?.value).toEqual({ min: 60, max: 150, unit: 'minutes' });
+    expect(knowledge?.openingHours?.value).toMatchObject({
+      timezone: 'Asia/Bangkok',
+      checkBeforeVisit: true,
+    });
+    expect(knowledge?.admission?.value).toMatchObject({ currency: 'THB', free: true });
+    expect(knowledge?.transportAccess?.value.modes).toContain('walking');
+    expect(knowledge?.coverage).toMatchObject({ status: 'rich', score: 100 });
   });
 
   it('projects current official visitor facts for the expanded Thailand route anchors', () => {
@@ -124,7 +129,7 @@ describe('travel activity knowledge', () => {
     });
   });
 
-  it('makes rich and starter coverage visually distinguishable without inventing facts', () => {
+  it('keeps every Thailand activity on the rich category-specific contract', () => {
     const richSlugs = [
       'th-bangkok-grand-palace',
       'th-bangkok-wat-pho',
@@ -152,18 +157,17 @@ describe('travel activity knowledge', () => {
     const statuses = pack.entities
       .filter((entity) => entity.entityType === 'poi')
       .map((entity) => getTravelActivityKnowledgeCoverage(entity)?.status);
-    expect(statuses.filter((status) => status === 'rich')).toHaveLength(18);
-    expect(statuses.filter((status) => status === 'starter')).toHaveLength(14);
+    expect(statuses.filter((status) => status === 'rich')).toHaveLength(32);
+    expect(statuses.filter((status) => status === 'usable')).toHaveLength(0);
+    expect(statuses.filter((status) => status === 'starter')).toHaveLength(0);
 
     expect(getTravelActivityKnowledgeCoverage(poi('th-hua-hin-night-market'))).toMatchObject({
       category: 'market',
       planningTier: 'supporting',
-      status: 'starter',
-      missingRequiredFactKeys: expect.arrayContaining([
-        'opening_hours.regular',
-        'visit.duration_minutes',
-        'visit.practical_notes',
-      ]),
+      status: 'rich',
+      score: 100,
+      missingRequiredFactKeys: [],
+      missingRecommendedFactKeys: [],
     });
   });
 

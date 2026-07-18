@@ -2,8 +2,8 @@
   "manifest": {
     "datasetKey": "thailand-core",
     "countryCode": "TH",
-    "version": "2026.07.18-v10",
-    "generatedAt": "2026-07-18T07:15:00Z",
+    "version": "2026.07.18-v11",
+    "generatedAt": "2026-07-18T08:10:00Z",
     "notes": "Thailand-first planning dataset. Editorial summaries are paraphrased and must not be treated as live availability, safety, entry, or price guarantees."
   },
   "sources": [
@@ -43,6 +43,20 @@
       "refreshIntervalDays": 90,
       "metadata": {
         "usage": "Reference and paraphrase only; do not syndicate source copy or images."
+      }
+    },
+    {
+      "sourceKey": "thailand_dnp",
+      "name": "Thailand Department of National Parks, Wildlife and Plant Conservation",
+      "sourceKind": "official",
+      "baseUrl": "https://www.dnp.go.th/",
+      "termsUrl": "https://www.dnp.go.th/",
+      "attributionText": "Department of National Parks, Wildlife and Plant Conservation, Thailand",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "refreshIntervalDays": 30,
+      "metadata": {
+        "usage": "Manual confirmation of structured park fees, closures, facilities, and visitor notices only; do not crawl or reproduce source prose or images."
       }
     },
     {
@@ -1195,7 +1209,168 @@
         { "factKey": "audience.family_fit", "value": { "fit": "conditional", "notes": ["The upper viewpoint can suit families, but children need close supervision near traffic, terrace edges, and any exposed lower trail."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Articles/10-things-to-do-in-phuket", "confidence": 0.82, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T05:45:00Z", "validUntil": "2027-01-14T05:45:00Z" }
       ]
     },
-    { "canonicalSlug": "th-krabi-tiger-cave-temple", "entityType": "poi", "parentSlug": "th-krabi", "countryCode": "TH", "primaryName": "Tiger Cave Temple", "timezone": "Asia/Bangkok", "latitude": 8.1236, "longitude": 98.9249, "typicalMinDays": 0.2, "typicalMaxDays": 0.5, "popularityScore": 78, "hiddenGemScore": 34, "tourismIntensityScore": 62, "profile": { "summary": "A temple and steep stair climb near Krabi Town; heat, fitness, weather, and respectful dress materially affect suitability." }, "tagKeys": ["temples", "hiking", "nature"] },
+    {
+      "canonicalSlug": "th-krabi-tiger-cave-temple",
+      "entityType": "poi",
+      "parentSlug": "th-krabi",
+      "countryCode": "TH",
+      "primaryName": "Tiger Cave Temple",
+      "localName": "วัดถ้ำเสือ",
+      "timezone": "Asia/Bangkok",
+      "latitude": 8.1236,
+      "longitude": 98.9249,
+      "typicalMinDays": 0.2,
+      "typicalMaxDays": 0.5,
+      "popularityScore": 78,
+      "hiddenGemScore": 34,
+      "tourismIntensityScore": 62,
+      "sourceUrls": ["https://kbi.onab.go.th/th/content/category/detail/id/110/iid/6241", "https://www.tourismthailand.org/Articles/krabi-embrace-the-charm-of-nature-relax-and-unwind"],
+      "profile": { "summary": "A temple and steep stair climb near Krabi Town; heat, fitness, weather, and respectful dress materially affect suitability." },
+      "tagKeys": ["temples", "hiking", "nature"],
+      "facts": [
+        {
+          "factKey": "visit.duration_minutes",
+          "value": { "min": 90, "max": 240 },
+          "unit": "minutes",
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://kbi.onab.go.th/th/content/category/detail/id/110/iid/6241",
+          "confidence": 0.9,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z",
+          "metadata": { "method": "Range separates a shorter monastery and cave visit from the demanding summit staircase and recovery time." }
+        },
+        {
+          "factKey": "visit.best_time",
+          "value": ["Start early in daylight to reduce heat and leave a safe margin for the descent.", "Skip or shorten the summit climb when rain, extreme heat, poor air, or the traveler's current condition makes the staircase unsuitable."],
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Articles/krabi-embrace-the-charm-of-nature-relax-and-unwind",
+          "confidence": 0.9,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "opening_hours.regular",
+          "value": {
+            "timezone": "Asia/Bangkok",
+            "schedule": [{ "days": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], "opens": "06:00", "closes": "18:00", "scope": "Modeled daylight visitor window" }],
+            "notes": ["This is a working monastery; ceremonies, maintenance, weather, and summit access can change independently."],
+            "checkBeforeVisit": true
+          },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://kbi.onab.go.th/th/content/category/detail/id/110/iid/6241",
+          "confidence": 0.72,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2026-08-17T08:10:00Z"
+        },
+        {
+          "factKey": "pricing.admission",
+          "value": {
+            "currency": "THB",
+            "notes": ["No stable official visitor price is published in the registered government references; donation practice or a current visitor charge may apply, so verify onsite before presenting a fixed amount."],
+            "checkBeforeVisit": true
+          },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://kbi.onab.go.th/th/content/category/detail/id/110/iid/6241",
+          "confidence": 0.7,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2026-08-17T08:10:00Z"
+        },
+        {
+          "factKey": "visit.booking",
+          "value": { "mode": "walk_in", "notes": ["No advance admission booking is modeled; guided day tours and transfers are separate products, not a temple-entry requirement."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Articles/krabi-embrace-the-charm-of-nature-relax-and-unwind",
+          "confidence": 0.84,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2026-10-16T08:10:00Z"
+        },
+        {
+          "factKey": "visit.dress_code",
+          "value": ["Cover shoulders and knees in worship areas", "Remove shoes where signs or temple practice require it", "Choose secure footwear for the summit staircase and carry a modest layer rather than climbing in beachwear"],
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://kbi.onab.go.th/th/content/category/detail/id/110/iid/6241",
+          "confidence": 0.9,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "visit.practical_notes",
+          "value": ["The cave monastery and the summit are separate decisions; travelers who skip the staircase can still visit the religious complex.", "The summit route has roughly 1,260 very steep and uneven steps; carry water, pace conservatively, and turn around when conditions deteriorate.", "Keep food, glasses, and loose items secured around monkeys and never feed or touch wildlife."],
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://kbi.onab.go.th/th/content/category/detail/id/110/iid/6241",
+          "confidence": 0.92,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "visit.weather_dependency",
+          "value": { "level": "high", "notes": ["Heat and humidity materially raise exertion; rain makes the long staircase slippery, while cloud and haze can remove the summit-view payoff."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Articles/krabi-embrace-the-charm-of-nature-relax-and-unwind",
+          "confidence": 0.94,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "visit.physical_intensity",
+          "value": { "level": "high", "notes": ["The summit staircase is a sustained, steep climb with high steps and a demanding descent; it is not an ordinary temple walk and should be excluded for travelers with unsuitable fitness, knees, balance, or health." ] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Articles/krabi-embrace-the-charm-of-nature-relax-and-unwind",
+          "confidence": 0.96,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "access.transport",
+          "value": { "modes": ["car", "private_driver", "taxi", "ride_hail", "songthaew", "guided_tour", "motorbike"], "notes": ["The temple is north of Krabi Town and best treated as a dedicated road stop; confirm the return pickup, and do not recommend self-riding to unlicensed or inexperienced riders."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Articles/krabi-embrace-the-charm-of-nature-relax-and-unwind",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "visit.facilities",
+          "value": ["Parking near the monastery", "Toilets and basic refreshments in the visitor area", "Rest landings on the summit staircase", "Religious buildings with different shoe and access rules"],
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://kbi.onab.go.th/th/content/category/detail/id/110/iid/6241",
+          "confidence": 0.72,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2026-10-16T08:10:00Z"
+        },
+        {
+          "factKey": "audience.family_fit",
+          "value": { "fit": "conditional", "notes": ["The lower temple complex can suit families with respectful preparation; the exposed summit climb is inappropriate for many young children and requires close supervision for any child attempting it."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://kbi.onab.go.th/th/content/category/detail/id/110/iid/6241",
+          "confidence": 0.82,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "audience.mobility_fit",
+          "value": { "fit": "limited", "notes": ["The summit is not mobility-accessible; selected ground-level monastery areas may be possible only after checking parking, thresholds, steps, and current assistance locally."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://kbi.onab.go.th/th/content/category/detail/id/110/iid/6241",
+          "confidence": 0.84,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        }
+      ]
+    },
     {
       "canonicalSlug": "th-koh-samui-ang-thong",
       "entityType": "poi",
@@ -1258,7 +1433,36 @@
         { "factKey": "audience.family_fit", "value": { "fit": "conditional", "notes": ["A direct ferry and one serviced beach can work for families, but supervise children around piers and traffic and choose the crossing and beach for the youngest traveler." ] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Pattaya/469", "confidence": 0.84, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T05:45:00Z", "validUntil": "2027-01-14T05:45:00Z" }
       ]
     },
-    { "canonicalSlug": "th-hua-hin-night-market", "entityType": "poi", "parentSlug": "th-hua-hin", "countryCode": "TH", "primaryName": "Hua Hin Night Market", "timezone": "Asia/Bangkok", "latitude": 12.571, "longitude": 99.956, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 78, "hiddenGemScore": 24, "tourismIntensityScore": 66, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Hua-Hin/240"], "profile": { "summary": "An evening food and shopping stop in central Hua Hin; current operating days and hours should be verified." }, "tagKeys": ["markets", "food", "lively"] },
+    {
+      "canonicalSlug": "th-hua-hin-night-market",
+      "entityType": "poi",
+      "parentSlug": "th-hua-hin",
+      "countryCode": "TH",
+      "primaryName": "Hua Hin Night Market",
+      "timezone": "Asia/Bangkok",
+      "latitude": 12.571,
+      "longitude": 99.956,
+      "typicalMinDays": 0.1,
+      "typicalMaxDays": 0.3,
+      "popularityScore": 78,
+      "hiddenGemScore": 24,
+      "tourismIntensityScore": 66,
+      "sourceUrls": ["https://www.tourismthailand.org/Articles/vibrant-night-in-hua-hin", "https://www.tourismthailand.org/Destinations/Provinces/Hua-Hin/240"],
+      "profile": { "summary": "An evening food and shopping stop in central Hua Hin; current operating days and hours should be verified." },
+      "tagKeys": ["markets", "food", "lively"],
+      "facts": [
+        { "factKey": "visit.duration_minutes", "value": { "min": 60, "max": 150 }, "unit": "minutes", "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Articles/vibrant-night-in-hua-hin", "confidence": 0.9, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z", "metadata": { "method": "Planning range for one food pass plus browsing; a seated seafood meal extends the block." } },
+        { "factKey": "visit.best_time", "value": ["Arrive after stalls have opened but before the densest dinner crowd when easier walking and food comparison matter.", "Treat the market as the evening meal rather than stacking it after a full dinner; sample selectively and ask about ingredients, allergens, and spice level."], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Articles/vibrant-night-in-hua-hin", "confidence": 0.9, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "opening_hours.regular", "value": { "timezone": "Asia/Bangkok", "schedule": [{ "days": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], "opens": "17:00", "closes": "23:00", "scope": "Published market hours" }], "notes": ["Individual vendors may open later, close earlier, or skip a night; holidays and local events can alter the street operation."], "checkBeforeVisit": true }, "sourceKey": "tat_official", "sourceUrl": "https://www.tourismthailand.org/Articles/vibrant-night-in-hua-hin", "confidence": 0.94, "reviewStatus": "verified", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-08-17T08:10:00Z" },
+        { "factKey": "pricing.admission", "value": { "currency": "THB", "free": true, "notes": ["There is no modeled entry ticket for walking the public market street; food, drinks, crafts, and restaurant meals are purchased separately."], "checkBeforeVisit": true }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Articles/vibrant-night-in-hua-hin", "confidence": 0.84, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-08-17T08:10:00Z" },
+        { "factKey": "visit.practical_notes", "value": ["The market runs along Dechanuchit Road between Phetchakasem Road and the railway side in central Hua Hin.", "Compare displayed seafood prices and preparation details before ordering, and keep cash or a payment fallback for small vendors.", "Crowds, heat, smoke, uneven paving, and closely spaced stalls make an agreed meeting point useful for groups."], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Articles/vibrant-night-in-hua-hin", "confidence": 0.94, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "access.transport", "value": { "modes": ["walking", "songthaew", "tuk_tuk", "taxi", "ride_hail", "car"], "notes": ["The central location can be walkable from downtown accommodation; use a songthaew, tuk-tuk, or taxi from beach areas and arrange pickup away from the busiest market edge."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Articles/vibrant-night-in-hua-hin", "confidence": 0.9, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.physical_intensity", "value": { "level": "low", "notes": ["The route is short and flat in concept, but standing, dense pedestrian traffic, heat, and slow stop-start movement can increase effort."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Articles/vibrant-night-in-hua-hin", "confidence": 0.84, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.facilities", "value": ["Street-food and restaurant seating varies by vendor", "Convenience services are available in the surrounding downtown area", "Do not assume dedicated public toilets or step-free seating at every section", "Weather cover is inconsistent along the street"], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Articles/vibrant-night-in-hua-hin", "confidence": 0.74, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-10-16T08:10:00Z" },
+        { "factKey": "audience.family_fit", "value": { "fit": "good", "notes": ["Food choice and a compact central route can work well for families when meal timing is early and children are supervised in dense crowds.", "Check ingredients carefully for allergies and dietary restrictions rather than inferring from appearance."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Articles/vibrant-night-in-hua-hin", "confidence": 0.84, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "audience.mobility_fit", "value": { "fit": "conditional", "notes": ["A short edge-to-edge tasting route can reduce distance, but crowd density, narrow gaps, uneven surfaces, limited seating, and pickup access require a tailored plan."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Articles/vibrant-night-in-hua-hin", "confidence": 0.78, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-10-16T08:10:00Z" }
+      ]
+    },
     {
       "canonicalSlug": "th-pai-canyon",
       "entityType": "poi",
@@ -1413,9 +1617,448 @@
         }
       ]
     },
-    { "canonicalSlug": "th-koh-lanta-national-park", "entityType": "poi", "parentSlug": "th-koh-lanta", "countryCode": "TH", "primaryName": "Mu Ko Lanta National Park", "timezone": "Asia/Bangkok", "latitude": 7.493, "longitude": 99.075, "typicalMinDays": 0.3, "typicalMaxDays": 0.7, "popularityScore": 74, "hiddenGemScore": 56, "tourismIntensityScore": 46, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357"], "profile": { "summary": "The protected southern end of Koh Lanta combines forest, coastline, viewpoints, and a lighthouse; seasonal and park conditions require checking." }, "tagKeys": ["nature", "hiking", "national_park", "hidden_gem", "quiet"] },
-    { "canonicalSlug": "th-koh-phangan-than-sadet", "entityType": "poi", "parentSlug": "th-koh-phangan", "countryCode": "TH", "primaryName": "Than Sadet National Waterfall", "localName": "น้ำตกธารเสด็จ", "timezone": "Asia/Bangkok", "latitude": 9.7456, "longitude": 100.0593, "typicalMinDays": 0.2, "typicalMaxDays": 0.5, "popularityScore": 72, "hiddenGemScore": 62, "tourismIntensityScore": 46, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358"], "profile": { "summary": "A forest-and-waterfall excursion on eastern Koh Phangan; water levels, trail conditions, and road access vary with weather." }, "tagKeys": ["nature", "hiking", "waterfall", "national_park", "hidden_gem"] },
-    { "canonicalSlug": "th-koh-phangan-thong-nai-pan-yai", "entityType": "poi", "parentSlug": "th-koh-phangan", "countryCode": "TH", "primaryName": "Thong Nai Pan Yai Beach", "timezone": "Asia/Bangkok", "latitude": 9.7696, "longitude": 100.0552, "typicalMinDays": 0.3, "typicalMaxDays": 0.8, "popularityScore": 78, "hiddenGemScore": 52, "tourismIntensityScore": 54, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358"], "profile": { "summary": "A broad northeast-coast beach that offers a quieter counterpoint to Haad Rin and requires meaningful cross-island road time." }, "tagKeys": ["beaches", "quiet", "hidden_gem"] },
+    {
+      "canonicalSlug": "th-koh-lanta-national-park",
+      "entityType": "poi",
+      "parentSlug": "th-koh-lanta",
+      "countryCode": "TH",
+      "primaryName": "Mu Ko Lanta National Park",
+      "timezone": "Asia/Bangkok",
+      "latitude": 7.493,
+      "longitude": 99.075,
+      "typicalMinDays": 0.3,
+      "typicalMaxDays": 0.7,
+      "popularityScore": 74,
+      "hiddenGemScore": 56,
+      "tourismIntensityScore": 46,
+      "sourceUrls": [
+        "https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357",
+        "https://news.dnp.go.th/news/17112"
+      ],
+      "profile": {
+        "summary": "The protected southern end of Koh Lanta combines forest, coastline, viewpoints, and a lighthouse; seasonal and park conditions require checking."
+      },
+      "tagKeys": ["nature", "hiking", "national_park", "hidden_gem", "quiet"],
+      "facts": [
+        {
+          "factKey": "visit.duration_minutes",
+          "value": { "min": 180, "max": 360 },
+          "unit": "minutes",
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z",
+          "metadata": { "method": "Planning range for the Laem Tanod headquarters, beaches, lighthouse viewpoint, and a short nature walk; offshore islands are separate excursions." }
+        },
+        {
+          "factKey": "visit.best_time",
+          "value": [
+            "Use a dry-season morning for cooler walking and enough buffer before the road back north.",
+            "Treat the Laem Tanod headland visit separately from offshore islands, many of which normally close during the May-to-October monsoon period."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357",
+          "confidence": 0.9,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "opening_hours.regular",
+          "value": {
+            "timezone": "Asia/Bangkok",
+            "schedule": [{ "days": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], "opens": "08:30", "closes": "16:30", "scope": "Laem Tanod headquarters and visitor area" }],
+            "notes": ["Individual trails, offshore islands, camping, and services can use different or seasonal access windows."],
+            "checkBeforeVisit": true
+          },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.thainationalparks.com/mu-ko-lanta-national-park",
+          "confidence": 0.82,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2026-08-17T08:10:00Z"
+        },
+        {
+          "factKey": "pricing.admission",
+          "value": {
+            "currency": "THB",
+            "adultForeign": 200,
+            "childForeign": 100,
+            "adultLocal": 40,
+            "childLocal": 20,
+            "notes": ["The DNP fee schedule places Mu Ko Lanta in park group 2; vehicle, camping, accommodation, boat, guide, and activity charges can be separate."],
+            "checkBeforeVisit": true
+          },
+          "unit": "THB",
+          "sourceKey": "thailand_dnp",
+          "sourceUrl": "https://news.dnp.go.th/news/17112",
+          "confidence": 0.98,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2026-08-17T08:10:00Z"
+        },
+        {
+          "factKey": "visit.booking",
+          "value": {
+            "mode": "walk_in",
+            "bookingUrl": "https://nps.dnp.go.th/",
+            "notes": ["General headland entry is not modeled as reservation-only; accommodation, camping, boats, and special activities can require separate arrangements."]
+          },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://nps.dnp.go.th/",
+          "confidence": 0.8,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2026-08-17T08:10:00Z"
+        },
+        {
+          "factKey": "visit.practical_notes",
+          "value": [
+            "Allow substantial road time from Saladan and the northern resort beaches; the final approach is hilly and slower than the map distance suggests.",
+            "Keep food and loose belongings secured around macaques and never feed wildlife.",
+            "Check park notices for trail, beach, marine-area, camping, and weather restrictions before driving south."
+          ],
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357",
+          "confidence": 0.9,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "visit.weather_dependency",
+          "value": { "level": "seasonal", "notes": ["Monsoon rain, rough seas, wet trails, and seasonal marine closures materially change the useful park itinerary from May through October."] },
+          "sourceKey": "tat_official",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357",
+          "confidence": 0.96,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2026-10-16T08:10:00Z"
+        },
+        {
+          "factKey": "visit.physical_intensity",
+          "value": { "level": "variable", "notes": ["The visitor area and beaches can be moderate effort; lighthouse approaches and nature paths add heat, slopes, steps, roots, and uneven surfaces."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://cbtthailand.dasta.or.th/webapp/relattraction/content/1415/",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "access.transport",
+          "value": {
+            "modes": ["car", "private_driver", "taxi", "guided_tour", "motorbike"],
+            "notes": ["A car or driver is the practical default from most Koh Lanta bases; use extra caution on the narrow, hilly southern road and do not recommend self-riding to inexperienced riders."]
+          },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://cbtthailand.dasta.or.th/webapp/relattraction/content/1415/",
+          "confidence": 0.9,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "visit.facilities",
+          "value": ["Visitor information", "Parking", "Toilets", "Basic drinks or refreshments when operating", "Camping and accommodation services subject to current park rules"],
+          "sourceKey": "thailand_dnp",
+          "sourceUrl": "https://portal.dnp.go.th/DNP/FileSystem/download?uuid=3f226add-5463-43b0-89ed-429afbbead16.pdf",
+          "confidence": 0.84,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2026-08-17T08:10:00Z"
+        },
+        {
+          "factKey": "audience.family_fit",
+          "value": { "fit": "conditional", "notes": ["A shorter beach-and-viewpoint visit can suit families, but heat, monkeys, long road time, steep paths, and sea conditions require close supervision and selective routing."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Lanta/357",
+          "confidence": 0.82,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "audience.mobility_fit",
+          "value": { "fit": "conditional", "notes": ["A vehicle-based visitor-centre and beach stop may work for some travelers, while sand, steps, slopes, and nature trails need individual assessment."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://cbtthailand.dasta.or.th/webapp/relattraction/content/1415/",
+          "confidence": 0.74,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        }
+      ]
+    },
+    {
+      "canonicalSlug": "th-koh-phangan-than-sadet",
+      "entityType": "poi",
+      "parentSlug": "th-koh-phangan",
+      "countryCode": "TH",
+      "primaryName": "Than Sadet National Waterfall",
+      "localName": "น้ำตกธารเสด็จ",
+      "timezone": "Asia/Bangkok",
+      "latitude": 9.7456,
+      "longitude": 100.0593,
+      "typicalMinDays": 0.2,
+      "typicalMaxDays": 0.5,
+      "popularityScore": 72,
+      "hiddenGemScore": 62,
+      "tourismIntensityScore": 46,
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358", "https://news.dnp.go.th/news/17112"],
+      "profile": { "summary": "A forest-and-waterfall excursion on eastern Koh Phangan; water levels, trail conditions, and road access vary with weather." },
+      "tagKeys": ["nature", "hiking", "waterfall", "national_park", "hidden_gem"],
+      "facts": [
+        {
+          "factKey": "visit.duration_minutes",
+          "value": { "min": 90, "max": 180 },
+          "unit": "minutes",
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "visit.best_time",
+          "value": ["Visit in daylight after recent ordinary rainfall for better water flow, but avoid heavy-rain periods when roads, rocks, and trails become unsafe.", "Combine it with Than Sadet Beach or another east-coast stop rather than repeating the cross-island drive."],
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "opening_hours.regular",
+          "value": {
+            "timezone": "Asia/Bangkok",
+            "schedule": [{ "days": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], "opens": "08:30", "closes": "16:00", "scope": "Modeled visitor window" }],
+            "notes": ["Park access, waterfall paths, swimming areas, and facilities can close independently for weather or safety."],
+            "checkBeforeVisit": true
+          },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://aroundus.com/p/9599154-than-sadet-ko-pha-ngan-national-park",
+          "confidence": 0.76,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2026-08-17T08:10:00Z"
+        },
+        {
+          "factKey": "pricing.admission",
+          "value": {
+            "currency": "THB",
+            "adultForeign": 100,
+            "childForeign": 50,
+            "adultLocal": 20,
+            "childLocal": 10,
+            "notes": ["The DNP fee schedule places Than Sadet–Ko Pha-ngan in park group 1; confirm whether the specific access point is collecting the park fee and whether vehicle or activity charges apply."],
+            "checkBeforeVisit": true
+          },
+          "unit": "THB",
+          "sourceKey": "thailand_dnp",
+          "sourceUrl": "https://news.dnp.go.th/news/17112",
+          "confidence": 0.97,
+          "reviewStatus": "verified",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2026-08-17T08:10:00Z"
+        },
+        {
+          "factKey": "visit.booking",
+          "value": { "mode": "walk_in", "notes": ["No reservation is modeled for an ordinary waterfall visit; accommodation, camping, guided activities, or special park access can use separate rules."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://nps.dnp.go.th/",
+          "confidence": 0.78,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2026-08-17T08:10:00Z"
+        },
+        {
+          "factKey": "visit.practical_notes",
+          "value": ["Water volume is not guaranteed and safe access changes after rain; never climb barriers or closed waterfall sections.", "Use shoes with grip and protect electronics on wet rocks.", "Confirm the return vehicle before walking because east-coast pickup supply can be thinner than around Thong Sala or Haad Rin."],
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358",
+          "confidence": 0.9,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "visit.weather_dependency",
+          "value": { "level": "high", "notes": ["Rainfall controls water flow but also creates slippery rock, flash runoff, road hazards, and temporary closures; drought can reduce the waterfall substantially."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358",
+          "confidence": 0.94,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "visit.physical_intensity",
+          "value": { "level": "variable", "notes": ["Short lower-area viewing can be moderate, while wet rock, roots, slopes, and attempts to reach higher cascades increase effort and fall risk."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "access.transport",
+          "value": { "modes": ["car", "private_driver", "taxi", "songthaew", "motorbike"], "notes": ["The east-coast road is hilly and weather-sensitive; prearranged transport is safer than assuming immediate pickup, and inexperienced riders should not use a scooter as the default recommendation."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "visit.facilities",
+          "value": ["Basic park or visitor services near the principal access area", "Limited parking", "Toilets or food services may be seasonal or located nearer Than Sadet Beach"],
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358",
+          "confidence": 0.66,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2026-08-17T08:10:00Z"
+        },
+        {
+          "factKey": "audience.family_fit",
+          "value": { "fit": "conditional", "notes": ["Older children may enjoy a short lower waterfall walk, but slippery rock, variable water, steep roads, and limited facilities require close supervision and a conservative route."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358",
+          "confidence": 0.78,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "audience.mobility_fit",
+          "value": { "fit": "limited", "notes": ["Wet natural surfaces, uneven paths, slopes, and limited adapted infrastructure make the waterfall unsuitable for many mobility-limited travelers without current local confirmation."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358",
+          "confidence": 0.78,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        }
+      ]
+    },
+    {
+      "canonicalSlug": "th-koh-phangan-thong-nai-pan-yai",
+      "entityType": "poi",
+      "parentSlug": "th-koh-phangan",
+      "countryCode": "TH",
+      "primaryName": "Thong Nai Pan Yai Beach",
+      "timezone": "Asia/Bangkok",
+      "latitude": 9.7696,
+      "longitude": 100.0552,
+      "typicalMinDays": 0.3,
+      "typicalMaxDays": 0.8,
+      "popularityScore": 78,
+      "hiddenGemScore": 52,
+      "tourismIntensityScore": 54,
+      "sourceUrls": ["https://www.tourismthailand.org/Attraction/thong-nai-pan-yai-beach", "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/ko-pha-ngan-2-days"],
+      "profile": { "summary": "A broad northeast-coast beach that offers a quieter counterpoint to Haad Rin and requires meaningful cross-island road time." },
+      "tagKeys": ["beaches", "quiet", "hidden_gem"],
+      "facts": [
+        {
+          "factKey": "visit.duration_minutes",
+          "value": { "min": 180, "max": 420 },
+          "unit": "minutes",
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/ko-pha-ngan-2-days",
+          "confidence": 0.88,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "visit.best_time",
+          "value": ["Use a morning-to-afternoon beach block and preserve daylight for the hilly cross-island return.", "A late-afternoon visit can be cooler, but confirm return transport and sea conditions before committing."],
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Attraction/thong-nai-pan-yai-beach",
+          "confidence": 0.86,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "visit.practical_notes",
+          "value": ["Thong Nai Pan Yai and Thong Nai Pan Noi are distinct bays; confirm the correct pickup and accommodation location.", "Do not treat calm-looking water as a safety guarantee: follow local flags, operator guidance, and current weather.", "Prearrange the return when visiting from another island base, especially after dark or in poor weather."],
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358",
+          "confidence": 0.9,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "visit.weather_dependency",
+          "value": { "level": "high", "notes": ["Rain, wind, Gulf swell, beach flags, and storm runoff affect swimming, road safety, and the reliability of the cross-island journey."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358",
+          "confidence": 0.92,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "visit.physical_intensity",
+          "value": { "level": "variable", "notes": ["A serviced beach stay can be low effort, while soft sand, heat, swimming, and transfers from uphill lodging increase effort."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Attraction/thong-nai-pan-yai-beach",
+          "confidence": 0.84,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "access.transport",
+          "value": { "modes": ["car", "private_driver", "taxi", "songthaew", "motorbike"], "notes": ["The northeast-coast road is long and hilly from Thong Sala or Haad Rin; a driver or prearranged taxi is the safest default, and inexperienced riders should not rely on scooters."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/ko-pha-ngan-2-days",
+          "confidence": 0.9,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "visit.facilities",
+          "value": ["Beachfront accommodation and restaurants", "Drinks and basic beach services", "Local taxis or resort transfers subject to current supply", "Toilets and showers vary by venue rather than one public facility"],
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Phangan/358",
+          "confidence": 0.78,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2026-10-16T08:10:00Z"
+        },
+        {
+          "factKey": "audience.family_fit",
+          "value": { "fit": "conditional", "notes": ["The broad beach and nearby services can work for families, but sea conditions, road transfers, shade, and the youngest swimmer's needs should determine the exact plan."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Attraction/thong-nai-pan-yai-beach",
+          "confidence": 0.82,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        },
+        {
+          "factKey": "audience.mobility_fit",
+          "value": { "fit": "conditional", "notes": ["Vehicle access to selected beachfront venues may work, but sand, steps, steep resort paths, and variable adapted facilities require venue-level confirmation."] },
+          "sourceKey": "travelflow_editorial",
+          "sourceUrl": "https://www.tourismthailand.org/Attraction/thong-nai-pan-yai-beach",
+          "confidence": 0.72,
+          "reviewStatus": "editorial_reviewed",
+          "observedAt": "2026-07-18T08:10:00Z",
+          "validUntil": "2027-01-14T08:10:00Z"
+        }
+      ]
+    },
     {
       "canonicalSlug": "th-koh-tao-nang-yuan",
       "entityType": "poi",
@@ -1609,7 +2252,36 @@
         }
       ]
     },
-    { "canonicalSlug": "th-koh-tao-sairee-beach", "entityType": "poi", "parentSlug": "th-koh-tao-sairee", "countryCode": "TH", "primaryName": "Sairee Beach sunset", "timezone": "Asia/Bangkok", "latitude": 10.0973, "longitude": 99.8278, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 86, "hiddenGemScore": 14, "tourismIntensityScore": 86, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"], "profile": { "summary": "An easy west-coast sunset and swimming block close to Koh Tao's densest dining and social scene." }, "tagKeys": ["beaches", "nightlife", "lively"] },
+    {
+      "canonicalSlug": "th-koh-tao-sairee-beach",
+      "entityType": "poi",
+      "parentSlug": "th-koh-tao-sairee",
+      "countryCode": "TH",
+      "primaryName": "Sairee Beach sunset",
+      "timezone": "Asia/Bangkok",
+      "latitude": 10.0973,
+      "longitude": 99.8278,
+      "typicalMinDays": 0.1,
+      "typicalMaxDays": 0.3,
+      "popularityScore": 86,
+      "hiddenGemScore": 14,
+      "tourismIntensityScore": 86,
+      "attributes": { "activityProfile": { "primaryCategory": "beach" } },
+      "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361"],
+      "profile": { "summary": "An easy west-coast sunset and swimming block close to Koh Tao's densest dining and social scene." },
+      "tagKeys": ["beaches", "nightlife", "lively"],
+      "facts": [
+        { "factKey": "visit.duration_minutes", "value": { "min": 60, "max": 180 }, "unit": "minutes", "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361", "confidence": 0.88, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z", "metadata": { "method": "Planning range for a swim or walk, sunset buffer, and one nearby drink or meal without turning the block into a full nightlife itinerary." } },
+        { "factKey": "visit.best_time", "value": ["Use the west-facing beach for a late-afternoon swim or walk followed by sunset, while preserving enough daylight to assess sea and shoreline conditions.", "February through April is TAT's general preferred Ko Tao period, but daily wind, rain, visibility, tide, and marine warnings remain more important for a specific visit."], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361", "confidence": 0.9, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.practical_notes", "value": ["Separate the beach-and-sunset block from later bars or nightlife so travelers can opt out without losing the natural stop.", "Never infer safe swimming from calm-looking water; follow current flags, local advice, boat traffic, weather, and visibility.", "Ko Tao is a fragile island ecosystem: carry waste out, avoid single-use litter, and do not touch coral, turtles, or other marine life."], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361", "confidence": 0.94, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.weather_dependency", "value": { "level": "high", "notes": ["Wind, storms, rain, haze, tide, water quality, and marine conditions affect sunset visibility and swimming suitability; use a non-swimming shoreline walk as the fallback."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361", "confidence": 0.94, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.physical_intensity", "value": { "level": "variable", "notes": ["A shoreline walk or seated sunset is low effort; swimming adds open-water risk and must be matched to conditions, supervision, and individual ability."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361", "confidence": 0.9, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "access.transport", "value": { "modes": ["walking", "shared_taxi", "taxi_boat", "motorbike"], "notes": ["Sairee is practical on foot from accommodation in the neighborhood; use local transfer options from Mae Haad or other bays and avoid recommending self-riding to unlicensed or inexperienced motorbike riders."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361", "confidence": 0.86, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.facilities", "value": ["Dense nearby accommodation and dining compared with quieter Ko Tao bays", "Beach bars and social venues in the wider Sairee area", "Toilets, showers, shade, loungers, and accessibility vary by business rather than being guaranteed public facilities", "Do not assume lifeguard coverage"], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361", "confidence": 0.8, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-10-16T08:10:00Z" },
+        { "factKey": "audience.family_fit", "value": { "fit": "conditional", "notes": ["The beach and early sunset can work for families when sea conditions are suitable and children have continuous water supervision.", "Choose an early meal and a quieter section if the later social scene, noise, or crowds do not fit the family." ] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361", "confidence": 0.84, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "audience.mobility_fit", "value": { "fit": "conditional", "notes": ["A venue-based sunset with arranged drop-off may reduce distance, but sand, water entry, uneven paths, tide, and business-specific facilities require confirmation."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Tao/361", "confidence": 0.76, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-10-16T08:10:00Z" }
+      ]
+    },
     {
       "canonicalSlug": "th-krabi-emerald-pool",
       "entityType": "poi",
@@ -1969,8 +2641,70 @@
         }
       ]
     },
-    { "canonicalSlug": "th-phuket-wat-chalong", "entityType": "poi", "parentSlug": "th-phuket", "countryCode": "TH", "primaryName": "Wat Chalong", "localName": "วัดไชยธาราราม", "timezone": "Asia/Bangkok", "latitude": 7.8463, "longitude": 98.3375, "typicalMinDays": 0.1, "typicalMaxDays": 0.3, "popularityScore": 90, "hiddenGemScore": 12, "tourismIntensityScore": 84, "sourceUrls": ["https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/recommended-route-for-one-day-3"], "profile": { "summary": "Phuket's major Buddhist temple, best grouped into a south-island route with respectful dress and realistic road buffers." }, "tagKeys": ["temples", "culture", "essential"] },
-    { "canonicalSlug": "th-phuket-karon-viewpoint", "entityType": "poi", "parentSlug": "th-phuket-karon", "countryCode": "TH", "primaryName": "Karon Viewpoint", "timezone": "Asia/Bangkok", "latitude": 7.7973, "longitude": 98.3022, "typicalMinDays": 0.1, "typicalMaxDays": 0.2, "popularityScore": 82, "hiddenGemScore": 18, "tourismIntensityScore": 76, "attributes": { "activityProfile": { "primaryCategory": "viewpoint" } }, "sourceUrls": ["https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/recommended-route-for-one-day-3"], "profile": { "summary": "A roadside viewpoint over Kata Noi, Kata, and Karon bays that fits a south-coast route rather than a standalone cross-island journey." }, "tagKeys": ["nature", "beaches", "viewpoint"] },
+    {
+      "canonicalSlug": "th-phuket-wat-chalong",
+      "entityType": "poi",
+      "parentSlug": "th-phuket",
+      "countryCode": "TH",
+      "primaryName": "Wat Chalong",
+      "localName": "วัดไชยธาราราม",
+      "timezone": "Asia/Bangkok",
+      "latitude": 7.8463,
+      "longitude": 98.3375,
+      "typicalMinDays": 0.1,
+      "typicalMaxDays": 0.3,
+      "popularityScore": 90,
+      "hiddenGemScore": 12,
+      "tourismIntensityScore": 84,
+      "sourceUrls": ["https://pkt.onab.go.th/th/content/category/detail/id/110/iid/5048", "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/recommended-route-for-one-day-3", "https://www.wat-chalong-phuket.com/faq.html"],
+      "profile": { "summary": "Phuket's major Buddhist temple, best grouped into a south-island route with respectful dress and realistic road buffers." },
+      "tagKeys": ["temples", "culture", "essential"],
+      "facts": [
+        { "factKey": "visit.duration_minutes", "value": { "min": 60, "max": 120 }, "unit": "minutes", "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.wat-chalong-phuket.com/faq.html", "confidence": 0.9, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z", "metadata": { "method": "Visitor-site range for the temple grounds, halls, and chedi without a separate guided tour." } },
+        { "factKey": "visit.best_time", "value": ["Visit between 07:00 and 09:00 for lower heat, lighter visitor traffic, and the possibility of observing morning religious activity without treating it as a performance.", "Avoid squeezing the temple between distant Phuket stops without a road buffer; traffic around Chalong can materially change arrival time."], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.wat-chalong-phuket.com/faq.html", "confidence": 0.9, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "opening_hours.regular", "value": { "timezone": "Asia/Bangkok", "schedule": [{ "days": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], "opens": "07:00", "closes": "17:00", "scope": "Published visitor access" }], "notes": ["This is an active temple; ceremonies, festivals, maintenance, and individual building access may alter the normal visitor experience."], "checkBeforeVisit": true }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.wat-chalong-phuket.com/faq.html", "confidence": 0.88, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-08-17T08:10:00Z" },
+        { "factKey": "pricing.admission", "value": { "currency": "THB", "free": true, "notes": ["General entry is published as free; donations and offerings are optional.", "Private transport, guides, offerings, and festival purchases are separate."], "checkBeforeVisit": true }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.wat-chalong-phuket.com/faq.html", "confidence": 0.88, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-08-17T08:10:00Z" },
+        { "factKey": "visit.booking", "value": { "mode": "walk_in", "notes": ["No advance booking is modeled for an ordinary temple visit; blessings are not guaranteed and organized tours are separate products."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.wat-chalong-phuket.com/faq.html", "confidence": 0.86, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-10-16T08:10:00Z" },
+        { "factKey": "visit.dress_code", "value": ["Cover shoulders, chest, midriff, and knees", "Remove shoes before entering temple buildings", "Speak quietly and do not touch statues or Buddhist relics", "Treat worshippers, monks, offerings, and firecracker rituals respectfully"], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.wat-chalong-phuket.com/faq.html", "confidence": 0.94, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.practical_notes", "value": ["Wat Chalong is a living religious site associated with Luang Por Chaem and remains important to local worshippers; use the visitor route without obstructing rituals.", "Firecracker sounds from the dedicated oven are part of a merit-making practice and can be unexpectedly loud for children or noise-sensitive travelers.", "Combine it with other south-Phuket stops only when current road conditions and the group's heat tolerance make the route realistic."], "sourceKey": "travelflow_editorial", "sourceUrl": "https://pkt.onab.go.th/th/content/category/detail/id/110/iid/5048", "confidence": 0.92, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "access.transport", "value": { "modes": ["car", "private_driver", "taxi", "ride_hail", "guided_tour", "motorbike"], "notes": ["The temple sits on Chaofa West Road and works naturally in a south-Phuket road loop; confirm return transport and allow for variable island traffic."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/recommended-route-for-one-day-3", "confidence": 0.86, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.physical_intensity", "value": { "level": "low", "notes": ["The grounds are compact, but the multi-level chedi adds stairs and the tropical heat can increase effort."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.wat-chalong-phuket.com/faq.html", "confidence": 0.84, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.facilities", "value": ["Free parking for cars, motorbikes, and minibuses", "Limited toilets", "Temple buildings and a multi-level chedi", "Shaded areas are present but not guaranteed throughout the route"], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.wat-chalong-phuket.com/faq.html", "confidence": 0.82, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-10-16T08:10:00Z" },
+        { "factKey": "audience.family_fit", "value": { "fit": "good", "notes": ["A short ground-level visit can work well for families when children understand temple etiquette.", "Prepare noise-sensitive children for sudden firecracker sounds and supervise them on chedi stairs."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.wat-chalong-phuket.com/faq.html", "confidence": 0.84, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "audience.mobility_fit", "value": { "fit": "conditional", "notes": ["The grounds are described as largely wheelchair accessible, but stairs in the chedi and thresholds in individual buildings require a ground-level alternative and current onsite confirmation."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.wat-chalong-phuket.com/faq.html", "confidence": 0.76, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-10-16T08:10:00Z" }
+      ]
+    },
+    {
+      "canonicalSlug": "th-phuket-karon-viewpoint",
+      "entityType": "poi",
+      "parentSlug": "th-phuket-karon",
+      "countryCode": "TH",
+      "primaryName": "Karon Viewpoint",
+      "localName": "จุดชมวิวสามอ่าว",
+      "timezone": "Asia/Bangkok",
+      "latitude": 7.7973,
+      "longitude": 98.3022,
+      "typicalMinDays": 0.1,
+      "typicalMaxDays": 0.2,
+      "popularityScore": 82,
+      "hiddenGemScore": 18,
+      "tourismIntensityScore": 76,
+      "attributes": { "activityProfile": { "primaryCategory": "viewpoint" } },
+      "sourceUrls": ["https://www.tourismthailand.org/Attraction/karon-viewpoint", "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/recommended-route-for-one-day-3"],
+      "profile": { "summary": "A roadside viewpoint over Kata Noi, Kata, and Karon bays that fits a south-coast route rather than a standalone cross-island journey." },
+      "tagKeys": ["nature", "beaches", "viewpoint"],
+      "facts": [
+        { "factKey": "visit.duration_minutes", "value": { "min": 20, "max": 60 }, "unit": "minutes", "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Attraction/karon-viewpoint", "confidence": 0.88, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z", "metadata": { "method": "Planning range for arrival, the upper viewing area, photographs, and a short traffic buffer." } },
+        { "factKey": "visit.best_time", "value": ["Visit in clear daylight when the three separate bays—Kata Noi, Kata, and Karon—can be read from north to south.", "Use the viewpoint as a flexible stop in a south-coast loop; do not cross Phuket solely for it when traffic or visibility is poor."], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/recommended-route-for-one-day-3", "confidence": 0.9, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.practical_notes", "value": ["The viewpoint is beside Highway 4030 and is best treated as a short route stop rather than a standalone attraction.", "Road traffic, tour-vehicle arrivals, and limited stopping space can turn a nominally short visit into a longer block.", "Keep valuables secured and use designated viewing and pedestrian areas rather than standing in the road for photographs."], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Attraction/karon-viewpoint", "confidence": 0.9, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.weather_dependency", "value": { "level": "high", "notes": ["Rain, low cloud, haze, and coastal glare can remove the three-bay view; wet roadside surfaces also reduce comfort and safety."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Destinations/Provinces/Phuket/350", "confidence": 0.9, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.physical_intensity", "value": { "level": "low", "notes": ["The normal roadside viewpoint visit is short, although steps, slopes, heat, standing, and traffic-side movement can still affect individual travelers."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Attraction/karon-viewpoint", "confidence": 0.86, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "access.transport", "value": { "modes": ["car", "private_driver", "taxi", "guided_tour", "motorbike"], "notes": ["The viewpoint is on the coastal road between the Kata area and Nai Harn/Rawai; build it into a road loop and confirm pickup or parking rather than assuming walkable access from every beach."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Trip-Planner/Suggestion-Detail/recommended-route-for-one-day-3", "confidence": 0.9, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.facilities", "value": ["Roadside viewing area", "Limited parking or short-stop space", "Shelter and seating may be limited", "Do not rely on food, toilets, or step-free access without current confirmation"], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Attraction/karon-viewpoint", "confidence": 0.68, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-08-17T08:10:00Z" },
+        { "factKey": "audience.family_fit", "value": { "fit": "conditional", "notes": ["The short stop can suit families, but children need close supervision beside the highway, parking movements, and viewpoint edges."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Attraction/karon-viewpoint", "confidence": 0.82, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "audience.mobility_fit", "value": { "fit": "conditional", "notes": ["A vehicle-based short visit may reduce walking, but current drop-off distance, steps, gradients, roadside traffic, and sightline access require individual checking."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Attraction/karon-viewpoint", "confidence": 0.74, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-10-16T08:10:00Z" }
+      ]
+    },
     {
       "canonicalSlug": "th-chiang-rai-blue-temple",
       "entityType": "poi",
@@ -2003,7 +2737,38 @@
         { "factKey": "audience.family_fit", "value": { "fit": "good", "notes": ["The compact, visually distinctive complex can work well for families when temple etiquette and crowd supervision are clear."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.thailandtravel.or.jp/wat-rong-sua-ten/", "confidence": 0.8, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T05:55:00Z", "validUntil": "2027-01-14T10:30:00Z" }
       ]
     },
-    { "canonicalSlug": "th-chiang-rai-baan-dam", "entityType": "poi", "parentSlug": "th-chiang-rai", "countryCode": "TH", "primaryName": "Baan Dam Museum / Black House", "timezone": "Asia/Bangkok", "latitude": 19.9912, "longitude": 99.8611, "typicalMinDays": 0.2, "typicalMaxDays": 0.4, "popularityScore": 82, "hiddenGemScore": 42, "tourismIntensityScore": 62, "sourceUrls": ["https://www.tourismthailand.org/Destinations/Provinces/Chiang%20Rai/102"], "profile": { "summary": "An art-and-architecture museum complex north of Chiang Rai that contrasts with the region's temple circuit and requires a road transfer." }, "tagKeys": ["culture", "museum", "hidden_gem"] },
+    {
+      "canonicalSlug": "th-chiang-rai-baan-dam",
+      "entityType": "poi",
+      "parentSlug": "th-chiang-rai",
+      "countryCode": "TH",
+      "primaryName": "Baan Dam Museum / Black House",
+      "localName": "พิพิธภัณฑ์บ้านดำ",
+      "timezone": "Asia/Bangkok",
+      "latitude": 19.9912,
+      "longitude": 99.8611,
+      "typicalMinDays": 0.2,
+      "typicalMaxDays": 0.4,
+      "popularityScore": 82,
+      "hiddenGemScore": 42,
+      "tourismIntensityScore": 62,
+      "sourceUrls": ["https://www.thailandtravel.or.jp/baan-dam-museum/", "https://www.tourismthailand.org/Articles/chiang-rai-chiang-mai-a-great-low-budgeted-trip", "https://thawan-duchanee.com/"],
+      "profile": { "summary": "An art-and-architecture museum complex north of Chiang Rai that contrasts with the region's temple circuit and requires a road transfer." },
+      "tagKeys": ["culture", "museum", "hidden_gem"],
+      "facts": [
+        { "factKey": "visit.duration_minutes", "value": { "min": 75, "max": 150 }, "unit": "minutes", "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.thailandtravel.or.jp/baan-dam-museum/", "confidence": 0.88, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z", "metadata": { "method": "Planning range for a selective circuit through the multi-building museum grounds rather than exhaustive inspection of every structure." } },
+        { "factKey": "visit.best_time", "value": ["Arrive earlier in the visitor day for cooler outdoor movement and enough time to explore the dispersed buildings without rushing before closing.", "Pair Baan Dam with Blue Temple, the airport side, or another north-of-city stop; it is inefficient to place between White Temple and central sights without route analysis."], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.thailandtravel.or.jp/baan-dam-museum/", "confidence": 0.9, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "opening_hours.regular", "value": { "timezone": "Asia/Bangkok", "schedule": [{ "days": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], "opens": "09:00", "closes": "17:00", "scope": "Published visitor hours" }], "notes": ["The official TAT visitor page explicitly lists irregular closure days, so confirm the exact date before the road transfer."], "checkBeforeVisit": true }, "sourceKey": "tat_official", "sourceUrl": "https://www.thailandtravel.or.jp/baan-dam-museum/", "confidence": 0.94, "reviewStatus": "verified", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-08-17T08:10:00Z" },
+        { "factKey": "pricing.admission", "value": { "currency": "THB", "adultForeign": 80, "adultLocal": 80, "notes": ["An older official TAT itinerary cites a general 80 THB admission, but the currently indexed visitor page does not publish a price; treat 80 THB as a reference only and verify the current ticket onsite or with the museum."], "checkBeforeVisit": true }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Articles/chiang-rai-chiang-mai-a-great-low-budgeted-trip", "confidence": 0.62, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-08-17T08:10:00Z" },
+        { "factKey": "visit.booking", "value": { "mode": "walk_in", "bookingUrl": "https://thawan-duchanee.com/", "notes": ["Individual admission is modeled as walk-in, but check the official museum channel first because irregular closures are published.", "Group, guide, and event arrangements are separate from ordinary entry."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.thailandtravel.or.jp/baan-dam-museum/", "confidence": 0.82, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-08-17T08:10:00Z" },
+        { "factKey": "visit.practical_notes", "value": ["Baan Dam preserves more than 25 northern-style buildings and the work and collections associated with artist Thawan Duchanee; it is an art museum, not a Buddhist temple.", "The imagery and material collection can include death, animal remains, and mature themes; prepare sensitive travelers and children instead of presenting it as a universally light attraction.", "Choose a representative route through the large grounds and keep the departure time visible when continuing to another dispersed Chiang Rai sight."], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.thailandtravel.or.jp/baan-dam-museum/", "confidence": 0.92, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "access.transport", "value": { "modes": ["car", "private_driver", "taxi", "ride_hail", "guided_tour"], "notes": ["The official TAT visitor page estimates roughly 20–30 minutes by car from central Chiang Rai; arrange return transport or include it in a north-side driver circuit."] }, "sourceKey": "tat_official", "sourceUrl": "https://www.thailandtravel.or.jp/baan-dam-museum/", "confidence": 0.94, "reviewStatus": "verified", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.physical_intensity", "value": { "level": "moderate", "notes": ["The museum is spread across a large outdoor compound with repeated walking, standing, thresholds, and movement between buildings; heat and rain can add effort."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.thailandtravel.or.jp/baan-dam-museum/", "confidence": 0.86, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.facilities", "value": ["Ticket and visitor facilities at the museum entrance", "Multiple indoor and outdoor exhibition buildings", "Parking is expected for the road-access museum but current capacity should be checked", "Do not assume every building is step-free or climate-controlled"], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.thailandtravel.or.jp/baan-dam-museum/", "confidence": 0.72, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-10-16T08:10:00Z" },
+        { "factKey": "audience.family_fit", "value": { "fit": "conditional", "notes": ["Architecture and imaginative forms may engage older children, while animal remains, mature imagery, heat, and the large grounds may not suit every family."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.thailandtravel.or.jp/baan-dam-museum/", "confidence": 0.82, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "audience.mobility_fit", "value": { "fit": "conditional", "notes": ["A shortened selection of accessible buildings may be possible, but distances, uneven outdoor surfaces, thresholds, steps, seating, and toilet access need direct confirmation."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.thailandtravel.or.jp/baan-dam-museum/", "confidence": 0.76, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-10-16T08:10:00Z" }
+      ]
+    },
     {
       "canonicalSlug": "th-ayutthaya-wat-mahathat",
       "entityType": "poi",
@@ -2069,7 +2834,37 @@
         { "factKey": "audience.family_fit", "value": { "fit": "good", "notes": ["Open space and cycling can work well for families when road time, heat, bicycle safety, and the number of temple stops are kept realistic."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://virtualhistoricalpark.finearts.go.th/sisatchanalai/index.php/en/history.html", "confidence": 0.8, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T05:55:00Z", "validUntil": "2027-01-14T10:30:00Z" }
       ]
     },
-    { "canonicalSlug": "th-chiang-mai-tha-phae", "entityType": "poi", "parentSlug": "th-chiang-mai-old-city", "countryCode": "TH", "primaryName": "Tha Phae Gate and Walking Street", "localName": "ประตูท่าแพ", "timezone": "Asia/Bangkok", "latitude": 18.7878, "longitude": 98.9933, "typicalMinDays": 0.1, "typicalMaxDays": 0.4, "popularityScore": 91, "hiddenGemScore": 12, "tourismIntensityScore": 88, "sourceUrls": ["https://www.tourismthailand.org/Promotions/78/4-most-visited-tourist-attractions-in-near-chiang-mai-moat-2"], "profile": { "summary": "An Old City landmark and entry point to the Sunday walking street; the market experience depends on the day and current event schedule." }, "tagKeys": ["history", "culture", "markets", "food", "lively", "essential"] },
+    {
+      "canonicalSlug": "th-chiang-mai-tha-phae",
+      "entityType": "poi",
+      "parentSlug": "th-chiang-mai-old-city",
+      "countryCode": "TH",
+      "primaryName": "Tha Phae Gate and Walking Street",
+      "localName": "ประตูท่าแพ",
+      "timezone": "Asia/Bangkok",
+      "latitude": 18.7878,
+      "longitude": 98.9933,
+      "typicalMinDays": 0.1,
+      "typicalMaxDays": 0.4,
+      "popularityScore": 91,
+      "hiddenGemScore": 12,
+      "tourismIntensityScore": 88,
+      "sourceUrls": ["https://www.tourismthailand.org/Promotions/78/4-most-visited-tourist-attractions-in-near-chiang-mai-moat-2", "https://www.tourismthailand.org/Articles/yummy-delicacies-at-chiang-mai-night-market", "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101"],
+      "profile": { "summary": "An Old City landmark and entry point to the Sunday walking street; the market experience depends on the day and current event schedule." },
+      "tagKeys": ["history", "culture", "markets", "food", "lively", "essential"],
+      "facts": [
+        { "factKey": "visit.duration_minutes", "value": { "min": 45, "max": 210 }, "unit": "minutes", "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Promotions/78/4-most-visited-tourist-attractions-in-near-chiang-mai-moat-2", "confidence": 0.9, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z", "metadata": { "method": "Range distinguishes a short daytime gate and moat orientation from a selective Sunday walking-street visit along Ratchadamnoen Road." } },
+        { "factKey": "visit.best_time", "value": ["Visit the gate in daylight for a short Old City orientation, or choose Sunday from 17:00 onward specifically for the walking street.", "For the Sunday market, arrive near opening for easier movement or later for the fullest atmosphere; do not promise both low crowds and peak market energy."], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Articles/yummy-delicacies-at-chiang-mai-night-market", "confidence": 0.94, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "opening_hours.regular", "value": { "timezone": "Asia/Bangkok", "schedule": [{ "days": ["sunday"], "opens": "17:00", "closes": "22:00", "scope": "Published Sunday Walking Street schedule; the outdoor gate landmark is separate" }], "notes": ["The gate can be visited outside market time, but the vendor-lined walking street is a Sunday event and may change for holidays, weather, civic events, or local operations."], "checkBeforeVisit": true }, "sourceKey": "tat_official", "sourceUrl": "https://thai.tourismthailand.org/Articles/10-%E0%B9%80%E0%B8%97%E0%B9%88-%E0%B8%99%E0%B9%88%E0%B8%B2%E0%B9%80%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%A7-%E0%B9%80%E0%B8%8A%E0%B8%B5%E0%B8%A2%E0%B8%87%E0%B9%83%E0%B8%AB%E0%B8%A1%E0%B9%88", "confidence": 0.94, "reviewStatus": "verified", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-08-17T08:10:00Z" },
+        { "factKey": "pricing.admission", "value": { "currency": "THB", "free": true, "notes": ["The public gate and walking street have no modeled admission ticket; food, crafts, performances, temple donations, and commercial experiences are separate."], "checkBeforeVisit": true }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Promotions/78/4-most-visited-tourist-attractions-in-near-chiang-mai-moat-2", "confidence": 0.86, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-08-17T08:10:00Z" },
+        { "factKey": "visit.practical_notes", "value": ["The Sunday walking street starts at Tha Phae Gate and runs west along Ratchadamnoen Road into the Old City, branching around intersections toward Wat Phra Singh.", "Choose a finite market section and an agreed exit point; an end-to-end crawl can consume the full evening and makes group separation likely.", "Ask vendors directly about ingredients, meat, fish sauce, allergens, and spice level; visual inspection is not a reliable dietary filter."], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Articles/yummy-delicacies-at-chiang-mai-night-market", "confidence": 0.94, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "access.transport", "value": { "modes": ["walking", "shared_songthaew", "tuk_tuk", "taxi", "ride_hail", "bicycle"], "notes": ["Tha Phae Gate is on the eastern Old City edge and is easy to reach on foot from many central neighborhoods; on Sunday, request drop-off outside the pedestrianized and congested market core."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Promotions/78/4-most-visited-tourist-attractions-in-near-chiang-mai-moat-2", "confidence": 0.92, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.physical_intensity", "value": { "level": "variable", "notes": ["A gate photo stop is low effort; the market adds prolonged standing, dense walking, heat, and potentially several kilometers if followed deeply into the Old City."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Promotions/78/4-most-visited-tourist-attractions-in-near-chiang-mai-moat-2", "confidence": 0.88, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "visit.facilities", "value": ["Food, drinks, crafts, and local products along the Sunday route", "Surrounding Old City cafés, restaurants, and convenience services", "Seating, toilets, weather cover, and step-free routes are distributed and not guaranteed at every section", "Crowd density can obstruct quick vehicle pickup"], "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Articles/yummy-delicacies-at-chiang-mai-night-market", "confidence": 0.8, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-10-16T08:10:00Z" },
+        { "factKey": "audience.family_fit", "value": { "fit": "conditional", "notes": ["The gate and early market can suit families, but use a short section, early meal timing, an agreed meeting point, and close supervision in dense pedestrian traffic."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Articles/yummy-delicacies-at-chiang-mai-night-market", "confidence": 0.84, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2027-01-14T08:10:00Z" },
+        { "factKey": "audience.mobility_fit", "value": { "fit": "conditional", "notes": ["A short gate-side visit may work well, while the full Sunday route can involve crowds, uneven paving, limited seating, long distances, and difficult pickup access; preselect a short section and exit."] }, "sourceKey": "travelflow_editorial", "sourceUrl": "https://www.tourismthailand.org/Promotions/78/4-most-visited-tourist-attractions-in-near-chiang-mai-moat-2", "confidence": 0.78, "reviewStatus": "editorial_reviewed", "observedAt": "2026-07-18T08:10:00Z", "validUntil": "2026-10-16T08:10:00Z" }
+      ]
+    },
     {
       "canonicalSlug": "th-kanchanaburi-hellfire-pass",
       "entityType": "poi",
