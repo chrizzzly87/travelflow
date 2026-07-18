@@ -39,6 +39,7 @@ describe('travel planning context service', () => {
     expect(result.context.pack.locale).toBe('de');
     expect(result.context.pack.templates.map((template) => template.templateKey)).toEqual([
       'th-bangkok-long-weekend',
+      'th-bangkok-river-slow',
       'th-bangkok-food-neighborhoods',
     ]);
   });

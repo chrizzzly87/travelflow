@@ -40,9 +40,10 @@ describe('travel planning context', () => {
     expect(context.retrieverVersion).toBe(TRAVEL_PLANNING_RETRIEVER_VERSION);
     expect(context.pack.dataset?.version).toBe('2026.07.18-v13');
     expect(context.pack.locale).toBe('de');
-    expect(context.pack.templates).toHaveLength(2);
+    expect(context.pack.templates).toHaveLength(3);
     expect(context.pack.templates.map((template) => template.templateKey)).toEqual([
       'th-bangkok-long-weekend',
+      'th-bangkok-river-slow',
       'th-bangkok-food-neighborhoods',
     ]);
     expect(context.pack.entities.map((entity) => entity.canonicalSlug)).toEqual(expect.arrayContaining([

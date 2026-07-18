@@ -146,14 +146,43 @@ const selectedRouteSlugs = (spec: JourneySpec): string[] => unique(
     .map((place) => place.entity.canonicalSlug),
 );
 
-const lockedRouteSlugs = (spec: JourneySpec): string[] => unique(
-  spec.places
-    .filter((place) => ROUTE_SELECTION_ROLES.has(place.role) && (place.locked || spec.constraints.routeLocked))
-    .map((place) => place.entity.canonicalSlug),
+const selectedRoutePlaces = (spec: JourneySpec): JourneyPlaceSelection[] => {
+  const seen = new Set<string>();
+  return spec.places.filter((place) => {
+    const slug = place.entity.canonicalSlug;
+    if (!ROUTE_SELECTION_ROLES.has(place.role) || seen.has(slug)) return false;
+    seen.add(slug);
+    return true;
+  });
+};
+
+const lockedRoutePlaces = (spec: JourneySpec): JourneyPlaceSelection[] => (
+  selectedRoutePlaces(spec)
+    .filter((place) => place.locked || spec.constraints.routeLocked)
 );
 
 const templateStopSlugs = (template: TravelTemplateCatalogItem): Set<string> =>
   new Set(template.stops.map((stop) => stop.entitySlug));
+
+const templateCoversPlace = (
+  pack: TravelDestinationPack,
+  stopSlugs: ReadonlySet<string>,
+  place: JourneyPlaceSelection,
+): boolean => {
+  if (stopSlugs.has(place.entity.canonicalSlug)) return true;
+  if (place.entity.entityType !== 'neighborhood') return false;
+
+  const index = getTravelKnowledgeIndex(pack);
+  let current = index.byId.get(place.entity.entityId ?? '')
+    ?? index.bySlug.get(place.entity.canonicalSlug);
+  const visited = new Set<string>();
+  while (current?.parentId && !visited.has(current.parentId)) {
+    visited.add(current.parentId);
+    current = index.byId.get(current.parentId);
+    if (current?.entityType === 'city') return stopSlugs.has(current.canonicalSlug);
+  }
+  return false;
+};
 
 const baseChangeCount = (template: TravelTemplateCatalogItem): number => {
   const bases = unique(
@@ -164,7 +193,11 @@ const baseChangeCount = (template: TravelTemplateCatalogItem): number => {
   return Math.max(0, bases.length - 1);
 };
 
-const isTemplateEligible = (spec: JourneySpec, template: TravelTemplateCatalogItem): boolean => {
+const isTemplateEligible = (
+  spec: JourneySpec,
+  pack: TravelDestinationPack,
+  template: TravelTemplateCatalogItem,
+): boolean => {
   if (!spec.countryCodes.includes(template.countryCode)) return false;
   if (template.journeyType !== spec.journeyType) return false;
   if (spec.constraints.maxBaseChanges !== undefined
@@ -175,7 +208,7 @@ const isTemplateEligible = (spec: JourneySpec, template: TravelTemplateCatalogIt
     .filter((place) => place.role === 'avoid')
     .map((place) => place.entity.canonicalSlug);
   if (avoidedSlugs.some((slug) => stopSlugs.has(slug))) return false;
-  return lockedRouteSlugs(spec).every((slug) => stopSlugs.has(slug));
+  return lockedRoutePlaces(spec).every((place) => templateCoversPlace(pack, stopSlugs, place));
 };
 
 export const matchTravelTemplates = (
@@ -190,13 +223,15 @@ export const matchTravelTemplates = (
   ]);
   const journeyMonths = getJourneyMonths(spec);
   const selectedSlugs = selectedRouteSlugs(spec);
+  const selectedPlaces = selectedRoutePlaces(spec);
 
   const matches = pack.templates.flatMap((template): TravelTemplateMatch[] => {
-    if (!isTemplateEligible(spec, template)) return [];
+    if (!isTemplateEligible(spec, pack, template)) return [];
 
     const delta = durationDelta(spec.durationDays, template);
     const stopSlugs = templateStopSlugs(template);
-    const selectedMatches = selectedSlugs.filter((slug) => stopSlugs.has(slug)).length;
+    const selectedMatches = selectedPlaces
+      .filter((place) => templateCoversPlace(pack, stopSlugs, place)).length;
     const selectedPlaceCoverage = selectedSlugs.length > 0 ? selectedMatches / selectedSlugs.length : 1;
     const selectedScore = selectedSlugs.length > 0 ? selectedPlaceCoverage * 10 : 5;
     const seasonal = seasonScore(journeyMonths, template.idealMonths);

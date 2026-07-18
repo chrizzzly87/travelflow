@@ -200,8 +200,8 @@ describe('pages/CreateTripShapeLabPage', () => {
       'create_trip_shape__concepts--prepare',
       expect.objectContaining({
         journey_type: 'city_break',
-        concept_count: 2,
-        attempted_template_count: 2,
+        concept_count: 3,
+        attempted_template_count: 3,
         failed_template_count: 0,
         knowledge_source: 'bundled',
         dataset_version: '2026.07.18-v13',
@@ -211,7 +211,7 @@ describe('pages/CreateTripShapeLabPage', () => {
       'create_trip_shape__reveal--ready',
       expect.objectContaining({
         journey_type: 'city_break',
-        concept_count: 2,
+        concept_count: 3,
         knowledge_source: 'bundled',
         dataset_version: '2026.07.18-v13',
       }),
