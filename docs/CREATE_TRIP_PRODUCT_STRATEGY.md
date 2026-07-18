@@ -16,7 +16,7 @@ The proposed position is:
 
 That creates a defensible gap between inspiration/tracking products such as Polarsteps and Skratch, and logistics-heavy planners such as Wanderlog and Stippl. TravelFlow can still grow into the full planning lifecycle, but its memorable first win should be a source-backed route reveal rather than an empty day planner.
 
-The Thailand foundation now proves the core architecture: structured `JourneySpec`, first-class cities and neighborhoods, bounded two-stage retrieval from an active country pack, premade route concepts, deterministic matching, immediate editable skeletons, constrained AI patching, typed activity metadata, a searchable admin catalogue, and a reusable map contract. The next product work should deepen traveler-aware planning and activity coverage before expanding globally.
+The Thailand foundation now proves the core architecture: structured `JourneySpec`, first-class cities and neighborhoods, bounded two-stage retrieval from an active country pack, premade route concepts, deterministic matching, immediate editable skeletons, constrained AI patching, typed activity metadata, a searchable admin catalogue, and a reusable map contract. The next product work should deepen traveler-aware planning and expand the activity catalogue beyond its 32 fully researched anchors before expanding globally.
 
 The follow-up trip visualization direction is defined in [JOURNEY_SPEC_SIDEBAR_CONCEPTS.md](./JOURNEY_SPEC_SIDEBAR_CONCEPTS.md). Its synchronized Journey Lens and Route Storyboard remain paused until the fast-path experience is approved; no further large TripView layout change should ship as part of this foundation.
 
@@ -171,7 +171,7 @@ This is faster than putting every fact into a vector database, produces stable a
 - The route reveal visibly reports source, dataset/retriever version, retrieval time, payload size, selected/source counts, and zero AI calls.
 - Opening the base compiles an editable trip locally and preserves the retrieval receipt plus canonical entity IDs.
 - The optional free-text adaptation sends one bounded request after route selection, accepts only allowlisted preference and known-place patches, validates the result twice, and supports review, apply, and undo before opening the trip.
-- Researched Bangkok activities expose structured duration, hours, pricing, booking, dress, audience, practical, freshness, and source fields; absent data stays absent.
+- All 32 current Thailand activity POIs expose the category-relevant structured duration, hours or operating context, pricing, booking, weather/effort, access, facilities, audience, practical, freshness, and source fields; absent or inapplicable data stays absent.
 - The admin travel-knowledge workspace opens on a searchable published catalogue and keeps ingestion candidates in a separate review queue.
 
 This is a structured retrieval/RAG system with constrained model-assisted personalization, but it is not yet semantic/vector retrieval or a complete traveler model. The selected route and most planning data are retrieved and compiled without AI; a single fast-model call can optionally interpret free text into a validated patch. The existing classic generator still uses the large-prompt generation path and remains useful as the comparison baseline.

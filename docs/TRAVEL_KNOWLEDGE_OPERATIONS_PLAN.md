@@ -282,6 +282,7 @@ Track these per country and dataset version:
 - [x] Prepare Thailand v6 with 277 facts and richer operational metadata for four Bangkok activities.
 - [x] Add a bounded, version-safe planning-context RPC and expose retrieval provenance in the route-first wizard.
 - [x] Add a searchable published-catalogue view to the admin workspace while preserving the separate review queue.
+- [x] Publish Thailand v11 with 571 sourced facts and rich category-aware coverage for all 32 current activity POIs while retaining v10 for immediate rollback.
 
 ### Stage 2 — freshness and source registry
 
