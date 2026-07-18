@@ -10,7 +10,8 @@ This checklist distinguishes the new Thailand planning foundation from the class
 | --- | --- |
 | Structured retrieval/RAG foundation | Retrieves a bounded planning context from the active, versioned Thailand catalogue with a bundled fallback. It does not send the full country pack to an LLM. |
 | Fast route comparison | Deterministically ranks up to three route templates from the compact context. The comparison itself makes zero AI calls. |
-| Direct city coverage | All fifteen supported cities have a city-break concept in the twenty-seven-template v12 catalogue, including non-Bangkok routes for Chiang Rai, Krabi, Pai, Hua Hin, and the island bases. |
+| Direct city coverage | All fifteen supported cities have a city-break concept in the twenty-seven-template v13 catalogue, including non-Bangkok routes for Chiang Rai, Krabi, Pai, Hua Hin, and the island bases. |
+| Area choice coverage | Every supported city has at least two selectable neighborhoods or editorial travel areas. New area records state base fit, walkability, evening energy, tradeoffs, and their non-administrative scope. |
 | Deeper selected route | Selecting a concept retrieves more neighborhoods and POIs, pinned to the chosen template and dataset version. |
 | Editable base trip | Opens a canonical, knowledge-enriched trip immediately without waiting for OpenAI. |
 | Constrained AI adaptation | After selecting a route, an optional free-text request proposes a small patch against known catalogue IDs. The base route remains locked until the traveler reviews and applies the proposal. |
@@ -31,15 +32,15 @@ This checklist distinguishes the new Thailand planning foundation from the class
 ## Test the fast path
 
 1. Open the named feature preview and go to `/create-trip`. The branch is configured to use the structured Thailand planner on the primary creator URL; production remains unchanged.
-2. Choose **City break**, select **Bangkok**, **Chiang Rai**, or **Krabi**, set a suitable duration, then choose a pace and interests.
+2. Choose **City break**, select **Bangkok**, **Chiang Rai**, **Ayutthaya**, **Sukhothai**, **Kanchanaburi**, **Pattaya**, **Hua Hin**, **Pai**, or **Krabi**, set a suitable duration, then choose a pace and interests.
 3. Select **Compare plans**.
 4. In **Source-backed fast path**, verify that the receipt visibly shows:
    - `0 AI calls`
-   - the active `2026.07.18-v12` dataset
+   - the active `2026.07.18-v13` dataset
    - a structured retriever version
    - retrieval time and a bounded payload size
    - selected places/templates versus source totals
-5. Choose one of the returned routes. Wait for the deeper selected-context line to report neighborhoods, activities, and payload size. Chiang Rai should offer **Chiang Rai in three colors**; Krabi should offer **Krabi between cliffs and sea**.
+5. Choose one of the returned routes. Wait for the deeper selected-context line to report neighborhoods, activities, and payload size. Chiang Rai should offer **Chiang Rai in three colors** and the **City Centre / Clock Tower** plus **Rim Kok Riverside** areas; Krabi should offer **Krabi between cliffs and sea**.
 6. Before using AI, select **Open instant base** if you want to prove the zero-AI path. The editable trip should open without an AI-generation waiting screen.
 7. Return to the route reveal and enter a request such as: “Make this slower, prioritize food, keep the Grand Palace, and avoid crowded markets.”
 8. Select **Adapt this route**. Verify that the review card visibly reports `1 AI call`, the server-selected model, response time, and the same dataset version.
@@ -72,7 +73,7 @@ The comparison is intentionally not claimed as a production speed multiplier yet
 3. Confirm the coverage summary reports **32 Activity POIs**, **32 Rich**, **0 Usable**, **0 Starter**, and **99% Average coverage**.
 4. Confirm there is no zero-count enrichment-queue action. Optional gaps can remain visible for honest inapplicable or unpublished fields, such as exact public-access hours for an active railway bridge.
 5. Filter activity coverage to **Rich**, then inspect `Grand Palace`, `Mu Ko Lanta National Park`, `Tiger Cave Temple`, `Wat Chalong`, `Hua Hin Night Market`, `Sairee Beach sunset`, `Baan Dam Museum`, and `Tha Phae Gate and Walking Street`.
-6. Verify facts show values, confidence/review state, observation and validity dates, source keys, and source links. The v11 activity additions should expose category-relevant hours or operating context, pricing, weather, physical effort, access, facilities, and family/mobility fit; v12 should list 27 templates.
+6. Verify facts show values, confidence/review state, observation and validity dates, source keys, and source links. The v11 activity additions should expose category-relevant hours or operating context, pricing, weather, physical effort, access, facilities, and family/mobility fit; v13 should list 27 templates and 45 neighborhoods.
 7. Confirm volatile values display check-before-visit guidance and that the Sunday Walking Street schedule is not presented as the daily opening time of Tha Phae Gate.
 8. Search/filter other entity types and inspect a route template with its stops and legs.
 9. Open **Review queue** and confirm the existing candidate workflow is still separate and functional.

@@ -58,7 +58,7 @@ const spec: JourneySpec = {
   },
   knowledgeContext: {
     datasetKey: 'thailand-v1',
-    datasetVersion: '2026.07.18-v12',
+    datasetVersion: '2026.07.18-v13',
     templateKey: 'th-bangkok-long-weekend',
     templateVersion: 1,
   },

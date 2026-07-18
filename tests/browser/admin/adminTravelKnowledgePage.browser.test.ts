@@ -251,8 +251,8 @@ describe('pages/AdminTravelKnowledgePage', () => {
     renderPage();
 
     expect(await screen.findByRole('heading', { name: 'Published catalogue' })).toBeInTheDocument();
-    expect(screen.getAllByText('2026.07.18-v12').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('84').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('2026.07.18-v13').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('99').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Thailand').length).toBeGreaterThan(0);
     expect(screen.getByText('Activity POIs')).toBeInTheDocument();
     expect(screen.getAllByText('32').length).toBeGreaterThan(0);
@@ -272,6 +272,6 @@ describe('pages/AdminTravelKnowledgePage', () => {
     expect(screen.getByRole('combobox', { name: 'Activity coverage' })).toHaveTextContent('All coverage levels');
     expect(screen.getByText('Rich').parentElement).toHaveTextContent('32');
     expect(screen.queryByRole('button', { name: /Open enrichment queue/ })).not.toBeInTheDocument();
-    expect(screen.getByText('Showing 84 entities. Search covers names, aliases, facts, tags, source keys, and route stops.')).toBeInTheDocument();
+    expect(screen.getByText('Showing 99 entities. Search covers names, aliases, facts, tags, source keys, and route stops.')).toBeInTheDocument();
   });
 });

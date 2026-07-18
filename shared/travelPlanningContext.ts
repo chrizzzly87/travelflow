@@ -217,14 +217,37 @@ const compactPlanningFact = (fact: TravelEntityFact): TravelEntityFact => {
   };
 };
 
+const compactContextAttributes = (
+  entity: TravelEntityCatalogItem,
+  includeDetailedContext: boolean,
+): Record<string, unknown> => {
+  const attributes = Object.fromEntries(
+    Object.entries(entity.attributes).filter(([key]) => key !== 'sourceUrls'),
+  );
+  const planningArea = attributes.planningArea;
+  if (
+    !includeDetailedContext
+    && typeof planningArea === 'object'
+    && planningArea !== null
+    && !Array.isArray(planningArea)
+  ) {
+    const area = planningArea as Record<string, unknown>;
+    attributes.planningArea = {
+      classification: area.classification,
+      baseFit: area.baseFit,
+      walkability: area.walkability,
+      eveningEnergy: area.eveningEnergy,
+    };
+  }
+  return attributes;
+};
+
 const compactContextEntity = (
   entity: TravelEntityCatalogItem,
   includeDetailedPoiFacts: boolean,
 ): TravelEntityCatalogItem => ({
   ...entity,
-  attributes: Object.fromEntries(
-    Object.entries(entity.attributes).filter(([key]) => key !== 'sourceUrls'),
-  ),
+  attributes: compactContextAttributes(entity, includeDetailedPoiFacts),
   names: entity.names.filter((name) => name.isPreferred),
   facts: entity.facts
     .filter((fact) => (
@@ -285,10 +308,15 @@ const selectRelevantEntities = (
       || query.selectedPlaceSlugs.includes(entity.canonicalSlug)
       || query.lockedPlaceSlugs.includes(entity.canonicalSlug)
     ));
+    const defaultNeighborhoodLimit = (
+      query.journeyType === 'single_country_circuit' && query.templateKeys.length === 0
+        ? 0
+        : query.neighborhoodLimitPerCity
+    );
     const selectedNeighborhoods = [
       ...requiredNeighborhoods,
       ...rankedNeighborhoods.filter((entity) => !requiredNeighborhoods.includes(entity)),
-    ].slice(0, Math.max(query.neighborhoodLimitPerCity, requiredNeighborhoods.length));
+    ].slice(0, Math.max(defaultNeighborhoodLimit, requiredNeighborhoods.length));
     for (const neighborhood of selectedNeighborhoods) {
       addEntityAndAncestors(neighborhood, pack, selectedSlugs);
     }

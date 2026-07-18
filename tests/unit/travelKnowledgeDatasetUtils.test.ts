@@ -219,6 +219,39 @@ describe('travel knowledge dataset tooling', () => {
     expect(result.errors.some((error) => error.includes('unknown source'))).toBe(true);
   });
 
+  it('rejects incomplete editorial planning-area metadata', () => {
+    const invalid: TravelKnowledgeDataset = {
+      ...dataset,
+      entities: dataset.entities.map((entity) => (
+        entity.canonicalSlug === 'th-bangkok-old-town'
+          ? {
+              ...entity,
+              attributes: {
+                planningArea: {
+                  classification: 'official_district',
+                  baseFit: 'sometimes',
+                  walkability: 'excellent',
+                  eveningEnergy: 'busy',
+                  tradeoffs: [],
+                },
+              },
+            }
+          : entity
+      )),
+    };
+
+    const result = validateTravelKnowledgeDataset(invalid);
+
+    expect(result.errors).toEqual(expect.arrayContaining([
+      'Entity th-bangkok-old-town planningArea must be classified as editorial_travel_area.',
+      'Entity th-bangkok-old-town planningArea has invalid baseFit.',
+      'Entity th-bangkok-old-town planningArea has invalid walkability.',
+      'Entity th-bangkok-old-town planningArea has invalid eveningEnergy.',
+      'Entity th-bangkok-old-town planningArea requires non-empty tradeoffs.',
+      'Entity th-bangkok-old-town planningArea requires a scopeNote.',
+    ]));
+  });
+
   it('sorts parents before children without depending on source-file order', () => {
     const ordered = sortTravelEntitiesByHierarchy([...dataset.entities].reverse());
     expect(ordered.map((entity) => entity.canonicalSlug)).toEqual([
