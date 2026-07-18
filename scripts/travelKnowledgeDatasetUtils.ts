@@ -268,6 +268,7 @@ export const compileTravelEntityAttributes = (
 
 export const validateTravelKnowledgeDataset = (
   dataset: TravelKnowledgeDataset,
+  now = new Date(),
 ): TravelKnowledgeDatasetValidationResult => {
   const errors: string[] = [];
   const sourceKeys = new Set<string>();
@@ -281,7 +282,12 @@ export const validateTravelKnowledgeDataset = (
 
   if (!KEY_PATTERN.test(dataset.manifest.datasetKey)) errors.push('Manifest datasetKey is invalid.');
   if (!COUNTRY_CODE_PATTERN.test(dataset.manifest.countryCode)) errors.push('Manifest countryCode must be ISO alpha-2.');
-  if (!Number.isFinite(Date.parse(dataset.manifest.generatedAt))) errors.push('Manifest generatedAt must be an ISO timestamp.');
+  const generatedAtMs = Date.parse(dataset.manifest.generatedAt);
+  if (!Number.isFinite(generatedAtMs)) {
+    errors.push('Manifest generatedAt must be an ISO timestamp.');
+  } else if (generatedAtMs > now.getTime()) {
+    errors.push('Manifest generatedAt cannot be in the future.');
+  }
 
   for (const source of dataset.sources) {
     if (!KEY_PATTERN.test(source.sourceKey)) errors.push(`Source key ${source.sourceKey} is invalid.`);
@@ -353,8 +359,11 @@ export const validateTravelKnowledgeDataset = (
     for (const fact of entityFacts) {
       if (!FACT_KEY_PATTERN.test(fact.factKey)) errors.push(`Entity ${entity.canonicalSlug} has invalid fact key ${fact.factKey}.`);
       if (!sourceKeys.has(fact.sourceKey)) errors.push(`Entity ${entity.canonicalSlug} fact ${fact.factKey} has unknown source ${fact.sourceKey}.`);
-      if (!Number.isFinite(Date.parse(fact.observedAt ?? dataset.manifest.generatedAt))) {
+      const observedAtMs = Date.parse(fact.observedAt ?? dataset.manifest.generatedAt);
+      if (!Number.isFinite(observedAtMs)) {
         errors.push(`Entity ${entity.canonicalSlug} fact ${fact.factKey} has invalid observedAt.`);
+      } else if (Number.isFinite(generatedAtMs) && observedAtMs > generatedAtMs) {
+        errors.push(`Entity ${entity.canonicalSlug} fact ${fact.factKey} was observed after the dataset was generated.`);
       }
       if (entity.entityType === 'poi') {
         validateTravelActivityFactValue(fact.factKey, fact.value).forEach((finding) => {
@@ -399,7 +408,7 @@ export const validateTravelKnowledgeDataset = (
           errors.push(`Template ${template.templateKey} required base ${stop.entitySlug} has no descendant POI candidate.`);
         }
       });
-    (template.legs ?? []).forEach((leg) => {
+    (template.legs ?? []).forEach((leg, index) => {
       templateLegCount += 1;
       if (!entitySlugs.has(leg.fromEntitySlug)) {
         errors.push(`Template ${template.templateKey} leg references unknown origin ${leg.fromEntitySlug}.`);
@@ -436,8 +445,11 @@ export const validateTravelKnowledgeDataset = (
       if (leg.confidence !== undefined && (leg.confidence < 0 || leg.confidence > 1)) {
         errors.push(`Template ${template.templateKey} leg has invalid confidence.`);
       }
-      if (!Number.isFinite(Date.parse(leg.observedAt ?? dataset.manifest.generatedAt))) {
+      const observedAtMs = Date.parse(leg.observedAt ?? dataset.manifest.generatedAt);
+      if (!Number.isFinite(observedAtMs)) {
         errors.push(`Template ${template.templateKey} leg has invalid observedAt.`);
+      } else if (Number.isFinite(generatedAtMs) && observedAtMs > generatedAtMs) {
+        errors.push(`Template ${template.templateKey} leg ${index + 1} was observed after the dataset was generated.`);
       }
     });
     template.tags.forEach((tag) => {

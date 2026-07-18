@@ -28,9 +28,10 @@ describe('travel knowledge operations schema', () => {
 
   it('keeps operational history out of anonymous grants and the public pack RPC', () => {
     const revokeStart = sql.indexOf('revoke all on table\n  public.travel_source_runs');
-    const publicGrantStart = sql.indexOf('grant select on table\n  public.travel_sources', revokeStart);
-    const operationsAccessBlock = sql.slice(revokeStart, publicGrantStart);
+    const legacyCatalogueRevokeStart = sql.indexOf('revoke all on table\n  public.travel_sources', revokeStart);
+    const operationsAccessBlock = sql.slice(revokeStart, legacyCatalogueRevokeStart);
     expect(revokeStart).toBeGreaterThan(-1);
+    expect(legacyCatalogueRevokeStart).toBeGreaterThan(revokeStart);
     expect(operationsAccessBlock).toContain('from public, anon, authenticated;');
     expect(operationsAccessBlock).toContain('to service_role;');
 
@@ -85,7 +86,9 @@ describe('travel knowledge operations schema', () => {
     expect(sql).toContain('where current_payload.dataset_version_id = v_current.dataset_version_id;');
     expect(sql).toContain("action in ('publish', 'rollback')");
     expect(sql).toContain('on conflict on constraint travel_active_datasets_pkey do update');
-    expect(sql).toContain('revoke insert, update, delete on table public.travel_dataset_versions from authenticated;');
+    expect(sql).toContain("raise exception 'Dataset generatedAt cannot be later than staging time.';");
+    expect(sql).toContain("raise exception 'Dataset facts cannot be observed after generatedAt.';");
+    expect(sql).toContain("raise exception 'Dataset route legs cannot be observed after generatedAt.';");
   });
 
   it('disambiguates the artifact dataset relationship before activation', () => {
@@ -94,7 +97,7 @@ describe('travel knowledge operations schema', () => {
     );
   });
 
-  it('serves only the active immutable payload with normalized-table fallback', () => {
+  it('serves only the active immutable payload and keeps normalized tables private', () => {
     const activePackStart = sql.indexOf('create or replace function public.get_active_travel_destination_pack');
     const activeSearchStart = sql.indexOf('create or replace function public.get_active_travel_entity_suggestions');
     const activePackFunction = sql.slice(activePackStart, activeSearchStart);
@@ -102,10 +105,11 @@ describe('travel knowledge operations schema', () => {
     expect(activePackFunction).toContain('security invoker');
     expect(activePackFunction).toContain('public.travel_active_datasets');
     expect(activePackFunction).toContain('public.travel_dataset_payloads');
-    expect(activePackFunction).toContain('public.get_travel_destination_pack(p_country_code, p_locale)');
+    expect(activePackFunction).not.toContain('public.get_travel_destination_pack(p_country_code, p_locale)');
     const activeSearchFunction = sql.slice(activeSearchStart, sql.indexOf('revoke all on function', activeSearchStart));
-    expect(activeSearchFunction).toContain('public.get_travel_entity_suggestions(');
-    expect(activeSearchFunction).toContain('where not exists (select 1 from active_entities)');
+    expect(activeSearchFunction).not.toContain('public.get_travel_entity_suggestions(');
+    expect(sql).toContain('revoke all on function public.get_travel_destination_pack(text, text) from public, anon, authenticated;');
+    expect(sql).toContain('revoke all on function public.get_travel_entity_suggestions(text, text, text[], integer) from public, anon, authenticated;');
     expect(sql).toContain('grant execute on function public.get_active_travel_destination_pack');
   });
 

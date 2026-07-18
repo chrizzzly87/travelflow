@@ -151,6 +151,8 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `admin__travel_knowledge--reload` | — | — | `AdminTravelKnowledgePage.tsx` |
 | `admin__travel_knowledge_source--open` | — | `{ source_key }` | `AdminTravelKnowledgePage.tsx` |
 | `admin__travel_knowledge_review--{decision}` | `accept`, `accept_with_edit`, `reject`, `request_changes` | `{ candidate_id, source_key, country_code, field_path }` | `AdminTravelKnowledgePage.tsx` |
+| `admin__travel_knowledge_catalog_sort--change` | — | `{ sort }` | `TravelKnowledgeCatalog.tsx` |
+| `admin__travel_knowledge_enrichment_queue--open` | — | `{ entity_count }` | `TravelKnowledgeCatalog.tsx` |
 
 ### Trip View
 | Event | Detail | Payload | File |

@@ -34,7 +34,8 @@ import { AdminSurfaceCard } from './AdminSurfaceCard';
 
 type CatalogMode = 'entities' | 'templates';
 type EntityTypeFilter = 'all' | TravelEntityType;
-type ActivityCoverageFilter = 'all' | TravelActivityCoverageStatus;
+type ActivityCoverageFilter = 'all' | 'needs_work' | TravelActivityCoverageStatus;
+type CatalogSort = 'catalog' | 'coverage_priority' | 'popularity';
 
 interface TravelKnowledgeCatalogProps {
     pack: TravelDestinationPack | null;
@@ -86,6 +87,15 @@ const templateSearchText = (template: TravelTemplateCatalogItem): string => (
         ...template.tags.map((tag) => tag.tagKey),
     ].join(' ').toLowerCase()
 );
+
+const activityCoverageSortRank = (
+    coverage: ReturnType<typeof getTravelActivityKnowledgeCoverage>,
+): number => {
+    if (!coverage) return 3;
+    if (coverage.status === 'starter') return 0;
+    if (coverage.status === 'usable') return 1;
+    return 2;
+};
 
 const EntityCard: React.FC<{
     entity: TravelEntityCatalogItem;
@@ -302,6 +312,7 @@ export const TravelKnowledgeCatalog: React.FC<TravelKnowledgeCatalogProps> = ({
     const [mode, setMode] = useState<CatalogMode>('entities');
     const [entityType, setEntityType] = useState<EntityTypeFilter>('all');
     const [activityCoverageFilter, setActivityCoverageFilter] = useState<ActivityCoverageFilter>('all');
+    const [catalogSort, setCatalogSort] = useState<CatalogSort>('catalog');
     const normalizedSearch = searchValue.trim().toLowerCase();
     const entityById = useMemo(() => new Map(
         (pack?.entities ?? []).map((entity) => [entity.entityId, entity]),
@@ -318,15 +329,30 @@ export const TravelKnowledgeCatalog: React.FC<TravelKnowledgeCatalogProps> = ({
             .filter((entity) => entityType === 'all' || entity.entityType === entityType)
             .filter((entity) => {
                 if (activityCoverageFilter === 'all') return true;
-                return getTravelActivityKnowledgeCoverage(entity)?.status === activityCoverageFilter;
+                const coverage = getTravelActivityKnowledgeCoverage(entity);
+                if (activityCoverageFilter === 'needs_work') {
+                    return coverage?.status === 'starter' || coverage?.status === 'usable';
+                }
+                return coverage?.status === activityCoverageFilter;
             })
             .filter((entity) => !normalizedSearch || entitySearchText(entity).includes(normalizedSearch))
-            .toSorted((left, right) => (
-                left.entityType.localeCompare(right.entityType)
-                || right.popularityScore - left.popularityScore
-                || left.name.localeCompare(right.name)
-            ))
-    ), [activityCoverageFilter, entityType, normalizedSearch, pack]);
+            .toSorted((left, right) => {
+                if (catalogSort === 'popularity') {
+                    return right.popularityScore - left.popularityScore || left.name.localeCompare(right.name);
+                }
+                if (catalogSort === 'coverage_priority') {
+                    const leftCoverage = getTravelActivityKnowledgeCoverage(left);
+                    const rightCoverage = getTravelActivityKnowledgeCoverage(right);
+                    return activityCoverageSortRank(leftCoverage) - activityCoverageSortRank(rightCoverage)
+                        || (leftCoverage?.score ?? 101) - (rightCoverage?.score ?? 101)
+                        || right.popularityScore - left.popularityScore
+                        || left.name.localeCompare(right.name);
+                }
+                return left.entityType.localeCompare(right.entityType)
+                    || right.popularityScore - left.popularityScore
+                    || left.name.localeCompare(right.name);
+            })
+    ), [activityCoverageFilter, catalogSort, entityType, normalizedSearch, pack]);
     const filteredTemplates = useMemo(() => (
         (pack?.templates ?? [])
             .filter((template) => !normalizedSearch || templateSearchText(template).includes(normalizedSearch))
@@ -346,6 +372,7 @@ export const TravelKnowledgeCatalog: React.FC<TravelKnowledgeCatalogProps> = ({
         return {
             total: coverage.length,
             counts,
+            needsWorkCount: counts.starter + counts.usable,
             averageScore: coverage.length > 0
                 ? Math.round(coverage.reduce((sum, item) => sum + item.coverage.score, 0) / coverage.length)
                 : 0,
@@ -404,6 +431,25 @@ export const TravelKnowledgeCatalog: React.FC<TravelKnowledgeCatalogProps> = ({
                                 </SelectContent>
                             </Select>
                         ) : null}
+                        {mode === 'entities' ? (
+                            <Select value={catalogSort} onValueChange={(value) => {
+                                setCatalogSort(value as CatalogSort);
+                                trackEvent('admin__travel_knowledge_catalog_sort--change', { sort: value });
+                            }}>
+                                <SelectTrigger
+                                    className="min-w-44"
+                                    aria-label="Catalogue sort"
+                                    {...getAnalyticsDebugAttributes('admin__travel_knowledge_catalog_sort--change')}
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="catalog">Catalogue order</SelectItem>
+                                    <SelectItem value="coverage_priority">Coverage priority</SelectItem>
+                                    <SelectItem value="popularity">Popularity</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        ) : null}
                         {mode === 'entities' && (entityType === 'all' || entityType === 'poi') ? (
                             <Select value={activityCoverageFilter} onValueChange={(value) => {
                                 setActivityCoverageFilter(value as ActivityCoverageFilter);
@@ -414,6 +460,7 @@ export const TravelKnowledgeCatalog: React.FC<TravelKnowledgeCatalogProps> = ({
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All coverage levels</SelectItem>
+                                    <SelectItem value="needs_work">Needs work ({activityCoverageSummary.needsWorkCount})</SelectItem>
                                     <SelectItem value="rich">Rich ({activityCoverageSummary.counts.rich})</SelectItem>
                                     <SelectItem value="usable">Usable ({activityCoverageSummary.counts.usable})</SelectItem>
                                     <SelectItem value="starter">Starter ({activityCoverageSummary.counts.starter})</SelectItem>
@@ -439,8 +486,11 @@ export const TravelKnowledgeCatalog: React.FC<TravelKnowledgeCatalogProps> = ({
                         <div className="mt-1 text-xl font-black text-emerald-900">{activityCoverageSummary.counts.rich}</div>
                     </div>
                     <div className="rounded-xl bg-amber-50 p-3">
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-700">Usable / starter</div>
-                        <div className="mt-1 text-xl font-black text-amber-900">{activityCoverageSummary.counts.usable} / {activityCoverageSummary.counts.starter}</div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-700">Needs work</div>
+                        <div className="mt-1 text-xl font-black text-amber-900">{activityCoverageSummary.needsWorkCount}</div>
+                        <div className="mt-1 text-[11px] text-amber-800">
+                            {activityCoverageSummary.counts.usable} usable · {activityCoverageSummary.counts.starter} starter
+                        </div>
                     </div>
                     <div className="rounded-xl bg-violet-50 p-3">
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-violet-700">Average coverage</div>
@@ -448,9 +498,27 @@ export const TravelKnowledgeCatalog: React.FC<TravelKnowledgeCatalogProps> = ({
                     </div>
                 </div>
                 {activityCoverageSummary.commonGaps.length > 0 ? (
-                    <p className="text-xs text-slate-500">
-                        Most common gaps: {activityCoverageSummary.commonGaps.map(([factKey, count]) => `${humanizeToken(factKey)} (${count})`).join(' · ')}
-                    </p>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs text-slate-500">
+                            Most common gaps: {activityCoverageSummary.commonGaps.map(([factKey, count]) => `${humanizeToken(factKey)} (${count})`).join(' · ')}
+                        </p>
+                        <button
+                            type="button"
+                            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900 transition-colors hover:bg-amber-100"
+                            onClick={() => {
+                                setMode('entities');
+                                setEntityType('poi');
+                                setActivityCoverageFilter('needs_work');
+                                setCatalogSort('coverage_priority');
+                                trackEvent('admin__travel_knowledge_enrichment_queue--open', {
+                                    entity_count: activityCoverageSummary.needsWorkCount,
+                                });
+                            }}
+                            {...getAnalyticsDebugAttributes('admin__travel_knowledge_enrichment_queue--open')}
+                        >
+                            <GitDiff size={15} /> Open enrichment queue ({activityCoverageSummary.needsWorkCount})
+                        </button>
+                    </div>
                 ) : null}
             </AdminSurfaceCard>
 

@@ -9879,7 +9879,7 @@ grant all on table
   public.travel_dataset_activations
 to service_role;
 
-grant select on table
+revoke all on table
   public.travel_sources,
   public.travel_dataset_versions,
   public.travel_entities,
@@ -9892,23 +9892,7 @@ grant select on table
   public.travel_template_stops,
   public.travel_template_legs,
   public.travel_template_tags
-to anon, authenticated;
-
-grant insert, update, delete on table
-  public.travel_sources,
-  public.travel_entities,
-  public.travel_entity_names,
-  public.travel_entity_facts,
-  public.travel_tags,
-  public.travel_entity_tags,
-  public.travel_templates,
-  public.travel_template_copy,
-  public.travel_template_stops,
-  public.travel_template_legs,
-  public.travel_template_tags
-to authenticated;
-
-revoke insert, update, delete on table public.travel_dataset_versions from authenticated;
+from public, anon, authenticated;
 
 grant all on table
   public.travel_sources,
@@ -10323,8 +10307,28 @@ begin
   if p_pack_payload ->> 'countryCode' <> v_country_code
     or p_pack_payload #>> '{dataset,datasetKey}' <> v_dataset_key
     or p_pack_payload #>> '{dataset,version}' <> v_version
-    or p_pack_payload #>> '{dataset,checksum}' <> p_dataset_checksum then
+    or p_pack_payload #>> '{dataset,checksum}' <> p_dataset_checksum
+    or (p_pack_payload #>> '{dataset,generatedAt}')::timestamptz <> p_generated_at then
     raise exception 'Pack identity does not match the staged dataset manifest.';
+  end if;
+  if p_generated_at > now() then
+    raise exception 'Dataset generatedAt cannot be later than staging time.';
+  end if;
+  if exists (
+    select 1
+    from jsonb_array_elements(coalesce(p_pack_payload -> 'entities', '[]'::jsonb)) entity
+    cross join lateral jsonb_array_elements(coalesce(entity -> 'facts', '[]'::jsonb)) fact
+    where nullif(fact ->> 'observedAt', '')::timestamptz > p_generated_at
+  ) then
+    raise exception 'Dataset facts cannot be observed after generatedAt.';
+  end if;
+  if exists (
+    select 1
+    from jsonb_array_elements(coalesce(p_pack_payload -> 'templates', '[]'::jsonb)) template
+    cross join lateral jsonb_array_elements(coalesce(template -> 'legs', '[]'::jsonb)) leg
+    where nullif(leg ->> 'observedAt', '')::timestamptz > p_generated_at
+  ) then
+    raise exception 'Dataset route legs cannot be observed after generatedAt.';
   end if;
 
   v_pack_entity_count := jsonb_array_length(coalesce(p_pack_payload -> 'entities', '[]'::jsonb));
@@ -10703,7 +10707,7 @@ $$;
 revoke all on function public.admin_stage_travel_dataset_artifact(
   text, text, text, text, integer, integer, integer, jsonb, timestamptz, text,
   text, uuid[], uuid[], uuid[], jsonb, jsonb, text, text, text, text, bigint, jsonb
-) from public, anon;
+) from public, anon, authenticated;
 revoke all on function public.admin_publish_travel_dataset_artifact(uuid, text) from public, anon;
 revoke all on function public.admin_rollback_travel_dataset(text, uuid, text) from public, anon;
 
@@ -11009,7 +11013,7 @@ as $$
   )
   select coalesce(
     (select localized_payload.pack_payload from localized_payload),
-    public.get_travel_destination_pack(p_country_code, p_locale)
+    '{}'::jsonb
   );
 $$;
 
@@ -11101,17 +11105,6 @@ as $$
       matches.entity ->> 'name' asc
     limit least(greatest(coalesce(p_limit, 20), 1), 50)
   ) active_matches
-
-  union all
-
-  select legacy_matches.*
-  from public.get_travel_entity_suggestions(
-    p_query,
-    p_country_code,
-    p_entity_types,
-    p_limit
-  ) legacy_matches
-  where not exists (select 1 from active_entities)
   order by popularity_score desc, primary_name asc
   limit least(greatest(coalesce(p_limit, 20), 1), 50);
 $$;
@@ -11511,14 +11504,16 @@ as $$
   cross join selected_stats;
 $$;
 
-revoke all on function public.get_active_travel_destination_pack(text, text) from public;
-revoke all on function public.get_active_travel_entity_suggestions(text, text, text[], integer) from public;
+revoke all on function public.get_active_travel_destination_pack(text, text) from public, anon, authenticated;
+revoke all on function public.get_active_travel_entity_suggestions(text, text, text[], integer) from public, anon, authenticated;
 revoke all on function public.get_active_travel_planning_context(
   text, text, text, integer, integer[], text, text[], text[], text[], text[],
   integer, text[], integer, integer, integer
 ) from public;
-grant execute on function public.get_active_travel_destination_pack(text, text) to anon, authenticated;
-grant execute on function public.get_active_travel_entity_suggestions(text, text, text[], integer) to anon, authenticated;
+revoke all on function public.get_travel_destination_pack(text, text) from public, anon, authenticated;
+revoke all on function public.get_travel_entity_suggestions(text, text, text[], integer) from public, anon, authenticated;
+grant execute on function public.get_active_travel_destination_pack(text, text) to anon, authenticated, service_role;
+grant execute on function public.get_active_travel_entity_suggestions(text, text, text[], integer) to anon, authenticated, service_role;
 grant execute on function public.get_active_travel_planning_context(
   text, text, text, integer, integer[], text, text[], text[], text[], text[],
   integer, text[], integer, integer, integer
