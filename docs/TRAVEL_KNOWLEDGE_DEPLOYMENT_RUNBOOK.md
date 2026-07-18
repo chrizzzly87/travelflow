@@ -299,7 +299,7 @@ For the Dashboard path, extract and run only the travel-knowledge section of `do
 
 ## Verify
 
-Expected active Thailand v12 counts:
+Expected active Thailand v13 counts:
 
 ```sql
 select
@@ -325,9 +325,9 @@ select public.get_active_travel_destination_pack('TH', 'en') #>> '{dataset,versi
 
 The repository validator expects:
 
-- 84 entities: 1 country, 6 regions, 15 cities, 30 neighborhoods, and 32 POIs
-- 571 facts
-- 420 tags
+- 99 entities: 1 country, 6 regions, 15 cities, 45 neighborhoods, and 32 POIs
+- 601 facts
+- 487 tags
 - 27 templates
 - 16 route legs
 

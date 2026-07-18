@@ -284,6 +284,7 @@ Track these per country and dataset version:
 - [x] Add a searchable published-catalogue view to the admin workspace while preserving the separate review queue.
 - [x] Publish Thailand v11 with 571 sourced facts and rich category-aware coverage for all 32 current activity POIs while retaining v10 for immediate rollback.
 - [x] Publish Thailand v12 with 27 route templates so all 15 supported cities have a directly selectable city-break concept while retaining v11 for immediate rollback.
+- [ ] Publish Thailand v13 with at least two source-backed base areas for all 15 supported cities while retaining v12 for immediate rollback.
 
 ### Stage 2 — freshness and source registry
 

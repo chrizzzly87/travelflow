@@ -38,7 +38,7 @@ describe('travel planning context', () => {
 
     expect(context.version).toBe(TRAVEL_PLANNING_CONTEXT_VERSION);
     expect(context.retrieverVersion).toBe(TRAVEL_PLANNING_RETRIEVER_VERSION);
-    expect(context.pack.dataset?.version).toBe('2026.07.18-v12');
+    expect(context.pack.dataset?.version).toBe('2026.07.18-v13');
     expect(context.pack.locale).toBe('de');
     expect(context.pack.templates).toHaveLength(2);
     expect(context.pack.templates.map((template) => template.templateKey)).toEqual([
@@ -58,6 +58,54 @@ describe('travel planning context', () => {
         fact.factKey === 'summary' || fact.factKey === 'visit.duration_minutes'
       )))).toBe(true);
     expect(context.stats.selectedEntityCount).toBeLessThan(context.stats.sourceEntityCount);
+    expect(validateTravelPlanningContext(context)).toEqual({ valid: true, errors: [] });
+  });
+
+  it('retrieves the new Chiang Rai base-area choices without an AI request', () => {
+    const spec = buildJourneySpecFromShapeWizard({
+      ...cityBreakDraft,
+      durationDays: 3,
+      selectedCitySlug: 'th-chiang-rai',
+      selectedNeighborhoodSlugs: [],
+      interestTags: ['culture', 'temples'],
+    }, pack);
+    const context = buildTravelPlanningContext(pack, spec, {
+      neighborhoodLimitPerCity: 4,
+      poiLimitPerCity: 4,
+    });
+
+    expect(context.pack.entities.map((entity) => entity.canonicalSlug)).toEqual(expect.arrayContaining([
+      'th-chiang-rai',
+      'th-chiang-rai-city-centre',
+      'th-chiang-rai-rim-kok',
+    ]));
+    expect(context.pack.entities
+      .filter((entity) => entity.parentId === context.pack.entities
+        .find((candidate) => candidate.canonicalSlug === 'th-chiang-rai')?.entityId)
+      .filter((entity) => entity.entityType === 'neighborhood')).toHaveLength(2);
+    expect(context.pack.entities
+      .find((entity) => entity.canonicalSlug === 'th-chiang-rai-city-centre')
+      ?.attributes.planningArea).toEqual({
+        classification: 'editorial_travel_area',
+        baseFit: 'primary',
+        walkability: 'high',
+        eveningEnergy: 'lively',
+      });
+    const selectedTemplate = context.pack.templates.find((template) => (
+      template.stops.some((stop) => stop.entitySlug === 'th-chiang-rai')
+    ));
+    if (!selectedTemplate) throw new Error('Chiang Rai route fixture is unavailable.');
+    const detailedContext = buildTravelPlanningContext(pack, spec, {
+      templateKeys: [selectedTemplate.templateKey],
+      neighborhoodLimitPerCity: 4,
+      poiLimitPerCity: 6,
+    });
+    expect(detailedContext.pack.entities
+      .find((entity) => entity.canonicalSlug === 'th-chiang-rai-city-centre')
+      ?.attributes.planningArea).toMatchObject({
+        tradeoffs: expect.arrayContaining([expect.any(String)]),
+        scopeNote: expect.stringContaining('not an administrative boundary'),
+      });
     expect(validateTravelPlanningContext(context)).toEqual({ valid: true, errors: [] });
   });
 
@@ -179,6 +227,27 @@ describe('travel planning context', () => {
       const bytes = new TextEncoder().encode(JSON.stringify(context)).byteLength;
       expect(bytes, `${draft.journeyType} context bytes`).toBeLessThan(100_000);
     }
+  });
+
+  it('defers optional circuit neighborhoods until one route is selected', () => {
+    const spec = buildJourneySpecFromShapeWizard({
+      ...cityBreakDraft,
+      journeyType: 'single_country_circuit',
+      durationDays: 12,
+      maxBaseChanges: 4,
+      selectedCitySlug: undefined,
+      selectedNeighborhoodSlugs: [],
+    }, pack);
+    const comparison = buildTravelPlanningContext(pack, spec);
+    const selectedTemplate = comparison.pack.templates[0];
+    if (!selectedTemplate) throw new Error('Thailand circuit fixture is unavailable.');
+    const selected = buildTravelPlanningContext(pack, spec, {
+      templateKeys: [selectedTemplate.templateKey],
+      neighborhoodLimitPerCity: 4,
+    });
+
+    expect(comparison.stats.selectedNeighborhoodCount).toBeLessThan(comparison.stats.selectedCityCount * 2);
+    expect(selected.stats.selectedNeighborhoodCount).toBeGreaterThan(comparison.stats.selectedNeighborhoodCount);
   });
 
   it('rejects dataset drift and missing template entities', () => {
