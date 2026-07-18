@@ -13,17 +13,17 @@ summary: "A route-first Thailand planner compares trusted trip concepts before o
 ## Changes
 - [ ] [Internal] 🧭 Added a five-step trip-shape flow for city breaks, one-base day trips, and Thailand circuits.
 - [ ] [Internal] 🗺️ Added canonical cities and neighborhoods with immediate, explainable route comparison and an editable plan handoff.
-- [ ] [Internal] 🇹🇭 Added a versioned Thailand knowledge pack with 84 canonical places, 464 sourced facts, 420 evidence-aware tags, localized route templates, and activity coverage for every required route base.
+- [ ] [Internal] 🇹🇭 Added a versioned Thailand knowledge pack with 84 canonical places, 571 sourced facts, 420 evidence-aware tags, localized route templates, and activity coverage for every required route base.
 - [ ] [Internal] ⚡ Added deterministic route matching, sourced transfer ranges, and instant knowledge-enriched trips so the first useful answer no longer waits for itinerary generation.
 - [ ] [Internal] 🧾 Added a visible fast-path receipt with retrieval time, payload size, dataset version, selected catalogue counts, and AI-call count.
-- [ ] [Internal] 🏛️ Added category-aware hours, pricing, duration, booking, weather, effort, access, facilities, audience, freshness, and source fields for twenty-two researched activities without inventing missing data.
+- [ ] [Internal] 🏛️ Added category-aware hours, pricing, duration, booking, weather, effort, access, facilities, audience, freshness, and source fields for all thirty-two researched activities without inventing missing data.
 - [ ] [Internal] 🗂️ Added a searchable admin catalogue with a one-click enrichment queue, coverage-priority sorting, published places, facts, tags, templates, source evidence, freshness, and honest rich/usable/starter gaps alongside the review queue.
 - [ ] [Internal] ⏱️ Added cached country-knowledge indexes, browser-visible stage latency telemetry, dataset-safe route reveals, compact initial comparison payloads, and repeatable CPU performance guardrails for every supported trip shape.
 - [ ] [Internal] 📚 Added compact destination briefs and an instant route preview with sourced city guidance, ranked neighborhoods and activities, signature dishes, seasonal context, and evidence-aware audience signals.
 - [ ] [Internal] 🛡️ Serialized concurrent saves for the same newly opened trip so the instant-plan handoff cannot race itself into a duplicate write.
 - [ ] [Internal] 🔎 Preserved canonical entity IDs, recommendation origin, source keys, rank scores, and compiler versions on the editable plan for reproducible planning and quality diagnostics.
 - [ ] [Internal] 🔄 Defined the licensed source, crawl, review, versioning, publish, freshness, and rollback pipeline for continuously maintained country knowledge.
-- [ ] [Internal] 🧾 Deployed an admin-only source-run and review ledger, registered 19 governed sources, and added build-blocking plus weekly freshness, expiry, license, and registry-drift checks before enabling crawlers.
+- [ ] [Internal] 🧾 Deployed an admin-only source-run and review ledger, registered 20 governed sources, and added build-blocking plus weekly freshness, expiry, license, and registry-drift checks before enabling crawlers.
 - [ ] [Internal] 📥 Added guarded GeoNames and Wikidata ingestion with private immutable source snapshots, deterministic identity matching, and review-only change candidates.
 - [ ] [Internal] ✅ Added an admin review queue with source evidence, structured value comparisons, and atomic accept, edit, reject, or request-changes decisions that cannot publish data directly.
 - [ ] [Internal] 📦 Added deterministic reviewed-data artifacts with guarded staging, atomic activation, immutable history, and version-pointer rollback.
@@ -43,3 +43,4 @@ summary: "A route-first Thailand planner compares trusted trip concepts before o
 - [ ] [Internal] 🧰 Kept legacy trips with reused transfer identifiers loadable by assigning collision-safe route and journey leg identifiers at the presentation boundary.
 - [ ] [Internal] 🔐 Made the immutable active artifact the sole public Thailand catalogue, removed stale normalized-table fallbacks, and rejected future or internally inconsistent source timestamps before staging.
 - [ ] [Internal] 💾 Captured and checksum-verified a private post-v9 checkpoint of all travel tables, functions, policies, grants, triggers, indexes, and knowledge storage metadata before the v10 database changes.
+- [ ] [Internal] 🧹 Hid the admin enrichment-queue action when every activity already meets the rich contract while continuing to surface honest optional-field gaps.

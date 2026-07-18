@@ -502,22 +502,24 @@ export const TravelKnowledgeCatalog: React.FC<TravelKnowledgeCatalogProps> = ({
                         <p className="text-xs text-slate-500">
                             Most common gaps: {activityCoverageSummary.commonGaps.map(([factKey, count]) => `${humanizeToken(factKey)} (${count})`).join(' · ')}
                         </p>
-                        <button
-                            type="button"
-                            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900 transition-colors hover:bg-amber-100"
-                            onClick={() => {
-                                setMode('entities');
-                                setEntityType('poi');
-                                setActivityCoverageFilter('needs_work');
-                                setCatalogSort('coverage_priority');
-                                trackEvent('admin__travel_knowledge_enrichment_queue--open', {
-                                    entity_count: activityCoverageSummary.needsWorkCount,
-                                });
-                            }}
-                            {...getAnalyticsDebugAttributes('admin__travel_knowledge_enrichment_queue--open')}
-                        >
-                            <GitDiff size={15} /> Open enrichment queue ({activityCoverageSummary.needsWorkCount})
-                        </button>
+                        {activityCoverageSummary.needsWorkCount > 0 ? (
+                            <button
+                                type="button"
+                                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900 transition-colors hover:bg-amber-100"
+                                onClick={() => {
+                                    setMode('entities');
+                                    setEntityType('poi');
+                                    setActivityCoverageFilter('needs_work');
+                                    setCatalogSort('coverage_priority');
+                                    trackEvent('admin__travel_knowledge_enrichment_queue--open', {
+                                        entity_count: activityCoverageSummary.needsWorkCount,
+                                    });
+                                }}
+                                {...getAnalyticsDebugAttributes('admin__travel_knowledge_enrichment_queue--open')}
+                            >
+                                <GitDiff size={15} /> Open enrichment queue ({activityCoverageSummary.needsWorkCount})
+                            </button>
+                        ) : null}
                     </div>
                 ) : null}
             </AdminSurfaceCard>

@@ -65,7 +65,7 @@ describe('journeyOverviewService', () => {
         openDecisionCount: 0,
       },
       provenance: {
-        datasetVersion: '2026.07.18-v9',
+        datasetVersion: '2026.07.18-v11',
         templateKey: 'th-first-timer-bangkok-north-beach',
         matchedTemplateScore: 92,
       },
