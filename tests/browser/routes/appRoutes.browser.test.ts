@@ -27,7 +27,10 @@ vi.mock('../../../pages/CreateTripV3Page', () => ({
   CreateTripV3Page: () => React.createElement('div', { 'data-testid': 'wizard-v3-creator' }),
 }));
 vi.mock('../../../pages/CreateTripShapeLabPage', () => ({
-  CreateTripShapeLabPage: () => React.createElement('div', { 'data-testid': 'shape-creator' }),
+  CreateTripShapeLabPage: ({ surface = 'lab' }: { surface?: string }) => React.createElement('div', {
+    'data-testid': 'shape-creator',
+    'data-surface': surface,
+  }),
 }));
 vi.mock('../../../pages/JourneyOverviewLabPage', () => ({
   JourneyOverviewLabPage: () => React.createElement('div', { 'data-testid': 'journey-overview-lab' }),
@@ -158,12 +161,12 @@ describe('app/routes/AppRoutes create-trip rollout', () => {
     primary.unmount();
 
     const wizard = renderRoutes('/create-trip/wizard');
-    expect(await wizard.findByTestId('shape-creator')).toBeTruthy();
+    expect(await wizard.findByTestId('shape-creator')).toHaveAttribute('data-surface', 'wizard');
     wizard.unmount();
 
     vi.stubEnv('VITE_CREATE_TRIP_SHAPE_ROLLOUT', 'primary');
     const promoted = renderRoutes('/create-trip');
-    expect(await promoted.findByTestId('shape-creator')).toBeTruthy();
+    expect(await promoted.findByTestId('shape-creator')).toHaveAttribute('data-surface', 'primary');
     expect(mocks.trackEvent).toHaveBeenCalledWith('create_trip__experience--view', {
       surface: 'primary',
       experience: 'shape_thailand',

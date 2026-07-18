@@ -13,7 +13,7 @@ This checklist distinguishes the new Thailand planning foundation from the class
 | Deeper selected route | Selecting a concept retrieves more neighborhoods and POIs, pinned to the chosen template and dataset version. |
 | Editable base trip | Opens a canonical, knowledge-enriched trip immediately without waiting for OpenAI. |
 | Constrained AI adaptation | After selecting a route, an optional free-text request proposes a small patch against known catalogue IDs. The base route remains locked until the traveler reviews and applies the proposal. |
-| Rich activity contract | Eight researched anchor POIs carry category-aware duration, best time, hours, admission, booking, weather/effort, access, facilities, audience fit, practical notes, freshness, and per-field provenance. Missing research stays visibly absent rather than being invented. |
+| Rich activity contract | Eighteen researched anchor POIs carry category-aware duration, best time, hours, admission, booking, weather/effort, access, facilities, audience fit, practical notes, freshness, and per-field provenance. Missing research stays visibly absent rather than being invented. |
 | Admin catalogue | Shows the active dataset, searchable entities and templates, facts, tags, freshness, scores, source links, rich/usable/starter coverage, missing fields, and the separate ingestion review queue. |
 | Visual proof | The route reveal reports retrieval time, payload size, selected/source entity and template counts, source, dataset/retriever version, and `0 AI calls`. The trip trace preserves the same receipt. |
 
@@ -22,19 +22,19 @@ This checklist distinguishes the new Thailand planning foundation from the class
 | Capability | Next change |
 | --- | --- |
 | Free-text semantic/vector retrieval | Add embeddings only for free-text wishes and long-tail notes; keep geography, dates, duration, freshness, and traveler constraints as structured filters. |
-| Complete Thailand activity depth | Expand the rich activity contract beyond the eight anchor proof points. The other 24 POIs are deliberately marked `starter` with category-specific missing-field lists. |
+| Complete Thailand activity depth | Expand the rich activity contract beyond the eighteen researched anchors. The other 14 POIs are deliberately marked `starter` with category-specific missing-field lists. |
 | Full traveler setup | Add party composition, child ages, mobility, dietary needs, LGBTQ+ context preferences, and group hard constraints/votes to `JourneySpec` and ranking. |
 | Live operational data | Keep weather, closures, schedules, real-time availability, and volatile prices in licensed runtime providers or short-lived caches. |
 | New trip-page sidebar | Paused. Review isolated layout concepts before changing the production workspace again. |
 
 ## Test the fast path
 
-1. Open the named feature preview and go to `/create-trip/wizard`.
+1. Open the named feature preview and go to `/create-trip`. The branch is configured to use the structured Thailand planner on the primary creator URL; production remains unchanged.
 2. Choose **City break**, select **Bangkok**, set four days, then choose a pace and interests.
 3. Select **Compare plans**.
 4. In **Source-backed fast path**, verify that the receipt visibly shows:
    - `0 AI calls`
-   - the active `2026.07.17-v7` dataset
+   - the active `2026.07.18-v9` dataset
    - a structured retriever version
    - retrieval time and a bounded payload size
    - selected places/templates versus source totals
@@ -52,7 +52,7 @@ The AI adaptation is not a second full itinerary generation. It receives only th
 
 ## Compare it with classic generation
 
-1. In a second tab, open `/create-trip`.
+1. Follow **Planning somewhere else? Use the classic creator**, or open `/create-trip/labs/classic-card` in a second tab.
 2. Enter an equivalent Bangkok trip and start classic generation.
 3. Compare:
    - time until the first useful editable route
@@ -68,10 +68,10 @@ The comparison is intentionally not claimed as a production speed multiplier yet
 
 1. Sign in with an admin account and open `/admin/travel-knowledge`.
 2. Confirm the page opens on **Published catalogue**, not the review queue.
-3. Confirm the coverage summary reports **32 Activity POIs**, **8 Rich**, **0 / 24 Usable / starter**, and **36% Average coverage**.
-4. Filter activity coverage to **Rich**, then inspect `Grand Palace`, `Ayutthaya Historical Park`, `Sukhothai Historical Park`, `Doi Inthanon National Park`, and `Erawan Waterfall`.
+3. Confirm the coverage summary reports **32 Activity POIs**, **18 Rich**, **0 Usable**, **14 Starter**, and **62% Average coverage**.
+4. Filter activity coverage to **Rich**, then inspect `Grand Palace`, `Ayutthaya Historical Park`, `Promthep Cape`, `Bridge over the River Khwae`, and `Mu Ko Ang Thong Marine National Park`.
 5. Verify facts show values, confidence/review state, observation and validity dates, source keys, and source links. The four new rich anchors should expose category-relevant fields such as weather, physical effort, access, facilities, and family/mobility fit.
-6. Filter to **Starter**, expand `Mu Ko Ang Thong Marine National Park`, and confirm its missing required/recommended fields are explicit rather than fabricated.
+6. Filter to **Starter**, expand `Tiger Cave Temple`, and confirm its missing required/recommended fields are explicit rather than fabricated.
 7. Search/filter other entity types and inspect a route template with its stops and legs.
 8. Open **Review queue** and confirm the existing candidate workflow is still separate and functional.
 

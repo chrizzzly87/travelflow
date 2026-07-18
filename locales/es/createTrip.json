@@ -382,6 +382,8 @@
   },
   "shapeLab": {
     "badge": "Laboratorio de rutas por Tailandia",
+    "badgePrimary": "Planificador rápido de Tailandia",
+    "classicFallback": "¿Planeas otro destino? Usa el planificador clásico.",
     "title": "Elige la ruta antes del itinerario.",
     "intro": "Empieza por la forma del viaje, compara tres rutas fundamentadas y abre un plan editable al instante. Las actividades detalladas pueden llegar cuando la ruta ya encaje.",
     "progressLabel": "Progreso de la planificación",

@@ -25,8 +25,19 @@ describe('config/prefetchTargets', () => {
   });
 
   it('keeps direct create-trip entry on its dedicated route chunk only', () => {
-    expect(resolvePrefetchTargets('/create-trip').map((target) => target.key)).toEqual([
+    expect(resolvePrefetchTargets('/create-trip', 'off').map((target) => target.key)).toEqual([
       'route:create-trip-lab-classic',
+      'component:trip-view',
+    ]);
+  });
+
+  it('warms only the promoted shape planner when the structured rollout is active', () => {
+    expect(resolvePrefetchTargets('/create-trip', 'primary').map((target) => target.key)).toEqual([
+      'route:create-trip-shape',
+      'component:trip-view',
+    ]);
+    expect(resolvePrefetchTargets('/de/create-trip/wizard', 'wizard').map((target) => target.key)).toEqual([
+      'route:create-trip-shape',
       'component:trip-view',
     ]);
   });

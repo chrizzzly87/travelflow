@@ -382,6 +382,8 @@
   },
   "shapeLab": {
     "badge": "Laboratorio itinerari Thailandia",
+    "badgePrimary": "Pianificatore rapido per la Thailandia",
+    "classicFallback": "Stai pianificando un’altra destinazione? Usa il pianificatore classico.",
     "title": "Scegli il percorso prima dell’itinerario.",
     "intro": "Parti dalla forma del viaggio, confronta tre percorsi ben fondati e apri subito un piano modificabile. Le attività dettagliate possono arrivare quando il percorso convince.",
     "progressLabel": "Avanzamento della pianificazione",

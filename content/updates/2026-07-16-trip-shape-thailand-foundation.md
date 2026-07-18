@@ -7,11 +7,11 @@ published_at: 2026-07-16T20:00:00Z
 status: draft
 notify_in_app: false
 in_app_hours: 24
-summary: "A hidden route-first planner now compares trusted Thailand trip concepts before opening an editable map and timeline."
+summary: "A route-first Thailand planner compares trusted trip concepts before opening an editable map and timeline."
 ---
 
 ## Changes
-- [ ] [Internal] 🧭 Added a hidden five-step trip-shape flow for city breaks, one-base day trips, and Thailand circuits.
+- [ ] [Internal] 🧭 Added a five-step trip-shape flow for city breaks, one-base day trips, and Thailand circuits.
 - [ ] [Internal] 🗺️ Added canonical cities and neighborhoods with immediate, explainable route comparison and an editable plan handoff.
 - [ ] [Internal] 🇹🇭 Added a versioned Thailand knowledge pack with 84 canonical places, 427 sourced facts, 420 evidence-aware tags, localized route templates, and activity coverage for every required route base.
 - [ ] [Internal] ⚡ Added deterministic route matching, sourced transfer ranges, and instant knowledge-enriched trips so the first useful answer no longer waits for itinerary generation.
@@ -31,6 +31,7 @@ summary: "A hidden route-first planner now compares trusted Thailand trip concep
 - [ ] [Internal] 🛡️ Backed up the existing production data, deployed the isolated travel-knowledge schema and Thailand pack, verified row parity and RLS, and enabled remote reads only on the test branch.
 - [ ] [Internal] 🧩 Added a reusable map presentation contract and routed the live trip workspace through validated marker, route, selection, and viewport scene layers separated from product state.
 - [ ] [Internal] 🚦 Added a default-off rollout that can promote the route-first planner on the wizard surface first, then on both production creator entries without changing their URLs.
+- [ ] [Internal] 🧪 Promoted the structured Thailand planner on the test branch while keeping the classic creator one click away for other destinations.
 - [ ] [Internal] 🔍 Added canonical city and neighborhood search across primary, local, and alternate place names in every active language.
 - [ ] [Internal] 🧵 Defined three low-risk JourneySpec sidebar concepts and a shared Journey Ribbon visualization before changing the main trip workspace.
 - [ ] [Internal] 🎛️ Added an isolated comparison lab for the Journey Lens, Route Storyboard, and Adaptive Inspector with synchronized city and transfer focus.
