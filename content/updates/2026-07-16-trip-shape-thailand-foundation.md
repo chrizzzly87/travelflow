@@ -18,7 +18,7 @@ summary: "A hidden route-first planner now compares trusted Thailand trip concep
 - [ ] [Internal] 🧾 Added a visible fast-path receipt with retrieval time, payload size, dataset version, selected catalogue counts, and AI-call count.
 - [ ] [Internal] 🏛️ Added category-aware hours, pricing, duration, booking, weather, effort, access, facilities, audience, freshness, and source fields for fourteen researched activities without inventing missing data.
 - [ ] [Internal] 🗂️ Added a searchable admin catalogue for published places, facts, tags, templates, source evidence, freshness, and honest rich/usable/starter coverage gaps alongside the review queue.
-- [ ] [Internal] ⏱️ Added cached country-knowledge indexes, browser-visible stage latency telemetry, dataset-safe route reveals, and repeatable CPU performance guardrails for every supported trip shape.
+- [ ] [Internal] ⏱️ Added cached country-knowledge indexes, browser-visible stage latency telemetry, dataset-safe route reveals, compact initial comparison payloads, and repeatable CPU performance guardrails for every supported trip shape.
 - [ ] [Internal] 📚 Added compact destination briefs and an instant route preview with sourced city guidance, ranked neighborhoods and activities, signature dishes, seasonal context, and evidence-aware audience signals.
 - [ ] [Internal] 🔎 Preserved canonical entity IDs, recommendation origin, source keys, rank scores, and compiler versions on the editable plan for reproducible planning and quality diagnostics.
 - [ ] [Internal] 🔄 Defined the licensed source, crawl, review, versioning, publish, freshness, and rollback pipeline for continuously maintained country knowledge.

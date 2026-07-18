@@ -11425,6 +11425,11 @@ as $$
               'audience.solo_fit',
               'audience.mobility_fit'
             ]::text[])
+              and (
+                entity_rows.entity ->> 'entityType' <> 'poi'
+                or cardinality((select requested.template_keys from requested)) > 0
+                or fact ->> 'factKey' = any(array['summary', 'visit.duration_minutes']::text[])
+              )
           ),
           '[]'::jsonb
         ),
