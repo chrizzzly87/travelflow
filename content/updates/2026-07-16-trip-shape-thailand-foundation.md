@@ -47,3 +47,4 @@ summary: "A route-first Thailand planner compares trusted trip concepts before o
 - [ ] [Internal] 🚀 Published the complete v11 Thailand activity catalogue through an atomic active pointer after a private 20-table checksum checkpoint, retaining v10 as the immediate rollback target.
 - [ ] [Internal] 🧬 Persisted JourneySpec v1 intent and trip-shape provenance for new classic and legacy-wizard generations across authentication queues, retries, workers, and diagnostics without changing their existing AI prompts.
 - [ ] [Internal] 🔐 Restored the guarded Travel Knowledge admin reads without exposing normalized catalogue tables to signed-in or anonymous clients.
+- [ ] [Internal] 🧩 Recovered safe neighbourhood personalization suggestions when an AI treated an area as one schedulable activity, while retaining catalogue validation for invented data.

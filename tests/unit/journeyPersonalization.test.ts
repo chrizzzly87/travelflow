@@ -7,6 +7,7 @@ import {
   applyJourneyPersonalizationProposal,
   buildJourneyPersonalizationContext,
   buildJourneyPersonalizationPrompt,
+  normalizeJourneyPersonalizationProposalForContext,
   validateJourneyPersonalizationProposal,
   validateJourneyPersonalizationRequest,
   type JourneyPersonalizationProposalV1,
@@ -162,6 +163,30 @@ describe('JourneySpec personalization', () => {
       expect.stringContaining('outside the retrieved context'),
       expect.stringContaining('cannot be scheduled as a single activity'),
     ]));
+  });
+
+  it('repairs a known neighborhood must-visit decision without accepting invented catalogue data', () => {
+    const { context } = fixture();
+    const neighborhood = context.entities.find((entity) => entity.entityType === 'neighborhood');
+    if (!neighborhood) throw new Error('Bangkok neighborhood fixture is unavailable.');
+    const proposal = proposalFor(context.datasetVersion, context.templateKey, [
+      { entityId: neighborhood.entityId, role: 'must_visit', reason: 'Explore this food area.' },
+      { entityId: '00000000-0000-4000-8000-000000000000', role: 'avoid', reason: 'Unknown entity.' },
+    ]);
+
+    const normalized = normalizeJourneyPersonalizationProposalForContext(proposal, context);
+    const normalizedProposal = normalized.value as JourneyPersonalizationProposalV1;
+
+    expect(normalized.repairs).toEqual([
+      `neighborhood_must_visit_to_consider:${neighborhood.entityId}`,
+    ]);
+    expect(normalizedProposal.placeDecisions[0]?.role).toBe('consider');
+    expect(validateJourneyPersonalizationProposal(normalizedProposal, context)).toMatchObject({
+      valid: false,
+      errors: expect.arrayContaining([
+        expect.stringContaining('outside the retrieved context'),
+      ]),
+    });
   });
 
   it('rejects conflicting duplicate decisions for the same catalogue entity', () => {

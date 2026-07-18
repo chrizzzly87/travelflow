@@ -145,6 +145,60 @@ describe('journey personalization edge endpoint', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('downgrades a known neighborhood must-visit decision to a safe area consideration', async () => {
+    envValues.GEMINI_API_KEY = 'test-key';
+    const body = validBody();
+    const neighborhood = body.context.entities.find((entity) => entity.entityType === 'neighborhood');
+    if (!neighborhood) throw new Error('Bangkok neighborhood fixture is unavailable.');
+    const proposal = {
+      version: JOURNEY_PERSONALIZATION_VERSION,
+      datasetVersion: body.context.datasetVersion,
+      templateKey: body.context.templateKey,
+      summary: 'Prioritize the selected Bangkok food neighborhood.',
+      preferencePatch: {
+        pace: 'unchanged',
+        replaceInterestTags: false,
+        interestTags: [],
+        replaceVibeTags: false,
+        vibeTags: [],
+        replaceTransportPreferences: false,
+        transportPreferences: [],
+        setMaxTransferMinutes: false,
+        maxTransferMinutes: 0,
+      },
+      placeDecisions: [{
+        entityId: neighborhood.entityId,
+        role: 'must_visit',
+        reason: 'Explore this food area.',
+      }],
+      unresolved: [],
+      cautions: [],
+    };
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({
+      candidates: [{
+        content: { parts: [{ text: JSON.stringify(proposal) }] },
+        finishReason: 'STOP',
+      }],
+      usageMetadata: {
+        promptTokenCount: 100,
+        candidatesTokenCount: 80,
+        totalTokenCount: 180,
+      },
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+    const response = await handler(requestFor(body), { ip: '10.0.4.4' });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      data: {
+        placeDecisions: [{
+          entityId: neighborhood.entityId,
+          role: 'consider',
+        }],
+      },
+    });
+  });
+
   it('is registered as a dedicated Netlify edge route', () => {
     const netlifyToml = readFileSync(path.resolve(process.cwd(), 'netlify.toml'), 'utf8');
     expect(netlifyToml).toContain('path = "/api/ai/personalize-journey"\n  function = "ai-personalize-journey"');

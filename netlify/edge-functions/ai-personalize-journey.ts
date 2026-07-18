@@ -13,6 +13,7 @@ import { persistAiGenerationTelemetry } from '../edge-lib/ai-generation-telemetr
 import {
   JOURNEY_PERSONALIZATION_OUTPUT_SCHEMA,
   buildJourneyPersonalizationPrompt,
+  normalizeJourneyPersonalizationProposalForContext,
   validateJourneyPersonalizationProposal,
   validateJourneyPersonalizationRequest,
   type JourneyPersonalizationRequestV1,
@@ -157,8 +158,12 @@ export default async (request: Request, context?: { ip?: string }) => {
       });
     }
 
-    const proposalValidation = validateJourneyPersonalizationProposal(
+    const normalizedProposal = normalizeJourneyPersonalizationProposalForContext(
       result.value.data,
+      body.context,
+    );
+    const proposalValidation = validateJourneyPersonalizationProposal(
+      normalizedProposal.value,
       body.context,
     );
     if (!proposalValidation.valid) {
@@ -178,6 +183,7 @@ export default async (request: Request, context?: { ip?: string }) => {
           flow: 'journey_personalization',
           dataset_version: body.context.datasetVersion,
           template_key: body.context.templateKey,
+          normalization_repairs: normalizedProposal.repairs,
         },
       });
       return json(422, {
@@ -211,11 +217,12 @@ export default async (request: Request, context?: { ip?: string }) => {
         dataset_version: body.context.datasetVersion,
         template_key: body.context.templateKey,
         context_entity_count: body.context.entities.length,
+        normalization_repairs: normalizedProposal.repairs,
       },
     });
 
     return json(200, {
-      data: result.value.data,
+      data: normalizedProposal.value,
       meta: {
         ...result.value.meta,
         requestId,
