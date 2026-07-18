@@ -1,8 +1,8 @@
 # Travel knowledge deployment runbook
 
-Status: schema, Thailand v9 source-backed fast-path dataset, immutable artifact, and atomic active pointer applied and verified in production on 2026-07-18.
+Status: schema, Thailand v10 source-backed fast-path dataset, immutable artifact, provenance guards, and atomic active pointer applied and verified in production on 2026-07-18.
 
-This runbook deploys the additive travel-knowledge schema and versioned Thailand datasets without deleting or replacing existing TravelFlow tables. Thailand v8 remains the verified immediate rollback target for the active v9 release; earlier artifacts are also retained.
+This runbook deploys the additive travel-knowledge schema and versioned Thailand datasets without deleting or replacing existing TravelFlow tables. Thailand v9 remains the verified immediate rollback target for the active v10 release; earlier artifacts are also retained.
 
 ## Production deployment record
 
@@ -30,6 +30,11 @@ Applied migrations:
 - `20260717141224 fix_travel_dataset_payload_column_resolution`
 - `20260717160009 compact_travel_planning_context_v2`
 - `20260717160441 preserve_travel_planning_summary_sources_v2`
+- `20260718052939 compact_initial_travel_planning_poi_facts`
+- `20260718061531 serialize_concurrent_trip_upserts`
+- `20260718061621 serialize_legacy_concurrent_trip_upserts`
+- `20260718072555 backup_travel_knowledge_post_v9_20260718t072025z`
+- `20260718074101 guard_travel_dataset_provenance_v10`
 
 The initial foundation applied only the isolated travel-knowledge section of `docs/supabase.sql`, followed by the exact generated Thailand seed. Later operations and private-bucket migrations were also narrow and additive; the rest of the documented schema was not replayed.
 
@@ -130,6 +135,28 @@ Active v9 release:
 
 The v9 activation switched only the country pointer and wrote activation-ledger row `7467a7eb-8332-493b-ab80-cb01810ec930`. Existing advisor findings remained unchanged because the release was content-only and introduced no schema or policy changes.
 
+### Thailand v10 catalogue and provenance activation
+
+Thailand v10 enriches four more high-value POIs, adds a coverage-prioritized admin queue, and hardens the publication boundary. The staged manifest, facts, and route legs must no longer claim timestamps later than the pack generation time. The published immutable payload is now the only public active-pack source; legacy normalized tables and their old read RPCs are no longer an anonymous fallback.
+
+- repository commit: `b0eacc2d624054dd83cf4b1ac0537355c6bcb3a5`
+- dataset version: `8acec18c-3dbc-4a33-8db8-e4493ef21867`
+- payload: `23a2bec2-ffc5-47ae-9234-8b66cb6f888e`
+- artifact: `38122ce8-4187-433f-b0c3-f94dcccdb46e`
+- activation: `7089d1fd-5787-47b9-a256-ed577f47c6a4` at `2026-07-18T07:46:25.913793Z`
+- dataset checksum: `0d30648a8daec0cc41b180189dd4a5cd9d58f1fc4a4b3923b4dab936b6a779fb`
+- pack checksum: `cdb466d24f6b76b1b8ef5b9ab1dada179470f6cafcfd909e7a295884ceba05b0`
+- seed checksum: `14f4bc290231f205dac76fe1e0721d50a0503b08430d72745bbf4968a0e9444a`
+- artifact checksum: `59eb8f12f751d7b4d8f475de250e22e7b495f2c3bade1489f83f210caf22e0b3`
+- active payload: 646,551 bytes; 84 entities, 464 facts, 420 entity tags, 15 templates, and 16 route legs
+- activity coverage: 32 POIs, 22 rich, 0 usable, 10 starter, 73% average coverage
+- anonymous city context: 34,458 compact JSON bytes, 11 selected entities, 3 templates
+- anonymous initial single-country circuit context: 93,516 compact JSON bytes, 30 selected entities, 3 templates
+- anonymous selected deep heritage context: 92,956 compact JSON bytes, 26 selected entities, 1 template
+- immediate rollback target: v9 artifact `4528a314-e8be-4aeb-b344-7e3c5d555e25`; its superseded dataset, retired payload, and checksum-addressable bundle remain retained
+
+The v10 publish passed staged count, checksum, timestamp, private-object, source-run, and review-candidate checks before activation. Both representative planning contexts stayed below the 100 KB guardrail. The schema migration removed direct public, anonymous, and authenticated access to all twelve legacy normalized travel tables and their legacy read RPCs while preserving the public active-pack and suggestion projections.
+
 ## Sources of truth
 
 - Additive schema and policies: `docs/supabase.sql`
@@ -193,6 +220,16 @@ Before deploying the atomic artifact workflow, a third travel-only checkpoint wa
 - external non-secret manifest: `/Users/chrizzzly/.codex/backups/travelflow/travelflow-supabase-travel-knowledge-pre-atomic-publish-20260717T091156Z.manifest.json`
 - manifest SHA-256: `ed4f2056d404b363e50cd5f829ae4132ab291bc24d4c54c9501a1a20c0ee3e69`
 
+Immediately before the v10 provenance and access migration, a fourth private travel-only checkpoint captured the complete post-v9 state:
+
+- backup schema: `tf_bak_tk_20260718t072025z`
+- 20 `public.travel_*` tables and 1,138 rows copied under repeatable-read
+- zero row-count or deterministic JSON-row checksum mismatches across 20/20 copied tables
+- function, policy, grant, trigger, constraint, index, default-privilege, and private Storage metadata captured
+- the private snapshot bucket contained 10 objects and retained its two restrictive policies
+- `public`, `anon`, and `authenticated` have no access to the backup schema; `service_role` has read access
+- source tables were unchanged after the checkpoint verification completed
+
 ## Apply or update
 
 The SQL is designed to be additive and idempotent. For a new environment, apply the isolated travel-knowledge schema first, then the generated seed. Do not replay unrelated sections of `docs/supabase.sql` merely to install this feature.
@@ -206,7 +243,7 @@ For the Dashboard path, extract and run only the travel-knowledge section of `do
 
 ## Verify
 
-Expected active Thailand v9 counts:
+Expected active Thailand v10 counts:
 
 ```sql
 select dataset_key, version, entity_count, fact_count, template_count
@@ -215,34 +252,34 @@ where dataset_key = 'thailand-core';
 
 select entity_type, count(*)
 from public.travel_entities
-where dataset_version = '2026.07.18-v9'
+where dataset_version = '2026.07.18-v10'
 group by entity_type
 order by entity_type;
 
 select count(*) as fact_count
 from public.travel_entity_facts fact
 join public.travel_entities entity on entity.id = fact.entity_id
-where entity.dataset_version = '2026.07.18-v9';
+where entity.dataset_version = '2026.07.18-v10';
 
 select count(*) as tag_count
 from public.travel_entity_tags tag
 join public.travel_entities entity on entity.id = tag.entity_id
-where entity.dataset_version = '2026.07.18-v9';
+where entity.dataset_version = '2026.07.18-v10';
 
 select count(*) as template_count
 from public.travel_templates
-where dataset_version = '2026.07.18-v9';
+where dataset_version = '2026.07.18-v10';
 
 select count(*) as route_leg_count
 from public.travel_template_legs leg
 join public.travel_templates template on template.id = leg.template_id
-where template.dataset_version = '2026.07.18-v9';
+where template.dataset_version = '2026.07.18-v10';
 ```
 
 The repository validator expects:
 
 - 84 entities: 1 country, 6 regions, 15 cities, 30 neighborhoods, and 32 POIs
-- 427 facts
+- 464 facts
 - 420 tags
 - 15 templates
 - 16 route legs
@@ -293,17 +330,19 @@ Deploy this flag separately from the schema change. The read service remains ver
 
 ## Advisor follow-ups
 
-No travel-specific missing-RLS, missing-policy, or mutable-function-search-path security issue remains. The security advisor reports the intentional anonymous public-read policies. It also identifies the two restrictive Storage denial policies as policies applying to `public`; those policies are defense-in-depth denials, not grants, and their predicates explicitly exclude the snapshot bucket.
+No travel-specific advisor error, missing-RLS issue, missing-policy issue, or mutable-function-search-path issue remains after v10. Direct public, anonymous, and authenticated grants on the legacy normalized travel tables were revoked; external reads now go through the current immutable active payload projections. The two restrictive Storage denial policies remain defense-in-depth denials, not grants, and their predicates explicitly exclude the snapshot bucket.
 
 The operations migration added the five previously missing foreign-key indexes and changed travel admin policies to use init-plan-safe auth expressions. Supabase no longer reports those two finding classes for the travel tables.
 
-Before the published travel tables receive material authenticated read volume, address this remaining performance finding in a separate policy migration:
+Before the legacy normalized travel tables receive material authenticated read volume again, address this remaining performance finding in a separate policy migration:
 
-- duplicate permissive `SELECT` policies for the `authenticated` role
+- 14 duplicate permissive-policy warnings across legacy normalized travel tables
 
 Fresh unused-index notices are expected while the operational tables are empty and should be reassessed after representative traffic rather than removed immediately. The security advisor reports only the intentional anonymous public-read warnings for the published projection; no operational table is included in those warnings.
 
-The three artifact mutation RPCs intentionally remain authenticated `SECURITY DEFINER` functions. Public and anonymous execution is revoked; each has an empty `search_path`, disables caller RLS only inside the guarded transaction, and repeats an admin-or-service-role authorization check. Supabase therefore reports the expected authenticated-definer warnings. Public pack and entity-suggestion RPCs remain `SECURITY INVOKER`. The foreign-key indexes reported immediately after the activation migration were added before rollout.
+The four guarded admin write RPCs for staging, publishing, rollback, and review intentionally remain authenticated `SECURITY DEFINER` functions. Public and anonymous execution is revoked; each has an empty `search_path`, disables caller RLS only inside the guarded transaction, and repeats an admin-or-service-role authorization check. Supabase therefore reports four expected authenticated-definer warnings. Public pack and entity-suggestion RPCs remain `SECURITY INVOKER`. The foreign-key indexes reported immediately after the activation migration were added before rollout.
+
+The advisor also reports anonymous-sign-in warnings whose matched text is stored policy metadata inside the private backup schema. Those are snapshot false positives rather than enabled authentication behavior. Backup snapshot tables intentionally have no primary keys and account for most of the informational performance notices; they are immutable recovery copies, not query-serving application tables.
 
 The admin review write RPC intentionally remains an authenticated `SECURITY DEFINER` function because direct decision-table inserts are revoked and decision plus candidate status must commit atomically. It has an empty `search_path`, explicit authenticated-only execution, non-null/non-anonymous identity checks, and an internal admin-role check. The candidate-list and review-summary RPCs use `SECURITY INVOKER` so reads continue through table grants and RLS.
 
