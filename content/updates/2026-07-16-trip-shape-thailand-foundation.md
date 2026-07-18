@@ -48,3 +48,4 @@ summary: "A route-first Thailand planner compares trusted trip concepts before o
 - [ ] [Internal] 🧬 Persisted JourneySpec v1 intent and trip-shape provenance for new classic and legacy-wizard generations across authentication queues, retries, workers, and diagnostics without changing their existing AI prompts.
 - [ ] [Internal] 🔐 Restored the guarded Travel Knowledge admin reads without exposing normalized catalogue tables to signed-in or anonymous clients.
 - [ ] [Internal] 🧩 Recovered safe neighbourhood personalization suggestions when an AI treated an area as one schedulable activity, while retaining catalogue validation for invented data.
+- [ ] [Internal] 🧭 Expanded the zero-AI Thailand catalogue to twenty-seven route templates so every supported city has a directly selectable city-break concept with explicit highlights and tradeoffs.

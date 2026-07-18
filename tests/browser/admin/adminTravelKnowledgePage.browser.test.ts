@@ -251,7 +251,7 @@ describe('pages/AdminTravelKnowledgePage', () => {
     renderPage();
 
     expect(await screen.findByRole('heading', { name: 'Published catalogue' })).toBeInTheDocument();
-    expect(screen.getAllByText('2026.07.18-v11').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('2026.07.18-v12').length).toBeGreaterThan(0);
     expect(screen.getAllByText('84').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Thailand').length).toBeGreaterThan(0);
     expect(screen.getByText('Activity POIs')).toBeInTheDocument();
