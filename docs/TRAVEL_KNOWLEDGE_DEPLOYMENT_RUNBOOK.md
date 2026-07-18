@@ -1,8 +1,8 @@
 # Travel knowledge deployment runbook
 
-Status: schema, Thailand v7 source-backed fast-path dataset, immutable artifact, and atomic active pointer applied and verified in production on 2026-07-17.
+Status: schema, Thailand v9 source-backed fast-path dataset, immutable artifact, and atomic active pointer applied and verified in production on 2026-07-18.
 
-This runbook deploys the additive travel-knowledge schema and versioned Thailand datasets without deleting or replacing existing TravelFlow tables. Thailand v6 remains the verified immediate rollback target for the active v7 release; v5 is also retained.
+This runbook deploys the additive travel-knowledge schema and versioned Thailand datasets without deleting or replacing existing TravelFlow tables. Thailand v8 remains the verified immediate rollback target for the active v9 release; earlier artifacts are also retained.
 
 ## Production deployment record
 
@@ -107,6 +107,29 @@ Thailand v7 extends the same immutable artifact and atomic-pointer workflow with
 
 The v7 activation changed only the active dataset pointer and activation ledger after staging the immutable payload. The pre-existing private backups remain verified; no destructive restore or table rewrite was required.
 
+### Thailand v8 and v9 rich-activity activations
+
+Thailand v8 expanded the activity contract from eight to fourteen rich POIs. Thailand v9 then completed the structured fields for every POI referenced directly by a route template, including Bridge over the River Khwae, Promthep Cape, Mu Ko Ang Thong, and Koh Larn. Both releases used the same immutable stage-and-publish workflow; neither rewrote an existing artifact.
+
+Active v9 release:
+
+- repository commit: `84fd03f4684aea7d837d9335f9d21b74b4404f68`
+- dataset version: `cbc907fd-1bdb-4ccc-a6fc-271d58dd590a`
+- payload: `4d8a33a1-6ce0-48fa-b4d5-62278bf59ee5`
+- artifact: `4528a314-e8be-4aeb-b344-7e3c5d555e25`
+- activation: `7467a7eb-8332-493b-ab80-cb01810ec930` at `2026-07-18T06:03:23.950335Z`
+- dataset checksum: `c2b1581f6832babd6706586f0aa5d524bf617f682e24bc5410df2f1705d730f1`
+- pack checksum: `04d1a56505f05cb4bb4b47a257a60354aef618191ef8e1ebbd9eb6ed3207a662`
+- seed checksum: `011e312211436442c84acfe51ed3883d2080d048bbd71838f2a84347f27ee6e9`
+- artifact checksum: `b89a429279f5bd122a3d2c46295597500b23285f4a1189236eb96a6dd60b1a75`
+- active payload: 614,947 bytes; 84 entities, 427 facts, 420 entity tags, 15 templates, and 16 route legs
+- activity coverage: 32 POIs, 18 rich, 0 usable, 14 starter, 62% average coverage
+- anonymous single-country circuit context: 93,060 compact JSON bytes, below the 100 KB guardrail
+- targeted route contexts: 18,329–29,598 bytes for Pattaya, Samui, Phuket, and Kanchanaburi, with each route-critical POI and its structured facts present
+- immediate rollback target: v8 artifact `5fa21ca0-bbd7-494a-b113-3199448683cd`; its dataset, payload, and checksum-addressable bundle remain retained
+
+The v9 activation switched only the country pointer and wrote activation-ledger row `7467a7eb-8332-493b-ab80-cb01810ec930`. Existing advisor findings remained unchanged because the release was content-only and introduced no schema or policy changes.
+
 ## Sources of truth
 
 - Additive schema and policies: `docs/supabase.sql`
@@ -183,7 +206,7 @@ For the Dashboard path, extract and run only the travel-knowledge section of `do
 
 ## Verify
 
-Expected active Thailand v7 counts:
+Expected active Thailand v9 counts:
 
 ```sql
 select dataset_key, version, entity_count, fact_count, template_count
@@ -192,34 +215,34 @@ where dataset_key = 'thailand-core';
 
 select entity_type, count(*)
 from public.travel_entities
-where dataset_version = '2026.07.17-v7'
+where dataset_version = '2026.07.18-v9'
 group by entity_type
 order by entity_type;
 
 select count(*) as fact_count
 from public.travel_entity_facts fact
 join public.travel_entities entity on entity.id = fact.entity_id
-where entity.dataset_version = '2026.07.17-v7';
+where entity.dataset_version = '2026.07.18-v9';
 
 select count(*) as tag_count
 from public.travel_entity_tags tag
 join public.travel_entities entity on entity.id = tag.entity_id
-where entity.dataset_version = '2026.07.17-v7';
+where entity.dataset_version = '2026.07.18-v9';
 
 select count(*) as template_count
 from public.travel_templates
-where dataset_version = '2026.07.17-v7';
+where dataset_version = '2026.07.18-v9';
 
 select count(*) as route_leg_count
 from public.travel_template_legs leg
 join public.travel_templates template on template.id = leg.template_id
-where template.dataset_version = '2026.07.17-v7';
+where template.dataset_version = '2026.07.18-v9';
 ```
 
 The repository validator expects:
 
 - 84 entities: 1 country, 6 regions, 15 cities, 30 neighborhoods, and 32 POIs
-- 321 facts
+- 427 facts
 - 420 tags
 - 15 templates
 - 16 route legs
