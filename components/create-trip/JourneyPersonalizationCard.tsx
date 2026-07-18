@@ -67,6 +67,12 @@ const PersonalizationChangeRow: React.FC<{
   );
 };
 
+const personalizationChangeKey = (change: JourneyPersonalizationChange): string => (
+  change.kind === 'place_role'
+    ? `${change.kind}:${change.entity?.entityId ?? 'unknown'}`
+    : change.kind
+);
+
 export const JourneyPersonalizationCard: React.FC<JourneyPersonalizationCardProps> = ({
   value,
   result,
@@ -173,9 +179,9 @@ export const JourneyPersonalizationCard: React.FC<JourneyPersonalizationCardProp
 
           {result.applied.changes.length > 0 ? (
             <ul className="shape-personalize__changes">
-              {result.applied.changes.map((change, index) => (
+              {result.applied.changes.map((change) => (
                 <PersonalizationChangeRow
-                  key={`${change.kind}:${change.entity?.entityId ?? index}`}
+                  key={personalizationChangeKey(change)}
                   change={change}
                 />
               ))}
