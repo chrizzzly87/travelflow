@@ -45,3 +45,5 @@ summary: "A route-first Thailand planner compares trusted trip concepts before o
 - [ ] [Internal] 💾 Captured and checksum-verified a private post-v9 checkpoint of all travel tables, functions, policies, grants, triggers, indexes, and knowledge storage metadata before the v10 database changes.
 - [ ] [Internal] 🧹 Hid the admin enrichment-queue action when every activity already meets the rich contract while continuing to surface honest optional-field gaps.
 - [ ] [Internal] 🚀 Published the complete v11 Thailand activity catalogue through an atomic active pointer after a private 20-table checksum checkpoint, retaining v10 as the immediate rollback target.
+- [ ] [Internal] 🧬 Persisted JourneySpec v1 intent and trip-shape provenance for new classic and legacy-wizard generations across authentication queues, retries, workers, and diagnostics without changing their existing AI prompts.
+- [ ] [Internal] 🔐 Restored the guarded Travel Knowledge admin reads without exposing normalized catalogue tables to signed-in or anonymous clients.

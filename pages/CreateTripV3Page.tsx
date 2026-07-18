@@ -62,6 +62,7 @@ import { decodeTripPrefill } from '../services/tripPrefillDecoder';
 import { TripView } from '../components/TripView';
 import { TripGenerationSkeleton } from '../components/TripGenerationSkeleton';
 import { startClientAsyncTripGeneration } from '../services/tripGenerationClientAsyncService';
+import { buildJourneySpecFromCreateTripIntent } from '../services/createTripJourneySpecService';
 import {
     createTripGenerationInputSnapshot,
     createTripGenerationRequestId,
@@ -1327,11 +1328,40 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             traveler_type: travelerType,
             transport_override: hasTransportOverride,
         });
+        const journeySpec = buildJourneySpecFromCreateTripIntent({
+            destinationNames: orderedDestinations,
+            startDate: dateInputMode === 'exact' ? startDate : undefined,
+            endDate: dateInputMode === 'exact' ? endDate : undefined,
+            durationDays: totalDays,
+            roundTrip: isRoundTrip,
+            pace,
+            flexibleMonths: dateInputMode === 'flex' ? destinationRecommendationMonths : undefined,
+            preferences: {
+                dateInputMode,
+                flexWeeks: dateInputMode === 'flex' ? flexWeeks : undefined,
+                flexWindow: dateInputMode === 'flex' ? flexWindow : undefined,
+                startDestination: startDestination ? getDestinationPromptLabel(startDestination) : undefined,
+                destinationOrder: orderedDestinations.map((country) => getDestinationPromptLabel(country)),
+                routeLock,
+                travelerType,
+                travelerDetails,
+                tripStyleTags: selectedStyles,
+                tripVibeTags: selectedVibes,
+                transportPreferences: transportModes,
+                hasTransportOverride,
+                specificCities: specificCities.trim() || undefined,
+                notes: notes.trim() || undefined,
+                selectedIslandNames,
+                enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
+            },
+            createdFrom: 'wizard_v3',
+        });
         const inputSnapshot = createTripGenerationInputSnapshot({
             flow: 'wizard',
             destinationLabel,
             startDate,
             endDate,
+            journeySpec,
             payload: {
                 options: wizardOptions,
                 wizardBranch,
@@ -1346,6 +1376,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     destinationLabel,
                     startDate,
                     endDate,
+                    journeySpec,
                     options: wizardOptions,
                 });
                 const requestId = createTripGenerationRequestId();

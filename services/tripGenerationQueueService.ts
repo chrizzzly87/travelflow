@@ -1,4 +1,6 @@
 import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
+import type { JourneySpec } from '../shared/journeySpec';
+import { isJourneySpec } from '../shared/journeySpec';
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import {
     buildClassicItineraryPrompt,
@@ -31,6 +33,7 @@ interface BaseQueuedPayload {
     destinationLabel: string;
     startDate: string;
     endDate: string;
+    journeySpec?: JourneySpec;
 }
 
 interface QueuedClassicPayload extends BaseQueuedPayload {
@@ -138,6 +141,9 @@ const parseQueuedPayload = (flow: TripGenerationFlow, payload: unknown): QueuedT
     const destinationLabel = asText(payload.destinationLabel, 'Trip');
     const startDate = asText(payload.startDate);
     const endDate = asText(payload.endDate);
+    const journeySpec = isJourneySpec(payload.journeySpec, { phase: 'intent' })
+        ? payload.journeySpec
+        : undefined;
 
     if (!startDate || !endDate) {
         throw new Error('Queued request date payload is missing.');
@@ -154,6 +160,7 @@ const parseQueuedPayload = (flow: TripGenerationFlow, payload: unknown): QueuedT
             destinationLabel,
             startDate,
             endDate,
+            journeySpec,
             destinationPrompt,
             options: isRecord(payload.options) ? payload.options as GenerateOptions : {},
         };
@@ -166,6 +173,7 @@ const parseQueuedPayload = (flow: TripGenerationFlow, payload: unknown): QueuedT
             destinationLabel,
             startDate,
             endDate,
+            journeySpec,
             options: isRecord(payload.options) ? payload.options as WizardGenerateOptions : { countries: [] },
         };
     }
@@ -176,6 +184,7 @@ const parseQueuedPayload = (flow: TripGenerationFlow, payload: unknown): QueuedT
         destinationLabel,
         startDate,
         endDate,
+        journeySpec,
         options: isRecord(payload.options) ? payload.options as SurpriseGenerateOptions : { country: destinationLabel },
     };
 };
@@ -207,6 +216,7 @@ const buildInputSnapshotFromQueuedPayload = (
             destinationLabel: payload.destinationLabel,
             startDate: payload.startDate,
             endDate: payload.endDate,
+            journeySpec: payload.journeySpec,
             payload: {
                 destinationPrompt: payload.destinationPrompt,
                 options: payload.options,
@@ -219,6 +229,7 @@ const buildInputSnapshotFromQueuedPayload = (
         destinationLabel: payload.destinationLabel,
         startDate: payload.startDate,
         endDate: payload.endDate,
+        journeySpec: payload.journeySpec,
         payload: {
             options: payload.options,
         },

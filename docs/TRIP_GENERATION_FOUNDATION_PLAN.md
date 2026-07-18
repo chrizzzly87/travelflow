@@ -217,6 +217,8 @@ Place roles:
 
 Adapters translate the existing create-trip preference structure into `JourneySpec` so both old creators continue working while the new path is developed.
 
+Current implementation: new classic and V3 wizard submissions persist `JourneySpec` v1 beside the existing generation input snapshot. That provenance survives pending-auth claims, async workers, retries, and benchmark/admin exports. Their generation execution remains the existing large-prompt fallback; the contract is now shared without pretending those trips were compiled from canonical knowledge.
+
 ## 8. Wizard v1
 
 The first experiment uses five short steps plus a route reveal:

@@ -89,6 +89,7 @@ import {
 } from '../services/tripGenerationTabFeedbackService';
 import { enqueueClassicAsyncTripGenerationJob } from '../services/tripGenerationAsyncEnqueueService';
 import { waitForTripAttemptPersistence, waitForTripPersistence } from '../services/tripGenerationPersistenceService';
+import { buildJourneySpecFromCreateTripIntent } from '../services/createTripJourneySpecService';
 import { getCountrySeasonByName, monthRangeBetweenDates } from '../data/countryTravelData';
 import { AppLanguage, ITrip, TripPrefillData } from '../types';
 import {
@@ -1779,11 +1780,36 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 model: selectedAiModel.model,
             },
         };
+        const journeySpec = buildJourneySpecFromCreateTripIntent({
+            destinationNames: orderedDestinations,
+            startDate: dateInputMode === 'exact' ? startDate : undefined,
+            endDate: dateInputMode === 'exact' ? endDate : undefined,
+            durationDays: dayCount,
+            roundTrip,
+            pace,
+            flexibleMonths: dateInputMode === 'flex' ? recommendationMonths : undefined,
+            preferences: {
+                dateInputMode,
+                flexWeeks: dateInputMode === 'flex' ? flexWeeks : undefined,
+                flexWindow: dateInputMode === 'flex' ? flexWindow : undefined,
+                startDestination: startDestination ? getDestinationPromptLabel(startDestination) : undefined,
+                destinationOrder: destinationPromptLabels,
+                routeLock,
+                travelerType,
+                travelerDetails,
+                tripStyleTags: selectedStyles,
+                transportPreferences: transportModes,
+                hasTransportOverride: hasTransportOverrideRef.current,
+                notes: notes.trim() || undefined,
+            },
+            createdFrom: 'classic',
+        });
         const generationSnapshot = createTripGenerationInputSnapshot({
             flow: 'classic',
             destinationLabel,
             startDate,
             endDate,
+            journeySpec,
             payload: {
                 destinationPrompt,
                 options: classicGenerateOptions,
@@ -1798,6 +1824,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                     destinationLabel,
                     startDate,
                     endDate,
+                    journeySpec,
                     destinationPrompt,
                     options: classicGenerateOptions,
                 });

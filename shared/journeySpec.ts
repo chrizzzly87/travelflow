@@ -114,6 +114,8 @@ export interface LegacyJourneySpecInput {
   endDate?: string;
   durationDays: number;
   roundTrip?: boolean;
+  pace?: JourneyPace;
+  flexibleMonths?: number[];
   preferences?: CreateTripPreferenceSignals;
   resolvedPlaces?: JourneyPlaceSelection[];
   journeyType?: JourneyType;
@@ -386,7 +388,10 @@ export const validateJourneySpec = (
   return { valid: errors.length === 0, errors };
 };
 
-export const isJourneySpec = (value: unknown): value is JourneySpec => validateJourneySpec(value).valid;
+export const isJourneySpec = (
+  value: unknown,
+  options: JourneySpecValidationOptions = {},
+): value is JourneySpec => validateJourneySpec(value, options).valid;
 
 export const buildJourneySpecFromLegacyCreateTrip = (input: LegacyJourneySpecInput): JourneySpec => {
   const preferences = input.preferences ?? {};
@@ -421,7 +426,7 @@ export const buildJourneySpecFromLegacyCreateTrip = (input: LegacyJourneySpecInp
     dateWindow: exactDates ?? {
       mode: 'flexible',
       durationDays: normalizedDurationDays,
-      months: uniqueStrings((preferences.idealMonths ?? []).map(String))
+      months: uniqueStrings((input.flexibleMonths ?? preferences.idealMonths ?? []).map(String))
         .map(Number)
         .filter((month) => Number.isInteger(month) && month >= 1 && month <= 12),
       season: preferences.flexWindow,
@@ -434,7 +439,7 @@ export const buildJourneySpecFromLegacyCreateTrip = (input: LegacyJourneySpecInp
       transportPreferences: preferences.transportPreferences ?? [],
     },
     preferences: {
-      pace: 'balanced',
+      pace: input.pace ?? 'balanced',
       interestTags: preferences.tripStyleTags ?? [],
       vibeTags: preferences.tripVibeTags ?? [],
       freeTextPlaceRequest: preferences.specificCities,

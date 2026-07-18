@@ -62,8 +62,12 @@ describe('travel knowledge operations schema', () => {
     const listFunctionStart = sql.indexOf('create or replace function public.admin_list_travel_knowledge_candidates');
     const summaryFunctionStart = sql.indexOf('create or replace function public.admin_get_travel_knowledge_review_summary');
     const reviewFunctionStart = sql.indexOf('create or replace function public.admin_review_travel_knowledge_candidate');
-    expect(sql.slice(listFunctionStart, summaryFunctionStart)).toContain('security invoker');
-    expect(sql.slice(summaryFunctionStart, reviewFunctionStart)).toContain('security invoker');
+    const listFunction = sql.slice(listFunctionStart, summaryFunctionStart);
+    const summaryFunction = sql.slice(summaryFunctionStart, reviewFunctionStart);
+    expect(listFunction).toContain('security definer');
+    expect(listFunction).toContain('set row_security = off');
+    expect(summaryFunction).toContain('security definer');
+    expect(summaryFunction).toContain('set row_security = off');
     expect(sql.slice(reviewFunctionStart, sql.indexOf('revoke all on function', reviewFunctionStart))).toContain('security definer');
   });
 
