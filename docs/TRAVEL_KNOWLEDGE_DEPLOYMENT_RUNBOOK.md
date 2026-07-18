@@ -1,8 +1,8 @@
 # Travel knowledge deployment runbook
 
-Status: schema, Thailand v12 source-backed fast-path dataset, immutable artifact, provenance guards, and atomic active pointer applied and verified in production on 2026-07-18.
+Status: schema, Thailand v13 source-backed fast-path dataset, immutable artifact, provenance guards, and atomic active pointer applied and verified in production on 2026-07-18.
 
-This runbook deploys the additive travel-knowledge schema and versioned Thailand datasets without deleting or replacing existing TravelFlow tables. Thailand v11 remains the verified immediate rollback target for the active v12 release; earlier artifacts are also retained.
+This runbook deploys the additive travel-knowledge schema and versioned Thailand datasets without deleting or replacing existing TravelFlow tables. Thailand v12 remains the verified immediate rollback target for the active v13 release; earlier artifacts are also retained.
 
 ## Production deployment record
 
@@ -36,6 +36,8 @@ Applied migrations:
 - `20260718072555 backup_travel_knowledge_post_v9_20260718t072025z`
 - `20260718074101 guard_travel_dataset_provenance_v10`
 - `20260718084324 backup_travel_knowledge_pre_v11_20260718t084050z`
+- `20260718092925 guard_travel_knowledge_admin_reads`
+- `20260718113618 travel_planning_context_neighborhood_city_coverage`
 
 The initial foundation applied only the isolated travel-knowledge section of `docs/supabase.sql`, followed by the exact generated Thailand seed. Later operations and private-bucket migrations were also narrow and additive; the rest of the documented schema was not replayed.
 
@@ -218,9 +220,11 @@ Thailand v13 adds fifteen candid, source-backed planning areas across the seven 
 - hierarchy: 1 country, 6 regions, 15 cities, 45 neighborhoods, and 32 activity POIs
 - deterministic benchmark: Chiang Rai comparison 23,091 bytes and selected route 31,494 bytes; Thailand circuit comparison 79,981 bytes and selected route 99,518 bytes
 - anonymous active-pack read: HTTP 200, version `2026.07.18-v13`, 99 entities, 45 neighborhoods, and 27 templates
+- selected Chiang Rai City Centre context: `structured-pack-v2`, 8 selected entities, 1 city-level route template, and no AI call required
+- named-preview browser verification: live Supabase receipt in 334 ms, 23 KB comparison context, 31 KB selected-route context, one valid optional personalization response in 1,755 ms, and a successfully opened editable trip
 - immediate rollback target: v12 artifact `026b9500-899b-46e1-beda-4def58fadfd3`; its superseded payload and checksum-addressable private bundle remain retained
 
-The v13 activation changed only immutable content and the atomic active pointer. The staged repository commit, payload checksums, active pointer, anonymous RPC, catalogue counts, and retained v12 rollback artifact were verified after publication.
+The v13 activation changed only immutable content and the atomic active pointer. A later narrow function migration made selected neighborhoods refine their parent city's route templates in live retrieval, matching the bundled client behavior. The staged repository commit, payload checksums, active pointer, anonymous RPC, catalogue counts, selected-neighborhood route retrieval, and retained v12 rollback artifact were verified after publication.
 
 ## Sources of truth
 
