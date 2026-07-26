@@ -20,4 +20,18 @@ describe('components/TripView runtime ordering', () => {
         expect(viewportStateIndex).toBeLessThan(paywallHandlerIndex);
         expect(viewportStateIndex).toBeLessThan(pendingAuthHandlerIndex);
     });
+
+    it('passes a declared orchestration binding into the abort-and-retry capability check', () => {
+        const source = readFileSync(
+            resolve(process.cwd(), 'components/TripView.tsx'),
+            'utf8',
+        );
+
+        // Regression: the abort-and-retry options object referenced a bare
+        // `latestAttemptOrchestration`, which threw a ReferenceError as soon as a
+        // generation exceeded the timeout and `isGenerationSlow` became true.
+        expect(source).toContain('const latestGenerationAttemptOrchestration = useMemo(');
+        expect(source).toContain('latestAttemptOrchestration: latestGenerationAttemptOrchestration,');
+        expect(source).not.toMatch(/^\s*latestAttemptOrchestration,\s*$/m);
+    });
 });
