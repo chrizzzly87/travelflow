@@ -210,6 +210,60 @@
   "wizard": {
     "flowLabel": "Adaptive wizard",
     "stepBadge": "Step {current} of {total}",
+    "personalize": {
+      "eyebrow": "Make the base yours",
+      "title": "Tune this route without rebuilding it.",
+      "description": "Describe what should change. AI can only propose small edits using places and tags already present in the retrieved catalogue.",
+      "guarded": "Catalogue-guarded",
+      "requestLabel": "What should feel different?",
+      "placeholder": "For example: slower mornings, more food, keep the Grand Palace, and avoid crowded markets.",
+      "requestHint": "{count} characters left",
+      "examplesLabel": "Personalization examples",
+      "examples": {
+        "0": "Slower mornings, food first",
+        "1": "Famous highlights, less rushing",
+        "2": "Hidden gems, avoid busy markets"
+      },
+      "submit": "Personalize selected route",
+      "loading": "Checking the catalogue…",
+      "routeLocked": "Route, dates, and duration stay locked.",
+      "errorTitle": "The base route is still ready.",
+      "errorDescription": "Personalization could not be completed. You can retry or open the instant base without AI.",
+      "proposalEyebrow": "Validated proposal",
+      "ready": "Ready to review",
+      "applied": "Applied",
+      "noChanges": "The request did not require a safe catalogue change.",
+      "unresolved": "Not supported by this context",
+      "cautions": "Keep in mind",
+      "apply": "Apply {count} changes",
+      "undo": "Undo changes",
+      "tryAnother": "Try another request",
+      "minutes": "{count} minutes",
+      "receipt": {
+        "aiCalls": "AI calls",
+        "model": "Model",
+        "time": "Response",
+        "dataset": "Dataset"
+      },
+      "changeLabels": {
+        "pace": "Travel rhythm",
+        "interest_tags": "Interests",
+        "vibe_tags": "Vibe",
+        "transport_preferences": "Transport",
+        "max_transfer_minutes": "Transfer limit",
+        "place_role": "Place"
+      },
+      "roles": {
+        "must_visit": "Must visit",
+        "consider": "Consider",
+        "avoid": "Avoid"
+      },
+      "paces": {
+        "relaxed": "Relaxed",
+        "balanced": "Balanced",
+        "full": "Full"
+      }
+    },
     "actions": {
       "back": "Back",
       "continue": "Continue",
@@ -325,5 +379,172 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "shapeLab": {
+    "badge": "Лаборатория маршрутов по Таиланду",
+    "badgePrimary": "Быстрый планировщик Таиланда",
+    "classicFallback": "Планируете другое направление? Используйте классический планировщик.",
+    "title": "Сначала маршрут, потом расписание.",
+    "intro": "Начните с формата поездки, сравните три обоснованных маршрута и сразу откройте редактируемый план. Подробные занятия можно добавить, когда маршрут уже подходит.",
+    "progressLabel": "Ход планирования поездки",
+    "steps": {
+      "shape": "Формат",
+      "place": "Места",
+      "timing": "Сроки",
+      "style": "Ритм",
+      "reveal": "Маршруты"
+    },
+    "shape": {
+      "eyebrow": "Начните со структуры",
+      "title": "Какой формат нужен этой поездке?",
+      "description": "От этого решения зависит разумное количество баз, переездов и однодневных выездов.",
+      "options": {
+        "city_break": {
+          "title": "Один город — как следует",
+          "description": "Остановитесь в одном городе и исследуйте его районы без смены отеля."
+        },
+        "hub_and_day_trips": {
+          "title": "Одна база — больше охват",
+          "description": "Распакуйтесь один раз и добавьте реалистичные однодневные поездки."
+        },
+        "single_country_circuit": {
+          "title": "Маршрут по Таиланду",
+          "description": "Свяжите несколько баз с ночёвками, не перегружая поездку переездами."
+        }
+      }
+    },
+    "place": {
+      "eyebrow": "Полноценные места",
+      "title": "Какое место должно задать направление?",
+      "requiredDescription": "Выберите город, который станет базой поездки. Для каждого варианта уже есть подходящая концепция.",
+      "optionalDescription": "Выберите обязательный город или позвольте длительности, сезону и интересам определить маршрут.",
+      "searchLabel": "Поиск городов и районов",
+      "searchPlaceholder": "Например, Бангкок, Чиангмай или Яоварат",
+      "searchHint": "Ищите города, местные названия, варианты названий и районы, уже поддерживаемые для этого типа поездки.",
+      "neighborhoodResult": "Район города {city}",
+      "noSearchResults": "Поддерживаемый город или район по этому запросу пока не найден.",
+      "stayRange": "Обычно {min}–{max} ночей",
+      "popularity": "Популярность {score}/100",
+      "hiddenGem": "Открытие {score}/100",
+      "neighborhoodTitle": "Добавьте городу характера",
+      "neighborhoodHint": "Необязательно: выберите до трёх районов. Они сохранятся в задании как канонические места."
+    },
+    "timing": {
+      "eyebrow": "Учитываем реальное ограничение",
+      "title": "Сколько у нас времени?",
+      "description": "Гибкие сроки дают самый быстрый результат. Точные даты подойдут, если транспорт или доступность уже определены.",
+      "modeLabel": "Гибкость дат",
+      "modes": {
+        "flexible": "Гибкий период",
+        "exact": "Точные даты"
+      },
+      "durationLabel": "Длительность поездки",
+      "nights": "ночей",
+      "decreaseDuration": "Убрать одну ночь",
+      "increaseDuration": "Добавить одну ночь",
+      "monthLabel": "Предпочтительный месяц",
+      "startDate": "Дата начала",
+      "endDate": "Дата окончания",
+      "dateError": "Выберите дату окончания позже даты начала, чтобы сравнить маршруты."
+    },
+    "style": {
+      "eyebrow": "Только важные сигналы",
+      "title": "Что должен оптимизировать маршрут?",
+      "description": "Для первого сравнения достаточно ритма и интересов. Остальное можно уточнить в плане.",
+      "paceLabel": "Ритм поездки",
+      "interestsLabel": "Больше этого",
+      "advancedLabel": "Настроить ограничения",
+      "maxChanges": "Максимум смен базы"
+    },
+    "reveal": {
+      "eyebrow": "Маршруты сразу",
+      "titleOne": "Один обоснованный маршрут по Таиланду.",
+      "titleMany": "{count} обоснованных маршрута по Таиланду.",
+      "description": "Это версионные схемы из пакета знаний о Таиланде, а не придуманные во время ожидания направления.",
+      "dataNote": "Сравнено шаблонов: {templates}; канонических мест: {entities} · данные {version}",
+      "engine": {
+        "label": "Данные быстрого планировщика",
+        "title": "Быстрый путь на основе источников",
+        "description": "Эти варианты получены и собраны из каталога Таиланда до любой персонализации с помощью ИИ.",
+        "noAi": "0 вызовов ИИ",
+        "retrieval": "Получение",
+        "milliseconds": "{value} мс",
+        "places": "Выбрано мест",
+        "templates": "Выбрано шаблонов",
+        "payload": "Контекст",
+        "loadingSelected": "Загружается расширенный контекст каталога для этого маршрута…",
+        "selectedReady": "Маршрут готов: {neighborhoods} районов и {pois} POI в контексте {size}."
+      },
+      "fallback": "Данные доступны офлайн",
+      "sources": {
+        "memory": "Актуальный кэш",
+        "bundled": "Локальная копия",
+        "supabase": "Supabase онлайн"
+      },
+      "noMatchesTitle": "Текущие ограничения слишком строгие.",
+      "noMatchesDescription": "Смените базовый город, добавьте ночь или разрешите ещё одну смену базы.",
+      "adjustRoute": "Изменить условия",
+      "match": "Совпадение {score}%",
+      "selected": "Выбрано",
+      "tradeoff": "Важно знать до выбора",
+      "keepSelected": "Оставить маршрут",
+      "chooseRoute": "Выбрать маршрут",
+      "readyTitle": "Схема маршрута готова.",
+      "readyDescription": "Откройте её с реальными городами, координатами, ночёвками, выездами и редактируемыми метками.",
+      "readyAdaptedTitle": "Адаптированный маршрут готов.",
+      "readyAdaptedDescription": "Откройте план на основе каталога с уже применёнными изменениями ИИ, которые вы одобрили.",
+    "dayTripShort": "однодневная поездка",
+    "nightsShort": "{count} ночей",
+    "brief": {
+      "title": "Добавьте маршруту характер.",
+      "description": "Эти краткие сведения о городах уже включены в план, поэтому следующие ответы будут быстрыми и последовательными.",
+      "bestMonths": "Подходящие месяцы",
+      "dishes": "Стоит попробовать",
+      "neighborhoods": "Районы",
+      "activities": "Хорошие отправные точки",
+      "stayRange": "{min}–{max} ночей",
+      "source": "Открыть источник",
+      "audienceContext": "Контекст для путешественников",
+      "audienceSignals": {
+        "family_activity_supply": "Выбор занятий для семей",
+        "lgbtq_scene": "Подтверждённая LGBTQ+ сцена",
+        "solo_travel_interest": "Интерес для самостоятельных поездок"
+      }
+    },
+    "reasons": {
+        "duration_fit": "Подходит по времени",
+        "pace_fit": "Подходит по ритму",
+        "season_fit": "Подходящий сезон",
+        "interest_fit": "Совпадает с интересами",
+        "selected_places_fit": "Включает ваши места"
+      }
+    },
+    "actions": {
+      "compare": "Сравнить маршруты",
+      "preparing": "Получаем маршруты…",
+      "openPlan": "Открыть готовую основу",
+      "openAdaptedPlan": "Открыть адаптированный план"
+    }
+  },
+  "journeyLab": {
+    "badge": "Лаборатория визуализации путешествия",
+    "title": "Вся поездка целиком, а не только точки.",
+    "intro": "Три структуры превращают одну поездку в понятную историю: базы, нагрузка переездов, районы, еда, занятия, соответствие и источники.",
+    "prototypeNote": "Это отдельная лаборатория концепций. Текущий планировщик не изменён.",
+    "live": { "close": "Закрыть обзор путешествия" },
+    "conceptsLabel": "Сравните три способа понять поездку",
+    "concepts": {
+      "lens": { "title": "Journey Lens", "description": "Постоянный обзор рядом с рабочей областью планирования.", "bestFor": "Рекомендуемый вариант" },
+      "storyboard": { "title": "Route Storyboard", "description": "Редакционный вид по главам с выразительной линией маршрута.", "bestFor": "Презентация и публикация" },
+      "inspector": { "title": "Adaptive Inspector", "description": "Компактный указатель с деталями только по запросу.", "bestFor": "Сосредоточенное редактирование" }
+    },
+    "labels": {
+      "tripExample": "Пример: Таиланд", "tripCharacter": "Характер поездки", "routeOverview": "Интерактивный обзор поездки", "focusHint": "Выберите город или переезд", "chapters": "Главы маршрута", "chapter": "Глава", "transfer": "Переезд", "routeStory": "История маршрута", "compactIndex": "Указатель глав", "selected": "Выбранный контекст", "compare": "Сначала структура", "evidence": "На основе известных данных", "whyFits": "Почему маршрут подходит", "neighborhoods": "Районы", "dishes": "Что попробовать", "activities": "Опорные занятия"
+    },
+    "summary": { "days": "{count} дней", "bases": "Базы", "transfers": "Переезды", "transferTime": "Время в пути", "activities": "Запланировано" },
+    "chapter": { "nights": "{count} ночей", "days": "Дни {range}" },
+    "transfer": { "ariaLabel": "Переезд из {from} в {to}, {duration}", "duration": "Длительность", "distance": "Расстояние", "load": "Нагрузка поездки", "toleranceWarning": "Этот участок превышает лимит переезда в брифе.", "light": "Лёгкий участок", "balanced": "Сбалансированный участок", "heavy": "Сложный участок", "unknown": "Нужны данные маршрута" },
+    "empty": { "neighborhoods": "Выберите базовый район", "dishes": "Добавьте местную еду", "activities": "Оставьте свободное время" },
+    "evidence": { "title": "Быстрые ответы с прозрачной основой.", "description": "Вид собран из той же версионированной JourneySpec, канонических мест, справок о направлениях и метрик маршрута, что и планировщик.", "dataset": "Набор данных", "template": "Шаблон маршрута", "routeFit": "Соответствие маршрута" }
   }
 }

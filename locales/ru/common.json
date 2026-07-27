@@ -507,6 +507,16 @@
       "aiRetry": "Повторить"
     }
   },
+  "tripActivityKnowledge": {
+    "title": "Информация для посетителей с источниками", "description": "Структурированные данные каталога, а не сгенерированный текст.", "currentUntil": "Актуально до {date}",
+    "freshness": { "current": "Актуально", "expired": "Проверьте снова", "undated": "Нет даты проверки" },
+    "duration": "Рекомендуемая длительность", "bestTime": "Лучшее время", "hours": "Часы работы", "lastEntry": "последний вход {time}", "admission": "Вход", "free": "Бесплатно", "booking": "Бронирование",
+    "bookingModes": { "walk_in": "Без бронирования", "optional_advance": "Бронирование по желанию", "recommended_advance": "Бронируйте заранее", "required_advance": "Требуется бронь" },
+    "audience": "Для кого", "audienceLabels": { "family": "Семьи", "lgbtq": "ЛГБТК+", "solo": "Соло", "mobility": "Мобильность" },
+    "fitLabels": { "good": "Хорошо подходит", "conditional": "Смотрите примечания", "limited": "Ограниченно", "unknown": "Ещё не проверено" },
+    "dressCode": "Дресс-код", "accessibility": "Доступность", "practicalNotes": "Полезно знать", "sources": "Источники",
+    "verifyLive": "Часы работы, цены и доступность могут меняться. Проверьте источник перед визитом."
+  },
   "tripRouteShell": {
     "loadingTrip": "Загрузка поездки",
     "preparingPlanner": "Подготовка планировщика",

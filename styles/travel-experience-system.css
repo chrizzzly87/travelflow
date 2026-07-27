@@ -1,0 +1,104 @@
+.tf-travel-experience {
+  --tf-travel-paper: oklch(97% 0.014 83);
+  --tf-travel-paper-raised: oklch(99% 0.005 84);
+  --tf-travel-ink: oklch(22% 0.025 264);
+  --tf-travel-muted: oklch(48% 0.025 264);
+  --tf-travel-rule: oklch(82% 0.026 78);
+  --tf-travel-focus: oklch(52% 0.2 275);
+  --tf-travel-accent-ink: oklch(48% 0.15 32);
+  --tf-travel-route-line: oklch(52% 0.08 30);
+  --tf-travel-danger: oklch(59% 0.2 28);
+  --tf-travel-warm-ink: oklch(38% 0.09 75);
+  --tf-travel-mango: oklch(84% 0.16 84);
+  --tf-travel-lagoon: oklch(78% 0.12 190);
+  --tf-travel-hibiscus: oklch(72% 0.19 25);
+  --tf-travel-orchid: oklch(76% 0.13 300);
+  --tf-travel-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  color: var(--tf-travel-ink);
+}
+
+.tf-playful-decision-card {
+  --tf-playful-tone: var(--tf-travel-mango);
+  --tf-playful-rotation: 0deg;
+  --tf-playful-selected-lift: -0.4rem;
+  --tf-playful-selected-scale: 1;
+  --tf-playful-hover-lift: -0.3rem;
+  --tf-playful-hover-scale: 1.01;
+  position: relative;
+  border: 2px solid var(--tf-travel-ink);
+  border-radius: 2.4rem 1.7rem 2.2rem 1.4rem / 2rem 2.4rem 1.6rem 2.2rem;
+  corner-shape: squircle;
+  color: var(--tf-travel-ink);
+  background: var(--tf-playful-tone);
+  transform: rotate(var(--tf-playful-rotation));
+  transition: transform 240ms var(--tf-travel-ease-out), background-color 140ms ease-out;
+}
+
+.tf-playful-decision-card[data-tone='lagoon'] {
+  --tf-playful-tone: var(--tf-travel-lagoon);
+}
+
+.tf-playful-decision-card[data-tone='hibiscus'] {
+  --tf-playful-tone: var(--tf-travel-hibiscus);
+}
+
+.tf-playful-decision-card[data-tone='orchid'] {
+  --tf-playful-tone: var(--tf-travel-orchid);
+}
+
+.tf-playful-decision-card[data-scribble='true']::after {
+  position: absolute;
+  inset-inline: 12% 7%;
+  inset-block-end: 13%;
+  block-size: 1.1rem;
+  border-block-start: 3px solid currentColor;
+  border-radius: 50%;
+  content: '';
+  opacity: 0.42;
+  pointer-events: none;
+  transform: rotate(-3deg);
+}
+
+.tf-playful-decision-card[data-selected='true'] {
+  transform: translateY(var(--tf-playful-selected-lift)) rotate(0deg) scale(var(--tf-playful-selected-scale));
+}
+
+.tf-playful-decision-card[data-interactive='true'] {
+  min-inline-size: 2.75rem;
+  min-block-size: 2.75rem;
+  cursor: pointer;
+  text-align: start;
+}
+
+@media (hover: hover) {
+  .tf-playful-decision-card[data-interactive='true']:hover {
+    transform: translateY(var(--tf-playful-hover-lift)) rotate(0deg) scale(var(--tf-playful-hover-scale));
+  }
+}
+
+.tf-playful-decision-card[data-interactive='true']:focus-visible {
+  outline: 3px solid var(--tf-travel-focus);
+  outline-offset: 3px;
+  transform: translateY(-0.25rem) rotate(0deg);
+}
+
+.tf-playful-decision-card[data-interactive='true']:active {
+  transform: translateY(0.1rem) rotate(0deg) scale(0.985);
+  transition-duration: 100ms;
+}
+
+.tf-playful-decision-card[data-interactive='true']:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tf-playful-decision-card,
+  .tf-playful-decision-card[data-selected='true'],
+  .tf-playful-decision-card[data-interactive='true']:hover,
+  .tf-playful-decision-card[data-interactive='true']:focus-visible,
+  .tf-playful-decision-card[data-interactive='true']:active {
+    transform: none;
+    transition-duration: 0.01ms;
+  }
+}

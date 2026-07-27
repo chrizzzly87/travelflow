@@ -3,7 +3,13 @@ import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, Maximiz
 import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
 import { TripFloatingMapPreview } from './TripFloatingMapPreview';
 
-import type { ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../../types';
+import type { ItineraryMapProps } from '../ItineraryMap';
+import type { MapPresentationModel } from '../../shared/mapPresentation';
+import type { MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../../types';
+
+export type TripMapRendererProps = Omit<ItineraryMapProps, 'items' | 'presentation'> & {
+    presentation: MapPresentationModel;
+};
 
 interface TripViewPlannerWorkspaceProps {
     isPaywallLocked: boolean;
@@ -11,6 +17,7 @@ interface TripViewPlannerWorkspaceProps {
     isMobileMapExpanded: boolean;
     onCloseMobileMap: () => void;
     onToggleMobileMapExpanded: () => void;
+    journeyOverviewRail?: React.ReactNode;
     timelineCanvas: React.ReactNode;
     onTimelineTouchStart: (event: React.TouchEvent<HTMLDivElement>) => void;
     onTimelineTouchMove: (event: React.TouchEvent<HTMLDivElement>) => void;
@@ -26,10 +33,10 @@ interface TripViewPlannerWorkspaceProps {
     timelineView: 'horizontal' | 'vertical';
     mapViewportRef: React.RefObject<HTMLDivElement | null>;
     isMapBootstrapEnabled: boolean;
-    ItineraryMapComponent: React.ComponentType<any>;
+    ItineraryMapComponent: React.ComponentType<TripMapRendererProps>;
     mapLoadingFallback: React.ReactNode;
     mapDeferredFallback: React.ReactNode;
-    displayItems: ITimelineItem[];
+    mapPresentation: MapPresentationModel;
     selectedItemId: string | null;
     onMapCitySelect?: (cityId: string) => void;
     onMapActivitySelect?: (activityId: string) => void;
@@ -74,6 +81,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     isMobileMapExpanded,
     onCloseMobileMap,
     onToggleMobileMapExpanded,
+    journeyOverviewRail,
     timelineCanvas,
     onTimelineTouchStart,
     onTimelineTouchMove,
@@ -92,7 +100,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     ItineraryMapComponent,
     mapLoadingFallback,
     mapDeferredFallback,
-    displayItems,
+    mapPresentation,
     selectedItemId,
     onMapCitySelect,
     onMapActivitySelect,
@@ -313,7 +321,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
             <Suspense fallback={mapLoadingFallback}>
                 <ItineraryMapComponent
                     key={tripId}
-                    items={displayItems}
+                    presentation={mapPresentation}
                     selectedItemId={selectedItemId}
                     onCityMarkerSelect={onMapCitySelect}
                     onActivityMarkerSelect={onMapActivitySelect}
@@ -344,7 +352,20 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     };
 
     return (
-        <>
+        <div
+            className={`flex h-full w-full min-h-0 min-w-0 ${isMobile ? 'flex-col' : 'flex-row'}`}
+            data-testid="planner-workspace-frame"
+        >
+            {journeyOverviewRail ? (
+                <aside
+                    className="tf-trip-journey-rail-slot shrink-0"
+                    data-testid="planner-journey-overview-rail"
+                    data-compact={detailsPanelVisible ? 'true' : 'false'}
+                >
+                    {journeyOverviewRail}
+                </aside>
+            ) : null}
+            <div className="relative h-full min-h-0 min-w-0 flex-1">
             {isMobileMapExpanded && (
                 <button
                     type="button"
@@ -512,6 +533,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     </>
                 )}
             </div>
-        </>
+            </div>
+        </div>
     );
 };

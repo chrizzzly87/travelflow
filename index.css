@@ -44,6 +44,7 @@
 @source not "./pages/CreateTripV1Page.tsx";
 @source not "./pages/CreateTripV2Page.tsx";
 @source not "./pages/CreateTripV3Page.tsx";
+@source not "./pages/CreateTripShapeLabPage.tsx";
 @source not "./pages/CreateTripSplitWorkspaceLabPage.tsx";
 @source not "./pages/CreateTripJourneyArchitectLabPage.tsx";
 

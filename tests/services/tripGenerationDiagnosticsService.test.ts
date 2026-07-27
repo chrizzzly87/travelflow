@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ITrip } from '../../types';
+import { buildJourneySpecFromLegacyCreateTrip } from '../../shared/journeySpec';
 import {
   classifyTripGenerationFailure,
   TRIP_GENERATION_STALE_GRACE_MS,
@@ -27,12 +28,32 @@ const buildTrip = (): ITrip => ({
 });
 
 describe('tripGenerationDiagnosticsService', () => {
+  it('classifies provider quota exhaustion as a provider failure', () => {
+    expect(classifyTripGenerationFailure({
+      code: 'OPENAI_QUOTA_EXHAUSTED',
+      status: 429,
+      message: 'OpenAI generation request failed.',
+    })).toMatchObject({
+      kind: 'provider',
+      code: 'OPENAI_QUOTA_EXHAUSTED',
+      statusCode: 429,
+    });
+  });
+
   it('preserves trip identity/title and writes failed diagnostics on classic failure', () => {
+    const journeySpec = buildJourneySpecFromLegacyCreateTrip({
+      countries: [{ name: 'Italy', code: 'IT' }],
+      startDate: '2026-03-01',
+      endDate: '2026-03-05',
+      durationDays: 4,
+      createdFrom: 'classic',
+    });
     const snapshot = createTripGenerationInputSnapshot({
       flow: 'classic',
       destinationLabel: 'Rome',
       startDate: '2026-03-01',
       endDate: '2026-03-05',
+      journeySpec,
       payload: {
         destinationPrompt: 'Rome',
         options: {
@@ -67,6 +88,8 @@ describe('tripGenerationDiagnosticsService', () => {
     expect(failedTrip.title).toBe('Rome city break');
     expect(failedTrip.aiMeta?.generation?.state).toBe('failed');
     expect(failedTrip.aiMeta?.generation?.inputSnapshot?.flow).toBe('classic');
+    expect(failedTrip.aiMeta?.generation?.inputSnapshot?.journeySpec).toEqual(journeySpec);
+    expect(failedTrip.aiMeta?.generation?.inputSnapshot?.journeySpec?.version).toBe(1);
 
     const attempt = failedTrip.aiMeta?.generation?.latestAttempt;
     expect(attempt?.requestId).toBe('request-1');

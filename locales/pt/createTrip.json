@@ -210,6 +210,60 @@
   "wizard": {
     "flowLabel": "Adaptive wizard",
     "stepBadge": "Step {current} of {total}",
+    "personalize": {
+      "eyebrow": "Make the base yours",
+      "title": "Tune this route without rebuilding it.",
+      "description": "Describe what should change. AI can only propose small edits using places and tags already present in the retrieved catalogue.",
+      "guarded": "Catalogue-guarded",
+      "requestLabel": "What should feel different?",
+      "placeholder": "For example: slower mornings, more food, keep the Grand Palace, and avoid crowded markets.",
+      "requestHint": "{count} characters left",
+      "examplesLabel": "Personalization examples",
+      "examples": {
+        "0": "Slower mornings, food first",
+        "1": "Famous highlights, less rushing",
+        "2": "Hidden gems, avoid busy markets"
+      },
+      "submit": "Personalize selected route",
+      "loading": "Checking the catalogue…",
+      "routeLocked": "Route, dates, and duration stay locked.",
+      "errorTitle": "The base route is still ready.",
+      "errorDescription": "Personalization could not be completed. You can retry or open the instant base without AI.",
+      "proposalEyebrow": "Validated proposal",
+      "ready": "Ready to review",
+      "applied": "Applied",
+      "noChanges": "The request did not require a safe catalogue change.",
+      "unresolved": "Not supported by this context",
+      "cautions": "Keep in mind",
+      "apply": "Apply {count} changes",
+      "undo": "Undo changes",
+      "tryAnother": "Try another request",
+      "minutes": "{count} minutes",
+      "receipt": {
+        "aiCalls": "AI calls",
+        "model": "Model",
+        "time": "Response",
+        "dataset": "Dataset"
+      },
+      "changeLabels": {
+        "pace": "Travel rhythm",
+        "interest_tags": "Interests",
+        "vibe_tags": "Vibe",
+        "transport_preferences": "Transport",
+        "max_transfer_minutes": "Transfer limit",
+        "place_role": "Place"
+      },
+      "roles": {
+        "must_visit": "Must visit",
+        "consider": "Consider",
+        "avoid": "Avoid"
+      },
+      "paces": {
+        "relaxed": "Relaxed",
+        "balanced": "Balanced",
+        "full": "Full"
+      }
+    },
     "actions": {
       "back": "Back",
       "continue": "Continue",
@@ -325,5 +379,172 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "shapeLab": {
+    "badge": "Laboratório de rotas da Tailândia",
+    "badgePrimary": "Planejador rápido da Tailândia",
+    "classicFallback": "Vai planejar outro destino? Use o planejador clássico.",
+    "title": "Escolha a rota antes do roteiro.",
+    "intro": "Comece pelo formato da viagem, compare três rotas bem fundamentadas e abra imediatamente um plano editável. As atividades detalhadas podem vir depois de a rota fazer sentido.",
+    "progressLabel": "Progresso do planejamento",
+    "steps": {
+      "shape": "Formato",
+      "place": "Lugares",
+      "timing": "Período",
+      "style": "Ritmo",
+      "reveal": "Rotas"
+    },
+    "shape": {
+      "eyebrow": "Comece pela estrutura",
+      "title": "Que formato esta viagem deve ter?",
+      "description": "Esta decisão define quantas bases, conexões e excursões fazem sentido.",
+      "options": {
+        "city_break": {
+          "title": "Uma cidade, de verdade",
+          "description": "Fique em uma só cidade e explore os bairros sem trocar de hotel."
+        },
+        "hub_and_day_trips": {
+          "title": "Uma base, mais alcance",
+          "description": "Desfaça as malas uma vez e acrescente passeios realistas de um dia."
+        },
+        "single_country_circuit": {
+          "title": "Um circuito pela Tailândia",
+          "description": "Conecte várias bases com pernoite sem perder o controle dos traslados."
+        }
+      }
+    },
+    "place": {
+      "eyebrow": "Lugares em primeiro plano",
+      "title": "Qual lugar deve orientar a rota?",
+      "requiredDescription": "Escolha a cidade que será a base desta viagem. Cada opção já tem uma rota compatível.",
+      "optionalDescription": "Escolha uma cidade obrigatória ou deixe a duração, a estação e os interesses decidirem.",
+      "searchLabel": "Pesquisar cidades e bairros",
+      "searchPlaceholder": "Experimente Bangkok, Chiang Mai ou Yaowarat",
+      "searchHint": "Pesquise cidades, nomes locais, aliases e bairros já suportados por este tipo de viagem.",
+      "neighborhoodResult": "Bairro em {city}",
+      "noSearchResults": "Ainda não existe uma cidade ou bairro suportado para essa pesquisa.",
+      "stayRange": "Normalmente {min}–{max} noites",
+      "popularity": "Popularidade {score}/100",
+      "hiddenGem": "Descoberta {score}/100",
+      "neighborhoodTitle": "Dê mais personalidade à cidade",
+      "neighborhoodHint": "Opcional: escolha até três bairros. Eles continuam como lugares canônicos no briefing."
+    },
+    "timing": {
+      "eyebrow": "Use a restrição real",
+      "title": "Quanto tempo temos?",
+      "description": "Um período flexível é mais rápido. Use datas exatas se transporte e disponibilidade já estiverem definidos.",
+      "modeLabel": "Flexibilidade de datas",
+      "modes": {
+        "flexible": "Período flexível",
+        "exact": "Datas exatas"
+      },
+      "durationLabel": "Duração da viagem",
+      "nights": "noites",
+      "decreaseDuration": "Remover uma noite",
+      "increaseDuration": "Adicionar uma noite",
+      "monthLabel": "Mês preferido",
+      "startDate": "Data de início",
+      "endDate": "Data de fim",
+      "dateError": "Escolha uma data final posterior ao início para comparar rotas."
+    },
+    "style": {
+      "eyebrow": "Só os sinais que importam",
+      "title": "O que a rota deve priorizar?",
+      "description": "Ritmo e interesses bastam para a primeira comparação. Os detalhes podem ser ajustados dentro do plano.",
+      "paceLabel": "Ritmo de viagem",
+      "interestsLabel": "Quero mais",
+      "advancedLabel": "Ajustar limites da rota",
+      "maxChanges": "Máximo de mudanças de base"
+    },
+    "reveal": {
+      "eyebrow": "Rotas instantâneas",
+      "titleOne": "Uma rota bem fundamentada pela Tailândia.",
+      "titleMany": "{count} rotas bem fundamentadas pela Tailândia.",
+      "description": "São esqueletos versionados do pacote de conhecimento da Tailândia, não destinos inventados durante a espera.",
+      "dataNote": "{templates} modelos comparados com {entities} lugares canônicos · dados {version}",
+      "engine": {
+        "label": "Evidência do planeador rápido",
+        "title": "Percurso rápido com fontes",
+        "description": "Estas opções foram recuperadas e compiladas do catálogo da Tailândia antes de qualquer personalização por IA.",
+        "noAi": "0 chamadas de IA",
+        "retrieval": "Recuperação",
+        "milliseconds": "{value} ms",
+        "places": "Lugares selecionados",
+        "templates": "Modelos selecionados",
+        "payload": "Contexto",
+        "loadingSelected": "A carregar o contexto detalhado do catálogo para esta rota…",
+        "selectedReady": "Rota pronta com {neighborhoods} bairros e {pois} POI num contexto de {size}."
+      },
+      "fallback": "Dados disponíveis offline",
+      "sources": {
+        "memory": "Cache atualizado",
+        "bundled": "Reserva local",
+        "supabase": "Supabase ao vivo"
+      },
+      "noMatchesTitle": "As restrições atuais estão apertadas demais.",
+      "noMatchesDescription": "Troque a cidade-base, acrescente uma noite ou permita mais uma mudança de base.",
+      "adjustRoute": "Ajustar preferências",
+      "match": "{score}% de compatibilidade",
+      "selected": "Selecionada",
+      "tradeoff": "Saiba antes de escolher",
+      "keepSelected": "Manter esta rota",
+      "chooseRoute": "Escolher esta rota",
+      "readyTitle": "O esqueleto da sua rota está pronto.",
+      "readyDescription": "Abra agora com cidades, coordenadas, noites, passeios e marcadores editáveis reais.",
+      "readyAdaptedTitle": "Sua rota adaptada está pronta.",
+      "readyAdaptedDescription": "Abra o plano baseado no catálogo com os ajustes de IA que você aprovou já aplicados.",
+    "dayTripShort": "passeio de um dia",
+    "nightsShort": "{count} noites",
+    "brief": {
+      "title": "Dê textura à rota.",
+      "description": "Estes resumos das cidades já fazem parte do plano, para que as próximas respostas sejam rápidas e consistentes.",
+      "bestMonths": "Meses mais indicados",
+      "dishes": "Comece por",
+      "neighborhoods": "Bairros",
+      "activities": "Bons pontos de partida",
+      "stayRange": "{min}–{max} noites",
+      "source": "Ver fonte",
+      "audienceContext": "Contexto para viajantes",
+      "audienceSignals": {
+        "family_activity_supply": "Oferta de atividades para famílias",
+        "lgbtq_scene": "Cena LGBTQ+ documentada",
+        "solo_travel_interest": "Interesse para viagens a solo"
+      }
+    },
+    "reasons": {
+        "duration_fit": "Cabe no seu tempo",
+        "pace_fit": "Combina com seu ritmo",
+        "season_fit": "Boa estação",
+        "interest_fit": "Combina com seus interesses",
+        "selected_places_fit": "Inclui seus lugares"
+      }
+    },
+    "actions": {
+      "compare": "Comparar rotas",
+      "preparing": "A recuperar rotas…",
+      "openPlan": "Abrir base instantânea",
+      "openAdaptedPlan": "Abrir plano adaptado"
+    }
+  },
+  "journeyLab": {
+    "badge": "Laboratório de visualização da viagem",
+    "title": "Veja a viagem inteira, não apenas os pontos.",
+    "intro": "Três estruturas transformam a mesma viagem numa história clara: bases, carga dos deslocamentos, bairros, comida, atividades, afinidade e fontes.",
+    "prototypeNote": "Este é um laboratório de conceitos isolado. O planeador atual não muda.",
+    "live": { "close": "Fechar a visão geral da viagem" },
+    "conceptsLabel": "Compare três formas de entender uma viagem",
+    "concepts": {
+      "lens": { "title": "Journey Lens", "description": "Uma visão geral permanente junto à área de planeamento.", "bestFor": "Opção recomendada" },
+      "storyboard": { "title": "Route Storyboard", "description": "Uma vista editorial por capítulos com um percurso forte.", "bestFor": "Apresentar e partilhar" },
+      "inspector": { "title": "Adaptive Inspector", "description": "Um índice compacto com detalhes apenas quando necessário.", "bestFor": "Edição focada" }
+    },
+    "labels": {
+      "tripExample": "Exemplo da Tailândia", "tripCharacter": "Caráter da viagem", "routeOverview": "Visão interativa da viagem", "focusHint": "Escolha uma cidade ou deslocamento", "chapters": "Capítulos da rota", "chapter": "Capítulo", "transfer": "Deslocamento", "routeStory": "A história da rota", "compactIndex": "Índice dos capítulos", "selected": "Contexto selecionado", "compare": "Primeiro, a estrutura", "evidence": "Criado com dados conhecidos", "whyFits": "Porque esta rota combina", "neighborhoods": "Bairros", "dishes": "Comece por", "activities": "Bons pontos de partida"
+    },
+    "summary": { "days": "{count} dias", "bases": "Bases", "transfers": "Deslocamentos", "transferTime": "Tempo de viagem", "activities": "Planeadas" },
+    "chapter": { "nights": "{count} noites", "days": "Dias {range}" },
+    "transfer": { "ariaLabel": "Deslocamento de {from} para {to}, {duration}", "duration": "Duração", "distance": "Distância", "load": "Carga da viagem", "toleranceWarning": "Este trecho excede o limite de deslocamento do briefing.", "light": "Trecho leve", "balanced": "Trecho equilibrado", "heavy": "Trecho exigente", "unknown": "Faltam dados da rota" },
+    "empty": { "neighborhoods": "Escolha uma zona base", "dishes": "Adicione comida local", "activities": "Deixe tempo livre" },
+    "evidence": { "title": "Respostas rápidas com uma base visível.", "description": "A vista usa a mesma JourneySpec versionada, lugares canónicos, guias de destino e métricas de rota que podem alimentar o planeador.", "dataset": "Conjunto de dados", "template": "Modelo de rota", "routeFit": "Afinidade da rota" }
   }
 }

@@ -193,6 +193,60 @@
   "wizard": {
     "flowLabel": "Adaptive wizard",
     "stepBadge": "Step {current} of {total}",
+    "personalize": {
+      "eyebrow": "Make the base yours",
+      "title": "Tune this route without rebuilding it.",
+      "description": "Describe what should change. AI can only propose small edits using places and tags already present in the retrieved catalogue.",
+      "guarded": "Catalogue-guarded",
+      "requestLabel": "What should feel different?",
+      "placeholder": "For example: slower mornings, more food, keep the Grand Palace, and avoid crowded markets.",
+      "requestHint": "{count} characters left",
+      "examplesLabel": "Personalization examples",
+      "examples": {
+        "0": "Slower mornings, food first",
+        "1": "Famous highlights, less rushing",
+        "2": "Hidden gems, avoid busy markets"
+      },
+      "submit": "Personalize selected route",
+      "loading": "Checking the catalogue…",
+      "routeLocked": "Route, dates, and duration stay locked.",
+      "errorTitle": "The base route is still ready.",
+      "errorDescription": "Personalization could not be completed. You can retry or open the instant base without AI.",
+      "proposalEyebrow": "Validated proposal",
+      "ready": "Ready to review",
+      "applied": "Applied",
+      "noChanges": "The request did not require a safe catalogue change.",
+      "unresolved": "Not supported by this context",
+      "cautions": "Keep in mind",
+      "apply": "Apply {count} changes",
+      "undo": "Undo changes",
+      "tryAnother": "Try another request",
+      "minutes": "{count} minutes",
+      "receipt": {
+        "aiCalls": "AI calls",
+        "model": "Model",
+        "time": "Response",
+        "dataset": "Dataset"
+      },
+      "changeLabels": {
+        "pace": "Travel rhythm",
+        "interest_tags": "Interests",
+        "vibe_tags": "Vibe",
+        "transport_preferences": "Transport",
+        "max_transfer_minutes": "Transfer limit",
+        "place_role": "Place"
+      },
+      "roles": {
+        "must_visit": "Must visit",
+        "consider": "Consider",
+        "avoid": "Avoid"
+      },
+      "paces": {
+        "relaxed": "Relaxed",
+        "balanced": "Balanced",
+        "full": "Full"
+      }
+    },
     "actions": {
       "back": "Back",
       "continue": "Continue",
@@ -308,5 +362,158 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "shapeLab": {
+    "badge": "تھائی لینڈ روٹ لیب",
+    "badgePrimary": "تھائی لینڈ فوری پلانر",
+    "classicFallback": "کسی اور منزل کا منصوبہ بنا رہے ہیں؟ کلاسک پلانر استعمال کریں۔",
+    "title": "روزانہ منصوبے سے پہلے راستہ چنیں۔",
+    "intro": "سفر کی شکل سے آغاز کریں، تین معتبر راستوں کا موازنہ کریں اور فوراً قابلِ ترمیم منصوبہ کھولیں۔ تفصیلی سرگرمیاں اس وقت شامل کی جا سکتی ہیں جب راستہ درست لگے۔",
+    "progressLabel": "سفر کی منصوبہ بندی کی پیش رفت",
+    "steps": {
+      "shape": "شکل",
+      "place": "مقامات",
+      "timing": "وقت",
+      "style": "رفتار",
+      "reveal": "راستے"
+    },
+    "shape": {
+      "eyebrow": "ساخت سے شروع کریں",
+      "title": "اس سفر کی شکل کیا ہونی چاہیے؟",
+      "description": "یہ فیصلہ مناسب قیام گاہوں، منتقلیوں اور ایک روزہ دوروں کی تعداد طے کرتا ہے۔",
+      "options": {
+        "city_break": {
+          "title": "ایک شہر، بھرپور انداز میں",
+          "description": "ایک ہی شہر میں رہیں اور ہوٹل بدلے بغیر اس کے محلّے دیکھیں۔"
+        },
+        "hub_and_day_trips": {
+          "title": "ایک مرکز، زیادہ رسائی",
+          "description": "ایک بار سامان کھولیں اور حقیقت پسندانہ ایک روزہ دورے شامل کریں۔"
+        },
+        "single_country_circuit": {
+          "title": "تھائی لینڈ کا چکر",
+          "description": "منتقلیوں کو قابو میں رکھتے ہوئے کئی رات کے قیام جوڑیں۔"
+        }
+      }
+    },
+    "place": {
+      "eyebrow": "واضح شناخت والے مقامات",
+      "title": "کون سا مقام راستے کی سمت طے کرے؟",
+      "requiredDescription": "وہ شہر چنیں جو اس سفر کا مرکز ہوگا۔ ہر انتخاب کے لیے موزوں راستہ پہلے سے موجود ہے۔",
+      "optionalDescription": "ضرور دیکھنے والا شہر چنیں یا مدت، موسم اور دلچسپیوں کو فیصلہ کرنے دیں۔",
+      "searchLabel": "شہروں اور محلوں کی تلاش",
+      "searchPlaceholder": "بینکاک، چیانگ مائی یا یاوارات آزمائیں",
+      "searchHint": "اس سفر کی شکل کے لیے پہلے سے معاون شہروں، مقامی ناموں، متبادل ناموں اور محلوں کو تلاش کریں۔",
+      "neighborhoodResult": "{city} کا محلہ",
+      "noSearchResults": "ابھی کوئی معاون شہر یا محلہ اس تلاش سے مطابقت نہیں رکھتا۔",
+      "stayRange": "عموماً {min}–{max} راتیں",
+      "popularity": "مقبولیت {score}/100",
+      "hiddenGem": "دریافت {score}/100",
+      "neighborhoodTitle": "شہر کو مزید گہرائی دیں",
+      "neighborhoodHint": "اختیاری: تین تک محلّے چنیں۔ یہ سفر کی تفصیل میں مستند مقامات کے طور پر محفوظ رہیں گے۔"
+    },
+    "timing": {
+      "eyebrow": "حقیقی پابندی استعمال کریں",
+      "title": "ہمارے پاس کتنا وقت ہے؟",
+      "description": "لچک دار مدت سب سے تیز ہے۔ اگر نقل و حمل یا دستیابی پہلے سے طے ہے تو درست تاریخیں دیں۔",
+      "modeLabel": "وقت کی یقین دہانی",
+      "modes": {
+        "flexible": "لچک دار مدت",
+        "exact": "درست تاریخیں"
+      },
+      "durationLabel": "سفر کی مدت",
+      "nights": "راتیں",
+      "decreaseDuration": "ایک رات کم کریں",
+      "increaseDuration": "ایک رات بڑھائیں",
+      "monthLabel": "پسندیدہ مہینہ",
+      "startDate": "آغاز کی تاریخ",
+      "endDate": "اختتام کی تاریخ",
+      "dateError": "راستوں کا موازنہ کرنے کے لیے اختتامی تاریخ آغاز کے بعد منتخب کریں۔"
+    },
+    "style": {
+      "eyebrow": "صرف اہم اشارے",
+      "title": "راستہ کس چیز کو ترجیح دے؟",
+      "description": "پہلے موازنے کے لیے رفتار اور دلچسپیاں کافی ہیں۔ باریک تبدیلیاں منصوبے میں کی جا سکتی ہیں۔",
+      "paceLabel": "سفر کی رفتار",
+      "interestsLabel": "مزید یہ چاہیے",
+      "advancedLabel": "راستے کی حدود بدلیں",
+      "maxChanges": "مرکز بدلنے کی زیادہ سے زیادہ تعداد"
+    },
+    "reveal": {
+      "eyebrow": "فوری راستے",
+      "titleOne": "تھائی لینڈ کا ایک معتبر راستہ۔",
+      "titleMany": "تھائی لینڈ کے {count} معتبر راستے۔",
+      "description": "یہ تھائی لینڈ کے علمی پیک سے ورژن شدہ راستے ہیں، انتظار کے دوران بنائے گئے مقامات نہیں۔",
+      "dataNote": "{templates} نمونوں کا {entities} مستند مقامات سے موازنہ · ڈیٹا {version}",
+      "fallback": "آف لائن دستیاب ڈیٹا",
+      "sources": {
+        "memory": "تازہ کیش",
+        "bundled": "مقامی محفوظ نقل",
+        "supabase": "Supabase لائیو"
+      },
+      "noMatchesTitle": "موجودہ پابندیاں بہت سخت ہیں۔",
+      "noMatchesDescription": "مرکزی شہر بدلیں، ایک رات بڑھائیں یا ایک اضافی مرکز کی اجازت دیں۔",
+      "adjustRoute": "تفصیل بدلیں",
+      "match": "{score}% مطابقت",
+      "selected": "منتخب",
+      "tradeoff": "منتخب کرنے سے پہلے جانیں",
+      "keepSelected": "یہ راستہ رکھیں",
+      "chooseRoute": "یہ راستہ چنیں",
+      "readyTitle": "آپ کے راستے کا خاکہ تیار ہے۔",
+      "readyDescription": "اسے حقیقی شہروں، مختصات، راتوں، ایک روزہ دوروں اور قابلِ ترمیم نقشہ نشانات کے ساتھ کھولیں۔",
+      "readyAdaptedTitle": "آپ کا ترمیم شدہ راستہ تیار ہے۔",
+      "readyAdaptedDescription": "کیٹالاگ پر مبنی منصوبہ ان منظور شدہ AI ترامیم کے ساتھ کھولیں جو لاگو ہو چکی ہیں۔",
+    "dayTripShort": "ایک روزہ دورہ",
+    "nightsShort": "{count} راتیں",
+    "brief": {
+      "title": "راستے کے ساتھ منزل کی جھلک بھی دیکھیں۔",
+      "description": "یہ مختصر شہری رہنمائی پہلے ہی منصوبے میں شامل ہے، اس لیے اگلے جوابات تیز اور یکساں رہیں گے۔",
+      "bestMonths": "موزوں مہینے",
+      "dishes": "پہلے یہ چکھیں",
+      "neighborhoods": "علاقے",
+      "activities": "اچھے نقطۂ آغاز",
+      "stayRange": "{min} تا {max} راتیں",
+      "source": "ماخذ دیکھیں",
+      "audienceContext": "مسافروں کے لیے سیاق",
+      "audienceSignals": {
+        "family_activity_supply": "خاندان کے لیے سرگرمیوں کی دستیابی",
+        "lgbtq_scene": "دستاویزی LGBTQ+ ماحول",
+        "solo_travel_interest": "تنہا سفر کرنے والوں کی دلچسپی"
+      }
+    },
+    "reasons": {
+        "duration_fit": "آپ کے وقت کے مطابق",
+        "pace_fit": "آپ کی رفتار کے مطابق",
+        "season_fit": "موزوں موسم",
+        "interest_fit": "دلچسپیوں کے مطابق",
+        "selected_places_fit": "آپ کے مقامات شامل ہیں"
+      }
+    },
+    "actions": {
+      "compare": "راستوں کا موازنہ",
+      "openPlan": "قابلِ ترمیم منصوبہ کھولیں",
+      "openAdaptedPlan": "ترمیم شدہ منصوبہ کھولیں"
+    }
+  },
+  "journeyLab": {
+    "badge": "سفر کی منظرکشی کی تجربہ گاہ",
+    "title": "صرف پن نہیں، پورا سفر دیکھیں۔",
+    "intro": "تین ساختیں ایک ہی سفر کو واضح کہانی بناتی ہیں: قیام، منتقلی کا بوجھ، علاقے، کھانا، سرگرمیاں، مسافر سے مطابقت اور ذرائع۔",
+    "prototypeNote": "یہ ایک الگ تصوراتی تجربہ گاہ ہے۔ موجودہ ٹرپ پلانر تبدیل نہیں ہوا۔",
+    "live": { "close": "سفر کا جائزہ بند کریں" },
+    "conceptsLabel": "سفر سمجھنے کے تین طریقوں کا موازنہ کریں",
+    "concepts": {
+      "lens": { "title": "Journey Lens", "description": "منصوبہ بندی کے ساتھ ہمیشہ نظر آنے والا خلاصہ۔", "bestFor": "تجویز کردہ بنیادی انتخاب" },
+      "storyboard": { "title": "Route Storyboard", "description": "نمایاں سفری لکیر کے ساتھ باب وار اداریاتی منظر۔", "bestFor": "پیشکش اور اشتراک" },
+      "inspector": { "title": "Adaptive Inspector", "description": "ضرورت کے وقت تفصیل دکھانے والا مختصر باب اشاریہ۔", "bestFor": "مرکوز ترمیم" }
+    },
+    "labels": {
+      "tripExample": "تھائی لینڈ کی مثال", "tripCharacter": "سفر کا مزاج", "routeOverview": "تفاعلی سفری جائزہ", "focusHint": "شہر یا منتقلی منتخب کریں", "chapters": "راستے کے ابواب", "chapter": "باب", "transfer": "منتقلی", "routeStory": "راستے کی کہانی", "compactIndex": "سفری ابواب کا اشاریہ", "selected": "منتخب سیاق", "compare": "پہلے ساخت", "evidence": "معلوم ڈیٹا سے تیار", "whyFits": "یہ راستہ کیوں موزوں ہے", "neighborhoods": "علاقے", "dishes": "یہاں سے شروع کریں", "activities": "اچھی بنیادی سرگرمیاں"
+    },
+    "summary": { "days": "{count} دن", "bases": "قیام", "transfers": "منتقلیاں", "transferTime": "سفر کا وقت", "activities": "منصوبہ بند" },
+    "chapter": { "nights": "{count} راتیں", "days": "دن {range}" },
+    "transfer": { "ariaLabel": "{from} سے {to} منتقلی، {duration}", "duration": "دورانیہ", "distance": "فاصلہ", "load": "سفری بوجھ", "toleranceWarning": "یہ حصہ ٹرپ بریف کی منتقلی حد سے زیادہ ہے۔", "light": "ہلکا حصہ", "balanced": "متوازن حصہ", "heavy": "بھاری حصہ", "unknown": "راستے کا ڈیٹا درکار" },
+    "empty": { "neighborhoods": "بنیادی علاقہ منتخب کریں", "dishes": "مقامی کھانا شامل کریں", "activities": "وقت خالی رکھیں" },
+    "evidence": { "title": "واضح بنیاد کے ساتھ تیز جواب۔", "description": "یہ منظر اسی ورژن شدہ JourneySpec، معیاری مقامات، منزل بریف اور راستے کے اعداد سے تیار ہوتا ہے جو پلانر کو بھی طاقت دے سکتے ہیں۔", "dataset": "ڈیٹا سیٹ", "template": "راستے کا سانچہ", "routeFit": "راستے کی مطابقت" }
   }
 }

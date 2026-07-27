@@ -162,6 +162,16 @@
       }
     }
   },
+  "tripActivityKnowledge": {
+    "title": "اطلاعات بازدید با منبع", "description": "داده‌های ساختاریافتهٔ فهرست، نه متن تولیدشده.", "currentUntil": "معتبر تا {date}",
+    "freshness": { "current": "به‌روز", "expired": "دوباره بررسی کنید", "undated": "تاریخ بررسی موجود نیست" },
+    "duration": "مدت پیشنهادی", "bestTime": "بهترین زمان", "hours": "ساعات بازدید", "lastEntry": "آخرین ورود {time}", "admission": "ورودی", "free": "رایگان", "booking": "رزرو",
+    "bookingModes": { "walk_in": "بدون رزرو", "optional_advance": "رزرو قبلی اختیاری", "recommended_advance": "رزرو از قبل", "required_advance": "رزرو قبلی الزامی" },
+    "audience": "تناسب با مسافر", "audienceLabels": { "family": "خانواده", "lgbtq": "+LGBTQ", "solo": "تنها", "mobility": "حرکت‌پذیری" },
+    "fitLabels": { "good": "مناسب", "conditional": "یادداشت‌ها را ببینید", "limited": "محدود", "unknown": "هنوز بررسی نشده" },
+    "dressCode": "پوشش", "accessibility": "دسترس‌پذیری", "practicalNotes": "نکات کاربردی", "sources": "منابع",
+    "verifyLive": "ساعت، قیمت و موجودی ممکن است تغییر کند. پیش از بازدید منبع پیوندشده را بررسی کنید."
+  },
   "tripRouteShell": {
     "loadingTrip": "Loading trip",
     "preparingPlanner": "Preparing planner",

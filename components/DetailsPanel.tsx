@@ -25,6 +25,7 @@ import {
   type HotelSearchResult,
   type SearchByTextResponseShape,
 } from './detailsPanelUtils';
+import { ActivityKnowledgeCard } from './tripview/ActivityKnowledgeCard';
 
 interface DetailsPanelProps {
   item: ITimelineItem | null;
@@ -1705,6 +1706,10 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                      </div>
                  </div>
              )}
+
+             {isActivity && displayItem.activityKnowledge ? (
+                 <ActivityKnowledgeCard knowledge={displayItem.activityKnowledge} />
+             ) : null}
 
              {isActivity && (
                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">

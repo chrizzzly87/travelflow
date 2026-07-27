@@ -193,6 +193,60 @@
   "wizard": {
     "flowLabel": "Adaptive wizard",
     "stepBadge": "Step {current} of {total}",
+    "personalize": {
+      "eyebrow": "Make the base yours",
+      "title": "Tune this route without rebuilding it.",
+      "description": "Describe what should change. AI can only propose small edits using places and tags already present in the retrieved catalogue.",
+      "guarded": "Catalogue-guarded",
+      "requestLabel": "What should feel different?",
+      "placeholder": "For example: slower mornings, more food, keep the Grand Palace, and avoid crowded markets.",
+      "requestHint": "{count} characters left",
+      "examplesLabel": "Personalization examples",
+      "examples": {
+        "0": "Slower mornings, food first",
+        "1": "Famous highlights, less rushing",
+        "2": "Hidden gems, avoid busy markets"
+      },
+      "submit": "Personalize selected route",
+      "loading": "Checking the catalogue…",
+      "routeLocked": "Route, dates, and duration stay locked.",
+      "errorTitle": "The base route is still ready.",
+      "errorDescription": "Personalization could not be completed. You can retry or open the instant base without AI.",
+      "proposalEyebrow": "Validated proposal",
+      "ready": "Ready to review",
+      "applied": "Applied",
+      "noChanges": "The request did not require a safe catalogue change.",
+      "unresolved": "Not supported by this context",
+      "cautions": "Keep in mind",
+      "apply": "Apply {count} changes",
+      "undo": "Undo changes",
+      "tryAnother": "Try another request",
+      "minutes": "{count} minutes",
+      "receipt": {
+        "aiCalls": "AI calls",
+        "model": "Model",
+        "time": "Response",
+        "dataset": "Dataset"
+      },
+      "changeLabels": {
+        "pace": "Travel rhythm",
+        "interest_tags": "Interests",
+        "vibe_tags": "Vibe",
+        "transport_preferences": "Transport",
+        "max_transfer_minutes": "Transfer limit",
+        "place_role": "Place"
+      },
+      "roles": {
+        "must_visit": "Must visit",
+        "consider": "Consider",
+        "avoid": "Avoid"
+      },
+      "paces": {
+        "relaxed": "Relaxed",
+        "balanced": "Balanced",
+        "full": "Full"
+      }
+    },
     "actions": {
       "back": "Back",
       "continue": "Continue",
@@ -308,5 +362,158 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "shapeLab": {
+    "badge": "آزمایشگاه مسیرهای تایلند",
+    "badgePrimary": "برنامه‌ریز سریع تایلند",
+    "classicFallback": "مقصد دیگری را برنامه‌ریزی می‌کنید؟ از برنامه‌ریز کلاسیک استفاده کنید.",
+    "title": "پیش از برنامه روزانه، مسیر را انتخاب کنید.",
+    "intro": "از شکل سفر شروع کنید، سه مسیر مستند را مقایسه کنید و فوراً یک برنامه قابل ویرایش باز کنید. جزئیات فعالیت‌ها می‌توانند پس از قطعی‌شدن مسیر اضافه شوند.",
+    "progressLabel": "پیشرفت برنامه‌ریزی سفر",
+    "steps": {
+      "shape": "شکل سفر",
+      "place": "مکان‌ها",
+      "timing": "زمان",
+      "style": "ریتم",
+      "reveal": "مسیرها"
+    },
+    "shape": {
+      "eyebrow": "از ساختار شروع کنید",
+      "title": "این سفر چه شکلی باید داشته باشد؟",
+      "description": "این انتخاب تعداد منطقی پایگاه‌ها، جابه‌جایی‌ها و سفرهای یک‌روزه را مشخص می‌کند.",
+      "options": {
+        "city_break": {
+          "title": "یک شهر، کامل",
+          "description": "در یک شهر بمانید و بدون تعویض هتل محله‌های آن را کشف کنید."
+        },
+        "hub_and_day_trips": {
+          "title": "یک پایگاه، دسترسی بیشتر",
+          "description": "یک‌بار چمدان را باز کنید و سفرهای یک‌روزه واقع‌بینانه اضافه کنید."
+        },
+        "single_country_circuit": {
+          "title": "گردش در تایلند",
+          "description": "چند پایگاه اقامتی را با جابه‌جایی‌های قابل‌کنترل به هم متصل کنید."
+        }
+      }
+    },
+    "place": {
+      "eyebrow": "مکان‌های دارای هویت",
+      "title": "کدام مکان باید جهت مسیر را تعیین کند؟",
+      "requiredDescription": "شهری را انتخاب کنید که پایگاه سفر باشد. برای هر گزینه یک مسیر هماهنگ آماده است.",
+      "optionalDescription": "یک شهر ضروری انتخاب کنید یا تصمیم را به مدت، فصل و علایق بسپارید.",
+      "searchLabel": "جست‌وجوی شهرها و محله‌ها",
+      "searchPlaceholder": "بانکوک، چیانگ‌مای یا یاوارات را امتحان کنید",
+      "searchHint": "شهرها، نام‌های محلی، نام‌های جایگزین و محله‌های پشتیبانی‌شده برای این نوع سفر را جست‌وجو کنید.",
+      "neighborhoodResult": "محله‌ای در {city}",
+      "noSearchResults": "هنوز شهر یا محله پشتیبانی‌شده‌ای با این جست‌وجو مطابقت ندارد.",
+      "stayRange": "معمولاً {min} تا {max} شب",
+      "popularity": "محبوبیت {score}/100",
+      "hiddenGem": "کشف {score}/100",
+      "neighborhoodTitle": "به شهر بافت بیشتری بدهید",
+      "neighborhoodHint": "اختیاری: تا سه محله انتخاب کنید. آن‌ها به‌عنوان مکان‌های یکتای مرجع در شرح سفر باقی می‌مانند."
+    },
+    "timing": {
+      "eyebrow": "محدودیت واقعی را وارد کنید",
+      "title": "چقدر زمان داریم؟",
+      "description": "بازه انعطاف‌پذیر سریع‌ترین گزینه است. اگر حمل‌ونقل یا ظرفیت از پیش مشخص است، تاریخ دقیق را وارد کنید.",
+      "modeLabel": "میزان قطعیت زمان",
+      "modes": {
+        "flexible": "بازه انعطاف‌پذیر",
+        "exact": "تاریخ دقیق"
+      },
+      "durationLabel": "مدت سفر",
+      "nights": "شب",
+      "decreaseDuration": "یک شب کم کنید",
+      "increaseDuration": "یک شب اضافه کنید",
+      "monthLabel": "ماه ترجیحی",
+      "startDate": "تاریخ شروع",
+      "endDate": "تاریخ پایان",
+      "dateError": "برای مقایسه مسیرها، تاریخ پایان را پس از تاریخ شروع انتخاب کنید."
+    },
+    "style": {
+      "eyebrow": "فقط نشانه‌های اثرگذار",
+      "title": "مسیر باید برای چه چیزی بهینه شود؟",
+      "description": "برای مقایسه اول، ریتم و علایق کافی هستند. جزئیات را می‌توان در برنامه تنظیم کرد.",
+      "paceLabel": "ریتم سفر",
+      "interestsLabel": "بیشتر از این‌ها",
+      "advancedLabel": "تنظیم محدودیت مسیر",
+      "maxChanges": "حداکثر تغییر پایگاه"
+    },
+    "reveal": {
+      "eyebrow": "نمایش فوری مسیر",
+      "titleOne": "یک مسیر مستند در تایلند.",
+      "titleMany": "{count} مسیر مستند در تایلند.",
+      "description": "این‌ها چارچوب‌های نسخه‌بندی‌شده از بسته دانشی تایلند هستند، نه مقصدهایی که هنگام انتظار ساخته شده‌اند.",
+      "dataNote": "مقایسه {templates} الگو با {entities} مکان مرجع · داده {version}",
+      "fallback": "داده آماده استفاده آفلاین",
+      "sources": {
+        "memory": "حافظه تازه",
+        "bundled": "نسخه محلی پشتیبان",
+        "supabase": "Supabase زنده"
+      },
+      "noMatchesTitle": "محدودیت‌های فعلی بیش از حد سخت هستند.",
+      "noMatchesDescription": "شهر پایگاه را تغییر دهید، یک شب اضافه کنید یا یک تغییر پایگاه دیگر مجاز کنید.",
+      "adjustRoute": "تنظیم شرح سفر",
+      "match": "{score}% تناسب مسیر",
+      "selected": "انتخاب‌شده",
+      "tradeoff": "پیش از انتخاب بدانید",
+      "keepSelected": "این مسیر را نگه دارید",
+      "chooseRoute": "این مسیر را انتخاب کنید",
+      "readyTitle": "چارچوب مسیر شما آماده است.",
+      "readyDescription": "آن را با شهرها، مختصات، شب‌ها، سفرهای یک‌روزه و نشانگرهای قابل ویرایش واقعی باز کنید.",
+      "readyAdaptedTitle": "مسیر شخصی‌سازی‌شده شما آماده است.",
+      "readyAdaptedDescription": "برنامه مبتنی بر کاتالوگ را با تغییرات تأییدشده هوش مصنوعی باز کنید.",
+    "dayTripShort": "سفر یک‌روزه",
+    "nightsShort": "{count} شب",
+    "brief": {
+      "title": "فقط مسیر نه؛ حال‌وهوای مقصد را هم ببینید.",
+      "description": "این راهنمای کوتاه شهر از همین حالا در برنامه ذخیره شده است تا پاسخ‌های بعدی سریع و یکدست بمانند.",
+      "bestMonths": "ماه‌های مناسب‌تر",
+      "dishes": "برای شروع بچشید",
+      "neighborhoods": "محله‌ها",
+      "activities": "نقاط شروع خوب",
+      "stayRange": "{min} تا {max} شب",
+      "source": "مشاهده منبع",
+      "audienceContext": "اطلاعات ویژه مسافران",
+      "audienceSignals": {
+        "family_activity_supply": "تنوع فعالیت‌های خانوادگی",
+        "lgbtq_scene": "فضای مستند LGBTQ+",
+        "solo_travel_interest": "مورد توجه مسافران تنها"
+      }
+    },
+    "reasons": {
+        "duration_fit": "متناسب با زمان شما",
+        "pace_fit": "هماهنگ با ریتم شما",
+        "season_fit": "فصل مناسب",
+        "interest_fit": "هماهنگ با علایق",
+        "selected_places_fit": "شامل مکان‌های شما"
+      }
+    },
+    "actions": {
+      "compare": "مقایسه مسیرها",
+      "openPlan": "بازکردن برنامه قابل ویرایش",
+      "openAdaptedPlan": "بازکردن برنامه شخصی‌سازی‌شده"
+    }
+  },
+  "journeyLab": {
+    "badge": "آزمایشگاه نمایش سفر",
+    "title": "کل سفر را ببینید، نه فقط نقطه‌ها را.",
+    "intro": "سه ساختار، یک سفر را به روایتی روشن تبدیل می‌کنند: پایگاه‌ها، فشار جابه‌جایی، محله‌ها، غذا، فعالیت‌ها، تناسب با مسافر و منابع.",
+    "prototypeNote": "این یک آزمایشگاه مستقل مفهومی است. برنامه‌ریز فعلی بدون تغییر می‌ماند.",
+    "live": { "close": "بستن نمای کلی سفر" },
+    "conceptsLabel": "سه روش برای درک یک سفر را مقایسه کنید",
+    "concepts": {
+      "lens": { "title": "Journey Lens", "description": "نمایی همیشگی در کنار فضای برنامه‌ریزی.", "bestFor": "پیشنهاد پیش‌فرض" },
+      "storyboard": { "title": "Route Storyboard", "description": "نمای فصل‌بندی‌شده با خط سیر پررنگ سفر.", "bestFor": "نمایش و اشتراک‌گذاری" },
+      "inspector": { "title": "Adaptive Inspector", "description": "فهرست فشرده فصل‌ها با جزئیات در زمان نیاز.", "bestFor": "ویرایش متمرکز" }
+    },
+    "labels": {
+      "tripExample": "نمونه تایلند", "tripCharacter": "حال‌وهوای سفر", "routeOverview": "نمای تعاملی سفر", "focusHint": "یک شهر یا جابه‌جایی را انتخاب کنید", "chapters": "فصل‌های مسیر", "chapter": "فصل", "transfer": "جابه‌جایی", "routeStory": "داستان مسیر", "compactIndex": "فهرست فصل‌های سفر", "selected": "زمینه انتخاب‌شده", "compare": "ابتدا ساختار", "evidence": "ساخته‌شده از داده‌های معتبر", "whyFits": "چرا این مسیر مناسب است", "neighborhoods": "محله‌ها", "dishes": "برای شروع", "activities": "نقاط شروع خوب"
+    },
+    "summary": { "days": "{count} روز", "bases": "پایگاه‌ها", "transfers": "جابه‌جایی‌ها", "transferTime": "زمان سفر", "activities": "برنامه‌ریزی‌شده" },
+    "chapter": { "nights": "{count} شب", "days": "روزهای {range}" },
+    "transfer": { "ariaLabel": "جابه‌جایی از {from} به {to}، {duration}", "duration": "مدت", "distance": "فاصله", "load": "فشار سفر", "toleranceWarning": "این بخش از حد جابه‌جایی تعیین‌شده در شرح سفر بیشتر است.", "light": "بخش سبک", "balanced": "بخش متعادل", "heavy": "بخش سنگین", "unknown": "نیازمند داده مسیر" },
+    "empty": { "neighborhoods": "یک محله پایه انتخاب کنید", "dishes": "غذای محلی اضافه کنید", "activities": "زمانی را آزاد بگذارید" },
+    "evidence": { "title": "پاسخ‌های سریع با پایه‌ای شفاف.", "description": "این نما از همان JourneySpec نسخه‌بندی‌شده، مکان‌های استاندارد، راهنمای مقصد و معیارهای مسیر قابل استفاده در برنامه‌ریز ساخته می‌شود.", "dataset": "مجموعه‌داده", "template": "الگوی مسیر", "routeFit": "تناسب مسیر" }
   }
 }

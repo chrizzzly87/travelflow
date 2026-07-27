@@ -210,6 +210,60 @@
   "wizard": {
     "flowLabel": "Adaptive wizard",
     "stepBadge": "Step {current} of {total}",
+    "personalize": {
+      "eyebrow": "Make the base yours",
+      "title": "Tune this route without rebuilding it.",
+      "description": "Describe what should change. AI can only propose small edits using places and tags already present in the retrieved catalogue.",
+      "guarded": "Catalogue-guarded",
+      "requestLabel": "What should feel different?",
+      "placeholder": "For example: slower mornings, more food, keep the Grand Palace, and avoid crowded markets.",
+      "requestHint": "{count} characters left",
+      "examplesLabel": "Personalization examples",
+      "examples": {
+        "0": "Slower mornings, food first",
+        "1": "Famous highlights, less rushing",
+        "2": "Hidden gems, avoid busy markets"
+      },
+      "submit": "Personalize selected route",
+      "loading": "Checking the catalogue…",
+      "routeLocked": "Route, dates, and duration stay locked.",
+      "errorTitle": "The base route is still ready.",
+      "errorDescription": "Personalization could not be completed. You can retry or open the instant base without AI.",
+      "proposalEyebrow": "Validated proposal",
+      "ready": "Ready to review",
+      "applied": "Applied",
+      "noChanges": "The request did not require a safe catalogue change.",
+      "unresolved": "Not supported by this context",
+      "cautions": "Keep in mind",
+      "apply": "Apply {count} changes",
+      "undo": "Undo changes",
+      "tryAnother": "Try another request",
+      "minutes": "{count} minutes",
+      "receipt": {
+        "aiCalls": "AI calls",
+        "model": "Model",
+        "time": "Response",
+        "dataset": "Dataset"
+      },
+      "changeLabels": {
+        "pace": "Travel rhythm",
+        "interest_tags": "Interests",
+        "vibe_tags": "Vibe",
+        "transport_preferences": "Transport",
+        "max_transfer_minutes": "Transfer limit",
+        "place_role": "Place"
+      },
+      "roles": {
+        "must_visit": "Must visit",
+        "consider": "Consider",
+        "avoid": "Avoid"
+      },
+      "paces": {
+        "relaxed": "Relaxed",
+        "balanced": "Balanced",
+        "full": "Full"
+      }
+    },
     "actions": {
       "back": "Back",
       "continue": "Continue",
@@ -324,6 +378,229 @@
       "relaxed": "Relaxed",
       "balanced": "Balanced",
       "fast": "Fast"
+    }
+  },
+  "shapeLab": {
+    "badge": "Thailand route lab",
+    "badgePrimary": "Thailand fast planner",
+    "classicFallback": "Planning somewhere else? Use the classic creator.",
+    "title": "Choose the route before the itinerary.",
+    "intro": "Start with the shape of the trip, compare three grounded route concepts, then open an editable plan immediately. Detailed activities can arrive after the route feels right.",
+    "progressLabel": "Trip planning progress",
+    "steps": {
+      "shape": "Shape",
+      "place": "Places",
+      "timing": "Timing",
+      "style": "Rhythm",
+      "reveal": "Routes"
+    },
+    "shape": {
+      "eyebrow": "Start with structure",
+      "title": "What shape should this trip take?",
+      "description": "This one decision changes how many bases, transfers, and day trips make sense.",
+      "options": {
+        "city_break": {
+          "title": "One city, properly",
+          "description": "Stay in one city and explore its neighborhoods without changing hotels."
+        },
+        "hub_and_day_trips": {
+          "title": "One base, wider reach",
+          "description": "Unpack once and add realistic same-day excursions around your base."
+        },
+        "single_country_circuit": {
+          "title": "A Thailand circuit",
+          "description": "Connect several overnight bases while keeping transfers under control."
+        }
+      }
+    },
+    "place": {
+      "eyebrow": "First-class places",
+      "title": "Where should the route take its cue from?",
+      "requiredDescription": "Choose the city that will anchor this trip shape. Every option already has a matching route concept.",
+      "optionalDescription": "Choose a must-visit city, or leave this open and let duration, season, and interests decide.",
+      "searchLabel": "Search cities and neighborhoods",
+      "searchPlaceholder": "Try Bangkok, Chiang Mai, or Yaowarat",
+      "searchHint": "Search cities, local names, aliases, and neighborhoods already supported by this trip shape.",
+      "neighborhoodResult": "Neighborhood in {city}",
+      "noSearchResults": "No supported city or neighborhood matches that search yet.",
+      "stayRange": "Usually {min}–{max} nights",
+      "popularity": "Popular {score}/100",
+      "hiddenGem": "Discovery {score}/100",
+      "neighborhoodTitle": "Give the city more texture",
+      "neighborhoodHint": "Optional: select up to three neighborhoods. They stay as named, canonical places in the brief."
+    },
+    "timing": {
+      "eyebrow": "Use the real constraint",
+      "title": "How much time do we have?",
+      "description": "Flexible timing is fastest. Exact dates are there when transport and availability are already fixed.",
+      "modeLabel": "Timing certainty",
+      "modes": {
+        "flexible": "Flexible window",
+        "exact": "Exact dates"
+      },
+      "durationLabel": "Trip length",
+      "nights": "nights",
+      "decreaseDuration": "Remove one night",
+      "increaseDuration": "Add one night",
+      "monthLabel": "Best-fit month",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "dateError": "Choose an end date after the start date to compare routes."
+    },
+    "style": {
+      "eyebrow": "Only the signals that matter",
+      "title": "What should the route optimize for?",
+      "description": "A quick rhythm and interest pass is enough for the first comparison. Fine-tuning can happen inside the plan.",
+      "paceLabel": "Travel rhythm",
+      "interestsLabel": "Turn up",
+      "advancedLabel": "Tune route limits",
+      "maxChanges": "Maximum base changes"
+    },
+    "reveal": {
+      "eyebrow": "Instant route reveal",
+      "titleOne": "One grounded way through Thailand.",
+      "titleMany": "{count} grounded ways through Thailand.",
+      "description": "These are versioned route skeletons from the Thailand knowledge pack—not destinations invented while you wait.",
+      "dataNote": "Compared {templates} templates against {entities} canonical places · dataset {version}",
+      "engine": {
+        "label": "Fast planner evidence",
+        "title": "Source-backed fast path",
+        "description": "These options were retrieved and compiled from the Thailand catalogue before any AI personalization.",
+        "noAi": "0 AI calls",
+        "retrieval": "Retrieval",
+        "milliseconds": "{value} ms",
+        "places": "Places selected",
+        "templates": "Templates selected",
+        "payload": "Context payload",
+        "loadingSelected": "Loading the deeper catalogue context for this route…",
+        "selectedReady": "Selected route ready with {neighborhoods} neighborhoods and {pois} POIs in a {size} context."
+      },
+      "fallback": "Offline-ready data",
+      "sources": {
+        "memory": "Fresh cache",
+        "bundled": "Bundled fallback",
+        "supabase": "Supabase live"
+      },
+      "noMatchesTitle": "The current constraints are too tight.",
+      "noMatchesDescription": "Change the anchor city, add a night, or allow one more base change to unlock a route.",
+      "adjustRoute": "Adjust the brief",
+      "match": "{score}% route fit",
+      "selected": "Selected",
+      "tradeoff": "Know before choosing",
+      "keepSelected": "Keep this route",
+      "chooseRoute": "Choose this route",
+      "readyTitle": "Your route skeleton is ready.",
+      "readyDescription": "Open it now with real cities, coordinates, nights, day trips, and editable map markers.",
+      "readyAdaptedTitle": "Your adapted route is ready.",
+      "readyAdaptedDescription": "Open the catalogue-backed plan with your approved AI changes already applied.",
+    "dayTripShort": "day trip",
+    "nightsShort": "{count} nights",
+    "brief": {
+      "title": "Get the texture, not just the route.",
+      "description": "These city briefs are already in the plan, so the next answers can stay fast and consistent.",
+      "bestMonths": "Best-fit months",
+      "dishes": "Start with",
+      "neighborhoods": "Neighborhoods",
+      "activities": "Good anchors",
+      "stayRange": "{min}–{max} nights",
+      "source": "View source",
+      "audienceContext": "Traveler context",
+      "audienceSignals": {
+        "family_activity_supply": "Family activity supply",
+        "lgbtq_scene": "Documented LGBTQ+ scene",
+        "solo_travel_interest": "Solo-travel interest"
+      }
+    },
+    "reasons": {
+        "duration_fit": "Fits your time",
+        "pace_fit": "Matches your rhythm",
+        "season_fit": "Season fit",
+        "interest_fit": "Interest match",
+        "selected_places_fit": "Includes your places"
+      }
+    },
+    "actions": {
+      "compare": "Compare routes",
+      "preparing": "Retrieving routes…",
+      "openPlan": "Open instant base",
+      "openAdaptedPlan": "Open adapted plan"
+    }
+  },
+  "journeyLab": {
+    "badge": "Journey visualization lab",
+    "title": "See the whole journey, not just the pins.",
+    "intro": "Three structures turn the same trip into a clear route story—bases, transfer load, neighborhoods, food, activities, traveler fit, and evidence included.",
+    "prototypeNote": "This is an isolated concept lab. The current trip planner is unchanged.",
+    "live": { "close": "Close journey overview" },
+    "conceptsLabel": "Compare three ways to understand a trip",
+    "concepts": {
+      "lens": {
+        "title": "Journey Lens",
+        "description": "A persistent overview rail beside the planning canvas.",
+        "bestFor": "Recommended default"
+      },
+      "storyboard": {
+        "title": "Route Storyboard",
+        "description": "An editorial chapter view with a strong journey spine.",
+        "bestFor": "Reveal and sharing"
+      },
+      "inspector": {
+        "title": "Adaptive Inspector",
+        "description": "A compact chapter index with details only when needed.",
+        "bestFor": "Focused editing"
+      }
+    },
+    "labels": {
+      "tripExample": "Thailand example",
+      "tripCharacter": "Trip character",
+      "routeOverview": "Interactive journey overview",
+      "focusHint": "Choose a city or transfer to inspect it",
+      "chapters": "Route chapters",
+      "chapter": "Chapter",
+      "transfer": "Transfer",
+      "routeStory": "The route story",
+      "compactIndex": "Trip chapter index",
+      "selected": "Selected context",
+      "compare": "Structure first",
+      "evidence": "Built from known data",
+      "whyFits": "Why this route fits",
+      "neighborhoods": "Neighborhoods",
+      "dishes": "Start with",
+      "activities": "Good anchors"
+    },
+    "summary": {
+      "days": "{count} days",
+      "bases": "Bases",
+      "transfers": "Transfers",
+      "transferTime": "Travel time",
+      "activities": "Planned"
+    },
+    "chapter": {
+      "nights": "{count} nights",
+      "days": "Days {range}"
+    },
+    "transfer": {
+      "ariaLabel": "Transfer from {from} to {to}, {duration}",
+      "duration": "Duration",
+      "distance": "Distance",
+      "load": "Journey load",
+      "toleranceWarning": "This leg exceeds the transfer limit in the trip brief.",
+      "light": "Light leg",
+      "balanced": "Balanced leg",
+      "heavy": "Heavy leg",
+      "unknown": "Needs route data"
+    },
+    "empty": {
+      "neighborhoods": "Choose a base area",
+      "dishes": "Add local food",
+      "activities": "Keep time open"
+    },
+    "evidence": {
+      "title": "Fast answers with a visible foundation.",
+      "description": "The view is compiled from the same versioned JourneySpec, canonical places, destination briefs, and route metrics that can power the planner.",
+      "dataset": "Dataset",
+      "template": "Route template",
+      "routeFit": "Route fit"
     }
   }
 }

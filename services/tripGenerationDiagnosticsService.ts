@@ -173,6 +173,7 @@ const classifyByCodeOrMessage = (codeRaw: string | null, messageRaw: string | nu
         code.includes('provider')
         || code.includes('model_not_allowed')
         || code.includes('key_missing')
+        || code.includes('quota')
         || code.includes('request_failed')
     ) {
         return 'provider';
@@ -343,6 +344,7 @@ export const createTripGenerationInputSnapshot = (params: {
     destinationLabel?: string;
     startDate?: string;
     endDate?: string;
+    journeySpec?: TripGenerationInputSnapshot['journeySpec'];
     payload: Record<string, unknown>;
 }): TripGenerationInputSnapshot => {
     return {
@@ -350,6 +352,7 @@ export const createTripGenerationInputSnapshot = (params: {
         destinationLabel: params.destinationLabel,
         startDate: params.startDate,
         endDate: params.endDate,
+        journeySpec: params.journeySpec,
         payload: params.payload,
         createdAt: getNowIso(),
     };

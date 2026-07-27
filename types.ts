@@ -1,6 +1,10 @@
 
 import type { TransportMode as CanonicalTransportMode } from './shared/transportModes';
 import type { CreateTripPrefillDraft } from './shared/createTripPreferences';
+import type { JourneySpec } from './shared/journeySpec';
+import type { JourneyDestinationBrief } from './shared/journeyDestinationBrief';
+import type { TravelEntityReference } from './shared/travelKnowledge';
+import type { TravelActivityKnowledge } from './shared/travelActivityKnowledge';
 
 export type ItemType = 'city' | 'activity' | 'travel' | 'travel-empty';
 export type TransportMode = CanonicalTransportMode;
@@ -99,6 +103,7 @@ export interface TripGenerationInputSnapshot {
     destinationLabel?: string;
     startDate?: string;
     endDate?: string;
+    journeySpec?: JourneySpec;
     payload: Record<string, unknown>;
     createdAt: string;
 }
@@ -163,6 +168,69 @@ export interface ITripAiMeta {
     generation?: TripGenerationMeta;
 }
 
+export interface ITripPlanningMeta {
+    journeySpec: JourneySpec;
+    routeStage: 'skeleton' | 'enriched';
+    datasetVersion: string;
+    templateKey: string;
+    templateVersion: number;
+    destinationBriefs: JourneyDestinationBrief[];
+    trace?: JourneyPlanningTrace;
+}
+
+export type JourneyKnowledgeSource = 'memory' | 'bundled' | 'supabase' | 'remote';
+
+export interface JourneyPlanningContextTrace {
+    version: number;
+    retrieverVersion: string;
+    source: 'memory' | 'bundled' | 'supabase';
+    loadDurationMs: number;
+    rawBytes: number;
+    selectedEntityCount: number;
+    selectedTemplateCount: number;
+    selectedNeighborhoodCount: number;
+    selectedPoiCount: number;
+    aiCallCount: number;
+}
+
+export interface JourneyPlanningTrace {
+    skeletonCompilerVersion: string;
+    templateRankerVersion: string;
+    knowledgeEnricherVersion?: string;
+    knowledgeSource?: JourneyKnowledgeSource;
+    planningContext?: JourneyPlanningContextTrace;
+    matchedTemplateScore?: number;
+    matchedTemplateReasons?: string[];
+    matchedTemplateTradeoffs?: string[];
+    knowledgeActivityCount?: number;
+    personalization?: JourneyPersonalizationTrace;
+    compiledAt: string;
+}
+
+export interface JourneyPersonalizationTrace {
+    version: number;
+    requestId: string;
+    provider: string;
+    model: string;
+    durationMs: number;
+    operationCount: number;
+    unresolvedCount: number;
+    applied: boolean;
+    datasetVersion: string;
+    createdAt: string;
+}
+
+export type TimelineKnowledgeOrigin = 'traveler_selection' | 'route_template' | 'knowledge_ranker';
+
+export interface ITimelineItemKnowledgeMeta {
+    entity: TravelEntityReference;
+    datasetVersion: string;
+    origin: TimelineKnowledgeOrigin;
+    templateKey?: string;
+    matchScore?: number;
+    sourceKeys: string[];
+}
+
 export interface IHotel {
     id: string;
     name: string;
@@ -208,6 +276,8 @@ export interface ITimelineItem {
   activityType?: ActivityType[]; // Array for multi-select
   aiInsights?: IAiInsights;
   hotels?: IHotel[];
+  knowledgeMeta?: ITimelineItemKnowledgeMeta;
+  activityKnowledge?: TravelActivityKnowledge;
   
   // Travel Specifics
   bufferBefore?: number; // Minutes
@@ -237,6 +307,7 @@ export interface ITrip {
   cityColorPaletteId?: string;
   mapColorMode?: MapColorMode;
   aiMeta?: ITripAiMeta;
+  planningMeta?: ITripPlanningMeta;
   defaultView?: IViewSettings;
   status?: 'active' | 'archived' | 'expired';
   tripExpiresAt?: string | null;

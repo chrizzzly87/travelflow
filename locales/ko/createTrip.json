@@ -210,6 +210,60 @@
   "wizard": {
     "flowLabel": "Adaptive wizard",
     "stepBadge": "Step {current} of {total}",
+    "personalize": {
+      "eyebrow": "Make the base yours",
+      "title": "Tune this route without rebuilding it.",
+      "description": "Describe what should change. AI can only propose small edits using places and tags already present in the retrieved catalogue.",
+      "guarded": "Catalogue-guarded",
+      "requestLabel": "What should feel different?",
+      "placeholder": "For example: slower mornings, more food, keep the Grand Palace, and avoid crowded markets.",
+      "requestHint": "{count} characters left",
+      "examplesLabel": "Personalization examples",
+      "examples": {
+        "0": "Slower mornings, food first",
+        "1": "Famous highlights, less rushing",
+        "2": "Hidden gems, avoid busy markets"
+      },
+      "submit": "Personalize selected route",
+      "loading": "Checking the catalogue…",
+      "routeLocked": "Route, dates, and duration stay locked.",
+      "errorTitle": "The base route is still ready.",
+      "errorDescription": "Personalization could not be completed. You can retry or open the instant base without AI.",
+      "proposalEyebrow": "Validated proposal",
+      "ready": "Ready to review",
+      "applied": "Applied",
+      "noChanges": "The request did not require a safe catalogue change.",
+      "unresolved": "Not supported by this context",
+      "cautions": "Keep in mind",
+      "apply": "Apply {count} changes",
+      "undo": "Undo changes",
+      "tryAnother": "Try another request",
+      "minutes": "{count} minutes",
+      "receipt": {
+        "aiCalls": "AI calls",
+        "model": "Model",
+        "time": "Response",
+        "dataset": "Dataset"
+      },
+      "changeLabels": {
+        "pace": "Travel rhythm",
+        "interest_tags": "Interests",
+        "vibe_tags": "Vibe",
+        "transport_preferences": "Transport",
+        "max_transfer_minutes": "Transfer limit",
+        "place_role": "Place"
+      },
+      "roles": {
+        "must_visit": "Must visit",
+        "consider": "Consider",
+        "avoid": "Avoid"
+      },
+      "paces": {
+        "relaxed": "Relaxed",
+        "balanced": "Balanced",
+        "full": "Full"
+      }
+    },
     "actions": {
       "back": "Back",
       "continue": "Continue",
@@ -325,5 +379,172 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "shapeLab": {
+    "badge": "태국 루트 실험실",
+    "badgePrimary": "태국 빠른 플래너",
+    "classicFallback": "다른 여행지를 계획하시나요? 기존 플래너를 사용하세요.",
+    "title": "일정보다 먼저 루트를 고르세요.",
+    "intro": "여행 형태부터 정하고 근거 있는 세 가지 루트를 비교한 뒤 편집 가능한 플랜을 바로 여세요. 세부 활동은 루트가 마음에 든 다음 추가해도 됩니다.",
+    "progressLabel": "여행 계획 진행 상황",
+    "steps": {
+      "shape": "형태",
+      "place": "장소",
+      "timing": "일정",
+      "style": "리듬",
+      "reveal": "루트"
+    },
+    "shape": {
+      "eyebrow": "구조부터 시작",
+      "title": "어떤 형태의 여행인가요?",
+      "description": "이 선택에 따라 적절한 거점 수, 이동 횟수, 당일치기 일정이 달라집니다.",
+      "options": {
+        "city_break": {
+          "title": "한 도시를 제대로",
+          "description": "호텔을 옮기지 않고 한 도시의 여러 동네를 깊이 둘러보세요."
+        },
+        "hub_and_day_trips": {
+          "title": "한 거점에서 더 넓게",
+          "description": "짐은 한 번만 풀고 현실적인 당일치기 여행을 더하세요."
+        },
+        "single_country_circuit": {
+          "title": "태국 순환 여행",
+          "description": "이동 부담을 관리하며 여러 숙박 거점을 연결하세요."
+        }
+      }
+    },
+    "place": {
+      "eyebrow": "장소를 핵심 데이터로",
+      "title": "어느 장소를 중심으로 잡을까요?",
+      "requiredDescription": "이 여행의 거점이 될 도시를 고르세요. 모든 선택지에는 이미 맞는 루트가 있습니다.",
+      "optionalDescription": "꼭 가고 싶은 도시를 고르거나 기간, 계절, 관심사에 맡겨 보세요.",
+      "searchLabel": "도시와 지역 검색",
+      "searchPlaceholder": "방콕, 치앙마이 또는 야오와랏을 검색해 보세요",
+      "searchHint": "이 여행 형태에서 이미 지원되는 도시, 현지 이름, 별칭과 지역을 검색합니다.",
+      "neighborhoodResult": "{city}의 지역",
+      "noSearchResults": "이 검색과 일치하는 지원 도시나 지역이 아직 없습니다.",
+      "stayRange": "보통 {min}–{max}박",
+      "popularity": "인기도 {score}/100",
+      "hiddenGem": "발견도 {score}/100",
+      "neighborhoodTitle": "도시에 더 많은 결을 더하세요",
+      "neighborhoodHint": "선택 사항: 최대 세 곳의 동네를 고르세요. 여행 조건에 고유 장소로 유지됩니다."
+    },
+    "timing": {
+      "eyebrow": "실제 제약을 반영",
+      "title": "시간이 얼마나 있나요?",
+      "description": "유연한 일정이 가장 빠릅니다. 교통이나 예약이 정해졌다면 정확한 날짜를 입력하세요.",
+      "modeLabel": "일정 확정도",
+      "modes": {
+        "flexible": "유연한 기간",
+        "exact": "정확한 날짜"
+      },
+      "durationLabel": "여행 기간",
+      "nights": "박",
+      "decreaseDuration": "1박 줄이기",
+      "increaseDuration": "1박 늘리기",
+      "monthLabel": "희망 월",
+      "startDate": "시작일",
+      "endDate": "종료일",
+      "dateError": "루트를 비교하려면 시작일보다 늦은 종료일을 선택하세요."
+    },
+    "style": {
+      "eyebrow": "결과를 바꾸는 신호만",
+      "title": "루트에서 무엇을 우선할까요?",
+      "description": "첫 비교에는 리듬과 관심사면 충분합니다. 세부 조정은 플랜 안에서 할 수 있습니다.",
+      "paceLabel": "여행 리듬",
+      "interestsLabel": "더 원하는 것",
+      "advancedLabel": "루트 제한 조정",
+      "maxChanges": "최대 거점 변경 횟수"
+    },
+    "reveal": {
+      "eyebrow": "즉시 루트 비교",
+      "titleOne": "근거 있는 태국 루트 한 가지.",
+      "titleMany": "근거 있는 태국 루트 {count}가지.",
+      "description": "대기 중 만들어 낸 목적지가 아니라 버전이 관리되는 태국 지식 팩의 루트 구조입니다.",
+      "dataNote": "템플릿 {templates}개와 고유 장소 {entities}곳 비교 · 데이터 {version}",
+      "engine": {
+        "label": "빠른 플래너 근거",
+        "title": "출처 기반 빠른 경로",
+        "description": "AI 개인화 전에 태국 카탈로그에서 옵션을 검색하고 구성했습니다.",
+        "noAi": "AI 호출 0회",
+        "retrieval": "검색",
+        "milliseconds": "{value}ms",
+        "places": "선택한 장소",
+        "templates": "선택한 템플릿",
+        "payload": "컨텍스트",
+        "loadingSelected": "이 경로의 상세 카탈로그 컨텍스트를 불러오는 중…",
+        "selectedReady": "{size} 컨텍스트에 동네 {neighborhoods}곳과 POI {pois}곳을 준비했습니다."
+      },
+      "fallback": "오프라인 사용 가능 데이터",
+      "sources": {
+        "memory": "최신 캐시",
+        "bundled": "로컬 예비 데이터",
+        "supabase": "Supabase 실시간"
+      },
+      "noMatchesTitle": "현재 조건이 너무 엄격합니다.",
+      "noMatchesDescription": "거점 도시를 바꾸거나 1박을 추가하거나 거점 변경을 한 번 더 허용하세요.",
+      "adjustRoute": "조건 수정",
+      "match": "루트 적합도 {score}%",
+      "selected": "선택됨",
+      "tradeoff": "선택 전에 알아둘 점",
+      "keepSelected": "이 루트 유지",
+      "chooseRoute": "이 루트 선택",
+      "readyTitle": "루트 구조가 준비되었습니다.",
+      "readyDescription": "실제 도시, 좌표, 숙박일, 당일치기, 편집 가능한 지도 마커와 함께 여세요.",
+      "readyAdaptedTitle": "맞춤 루트가 준비되었습니다.",
+      "readyAdaptedDescription": "승인한 AI 조정이 적용된 카탈로그 기반 플랜을 여세요.",
+    "dayTripShort": "당일치기",
+    "nightsShort": "{count}박",
+    "brief": {
+      "title": "경로에 여행의 결을 더하세요.",
+      "description": "이 도시 브리프는 이미 일정에 담겨 있어, 다음 답변도 빠르고 일관되게 이어집니다.",
+      "bestMonths": "추천 시기",
+      "dishes": "먼저 맛볼 것",
+      "neighborhoods": "동네",
+      "activities": "좋은 시작점",
+      "stayRange": "{min}–{max}박",
+      "source": "출처 보기",
+      "audienceContext": "여행자 맥락",
+      "audienceSignals": {
+        "family_activity_supply": "가족 활동 선택지",
+        "lgbtq_scene": "자료로 확인된 LGBTQ+ 여행 환경",
+        "solo_travel_interest": "혼자 여행하기 좋은 관심도"
+      }
+    },
+    "reasons": {
+        "duration_fit": "기간에 맞음",
+        "pace_fit": "리듬에 맞음",
+        "season_fit": "계절에 맞음",
+        "interest_fit": "관심사에 맞음",
+        "selected_places_fit": "선택 장소 포함"
+      }
+    },
+    "actions": {
+      "compare": "루트 비교",
+      "preparing": "경로 검색 중…",
+      "openPlan": "즉시 기본안 열기",
+      "openAdaptedPlan": "맞춤 플랜 열기"
+    }
+  },
+  "journeyLab": {
+    "badge": "여행 시각화 실험실",
+    "title": "핀만 보지 말고 여행 전체를 보세요.",
+    "intro": "세 가지 구조가 같은 여행을 명확한 이야기로 바꿉니다. 거점, 이동 부담, 동네, 음식, 활동, 여행자 적합도와 출처까지 함께 보여 줍니다.",
+    "prototypeNote": "현재 플래너와 분리된 콘셉트 실험실입니다. 기존 플래너는 변경되지 않습니다.",
+    "live": { "close": "여행 개요 닫기" },
+    "conceptsLabel": "여행을 이해하는 세 가지 방식 비교",
+    "concepts": {
+      "lens": { "title": "Journey Lens", "description": "계획 화면 옆에 항상 보이는 여행 개요입니다.", "bestFor": "추천 기본안" },
+      "storyboard": { "title": "Route Storyboard", "description": "선명한 여정 축을 가진 에디토리얼 챕터 뷰입니다.", "bestFor": "공개 및 공유" },
+      "inspector": { "title": "Adaptive Inspector", "description": "필요할 때만 세부 정보를 여는 간결한 챕터 색인입니다.", "bestFor": "집중 편집" }
+    },
+    "labels": {
+      "tripExample": "태국 예시", "tripCharacter": "여행 성격", "routeOverview": "인터랙티브 여행 개요", "focusHint": "도시나 이동 구간을 선택해 살펴보세요", "chapters": "경로 챕터", "chapter": "챕터", "transfer": "이동", "routeStory": "경로 이야기", "compactIndex": "여행 챕터 색인", "selected": "선택한 맥락", "compare": "구조부터", "evidence": "확인된 데이터 기반", "whyFits": "이 경로가 맞는 이유", "neighborhoods": "동네", "dishes": "먼저 맛볼 음식", "activities": "좋은 핵심 활동"
+    },
+    "summary": { "days": "{count}일", "bases": "거점", "transfers": "이동", "transferTime": "이동 시간", "activities": "계획됨" },
+    "chapter": { "nights": "{count}박", "days": "{range}일차" },
+    "transfer": { "ariaLabel": "{from}에서 {to}까지 이동, {duration}", "duration": "소요 시간", "distance": "거리", "load": "여행 부담", "toleranceWarning": "이 구간은 여행 브리프의 이동 한도를 초과합니다.", "light": "가벼운 구간", "balanced": "균형 잡힌 구간", "heavy": "부담 큰 구간", "unknown": "경로 데이터 필요" },
+    "empty": { "neighborhoods": "거점 동네 선택", "dishes": "현지 음식 추가", "activities": "빈 시간 남기기" },
+    "evidence": { "title": "근거가 보이는 빠른 답변.", "description": "플래너에 활용할 수 있는 동일한 버전의 JourneySpec, 표준 장소, 목적지 브리프와 경로 지표로 이 화면을 구성했습니다.", "dataset": "데이터셋", "template": "경로 템플릿", "routeFit": "경로 적합도" }
   }
 }

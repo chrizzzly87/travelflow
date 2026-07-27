@@ -9,6 +9,11 @@ import { MarketingRouteLoadingShell } from '../../components/bootstrap/Marketing
 import '../../styles/deferred-routes.css';
 import { suspendUntilAuthBootstrapSettles } from '../../services/authBootstrapSuspense';
 import { markInitialRouteHandoffCompleted } from '../../services/marketingRouteShellState';
+import {
+    getCreateTripShapeRollout,
+    resolveCreateTripExperience,
+} from '../../config/createTripExperience';
+import { trackEvent } from '../../services/analyticsService';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -50,6 +55,8 @@ const ShareUnavailablePage = lazyWithRecovery('ShareUnavailablePage', () => impo
 const NotFoundPage = lazyWithRecovery('NotFoundPage', () => import('../../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
 const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
 const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
+const CreateTripShapeLabPage = lazyWithRecovery('CreateTripShapeLabPage', () => import('../../pages/CreateTripShapeLabPage').then((module) => ({ default: module.CreateTripShapeLabPage })));
+const JourneyOverviewLabPage = lazyWithRecovery('JourneyOverviewLabPage', () => import('../../pages/JourneyOverviewLabPage').then((module) => ({ default: module.JourneyOverviewLabPage })));
 
 const RouteLoadingFallback: React.FC = () => (
     <MarketingRouteLoadingShell />
@@ -133,7 +140,7 @@ const MARKETING_ROUTE_CONFIGS: Array<{ path: string; element: React.ReactElement
     { path: '/cookies', element: <CookiesPage /> },
 ];
 
-const getLocalizedMarketingRoutePath = (path: string, locale: AppLanguage): string => {
+const getLocalizedRoutePath = (path: string, locale: AppLanguage): string => {
     if (path === '/') return `/${locale}`;
     return `/${locale}${path}`;
 };
@@ -159,6 +166,22 @@ const CreateTripWizardRoute: React.FC<{
     onLanguageLoaded?: (lang: AppLanguage) => void;
 }> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
     useDbSync(onLanguageLoaded);
+    const rollout = getCreateTripShapeRollout();
+    const experience = resolveCreateTripExperience('wizard', rollout);
+
+    useEffect(() => {
+        trackEvent('create_trip__experience--view', { surface: 'wizard', experience, rollout });
+    }, [experience, rollout]);
+
+    if (experience === 'shape_thailand') {
+        return (
+            <CreateTripShapeLabPage
+                onTripGenerated={onTripGenerated}
+                onOpenManager={onOpenManager}
+                surface="wizard"
+            />
+        );
+    }
     return (
         <CreateTripV3Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
     );
@@ -235,7 +258,7 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                 MARKETING_ROUTE_CONFIGS.map(({ path, element }) => (
                     <Route
                         key={`marketing:${locale}:${path}`}
-                        path={getLocalizedMarketingRoutePath(path, locale)}
+                        path={getLocalizedRoutePath(path, locale)}
                         element={renderWithHandoff(wrapMarketingRouteElement(path, element))}
                     />
                 ))
@@ -261,6 +284,26 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                     />)
                 }
             />
+            <Route
+                path="/create-trip/labs/shape"
+                element={
+                    renderWithHandoff(<CreateTripShapeLabPage
+                        onTripGenerated={onTripGenerated}
+                        onOpenManager={onOpenManager}
+                    />)
+                }
+            />
+            <Route
+                path="/create-trip/labs/journey-view"
+                element={renderWithHandoff(<JourneyOverviewLabPage />)}
+            />
+            {LOCALIZED_MARKETING_LOCALES.map((locale) => (
+                <Route
+                    key={`journey-overview-lab:${locale}`}
+                    path={getLocalizedRoutePath('/create-trip/labs/journey-view', locale)}
+                    element={renderWithHandoff(<JourneyOverviewLabPage />)}
+                />
+            ))}
             <Route path="/create-trip/labs/classic-legacy" element={<Navigate to="/create-trip" replace />} />
             <Route path="/create-trip/labs/split-workspace" element={<Navigate to="/create-trip" replace />} />
             <Route path="/create-trip/labs/journey-architect" element={<Navigate to="/create-trip" replace />} />

@@ -210,6 +210,60 @@
   "wizard": {
     "flowLabel": "Adaptive wizard",
     "stepBadge": "Step {current} of {total}",
+    "personalize": {
+      "eyebrow": "Make the base yours",
+      "title": "Tune this route without rebuilding it.",
+      "description": "Describe what should change. AI can only propose small edits using places and tags already present in the retrieved catalogue.",
+      "guarded": "Catalogue-guarded",
+      "requestLabel": "What should feel different?",
+      "placeholder": "For example: slower mornings, more food, keep the Grand Palace, and avoid crowded markets.",
+      "requestHint": "{count} characters left",
+      "examplesLabel": "Personalization examples",
+      "examples": {
+        "0": "Slower mornings, food first",
+        "1": "Famous highlights, less rushing",
+        "2": "Hidden gems, avoid busy markets"
+      },
+      "submit": "Personalize selected route",
+      "loading": "Checking the catalogue…",
+      "routeLocked": "Route, dates, and duration stay locked.",
+      "errorTitle": "The base route is still ready.",
+      "errorDescription": "Personalization could not be completed. You can retry or open the instant base without AI.",
+      "proposalEyebrow": "Validated proposal",
+      "ready": "Ready to review",
+      "applied": "Applied",
+      "noChanges": "The request did not require a safe catalogue change.",
+      "unresolved": "Not supported by this context",
+      "cautions": "Keep in mind",
+      "apply": "Apply {count} changes",
+      "undo": "Undo changes",
+      "tryAnother": "Try another request",
+      "minutes": "{count} minutes",
+      "receipt": {
+        "aiCalls": "AI calls",
+        "model": "Model",
+        "time": "Response",
+        "dataset": "Dataset"
+      },
+      "changeLabels": {
+        "pace": "Travel rhythm",
+        "interest_tags": "Interests",
+        "vibe_tags": "Vibe",
+        "transport_preferences": "Transport",
+        "max_transfer_minutes": "Transfer limit",
+        "place_role": "Place"
+      },
+      "roles": {
+        "must_visit": "Must visit",
+        "consider": "Consider",
+        "avoid": "Avoid"
+      },
+      "paces": {
+        "relaxed": "Relaxed",
+        "balanced": "Balanced",
+        "full": "Full"
+      }
+    },
     "actions": {
       "back": "Back",
       "continue": "Continue",
@@ -325,5 +379,172 @@
       "balanced": "Balanced",
       "fast": "Fast"
     }
+  },
+  "shapeLab": {
+    "badge": "Laboratorium tras po Tajlandii",
+    "badgePrimary": "Szybki planer Tajlandii",
+    "classicFallback": "Planujesz inny kierunek? Użyj klasycznego planera.",
+    "title": "Najpierw wybierz trasę, potem plan dnia.",
+    "intro": "Zacznij od formy podróży, porównaj trzy sprawdzone koncepcje tras i od razu otwórz edytowalny plan. Szczegółowe atrakcje mogą pojawić się, gdy trasa będzie już właściwa.",
+    "progressLabel": "Postęp planowania podróży",
+    "steps": {
+      "shape": "Forma",
+      "place": "Miejsca",
+      "timing": "Termin",
+      "style": "Rytm",
+      "reveal": "Trasy"
+    },
+    "shape": {
+      "eyebrow": "Zacznij od struktury",
+      "title": "Jaką formę ma mieć ta podróż?",
+      "description": "Ta decyzja określa sensowną liczbę baz, przejazdów i wycieczek jednodniowych.",
+      "options": {
+        "city_break": {
+          "title": "Jedno miasto, porządnie",
+          "description": "Zostań w jednym mieście i poznawaj dzielnice bez zmiany hotelu."
+        },
+        "hub_and_day_trips": {
+          "title": "Jedna baza, większy zasięg",
+          "description": "Rozpakuj się raz i dodaj realistyczne wycieczki jednodniowe z bazy."
+        },
+        "single_country_circuit": {
+          "title": "Objazd po Tajlandii",
+          "description": "Połącz kilka baz noclegowych, zachowując kontrolę nad przejazdami."
+        }
+      }
+    },
+    "place": {
+      "eyebrow": "Miejsca jako pełnoprawne dane",
+      "title": "Które miejsce ma nadać kierunek trasie?",
+      "requiredDescription": "Wybierz miasto będące bazą tej podróży. Każda opcja ma już dopasowaną trasę.",
+      "optionalDescription": "Wybierz obowiązkowe miasto albo pozwól zdecydować długości, porze roku i zainteresowaniom.",
+      "searchLabel": "Szukaj miast i dzielnic",
+      "searchPlaceholder": "Spróbuj Bangkok, Chiang Mai lub Yaowarat",
+      "searchHint": "Szukaj miast, nazw lokalnych, aliasów i dzielnic obsługiwanych już przez ten typ podróży.",
+      "neighborhoodResult": "Dzielnica w {city}",
+      "noSearchResults": "Żadne obsługiwane miasto ani dzielnica nie pasują jeszcze do tego wyszukiwania.",
+      "stayRange": "Zwykle {min}–{max} nocy",
+      "popularity": "Popularność {score}/100",
+      "hiddenGem": "Odkrywanie {score}/100",
+      "neighborhoodTitle": "Dodaj miastu więcej charakteru",
+      "neighborhoodHint": "Opcjonalnie: wybierz do trzech dzielnic. Pozostaną nazwanymi, kanonicznymi miejscami w briefie."
+    },
+    "timing": {
+      "eyebrow": "Użyj prawdziwego ograniczenia",
+      "title": "Ile mamy czasu?",
+      "description": "Elastyczny termin jest najszybszy. Dokładne daty wybierz, gdy transport lub dostępność są już ustalone.",
+      "modeLabel": "Elastyczność terminu",
+      "modes": {
+        "flexible": "Elastyczny termin",
+        "exact": "Dokładne daty"
+      },
+      "durationLabel": "Długość podróży",
+      "nights": "nocy",
+      "decreaseDuration": "Usuń jedną noc",
+      "increaseDuration": "Dodaj jedną noc",
+      "monthLabel": "Preferowany miesiąc",
+      "startDate": "Data rozpoczęcia",
+      "endDate": "Data zakończenia",
+      "dateError": "Wybierz datę zakończenia późniejszą niż rozpoczęcia, aby porównać trasy."
+    },
+    "style": {
+      "eyebrow": "Tylko sygnały, które mają znaczenie",
+      "title": "Co powinna optymalizować trasa?",
+      "description": "Rytm i zainteresowania wystarczą do pierwszego porównania. Szczegóły dopracujesz w planie.",
+      "paceLabel": "Rytm podróży",
+      "interestsLabel": "Więcej tego",
+      "advancedLabel": "Dostosuj limity trasy",
+      "maxChanges": "Maksymalna liczba zmian bazy"
+    },
+    "reveal": {
+      "eyebrow": "Natychmiastowe trasy",
+      "titleOne": "Jedna sprawdzona trasa przez Tajlandię.",
+      "titleMany": "{count} sprawdzone trasy przez Tajlandię.",
+      "description": "To wersjonowane szkielety tras z pakietu wiedzy o Tajlandii, a nie miejsca wymyślone podczas oczekiwania.",
+      "dataNote": "Porównano {templates} szablonów z {entities} kanonicznymi miejscami · dane {version}",
+      "engine": {
+        "label": "Dowód szybkiego planera",
+        "title": "Szybka ścieżka oparta na źródłach",
+        "description": "Te opcje pobrano i złożono z katalogu Tajlandii przed jakąkolwiek personalizacją AI.",
+        "noAi": "0 wywołań AI",
+        "retrieval": "Pobieranie",
+        "milliseconds": "{value} ms",
+        "places": "Wybrane miejsca",
+        "templates": "Wybrane szablony",
+        "payload": "Kontekst",
+        "loadingSelected": "Ładowanie rozszerzonego kontekstu katalogu dla tej trasy…",
+        "selectedReady": "Trasa gotowa z {neighborhoods} dzielnicami i {pois} POI w kontekście {size}."
+      },
+      "fallback": "Dane dostępne offline",
+      "sources": {
+        "memory": "Aktualna pamięć podręczna",
+        "bundled": "Lokalna rezerwa",
+        "supabase": "Supabase na żywo"
+      },
+      "noMatchesTitle": "Obecne ograniczenia są zbyt restrykcyjne.",
+      "noMatchesDescription": "Zmień miasto bazowe, dodaj noc albo dopuść jeszcze jedną zmianę bazy.",
+      "adjustRoute": "Zmień założenia",
+      "match": "{score}% dopasowania",
+      "selected": "Wybrano",
+      "tradeoff": "Warto wiedzieć przed wyborem",
+      "keepSelected": "Zachowaj tę trasę",
+      "chooseRoute": "Wybierz tę trasę",
+      "readyTitle": "Szkielet trasy jest gotowy.",
+      "readyDescription": "Otwórz go z prawdziwymi miastami, współrzędnymi, nocami, wycieczkami i edytowalnymi znacznikami.",
+      "readyAdaptedTitle": "Dostosowana trasa jest gotowa.",
+      "readyAdaptedDescription": "Otwórz plan oparty na katalogu z zatwierdzonymi zmianami AI już zastosowanymi.",
+    "dayTripShort": "wycieczka",
+    "nightsShort": "{count} nocy",
+    "brief": {
+      "title": "Dodaj trasie charakteru.",
+      "description": "Te krótkie opisy miast są już częścią planu, więc kolejne odpowiedzi pozostaną szybkie i spójne.",
+      "bestMonths": "Najlepsze miesiące",
+      "dishes": "Warto spróbować",
+      "neighborhoods": "Dzielnice",
+      "activities": "Dobre punkty startowe",
+      "stayRange": "{min}–{max} nocy",
+      "source": "Zobacz źródło",
+      "audienceContext": "Kontekst dla podróżnych",
+      "audienceSignals": {
+        "family_activity_supply": "Oferta aktywności rodzinnych",
+        "lgbtq_scene": "Udokumentowana scena LGBTQ+",
+        "solo_travel_interest": "Zainteresowanie podróżami solo"
+      }
+    },
+    "reasons": {
+        "duration_fit": "Pasuje do czasu",
+        "pace_fit": "Pasuje do rytmu",
+        "season_fit": "Dobra pora roku",
+        "interest_fit": "Pasuje do zainteresowań",
+        "selected_places_fit": "Zawiera Twoje miejsca"
+      }
+    },
+    "actions": {
+      "compare": "Porównaj trasy",
+      "preparing": "Pobieranie tras…",
+      "openPlan": "Otwórz natychmiastową bazę",
+      "openAdaptedPlan": "Otwórz dostosowany plan"
+    }
+  },
+  "journeyLab": {
+    "badge": "Laboratorium wizualizacji podróży",
+    "title": "Zobacz całą podróż, nie tylko punkty.",
+    "intro": "Trzy układy zamieniają tę samą podróż w czytelną opowieść: bazy, obciążenie przejazdami, dzielnice, jedzenie, atrakcje, dopasowanie i źródła.",
+    "prototypeNote": "To odizolowane laboratorium koncepcji. Obecny planer pozostaje bez zmian.",
+    "live": { "close": "Zamknij przegląd podróży" },
+    "conceptsLabel": "Porównaj trzy sposoby rozumienia podróży",
+    "concepts": {
+      "lens": { "title": "Journey Lens", "description": "Stały panel podsumowania obok obszaru planowania.", "bestFor": "Zalecany domyślnie" },
+      "storyboard": { "title": "Route Storyboard", "description": "Redakcyjny widok rozdziałów z wyraźną osią podróży.", "bestFor": "Prezentacja i udostępnianie" },
+      "inspector": { "title": "Adaptive Inspector", "description": "Kompaktowy indeks z detalami tylko wtedy, gdy są potrzebne.", "bestFor": "Skupiona edycja" }
+    },
+    "labels": {
+      "tripExample": "Przykład: Tajlandia", "tripCharacter": "Charakter podróży", "routeOverview": "Interaktywny przegląd podróży", "focusHint": "Wybierz miasto lub przejazd", "chapters": "Rozdziały trasy", "chapter": "Rozdział", "transfer": "Przejazd", "routeStory": "Opowieść o trasie", "compactIndex": "Indeks rozdziałów", "selected": "Wybrany kontekst", "compare": "Najpierw struktura", "evidence": "Na podstawie znanych danych", "whyFits": "Dlaczego ta trasa pasuje", "neighborhoods": "Dzielnice", "dishes": "Warto spróbować", "activities": "Dobre punkty programu"
+    },
+    "summary": { "days": "{count} dni", "bases": "Bazy", "transfers": "Przejazdy", "transferTime": "Czas w drodze", "activities": "Zaplanowane" },
+    "chapter": { "nights": "{count} nocy", "days": "Dni {range}" },
+    "transfer": { "ariaLabel": "Przejazd z {from} do {to}, {duration}", "duration": "Czas", "distance": "Dystans", "load": "Obciążenie podróży", "toleranceWarning": "Ten odcinek przekracza limit przejazdu w briefie.", "light": "Lekki odcinek", "balanced": "Zrównoważony odcinek", "heavy": "Wymagający odcinek", "unknown": "Brak danych trasy" },
+    "empty": { "neighborhoods": "Wybierz dzielnicę bazową", "dishes": "Dodaj lokalne jedzenie", "activities": "Zostaw wolny czas" },
+    "evidence": { "title": "Szybkie odpowiedzi z widoczną podstawą.", "description": "Widok korzysta z tej samej wersjonowanej JourneySpec, kanonicznych miejsc, opisów kierunków i metryk trasy co planer.", "dataset": "Zbiór danych", "template": "Szablon trasy", "routeFit": "Dopasowanie trasy" }
   }
 }

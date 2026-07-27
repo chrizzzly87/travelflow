@@ -207,6 +207,61 @@ export interface AdminAsyncWorkerHealthResponse {
     checks: AdminAsyncWorkerHealthCheckRecord[];
 }
 
+export type AdminTravelKnowledgeCandidateStatus = 'new' | 'needs_review' | 'accepted' | 'rejected' | 'superseded';
+export type AdminTravelKnowledgeCandidateSeverity = 'low' | 'moderate' | 'high' | 'critical';
+export type AdminTravelKnowledgeReviewDecision = 'accept' | 'accept_with_edit' | 'reject' | 'request_changes';
+
+export interface AdminTravelKnowledgeCandidateRecord {
+    candidateId: string;
+    sourceSnapshotId: string;
+    sourceRunId: string;
+    countryCode: string;
+    targetKind: string;
+    targetKey: string;
+    targetName: string;
+    targetEntityId: string | null;
+    targetTemplateId: string | null;
+    fieldPath: string;
+    changeKind: 'add' | 'update' | 'remove';
+    previousValue: unknown;
+    proposedValue: unknown;
+    extractionMethod: string;
+    confidence: number;
+    severity: AdminTravelKnowledgeCandidateSeverity;
+    validationFindings: unknown[];
+    status: AdminTravelKnowledgeCandidateStatus;
+    sourceKey: string;
+    sourceName: string;
+    sourceUrl: string;
+    retrievedAt: string;
+    createdAt: string;
+    updatedAt: string;
+    reviewCount: number;
+    latestDecision: AdminTravelKnowledgeReviewDecision | null;
+    latestReason: string | null;
+    latestAcceptedValue: unknown;
+    latestReviewedAt: string | null;
+}
+
+export interface AdminTravelKnowledgeReviewSummary {
+    candidateTotal: number;
+    newCount: number;
+    needsReviewCount: number;
+    acceptedCount: number;
+    rejectedCount: number;
+    successfulRunCount: number;
+    snapshotCount: number;
+    latestSourceRunAt: string | null;
+}
+
+export interface AdminTravelKnowledgeReviewResult {
+    candidateId: string;
+    candidateStatus: AdminTravelKnowledgeCandidateStatus;
+    decisionId: string;
+    decision: AdminTravelKnowledgeReviewDecision;
+    reviewedAt: string;
+}
+
 export interface AdminAirportCatalogMetadata extends AirportReferenceMetadata {
     syncedAt: string | null;
     syncedBy: string | null;
@@ -1533,6 +1588,259 @@ export const adminGetAiWorkerHealth = async (
             lastCanaryLatencyMs: null,
         },
         checks: Array.isArray(payload.checks) ? payload.checks : [],
+    };
+};
+
+const ADMIN_TRAVEL_KNOWLEDGE_REVIEW_POLICY_VERSION = 'travel-review-v1';
+
+const buildMockTravelKnowledgeCandidates = (): AdminTravelKnowledgeCandidateRecord[] => {
+    const now = new Date().toISOString();
+    return [
+        {
+            candidateId: 'mock-travel-candidate-geonames-bangkok',
+            sourceSnapshotId: 'mock-snapshot-geonames',
+            sourceRunId: 'mock-run-geonames',
+            countryCode: 'TH',
+            targetKind: 'entity',
+            targetKey: 'bangkok',
+            targetName: 'Bangkok',
+            targetEntityId: 'mock-entity-bangkok',
+            targetTemplateId: null,
+            fieldPath: 'attributes.externalIds.geonames',
+            changeKind: 'add',
+            previousValue: null,
+            proposedValue: '1609350',
+            extractionMethod: 'deterministic_transform',
+            confidence: 0.99,
+            severity: 'low',
+            validationFindings: [],
+            status: 'needs_review',
+            sourceKey: 'geonames',
+            sourceName: 'GeoNames',
+            sourceUrl: 'https://download.geonames.org/export/dump/TH.zip',
+            retrievedAt: now,
+            createdAt: now,
+            updatedAt: now,
+            reviewCount: 0,
+            latestDecision: null,
+            latestReason: null,
+            latestAcceptedValue: null,
+            latestReviewedAt: null,
+        },
+        {
+            candidateId: 'mock-travel-candidate-wikidata-chiang-mai',
+            sourceSnapshotId: 'mock-snapshot-wikidata',
+            sourceRunId: 'mock-run-wikidata',
+            countryCode: 'TH',
+            targetKind: 'entity',
+            targetKey: 'chiang-mai',
+            targetName: 'Chiang Mai',
+            targetEntityId: 'mock-entity-chiang-mai',
+            targetTemplateId: null,
+            fieldPath: 'attributes.externalIds.wikidata',
+            changeKind: 'add',
+            previousValue: null,
+            proposedValue: 'Q233588',
+            extractionMethod: 'structured_import',
+            confidence: 0.98,
+            severity: 'low',
+            validationFindings: [],
+            status: 'needs_review',
+            sourceKey: 'wikidata',
+            sourceName: 'Wikidata',
+            sourceUrl: 'https://www.wikidata.org/wiki/Q233588',
+            retrievedAt: now,
+            createdAt: now,
+            updatedAt: now,
+            reviewCount: 0,
+            latestDecision: null,
+            latestReason: null,
+            latestAcceptedValue: null,
+            latestReviewedAt: null,
+        },
+    ];
+};
+
+let mockTravelKnowledgeCandidates: AdminTravelKnowledgeCandidateRecord[] | null = null;
+
+const getMockTravelKnowledgeCandidates = (): AdminTravelKnowledgeCandidateRecord[] => {
+    if (!mockTravelKnowledgeCandidates) mockTravelKnowledgeCandidates = buildMockTravelKnowledgeCandidates();
+    return mockTravelKnowledgeCandidates;
+};
+
+const normalizeTravelKnowledgeCandidate = (value: Record<string, unknown>): AdminTravelKnowledgeCandidateRecord => ({
+    candidateId: String(value.candidate_id || ''),
+    sourceSnapshotId: String(value.source_snapshot_id || ''),
+    sourceRunId: String(value.source_run_id || ''),
+    countryCode: String(value.country_code || ''),
+    targetKind: String(value.target_kind || ''),
+    targetKey: String(value.target_key || ''),
+    targetName: String(value.target_name || value.target_key || ''),
+    targetEntityId: value.target_entity_id ? String(value.target_entity_id) : null,
+    targetTemplateId: value.target_template_id ? String(value.target_template_id) : null,
+    fieldPath: String(value.field_path || ''),
+    changeKind: (value.change_kind === 'update' || value.change_kind === 'remove' ? value.change_kind : 'add'),
+    previousValue: value.previous_value ?? null,
+    proposedValue: value.proposed_value ?? null,
+    extractionMethod: String(value.extraction_method || ''),
+    confidence: Number.isFinite(Number(value.confidence)) ? Number(value.confidence) : 0,
+    severity: (
+        value.severity === 'critical' || value.severity === 'high' || value.severity === 'moderate'
+            ? value.severity
+            : 'low'
+    ),
+    validationFindings: Array.isArray(value.validation_findings) ? value.validation_findings : [],
+    status: (
+        value.status === 'new'
+        || value.status === 'accepted'
+        || value.status === 'rejected'
+        || value.status === 'superseded'
+            ? value.status
+            : 'needs_review'
+    ),
+    sourceKey: String(value.source_key || ''),
+    sourceName: String(value.source_name || value.source_key || ''),
+    sourceUrl: String(value.source_url || ''),
+    retrievedAt: String(value.retrieved_at || ''),
+    createdAt: String(value.created_at || ''),
+    updatedAt: String(value.updated_at || ''),
+    reviewCount: Number.isFinite(Number(value.review_count)) ? Number(value.review_count) : 0,
+    latestDecision: (
+        value.latest_decision === 'accept'
+        || value.latest_decision === 'accept_with_edit'
+        || value.latest_decision === 'reject'
+        || value.latest_decision === 'request_changes'
+            ? value.latest_decision
+            : null
+    ),
+    latestReason: typeof value.latest_reason === 'string' ? value.latest_reason : null,
+    latestAcceptedValue: value.latest_accepted_value ?? null,
+    latestReviewedAt: typeof value.latest_reviewed_at === 'string' ? value.latest_reviewed_at : null,
+});
+
+export const adminListTravelKnowledgeCandidates = async (
+    options: {
+        countryCode?: string | null;
+        statuses?: AdminTravelKnowledgeCandidateStatus[];
+        limit?: number;
+        offset?: number;
+    } = {},
+): Promise<AdminTravelKnowledgeCandidateRecord[]> => {
+    const limit = Math.max(1, Math.min(250, Math.round(options.limit ?? 100)));
+    const offset = Math.max(0, Math.round(options.offset ?? 0));
+    if (shouldUseAdminMockData()) {
+        const statuses = options.statuses || [];
+        return getMockTravelKnowledgeCandidates()
+            .filter((candidate) => !options.countryCode || candidate.countryCode === options.countryCode.toUpperCase())
+            .filter((candidate) => statuses.length === 0 || statuses.includes(candidate.status))
+            .slice(offset, offset + limit);
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_list_travel_knowledge_candidates', {
+        p_country_code: options.countryCode?.trim().toUpperCase() || null,
+        p_statuses: options.statuses || [],
+        p_limit: limit,
+        p_offset: offset,
+    });
+    if (error) throw new Error(error.message || 'Could not load travel knowledge candidates.');
+    return (Array.isArray(data) ? data : []).map((row) => normalizeTravelKnowledgeCandidate(row as Record<string, unknown>));
+};
+
+export const adminGetTravelKnowledgeReviewSummary = async (
+    options: { countryCode?: string | null } = {},
+): Promise<AdminTravelKnowledgeReviewSummary> => {
+    if (shouldUseAdminMockData()) {
+        const candidates = getMockTravelKnowledgeCandidates()
+            .filter((candidate) => !options.countryCode || candidate.countryCode === options.countryCode.toUpperCase());
+        return {
+            candidateTotal: candidates.length,
+            newCount: candidates.filter((candidate) => candidate.status === 'new').length,
+            needsReviewCount: candidates.filter((candidate) => candidate.status === 'needs_review').length,
+            acceptedCount: candidates.filter((candidate) => candidate.status === 'accepted').length,
+            rejectedCount: candidates.filter((candidate) => candidate.status === 'rejected').length,
+            successfulRunCount: 2,
+            snapshotCount: 2,
+            latestSourceRunAt: candidates[0]?.retrievedAt || null,
+        };
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_get_travel_knowledge_review_summary', {
+        p_country_code: options.countryCode?.trim().toUpperCase() || null,
+    });
+    if (error) throw new Error(error.message || 'Could not load the travel knowledge review summary.');
+    const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
+    return {
+        candidateTotal: Number(row?.candidate_total || 0),
+        newCount: Number(row?.new_count || 0),
+        needsReviewCount: Number(row?.needs_review_count || 0),
+        acceptedCount: Number(row?.accepted_count || 0),
+        rejectedCount: Number(row?.rejected_count || 0),
+        successfulRunCount: Number(row?.successful_run_count || 0),
+        snapshotCount: Number(row?.snapshot_count || 0),
+        latestSourceRunAt: typeof row?.latest_source_run_at === 'string' ? row.latest_source_run_at : null,
+    };
+};
+
+export const adminReviewTravelKnowledgeCandidate = async (payload: {
+    candidateId: string;
+    decision: AdminTravelKnowledgeReviewDecision;
+    reason: string;
+    acceptedValue?: unknown;
+}): Promise<AdminTravelKnowledgeReviewResult> => {
+    if (shouldUseAdminMockData()) {
+        const candidates = getMockTravelKnowledgeCandidates();
+        const index = candidates.findIndex((candidate) => candidate.candidateId === payload.candidateId);
+        if (index < 0) throw new Error('Travel knowledge candidate not found.');
+        const current = candidates[index];
+        if (current.status !== 'new' && current.status !== 'needs_review') {
+            throw new Error('Travel knowledge candidate has already reached a terminal state.');
+        }
+        const reviewedAt = new Date().toISOString();
+        const candidateStatus: AdminTravelKnowledgeCandidateStatus = payload.decision === 'reject'
+            ? 'rejected'
+            : payload.decision === 'request_changes'
+                ? 'needs_review'
+                : 'accepted';
+        candidates[index] = {
+            ...current,
+            status: candidateStatus,
+            reviewCount: current.reviewCount + 1,
+            latestDecision: payload.decision,
+            latestReason: payload.reason.trim(),
+            latestAcceptedValue: payload.decision === 'accept_with_edit' ? payload.acceptedValue : current.proposedValue,
+            latestReviewedAt: reviewedAt,
+            updatedAt: reviewedAt,
+        };
+        return {
+            candidateId: current.candidateId,
+            candidateStatus,
+            decisionId: `mock-review-${Date.now()}`,
+            decision: payload.decision,
+            reviewedAt,
+        };
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_review_travel_knowledge_candidate', {
+        p_candidate_id: payload.candidateId,
+        p_decision: payload.decision,
+        p_reason: payload.reason.trim(),
+        p_accepted_value: payload.decision === 'accept_with_edit' ? payload.acceptedValue ?? null : null,
+        p_review_policy_version: ADMIN_TRAVEL_KNOWLEDGE_REVIEW_POLICY_VERSION,
+    });
+    if (error) throw new Error(error.message || 'Could not review the travel knowledge candidate.');
+    const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
+    if (!row?.candidate_id || !row?.decision_id || !row?.reviewed_at) {
+        throw new Error('Travel knowledge review returned an invalid result.');
+    }
+    return {
+        candidateId: String(row.candidate_id),
+        candidateStatus: String(row.candidate_status) as AdminTravelKnowledgeCandidateStatus,
+        decisionId: String(row.decision_id),
+        decision: String(row.decision) as AdminTravelKnowledgeReviewDecision,
+        reviewedAt: String(row.reviewed_at),
     };
 };
 

@@ -14,6 +14,14 @@ describe('criticalRoutePreload', () => {
     expect(getCriticalRouteModuleKeys('/example/demo')).toEqual(['ExampleTripLoaderRoute']);
     expect(getCriticalRouteModuleKeys('/create-trip')).toEqual(['CreateTripClassicLabPage']);
     expect(getCriticalRouteModuleKeys('/de/create-trip/wizard')).toEqual(['CreateTripV3Page']);
+    expect(getCriticalRouteModuleKeys('/create-trip/labs/shape')).toEqual(['CreateTripShapeLabPage']);
+  });
+
+  it('preloads only the creator selected by the controlled shape rollout', () => {
+    expect(getCriticalRouteModuleKeys('/create-trip', 'wizard')).toEqual(['CreateTripClassicLabPage']);
+    expect(getCriticalRouteModuleKeys('/de/create-trip/wizard', 'wizard')).toEqual(['CreateTripShapeLabPage']);
+    expect(getCriticalRouteModuleKeys('/create-trip', 'primary')).toEqual(['CreateTripShapeLabPage']);
+    expect(getCriticalRouteModuleKeys('/de/create-trip/wizard', 'primary')).toEqual(['CreateTripShapeLabPage']);
   });
 
   it('falls back to deferred marketing routing for localized marketing routes', () => {

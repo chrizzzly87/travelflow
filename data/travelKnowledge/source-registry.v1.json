@@ -1,0 +1,440 @@
+{
+  "manifest": {
+    "registryKey": "travel-knowledge-sources",
+    "version": "2026.07.18-v5",
+    "generatedAt": "2026-07-18T08:10:00Z",
+    "defaultCountryCodes": ["TH"]
+  },
+  "sources": [
+    {
+      "sourceKey": "wikidata",
+      "name": "Wikidata",
+      "sourceKind": "open_data",
+      "baseUrl": "https://www.wikidata.org/",
+      "termsUrl": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+      "licenseKey": "CC0-1.0",
+      "attributionText": "Wikidata contributors",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "ingestionMode": "automated_api",
+      "automationStatus": "active",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 365,
+      "rawStoragePolicy": "private_snapshot",
+      "allowLlmProcessing": true,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "access": "Entity API or bounded SPARQL; prefer country dumps when volume grows.",
+        "rateLimit": "Identifying user agent, bounded concurrency, Retry-After and exponential backoff."
+      }
+    },
+    {
+      "sourceKey": "geonames",
+      "name": "GeoNames",
+      "sourceKind": "open_data",
+      "baseUrl": "https://www.geonames.org/",
+      "termsUrl": "https://www.geonames.org/export/",
+      "licenseKey": "CC-BY-4.0",
+      "attributionText": "GeoNames geographical database",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "ingestionMode": "automated_bulk",
+      "automationStatus": "active",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 365,
+      "rawStoragePolicy": "private_snapshot",
+      "allowLlmProcessing": true,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "access": "Thailand country dump; do not issue one free web-service request per entity.",
+        "attributionRequired": true
+      }
+    },
+    {
+      "sourceKey": "osm_geofabrik",
+      "name": "OpenStreetMap Thailand extract by Geofabrik",
+      "sourceKind": "open_data",
+      "baseUrl": "https://download.geofabrik.de/asia/thailand.html",
+      "termsUrl": "https://www.openstreetmap.org/copyright",
+      "licenseKey": "ODbL-1.0",
+      "attributionText": "OpenStreetMap contributors",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "ingestionMode": "automated_bulk",
+      "automationStatus": "planned",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 7,
+      "rawStoragePolicy": "private_snapshot",
+      "allowLlmProcessing": true,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "access": "Daily or weekly Thailand PBF extract; never bulk-query public Nominatim or Overpass.",
+        "separationRequired": "Keep OSM-derived database artifacts separable for ODbL compliance."
+      }
+    },
+    {
+      "sourceKey": "wikimedia_analytics",
+      "name": "Wikimedia Analytics API",
+      "sourceKind": "open_data",
+      "baseUrl": "https://wikimedia.org/api/rest_v1/",
+      "termsUrl": "https://doc.wikimedia.org/generated-data-platform/aqs/analytics-api/documentation/access-policy.html",
+      "licenseKey": "CC0-1.0",
+      "attributionText": "Wikimedia Analytics",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "ingestionMode": "automated_api",
+      "automationStatus": "planned",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "private_snapshot",
+      "allowLlmProcessing": true,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "access": "Monthly batched pageviews or bulk analytics dumps.",
+        "method": "Popularity is a relative page-interest signal, never represented as visitor volume."
+      }
+    },
+    {
+      "sourceKey": "iana_tz",
+      "name": "IANA Time Zone Database",
+      "sourceKind": "open_data",
+      "baseUrl": "https://www.iana.org/time-zones",
+      "termsUrl": "https://www.iana.org/time-zones",
+      "licenseKey": "PUBLIC-DOMAIN",
+      "attributionText": "IANA Time Zone Database",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "ingestionMode": "automated_bulk",
+      "automationStatus": "planned",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 365,
+      "contentRefreshIntervalDays": 365,
+      "rawStoragePolicy": "private_snapshot",
+      "allowLlmProcessing": true,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "access": "Refresh on IANA release rather than by crawling pages."
+      }
+    },
+    {
+      "sourceKey": "thailand_open_data",
+      "name": "Thailand Open Government Data",
+      "sourceKind": "open_data",
+      "baseUrl": "https://www.data.go.th/",
+      "termsUrl": "https://www.data.go.th/pages/about-open-data",
+      "licenseKey": "PER-DATASET-REVIEW",
+      "attributionText": "The publisher named by each approved data.go.th dataset",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "automated_api",
+      "automationStatus": "blocked_license",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "gate": "Enable a dataset adapter only after its individual license permits commercial reuse, storage, and redistribution."
+      }
+    },
+    {
+      "sourceKey": "tmd_open_data",
+      "name": "Thai Meteorological Department Open Data",
+      "sourceKind": "official",
+      "baseUrl": "https://www.tmd.go.th/en/service/serviceData",
+      "termsUrl": "https://www.tmd.go.th/en/service/serviceData",
+      "licenseKey": "PER-PRODUCT-REVIEW",
+      "attributionText": "Thai Meteorological Department",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "licensed_runtime",
+      "automationStatus": "blocked_license",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 1,
+      "rawStoragePolicy": "runtime_cache",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "gate": "Forecasts and warnings stay runtime-only; store climate products only when the specific product license permits it."
+      }
+    },
+    {
+      "sourceKey": "wikimedia_commons",
+      "name": "Wikimedia Commons",
+      "sourceKind": "open_data",
+      "baseUrl": "https://commons.wikimedia.org/",
+      "termsUrl": "https://commons.wikimedia.org/wiki/Commons:Reusing_content_outside_Wikimedia",
+      "licenseKey": "PER-FILE-REVIEW",
+      "attributionText": "Per-file author and license attribution",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "automated_api",
+      "automationStatus": "planned",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 90,
+      "rawStoragePolicy": "private_snapshot",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "gate": "Accept only approved commercial-use licenses and persist author, license, source URL, modifications, and attribution per file."
+      }
+    },
+    {
+      "sourceKey": "tat_official",
+      "name": "Tourism Authority of Thailand",
+      "sourceKind": "official",
+      "baseUrl": "https://www.tourismthailand.org/",
+      "termsUrl": "https://www.tourismthailand.org/",
+      "attributionText": "Tourism Authority of Thailand",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 90,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Manual fact confirmation and original TravelFlow summaries only; do not crawl or syndicate source prose or images."
+      }
+    },
+    {
+      "sourceKey": "thailand_dnp",
+      "name": "Thailand Department of National Parks, Wildlife and Plant Conservation",
+      "sourceKind": "official",
+      "baseUrl": "https://www.dnp.go.th/",
+      "termsUrl": "https://www.dnp.go.th/",
+      "attributionText": "Department of National Parks, Wildlife and Plant Conservation, Thailand",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-18T08:10:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Manual confirmation of structured park fees, closures, facilities, and visitor notices only; do not crawl or reproduce source prose or images."
+      }
+    },
+    {
+      "sourceKey": "fine_arts_department",
+      "name": "Thailand Fine Arts Department virtual historical parks",
+      "sourceKind": "official",
+      "baseUrl": "https://virtualhistoricalpark.finearts.go.th/",
+      "termsUrl": "https://virtualhistoricalpark.finearts.go.th/",
+      "attributionText": "Fine Arts Department, Ministry of Culture, Thailand",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Manual confirmation of structured historical-park visitor facts only; do not crawl or store source prose or images."
+      }
+    },
+    {
+      "sourceKey": "australian_dva_hellfire_pass",
+      "name": "Australian Government Department of Veterans' Affairs — Hellfire Pass",
+      "sourceKind": "official",
+      "baseUrl": "https://hellfirepass.dva.gov.au/",
+      "termsUrl": "https://www.dva.gov.au/copyright-and-disclaimer",
+      "attributionText": "Australian Government Department of Veterans' Affairs",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-18T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Manual confirmation of structured visitor facts only; do not crawl or store source prose or images."
+      }
+    },
+    {
+      "sourceKey": "grand_palace_official",
+      "name": "The Grand Palace",
+      "sourceKind": "official",
+      "baseUrl": "https://www.royalgrandpalace.th/",
+      "termsUrl": "https://www.royalgrandpalace.th/en/visit/practical-information",
+      "attributionText": "Bureau of the Royal Household",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Manual confirmation of structured visitor facts only; do not crawl or store source prose or images."
+      }
+    },
+    {
+      "sourceKey": "wat_pho_official",
+      "name": "Wat Pho",
+      "sourceKind": "official",
+      "baseUrl": "https://www.watpho.com/",
+      "termsUrl": "https://www.watpho.com/en/contact/plan",
+      "attributionText": "Wat Phra Chetuphon Wimon Mangkhalaram",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Manual confirmation of structured visitor facts only; do not crawl or store source prose or images."
+      }
+    },
+    {
+      "sourceKey": "bma_official",
+      "name": "Bangkok Metropolitan Administration",
+      "sourceKind": "official",
+      "baseUrl": "https://www.bangkok.go.th/",
+      "termsUrl": "https://gov.bangkok.go.th/Policy/Terms",
+      "attributionText": "Bangkok Metropolitan Administration",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Manual confirmation from BMA public-information pages; store structured values and source URLs only."
+      }
+    },
+    {
+      "sourceKey": "wat_arun_community",
+      "name": "Wat Arun visitor guide",
+      "sourceKind": "community",
+      "baseUrl": "https://www.wat-arun.com/",
+      "termsUrl": "https://www.wat-arun.com/",
+      "attributionText": "Wat Arun community visitor guide",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Community reference for time-sensitive visitor facts; require freshness warnings and on-site verification."
+      }
+    },
+    {
+      "sourceKey": "unesco_whc",
+      "name": "UNESCO World Heritage Centre",
+      "sourceKind": "official",
+      "baseUrl": "https://whc.unesco.org/",
+      "termsUrl": "https://www.unesco.org/en/terms-use",
+      "attributionText": "UNESCO World Heritage Centre",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 180,
+      "contentRefreshIntervalDays": 365,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Manual designation/identity confirmation only; TravelFlow summaries must be original."
+      }
+    },
+    {
+      "sourceKey": "bank_of_thailand",
+      "name": "Bank of Thailand",
+      "sourceKind": "official",
+      "baseUrl": "https://www.bot.or.th/",
+      "termsUrl": "https://www.bot.or.th/en/terms-and-conditions.html",
+      "attributionText": "Bank of Thailand",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "licensed_runtime",
+      "automationStatus": "runtime_only",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 30,
+      "rawStoragePolicy": "runtime_cache",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Keep live exchange values outside long-lived destination packs; the pack may retain only stable currency identity."
+      }
+    },
+    {
+      "sourceKey": "iglta_thailand",
+      "name": "IGLTA Thailand travel guide",
+      "sourceKind": "community",
+      "baseUrl": "https://www.iglta.org/destinations/asia-middle-east/thailand/",
+      "termsUrl": "https://www.iglta.org/terms-conditions/",
+      "attributionText": "International LGBTQ+ Travel Association",
+      "commercialUseAllowed": false,
+      "redistributionAllowed": false,
+      "ingestionMode": "manual_reference",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 90,
+      "contentRefreshIntervalDays": 180,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": false,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "usage": "Scoped scene and supply evidence only; never represent it as a universal safety guarantee."
+      }
+    },
+    {
+      "sourceKey": "travelflow_editorial",
+      "name": "TravelFlow editorial",
+      "sourceKind": "editorial",
+      "baseUrl": "https://travelflowapp.netlify.app/",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "ingestionMode": "editorial",
+      "automationStatus": "manual_only",
+      "licenseReviewedAt": "2026-07-17T00:00:00Z",
+      "licenseReviewIntervalDays": 365,
+      "contentRefreshIntervalDays": 180,
+      "rawStoragePolicy": "metadata_only",
+      "allowLlmProcessing": true,
+      "countryCodes": ["TH"],
+      "metadata": {
+        "method": "Original summaries and planning judgments reviewed against registered evidence URLs."
+      }
+    }
+  ]
+}

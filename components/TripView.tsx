@@ -3,6 +3,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState } from '../types';
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
+import {
+    getTripJourneyOverviewRollout,
+    shouldRenderTripJourneyOverview,
+} from '../config/journeyOverviewExperience';
 import { buildLocalizedCreateTripPath, extractLocaleFromPath } from '../config/routes';
 import { DB_ENABLED } from '../config/db';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
@@ -24,6 +28,7 @@ import {
 } from '../config/paywall';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { removeLocalStorageItem } from '../services/browserStorageService';
+import { buildTripMapPresentation } from '../services/tripMapPresentationAdapter';
 import { buildBillingCheckoutPath } from '../services/billingService';
 import { useLoginModal } from '../hooks/useLoginModal';
 import {
@@ -176,6 +181,10 @@ const ItineraryMap = lazyWithRecovery('ItineraryMap', () =>
     import('./ItineraryMap').then((module) => ({ default: module.ItineraryMap }))
 );
 
+const TripJourneyOverviewRail = lazyWithRecovery('TripJourneyOverviewRail', () =>
+    import('./journey-overview/TripJourneyOverviewRail').then((module) => ({ default: module.TripJourneyOverviewRail }))
+);
+
 const MIN_SIDEBAR_WIDTH = 300;
 const MIN_TIMELINE_HEIGHT = 200;
 const MIN_BOTTOM_MAP_HEIGHT = 200;
@@ -211,6 +220,7 @@ const NEGATIVE_OFFSET_EPSILON = 0.001;
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
 const IS_DEV = import.meta.env.DEV;
+const TRIP_JOURNEY_OVERVIEW_ROLLOUT = getTripJourneyOverviewRollout();
 const GENERATION_PROGRESS_MESSAGES = [
     'Analyzing your travel preferences...',
     'Scouting top-rated cities and stops...',
@@ -1022,11 +1032,20 @@ const useTripViewRender = ({
         () => (isPaywallLocked ? buildPaywalledTripDisplay(trip) : trip),
         [isPaywallLocked, trip]
     );
+    const mapPresentation = useMemo(
+        () => buildTripMapPresentation(displayTrip),
+        [displayTrip]
+    );
     const hasLoadingItems = useMemo(
         () => displayTrip.items.some((item) => item.loading),
         [displayTrip.items]
     );
     const expectedCityLaneCount = displayTrip.items.filter((item) => item.type === 'city').length;
+    const showTripJourneyOverview = shouldRenderTripJourneyOverview({
+        rollout: TRIP_JOURNEY_OVERVIEW_ROLLOUT,
+        hasCity: expectedCityLaneCount > 0,
+        isPaywallLocked,
+    });
     const canEnableAdminOverride = isAdminFallbackView && Boolean(adminAccess?.canAdminWrite);
     const canUseAdminGenerationOverride = isAdminFallbackView && adminOverrideEnabled && Boolean(adminAccess?.canAdminWrite);
     const generationState = useMemo<TripGenerationState>(
@@ -2601,6 +2620,10 @@ const useTripViewRender = ({
         handleTimelineSelect(activityId, { isCity: false });
     }, [handleTimelineSelect]);
 
+    const handleJourneyOverviewItemSelect = useCallback((itemId: string, isCity: boolean) => {
+        handleTimelineSelect(itemId, { isCity });
+    }, [handleTimelineSelect]);
+
     const {
         routeStatusById,
         handleRouteMetrics,
@@ -3070,6 +3093,15 @@ const useTripViewRender = ({
         onCityColorPaletteChange: canEdit ? handleCityColorPaletteChange : undefined,
         onExportActivityCalendar: handleExportSelectedActivityCalendar,
     });
+    const journeyOverviewRail = showTripJourneyOverview ? (
+        <Suspense fallback={<div className="h-full w-full bg-[#fbf6ec]" aria-hidden="true" />}>
+            <TripJourneyOverviewRail
+                trip={displayTrip}
+                selectedItemId={selectedItemId}
+                onSelectItem={handleJourneyOverviewItemSelect}
+            />
+        </Suspense>
+    ) : undefined;
 
     if (viewMode === 'print') {
         return (
@@ -3201,6 +3233,7 @@ const useTripViewRender = ({
                         isMobileMapExpanded={isMobileMapExpanded}
                         onCloseMobileMap={() => setIsMobileMapExpanded(false)}
                         onToggleMobileMapExpanded={() => setIsMobileMapExpanded((value) => !value)}
+                        journeyOverviewRail={journeyOverviewRail}
                         timelineCanvas={timelineCanvas}
                         onTimelineTouchStart={handleTimelineTouchStart}
                         onTimelineTouchMove={handleTimelineTouchMove}
@@ -3267,7 +3300,7 @@ const useTripViewRender = ({
                         ItineraryMapComponent={ItineraryMap}
                         mapLoadingFallback={<MapLoadingFallback />}
                         mapDeferredFallback={<MapDeferredFallback onLoadNow={enableMapBootstrap} />}
-                        displayItems={displayTrip.items}
+                        mapPresentation={mapPresentation}
                         selectedItemId={selectedItemId}
                         onMapCitySelect={handleMapCitySelect}
                         onMapActivitySelect={handleMapActivitySelect}

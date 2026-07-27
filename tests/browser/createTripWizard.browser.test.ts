@@ -349,6 +349,21 @@ describe('pages/CreateTripV3Page', () => {
       transportPreferences: ['train'],
       hasTransportOverride: true,
     }));
+    expect(firstCall.inputSnapshot.journeySpec).toMatchObject({
+      version: 1,
+      createdFrom: 'wizard_v3',
+      countryCodes: ['JP'],
+      dateWindow: {
+        mode: 'flexible',
+        durationDays: 14,
+      },
+      constraints: {
+        transportPreferences: ['train'],
+      },
+      preferences: {
+        pace: 'full',
+      },
+    });
   });
 
   it('starts generation for a newly created anonymous session before auth context catches up', async () => {

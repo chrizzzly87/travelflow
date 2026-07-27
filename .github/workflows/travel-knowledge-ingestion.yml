@@ -1,0 +1,84 @@
+name: Travel Knowledge Identity Ingestion
+
+on:
+  schedule:
+    - cron: '37 3 1 * *'
+  workflow_dispatch:
+    inputs:
+      persist:
+        description: Persist immutable snapshots and review candidates after the dry-run passes
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: travel-knowledge-identity-ingestion
+  cancel-in-progress: false
+
+jobs:
+  thailand-identities:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate governed sources and dataset
+        run: pnpm travel-knowledge:check
+
+      - name: Dry-run Thailand identity reconciliation
+        run: pnpm travel-knowledge:ingest -- --source all --country TH --verbose
+
+      - name: Persist immutable snapshots and review candidates
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.TRAVELFLOW_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TRAVELFLOW_SUPABASE_SERVICE_ROLE_KEY }}
+          MANUAL_PERSIST: ${{ github.event.inputs.persist }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+
+          if [ "${EVENT_NAME}" != "schedule" ] && [ "${MANUAL_PERSIST}" != "true" ]; then
+            echo "Manual run requested dry-run only."
+            exit 0
+          fi
+
+          if [ -z "${VITE_SUPABASE_URL}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
+            if [ "${EVENT_NAME}" = "schedule" ]; then
+              echo "::warning::Scheduled persistence skipped because TravelFlow Supabase secrets are not configured."
+              exit 0
+            fi
+            echo "::error::Persistent ingestion requires TRAVELFLOW_SUPABASE_URL and TRAVELFLOW_SUPABASE_SERVICE_ROLE_KEY repository secrets."
+            exit 1
+          fi
+
+          TRAVEL_KNOWLEDGE_WRITE_MODE=review_candidates_only \
+            pnpm travel-knowledge:ingest -- --source all --country TH --persist
+          pnpm travel-knowledge:verify-snapshots
+
+      - name: Record ingestion scope
+        if: always()
+        run: |
+          {
+            echo '## Thailand identity ingestion'
+            echo
+            echo '- Sources: GeoNames country dump and bounded Wikidata requests'
+            echo '- Writes: private immutable snapshots plus needs-review candidates only'
+            echo '- Published travel data: never changed by this workflow'
+            echo '- Schedule: monthly; persistence safely skips until both repository secrets exist'
+          } >> "$GITHUB_STEP_SUMMARY"

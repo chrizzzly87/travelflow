@@ -382,6 +382,38 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     });
   });
 
+  it('classifies exhausted OpenAI quota without retrying another endpoint', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        error: {
+          message: 'You exceeded your current quota, please check your plan and billing details.',
+          type: 'insufficient_quota',
+          code: 'insufficient_quota',
+        },
+      }, 429),
+    );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-quota"}',
+      provider: 'openai',
+      model: 'gpt-5.4',
+      timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.ok).toBe(false);
+    if (!('status' in result)) return;
+    expect(result.status).toBe(429);
+    expect(result.value.code).toBe('OPENAI_QUOTA_EXHAUSTED');
+    expect(result.value.error).toBe('OpenAI generation request failed.');
+    expect(result.value.details).toContain('insufficient_quota');
+  });
+
   it('returns an explicit refusal when OpenAI chat completions refuses structured output', async () => {
     stubDenoEnv({
       OPENAI_API_KEY: 'openai-key',

@@ -45,6 +45,7 @@ export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
   gemini: new Set([
     "gemini-2.5-flash",
     "gemini-2.5-flash-lite",
+    "gemini-3.1-flash-lite",
     "gemini-2.5-pro",
     "gemini-3-flash-preview",
     "gemini-3-pro-preview",
@@ -135,6 +136,7 @@ const ANTHROPIC_MODEL_MAP: Record<string, string> = {
 const GEMINI_PRICING_PER_MILLION: Record<string, { input: number; output: number }> = {
   "gemini-2.5-flash": { input: 0.35, output: 1.05 },
   "gemini-2.5-flash-lite": { input: 0.1, output: 0.4 },
+  "gemini-3.1-flash-lite": { input: 0.25, output: 1.5 },
   "gemini-2.5-pro": { input: 3.5, output: 10.5 },
   "gemini-3-flash-preview": { input: 0.35, output: 1.05 },
   "gemini-3-pro-preview": { input: 3.5, output: 10.5 },
@@ -586,6 +588,22 @@ const isOpenAiDefaultTemperatureOnlyError = (details: string): boolean => {
   );
 };
 
+const isOpenAiQuotaFailure = (details: string): boolean => {
+  const normalized = details.toLowerCase();
+  return normalized.includes('insufficient_quota')
+    || normalized.includes('exceeded your current quota');
+};
+
+const buildOpenAiRequestFailure = (details: string): ProviderGenerationResult => ({
+  ok: false,
+  status: isOpenAiQuotaFailure(details) ? 429 : 502,
+  value: {
+    error: "OpenAI generation request failed.",
+    code: isOpenAiQuotaFailure(details) ? "OPENAI_QUOTA_EXHAUSTED" : "OPENAI_REQUEST_FAILED",
+    details: clipText(details),
+  },
+});
+
 export const ensureModelAllowed = (
   provider: string,
   model: string,
@@ -669,6 +687,7 @@ const generateWithGemini = async (
             contents: [{ role: "user", parts: [{ text: promptBody }] }],
             generationConfig: {
               responseMimeType: "application/json",
+              ...(jsonSchema ? { responseJsonSchema: jsonSchema.schema } : {}),
               maxOutputTokens: maxOutputTokens,
               temperature: strictParseRetry || jsonSchema ? 0 : 0.2,
             },
@@ -945,15 +964,7 @@ const generateWithOpenAi = async (
   const chatFailure = chatResult;
   const chatDetails = chatFailure.details;
   if (!isOpenAiChatEndpointModelMismatch(chatDetails) && !isOpenAiDefaultTemperatureOnlyError(chatDetails)) {
-    return {
-      ok: false,
-      status: 502,
-      value: {
-        error: "OpenAI generation request failed.",
-        code: "OPENAI_REQUEST_FAILED",
-        details: clipText(chatDetails),
-      },
-    };
+    return buildOpenAiRequestFailure(chatDetails);
   }
 
   let retryPrompt = prompt;
@@ -976,7 +987,7 @@ const generateWithOpenAi = async (
 
     let responsesEndpointResult:
       | { ok: true; payload: unknown }
-      | { ok: false; details: string };
+      | { ok: false; status: number; details: string };
 
     try {
       responsesEndpointResult = await fetchWithTimeout(
@@ -1007,6 +1018,7 @@ const generateWithOpenAi = async (
           if (!response.ok) {
             return {
               ok: false as const,
+              status: response.status,
               details: await response.text(),
             };
           }
@@ -1030,15 +1042,9 @@ const generateWithOpenAi = async (
 
     if (!responsesEndpointResult.ok) {
       const responsesFailure = responsesEndpointResult;
-      return {
-        ok: false,
-        status: 502,
-        value: {
-          error: "OpenAI generation request failed.",
-          code: "OPENAI_REQUEST_FAILED",
-          details: clipText(`chat_completions: ${chatDetails}\nresponses: ${responsesFailure.details}`),
-        },
-      };
+      return buildOpenAiRequestFailure(
+        `chat_completions: ${chatDetails}\nresponses: ${responsesFailure.details}`,
+      );
     }
 
     const responsesPayload = responsesEndpointResult.payload as Record<string, unknown>;
