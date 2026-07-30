@@ -301,6 +301,36 @@
     }
   },
   "tripView": {
+    "workspace": {
+      "shellLabel": "Modułowy obszar podróży",
+      "eyebrow": "Widoki podróży",
+      "title": "Twój obszar podróży",
+      "navigationLabel": "Widoki obszaru podróży",
+      "views": {
+        "overview": "Przegląd",
+        "schedule": "Harmonogram"
+      },
+      "classicAction": "Klasyczny planer",
+      "schedule": {
+        "eyebrow": "Dzień po dniu",
+        "title": "Harmonogram",
+        "description": "Przeglądaj podróż dzień po dniu. Godziny pojawiają się tylko wtedy, gdy są częścią planu.",
+        "transfer": "Przejazd",
+        "activity": "Aktywność",
+        "dayNumber": "Dzień {count}",
+        "today": "Dzisiaj",
+        "destinations": "Miejsca docelowe",
+        "multiDayDestination": "Trwa przez kilka dni",
+        "emptyDay": "Brak planów z określoną godziną",
+        "weekNumber": "Tydzień {count}",
+        "weekProgress": "{current} z {total}",
+        "previousWeek": "Poprzedni tydzień",
+        "nextWeek": "Następny tydzień",
+        "truncated": "Ta wyjątkowo długa podróż jest skrócona w widoku Harmonogram.",
+        "loading": "Przygotowywanie harmonogramu…",
+        "detailsLabel": "Szczegóły wybranego planu"
+      }
+    },
     "visualHistory": {
       "mapPreviewState": "Podglad mapy: {from} -> {to}",
       "mapPreviewStateValue": {

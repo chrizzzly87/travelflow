@@ -171,6 +171,36 @@
     "preparingExamplePlanner": "Preparing example planner"
   },
   "tripView": {
+    "workspace": {
+      "shellLabel": "ماڈیولر سفری ورک اسپیس",
+      "eyebrow": "سفر کے مناظر",
+      "title": "آپ کا سفری ورک اسپیس",
+      "navigationLabel": "سفری ورک اسپیس کے مناظر",
+      "views": {
+        "overview": "جائزہ",
+        "schedule": "شیڈول"
+      },
+      "classicAction": "کلاسک پلانر",
+      "schedule": {
+        "eyebrow": "دن بہ دن",
+        "title": "شیڈول",
+        "description": "سفر کو ایک وقت میں ایک دن دیکھیں۔ وقت صرف اسی وقت دکھایا جاتا ہے جب وہ منصوبے کا حصہ ہو۔",
+        "transfer": "منتقلی",
+        "activity": "سرگرمی",
+        "dayNumber": "دن {count}",
+        "today": "آج",
+        "destinations": "منزلیں",
+        "multiDayDestination": "کئی دن تک جاری",
+        "emptyDay": "ابھی کوئی وقت مقررہ منصوبہ نہیں",
+        "weekNumber": "ہفتہ {count}",
+        "weekProgress": "{current} از {total}",
+        "previousWeek": "پچھلا ہفتہ",
+        "nextWeek": "اگلا ہفتہ",
+        "truncated": "یہ غیر معمولی طویل سفر شیڈول منظر میں مختصر دکھایا گیا ہے۔",
+        "loading": "شیڈول تیار کیا جا رہا ہے…",
+        "detailsLabel": "منتخب منصوبے کی تفصیلات"
+      }
+    },
     "header": {
       "titleTooltipEditable": "Open trip details and edit the title",
       "titleTooltipReadonly": "Open trip details",

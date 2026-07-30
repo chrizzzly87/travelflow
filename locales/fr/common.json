@@ -303,6 +303,36 @@
     }
   },
   "tripView": {
+    "workspace": {
+      "shellLabel": "Espace de voyage modulaire",
+      "eyebrow": "Vues du voyage",
+      "title": "Votre espace de voyage",
+      "navigationLabel": "Vues de l’espace de voyage",
+      "views": {
+        "overview": "Vue d’ensemble",
+        "schedule": "Programme"
+      },
+      "classicAction": "Planificateur classique",
+      "schedule": {
+        "eyebrow": "Jour après jour",
+        "title": "Programme",
+        "description": "Parcourez le voyage jour après jour. Les horaires s’affichent uniquement lorsqu’ils font partie du programme.",
+        "transfer": "Transfert",
+        "activity": "Activité",
+        "dayNumber": "Jour {count}",
+        "today": "Aujourd’hui",
+        "destinations": "Destinations",
+        "multiDayDestination": "Se poursuit sur plusieurs jours",
+        "emptyDay": "Aucun horaire prévu pour le moment",
+        "weekNumber": "Semaine {count}",
+        "weekProgress": "{current} sur {total}",
+        "previousWeek": "Semaine précédente",
+        "nextWeek": "Semaine suivante",
+        "truncated": "Ce voyage exceptionnellement long est abrégé dans le Programme.",
+        "loading": "Préparation du programme…",
+        "detailsLabel": "Détails du programme sélectionné"
+      }
+    },
     "visualHistory": {
       "mapPreviewState": "Apercu de la carte: {from} -> {to}",
       "mapPreviewStateValue": {

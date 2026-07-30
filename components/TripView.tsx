@@ -88,6 +88,12 @@ import { TripViewHeader } from './tripview/TripViewHeader';
 import { TripViewHudOverlays } from './tripview/TripViewHudOverlays';
 import { TripViewPlannerWorkspace } from './tripview/TripViewPlannerWorkspace';
 import { TripViewStatusBanners } from './tripview/TripViewStatusBanners';
+import { TripWorkspaceShell } from './tripview/TripWorkspaceShell';
+import {
+    buildTripWorkspaceSearch,
+    readTripWorkspacePresentation,
+    type TripWorkspacePresentation,
+} from './tripview/tripWorkspacePresentation';
 import { showAppToast } from './ui/appToast';
 import {
     TRIP_GENERATION_TIMEOUT_MS,
@@ -127,6 +133,9 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
 
 const ReleaseNoticeDialog = lazyWithRecovery('ReleaseNoticeDialog', () =>
     import('./ReleaseNoticeDialog').then((module) => ({ default: module.ReleaseNoticeDialog }))
+);
+const TripScheduleView = lazyWithRecovery('TripScheduleView', () =>
+    import('./tripview/TripScheduleView').then((module) => ({ default: module.TripScheduleView }))
 );
 
 const PrintLayout = lazyWithRecovery('PrintLayout', () =>
@@ -1656,6 +1665,45 @@ const useTripViewRender = ({
         [canEdit, location.search]
     );
     const { viewMode, setViewMode } = useTripViewModeState();
+    const workspacePresentation = readTripWorkspacePresentation(location.search);
+    const handleWorkspacePresentationChange = useCallback((presentation: TripWorkspacePresentation) => {
+        if (presentation === workspacePresentation) return;
+        if (presentation === 'overview') {
+            trackEvent('trip_view__workspace_view--overview', {
+                trip_id: trip.id,
+                source: 'workspace_nav',
+            });
+        } else if (presentation === 'schedule') {
+            trackEvent('trip_view__workspace_view--schedule', {
+                trip_id: trip.id,
+                source: 'workspace_nav',
+            });
+        } else {
+            trackEvent('trip_view__workspace--exit', {
+                trip_id: trip.id,
+                source: 'workspace_nav',
+            });
+        }
+
+        const nextSearch = buildTripWorkspaceSearch(location.search, presentation);
+        navigate(
+            {
+                pathname: location.pathname,
+                search: nextSearch,
+            },
+            {
+                replace: true,
+                state: location.state,
+            },
+        );
+    }, [
+        location.pathname,
+        location.search,
+        location.state,
+        navigate,
+        trip.id,
+        workspacePresentation,
+    ]);
     const currentUrl = location.pathname + location.search;
     const {
         isHistoryOpen,
@@ -3195,6 +3243,34 @@ const useTripViewRender = ({
 
                 {/* Main Content */}
                 <main className="flex-1 relative overflow-hidden flex flex-col">
+                    <TripWorkspaceShell
+                        presentation={workspacePresentation}
+                        onViewChange={handleWorkspacePresentationChange}
+                        onExitToClassic={() => handleWorkspacePresentationChange('classic')}
+                        scheduleContent={(
+                            <Suspense fallback={<div className="size-full flex items-center justify-center text-sm text-slate-500">{t('tripView.workspace.schedule.loading')}</div>}>
+                                <div className="flex size-full min-h-0">
+                                    <div className="min-w-0 flex-1">
+                                        <TripScheduleView
+                                            trip={displayTrip}
+                                            locale={appLanguage}
+                                            selectedItemId={selectedItemId}
+                                            onSelect={handleTimelineSelect}
+                                        />
+                                    </div>
+                                    {!isMobile && detailsPanelVisible ? (
+                                        <aside
+                                            style={{ width: detailsWidth }}
+                                            className="relative h-full shrink-0 overflow-hidden border-s border-slate-200 bg-white"
+                                            aria-label={t('tripView.workspace.schedule.detailsLabel')}
+                                        >
+                                            {detailsPanelContent}
+                                        </aside>
+                                    ) : null}
+                                </div>
+                            </Suspense>
+                        )}
+                    >
                     <TripViewPlannerWorkspace
                         isPaywallLocked={isPaywallLocked}
                         isMobile={isMobile}
@@ -3320,6 +3396,7 @@ const useTripViewRender = ({
                         onDetailsResizeKeyDown={handleDetailsResizeKeyDown}
                         onTimelineResizeKeyDown={handleTimelineResizeKeyDown}
                     />
+                    </TripWorkspaceShell>
                     <TripViewModalLayer
                         isMobile={isMobile}
                         detailsPanelVisible={detailsPanelVisible}

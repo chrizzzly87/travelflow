@@ -303,6 +303,36 @@
     }
   },
   "tripView": {
+    "workspace": {
+      "shellLabel": "Espaço de viagem modular",
+      "eyebrow": "Vistas da viagem",
+      "title": "O teu espaço de viagem",
+      "navigationLabel": "Vistas do espaço de viagem",
+      "views": {
+        "overview": "Visão geral",
+        "schedule": "Agenda"
+      },
+      "classicAction": "Planeador clássico",
+      "schedule": {
+        "eyebrow": "Dia a dia",
+        "title": "Agenda",
+        "description": "Consulta a viagem dia a dia. As horas só aparecem quando fazem parte do plano.",
+        "transfer": "Transfer",
+        "activity": "Atividade",
+        "dayNumber": "Dia {count}",
+        "today": "Hoje",
+        "destinations": "Destinos",
+        "multiDayDestination": "Continua durante vários dias",
+        "emptyDay": "Ainda não há planos com hora",
+        "weekNumber": "Semana {count}",
+        "weekProgress": "{current} de {total}",
+        "previousWeek": "Semana anterior",
+        "nextWeek": "Semana seguinte",
+        "truncated": "Esta viagem invulgarmente longa aparece abreviada na Agenda.",
+        "loading": "A preparar a agenda…",
+        "detailsLabel": "Detalhes do plano selecionado"
+      }
+    },
     "visualHistory": {
       "mapPreviewState": "Pre-visualizacao do mapa: {from} -> {to}",
       "mapPreviewStateValue": {

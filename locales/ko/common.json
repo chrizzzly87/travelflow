@@ -303,6 +303,36 @@
     }
   },
   "tripView": {
+    "workspace": {
+      "shellLabel": "모듈형 여행 작업 공간",
+      "eyebrow": "여행 보기",
+      "title": "여행 작업 공간",
+      "navigationLabel": "여행 작업 공간 보기",
+      "views": {
+        "overview": "개요",
+        "schedule": "일정"
+      },
+      "classicAction": "기존 플래너",
+      "schedule": {
+        "eyebrow": "하루씩 보기",
+        "title": "일정",
+        "description": "여행을 하루씩 살펴보세요. 시간은 계획에 포함된 경우에만 표시됩니다.",
+        "transfer": "이동",
+        "activity": "활동",
+        "dayNumber": "{count}일차",
+        "today": "오늘",
+        "destinations": "여행지",
+        "multiDayDestination": "여러 날 동안 계속됨",
+        "emptyDay": "시간이 정해진 계획이 아직 없습니다",
+        "weekNumber": "{count}주차",
+        "weekProgress": "{total}개 중 {current}",
+        "previousWeek": "이전 주",
+        "nextWeek": "다음 주",
+        "truncated": "매우 긴 여행이므로 일정 보기에서는 일부만 표시됩니다.",
+        "loading": "일정을 준비하는 중…",
+        "detailsLabel": "선택한 계획 세부 정보"
+      }
+    },
     "visualHistory": {
       "mapPreviewState": "Map preview: {from} -> {to}",
       "mapPreviewStateValue": {

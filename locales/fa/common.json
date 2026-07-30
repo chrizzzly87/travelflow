@@ -171,6 +171,36 @@
     "preparingExamplePlanner": "Preparing example planner"
   },
   "tripView": {
+    "workspace": {
+      "shellLabel": "فضای کاری ماژولار سفر",
+      "eyebrow": "نماهای سفر",
+      "title": "فضای کاری سفر شما",
+      "navigationLabel": "نماهای فضای کاری سفر",
+      "views": {
+        "overview": "نمای کلی",
+        "schedule": "برنامه"
+      },
+      "classicAction": "برنامه‌ریز کلاسیک",
+      "schedule": {
+        "eyebrow": "روز به روز",
+        "title": "برنامه",
+        "description": "سفر را روز به روز مرور کنید. زمان فقط وقتی نمایش داده می‌شود که بخشی از برنامه باشد.",
+        "transfer": "جابجایی",
+        "activity": "فعالیت",
+        "dayNumber": "روز {count}",
+        "today": "امروز",
+        "destinations": "مقصدها",
+        "multiDayDestination": "در چند روز ادامه دارد",
+        "emptyDay": "هنوز برنامه زمان‌داری وجود ندارد",
+        "weekNumber": "هفته {count}",
+        "weekProgress": "{current} از {total}",
+        "previousWeek": "هفته قبل",
+        "nextWeek": "هفته بعد",
+        "truncated": "این سفر بسیار طولانی در نمای برنامه کوتاه‌تر نمایش داده می‌شود.",
+        "loading": "در حال آماده‌سازی برنامه…",
+        "detailsLabel": "جزئیات برنامه انتخاب‌شده"
+      }
+    },
     "header": {
       "titleTooltipEditable": "Open trip details and edit the title",
       "titleTooltipReadonly": "Open trip details",

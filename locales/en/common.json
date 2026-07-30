@@ -303,6 +303,36 @@
     }
   },
   "tripView": {
+    "workspace": {
+      "shellLabel": "Modular trip workspace",
+      "eyebrow": "Trip views",
+      "title": "Your workspace",
+      "navigationLabel": "Trip workspace views",
+      "views": {
+        "overview": "Overview",
+        "schedule": "Schedule"
+      },
+      "classicAction": "Classic planner",
+      "schedule": {
+        "eyebrow": "Day by day",
+        "title": "Schedule",
+        "description": "Scan the trip one day at a time. Times only appear when they are part of the plan.",
+        "transfer": "Transfer",
+        "activity": "Activity",
+        "dayNumber": "Day {count}",
+        "today": "Today",
+        "destinations": "Destinations",
+        "multiDayDestination": "Continues across multiple days",
+        "emptyDay": "No timed plans yet",
+        "weekNumber": "Week {count}",
+        "weekProgress": "{current} of {total}",
+        "previousWeek": "Previous week",
+        "nextWeek": "Next week",
+        "truncated": "This unusually long trip is shortened in the Schedule view.",
+        "loading": "Preparing the schedule…",
+        "detailsLabel": "Selected plan details"
+      }
+    },
     "visualHistory": {
       "mapPreviewState": "Map preview: {from} -> {to}",
       "mapPreviewStateValue": {

@@ -171,6 +171,9 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `trip_view__calendar_export--activities` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
 | `trip_view__calendar_export--cities` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
 | `trip_view__calendar_export--all` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
+| `trip_view__workspace_view--overview` | — | `{ trip_id, source }` | `TripView.tsx` |
+| `trip_view__workspace_view--schedule` | — | `{ trip_id, source }` | `TripView.tsx` |
+| `trip_view__workspace--exit` | — | `{ trip_id, source }` | `TripView.tsx` |
 
 ### Profile
 | Event | Detail | Payload | File |

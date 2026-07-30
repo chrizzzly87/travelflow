@@ -303,6 +303,36 @@
     }
   },
   "tripView": {
+    "workspace": {
+      "shellLabel": "Modularer Reisebereich",
+      "eyebrow": "Reiseansichten",
+      "title": "Dein Reisebereich",
+      "navigationLabel": "Ansichten im Reisebereich",
+      "views": {
+        "overview": "Übersicht",
+        "schedule": "Zeitplan"
+      },
+      "classicAction": "Klassischer Planer",
+      "schedule": {
+        "eyebrow": "Tag für Tag",
+        "title": "Zeitplan",
+        "description": "Sieh dir die Reise Tag für Tag an. Uhrzeiten erscheinen nur, wenn sie Teil der Planung sind.",
+        "transfer": "Transfer",
+        "activity": "Aktivität",
+        "dayNumber": "Tag {count}",
+        "today": "Heute",
+        "destinations": "Reiseziele",
+        "multiDayDestination": "Wird über mehrere Tage fortgesetzt",
+        "emptyDay": "Noch keine zeitlich geplanten Punkte",
+        "weekNumber": "Woche {count}",
+        "weekProgress": "{current} von {total}",
+        "previousWeek": "Vorherige Woche",
+        "nextWeek": "Nächste Woche",
+        "truncated": "Diese ungewöhnlich lange Reise wird im Zeitplan verkürzt dargestellt.",
+        "loading": "Zeitplan wird vorbereitet…",
+        "detailsLabel": "Details zum ausgewählten Plan"
+      }
+    },
     "visualHistory": {
       "mapPreviewState": "Kartenvorschau: {from} -> {to}",
       "mapPreviewStateValue": {

@@ -303,6 +303,36 @@
     }
   },
   "tripView": {
+    "workspace": {
+      "shellLabel": "Модульное пространство поездки",
+      "eyebrow": "Виды поездки",
+      "title": "Ваше пространство поездки",
+      "navigationLabel": "Виды пространства поездки",
+      "views": {
+        "overview": "Обзор",
+        "schedule": "Расписание"
+      },
+      "classicAction": "Классический планировщик",
+      "schedule": {
+        "eyebrow": "День за днём",
+        "title": "Расписание",
+        "description": "Просматривайте поездку по дням. Время показывается только тогда, когда оно есть в плане.",
+        "transfer": "Переезд",
+        "activity": "Занятие",
+        "dayNumber": "День {count}",
+        "today": "Сегодня",
+        "destinations": "Направления",
+        "multiDayDestination": "Продолжается несколько дней",
+        "emptyDay": "Планов с указанным временем пока нет",
+        "weekNumber": "Неделя {count}",
+        "weekProgress": "{current} из {total}",
+        "previousWeek": "Предыдущая неделя",
+        "nextWeek": "Следующая неделя",
+        "truncated": "Эта необычно длинная поездка показана в Расписании в сокращённом виде.",
+        "loading": "Подготавливаем расписание…",
+        "detailsLabel": "Сведения о выбранном плане"
+      }
+    },
     "visualHistory": {
       "mapPreviewState": "Karta predprosmotr: {from} -> {to}",
       "mapPreviewStateValue": {
