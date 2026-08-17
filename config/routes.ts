@@ -11,6 +11,7 @@ export type RouteKey =
     | 'inspirationsFestivals'
     | 'inspirationsWeekendGetaways'
     | 'inspirationsCountryDetail'
+    | 'inspirationsDestinationDetail'
     | 'updates'
     | 'blog'
     | 'blogPost'
@@ -48,6 +49,7 @@ export type RouteKey =
 
 type RouteParamsByKey = {
     inspirationsCountryDetail: { countryName: string };
+    inspirationsDestinationDetail: { countrySlug: string; destinationSlug: string };
     blogPost: { slug: string };
     tripDetail: { tripId: string };
     exampleTrip: { templateId: string };
@@ -67,7 +69,7 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
     /^\/inspirations\/countries$/,
     /^\/inspirations\/events-and-festivals$/,
     /^\/inspirations\/weekend-getaways$/,
-    /^\/inspirations\/country\/[^/]+$/,
+    /^\/inspirations\/country\/[^/]+(?:\/[^/]+)?$/,
     /^\/updates$/,
     /^\/blog$/,
     /^\/blog\/[^/]+$/,
@@ -96,6 +98,7 @@ export const LOCALIZED_MARKETING_ROUTE_KEYS: RouteKey[] = [
     'inspirationsFestivals',
     'inspirationsWeekendGetaways',
     'inspirationsCountryDetail',
+    'inspirationsDestinationDetail',
     'updates',
     'blog',
     'blogPost',
@@ -138,6 +141,10 @@ export const buildPath = <K extends RouteKey>(
             return '/inspirations/weekend-getaways';
         case 'inspirationsCountryDetail':
             return `/inspirations/country/${encodeSegment((params as RouteParamsByKey['inspirationsCountryDetail']).countryName)}`;
+        case 'inspirationsDestinationDetail': {
+            const destinationParams = params as RouteParamsByKey['inspirationsDestinationDetail'];
+            return `/inspirations/country/${encodeSegment(destinationParams.countrySlug)}/${encodeSegment(destinationParams.destinationSlug)}`;
+        }
         case 'updates':
             return '/updates';
         case 'blog':

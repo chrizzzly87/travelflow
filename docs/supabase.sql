@@ -8942,3 +8942,229 @@ begin
   end loop;
 end
 $$;
+-- Queryable destination-guide snapshots. The reviewed JSON payload remains the
+-- portable source of truth; scripts/sync-destination-guides.ts performs guarded,
+-- additive upserts after this schema is applied.
+create table if not exists public.destination_guides (
+  id text primary key,
+  slug text not null,
+  kind text not null check (kind in ('country', 'city', 'island')),
+  country_code text not null check (char_length(country_code) = 2),
+  parent_id text references public.destination_guides(id) on delete restrict,
+  name text not null,
+  region text not null,
+  priority_rank smallint,
+  source_updated_at timestamptz,
+  reviewed_at timestamptz not null,
+  payload jsonb not null,
+  unique (parent_id, slug)
+);
+
+create index if not exists destination_guides_kind_priority_idx
+  on public.destination_guides(kind, priority_rank nulls last, name);
+create index if not exists destination_guides_country_parent_idx
+  on public.destination_guides(country_code, parent_id, kind);
+create index if not exists destination_guides_payload_gin_idx
+  on public.destination_guides using gin(payload);
+
+alter table public.destination_guides enable row level security;
+
+drop policy if exists "Public destination guides are readable" on public.destination_guides;
+create policy "Public destination guides are readable"
+  on public.destination_guides
+  for select
+  using (true);
+
+grant select on public.destination_guides to anon, authenticated;
+grant all on public.destination_guides to service_role;
+
+-- Versioned destination ingestion. Raw provider payloads stay private while
+-- normalized country profiles and sanitized referral attribution are readable.
+create table if not exists public.destination_import_runs (
+  id uuid primary key default gen_random_uuid(),
+  provider text not null,
+  status text not null default 'running' check (status in ('running', 'completed', 'failed')),
+  schema_version integer not null check (schema_version > 0),
+  expected_records integer not null default 0 check (expected_records >= 0),
+  fetched_records integer not null default 0 check (fetched_records >= 0),
+  changed_records integer not null default 0 check (changed_records >= 0),
+  unchanged_records integer not null default 0 check (unchanged_records >= 0),
+  failed_records integer not null default 0 check (failed_records >= 0),
+  started_at timestamptz not null default now(),
+  completed_at timestamptz,
+  metadata jsonb not null default '{}'::jsonb,
+  error_summary text
+);
+
+create index if not exists destination_import_runs_provider_started_idx
+  on public.destination_import_runs(provider, started_at desc);
+
+create table if not exists public.destination_source_records (
+  id text primary key,
+  provider text not null,
+  source_record_id text not null,
+  entity_kind text not null check (entity_kind in ('country', 'region', 'island', 'city', 'event')),
+  origin_url text not null,
+  country_code text check (country_code is null or char_length(country_code) = 2),
+  slug text not null,
+  payload_hash text not null check (payload_hash ~ '^[a-f0-9]{64}$'),
+  acquisition_payload_hash text not null check (acquisition_payload_hash ~ '^[a-f0-9]{64}$'),
+  payload jsonb not null,
+  source_updated_at timestamptz,
+  fetched_at timestamptz not null,
+  first_seen_at timestamptz not null default now(),
+  last_seen_at timestamptz not null,
+  last_changed_at timestamptz not null default now(),
+  last_import_run_id uuid references public.destination_import_runs(id) on delete set null,
+  unique (provider, source_record_id),
+  unique (provider, origin_url)
+);
+
+create index if not exists destination_source_records_country_idx
+  on public.destination_source_records(provider, country_code, entity_kind);
+create index if not exists destination_source_records_slug_idx
+  on public.destination_source_records(provider, slug);
+create index if not exists destination_source_records_freshness_idx
+  on public.destination_source_records(provider, fetched_at desc);
+create index if not exists destination_source_records_import_run_idx
+  on public.destination_source_records(last_import_run_id)
+  where last_import_run_id is not null;
+create index if not exists destination_source_records_payload_gin_idx
+  on public.destination_source_records using gin(payload);
+
+create table if not exists public.destination_source_record_versions (
+  id bigint generated always as identity primary key,
+  source_record_id text not null references public.destination_source_records(id) on delete cascade,
+  origin_url text not null,
+  payload_hash text not null check (payload_hash ~ '^[a-f0-9]{64}$'),
+  acquisition_payload_hash text not null check (acquisition_payload_hash ~ '^[a-f0-9]{64}$'),
+  payload jsonb not null,
+  fetched_at timestamptz not null,
+  import_run_id uuid references public.destination_import_runs(id) on delete set null,
+  created_at timestamptz not null default now(),
+  unique (source_record_id, payload_hash)
+);
+
+create index if not exists destination_source_record_versions_source_idx
+  on public.destination_source_record_versions(source_record_id, fetched_at desc);
+create index if not exists destination_source_record_versions_import_run_idx
+  on public.destination_source_record_versions(import_run_id)
+  where import_run_id is not null;
+
+create table if not exists public.destination_country_profiles (
+  country_code text primary key check (char_length(country_code) = 2),
+  source_record_id text not null unique references public.destination_source_records(id) on delete restrict,
+  source_provider text not null,
+  source_country_id text not null,
+  origin_url text not null,
+  name text not null,
+  slug text not null unique,
+  region text not null,
+  popularity smallint,
+  latitude double precision,
+  longitude double precision,
+  currency_code text,
+  timezone text,
+  calling_code text,
+  summary text,
+  alert_message text,
+  safety_tips jsonb not null default '[]'::jsonb check (jsonb_typeof(safety_tips) = 'array'),
+  bonus_tips jsonb not null default '[]'::jsonb check (jsonb_typeof(bonus_tips) = 'array'),
+  static_sections jsonb not null default '{}'::jsonb check (jsonb_typeof(static_sections) = 'object'),
+  faqs jsonb not null default '[]'::jsonb check (jsonb_typeof(faqs) = 'array'),
+  recent_updates jsonb not null default '[]'::jsonb check (jsonb_typeof(recent_updates) = 'array'),
+  airports jsonb not null default '[]'::jsonb check (jsonb_typeof(airports) = 'array'),
+  beaches jsonb not null default '[]'::jsonb check (jsonb_typeof(beaches) = 'array'),
+  cities jsonb not null default '[]'::jsonb check (jsonb_typeof(cities) = 'array'),
+  weather jsonb not null default '[]'::jsonb check (jsonb_typeof(weather) = 'array'),
+  exchange_rate numeric,
+  exchange_base text,
+  source_fetched_at timestamptz not null,
+  source_updated_at timestamptz,
+  payload_hash text not null check (payload_hash ~ '^[a-f0-9]{64}$'),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists destination_country_profiles_region_popularity_idx
+  on public.destination_country_profiles(region, popularity desc nulls last, name);
+create index if not exists destination_country_profiles_cities_gin_idx
+  on public.destination_country_profiles using gin(cities);
+create index if not exists destination_country_profiles_airports_gin_idx
+  on public.destination_country_profiles using gin(airports);
+
+create table if not exists public.destination_referral_links (
+  id bigint generated always as identity primary key,
+  source_record_id text not null references public.destination_source_records(id) on delete cascade,
+  source_provider text not null,
+  field_path text not null,
+  provider text not null,
+  canonical_url text not null,
+  is_referral boolean not null default true,
+  removed_tracking_parameters text[] not null default '{}',
+  origin_url text not null,
+  is_active boolean not null default true,
+  first_seen_at timestamptz not null default now(),
+  last_seen_at timestamptz not null,
+  last_import_run_id uuid references public.destination_import_runs(id) on delete set null,
+  unique (source_record_id, field_path, canonical_url)
+);
+
+create index if not exists destination_referral_links_source_idx
+  on public.destination_referral_links(source_record_id, provider, is_active);
+create index if not exists destination_referral_links_import_idx
+  on public.destination_referral_links(source_provider, last_import_run_id);
+create index if not exists destination_referral_links_import_run_idx
+  on public.destination_referral_links(last_import_run_id)
+  where last_import_run_id is not null;
+
+create table if not exists public.destination_content_overrides (
+  id uuid primary key default gen_random_uuid(),
+  target_kind text not null check (target_kind in ('guide', 'country_profile')),
+  target_id text not null,
+  status text not null default 'draft' check (status in ('draft', 'published')),
+  patch jsonb not null default '{}'::jsonb check (jsonb_typeof(patch) = 'object'),
+  note text,
+  created_by uuid references auth.users(id) on delete set null,
+  updated_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (target_kind, target_id)
+);
+
+create index if not exists destination_content_overrides_status_target_idx
+  on public.destination_content_overrides(status, target_kind, target_id);
+
+alter table public.destination_import_runs enable row level security;
+alter table public.destination_source_records enable row level security;
+alter table public.destination_source_record_versions enable row level security;
+alter table public.destination_country_profiles enable row level security;
+alter table public.destination_referral_links enable row level security;
+alter table public.destination_content_overrides enable row level security;
+
+drop policy if exists "Public destination country profiles are readable" on public.destination_country_profiles;
+create policy "Public destination country profiles are readable"
+  on public.destination_country_profiles for select using (true);
+
+drop policy if exists "Public destination referral attribution is readable" on public.destination_referral_links;
+create policy "Public destination referral attribution is readable"
+  on public.destination_referral_links for select using (true);
+
+drop policy if exists "Published destination overrides are readable" on public.destination_content_overrides;
+create policy "Published destination overrides are readable"
+  on public.destination_content_overrides for select using (status = 'published');
+
+revoke all on public.destination_import_runs from public, anon, authenticated;
+revoke all on public.destination_source_records from public, anon, authenticated;
+revoke all on public.destination_source_record_versions from public, anon, authenticated;
+grant all on public.destination_import_runs to service_role;
+grant all on public.destination_source_records to service_role;
+grant all on public.destination_source_record_versions to service_role;
+grant select on public.destination_country_profiles to anon, authenticated;
+grant all on public.destination_country_profiles to service_role;
+grant select on public.destination_referral_links to anon, authenticated;
+grant all on public.destination_referral_links to service_role;
+revoke all on public.destination_content_overrides from public, anon, authenticated;
+grant select on public.destination_content_overrides to anon, authenticated;
+grant all on public.destination_content_overrides to service_role;
+grant usage, select on sequence public.destination_source_record_versions_id_seq to service_role;
+grant usage, select on sequence public.destination_referral_links_id_seq to service_role;
