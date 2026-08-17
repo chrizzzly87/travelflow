@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import destinationsEndpoint from '../../netlify/edge-functions/destinations';
+import destinationsEndpoint, { __destinationEndpointInternals } from '../../netlify/edge-functions/destinations';
 
 const readJson = async (response: Response) => response.json() as Promise<Record<string, any>>;
 
@@ -40,5 +40,22 @@ describe('GET /api/destinations', () => {
     expect(methodResponse.status).toBe(405);
     expect(filterResponse.status).toBe(400);
   });
-});
 
+  it('serializes database provenance without exposing internal source record ids', () => {
+    const provenance = __destinationEndpointInternals.serializeProvenance({
+      source_provider: 'atobeach',
+      origin_url: 'https://atobeach.com/api/countries/indonesia/',
+      source_fetched_at: '2026-08-17T12:00:00Z',
+      source_updated_at: null,
+      payload_hash: 'a'.repeat(64),
+    } as any);
+    expect(provenance).toEqual({
+      provider: 'atobeach',
+      originUrl: 'https://atobeach.com/api/countries/indonesia/',
+      fetchedAt: '2026-08-17T12:00:00Z',
+      sourceUpdatedAt: null,
+      payloadHash: 'a'.repeat(64),
+    });
+    expect(provenance).not.toHaveProperty('sourceRecordId');
+  });
+});

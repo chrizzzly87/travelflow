@@ -15,3 +15,4 @@ summary: "Explore when to go, where to arrive, and which cities and islands fit 
 - [x] [New feature] 🏝️ Dive from countries into city and island guides, including Mallorca, Phuket, and Koh Samui.
 - [x] [Improved] 🗓️ See the best, shoulder, and less ideal travel months at a glance before building your trip.
 - [ ] [Internal] 🗂️ Added reviewed destination provenance, validation, and query-ready storage.
+- [ ] [Internal] 🔄 Added versioned source imports with canonical referral URLs and original-source attribution.
