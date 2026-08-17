@@ -67,14 +67,21 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('openrouter', 'openai/gpt-chat-latest')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'anthropic/claude-opus-4.8')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'anthropic/claude-opus-4.8-fast')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'anthropic/claude-opus-5')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'anthropic/claude-sonnet-5')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'google/gemini-3.5-flash')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'google/gemini-3.1-flash-lite')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'nvidia/nemotron-3-super-120b-a12b:free')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5.2')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'deepseek/deepseek-v4-pro-0813')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'deepseek/deepseek-v4-flash-0731')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.3')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.5')).toBeNull();
-    expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.20-beta')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.6')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.20')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.1-fast')?.code).toBe('MODEL_NOT_ALLOWED');
+    expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.20-beta')?.code).toBe('MODEL_NOT_ALLOWED');
     expect(ensureModelAllowed('openrouter', 'qwen/qwen3.5-9b')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'qwen/qwen3.5-plus-20260420')).toBeNull();
     expect(ensureModelAllowed('openai', 'gpt-5.4')).toBeNull();
@@ -813,6 +820,35 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(body.model).toBe('google/gemini-3.5-flash');
     expect(body.response_format).toEqual({ type: 'json_object' });
     expect(body.temperature).toBe(0);
+    expect(result.ok).toBe(true);
+  });
+
+  it('omits unsupported sampling parameters for OpenRouter Claude Sonnet 5', async () => {
+    stubDenoEnv({
+      OPENROUTER_API_KEY: 'test-key',
+    });
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        model: 'anthropic/claude-sonnet-5',
+        choices: [{ message: { content: '{"title":"Claude itinerary"}' } }],
+        usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3 },
+      }),
+    );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"claude-openrouter"}',
+      provider: 'openrouter',
+      model: 'anthropic/claude-sonnet-5',
+      timeoutMs: 30_000,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const init = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
+    const body = JSON.parse(String(init.body));
+    expect(body.model).toBe('anthropic/claude-sonnet-5');
+    expect(body.response_format).toEqual({ type: 'json_object' });
+    expect(body).not.toHaveProperty('temperature');
     expect(result.ok).toBe(true);
   });
 

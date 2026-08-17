@@ -78,6 +78,8 @@ export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
     "openai/gpt-5.6-luna",
     "openai/gpt-5.6-luna-pro",
     "openai/gpt-chat-latest",
+    "anthropic/claude-opus-5",
+    "anthropic/claude-sonnet-5",
     "anthropic/claude-opus-4.8",
     "anthropic/claude-opus-4.8-fast",
     "openai/gpt-5.5",
@@ -87,11 +89,13 @@ export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
     "nvidia/nemotron-3-super-120b-a12b:free",
     "z-ai/glm-5",
     "z-ai/glm-5.2",
+    "deepseek/deepseek-v4-pro-0813",
+    "deepseek/deepseek-v4-flash-0731",
     "deepseek/deepseek-v3.2",
     "x-ai/grok-4.3",
     "x-ai/grok-4.5",
-    "x-ai/grok-4.1-fast",
-    "x-ai/grok-4.20-beta",
+    "x-ai/grok-4.6",
+    "x-ai/grok-4.20",
     "minimax/minimax-m2.5",
     "moonshotai/kimi-k2.5",
     "qwen/qwen3.5-9b",
@@ -146,6 +150,9 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MAX_ATTEMPTS = 3;
 const OPENROUTER_RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 const PROVIDER_PARSE_RETRY_MAX_ATTEMPTS = 2;
+const OPENROUTER_MODELS_WITHOUT_TEMPERATURE = new Set([
+  "anthropic/claude-sonnet-5",
+]);
 
 export const readEnv = (name: string): string => {
   try {
@@ -1370,7 +1377,7 @@ const generateWithOpenRouter = async (
           body: JSON.stringify({
             model,
             max_tokens: maxOutputTokens,
-            temperature: 0,
+            ...(OPENROUTER_MODELS_WITHOUT_TEMPERATURE.has(model) ? {} : { temperature: 0 }),
             response_format: { type: "json_object" },
             messages: [
               {

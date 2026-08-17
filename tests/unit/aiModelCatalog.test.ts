@@ -9,6 +9,7 @@ import {
   sortAiModels,
 } from '../../config/aiModelCatalog';
 import { BENCHMARK_DEFAULT_MODEL_IDS } from '../../services/aiBenchmarkPreferencesService';
+import { PROVIDER_ALLOWLIST } from '../../netlify/edge-lib/ai-provider-runtime';
 
 describe('config/aiModelCatalog', () => {
   it('includes latest provider additions and curated openrouter alternatives', () => {
@@ -34,16 +35,22 @@ describe('config/aiModelCatalog', () => {
     expect(modelIds.has('openrouter:openai/gpt-chat-latest')).toBe(true);
     expect(modelIds.has('openrouter:anthropic/claude-opus-4.8')).toBe(true);
     expect(modelIds.has('openrouter:anthropic/claude-opus-4.8-fast')).toBe(true);
+    expect(modelIds.has('openrouter:anthropic/claude-opus-5')).toBe(true);
+    expect(modelIds.has('openrouter:anthropic/claude-sonnet-5')).toBe(true);
     expect(modelIds.has('openrouter:google/gemini-3.5-flash')).toBe(true);
     expect(modelIds.has('openrouter:google/gemini-3.1-flash-lite')).toBe(true);
     expect(modelIds.has('openrouter:nvidia/nemotron-3-super-120b-a12b:free')).toBe(true);
     expect(modelIds.has('openrouter:z-ai/glm-5')).toBe(true);
     expect(modelIds.has('openrouter:z-ai/glm-5.2')).toBe(true);
     expect(modelIds.has('openrouter:deepseek/deepseek-v3.2')).toBe(true);
+    expect(modelIds.has('openrouter:deepseek/deepseek-v4-pro-0813')).toBe(true);
+    expect(modelIds.has('openrouter:deepseek/deepseek-v4-flash-0731')).toBe(true);
     expect(modelIds.has('openrouter:x-ai/grok-4.3')).toBe(true);
     expect(modelIds.has('openrouter:x-ai/grok-4.5')).toBe(true);
-    expect(modelIds.has('openrouter:x-ai/grok-4.1-fast')).toBe(true);
-    expect(modelIds.has('openrouter:x-ai/grok-4.20-beta')).toBe(true);
+    expect(modelIds.has('openrouter:x-ai/grok-4.6')).toBe(true);
+    expect(modelIds.has('openrouter:x-ai/grok-4.20')).toBe(true);
+    expect(modelIds.has('openrouter:x-ai/grok-4.1-fast')).toBe(false);
+    expect(modelIds.has('openrouter:x-ai/grok-4.20-beta')).toBe(false);
     expect(modelIds.has('openrouter:minimax/minimax-m2.5')).toBe(true);
     expect(modelIds.has('openrouter:moonshotai/kimi-k2.5')).toBe(true);
     expect(modelIds.has('openrouter:qwen/qwen3.5-9b')).toBe(true);
@@ -74,6 +81,9 @@ describe('config/aiModelCatalog', () => {
     );
     expect(sorted.findIndex((item) => item.id === 'openrouter:anthropic/claude-opus-4.8')).toBeLessThan(
       sorted.findIndex((item) => item.id === 'anthropic:claude-opus-4.6')
+    );
+    expect(sorted.findIndex((item) => item.id === 'openrouter:anthropic/claude-opus-5')).toBeLessThan(
+      sorted.findIndex((item) => item.id === 'openrouter:anthropic/claude-opus-4.8')
     );
     expect(sorted.find((item) => item.id === 'openrouter:google/gemini-3.5-flash')?.providerLabel).toBe('Google Gemini');
     expect(sorted.find((item) => item.id === 'openrouter:x-ai/grok-4.3')?.providerLabel).toBe('xAI');
@@ -118,9 +128,14 @@ describe('config/aiModelCatalog', () => {
       'openrouter:openai/gpt-5.6-terra-pro',
       'openrouter:openai/gpt-5.6-sol-pro',
       'openrouter:anthropic/claude-opus-4.8',
+      'openrouter:anthropic/claude-opus-5',
+      'openrouter:anthropic/claude-sonnet-5',
       'openrouter:openai/gpt-chat-latest',
       'openrouter:x-ai/grok-4.5',
+      'openrouter:x-ai/grok-4.6',
       'openrouter:z-ai/glm-5.2',
+      'openrouter:deepseek/deepseek-v4-pro-0813',
+      'openrouter:deepseek/deepseek-v4-flash-0731',
       'openrouter:google/gemini-3.5-flash',
       'openrouter:google/gemini-3.1-flash-lite',
       'openrouter:x-ai/grok-4.3',
@@ -138,5 +153,13 @@ describe('config/aiModelCatalog', () => {
     );
 
     expect(BENCHMARK_DEFAULT_MODEL_IDS.every((modelId) => activeIds.has(modelId))).toBe(true);
+  });
+
+  it('keeps active OpenRouter picker models aligned with the server allowlist', () => {
+    const activeOpenRouterModels = AI_MODEL_CATALOG
+      .filter((item) => item.provider === 'openrouter' && item.availability === 'active')
+      .map((item) => item.model);
+
+    expect(activeOpenRouterModels.every((model) => PROVIDER_ALLOWLIST.openrouter.has(model))).toBe(true);
   });
 });

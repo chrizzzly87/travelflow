@@ -128,22 +128,15 @@ describe('services/aiBenchmarkPreferencesService', () => {
 
   it('can merge newly added default targets into an existing saved default preference payload', () => {
     const fallbackPresets = createSystemBenchmarkPresets('2026-05-10', '2026-05-24');
-    const newDefaultTargets = [
-      'openrouter:openai/gpt-5.6-luna-pro',
-      'openrouter:openai/gpt-5.6-terra-pro',
-      'openrouter:openai/gpt-5.6-sol-pro',
-      'openrouter:anthropic/claude-opus-4.8',
-      'openrouter:openai/gpt-chat-latest',
-      'openrouter:openai/gpt-5.6-sol',
-      'openrouter:x-ai/grok-4.5',
-      'openrouter:z-ai/glm-5.2',
-      'openrouter:openai/gpt-5.5',
-      'openrouter:google/gemini-3.5-flash',
-      'openrouter:google/gemini-3.1-flash-lite',
-      'openrouter:x-ai/grok-4.3',
-      'openrouter:qwen/qwen3.5-plus-20260420',
+    const legacyDefaultTargets = [
+      'openai:gpt-5.4',
+      'gemini:gemini-3.1-pro-preview',
+      'gemini:gemini-3-pro-preview',
+      'openai:gpt-5.2-pro',
+      'anthropic:claude-sonnet-4.6',
+      'perplexity:perplexity/sonar',
+      'qwen:qwen/qwen3.5-plus-02-15',
     ];
-    const legacyDefaultTargets = BENCHMARK_DEFAULT_MODEL_IDS.filter((modelId) => !newDefaultTargets.includes(modelId));
     const allowed = new Set(BENCHMARK_DEFAULT_MODEL_IDS);
 
     const payload = normalizeBenchmarkPreferencesPayload(
@@ -156,6 +149,34 @@ describe('services/aiBenchmarkPreferencesService', () => {
         fallbackPresets,
         fallbackModelIds: BENCHMARK_DEFAULT_MODEL_IDS,
         allowedModelIds: allowed,
+        mergeFallbackModelIds: true,
+      },
+    );
+
+    expect(payload.modelTargets).toEqual(BENCHMARK_DEFAULT_MODEL_IDS);
+  });
+
+  it('merges this release model targets into the immediately previous default selection', () => {
+    const fallbackPresets = createSystemBenchmarkPresets('2026-05-10', '2026-05-24');
+    const newDefaultTargets = [
+      'openrouter:anthropic/claude-opus-5',
+      'openrouter:anthropic/claude-sonnet-5',
+      'openrouter:x-ai/grok-4.6',
+      'openrouter:deepseek/deepseek-v4-pro-0813',
+      'openrouter:deepseek/deepseek-v4-flash-0731',
+    ];
+    const previousDefaultTargets = BENCHMARK_DEFAULT_MODEL_IDS.filter((modelId) => !newDefaultTargets.includes(modelId));
+
+    const payload = normalizeBenchmarkPreferencesPayload(
+      {
+        modelTargets: previousDefaultTargets,
+        presets: fallbackPresets,
+        selectedPresetId: fallbackPresets[0]?.id,
+      },
+      {
+        fallbackPresets,
+        fallbackModelIds: BENCHMARK_DEFAULT_MODEL_IDS,
+        allowedModelIds: new Set(BENCHMARK_DEFAULT_MODEL_IDS),
         mergeFallbackModelIds: true,
       },
     );
