@@ -694,9 +694,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         () => selectedTargets.filter((model) => model.supportsReasoning === true),
         [selectedTargets],
     );
-    const canDisableReasoning = reasoningTargets.length > 0 && reasoningTargets.every((model) => (
-        model.reasoningMandatory !== true && model.reasoningEfforts?.includes('none')
-    ));
     const customScenarioDraftParse = useMemo(() => {
         const flowHint = customScenarioMeta?.flow || 'unknown';
         if (!customScenarioJsonDraft.trim()) {
@@ -2460,13 +2457,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="provider-default">Model default</SelectItem>
-                                        {AI_REASONING_EFFORTS.filter((effort) => effort !== 'none' || canDisableReasoning).map((effort) => (
+                                        {AI_REASONING_EFFORTS.map((effort) => (
                                             <SelectItem key={effort} value={effort}>{REASONING_MODE_LABELS[effort]}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                                 <span className="font-normal text-slate-500">
-                                    Applies to {reasoningTargets.length} reasoning model{reasoningTargets.length === 1 ? '' : 's'}; unsupported levels map to the nearest available level.
+                                    Applies to {reasoningTargets.length} reasoning model{reasoningTargets.length === 1 ? '' : 's'}; required reasoning uses the lowest supported level when Off is selected.
                                 </span>
                             </label>
 

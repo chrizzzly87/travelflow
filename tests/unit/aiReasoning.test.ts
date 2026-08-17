@@ -14,7 +14,7 @@ describe('resolveSupportedReasoningEffort', () => {
     expect(resolveSupportedReasoningEffort('low', ['high', 'xhigh'], true)).toBe('high');
   });
 
-  it('does not try to disable mandatory reasoning', () => {
-    expect(resolveSupportedReasoningEffort('none', ['low', 'high'], true)).toBeUndefined();
+  it('uses the lowest available level when mandatory reasoning cannot be disabled', () => {
+    expect(resolveSupportedReasoningEffort('none', ['low', 'high'], true)).toBe('low');
   });
 });

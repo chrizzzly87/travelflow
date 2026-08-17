@@ -26,7 +26,7 @@ export const resolveSupportedReasoningEffort = (
   const allowedEfforts = (supportedEfforts?.length ? supportedEfforts : AI_REASONING_EFFORTS)
     .filter((effort) => !reasoningMandatory || effort !== 'none');
 
-  if (allowedEfforts.length === 0 || (requested === 'none' && reasoningMandatory)) {
+  if (allowedEfforts.length === 0) {
     return undefined;
   }
   if (allowedEfforts.includes(requested)) {
