@@ -9026,6 +9026,9 @@ create index if not exists destination_source_records_slug_idx
   on public.destination_source_records(provider, slug);
 create index if not exists destination_source_records_freshness_idx
   on public.destination_source_records(provider, fetched_at desc);
+create index if not exists destination_source_records_import_run_idx
+  on public.destination_source_records(last_import_run_id)
+  where last_import_run_id is not null;
 create index if not exists destination_source_records_payload_gin_idx
   on public.destination_source_records using gin(payload);
 
@@ -9044,6 +9047,9 @@ create table if not exists public.destination_source_record_versions (
 
 create index if not exists destination_source_record_versions_source_idx
   on public.destination_source_record_versions(source_record_id, fetched_at desc);
+create index if not exists destination_source_record_versions_import_run_idx
+  on public.destination_source_record_versions(import_run_id)
+  where import_run_id is not null;
 
 create table if not exists public.destination_country_profiles (
   country_code text primary key check (char_length(country_code) = 2),
@@ -9107,6 +9113,9 @@ create index if not exists destination_referral_links_source_idx
   on public.destination_referral_links(source_record_id, provider, is_active);
 create index if not exists destination_referral_links_import_idx
   on public.destination_referral_links(source_provider, last_import_run_id);
+create index if not exists destination_referral_links_import_run_idx
+  on public.destination_referral_links(last_import_run_id)
+  where last_import_run_id is not null;
 
 alter table public.destination_import_runs enable row level security;
 alter table public.destination_source_records enable row level security;
