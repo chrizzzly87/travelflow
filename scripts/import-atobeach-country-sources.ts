@@ -51,8 +51,8 @@ const rest = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
     headers: { ...headers, ...init.headers },
   });
   if (!response.ok) throw new Error(`${init.method || 'GET'} ${path}: ${response.status} ${await response.text()}`);
-  if (response.status === 204) return undefined as T;
-  return await response.json() as T;
+  const responseText = await response.text();
+  return responseText ? JSON.parse(responseText) as T : undefined as T;
 };
 
 const canonicalize = (value: unknown): string => {
@@ -92,7 +92,11 @@ try {
   const current = await rest<Array<{ id: string; payload_hash: string }>>(
     'destination_source_records?provider=eq.atobeach&select=id,payload_hash&limit=1000',
   );
+  const currentVersions = await rest<Array<{ source_record_id: string; payload_hash: string }>>(
+    'destination_source_record_versions?select=source_record_id,payload_hash&limit=1000',
+  );
   const currentHashes = new Map(current.map((row) => [row.id, row.payload_hash]));
+  const existingVersions = new Set(currentVersions.map((row) => `${row.source_record_id}:${row.payload_hash}`));
   const normalized: NormalizedAtobeachCountryRecord[] = document.records.map((record) => {
     const result = normalizeAtobeachCountryRecord(record, run.id);
     const sanitizedHash = hashPayload(result.sourceRow.payload);
@@ -107,9 +111,12 @@ try {
 
   await upsertBatches('destination_source_records', changed.map((row) => row.sourceRow), 'id');
   await upsertBatches('destination_source_records', unchanged.map((row) => row.sourceRow), 'id');
+  const missingVersions = normalized.filter((row) => !existingVersions.has(
+    `${row.versionRow.source_record_id}:${row.versionRow.payload_hash}`,
+  ));
   await upsertBatches(
     'destination_source_record_versions',
-    changed.map((row) => row.versionRow),
+    missingVersions.map((row) => row.versionRow),
     'source_record_id,payload_hash',
   );
   await upsertBatches('destination_country_profiles', normalized.map((row) => row.profileRow), 'country_code');
@@ -139,7 +146,7 @@ try {
       },
     }),
   });
-  console.log(JSON.stringify({ importRunId: run.id, records: normalized.length, changed: changed.length, unchanged: unchanged.length, referrals: referralRows.length }));
+  console.log(JSON.stringify({ importRunId: run.id, records: normalized.length, changed: changed.length, unchanged: unchanged.length, versionsAdded: missingVersions.length, referrals: referralRows.length }));
 } catch (error) {
   await rest(`destination_import_runs?id=eq.${run.id}`, {
     method: 'PATCH',
