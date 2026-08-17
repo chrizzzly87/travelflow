@@ -4,6 +4,7 @@ import type {
   DestinationGuideEntry,
   DestinationGuideKind,
 } from '../../shared/destinationGuides.ts';
+import { deepMergeDestinationContent, isPlainObject } from '../../shared/destinationContentOverrides.ts';
 
 const STATIC_DOCUMENT = destinationGuidesJson as DestinationGuideDocument;
 const JSON_HEADERS = {
@@ -35,6 +36,12 @@ interface DestinationCountryProfileRow {
   weather: unknown[];
   exchange_rate: number | null;
   exchange_base: string | null;
+}
+
+interface PublishedOverrideRow {
+  target_kind: 'guide' | 'country_profile';
+  target_id: string;
+  patch: Record<string, unknown>;
 }
 
 const json = (status: number, payload: unknown, extraHeaders: Record<string, string> = {}): Response => (
@@ -79,17 +86,49 @@ export const loadDestinationGuideDocumentFromDatabase = async (): Promise<Destin
   const database = databaseHeaders();
   if (!database) return null;
 
-  const response = await fetch(
-    `${database.supabaseUrl}/rest/v1/destination_guides?select=payload&order=priority_rank.asc.nullslast,name.asc&limit=1000`,
-    { headers: database.headers },
-  );
+  const [response, overrideResponse] = await Promise.all([
+    fetch(
+      `${database.supabaseUrl}/rest/v1/destination_guides?select=payload&order=priority_rank.asc.nullslast,name.asc&limit=1000`,
+      { headers: database.headers },
+    ),
+    fetch(
+      `${database.supabaseUrl}/rest/v1/destination_content_overrides?target_kind=eq.guide&status=eq.published&select=target_id,patch&limit=1000`,
+      { headers: database.headers },
+    ),
+  ]);
   if (!response.ok) return null;
   const rows = await response.json().catch(() => null) as Array<{ payload?: DestinationGuideEntry }> | null;
-  const guides = Array.isArray(rows) ? rows.flatMap((row) => row.payload ? [row.payload] : []) : [];
+  const overrideRows = overrideResponse.ok
+    ? await overrideResponse.json().catch(() => []) as PublishedOverrideRow[]
+    : [];
+  const overrides = new Map(
+    overrideRows
+      .filter((row) => typeof row.target_id === 'string' && isPlainObject(row.patch))
+      .map((row) => [row.target_id, row.patch]),
+  );
+  const guides = Array.isArray(rows) ? rows.flatMap((row) => {
+    if (!row.payload) return [];
+    const patch = overrides.get(row.payload.id);
+    return [patch ? deepMergeDestinationContent(row.payload, patch) : row.payload];
+  }) : [];
   const countryCount = guides.filter((guide) => guide.kind === 'country').length;
   if (countryCount !== STATIC_DOCUMENT.selection.countryCount) return null;
 
   return { ...STATIC_DOCUMENT, guides };
+};
+
+export const loadDestinationCountryProfileOverrideFromDatabase = async (
+  countryCode: string,
+): Promise<Record<string, unknown> | null> => {
+  const database = databaseHeaders();
+  if (!database) return null;
+  const response = await fetch(
+    `${database.supabaseUrl}/rest/v1/destination_content_overrides?target_kind=eq.country_profile&target_id=eq.${encodeURIComponent(countryCode)}&status=eq.published&select=patch&limit=1`,
+    { headers: database.headers },
+  );
+  if (!response.ok) return null;
+  const rows = await response.json().catch(() => null) as Array<{ patch?: unknown }> | null;
+  return Array.isArray(rows) && isPlainObject(rows[0]?.patch) ? rows[0].patch : null;
 };
 
 export const loadDestinationCountryProfileFromDatabase = async (
@@ -183,7 +222,13 @@ export default async (request: Request): Promise<Response> => {
   const country = resolveCountry(document, segments[0]);
   if (!country) return json(404, { ok: false, error: 'Destination country not found' });
   const children = document.guides.filter((guide) => guide.parentSlug === country.slug);
-  const countryProfile = await loadDestinationCountryProfileFromDatabase(country.countryCode).catch(() => null);
+  const [countryProfile, countryProfileOverride] = await Promise.all([
+    loadDestinationCountryProfileFromDatabase(country.countryCode).catch(() => null),
+    loadDestinationCountryProfileOverrideFromDatabase(country.countryCode).catch(() => null),
+  ]);
+  const serializedProfile = countryProfile
+    ? deepMergeDestinationContent(serializeCountryProfile(countryProfile), countryProfileOverride || {})
+    : null;
   const includeProfile = url.searchParams.get('include')?.split(',').includes('source-profile') || false;
 
   if (segments.length === 1) {
@@ -192,7 +237,7 @@ export default async (request: Request): Promise<Response> => {
         ...country,
         children,
         provenance: countryProfile ? serializeProvenance(countryProfile) : null,
-        ...(includeProfile && countryProfile ? { sourceProfile: serializeCountryProfile(countryProfile) } : {}),
+        ...(includeProfile && serializedProfile ? { sourceProfile: serializedProfile } : {}),
       },
       meta: { ...meta, inheritedFrom: null },
     });
@@ -208,13 +253,14 @@ export default async (request: Request): Promise<Response> => {
       seasonality: child.seasonality || country.seasonality,
       events: child.events.length > 0 ? child.events : country.events,
       provenance: countryProfile ? serializeProvenance(countryProfile) : null,
-      ...(includeProfile && countryProfile ? { sourceProfile: serializeCountryProfile(countryProfile) } : {}),
+      ...(includeProfile && serializedProfile ? { sourceProfile: serializedProfile } : {}),
     },
     meta: { ...meta, inheritedFrom: country.id },
   });
 };
 
 export const __destinationEndpointInternals = {
+  deepMergeDestinationContent,
   normalizeSlug,
   parseKind,
   parseLimit,

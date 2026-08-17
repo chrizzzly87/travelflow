@@ -9117,11 +9117,29 @@ create index if not exists destination_referral_links_import_run_idx
   on public.destination_referral_links(last_import_run_id)
   where last_import_run_id is not null;
 
+create table if not exists public.destination_content_overrides (
+  id uuid primary key default gen_random_uuid(),
+  target_kind text not null check (target_kind in ('guide', 'country_profile')),
+  target_id text not null,
+  status text not null default 'draft' check (status in ('draft', 'published')),
+  patch jsonb not null default '{}'::jsonb check (jsonb_typeof(patch) = 'object'),
+  note text,
+  created_by uuid references auth.users(id) on delete set null,
+  updated_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (target_kind, target_id)
+);
+
+create index if not exists destination_content_overrides_status_target_idx
+  on public.destination_content_overrides(status, target_kind, target_id);
+
 alter table public.destination_import_runs enable row level security;
 alter table public.destination_source_records enable row level security;
 alter table public.destination_source_record_versions enable row level security;
 alter table public.destination_country_profiles enable row level security;
 alter table public.destination_referral_links enable row level security;
+alter table public.destination_content_overrides enable row level security;
 
 drop policy if exists "Public destination country profiles are readable" on public.destination_country_profiles;
 create policy "Public destination country profiles are readable"
@@ -9130,6 +9148,10 @@ create policy "Public destination country profiles are readable"
 drop policy if exists "Public destination referral attribution is readable" on public.destination_referral_links;
 create policy "Public destination referral attribution is readable"
   on public.destination_referral_links for select using (true);
+
+drop policy if exists "Published destination overrides are readable" on public.destination_content_overrides;
+create policy "Published destination overrides are readable"
+  on public.destination_content_overrides for select using (status = 'published');
 
 revoke all on public.destination_import_runs from public, anon, authenticated;
 revoke all on public.destination_source_records from public, anon, authenticated;
@@ -9141,5 +9163,8 @@ grant select on public.destination_country_profiles to anon, authenticated;
 grant all on public.destination_country_profiles to service_role;
 grant select on public.destination_referral_links to anon, authenticated;
 grant all on public.destination_referral_links to service_role;
+revoke all on public.destination_content_overrides from public, anon, authenticated;
+grant select on public.destination_content_overrides to anon, authenticated;
+grant all on public.destination_content_overrides to service_role;
 grant usage, select on sequence public.destination_source_record_versions_id_seq to service_role;
 grant usage, select on sequence public.destination_referral_links_id_seq to service_role;

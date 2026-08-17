@@ -88,4 +88,16 @@ describe('GET /api/destinations', () => {
     });
     expect(profile).not.toHaveProperty('payload');
   });
+
+  it('deep-merges published content without changing stable identity fields', () => {
+    const merged = __destinationEndpointInternals.deepMergeDestinationContent(
+      { id: 'country:thailand', summary: 'Base', facts: { currency: 'THB', timezone: 'Asia/Bangkok' } },
+      { summary: 'Edited', facts: { timezone: 'Asia/Phuket' } },
+    );
+    expect(merged).toEqual({
+      id: 'country:thailand',
+      summary: 'Edited',
+      facts: { currency: 'THB', timezone: 'Asia/Phuket' },
+    });
+  });
 });
