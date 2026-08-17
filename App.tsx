@@ -53,6 +53,7 @@ import { enqueueTripCommitAndSync } from './services/tripSyncManager';
 import { GlobalConnectivityBadge } from './components/GlobalConnectivityBadge';
 import { normalizeTransportMode } from './shared/transportModes';
 import { showAppToast } from './components/ui/appToast';
+import { loadPublicAiRuntimeSettings } from './services/aiRuntimeSettingsService';
 import { getTripGenerationState } from './services/tripGenerationDiagnosticsService';
 import {
     buildTripCommitFingerprint,
@@ -372,6 +373,10 @@ const AppContent: React.FC = () => {
     useRuntimeLocationBootstrap();
     useAnalyticsBootstrap();
     useTripsPrunedNoticeBootstrap();
+
+    useEffect(() => {
+        void loadPublicAiRuntimeSettings();
+    }, []);
 
     useEffect(() => {
         if (isAuthLoading) return;

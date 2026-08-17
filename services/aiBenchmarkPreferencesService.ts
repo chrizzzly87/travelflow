@@ -45,6 +45,9 @@ export const BENCHMARK_DEFAULT_MODEL_IDS = [
     'openrouter:x-ai/grok-4.6',
     'openrouter:deepseek/deepseek-v4-pro-0813',
     'openrouter:deepseek/deepseek-v4-flash-0731',
+    'openrouter:google/gemini-3.7-flash',
+    'openrouter:google/gemini-3.5-flash-lite',
+    'openrouter:moonshotai/kimi-k3',
     'openrouter:openai/gpt-5.6-luna-pro',
     'openrouter:openai/gpt-5.6-terra-pro',
     'openrouter:openai/gpt-5.6-sol-pro',
@@ -68,11 +71,19 @@ export const BENCHMARK_DEFAULT_MODEL_IDS = [
 
 const BENCHMARK_PREVIOUS_DEFAULT_MODEL_ID_SETS = [
     BENCHMARK_DEFAULT_MODEL_IDS.filter((modelId) => ![
+        'openrouter:google/gemini-3.7-flash',
+        'openrouter:google/gemini-3.5-flash-lite',
+        'openrouter:moonshotai/kimi-k3',
+    ].includes(modelId)),
+    BENCHMARK_DEFAULT_MODEL_IDS.filter((modelId) => ![
         'openrouter:anthropic/claude-opus-5',
         'openrouter:anthropic/claude-sonnet-5',
         'openrouter:x-ai/grok-4.6',
         'openrouter:deepseek/deepseek-v4-pro-0813',
         'openrouter:deepseek/deepseek-v4-flash-0731',
+        'openrouter:google/gemini-3.7-flash',
+        'openrouter:google/gemini-3.5-flash-lite',
+        'openrouter:moonshotai/kimi-k3',
     ].includes(modelId)),
     [
         'openai:gpt-5.4',
@@ -252,6 +263,8 @@ export const normalizeModelTargetIds = (
     const filtered = options?.allowedModelIds
         ? deduped.filter((entry) => options.allowedModelIds?.has(entry))
         : deduped;
+
+    if (Array.isArray(value) && value.length === 0) return [];
 
     const fallback = options?.fallbackModelIds?.filter(Boolean) || BENCHMARK_DEFAULT_MODEL_IDS;
     const allowedFallback = options?.allowedModelIds

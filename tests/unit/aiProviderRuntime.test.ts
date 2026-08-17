@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ensureModelAllowed,
+  ensureModelAllowedForGeneration,
   generateProviderItinerary,
 } from '../../netlify/edge-lib/ai-provider-runtime.ts';
 
@@ -70,10 +71,14 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('openrouter', 'anthropic/claude-opus-5')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'anthropic/claude-sonnet-5')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'google/gemini-3.5-flash')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'google/gemini-3.7-flash')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'google/gemini-3.6-flash')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'google/gemini-3.5-flash-lite')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'google/gemini-3.1-flash-lite')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'nvidia/nemotron-3-super-120b-a12b:free')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5.2')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'moonshotai/kimi-k3')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'deepseek/deepseek-v4-pro-0813')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'deepseek/deepseek-v4-flash-0731')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.3')).toBeNull();
@@ -91,6 +96,20 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('qwen', 'qwen/qwen-3.5-plus')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'missing-model')?.code).toBe('MODEL_NOT_ALLOWED');
     expect(ensureModelAllowed('unknown-provider', 'x')?.code).toBe('PROVIDER_NOT_SUPPORTED');
+  });
+
+  it('allows an admin-approved live OpenRouter model without weakening other providers', async () => {
+    stubDenoEnv({
+      VITE_SUPABASE_URL: 'https://travelflow.supabase.co',
+      VITE_SUPABASE_ANON_KEY: 'anon-key',
+    });
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse([{ ai_approved_openrouter_models: ['future/model-v1'] }]))
+      .mockResolvedValueOnce(jsonResponse([{ ai_approved_openrouter_models: ['future/model-v1'] }]));
+
+    expect(await ensureModelAllowedForGeneration('openrouter', 'future/model-v1')).toBeNull();
+    expect((await ensureModelAllowedForGeneration('openrouter', 'future/unapproved'))?.code).toBe('MODEL_NOT_ALLOWED');
+    expect((await ensureModelAllowedForGeneration('openai', 'future/model-v1'))?.code).toBe('MODEL_NOT_ALLOWED');
   });
 
   it('maps anthropic sonnet 4.6 to provider model id', async () => {
@@ -819,6 +838,7 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     const body = JSON.parse(String(init.body));
     expect(body.model).toBe('google/gemini-3.5-flash');
     expect(body.response_format).toEqual({ type: 'json_object' });
+    expect(body.provider).toEqual({ require_parameters: true });
     expect(body.temperature).toBe(0);
     expect(result.ok).toBe(true);
   });
@@ -848,6 +868,7 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     const body = JSON.parse(String(init.body));
     expect(body.model).toBe('anthropic/claude-sonnet-5');
     expect(body.response_format).toEqual({ type: 'json_object' });
+    expect(body.provider).toEqual({ require_parameters: true });
     expect(body).not.toHaveProperty('temperature');
     expect(result.ok).toBe(true);
   });

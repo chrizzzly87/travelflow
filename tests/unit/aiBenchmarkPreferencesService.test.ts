@@ -126,6 +126,16 @@ describe('services/aiBenchmarkPreferencesService', () => {
     expect(payload.presets).toEqual(fallbackPresets);
   });
 
+  it('preserves an explicit empty target list for the remove-all action', () => {
+    const fallbackPresets = createSystemBenchmarkPresets('2026-05-10', '2026-05-24');
+    const payload = normalizeBenchmarkPreferencesPayload(
+      { modelTargets: [], presets: fallbackPresets, selectedPresetId: fallbackPresets[0]?.id },
+      { fallbackPresets, fallbackModelIds: BENCHMARK_DEFAULT_MODEL_IDS },
+    );
+
+    expect(payload.modelTargets).toEqual([]);
+  });
+
   it('can merge newly added default targets into an existing saved default preference payload', () => {
     const fallbackPresets = createSystemBenchmarkPresets('2026-05-10', '2026-05-24');
     const legacyDefaultTargets = [
@@ -164,6 +174,9 @@ describe('services/aiBenchmarkPreferencesService', () => {
       'openrouter:x-ai/grok-4.6',
       'openrouter:deepseek/deepseek-v4-pro-0813',
       'openrouter:deepseek/deepseek-v4-flash-0731',
+      'openrouter:google/gemini-3.7-flash',
+      'openrouter:google/gemini-3.5-flash-lite',
+      'openrouter:moonshotai/kimi-k3',
     ];
     const previousDefaultTargets = BENCHMARK_DEFAULT_MODEL_IDS.filter((modelId) => !newDefaultTargets.includes(modelId));
 

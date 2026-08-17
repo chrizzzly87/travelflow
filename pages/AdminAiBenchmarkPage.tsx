@@ -17,6 +17,7 @@ import {
     Play,
     ToggleLeft,
     ToggleRight,
+    Funnel,
 } from '@phosphor-icons/react';
 import Prism from 'prismjs';
 if (typeof window !== 'undefined') {
@@ -26,8 +27,9 @@ import 'prismjs/components/prism-json';
 import {
     AI_MODEL_CATALOG,
     getDefaultCreateTripModel,
-    groupAiModelsByProvider,
+    registerRuntimeAiModels,
     sortAiModels,
+    type AiModelCatalogItem,
 } from '../config/aiModelCatalog';
 import { getAiProviderMetadata, getAiProviderSortOrder } from '../config/aiProviderCatalog';
 import { type GenerateOptions } from '../services/aiService';
@@ -60,6 +62,18 @@ import { AdminShell } from '../components/admin/AdminShell';
 import { AiProviderLogo } from '../components/admin/AiProviderLogo';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { AppModal } from '../components/ui/app-modal';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import {
+    Card,
+    CardAction,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { Switch } from '../components/ui/switch';
 import {
     Select,
     SelectContent,
@@ -68,6 +82,15 @@ import {
     SelectValue,
 } from '../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import {
+    isAiModelOlderThanMonths,
+    mergeAiModelCatalogs,
+    type OpenRouterCatalogModel,
+} from '../services/openRouterModelCatalogService';
+import {
+    applyAiRuntimeSettings,
+    type AiRuntimeSettings,
+} from '../services/aiRuntimeSettingsService';
 
 interface BenchmarkSession {
     id: string;
@@ -169,6 +192,11 @@ interface AiTelemetryApiResponse {
 interface BenchmarkPreferencesApiResponse extends BenchmarkApiResponse {
     preferences?: BenchmarkPreferencesPayload;
     updatedAt?: string | null;
+}
+
+interface BenchmarkModelsApiResponse extends BenchmarkApiResponse {
+    models?: OpenRouterCatalogModel[];
+    settings?: AiRuntimeSettings;
 }
 
 interface PresetEditorDraft {
@@ -497,6 +525,19 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [compactBenchmarkOutput, setCompactBenchmarkOutput] = useState(true);
 
     const [modelFilter, setModelFilter] = useState('');
+    const [modelProviderFilter, setModelProviderFilter] = useState('all');
+    const [modelCapabilityFilter, setModelCapabilityFilter] = useState('all');
+    const [modelPriceFilter, setModelPriceFilter] = useState('all');
+    const [liveOpenRouterModels, setLiveOpenRouterModels] = useState<OpenRouterCatalogModel[]>([]);
+    const [aiRuntimeSettings, setAiRuntimeSettings] = useState<AiRuntimeSettings>({
+        defaultModelId: getDefaultCreateTripModel().id,
+        approvedOpenRouterModels: [],
+        modelMaxAgeMonths: 6,
+        showOlderModels: false,
+        updatedAt: null,
+    });
+    const [modelCatalogLoading, setModelCatalogLoading] = useState(false);
+    const [modelCatalogLoaded, setModelCatalogLoaded] = useState(false);
     const [modelTargetIds, setModelTargetIds] = useState<string[]>(() => {
         const defaults = BENCHMARK_DEFAULT_MODEL_IDS.filter((modelId) =>
             AI_MODEL_CATALOG.some((entry) => entry.id === modelId && entry.availability === 'active')
@@ -553,7 +594,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const handledImportTokenRef = useRef<string | null>(null);
     const pendingImportedScenarioRef = useRef<ReturnType<typeof decodeBenchmarkScenarioImportPayload> | null>(null);
 
-    const sortedModels = useMemo(() => sortAiModels(AI_MODEL_CATALOG), []);
+    const sortedModels = useMemo(
+        () => sortAiModels(mergeAiModelCatalogs(AI_MODEL_CATALOG, liveOpenRouterModels)),
+        [liveOpenRouterModels],
+    );
     const activeModelIdSet = useMemo(
         () => new Set(sortedModels.flatMap((model) => (model.availability === 'active' ? [model.id] : []))),
         [sortedModels],
@@ -570,30 +614,53 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, [activeModelIdSet]);
 
     const filteredModels = useMemo(() => {
-        const activeModels = sortedModels.filter((model) => model.availability === 'active');
-        if (!modelFilter.trim()) return activeModels;
         const token = modelFilter.trim().toLocaleLowerCase();
-        return activeModels.filter((model) => {
+        return sortedModels.filter((model) => {
+            if (model.availability !== 'active') return false;
+            if (!aiRuntimeSettings.showOlderModels && isAiModelOlderThanMonths(model, aiRuntimeSettings.modelMaxAgeMonths)) return false;
+            if (modelProviderFilter !== 'all' && model.providerLabel !== modelProviderFilter) return false;
+            if (modelCapabilityFilter === 'structured' && model.supportsStructuredOutput !== true) return false;
+            if (modelCapabilityFilter === 'tools' && model.supportsTools !== true) return false;
+            if (modelCapabilityFilter === 'reasoning' && model.supportsReasoning !== true) return false;
+            if (modelPriceFilter === 'free' && model.isFree !== true) return false;
+            if (modelPriceFilter === 'budget' && (model.outputPricePerMillion === null || model.outputPricePerMillion === undefined || model.outputPricePerMillion > 5)) return false;
+            if (modelPriceFilter === 'premium' && (model.outputPricePerMillion === null || model.outputPricePerMillion === undefined || model.outputPricePerMillion <= 5)) return false;
+            if (!token) return true;
             return (
                 model.providerLabel.toLocaleLowerCase().includes(token)
                 || model.label.toLocaleLowerCase().includes(token)
                 || model.model.toLocaleLowerCase().includes(token)
             );
         });
-    }, [modelFilter, sortedModels]);
+    }, [
+        aiRuntimeSettings.modelMaxAgeMonths,
+        aiRuntimeSettings.showOlderModels,
+        modelCapabilityFilter,
+        modelFilter,
+        modelPriceFilter,
+        modelProviderFilter,
+        sortedModels,
+    ]);
 
-    const groupedModels = useMemo(() => groupAiModelsByProvider(filteredModels), [filteredModels]);
+    const groupedModels = useMemo(() => filteredModels.reduce<Record<string, AiModelCatalogItem[]>>((groups, model) => {
+        (groups[model.providerLabel] ||= []).push(model);
+        return groups;
+    }, {}), [filteredModels]);
+    const modelProviderOptions = useMemo(
+        () => Array.from(new Set(sortedModels.map((model) => model.providerLabel))).sort((left, right) => left.localeCompare(right)),
+        [sortedModels],
+    );
 
     const selectedTargets = useMemo(() => {
         const seen = new Set<string>();
         return modelTargetIds.flatMap((modelId) => {
-            const model = AI_MODEL_CATALOG.find((entry) => entry.id === modelId);
+            const model = sortedModels.find((entry) => entry.id === modelId);
             if (!model || model.availability !== 'active') return [];
             if (seen.has(model.id)) return [];
             seen.add(model.id);
             return [model];
         });
-    }, [modelTargetIds]);
+    }, [modelTargetIds, sortedModels]);
     const selectedTargetIdSet = useMemo(() => new Set(selectedTargets.map((target) => target.id)), [selectedTargets]);
     const inactiveTargetIdSet = useMemo(() => new Set(inactiveModelTargetIds), [inactiveModelTargetIds]);
     const runnableTargets = useMemo(
@@ -1005,6 +1072,39 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         return payload;
     }, [accessToken]);
 
+    const loadModelCatalog = useCallback(async (options?: { silent?: boolean }) => {
+        if (!accessToken) return;
+        setModelCatalogLoading(true);
+        try {
+            const payload = await fetchBenchmarkApi('/api/internal/ai/benchmark/models', { method: 'GET' }) as BenchmarkModelsApiResponse;
+            const models = Array.isArray(payload.models) ? payload.models : [];
+            setLiveOpenRouterModels(models);
+            registerRuntimeAiModels(models);
+            if (payload.settings) {
+                setAiRuntimeSettings(payload.settings);
+                applyAiRuntimeSettings(payload.settings, models);
+            }
+            if (!options?.silent) {
+                setMessage(`OpenRouter catalog refreshed: ${models.length} compatible models available.`);
+            }
+        } catch (catalogError) {
+            if (!options?.silent) {
+                setError(catalogError instanceof Error ? catalogError.message : 'Could not refresh the OpenRouter model catalog.');
+            }
+        } finally {
+            setModelCatalogLoading(false);
+            setModelCatalogLoaded(true);
+        }
+    }, [accessToken, fetchBenchmarkApi]);
+
+    useEffect(() => {
+        if (!accessToken) {
+            setModelCatalogLoaded(false);
+            return;
+        }
+        void loadModelCatalog({ silent: true });
+    }, [accessToken, loadModelCatalog]);
+
     useEffect(() => {
         const encodedImport = (searchParams.get('import') || '').trim();
         if (!encodedImport) return;
@@ -1113,10 +1213,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, [accessToken, applyMaskScenario, fetchBenchmarkApi, normalizePreferencesForClient]);
 
     useEffect(() => {
-        if (!accessToken) return;
+        if (!accessToken || !modelCatalogLoaded) return;
         setPreferencesLoaded(false);
         void loadPreferences();
-    }, [accessToken, loadPreferences]);
+    }, [accessToken, loadPreferences, modelCatalogLoaded]);
 
     useEffect(() => {
         if (preferencesLoaded) return;
@@ -1756,9 +1856,35 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
     const openModelPicker = useCallback(() => {
         setModelFilter('');
+        setModelProviderFilter('all');
+        setModelCapabilityFilter('all');
+        setModelPriceFilter('all');
         setModelDraftIds(modelTargetIds);
         setModelModalOpen(true);
     }, [modelTargetIds]);
+
+    const persistAiRuntimeSettings = useCallback(async (
+        overrides: Partial<Pick<AiRuntimeSettings, 'defaultModelId' | 'approvedOpenRouterModels' | 'modelMaxAgeMonths' | 'showOlderModels'>>,
+        options?: { silent?: boolean },
+    ): Promise<AiRuntimeSettings | null> => {
+        try {
+            const draft: AiRuntimeSettings = { ...aiRuntimeSettings, ...overrides };
+            const payload = await fetchBenchmarkApi('/api/internal/ai/benchmark/models', {
+                method: 'POST',
+                body: JSON.stringify(draft),
+            }) as BenchmarkModelsApiResponse;
+            const models = Array.isArray(payload.models) ? payload.models : liveOpenRouterModels;
+            const settings = payload.settings || draft;
+            setLiveOpenRouterModels(models);
+            setAiRuntimeSettings(settings);
+            applyAiRuntimeSettings(settings, models);
+            if (!options?.silent) setMessage('Frontend AI model settings saved.');
+            return settings;
+        } catch (settingsError) {
+            setError(settingsError instanceof Error ? settingsError.message : 'Could not save frontend AI model settings.');
+            return null;
+        }
+    }, [aiRuntimeSettings, fetchBenchmarkApi, liveOpenRouterModels]);
 
     const toggleModelDraft = useCallback((modelId: string) => {
         setModelDraftIds((current) => {
@@ -1787,28 +1913,52 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             presets: presetConfigs,
             selectedPresetId,
         });
-        if (normalized.modelTargets.length === 0) {
-            setError('Select at least one model target.');
-            return;
-        }
+        const liveModelIdSet = new Set(liveOpenRouterModels.map((model) => model.id));
+        const newlyApproved = normalized.modelTargets.flatMap((modelId) => (
+            liveModelIdSet.has(modelId) ? [modelId.slice('openrouter:'.length)] : []
+        ));
+        await persistAiRuntimeSettings({
+            approvedOpenRouterModels: Array.from(new Set([
+                ...aiRuntimeSettings.approvedOpenRouterModels,
+                ...newlyApproved,
+            ])),
+        }, { silent: true });
         setModelTargetIds(normalized.modelTargets);
         setInactiveModelTargetIds((current) => pruneInactiveBenchmarkTargetIds(current, normalized.modelTargets));
         setModelModalOpen(false);
         await savePreferences({
             modelTargets: normalized.modelTargets,
         }, { silent: true });
-    }, [modelDraftIds, normalizePreferencesForClient, presetConfigs, savePreferences, selectedPresetId]);
+    }, [
+        aiRuntimeSettings.approvedOpenRouterModels,
+        liveOpenRouterModels,
+        modelDraftIds,
+        normalizePreferencesForClient,
+        persistAiRuntimeSettings,
+        presetConfigs,
+        savePreferences,
+        selectedPresetId,
+    ]);
 
     const removeModelTarget = useCallback(async (modelId: string) => {
         const next = modelTargetIds.filter((entry) => entry !== modelId);
-        if (next.length === 0) {
-            setError('At least one model target is required.');
-            return;
-        }
         setModelTargetIds(next);
         setInactiveModelTargetIds((current) => current.filter((entry) => entry !== modelId));
         await savePreferences({ modelTargets: next }, { silent: true });
     }, [modelTargetIds, savePreferences]);
+
+    const removeAllModelTargets = useCallback(async () => {
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
+            title: 'Remove all benchmark models?',
+            message: 'This clears the selected benchmark model list. You can add models again at any time.',
+            confirmLabel: 'Remove all',
+        }));
+        if (!confirmed) return;
+        setModelTargetIds([]);
+        setInactiveModelTargetIds([]);
+        await savePreferences({ modelTargets: [] }, { silent: true });
+        setMessage('All benchmark models removed.');
+    }, [confirmDialog, savePreferences]);
 
     const handlePresetSelection = useCallback(async (presetId: string) => {
         if (presetId === CUSTOM_JSON_PRESET_ID) {
@@ -2276,46 +2426,66 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             </label>
                         </div>
 
-                        <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                                <div className="space-y-0.5">
-                                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Model targets</div>
-                                    <div className="text-[11px] text-slate-500">{runnableTargets.length} active / {selectedTargets.length} selected</div>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                    <button
-                                        type="button"
-                                        onClick={activateAllModelTargets}
-                                        disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsActive}
-                                        className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                        <ToggleRight size={12} />
-                                        Activate all
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={deactivateAllModelTargets}
-                                        disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsInactive}
-                                        className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                        <ToggleLeft size={12} />
-                                        Deactivate all
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={openModelPicker}
-                                        disabled={loading || cancelling || hasPendingRuns}
-                                        className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                        <Plus size={14} />
+                        <Card className="mt-4 gap-4 border-slate-200 py-4 shadow-sm">
+                            <CardHeader className="gap-1 px-4 md:px-5">
+                                <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+                                    Model workspace
+                                    <Badge variant="secondary">{runnableTargets.length} active</Badge>
+                                    <Badge variant="outline">{selectedTargets.length} selected</Badge>
+                                </CardTitle>
+                                <CardDescription>Benchmark targets and the model used by the public trip creator.</CardDescription>
+                                <CardAction>
+                                    <Button type="button" onClick={openModelPicker} disabled={loading || cancelling || hasPendingRuns} size="sm">
+                                        <Plus data-icon="inline-start" />
                                         Add models
-                                    </button>
+                                    </Button>
+                                </CardAction>
+                            </CardHeader>
+                            <CardContent className="flex flex-col gap-4 px-4 md:px-5">
+                                <div className="grid gap-3 rounded-lg bg-slate-50 p-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+                                    <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-slate-700">
+                                        Frontend default model
+                                        <Select
+                                            value={aiRuntimeSettings.defaultModelId}
+                                            onValueChange={(value) => void persistAiRuntimeSettings({
+                                                defaultModelId: value,
+                                                approvedOpenRouterModels: Array.from(new Set([
+                                                    ...aiRuntimeSettings.approvedOpenRouterModels,
+                                                    ...(value.startsWith('openrouter:') ? [value.slice('openrouter:'.length)] : []),
+                                                ])),
+                                            })}
+                                        >
+                                            <SelectTrigger aria-label="Frontend default model" className="bg-white">
+                                                <SelectValue placeholder="Choose the frontend model" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {sortedModels.filter((model) => model.availability === 'active').map((model) => (
+                                                    <SelectItem key={model.id} value={model.id}>{model.providerShortName} · {model.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </label>
+                                    <div className="flex flex-wrap items-end gap-2">
+                                        <Button type="button" variant="outline" size="sm" onClick={activateAllModelTargets} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsActive}>
+                                            <ToggleRight data-icon="inline-start" />
+                                            Activate all
+                                        </Button>
+                                        <Button type="button" variant="outline" size="sm" onClick={deactivateAllModelTargets} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsInactive}>
+                                            <ToggleLeft data-icon="inline-start" />
+                                            Deactivate all
+                                        </Button>
+                                        <Button type="button" variant="destructive" size="sm" onClick={() => void removeAllModelTargets()} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0}>
+                                            <Trash data-icon="inline-start" />
+                                            Remove all
+                                        </Button>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="mt-2 flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-2">
                                 {selectedTargets.length === 0 && (
-                                    <div className="text-xs text-slate-500">No model target selected.</div>
+                                    <div className="rounded-lg border border-dashed border-slate-300 px-3 py-6 text-center text-xs text-slate-500">
+                                        No benchmark models selected. Use Add models to build a fresh comparison set.
+                                    </div>
                                 )}
                                 {selectedTargets.map((model) => {
                                     const isActive = !inactiveTargetIdSet.has(model.id);
@@ -2342,10 +2512,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 logoSize={12}
                                             />
                                             <span className={`font-semibold ${isActive ? '' : 'line-through'}`}>{model.label}</span>
-                                            {model.isCurrentRuntime && (
-                                                <span className="rounded-full border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">
-                                                    Frontend current
-                                                </span>
+                                            {aiRuntimeSettings.defaultModelId === model.id && (
+                                                <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">Frontend default</Badge>
                                             )}
                                             <button
                                                 type="button"
@@ -2376,7 +2544,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={() => void removeModelTarget(model.id)}
-                                                disabled={loading || cancelling || hasPendingRuns || selectedTargets.length <= 1}
+                                                disabled={loading || cancelling || hasPendingRuns}
                                                 className="rounded-full p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                                                 aria-label={`Remove ${model.label}`}
                                                 title={`Remove ${model.label}`}
@@ -2386,8 +2554,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         </span>
                                     );
                                 })}
-                            </div>
-                        </div>
+                                </div>
+                            </CardContent>
+                        </Card>
 
                         <div className="mt-2 text-[11px] text-slate-500">
                             {COST_ESTIMATE_FOOTNOTE}
@@ -2794,32 +2963,60 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     mobileSheet={false}
                     footer={(
                         <div className="flex items-center justify-end gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setModelModalOpen(false)}
-                                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => void saveModelDraft()}
-                                className="rounded-md bg-accent-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-700"
-                            >
-                                Save models
-                            </button>
+                            <Button type="button" variant="outline" size="sm" onClick={() => setModelModalOpen(false)}>Cancel</Button>
+                            <Button type="button" size="sm" onClick={() => void saveModelDraft()}>Save {modelDraftIds.length} models</Button>
                         </div>
                     )}
                 >
-                    <div className="space-y-3">
-	                        <input
-	                            aria-label="Search provider, label, or model id"
-	                            value={modelFilter}
-                            onChange={(event) => setModelFilter(event.target.value)}
-                            placeholder="Search provider, label, or model id"
-                            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
-                        />
+                    <div className="space-y-4">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                                <div className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700"><Funnel size={15} /> Catalog filters</div>
+                                <Button type="button" variant="ghost" size="sm" onClick={() => void loadModelCatalog()} disabled={modelCatalogLoading}>
+                                    <ArrowClockwise className={modelCatalogLoading ? 'animate-spin' : ''} data-icon="inline-start" /> Refresh OpenRouter
+                                </Button>
+                            </div>
+                            <Input aria-label="Search provider, label, or model id" value={modelFilter} onChange={(event) => setModelFilter(event.target.value)} placeholder="Search provider, model, or exact OpenRouter ID" />
+                            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                                <Select value={modelProviderFilter} onValueChange={setModelProviderFilter}>
+                                    <SelectTrigger aria-label="Filter model provider"><SelectValue placeholder="All providers" /></SelectTrigger>
+                                    <SelectContent><SelectItem value="all">All providers</SelectItem>{modelProviderOptions.map((provider) => <SelectItem key={provider} value={provider}>{provider}</SelectItem>)}</SelectContent>
+                                </Select>
+                                <Select value={modelCapabilityFilter} onValueChange={setModelCapabilityFilter}>
+                                    <SelectTrigger aria-label="Filter model capability"><SelectValue placeholder="All capabilities" /></SelectTrigger>
+                                    <SelectContent><SelectItem value="all">All capabilities</SelectItem><SelectItem value="structured">Structured output</SelectItem><SelectItem value="tools">Tool support</SelectItem><SelectItem value="reasoning">Reasoning</SelectItem></SelectContent>
+                                </Select>
+                                <Select value={modelPriceFilter} onValueChange={setModelPriceFilter}>
+                                    <SelectTrigger aria-label="Filter model price"><SelectValue placeholder="Any price" /></SelectTrigger>
+                                    <SelectContent><SelectItem value="all">Any price</SelectItem><SelectItem value="free">Free</SelectItem><SelectItem value="budget">Budget (≤ $5/M output)</SelectItem><SelectItem value="premium">Premium (&gt; $5/M output)</SelectItem></SelectContent>
+                                </Select>
+                            </div>
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-3">
+                                <label className="flex items-center gap-2 text-xs font-medium text-slate-700">
+                                    Newer than
+                                    <Select value={String(aiRuntimeSettings.modelMaxAgeMonths)} onValueChange={(value) => {
+                                        const modelMaxAgeMonths = Number(value);
+                                        setAiRuntimeSettings((current) => ({ ...current, modelMaxAgeMonths }));
+                                        void persistAiRuntimeSettings({ modelMaxAgeMonths }, { silent: true });
+                                    }}>
+                                        <SelectTrigger aria-label="Model age threshold" className="h-8 w-[110px]"><SelectValue /></SelectTrigger>
+                                        <SelectContent>{[3, 6, 12, 24].map((months) => <SelectItem key={months} value={String(months)}>{months} months</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </label>
+                                <label className="flex items-center gap-2 text-xs font-medium text-slate-700">
+                                    <Switch checked={aiRuntimeSettings.showOlderModels} onCheckedChange={(showOlderModels) => {
+                                        setAiRuntimeSettings((current) => ({ ...current, showOlderModels }));
+                                        void persistAiRuntimeSettings({ showOlderModels }, { silent: true });
+                                    }} aria-label="Show older models" />
+                                    Show older models
+                                </label>
+                                <span className="text-xs text-slate-500">{filteredModels.length} compatible models</span>
+                            </div>
+                        </div>
                         <div className="max-h-[55vh] space-y-3 overflow-y-auto pr-1">
+                            {filteredModels.length === 0 && (
+                                <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">No compatible models match these filters. Try showing older models or clearing a filter.</div>
+                            )}
                             {Object.entries(groupedModels).map(([providerLabel, models]) => (
                                 <div key={providerLabel} className="space-y-1">
                                     <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -2847,11 +3044,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                     <span className="inline-flex min-w-0 items-center gap-1.5">
                                                         <AiProviderLogo provider={model.provider} model={model.model} size={12} />
                                                         <span className="min-w-0 truncate font-semibold">{model.label}</span>
-                                                        {model.isCurrentRuntime && (
-                                                            <span className="shrink-0 rounded-full border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">
-                                                                Frontend current
-                                                            </span>
-                                                        )}
+                                                        {aiRuntimeSettings.defaultModelId === model.id && <Badge variant="secondary" className="h-5 text-[10px]">Frontend default</Badge>}
+                                                        {model.catalogSource === 'openrouter-live' && <Badge variant="outline" className="h-5 text-[10px]">Live</Badge>}
+                                                        {model.isFree && <Badge variant="outline" className="h-5 text-[10px]">Free</Badge>}
+                                                        {model.supportsReasoning && <Badge variant="outline" className="h-5 text-[10px]">Reasoning</Badge>}
                                                     </span>
                                                     <span className="ml-2 shrink-0 text-[10px] text-slate-500">{model.estimatedCostPerQueryLabel}</span>
                                                 </button>

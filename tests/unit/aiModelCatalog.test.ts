@@ -38,6 +38,9 @@ describe('config/aiModelCatalog', () => {
     expect(modelIds.has('openrouter:anthropic/claude-opus-5')).toBe(true);
     expect(modelIds.has('openrouter:anthropic/claude-sonnet-5')).toBe(true);
     expect(modelIds.has('openrouter:google/gemini-3.5-flash')).toBe(true);
+    expect(modelIds.has('openrouter:google/gemini-3.7-flash')).toBe(true);
+    expect(modelIds.has('openrouter:google/gemini-3.6-flash')).toBe(true);
+    expect(modelIds.has('openrouter:google/gemini-3.5-flash-lite')).toBe(true);
     expect(modelIds.has('openrouter:google/gemini-3.1-flash-lite')).toBe(true);
     expect(modelIds.has('openrouter:nvidia/nemotron-3-super-120b-a12b:free')).toBe(true);
     expect(modelIds.has('openrouter:z-ai/glm-5')).toBe(true);
@@ -53,6 +56,7 @@ describe('config/aiModelCatalog', () => {
     expect(modelIds.has('openrouter:x-ai/grok-4.20-beta')).toBe(false);
     expect(modelIds.has('openrouter:minimax/minimax-m2.5')).toBe(true);
     expect(modelIds.has('openrouter:moonshotai/kimi-k2.5')).toBe(true);
+    expect(modelIds.has('openrouter:moonshotai/kimi-k3')).toBe(true);
     expect(modelIds.has('openrouter:qwen/qwen3.5-9b')).toBe(true);
     expect(modelIds.has('openrouter:qwen/qwen3.5-plus-20260420')).toBe(true);
     expect(modelIds.has('perplexity:perplexity/sonar')).toBe(true);
@@ -105,6 +109,8 @@ describe('config/aiModelCatalog', () => {
     expect(grouped.OpenAI?.map((item) => item.id)).toContain('openrouter:openai/gpt-5.5');
     expect(grouped['Google Gemini']?.map((item) => item.id)).toEqual(expect.arrayContaining([
       'openrouter:google/gemini-3.5-flash',
+      'openrouter:google/gemini-3.7-flash',
+      'openrouter:google/gemini-3.5-flash-lite',
       'openrouter:google/gemini-3.1-flash-lite',
     ]));
     expect(grouped.Qwen?.map((item) => item.id)).toContain('openrouter:qwen/qwen3.5-plus-20260420');
@@ -137,6 +143,8 @@ describe('config/aiModelCatalog', () => {
       'openrouter:deepseek/deepseek-v4-pro-0813',
       'openrouter:deepseek/deepseek-v4-flash-0731',
       'openrouter:google/gemini-3.5-flash',
+      'openrouter:google/gemini-3.7-flash',
+      'openrouter:google/gemini-3.5-flash-lite',
       'openrouter:google/gemini-3.1-flash-lite',
       'openrouter:x-ai/grok-4.3',
       'openrouter:qwen/qwen3.5-plus-20260420',

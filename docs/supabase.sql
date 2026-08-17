@@ -114,6 +114,10 @@ create table if not exists public.plans (
 create table if not exists public.app_runtime_settings (
   singleton boolean primary key default true,
   planner_beta_open boolean not null default false,
+  ai_default_model_id text not null default 'openai:gpt-5.4',
+  ai_approved_openrouter_models text[] not null default '{}',
+  ai_model_max_age_months integer not null default 6,
+  ai_show_older_models boolean not null default false,
   updated_at timestamptz not null default now(),
   updated_by uuid references auth.users on delete set null
 );
@@ -284,6 +288,29 @@ alter table public.app_runtime_settings alter column updated_at set default now(
 alter table public.app_runtime_settings alter column updated_at set not null;
 alter table public.app_runtime_settings
   add column if not exists updated_by uuid references auth.users on delete set null;
+alter table public.app_runtime_settings
+  add column if not exists ai_default_model_id text not null default 'openai:gpt-5.4';
+alter table public.app_runtime_settings
+  add column if not exists ai_approved_openrouter_models text[] not null default '{}';
+alter table public.app_runtime_settings
+  add column if not exists ai_model_max_age_months integer not null default 6;
+alter table public.app_runtime_settings
+  add column if not exists ai_show_older_models boolean not null default false;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'app_runtime_settings_ai_model_age_range'
+      and conrelid = 'public.app_runtime_settings'::regclass
+  ) then
+    alter table public.app_runtime_settings
+      add constraint app_runtime_settings_ai_model_age_range
+      check (ai_model_max_age_months between 1 and 36);
+  end if;
+end
+$$;
 
 do $$
 begin
@@ -7113,6 +7140,10 @@ drop function if exists public.get_public_runtime_settings();
 create or replace function public.get_public_runtime_settings()
 returns table(
   planner_beta_open boolean,
+  ai_default_model_id text,
+  ai_approved_openrouter_models text[],
+  ai_model_max_age_months integer,
+  ai_show_older_models boolean,
   updated_at timestamptz
 )
 language sql
@@ -7122,10 +7153,84 @@ set row_security = off
 as $$
   select
     ars.planner_beta_open,
+    ars.ai_default_model_id,
+    ars.ai_approved_openrouter_models,
+    ars.ai_model_max_age_months,
+    ars.ai_show_older_models,
     ars.updated_at
   from public.app_runtime_settings ars
   where ars.singleton = true
   limit 1;
+$$;
+
+drop function if exists public.admin_update_ai_runtime_settings(text, text[], integer, boolean);
+create or replace function public.admin_update_ai_runtime_settings(
+  p_default_model_id text,
+  p_approved_openrouter_models text[],
+  p_model_max_age_months integer,
+  p_show_older_models boolean
+)
+returns public.app_runtime_settings
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_result public.app_runtime_settings%rowtype;
+  v_default_model_id text := nullif(trim(coalesce(p_default_model_id, '')), '');
+  v_approved_models text[];
+begin
+  if not public.is_admin(v_uid) then
+    raise exception 'Not allowed';
+  end if;
+
+  if v_default_model_id is null or position(':' in v_default_model_id) = 0 then
+    raise exception 'Invalid AI default model id';
+  end if;
+
+  select coalesce(array_agg(distinct model_id order by model_id), '{}')
+  into v_approved_models
+  from unnest(coalesce(p_approved_openrouter_models, '{}')) as model_id
+  where model_id ~ '^[a-z0-9._-]+/[a-zA-Z0-9._:/-]+$';
+
+  insert into public.app_runtime_settings as ars (
+    singleton,
+    planner_beta_open,
+    ai_default_model_id,
+    ai_approved_openrouter_models,
+    ai_model_max_age_months,
+    ai_show_older_models,
+    updated_at,
+    updated_by
+  )
+  values (
+    true,
+    false,
+    v_default_model_id,
+    v_approved_models,
+    least(36, greatest(1, coalesce(p_model_max_age_months, 6))),
+    coalesce(p_show_older_models, false),
+    now(),
+    v_uid
+  )
+  on conflict (singleton) do update
+  set ai_default_model_id = excluded.ai_default_model_id,
+      ai_approved_openrouter_models = excluded.ai_approved_openrouter_models,
+      ai_model_max_age_months = excluded.ai_model_max_age_months,
+      ai_show_older_models = excluded.ai_show_older_models,
+      updated_at = excluded.updated_at,
+      updated_by = excluded.updated_by;
+
+  select *
+  into v_result
+  from public.app_runtime_settings ars
+  where ars.singleton = true
+  limit 1;
+
+  return v_result;
+end;
 $$;
 
 drop function if exists public.admin_update_runtime_settings(boolean);
@@ -7189,6 +7294,7 @@ grant execute on function public.admin_update_user_overrides(uuid, jsonb) to aut
 grant execute on function public.admin_update_plan_entitlements(text, jsonb) to authenticated;
 grant execute on function public.get_public_runtime_settings() to anon, authenticated;
 grant execute on function public.admin_update_runtime_settings(boolean) to authenticated;
+grant execute on function public.admin_update_ai_runtime_settings(text, text[], integer, boolean) to authenticated;
 grant execute on function public.trip_generation_attempt_start(text, text, text, text, text, text, text, text, timestamptz, jsonb) to authenticated;
 grant execute on function public.trip_generation_attempt_start(text, text, text, text, text, text, text, text, timestamptz, jsonb) to service_role;
 grant execute on function public.trip_generation_attempt_finish(uuid, text, text, text, text, text, timestamptz, integer, integer, text, text, text, jsonb) to authenticated;

@@ -84,6 +84,9 @@ export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
     "anthropic/claude-opus-4.8-fast",
     "openai/gpt-5.5",
     "google/gemini-3.5-flash",
+    "google/gemini-3.7-flash",
+    "google/gemini-3.6-flash",
+    "google/gemini-3.5-flash-lite",
     "google/gemini-3.1-flash-lite",
     "qwen/qwen3-coder:free",
     "nvidia/nemotron-3-super-120b-a12b:free",
@@ -98,6 +101,7 @@ export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
     "x-ai/grok-4.20",
     "minimax/minimax-m2.5",
     "moonshotai/kimi-k2.5",
+    "moonshotai/kimi-k3",
     "qwen/qwen3.5-9b",
     "qwen/qwen3.5-plus-20260420",
   ]),
@@ -152,6 +156,15 @@ const OPENROUTER_RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 const PROVIDER_PARSE_RETRY_MAX_ATTEMPTS = 2;
 const OPENROUTER_MODELS_WITHOUT_TEMPERATURE = new Set([
   "anthropic/claude-sonnet-5",
+  "google/gemini-3.7-flash",
+  "google/gemini-3.6-flash",
+  "google/gemini-3.5-flash-lite",
+  "openai/gpt-5.6-luna",
+  "openai/gpt-5.6-luna-pro",
+  "openai/gpt-5.6-terra",
+  "openai/gpt-5.6-terra-pro",
+  "openai/gpt-5.6-sol",
+  "openai/gpt-5.6-sol-pro",
 ]);
 
 export const readEnv = (name: string): string => {
@@ -615,6 +628,46 @@ export const ensureModelAllowed = (
   }
 
   return null;
+};
+
+const readApprovedOpenRouterModels = async (): Promise<Set<string>> => {
+  const supabaseUrl = readEnv("VITE_SUPABASE_URL").replace(/\/$/, "");
+  const anonKey = readEnv("VITE_SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !anonKey) return new Set();
+
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/get_public_runtime_settings`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: anonKey,
+        Authorization: `Bearer ${anonKey}`,
+      },
+      body: "{}",
+    });
+    if (!response.ok) return new Set();
+    const payload = await response.json();
+    const row = Array.isArray(payload) ? payload[0] : payload;
+    const list = Array.isArray(row?.ai_approved_openrouter_models)
+      ? row.ai_approved_openrouter_models
+      : [];
+    const models = new Set<string>(list.flatMap((entry: unknown) => (
+      typeof entry === "string" && entry.trim() ? [entry.trim()] : []
+    )));
+    return models;
+  } catch {
+    return new Set();
+  }
+};
+
+export const ensureModelAllowedForGeneration = async (
+  provider: string,
+  model: string,
+): Promise<ProviderGenerationFailurePayload | null> => {
+  const staticError = ensureModelAllowed(provider, model);
+  if (!staticError || provider !== "openrouter") return staticError;
+  const approvedModels = await readApprovedOpenRouterModels();
+  return approvedModels.has(model) ? null : staticError;
 };
 
 const generateWithGemini = async (
@@ -1379,6 +1432,7 @@ const generateWithOpenRouter = async (
             max_tokens: maxOutputTokens,
             ...(OPENROUTER_MODELS_WITHOUT_TEMPERATURE.has(model) ? {} : { temperature: 0 }),
             response_format: { type: "json_object" },
+            provider: { require_parameters: true },
             messages: [
               {
                 role: "system",
@@ -1531,7 +1585,7 @@ export const generateProviderItinerary = async (
   const model = PROVIDER_MODEL_ALIASES[provider]?.[requestedModel] ?? requestedModel;
   const maxOutputTokens = resolveOutputTokenBudget(provider, options.jsonSchema, options.maxOutputTokens);
 
-  const allowlistError = ensureModelAllowed(provider, model);
+  const allowlistError = await ensureModelAllowedForGeneration(provider, model);
   if (allowlistError) {
     return {
       ok: false,

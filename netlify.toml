@@ -124,6 +124,10 @@ exit 1
   function = "ai-benchmark"
 
 [[edge_functions]]
+  path = "/api/internal/ai/benchmark/models"
+  function = "ai-benchmark"
+
+[[edge_functions]]
   path = "/api/internal/ai/generation-enqueue"
   function = "ai-generate-enqueue"
 
