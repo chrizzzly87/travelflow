@@ -838,7 +838,7 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     const body = JSON.parse(String(init.body));
     expect(body.model).toBe('google/gemini-3.5-flash');
     expect(body.response_format).toEqual({ type: 'json_object' });
-    expect(body.provider).toEqual({ require_parameters: true });
+    expect(body.provider).toEqual({ require_parameters: true, sort: 'throughput' });
     expect(body.temperature).toBe(0);
     expect(result.ok).toBe(true);
   });
@@ -868,7 +868,7 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     const body = JSON.parse(String(init.body));
     expect(body.model).toBe('anthropic/claude-sonnet-5');
     expect(body.response_format).toEqual({ type: 'json_object' });
-    expect(body.provider).toEqual({ require_parameters: true });
+    expect(body.provider).toEqual({ require_parameters: true, sort: 'throughput' });
     expect(body).not.toHaveProperty('temperature');
     expect(result.ok).toBe(true);
   });
@@ -1095,6 +1095,40 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     if (!('status' in result)) return;
     expect(result.status).toBe(502);
     expect(result.value.code).toBe('OPENROUTER_PARSE_FAILED');
+  });
+
+  it('sends the trip JSON schema to OpenRouter instead of relying on retry parsing', async () => {
+    stubDenoEnv({
+      OPENROUTER_API_KEY: 'test-key',
+    });
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        model: 'google/gemini-3.7-flash',
+        choices: [{ message: { content: '{"tripTitle":"Fast structured trip"}' } }],
+        usage: {},
+      }),
+    );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"demo"}',
+      provider: 'openrouter',
+      model: 'google/gemini-3.7-flash',
+      timeoutMs: 60_000,
+      jsonSchema: testStructuredOutputSchema,
+      reasoningEffort: 'low',
+    });
+
+    expect(result.ok).toBe(true);
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(String(request.body));
+    expect(body.response_format).toEqual({
+      type: 'json_schema',
+      json_schema: testStructuredOutputSchema,
+    });
+    expect(body.reasoning).toEqual({ effort: 'low', exclude: true });
+    expect(body.provider).toEqual({ require_parameters: true, sort: 'throughput' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('returns timeout when response parsing stalls after headers', async () => {

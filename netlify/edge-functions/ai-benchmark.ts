@@ -16,6 +16,7 @@ import {
   type BenchmarkRunCommentTelemetryGroup,
 } from "../../shared/aiBenchmarkValidation.ts";
 import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
+import { isAiReasoningEffort, type AiReasoningEffort } from "../../shared/aiReasoning.ts";
 import {
   buildAiTelemetrySeries,
   summarizeAiTelemetry,
@@ -44,6 +45,7 @@ interface BenchmarkTarget {
   provider: string;
   model: string;
   label?: string;
+  reasoningEffort?: AiReasoningEffort;
 }
 
 interface BenchmarkScenario {
@@ -416,7 +418,7 @@ const normalizeBenchmarkTimeoutMs = (value: unknown): number | null => {
 
 const normalizeTarget = (value: unknown): BenchmarkTarget | null => {
   if (!value || typeof value !== "object") return null;
-  const typed = value as { provider?: unknown; model?: unknown; label?: unknown };
+  const typed = value as { provider?: unknown; model?: unknown; label?: unknown; reasoningEffort?: unknown };
   const provider = typeof typed.provider === "string" ? typed.provider.trim().toLowerCase() : "";
   const model = typeof typed.model === "string" ? typed.model.trim() : "";
   const label = typeof typed.label === "string" ? typed.label.trim() : "";
@@ -425,6 +427,7 @@ const normalizeTarget = (value: unknown): BenchmarkTarget | null => {
     provider,
     model,
     label: label || undefined,
+    reasoningEffort: isAiReasoningEffort(typed.reasoningEffort) ? typed.reasoningEffort : undefined,
   };
 };
 
@@ -993,6 +996,11 @@ const runGeneration = async (
   }
 
   const startedMs = Date.now();
+  const requestTarget = run.request_payload?.target;
+  const reasoningEffort = requestTarget && typeof requestTarget === "object"
+    && isAiReasoningEffort((requestTarget as Record<string, unknown>).reasoningEffort)
+    ? (requestTarget as { reasoningEffort: AiReasoningEffort }).reasoningEffort
+    : undefined;
   const persistRunTelemetry = async (
     input: {
       status: "success" | "failed";
@@ -1041,6 +1049,7 @@ const runGeneration = async (
       timeoutMs: providerTimeoutMs,
       maxOutputTokens: resolveBenchmarkMaxOutputTokens(run.provider, run.model, providerTimeoutMs),
       jsonSchema: TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
+      reasoningEffort,
     });
     const latencyMs = Date.now() - startedMs;
 

@@ -1,4 +1,5 @@
 import type { AiModelCatalogItem } from '../config/aiModelCatalog';
+import { isAiReasoningEffort, type AiReasoningEffort } from '../shared/aiReasoning';
 
 export const OPENROUTER_PUBLIC_MODELS_URL = 'https://openrouter.ai/api/v1/models';
 export const OPENROUTER_USER_MODELS_URL = 'https://openrouter.ai/api/v1/models/user';
@@ -115,6 +116,13 @@ const normalizeOpenRouterModel = (value: UnknownRecord): OpenRouterCatalogModel 
     const supportedParameters = Array.isArray(value.supported_parameters)
         ? value.supported_parameters.map(asText).filter(Boolean)
         : [];
+    const reasoning = isRecord(value.reasoning) ? value.reasoning : {};
+    const reasoningEfforts = Array.isArray(reasoning.supported_efforts)
+        ? reasoning.supported_efforts.filter(isAiReasoningEffort)
+        : [];
+    const defaultReasoningEffort = isAiReasoningEffort(reasoning.default_effort)
+        ? reasoning.default_effort
+        : null;
     const isFree = inputPricePerMillion === 0 && outputPricePerMillion === 0;
 
     return {
@@ -136,6 +144,10 @@ const normalizeOpenRouterModel = (value: UnknownRecord): OpenRouterCatalogModel 
         supportsStructuredOutput: supportedParameters.includes('structured_outputs'),
         supportsTools: supportedParameters.includes('tools') && supportedParameters.includes('tool_choice'),
         supportsReasoning: supportedParameters.includes('reasoning') || supportedParameters.includes('reasoning_effort'),
+        reasoningEfforts: reasoningEfforts as AiReasoningEffort[],
+        defaultReasoningEffort,
+        reasoningMandatory: reasoning.mandatory === true,
+        supportsReasoningMaxTokens: reasoning.supports_max_tokens === true,
         isFree,
         expirationDate: normalizeExpirationDate(value.expiration_date),
     };

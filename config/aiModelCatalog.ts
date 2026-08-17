@@ -3,6 +3,7 @@ import {
     getAiProviderMetadata,
     getAiProviderSortOrder,
 } from './aiProviderCatalog.ts';
+import type { AiReasoningEffort } from '../shared/aiReasoning';
 
 export type AiModelAvailability = 'active' | 'planned';
 
@@ -27,6 +28,10 @@ export interface AiModelCatalogItem {
     supportsStructuredOutput?: boolean;
     supportsTools?: boolean;
     supportsReasoning?: boolean;
+    reasoningEfforts?: AiReasoningEffort[];
+    defaultReasoningEffort?: AiReasoningEffort | null;
+    reasoningMandatory?: boolean;
+    supportsReasoningMaxTokens?: boolean;
     isFree?: boolean;
     expirationDate?: string | null;
 }

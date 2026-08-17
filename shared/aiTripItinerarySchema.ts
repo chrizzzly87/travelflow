@@ -30,9 +30,6 @@ const ACTIVITY_TYPE_VALUES = [
   "nature",
 ] as const satisfies readonly ActivityType[];
 
-const CITY_DESCRIPTION_REQUIRED_SECTIONS_PATTERN =
-  "(?=[\\s\\S]*###\\s*Must\\s*See)(?=[\\s\\S]*###\\s*Must\\s*Try)(?=[\\s\\S]*###\\s*Must\\s*Do)[\\s\\S]*";
-
 export const TRIP_ITINERARY_SCHEMA_NAME = "travelflow_trip_itinerary_v2";
 
 const tripCountryInfoJsonSchema = {
@@ -71,7 +68,7 @@ const tripCityJsonSchema = {
     description: {
       type: "string",
       minLength: 1,
-      pattern: CITY_DESCRIPTION_REQUIRED_SECTIONS_PATTERN,
+      description: "Markdown with ### Must See, ### Must Try, and ### Must Do checkbox sections.",
     },
     countryName: { type: "string", minLength: 1 },
     countryCode: { type: "string", pattern: "^[A-Z]{2}$" },

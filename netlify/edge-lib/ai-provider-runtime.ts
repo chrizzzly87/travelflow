@@ -1,4 +1,5 @@
 import type { StructuredOutputJsonSchema } from "../../shared/aiTripItinerarySchema.ts";
+import type { AiReasoningEffort } from "../../shared/aiReasoning.ts";
 
 export interface ProviderUsage {
   promptTokens?: number;
@@ -39,6 +40,7 @@ export interface ProviderGenerationOptions {
   timeoutMs: number;
   maxOutputTokens?: number;
   jsonSchema?: StructuredOutputJsonSchema;
+  reasoningEffort?: AiReasoningEffort;
 }
 
 export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
@@ -1374,6 +1376,8 @@ const generateWithOpenRouter = async (
   model: string,
   timeoutMs: number,
   maxOutputTokens: number,
+  jsonSchema?: StructuredOutputJsonSchema,
+  reasoningEffort?: AiReasoningEffort,
 ): Promise<ProviderGenerationResult> => {
   const apiKey = readEnv("OPENROUTER_API_KEY");
   if (!apiKey) {
@@ -1431,8 +1435,22 @@ const generateWithOpenRouter = async (
             model,
             max_tokens: maxOutputTokens,
             ...(OPENROUTER_MODELS_WITHOUT_TEMPERATURE.has(model) ? {} : { temperature: 0 }),
-            response_format: { type: "json_object" },
-            provider: { require_parameters: true },
+            response_format: jsonSchema
+              ? {
+                type: "json_schema",
+                json_schema: jsonSchema,
+              }
+              : { type: "json_object" },
+            ...(reasoningEffort ? {
+              reasoning: {
+                effort: reasoningEffort,
+                exclude: true,
+              },
+            } : {}),
+            provider: {
+              require_parameters: true,
+              sort: "throughput",
+            },
             messages: [
               {
                 role: "system",
@@ -1603,5 +1621,13 @@ export const generateProviderItinerary = async (
   if (provider === "anthropic") {
     return await generateWithAnthropic(options.prompt, model, options.timeoutMs, maxOutputTokens);
   }
-  return await generateWithOpenRouter(options.prompt, provider, model, options.timeoutMs, maxOutputTokens);
+  return await generateWithOpenRouter(
+    options.prompt,
+    provider,
+    model,
+    options.timeoutMs,
+    maxOutputTokens,
+    options.jsonSchema,
+    options.reasoningEffort,
+  );
 };

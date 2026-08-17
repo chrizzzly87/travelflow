@@ -91,6 +91,11 @@ import {
     applyAiRuntimeSettings,
     type AiRuntimeSettings,
 } from '../services/aiRuntimeSettingsService';
+import {
+    AI_REASONING_EFFORTS,
+    resolveSupportedReasoningEffort,
+    type AiReasoningEffort,
+} from '../shared/aiReasoning';
 
 interface BenchmarkSession {
     id: string;
@@ -228,6 +233,17 @@ const BENCHMARK_PARALLEL_CONCURRENCY = 3;
 const BENCHMARK_TIMEOUT_MIN_SECONDS = 20;
 const BENCHMARK_TIMEOUT_MAX_SECONDS = 180;
 const BENCHMARK_TIMEOUT_DEFAULT_SECONDS = 60;
+type BenchmarkReasoningMode = 'provider-default' | AiReasoningEffort;
+const REASONING_MODE_LABELS: Record<BenchmarkReasoningMode, string> = {
+    'provider-default': 'Model default',
+    none: 'Off',
+    minimal: 'Minimal',
+    low: 'Low · fastest',
+    medium: 'Medium',
+    high: 'High',
+    xhigh: 'Extra high',
+    max: 'Maximum',
+};
 const BENCHMARK_RUN_COMMENT_MAX_LENGTH = 2000;
 const COST_ESTIMATE_FOOTNOTE = 'Estimate for one classic itinerary generation; real cost varies by prompt/output size.';
 const BENCHMARK_BASELINE_PREFERENCE_DEFAULTS = {
@@ -522,7 +538,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [transportMask, setTransportMask] = useState<'automatic' | 'plane' | 'train' | 'camper'>('automatic');
     const [sessionName, setSessionName] = useState(DEFAULT_SESSION_NAME);
     const [benchmarkTimeoutSeconds, setBenchmarkTimeoutSeconds] = useState(BENCHMARK_TIMEOUT_DEFAULT_SECONDS);
+    const [benchmarkReasoningMode, setBenchmarkReasoningMode] = useState<BenchmarkReasoningMode>('low');
     const [compactBenchmarkOutput, setCompactBenchmarkOutput] = useState(true);
+    const [workspaceTab, setWorkspaceTab] = useState<'setup' | 'results' | 'insights'>('setup');
 
     const [modelFilter, setModelFilter] = useState('');
     const [modelProviderFilter, setModelProviderFilter] = useState('all');
@@ -548,6 +566,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [inactiveModelTargetIds, setInactiveModelTargetIds] = useState<string[]>([]);
     const [modelModalOpen, setModelModalOpen] = useState(false);
     const [modelDraftIds, setModelDraftIds] = useState<string[]>([]);
+    const [showAllSelectedModels, setShowAllSelectedModels] = useState(false);
     const [presetEditor, setPresetEditor] = useState<PresetEditorDraft | null>(null);
     const [customScenarioJsonDraft, setCustomScenarioJsonDraft] = useState('');
     const [customScenarioMeta, setCustomScenarioMeta] = useState<{
@@ -662,6 +681,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         });
     }, [modelTargetIds, sortedModels]);
     const selectedTargetIdSet = useMemo(() => new Set(selectedTargets.map((target) => target.id)), [selectedTargets]);
+    const visibleSelectedTargets = showAllSelectedModels ? selectedTargets : selectedTargets.slice(0, 8);
+    const hiddenSelectedTargetCount = Math.max(0, selectedTargets.length - visibleSelectedTargets.length);
     const inactiveTargetIdSet = useMemo(() => new Set(inactiveModelTargetIds), [inactiveModelTargetIds]);
     const runnableTargets = useMemo(
         () => buildRunnableBenchmarkTargets(selectedTargets, inactiveModelTargetIds),
@@ -669,6 +690,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     );
     const allTargetsActive = selectedTargets.length > 0 && runnableTargets.length === selectedTargets.length;
     const allTargetsInactive = selectedTargets.length > 0 && runnableTargets.length === 0;
+    const reasoningTargets = useMemo(
+        () => selectedTargets.filter((model) => model.supportsReasoning === true),
+        [selectedTargets],
+    );
+    const canDisableReasoning = reasoningTargets.length > 0 && reasoningTargets.every((model) => (
+        model.reasoningMandatory !== true && model.reasoningEfforts?.includes('none')
+    ));
     const customScenarioDraftParse = useMemo(() => {
         const flowHint = customScenarioMeta?.flow || 'unknown';
         if (!customScenarioJsonDraft.trim()) {
@@ -1443,6 +1471,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 execution: {
                     timeoutSeconds: benchmarkTimeoutSeconds,
                     compactOutput: compactBenchmarkOutput,
+                    reasoning: benchmarkReasoningMode,
                 },
             },
             metadata: {
@@ -1456,11 +1485,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 execution: {
                     timeoutSeconds: benchmarkTimeoutSeconds,
                     compactOutput: compactBenchmarkOutput,
+                    reasoning: benchmarkReasoningMode,
                 },
             },
         };
     }, [
         benchmarkTimeoutSeconds,
+        benchmarkReasoningMode,
         compactBenchmarkOutput,
         routeLock,
         readMaskScenario,
@@ -1533,7 +1564,25 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     sessionName: sessionName.trim() || DEFAULT_SESSION_NAME,
                     flow: 'classic',
                     scenario: buildScenario(),
-                    targets: selected,
+                    targets: selected.map((target) => {
+                        const catalogModel = sortedModels.find((model) => (
+                            model.provider === target.provider && model.model === target.model
+                        ));
+                        const shouldConfigureReasoning = target.provider === 'openrouter'
+                            && catalogModel?.supportsReasoning === true
+                            && benchmarkReasoningMode !== 'provider-default';
+                        const reasoningEffort = shouldConfigureReasoning
+                            ? resolveSupportedReasoningEffort(
+                                benchmarkReasoningMode,
+                                catalogModel.reasoningEfforts,
+                                catalogModel.reasoningMandatory,
+                            )
+                            : undefined;
+                        return {
+                            ...target,
+                            ...(reasoningEffort ? { reasoningEffort } : {}),
+                        };
+                    }),
                     runCount: 1,
                     concurrency: BENCHMARK_PARALLEL_CONCURRENCY,
                     timeoutMs,
@@ -1582,6 +1631,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, [
         accessToken,
         benchmarkTimeoutSeconds,
+        benchmarkReasoningMode,
         compactBenchmarkOutput,
         runnableTargets,
         runs,
@@ -1591,6 +1641,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         buildScenario,
         searchParams,
         setSearchParams,
+        sortedModels,
         refreshTelemetryData,
     ]);
 
@@ -1742,9 +1793,12 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, [buildScenario]);
 
     const scrollToResults = useCallback(() => {
-        resultsSectionRef.current?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
+        setWorkspaceTab('results');
+        window.requestAnimationFrame(() => {
+            resultsSectionRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+            });
         });
     }, []);
 
@@ -2084,32 +2138,11 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     return (
         <AdminShell
             title="AI Benchmark"
-            description="Compare model/provider outputs for the create-trip contract with persistent benchmark sessions."
+            description="Compare trip quality, latency, and cost."
             showGlobalSearch={false}
             showDateRange={false}
         >
-            <div className="mx-auto w-full max-w-[1600px] space-y-4">
-                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div>
-                            <h2 className="text-base font-semibold text-slate-900">Benchmark execution context</h2>
-                            <p className="mt-1 max-w-3xl text-sm text-slate-600">
-                                Default create-trip benchmark workspace. Configure session input on the left and compare selected model targets on the right.
-                                Session identifiers and filters persist in the URL.
-                            </p>
-                        </div>
-
-                        <div className="w-full max-w-sm space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-[11px] text-slate-600 sm:p-3 sm:text-xs">
-                            <div className="font-semibold text-slate-700">Internal API auth</div>
-                            <div className="text-[11px] text-slate-500">
-                                Requests use your current Supabase bearer token with server-side admin validation.
-                            </div>
-                            <div className="text-[11px] text-slate-500">
-                                Access token state: <span className="font-semibold text-slate-700">{accessToken ? 'ready' : 'missing'}</span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+            <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4">
 
                 {error && (
                     <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
@@ -2122,6 +2155,27 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         {message}
                     </section>
                 )}
+
+                <Tabs
+                    value={workspaceTab}
+                    onValueChange={(value) => setWorkspaceTab(value as 'setup' | 'results' | 'insights')}
+                    className="flex flex-col gap-4"
+                >
+                    <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur">
+                        <TabsList className="grid w-full grid-cols-3 sm:w-auto">
+                            <TabsTrigger value="setup">Setup</TabsTrigger>
+                            <TabsTrigger value="results">Results · {runs.length}</TabsTrigger>
+                            <TabsTrigger value="insights">Insights</TabsTrigger>
+                        </TabsList>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <Badge variant={accessToken ? 'secondary' : 'destructive'}>
+                                {accessToken ? 'Admin connected' : 'Re-auth required'}
+                            </Badge>
+                            <span className="tabular-nums">{runnableTargets.length} active models</span>
+                        </div>
+                    </div>
+
+                    <TabsContent value="insights" className="mt-0">
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -2185,6 +2239,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         ))}
                     </div>
                 </section>
+
+                    </TabsContent>
+
+                    <TabsContent value="setup" className="mt-0">
 
                 <section className="grid gap-4 xl:grid-cols-[minmax(320px,0.95fr)_minmax(520px,1.05fr)]">
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
@@ -2341,63 +2399,83 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     </div>
 
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h3 className="text-lg font-semibold text-slate-900">Model targets + execution</h3>
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <h3 className="text-lg font-semibold tracking-tight text-slate-950">Run configuration</h3>
+                                <p className="mt-1 text-xs text-slate-500">Choose the speed/quality tradeoff, then run the active comparison set.</p>
+                            </div>
                             <div className="flex flex-wrap items-center gap-2">
-                                <button
+                                <Button
                                     type="button"
                                     onClick={() => {
                                         scrollToResults();
                                         void runBenchmark();
                                     }}
                                     disabled={loading || hasPendingRuns || cancelling || runnableTargets.length === 0}
-                                    className="inline-flex items-center gap-1 rounded-md bg-accent-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    <ArrowClockwise size={14} />
-                                    Test all
-                                </button>
-                                <button
+                                    <Play data-icon="inline-start" weight="fill" />
+                                    Run {runnableTargets.length} active
+                                </Button>
+                                <Button
                                     type="button"
+                                    variant="outline"
+                                    size="sm"
                                     onClick={cancelActiveRunsInSession}
                                     disabled={loading || cancelling || !session || !hasPendingRuns}
-                                    className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    <StopCircle size={14} />
-                                    Abort active
-                                </button>
-                                <button
+                                    <StopCircle data-icon="inline-start" />
+                                    Stop
+                                </Button>
+                                <Button
                                     type="button"
+                                    variant="ghost"
+                                    size="sm"
                                     onClick={cleanupSession}
                                     disabled={loading || cancelling || !session || hasPendingRuns}
-                                    className="inline-flex items-center gap-1 rounded-md border border-rose-300 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    <Trash size={14} />
-                                    Cleanup session
-                                </button>
+                                    <Trash data-icon="inline-start" />
+                                    Clear session
+                                </Button>
                             </div>
                         </div>
 
-                        <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
-                            <span className="font-semibold text-slate-700">Parallel workers:</span> {BENCHMARK_PARALLEL_CONCURRENCY}. Additional active models are queued automatically.
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            <Badge variant="secondary">{selectedTargets.length} selected</Badge>
+                            <Badge variant="secondary">{runnableTargets.length} active</Badge>
+                            <Badge variant="outline">{BENCHMARK_PARALLEL_CONCURRENCY} parallel</Badge>
                             {runnableTargets.length > BENCHMARK_PARALLEL_CONCURRENCY && (
-                                <span className="ml-1">
-                                    ({runnableTargets.length - BENCHMARK_PARALLEL_CONCURRENCY} queued with current active targets)
-                                </span>
-                            )}
-                            {selectedTargets.length > runnableTargets.length && (
-                                <span className="ml-1">
-                                    ({selectedTargets.length - runnableTargets.length} temporarily deactivated)
-                                </span>
+                                <Badge variant="outline">{runnableTargets.length - BENCHMARK_PARALLEL_CONCURRENCY} queued</Badge>
                             )}
                         </div>
 
-                        <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                            <label className="space-y-1 text-xs">
-                                <span className="font-semibold uppercase tracking-wide text-slate-500">Timeout (seconds)</span>
-	                                <input
-	                                    type="number"
-	                                    aria-label="Timeout seconds"
-	                                    min={BENCHMARK_TIMEOUT_MIN_SECONDS}
+                        <div className="mt-4 grid gap-3 md:grid-cols-3">
+                            <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-700">
+                                Reasoning effort
+                                <Select
+                                    value={benchmarkReasoningMode}
+                                    onValueChange={(value) => setBenchmarkReasoningMode(value as BenchmarkReasoningMode)}
+                                >
+                                    <SelectTrigger aria-label="Reasoning effort" className="bg-white">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="provider-default">Model default</SelectItem>
+                                        {AI_REASONING_EFFORTS.filter((effort) => effort !== 'none' || canDisableReasoning).map((effort) => (
+                                            <SelectItem key={effort} value={effort}>{REASONING_MODE_LABELS[effort]}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <span className="font-normal text-slate-500">
+                                    Applies to {reasoningTargets.length} reasoning model{reasoningTargets.length === 1 ? '' : 's'}; unsupported levels map to the nearest available level.
+                                </span>
+                            </label>
+
+                            <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-700">
+                                Hard time limit
+                                <Input
+                                    type="number"
+                                    aria-label="Timeout seconds"
+                                    min={BENCHMARK_TIMEOUT_MIN_SECONDS}
                                     max={BENCHMARK_TIMEOUT_MAX_SECONDS}
                                     step={5}
                                     value={benchmarkTimeoutSeconds}
@@ -2411,18 +2489,20 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             Math.max(BENCHMARK_TIMEOUT_MIN_SECONDS, Math.min(BENCHMARK_TIMEOUT_MAX_SECONDS, Math.round(parsed)))
                                         );
                                     }}
-                                    className="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-xs text-slate-800 outline-none focus:ring-2 focus:ring-accent-500"
                                 />
+                                <span className="font-normal text-slate-500">Safety ceiling, not a target. Actual latency is measured separately.</span>
                             </label>
 
-                            <label className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
-	                                <input
-	                                    type="checkbox"
-	                                    aria-label="Compact output"
-	                                    checked={compactBenchmarkOutput}
-                                    onChange={(event) => setCompactBenchmarkOutput(event.target.checked)}
+                            <label className="flex min-h-20 items-start justify-between gap-3 rounded-lg bg-slate-50 p-3 text-xs font-medium text-slate-700">
+                                <span>
+                                    Compact output
+                                    <span className="mt-1 block font-normal text-slate-500">Shorter JSON for faster, more reliable comparisons.</span>
+                                </span>
+                                <Switch
+                                    aria-label="Compact output"
+                                    checked={compactBenchmarkOutput}
+                                    onCheckedChange={setCompactBenchmarkOutput}
                                 />
-                                Compact output (faster + more reliable JSON)
                             </label>
                         </div>
 
@@ -2482,12 +2562,12 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </div>
 
                                 <div className="flex flex-wrap gap-2">
-                                {selectedTargets.length === 0 && (
-                                    <div className="rounded-lg border border-dashed border-slate-300 px-3 py-6 text-center text-xs text-slate-500">
-                                        No benchmark models selected. Use Add models to build a fresh comparison set.
-                                    </div>
-                                )}
-                                {selectedTargets.map((model) => {
+                                    {selectedTargets.length === 0 && (
+                                        <div className="w-full rounded-lg border border-dashed border-slate-300 px-3 py-6 text-center text-xs text-slate-500">
+                                            No benchmark models selected. Use Add models to build a fresh comparison set.
+                                        </div>
+                                    )}
+                                    {visibleSelectedTargets.map((model) => {
                                     const isActive = !inactiveTargetIdSet.has(model.id);
                                     const singleTarget: AiBenchmarkRunTarget = {
                                         provider: model.provider,
@@ -2553,7 +2633,17 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             </button>
                                         </span>
                                     );
-                                })}
+                                    })}
+                                    {hiddenSelectedTargetCount > 0 && (
+                                        <Button type="button" variant="outline" size="sm" onClick={() => setShowAllSelectedModels(true)}>
+                                            Show {hiddenSelectedTargetCount} more
+                                        </Button>
+                                    )}
+                                    {showAllSelectedModels && selectedTargets.length > 8 && (
+                                        <Button type="button" variant="ghost" size="sm" onClick={() => setShowAllSelectedModels(false)}>
+                                            Collapse list
+                                        </Button>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -2563,6 +2653,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         </div>
                     </div>
                 </section>
+
+                    </TabsContent>
+
+                    <TabsContent value="results" className="mt-0">
 
                 <section ref={resultsSectionRef} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -2954,6 +3048,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     </div>
                 </section>
 
+                    </TabsContent>
+                </Tabs>
+
                 <AppModal
                     isOpen={modelModalOpen}
                     onClose={() => setModelModalOpen(false)}
@@ -3041,13 +3138,20 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         disabled ? 'cursor-not-allowed opacity-50' : '',
                                                     ].join(' ')}
                                                 >
-                                                    <span className="inline-flex min-w-0 items-center gap-1.5">
-                                                        <AiProviderLogo provider={model.provider} model={model.model} size={12} />
-                                                        <span className="min-w-0 truncate font-semibold">{model.label}</span>
-                                                        {aiRuntimeSettings.defaultModelId === model.id && <Badge variant="secondary" className="h-5 text-[10px]">Frontend default</Badge>}
-                                                        {model.catalogSource === 'openrouter-live' && <Badge variant="outline" className="h-5 text-[10px]">Live</Badge>}
-                                                        {model.isFree && <Badge variant="outline" className="h-5 text-[10px]">Free</Badge>}
-                                                        {model.supportsReasoning && <Badge variant="outline" className="h-5 text-[10px]">Reasoning</Badge>}
+                                                    <span className="flex min-w-0 flex-col gap-1">
+                                                        <span className="inline-flex min-w-0 items-center gap-1.5">
+                                                            <AiProviderLogo provider={model.provider} model={model.model} size={12} />
+                                                            <span className="min-w-0 truncate font-semibold">{model.label}</span>
+                                                            {aiRuntimeSettings.defaultModelId === model.id && <Badge variant="secondary" className="h-5 text-[10px]">Frontend default</Badge>}
+                                                            {model.catalogSource === 'openrouter-live' && <Badge variant="outline" className="h-5 text-[10px]">Live</Badge>}
+                                                            {model.isFree && <Badge variant="outline" className="h-5 text-[10px]">Free</Badge>}
+                                                        </span>
+                                                        <span className="truncate text-[10px] font-normal text-slate-500">
+                                                            {model.contextLength ? `${Math.round(model.contextLength / 1000)}k context · ` : ''}
+                                                            {model.supportsReasoning
+                                                                ? `Reasoning ${model.reasoningMandatory ? 'required' : 'optional'} · ${model.reasoningEfforts?.join(', ') || 'provider controlled'}${model.defaultReasoningEffort ? ` · default ${model.defaultReasoningEffort}` : ''}`
+                                                                : 'No configurable reasoning'}
+                                                        </span>
                                                     </span>
                                                     <span className="ml-2 shrink-0 text-[10px] text-slate-500">{model.estimatedCostPerQueryLabel}</span>
                                                 </button>

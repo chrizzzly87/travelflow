@@ -15,6 +15,12 @@ const compatibleModel = {
   expiration_date: null,
   architecture: { output_modalities: ['text'] },
   supported_parameters: ['response_format', 'structured_outputs', 'tools', 'tool_choice', 'reasoning'],
+  reasoning: {
+    mandatory: true,
+    default_enabled: true,
+    supported_efforts: ['high', 'medium', 'low'],
+    default_effort: 'medium',
+  },
   pricing: { prompt: '0.000000375', completion: '0.000001875' },
 };
 
@@ -31,6 +37,9 @@ describe('openRouterModelCatalogService', () => {
       supportsStructuredOutput: true,
       supportsTools: true,
       supportsReasoning: true,
+      reasoningEfforts: ['high', 'medium', 'low'],
+      defaultReasoningEffort: 'medium',
+      reasoningMandatory: true,
       inputPricePerMillion: 0.375,
       outputPricePerMillion: 1.875,
     });
