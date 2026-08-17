@@ -3,8 +3,8 @@ id: rel-2026-08-17-destination-guides
 version: v0.159.0
 title: "Destination guides from country to island"
 date: 2026-08-17
-published_at: 2026-08-17T12:00:00Z
-status: draft
+published_at: 2026-08-17T18:38:00Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Explore when to go, where to arrive, and which cities and islands fit your next trip."
