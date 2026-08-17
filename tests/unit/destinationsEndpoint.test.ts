@@ -58,4 +58,34 @@ describe('GET /api/destinations', () => {
     });
     expect(provenance).not.toHaveProperty('sourceRecordId');
   });
+
+  it('serializes useful country facts in the safe source profile projection', () => {
+    const profile = __destinationEndpointInternals.serializeCountryProfile({
+      currency_code: 'THB',
+      timezone: 'Asia/Bangkok',
+      calling_code: '66',
+      popularity: 10,
+      summary: 'Thailand summary',
+      alert_message: null,
+      safety_tips: [],
+      bonus_tips: [],
+      static_sections: {},
+      faqs: [],
+      recent_updates: [],
+      airports: [],
+      beaches: [],
+      cities: [],
+      weather: [],
+      exchange_rate: 44.8,
+      exchange_base: 'GBP',
+    } as any);
+
+    expect(profile).toMatchObject({
+      currencyCode: 'THB',
+      timezone: 'Asia/Bangkok',
+      callingCode: '66',
+      exchange: { rate: 44.8, base: 'GBP' },
+    });
+    expect(profile).not.toHaveProperty('payload');
+  });
 });

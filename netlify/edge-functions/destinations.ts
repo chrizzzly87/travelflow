@@ -18,6 +18,9 @@ interface DestinationCountryProfileRow {
   source_fetched_at: string;
   source_updated_at: string | null;
   payload_hash: string;
+  currency_code: string | null;
+  timezone: string | null;
+  calling_code: string | null;
   popularity: number | null;
   summary: string | null;
   alert_message: string | null;
@@ -96,6 +99,7 @@ export const loadDestinationCountryProfileFromDatabase = async (
   if (!database) return null;
   const fields = [
     'source_provider', 'origin_url', 'source_fetched_at', 'source_updated_at', 'payload_hash',
+    'currency_code', 'timezone', 'calling_code',
     'popularity', 'summary', 'alert_message', 'safety_tips', 'bonus_tips', 'static_sections',
     'faqs', 'recent_updates', 'airports', 'beaches', 'cities', 'weather', 'exchange_rate', 'exchange_base',
   ].join(',');
@@ -109,6 +113,9 @@ export const loadDestinationCountryProfileFromDatabase = async (
 };
 
 const serializeCountryProfile = (profile: DestinationCountryProfileRow) => ({
+  currencyCode: profile.currency_code,
+  timezone: profile.timezone,
+  callingCode: profile.calling_code,
   popularity: profile.popularity,
   summary: profile.summary,
   alertMessage: profile.alert_message,
