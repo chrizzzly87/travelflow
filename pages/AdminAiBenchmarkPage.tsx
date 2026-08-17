@@ -66,7 +66,6 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -77,10 +76,19 @@ import { Switch } from '../components/ui/switch';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from '../components/ui/select';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '../components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import {
     isAiModelOlderThanMonths,
@@ -229,7 +237,8 @@ interface ValidationCheckStats {
 const DEFAULT_SESSION_NAME = 'AI benchmark session';
 const CUSTOM_JSON_PRESET_ID = '__custom_json__';
 const CUSTOM_JSON_PRESET_NAME = 'Custom JSON import';
-const BENCHMARK_PARALLEL_CONCURRENCY = 3;
+const BENCHMARK_CONCURRENCY_DEFAULT = 2;
+const BENCHMARK_CONCURRENCY_MAX = 5;
 const BENCHMARK_TIMEOUT_MIN_SECONDS = 20;
 const BENCHMARK_TIMEOUT_MAX_SECONDS = 180;
 const BENCHMARK_TIMEOUT_DEFAULT_SECONDS = 60;
@@ -345,6 +354,61 @@ const getRunTimestampIso = (run: BenchmarkRun): string | null => {
 };
 
 const isRunActive = (run: BenchmarkRun): boolean => run.status === 'queued' || run.status === 'running';
+
+const RunLatency: React.FC<{ run: BenchmarkRun }> = React.memo(({ run }) => {
+    const startedMs = run.started_at ? Date.parse(run.started_at) : Number.NaN;
+    const [elapsedMs, setElapsedMs] = useState(() => (
+        Number.isFinite(startedMs) ? Math.max(0, Date.now() - startedMs) : 0
+    ));
+
+    useEffect(() => {
+        if (run.status !== 'running' || !Number.isFinite(startedMs)) return;
+        const updateElapsed = () => setElapsedMs(Math.max(0, Date.now() - startedMs));
+        updateElapsed();
+        const timer = window.setInterval(updateElapsed, 1000);
+        return () => window.clearInterval(timer);
+    }, [run.status, startedMs]);
+
+    if (typeof run.latency_ms === 'number') {
+        return <span className="tabular-nums">{formatDuration(run.latency_ms)}</span>;
+    }
+    if (run.status !== 'running' || !Number.isFinite(startedMs)) {
+        return <span>—</span>;
+    }
+    return <span className="tabular-nums">{Math.floor(elapsedMs / 1000)} s</span>;
+});
+
+RunLatency.displayName = 'RunLatency';
+
+const ModelReasoningSelect: React.FC<{
+    model: AiModelCatalogItem;
+    runDefault: BenchmarkReasoningMode;
+    value?: BenchmarkReasoningMode;
+    onChange: (value: BenchmarkReasoningMode | undefined) => void;
+}> = ({ model, runDefault, value, onChange }) => {
+    const isConfigurable = model.provider === 'openrouter' && model.supportsReasoning === true;
+    if (!isConfigurable) {
+        return <span className="text-xs text-slate-500">Not configurable</span>;
+    }
+
+    const supportedEfforts = (model.reasoningEfforts?.length ? model.reasoningEfforts : AI_REASONING_EFFORTS)
+        .filter((effort) => !model.reasoningMandatory || effort !== 'none');
+
+    return (
+        <Select value={value || 'inherit'} onValueChange={(nextValue) => onChange(nextValue === 'inherit' ? undefined : nextValue as BenchmarkReasoningMode)}>
+            <SelectTrigger aria-label={`${model.label} reasoning`} className="h-8"><SelectValue /></SelectTrigger>
+            <SelectContent>
+                <SelectGroup>
+                    <SelectItem value="inherit">Run default · {REASONING_MODE_LABELS[runDefault]}</SelectItem>
+                    <SelectItem value="provider-default">Model default</SelectItem>
+                    {supportedEfforts.map((effort) => (
+                        <SelectItem key={effort} value={effort}>{REASONING_MODE_LABELS[effort]}</SelectItem>
+                    ))}
+                </SelectGroup>
+            </SelectContent>
+        </Select>
+    );
+};
 
 const isRunCancelledByUser = (run: BenchmarkRun): boolean => {
     if (run.status !== 'failed') return false;
@@ -539,6 +603,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [sessionName, setSessionName] = useState(DEFAULT_SESSION_NAME);
     const [benchmarkTimeoutSeconds, setBenchmarkTimeoutSeconds] = useState(BENCHMARK_TIMEOUT_DEFAULT_SECONDS);
     const [benchmarkReasoningMode, setBenchmarkReasoningMode] = useState<BenchmarkReasoningMode>('low');
+    const [benchmarkConcurrency, setBenchmarkConcurrency] = useState(BENCHMARK_CONCURRENCY_DEFAULT);
+    const [modelReasoningModes, setModelReasoningModes] = useState<Record<string, BenchmarkReasoningMode>>({});
     const [compactBenchmarkOutput, setCompactBenchmarkOutput] = useState(true);
     const [workspaceTab, setWorkspaceTab] = useState<'setup' | 'results' | 'insights'>('setup');
 
@@ -566,7 +632,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [inactiveModelTargetIds, setInactiveModelTargetIds] = useState<string[]>([]);
     const [modelModalOpen, setModelModalOpen] = useState(false);
     const [modelDraftIds, setModelDraftIds] = useState<string[]>([]);
-    const [showAllSelectedModels, setShowAllSelectedModels] = useState(false);
+    const [templateDetailsOpen, setTemplateDetailsOpen] = useState(false);
     const [presetEditor, setPresetEditor] = useState<PresetEditorDraft | null>(null);
     const [customScenarioJsonDraft, setCustomScenarioJsonDraft] = useState('');
     const [customScenarioMeta, setCustomScenarioMeta] = useState<{
@@ -589,7 +655,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
     const [loading, setLoading] = useState(false);
     const [cancelling, setCancelling] = useState(false);
-    const [liveNow, setLiveNow] = useState(() => Date.now());
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
 
@@ -681,8 +746,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         });
     }, [modelTargetIds, sortedModels]);
     const selectedTargetIdSet = useMemo(() => new Set(selectedTargets.map((target) => target.id)), [selectedTargets]);
-    const visibleSelectedTargets = showAllSelectedModels ? selectedTargets : selectedTargets.slice(0, 8);
-    const hiddenSelectedTargetCount = Math.max(0, selectedTargets.length - visibleSelectedTargets.length);
     const inactiveTargetIdSet = useMemo(() => new Set(inactiveModelTargetIds), [inactiveModelTargetIds]);
     const runnableTargets = useMemo(
         () => buildRunnableBenchmarkTargets(selectedTargets, inactiveModelTargetIds),
@@ -758,6 +821,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         presetConfigs,
         selectedPresetId,
     ]);
+    const selectedTemplateJson = useMemo(() => (
+        selectedPresetId === CUSTOM_JSON_PRESET_ID && customScenarioJsonDraft.trim()
+            ? customScenarioJsonDraft
+            : JSON.stringify(selectedPreset?.scenario || {}, null, 2)
+    ), [customScenarioJsonDraft, selectedPreset?.scenario, selectedPresetId]);
+    const selectedTemplateJsonHtml = useMemo(() => Prism.highlight(
+        selectedTemplateJson,
+        Prism.languages.json,
+        'json',
+    ), [selectedTemplateJson]);
 
     const providerOptions = useMemo(() => {
         const values = Array.from(new Set(runs.flatMap((run) => (run.provider ? [run.provider] : []))));
@@ -890,19 +963,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             });
     }, [runs]);
 
-    const getDisplayLatencyMs = useCallback((run: BenchmarkRun): number | null => {
-        if (typeof run.latency_ms === 'number' && run.latency_ms > 0) {
-            return run.latency_ms;
-        }
-        if (run.status !== 'running') {
-            return typeof run.latency_ms === 'number' ? run.latency_ms : null;
-        }
-        if (!run.started_at) return null;
-        const startedMs = Date.parse(run.started_at);
-        if (!Number.isFinite(startedMs)) return null;
-        return Math.max(0, liveNow - startedMs);
-    }, [liveNow]);
-
     const benchmarkSessionParam = (searchParams.get('session') || '').trim();
 
     const applyMaskScenario = useCallback((scenario: BenchmarkMaskScenario) => {
@@ -1031,12 +1091,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     useEffect(() => {
         void import('prismjs/themes/prism-tomorrow.css');
     }, []);
-
-    useEffect(() => {
-        if (!hasPendingRuns) return;
-        const timer = window.setInterval(() => setLiveNow(Date.now()), 250);
-        return () => window.clearInterval(timer);
-    }, [hasPendingRuns]);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -1565,12 +1619,15 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         const catalogModel = sortedModels.find((model) => (
                             model.provider === target.provider && model.model === target.model
                         ));
+                        const requestedReasoningMode = catalogModel
+                            ? modelReasoningModes[catalogModel.id] ?? benchmarkReasoningMode
+                            : benchmarkReasoningMode;
                         const shouldConfigureReasoning = target.provider === 'openrouter'
                             && catalogModel?.supportsReasoning === true
-                            && benchmarkReasoningMode !== 'provider-default';
+                            && requestedReasoningMode !== 'provider-default';
                         const reasoningEffort = shouldConfigureReasoning
                             ? resolveSupportedReasoningEffort(
-                                benchmarkReasoningMode,
+                                requestedReasoningMode as AiReasoningEffort,
                                 catalogModel.reasoningEfforts,
                                 catalogModel.reasoningMandatory,
                             )
@@ -1581,7 +1638,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         };
                     }),
                     runCount: 1,
-                    concurrency: BENCHMARK_PARALLEL_CONCURRENCY,
+                    concurrency: benchmarkConcurrency,
                     timeoutMs,
                 }),
             });
@@ -1599,7 +1656,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             const hasPending = nextRuns.some((run) => isRunActive(run));
             if (hasPending) {
                 setMessage(
-                    `Queued ${selected.length} target(s). Running in background (${timeoutSeconds}s timeout, ${compactBenchmarkOutput ? 'compact' : 'standard'} output).`
+                    `Queued ${selected.length} target(s) with up to ${benchmarkConcurrency} parallel (${timeoutSeconds}s timeout, ${compactBenchmarkOutput ? 'compact' : 'standard'} output).`
                 );
             } else {
                 setMessage(
@@ -1629,7 +1686,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         accessToken,
         benchmarkTimeoutSeconds,
         benchmarkReasoningMode,
+        benchmarkConcurrency,
         compactBenchmarkOutput,
+        modelReasoningModes,
         runnableTargets,
         runs,
         fetchBenchmarkApi,
@@ -2241,415 +2300,305 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                     <TabsContent value="setup" className="mt-0">
 
-                <section className="grid gap-4 xl:grid-cols-[minmax(320px,0.95fr)_minmax(520px,1.05fr)]">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-                        <div className="flex items-start justify-between gap-3">
-                            <div>
-                                <h3 className="text-lg font-semibold text-slate-900">Create-trip benchmark mask</h3>
-                                <p className="mt-1 text-xs text-slate-500">
-                                    Pick a preset and edit in modal so the results table stays in view.
-                                </p>
-                            </div>
-                            <span className="rounded-full border border-slate-300 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                                {!accessToken && isAuthenticated
-                                    ? 'Re-auth required on this localhost port'
-                                    : preferencesLoaded
-                                        ? 'DB sync ready'
-                                        : 'Loading prefs...'}
-                            </span>
+                <Card className="gap-0 rounded-lg border-slate-200 py-0 shadow-sm">
+                    <CardHeader className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-start sm:justify-between md:px-6">
+                        <div>
+                            <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
+                                Benchmark setup
+                                <Badge variant="secondary">{runnableTargets.length} active</Badge>
+                                <Badge variant="outline">{selectedTargets.length} selected</Badge>
+                            </CardTitle>
+                            <CardDescription className="mt-1">Choose one trip template, tune execution, then compare the selected models.</CardDescription>
                         </div>
+                        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                            <Button
+                                type="button"
+                                onClick={() => {
+                                    scrollToResults();
+                                    void runBenchmark();
+                                }}
+                                disabled={loading || hasPendingRuns || cancelling || runnableTargets.length === 0}
+                            >
+                                <Play data-icon="inline-start" weight="fill" />
+                                Run {runnableTargets.length} model{runnableTargets.length === 1 ? '' : 's'}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={cancelActiveRunsInSession}
+                                disabled={loading || cancelling || !session || !hasPendingRuns}
+                            >
+                                <StopCircle data-icon="inline-start" />
+                                Stop
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={cleanupSession}
+                                disabled={loading || cancelling || !session || hasPendingRuns}
+                            >
+                                <Trash data-icon="inline-start" />
+                                Clear
+                            </Button>
+                        </div>
+                    </CardHeader>
 
-                        <div className="mt-3 space-y-3">
-                            <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Session name</span>
-	                                <input
-	                                    aria-label="Session name"
-	                                    value={sessionName}
-                                    onChange={(event) => setSessionName(event.target.value)}
-                                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
-                                />
-                            </label>
-
-                            <div className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preset</span>
+                    <CardContent className="divide-y divide-slate-200 px-0">
+                        <section className="grid gap-4 p-4 md:grid-cols-[minmax(220px,0.8fr)_minmax(240px,1fr)_minmax(300px,1.4fr)] md:p-6">
+                            <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-slate-700">
+                                Trip template
                                 <Select value={selectedPresetId} onValueChange={(value) => void handlePresetSelection(value)}>
-                                    <SelectTrigger aria-label="Preset">
-                                        <SelectValue placeholder="Choose benchmark preset" />
+                                    <SelectTrigger aria-label="Trip template" className="h-9">
+                                        <SelectValue placeholder="Choose a template" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {presetConfigs.map((preset) => (
-                                            <SelectItem key={preset.id} value={preset.id}>
-                                                {preset.name}
-                                            </SelectItem>
-                                        ))}
-                                        <SelectItem value={CUSTOM_JSON_PRESET_ID}>
-                                            {CUSTOM_JSON_PRESET_NAME}
-                                        </SelectItem>
+                                        <SelectGroup>
+                                            {presetConfigs.map((preset) => (
+                                                <SelectItem key={preset.id} value={preset.id}>{preset.name}</SelectItem>
+                                            ))}
+                                            <SelectItem value={CUSTOM_JSON_PRESET_ID}>{CUSTOM_JSON_PRESET_NAME}</SelectItem>
+                                        </SelectGroup>
                                     </SelectContent>
                                 </Select>
-                            </div>
-
-                            <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="font-semibold text-slate-800">{selectedPreset?.name || 'Preset'}</span>
-                                    <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[10px] uppercase tracking-wide">
-                                        {selectedPreset?.kind || 'system'}
-                                    </span>
-                                </div>
-                                <p className="mt-1 text-[11px] text-slate-500">
-                                    {selectedPreset?.description || 'No description saved for this preset.'}
-                                </p>
-                                <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
-                                    <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">
-                                        {destinations || 'No destinations'}
-                                    </span>
-                                    <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">
-                                        {dateInputMode === 'flex' ? `${flexWeeks} week flexible` : `${startDate} → ${endDate}`}
-                                    </span>
-                                    <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">{budget}</span>
-                                    <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">{pace}</span>
-                                </div>
-                            </div>
-                            {selectedPresetId === CUSTOM_JSON_PRESET_ID && (
-                                <div className="space-y-2 rounded-md border border-accent-200 bg-accent-50/50 p-3">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-accent-800">Custom JSON import</span>
-                                        <span className="rounded-full border border-accent-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-700">
-                                            mapped as {customScenarioDraftParse.flow}
-                                        </span>
-                                    </div>
-                                    <p className="text-[11px] text-slate-600">
-                                        Paste a trip generation payload or a benchmark scenario JSON. Apply it to prefill the benchmark mask.
-                                    </p>
-	                                    <textarea
-	                                        aria-label="Custom JSON import"
-	                                        value={customScenarioJsonDraft}
-                                        onChange={(event) => {
-                                            setCustomScenarioJsonDraft(event.target.value);
-                                            setCustomScenarioMeta((current) => current || {
-                                                source: 'manual',
-                                                flow: 'unknown',
-                                                tripId: null,
-                                            });
-                                        }}
-                                        rows={10}
-                                        spellCheck={false}
-                                        className="min-h-[200px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-[11px] text-slate-800 outline-none focus:ring-2 focus:ring-accent-500"
-                                        placeholder='{"destinationPrompt":"Berlin, Germany","options":{"budget":"Medium","pace":"Balanced"}}'
-                                    />
-                                    {customScenarioDraftParse.error ? (
-                                        <p className="text-[11px] font-medium text-rose-700">{customScenarioDraftParse.error}</p>
-                                    ) : (
-                                        <p className="text-[11px] text-slate-600">
-                                            Ready to apply. Destination preview: <span className="font-semibold text-slate-800">{customScenarioDraftParse.scenario?.destinations || 'n/a'}</span>
-                                        </p>
-                                    )}
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={applyCustomJsonToMask}
-                                            disabled={loading || cancelling || !customScenarioJsonDraft.trim() || Boolean(customScenarioDraftParse.error)}
-                                            className="inline-flex items-center gap-1 rounded-md border border-accent-300 bg-accent-100 px-2.5 py-1.5 text-xs font-semibold text-accent-800 hover:bg-accent-200 disabled:cursor-not-allowed disabled:opacity-60"
-                                        >
-                                            Apply JSON to mask
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => loadCurrentMaskIntoCustomJson()}
-                                            disabled={loading || cancelling}
-                                            className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                        >
-                                            Load current mask JSON
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="flex flex-wrap items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => openPresetEditor('edit')}
-                                    disabled={loading || cancelling || selectedPresetId === CUSTOM_JSON_PRESET_ID}
-                                    className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    Edit preset
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => openPresetEditor('create')}
-                                    disabled={loading || cancelling}
-                                    className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    <Plus size={14} />
-                                    New custom preset
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={openPromptPreview}
-                                    disabled={loading}
-                                    className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    Preview prompt
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-                        <div className="flex flex-wrap items-start justify-between gap-4">
-                            <div>
-                                <h3 className="text-lg font-semibold tracking-tight text-slate-950">Run configuration</h3>
-                                <p className="mt-1 text-xs text-slate-500">Choose the speed/quality tradeoff, then run the active comparison set.</p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                    type="button"
-                                    onClick={() => {
-                                        scrollToResults();
-                                        void runBenchmark();
-                                    }}
-                                    disabled={loading || hasPendingRuns || cancelling || runnableTargets.length === 0}
-                                >
-                                    <Play data-icon="inline-start" weight="fill" />
-                                    Run {runnableTargets.length} active
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={cancelActiveRunsInSession}
-                                    disabled={loading || cancelling || !session || !hasPendingRuns}
-                                >
-                                    <StopCircle data-icon="inline-start" />
-                                    Stop
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={cleanupSession}
-                                    disabled={loading || cancelling || !session || hasPendingRuns}
-                                >
-                                    <Trash data-icon="inline-start" />
-                                    Clear session
-                                </Button>
-                            </div>
-                        </div>
-
-                        <div className="mt-4 flex flex-wrap gap-2">
-                            <Badge variant="secondary">{selectedTargets.length} selected</Badge>
-                            <Badge variant="secondary">{runnableTargets.length} active</Badge>
-                            <Badge variant="outline">{BENCHMARK_PARALLEL_CONCURRENCY} parallel</Badge>
-                            {runnableTargets.length > BENCHMARK_PARALLEL_CONCURRENCY && (
-                                <Badge variant="outline">{runnableTargets.length - BENCHMARK_PARALLEL_CONCURRENCY} queued</Badge>
-                            )}
-                        </div>
-
-                        <div className="mt-4 grid gap-3 md:grid-cols-3">
-                            <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-700">
-                                Reasoning effort
-                                <Select
-                                    value={benchmarkReasoningMode}
-                                    onValueChange={(value) => setBenchmarkReasoningMode(value as BenchmarkReasoningMode)}
-                                >
-                                    <SelectTrigger aria-label="Reasoning effort" className="bg-white">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="provider-default">Model default</SelectItem>
-                                        {AI_REASONING_EFFORTS.map((effort) => (
-                                            <SelectItem key={effort} value={effort}>{REASONING_MODE_LABELS[effort]}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <span className="font-normal text-slate-500">
-                                    Applies to {reasoningTargets.length} reasoning model{reasoningTargets.length === 1 ? '' : 's'}; required reasoning uses the lowest supported level when Off is selected.
-                                </span>
                             </label>
 
-                            <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-700">
-                                Hard time limit
+                            <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-slate-700">
+                                Session name
                                 <Input
-                                    type="number"
-                                    aria-label="Timeout seconds"
-                                    min={BENCHMARK_TIMEOUT_MIN_SECONDS}
-                                    max={BENCHMARK_TIMEOUT_MAX_SECONDS}
-                                    step={5}
-                                    value={benchmarkTimeoutSeconds}
-                                    onChange={(event) => {
-                                        const parsed = Number(event.target.value);
-                                        if (!Number.isFinite(parsed)) {
-                                            setBenchmarkTimeoutSeconds(BENCHMARK_TIMEOUT_DEFAULT_SECONDS);
-                                            return;
-                                        }
-                                        setBenchmarkTimeoutSeconds(
-                                            Math.max(BENCHMARK_TIMEOUT_MIN_SECONDS, Math.min(BENCHMARK_TIMEOUT_MAX_SECONDS, Math.round(parsed)))
-                                        );
-                                    }}
-                                />
-                                <span className="font-normal text-slate-500">Safety ceiling, not a target. Actual latency is measured separately.</span>
-                            </label>
-
-                            <label className="flex min-h-20 items-start justify-between gap-3 rounded-lg bg-slate-50 p-3 text-xs font-medium text-slate-700">
-                                <span>
-                                    Compact output
-                                    <span className="mt-1 block font-normal text-slate-500">Shorter JSON for faster, more reliable comparisons.</span>
-                                </span>
-                                <Switch
-                                    aria-label="Compact output"
-                                    checked={compactBenchmarkOutput}
-                                    onCheckedChange={setCompactBenchmarkOutput}
+                                    aria-label="Session name"
+                                    value={sessionName}
+                                    onChange={(event) => setSessionName(event.target.value)}
+                                    className="h-9"
                                 />
                             </label>
-                        </div>
 
-                        <Card className="mt-4 gap-4 border-slate-200 py-4 shadow-sm">
-                            <CardHeader className="gap-1 px-4 md:px-5">
-                                <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-                                    Model workspace
-                                    <Badge variant="secondary">{runnableTargets.length} active</Badge>
-                                    <Badge variant="outline">{selectedTargets.length} selected</Badge>
-                                </CardTitle>
-                                <CardDescription>Benchmark targets and the model used by the public trip creator.</CardDescription>
-                                <CardAction>
-                                    <Button type="button" onClick={openModelPicker} disabled={loading || cancelling || hasPendingRuns} size="sm">
-                                        <Plus data-icon="inline-start" />
-                                        Add models
+                            <div className="min-w-0 rounded-md border border-slate-200 bg-slate-50 p-3">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="truncate text-sm font-semibold text-slate-900">{selectedPreset?.name || 'Template'}</span>
+                                            <Badge variant="outline" className="h-5 text-[10px]">{selectedPreset?.kind || 'system'}</Badge>
+                                        </div>
+                                        <p className="mt-1 line-clamp-2 text-xs text-slate-500">
+                                            {selectedPreset?.description || 'No description saved for this template.'}
+                                        </p>
+                                    </div>
+                                    <Button type="button" variant="outline" size="xs" onClick={() => setTemplateDetailsOpen(true)}>
+                                        Details
                                     </Button>
-                                </CardAction>
-                            </CardHeader>
-                            <CardContent className="flex flex-col gap-4 px-4 md:px-5">
-                                <div className="grid gap-3 rounded-lg bg-slate-50 p-3 lg:grid-cols-[minmax(0,1fr)_auto]">
-                                    <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-slate-700">
-                                        Frontend default model
-                                        <Select
-                                            value={aiRuntimeSettings.defaultModelId}
-                                            onValueChange={(value) => void persistAiRuntimeSettings({
-                                                defaultModelId: value,
-                                                approvedOpenRouterModels: Array.from(new Set([
-                                                    ...aiRuntimeSettings.approvedOpenRouterModels,
-                                                    ...(value.startsWith('openrouter:') ? [value.slice('openrouter:'.length)] : []),
-                                                ])),
-                                            })}
-                                        >
-                                            <SelectTrigger aria-label="Frontend default model" className="bg-white">
-                                                <SelectValue placeholder="Choose the frontend model" />
-                                            </SelectTrigger>
-                                            <SelectContent>
+                                </div>
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                    <Badge variant="secondary">{destinations || 'No destination'}</Badge>
+                                    <Badge variant="outline">{dateInputMode === 'flex' ? `${flexWeeks} week flexible` : `${startDate} → ${endDate}`}</Badge>
+                                    <Badge variant="outline">{budget}</Badge>
+                                    <Badge variant="outline">{pace}</Badge>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className="p-4 md:p-6">
+                            <div className="mb-3 flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-slate-900">Execution</h3>
+                                    <p className="text-xs text-slate-500">Run defaults apply unless a model has its own reasoning setting below.</p>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                    <span>{Math.max(0, runnableTargets.length - benchmarkConcurrency)} queued</span>
+                                    <span aria-hidden="true">·</span>
+                                    <span>{preferencesLoaded ? 'Saved preferences ready' : 'Loading preferences'}</span>
+                                </div>
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                                <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-700">
+                                    Run default reasoning
+                                    <Select value={benchmarkReasoningMode} onValueChange={(value) => setBenchmarkReasoningMode(value as BenchmarkReasoningMode)}>
+                                        <SelectTrigger aria-label="Run default reasoning" className="h-9"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                <SelectItem value="provider-default">Model default</SelectItem>
+                                                {AI_REASONING_EFFORTS.map((effort) => (
+                                                    <SelectItem key={effort} value={effort}>{REASONING_MODE_LABELS[effort]}</SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                    <span className="font-normal text-slate-500">Used by {reasoningTargets.length} compatible model{reasoningTargets.length === 1 ? '' : 's'}.</span>
+                                </label>
+
+                                <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-700">
+                                    Parallel requests
+                                    <Select value={String(benchmarkConcurrency)} onValueChange={(value) => setBenchmarkConcurrency(Number(value))}>
+                                        <SelectTrigger aria-label="Parallel requests" className="h-9"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                {Array.from({ length: BENCHMARK_CONCURRENCY_MAX }, (_, index) => index + 1).map((count) => (
+                                                    <SelectItem key={count} value={String(count)}>{count} at a time</SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                    <span className="font-normal text-slate-500">Lower reduces provider contention and timeout risk.</span>
+                                </label>
+
+                                <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-700">
+                                    Time limit
+                                    <Input
+                                        type="number"
+                                        aria-label="Timeout seconds"
+                                        min={BENCHMARK_TIMEOUT_MIN_SECONDS}
+                                        max={BENCHMARK_TIMEOUT_MAX_SECONDS}
+                                        step={5}
+                                        value={benchmarkTimeoutSeconds}
+                                        className="h-9"
+                                        onChange={(event) => {
+                                            const parsed = Number(event.target.value);
+                                            setBenchmarkTimeoutSeconds(Number.isFinite(parsed)
+                                                ? Math.max(BENCHMARK_TIMEOUT_MIN_SECONDS, Math.min(BENCHMARK_TIMEOUT_MAX_SECONDS, Math.round(parsed)))
+                                                : BENCHMARK_TIMEOUT_DEFAULT_SECONDS);
+                                        }}
+                                    />
+                                    <span className="font-normal text-slate-500">Seconds per model; actual latency stays visible.</span>
+                                </label>
+
+                                <div className="flex min-h-[76px] items-start justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+                                    <div>
+                                        <div className="text-xs font-medium text-slate-700">Compact output</div>
+                                        <p className="mt-1 text-xs text-slate-500">Shorter JSON, faster comparisons.</p>
+                                    </div>
+                                    <Switch aria-label="Compact output" checked={compactBenchmarkOutput} onCheckedChange={setCompactBenchmarkOutput} />
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className="p-4 md:p-6">
+                            <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-slate-900">Models</h3>
+                                    <p className="text-xs text-slate-500">Set each model’s reasoning, active status, and single-run actions.</p>
+                                </div>
+                                <Button type="button" onClick={openModelPicker} disabled={loading || cancelling || hasPendingRuns}>
+                                    <Plus data-icon="inline-start" />
+                                    Add models
+                                </Button>
+                            </div>
+
+                            <div className="mb-3 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 lg:grid-cols-[minmax(260px,1fr)_auto]">
+                                <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-slate-700">
+                                    Frontend default model
+                                    <Select
+                                        value={aiRuntimeSettings.defaultModelId}
+                                        onValueChange={(value) => void persistAiRuntimeSettings({
+                                            defaultModelId: value,
+                                            approvedOpenRouterModels: Array.from(new Set([
+                                                ...aiRuntimeSettings.approvedOpenRouterModels,
+                                                ...(value.startsWith('openrouter:') ? [value.slice('openrouter:'.length)] : []),
+                                            ])),
+                                        })}
+                                    >
+                                        <SelectTrigger aria-label="Frontend default model" className="h-9 bg-white">
+                                            <SelectValue placeholder="Choose the frontend model" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
                                                 {sortedModels.filter((model) => model.availability === 'active').map((model) => (
                                                     <SelectItem key={model.id} value={model.id}>{model.providerShortName} · {model.label}</SelectItem>
                                                 ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </label>
-                                    <div className="flex flex-wrap items-end gap-2">
-                                        <Button type="button" variant="outline" size="sm" onClick={activateAllModelTargets} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsActive}>
-                                            <ToggleRight data-icon="inline-start" />
-                                            Activate all
-                                        </Button>
-                                        <Button type="button" variant="outline" size="sm" onClick={deactivateAllModelTargets} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsInactive}>
-                                            <ToggleLeft data-icon="inline-start" />
-                                            Deactivate all
-                                        </Button>
-                                        <Button type="button" variant="destructive" size="sm" onClick={() => void removeAllModelTargets()} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0}>
-                                            <Trash data-icon="inline-start" />
-                                            Remove all
-                                        </Button>
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </label>
+                                <div className="flex flex-wrap items-end gap-2">
+                                    <Button type="button" variant="outline" size="sm" onClick={activateAllModelTargets} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsActive}>
+                                        <ToggleRight data-icon="inline-start" /> Activate all
+                                    </Button>
+                                    <Button type="button" variant="outline" size="sm" onClick={deactivateAllModelTargets} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsInactive}>
+                                        <ToggleLeft data-icon="inline-start" /> Deactivate all
+                                    </Button>
+                                    <Button type="button" variant="destructive" size="sm" onClick={() => void removeAllModelTargets()} disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0}>
+                                        <Trash data-icon="inline-start" /> Remove all
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="overflow-hidden rounded-md border border-slate-200">
+                                {selectedTargets.length === 0 ? (
+                                    <div className="px-4 py-10 text-center text-sm text-slate-500">
+                                        No benchmark models selected. Add models to build a comparison set.
                                     </div>
-                                </div>
+                                ) : (
+                                    <Table>
+                                        <TableHeader className="bg-slate-50">
+                                            <TableRow>
+                                                <TableHead className="ps-4">Model</TableHead>
+                                                <TableHead className="w-[220px]">Reasoning</TableHead>
+                                                <TableHead className="w-[110px]">Active</TableHead>
+                                                <TableHead className="w-[100px] pe-4 text-end">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {selectedTargets.map((model) => {
+                                                const isActive = !inactiveTargetIdSet.has(model.id);
+                                                const singleTarget: AiBenchmarkRunTarget = { provider: model.provider, model: model.model, label: model.label };
+                                                return (
+                                                    <TableRow key={model.id} className={!isActive ? 'bg-slate-50/70 text-slate-500' : undefined}>
+                                                        <TableCell className="ps-4">
+                                                            <div className="flex items-center gap-2 font-medium text-slate-900">
+                                                                <AiProviderLogo provider={model.provider} model={model.model} size={20} />
+                                                                <span className="truncate">{model.label}</span>
+                                                                {aiRuntimeSettings.defaultModelId === model.id && <Badge variant="secondary">Frontend</Badge>}
+                                                            </div>
+                                                            <div className="ps-7 text-xs text-slate-500">{model.providerShortName} · {model.model}</div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <ModelReasoningSelect
+                                                                model={model}
+                                                                runDefault={benchmarkReasoningMode}
+                                                                value={modelReasoningModes[model.id]}
+                                                                onChange={(value) => setModelReasoningModes((current) => {
+                                                                    if (value === undefined) {
+                                                                        const next = { ...current };
+                                                                        delete next[model.id];
+                                                                        return next;
+                                                                    }
+                                                                    return { ...current, [model.id]: value };
+                                                                })}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="flex items-center gap-2">
+                                                                <Switch
+                                                                    checked={isActive}
+                                                                    onCheckedChange={() => toggleModelTargetActive(model.id)}
+                                                                    disabled={loading || cancelling || hasPendingRuns}
+                                                                    aria-label={`${isActive ? 'Deactivate' : 'Activate'} ${model.label}`}
+                                                                />
+                                                                <span className="text-xs text-slate-500">{isActive ? 'On' : 'Off'}</span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="pe-4">
+                                                            <div className="flex justify-end gap-1">
+                                                                <Button type="button" variant="ghost" size="icon-sm" onClick={() => { scrollToResults(); runSingleTarget(singleTarget); }} disabled={loading || cancelling || hasPendingRuns} aria-label={`Run ${model.label} only`} title={`Run ${model.label} only`}>
+                                                                    <Play weight="fill" />
+                                                                </Button>
+                                                                <Button type="button" variant="ghost" size="icon-sm" onClick={() => void removeModelTarget(model.id)} disabled={loading || cancelling || hasPendingRuns} aria-label={`Remove ${model.label}`} title={`Remove ${model.label}`}>
+                                                                    <X />
+                                                                </Button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                )}
+                            </div>
+                            <p className="mt-2 text-xs text-slate-500">{COST_ESTIMATE_FOOTNOTE}</p>
+                        </section>
+                    </CardContent>
+                </Card>
 
-                                <div className="flex flex-wrap gap-2">
-                                    {selectedTargets.length === 0 && (
-                                        <div className="w-full rounded-lg border border-dashed border-slate-300 px-3 py-6 text-center text-xs text-slate-500">
-                                            No benchmark models selected. Use Add models to build a fresh comparison set.
-                                        </div>
-                                    )}
-                                    {visibleSelectedTargets.map((model) => {
-                                    const isActive = !inactiveTargetIdSet.has(model.id);
-                                    const singleTarget: AiBenchmarkRunTarget = {
-                                        provider: model.provider,
-                                        model: model.model,
-                                        label: model.label,
-                                    };
-                                    return (
-                                        <span
-                                            key={model.id}
-                                            className={[
-                                                'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px]',
-                                                isActive
-                                                    ? 'border-slate-300 bg-slate-50 text-slate-700'
-                                                    : 'border-slate-300 bg-slate-100 text-slate-500',
-                                            ].join(' ')}
-                                        >
-                                            <ProviderLabel
-                                                provider={model.provider}
-                                                model={model.model}
-                                                showModel={false}
-                                                providerClassName={isActive ? 'text-slate-600' : 'text-slate-500'}
-                                                logoSize={12}
-                                            />
-                                            <span className={`font-semibold ${isActive ? '' : 'line-through'}`}>{model.label}</span>
-                                            {aiRuntimeSettings.defaultModelId === model.id && (
-                                                <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">Frontend default</Badge>
-                                            )}
-                                            <button
-                                                type="button"
-                                                onClick={() => toggleModelTargetActive(model.id)}
-                                                disabled={loading || cancelling || hasPendingRuns}
-                                                className={[
-                                                    'rounded-full p-0.5 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50',
-                                                    isActive ? 'text-emerald-700 hover:text-emerald-800' : 'text-slate-500 hover:text-slate-800',
-                                                ].join(' ')}
-                                                aria-label={isActive ? `Deactivate ${model.label} for Test all` : `Activate ${model.label} for Test all`}
-                                                title={isActive ? `Deactivate ${model.label} for Test all` : `Activate ${model.label} for Test all`}
-                                            >
-                                                {isActive ? <ToggleRight size={10} /> : <ToggleLeft size={10} />}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    scrollToResults();
-                                                    runSingleTarget(singleTarget);
-                                                }}
-                                                disabled={loading || cancelling || hasPendingRuns}
-                                                className="rounded-full p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                                                aria-label={`Run ${model.label} only`}
-                                                title={`Run ${model.label} only`}
-                                            >
-                                                <Play size={10} weight="fill" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => void removeModelTarget(model.id)}
-                                                disabled={loading || cancelling || hasPendingRuns}
-                                                className="rounded-full p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                                                aria-label={`Remove ${model.label}`}
-                                                title={`Remove ${model.label}`}
-                                            >
-                                                <X size={10} />
-                                            </button>
-                                        </span>
-                                    );
-                                    })}
-                                    {hiddenSelectedTargetCount > 0 && (
-                                        <Button type="button" variant="outline" size="sm" onClick={() => setShowAllSelectedModels(true)}>
-                                            Show {hiddenSelectedTargetCount} more
-                                        </Button>
-                                    )}
-                                    {showAllSelectedModels && selectedTargets.length > 8 && (
-                                        <Button type="button" variant="ghost" size="sm" onClick={() => setShowAllSelectedModels(false)}>
-                                            Collapse list
-                                        </Button>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <div className="mt-2 text-[11px] text-slate-500">
-                            {COST_ESTIMATE_FOOTNOTE}
-                        </div>
-                    </div>
-                </section>
 
                     </TabsContent>
 
@@ -2844,7 +2793,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 )}
                                             </td>
                                             <td className="px-3 py-2 text-xs text-slate-600">{formatTimestamp(getRunTimestampIso(run))}</td>
-                                            <td className="px-3 py-2 text-sm text-slate-700">{formatDuration(getDisplayLatencyMs(run))}</td>
+                                            <td className="px-3 py-2 text-sm text-slate-700"><RunLatency run={run} /></td>
                                             <td className="px-3 py-2 text-sm text-slate-700">
                                                 <div className="space-y-1">
                                                     <div>
@@ -3047,6 +2996,87 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                     </TabsContent>
                 </Tabs>
+
+                <AppModal
+                    isOpen={templateDetailsOpen}
+                    onClose={() => setTemplateDetailsOpen(false)}
+                    title={selectedPreset?.name || 'Trip template details'}
+                    description="Review the benchmark input without losing the run configuration."
+                    size="xl"
+                    mobileSheet={false}
+                    contentClassName="sm:rounded-lg"
+                    footer={(
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <Button type="button" variant="ghost" size="sm" onClick={openPromptPreview}>Preview prompt</Button>
+                            <div className="flex items-center gap-2">
+                                {selectedPresetId !== CUSTOM_JSON_PRESET_ID && (
+                                    <Button type="button" variant="outline" size="sm" onClick={() => { setTemplateDetailsOpen(false); openPresetEditor('edit'); }}>
+                                        Edit template
+                                    </Button>
+                                )}
+                                <Button type="button" size="sm" onClick={() => setTemplateDetailsOpen(false)}>Done</Button>
+                            </div>
+                        </div>
+                    )}
+                >
+                    <div className="space-y-4">
+                        <div className="grid gap-2 sm:grid-cols-4">
+                            {[
+                                { label: 'Route', value: destinations || 'Not set' },
+                                { label: 'Dates', value: dateInputMode === 'flex' ? `${flexWeeks} weeks · ${flexWindow}` : `${startDate} → ${endDate}` },
+                                { label: 'Budget', value: budget },
+                                { label: 'Pace', value: pace },
+                            ].map((item) => (
+                                <div key={item.label} className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                                    <div className="text-[11px] font-medium text-slate-500">{item.label}</div>
+                                    <div className="mt-1 truncate text-sm font-semibold text-slate-900" title={item.value}>{item.value}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div>
+                            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                    <h4 className="text-sm font-semibold text-slate-900">Scenario JSON</h4>
+                                    <p className="text-xs text-slate-500">The normalized input sent through the classic benchmark contract.</p>
+                                </div>
+                                {selectedPresetId === CUSTOM_JSON_PRESET_ID && (
+                                    <Badge variant={customScenarioDraftParse.error ? 'destructive' : 'secondary'}>
+                                        {customScenarioDraftParse.error || `Mapped as ${customScenarioDraftParse.flow}`}
+                                    </Badge>
+                                )}
+                            </div>
+
+                            {selectedPresetId === CUSTOM_JSON_PRESET_ID ? (
+                                <div className="space-y-2">
+                                    <textarea
+                                        aria-label="Custom scenario JSON"
+                                        value={customScenarioJsonDraft}
+                                        onChange={(event) => {
+                                            setCustomScenarioJsonDraft(event.target.value);
+                                            setCustomScenarioMeta((current) => current || { source: 'manual', flow: 'unknown', tripId: null });
+                                        }}
+                                        rows={16}
+                                        spellCheck={false}
+                                        className="min-h-[320px] w-full rounded-md border border-slate-700 bg-slate-950 p-4 font-mono text-xs leading-6 text-slate-100 outline-none focus:border-accent-400"
+                                        placeholder='{"destinationPrompt":"Berlin, Germany","options":{"budget":"Medium"}}'
+                                    />
+                                    <div className="flex flex-wrap justify-end gap-2">
+                                        <Button type="button" variant="outline" size="sm" onClick={() => loadCurrentMaskIntoCustomJson()}>Load current setup</Button>
+                                        <Button type="button" size="sm" onClick={applyCustomJsonToMask} disabled={!customScenarioJsonDraft.trim() || Boolean(customScenarioDraftParse.error)}>Apply JSON</Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <pre className="max-h-[420px] overflow-auto rounded-md border border-slate-800 bg-slate-950 p-4 text-xs leading-6">
+                                    <code
+                                        className="language-json"
+                                        dangerouslySetInnerHTML={{ __html: selectedTemplateJsonHtml }}
+                                    />
+                                </pre>
+                            )}
+                        </div>
+                    </div>
+                </AppModal>
 
                 <AppModal
                     isOpen={modelModalOpen}
@@ -3598,12 +3628,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     </div>
                 )}
 
-                <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
-                    <div className="font-semibold">Important implementation note</div>
-                    <div className="mt-1">
-                        This benchmark page now mirrors the default create-trip mask while preserving the existing classic prompt contract for comparable results across runs.
-                    </div>
-                </section>
             </div>
         </AdminShell>
     );
