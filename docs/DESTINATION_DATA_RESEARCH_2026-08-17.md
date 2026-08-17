@@ -155,6 +155,24 @@ event_location(event_id, place_id, latitude, longitude)
 
 Do not copy Rove's prose, images, score compilation, or event catalogue into production without a licence. Its [`robots.txt`](https://rove.me/robots.txt) does not disallow destination pages, but robots permission is not a content licence; [Rove's terms](https://rove.me/terms) describe the site as a consumer travel-information/booking service and provide materials “as is,” without granting republication rights. Prefer official event organisers/tourism boards and climate-derived seasonality with a documented scoring method. If Rove is desired as a feed, request a commercial licence/API.
 
+### Rove source, licence, and freshness follow-up
+
+As checked on 2026-08-17, Rove's live [`robots.txt`](https://rove.me/robots.txt) disallows settings, review-query, video, edit, and authentication-result paths and points to its [`sitemap.xml`](https://rove.me/sitemap.xml); it does not disallow `/to/thailand`. The sitemap exposes public discovery URLs and multilingual alternates. Neither file grants a content or database licence. [Rove's terms](https://rove.me/terms) say the service exists to help consumers gather/share travel information and make travel searches or bookings, provide the materials “as is,” and do not state a right to republish the site's destination database.
+
+The live [Thailand page](https://rove.me/to/thailand) still labels itself for 2026 and “70 Things to Do,” but displays “Last updated: Nov 15, 2024” and contains event occurrences dated in 2023-2025. That makes it unsuitable as an unattended source of current event dates. Any occurrence discovered there would need re-verification against the official organiser or tourism authority before publication.
+
+On 2026-08-17 we also performed a robots-permitted, metadata-only Scrapling fetch of that page with the identified `TravelFlowResearchBot/1.0` user agent and generated stealth headers disabled. It returned HTTP 200, a 233,516-byte rendered response, 67 unique Thailand child URLs, the twelve month labels, and the page title. We deliberately did not persist Rove's descriptions, images, curated ordering, event catalogue, or compiled month scores. No Rove event occurrence was imported into production; the initial Thailand guide continues to use independently checked official tourism sources. The retained provenance for this comparison is the origin URL above and the observation date in this paragraph.
+
+Separate what is potentially independently verifiable from Rove's protected expression and compilation:
+
+| Potential factual metadata (verify independently) | Do not reproduce without permission/licence |
+| --- | --- |
+| Event name, official occurrence dates, venue, coordinates, category, destination relationship, organiser URL | Event summaries/descriptions, editorial recommendations, images, page copy, map artwork |
+| Destination name/type/coordinates and month labels | Rove's curated event selection/order and its compiled monthly “best time” scores |
+| A source URL plus `observed_at` and `verified_at` | The page's narrative interpretation of weather, crowds, price, and suitability |
+
+Facts are not automatically safe to bulk extract: a curated collection can carry database, contract, and provenance obligations, and stale facts can still be harmful. Store independently sourced factual fields with source/licence and verification timestamps; write original destination copy; derive TravelFlow seasonality from licensed climate data with a published scoring method.
+
 ## Comparable destination/planning products
 
 | Product | Useful first-party pattern | What it suggests for TravelFlow |
@@ -355,6 +373,75 @@ Why these settings:
 - A robots-blocked URL is an expected **skip**, not a transient fetch failure. Persist the URL, `outcome=robots_blocked`, synthetic/returned 403, reason, crawler version, configured user agent, and timestamp. Do not send it to retry, proxy, stealth, fallback-fetch, or browser-automation paths. Crawl4AI's official example identifies this exact result shape. [Official robots example](https://docs.crawl4ai.com/advanced/multi-url-crawling/)
 
 Pin and test a specific Crawl4AI 0.9.x patch release before production because its public API has evolved across releases. The configuration above follows the current v0.9.x documentation; record the installed version in every crawl run. Also preflight the seed set against our legal allowlist: Crawl4AI's robots check is a technical floor, not a substitute for terms/licence review or permission.
+
+## Scrapling: current API and conservative crawl profile
+
+This is an alternative only for publisher-approved pages and licensed factual fields. According to Scrapling's current official documentation, Python 3.10+ is required. `pip install scrapling` installs only the parsing layer; fetchers and spiders require:
+
+```bash
+pip install "scrapling[fetchers]"
+scrapling install
+```
+
+`scrapling install --force` refreshes downloaded browser/fingerprint assets. Pin the package version rather than running that refresh implicitly in production. See the official [installation guide](https://scrapling.readthedocs.io/en/latest/).
+
+### API behavior and compliance boundaries
+
+- `Fetcher.get(...)` and `await AsyncFetcher.get(...)` perform static HTTP requests without JavaScript; browser-backed `DynamicFetcher` and `StealthyFetcher` are separate choices. Fetch responses are selectors with CSS/XPath extraction, and JSON responses expose `.json()`. [Fetcher selection](https://scrapling.readthedocs.io/en/latest/fetching/choosing.html) and [HTTP fetcher guide](https://scrapling.readthedocs.io/en/latest/fetching/static.html)
+- The one-off Fetcher APIs do not document a robots-enforcement option. Robots handling belongs to `Spider`, so a bulk workflow must use a compliant Spider or perform an independent robots preflight before every one-off fetch.
+- Spider is asynchronous and schedules callbacks concurrently. Its documented defaults are `concurrent_requests=4`, no per-domain cap, `download_delay=0`, and `robots_txt_obey=False`. Enabling robots makes it prefetch/cache rules per domain, drop disallowed requests, increment `stats.robots_disallowed_count`, and honor `Crawl-delay`/`Request-rate`; it does **not** lower concurrency. [Spider robots guide](https://scrapling.readthedocs.io/en/latest/spiders/getting-started.html) and [advanced controls](https://scrapling.readthedocs.io/en/latest/spiders/advanced.html)
+- A robots-denied request is silently dropped rather than yielded as a response/item. Scrapling exposes the aggregate `robots_disallowed_count`, not a documented per-URL denial result. If the audit requires each denied URL and matched rule, run a separate standards-compliant seed preflight and persist the denial before scheduling it.
+- Spider callbacks yield dictionaries; completed items can be exported as JSON/JSONL/CSV/XML. Persist only schema-validated factual fields and provenance, not the upstream editorial body. [Spider architecture](https://scrapling.readthedocs.io/en/latest/spiders/architecture.html)
+- `development_mode=True` stores fetched responses under `.scrapling_cache/{spider.name}/` without automatic expiry, and cache replay bypasses network delay/rate limiting/block retry. It is a development fixture cache, not a production freshness cache; leave it off for scheduled ingestion. [Advanced controls](https://scrapling.readthedocs.io/en/latest/spiders/advanced.html)
+
+Scrapling is not non-stealth by default. Its HTTP session defaults to recent-Chrome TLS impersonation and `stealthy_headers=True`, which generates browser-like headers and a Google referrer. Browser sessions add further anti-detection behavior, while `AsyncStealthySession`, `StealthyFetcher`, proxy rotation, and block retries are explicitly designed for bypass scenarios. Capability is not authorization: do not use those features to defeat a publisher refusal, robots denial, login, challenge, or rate limit. See the official [Fetcher API reference](https://scrapling.readthedocs.io/en/latest/api-reference/fetchers.html), [session guide](https://scrapling.readthedocs.io/en/latest/spiders/sessions.html), and [blocking/proxy guide](https://scrapling.readthedocs.io/en/latest/spiders/proxy-blocking.html).
+
+Recommended transparent, serialized profile:
+
+```python
+from scrapling.fetchers import FetcherSession
+from scrapling.spiders import Response, Spider
+
+BOT_USER_AGENT = (
+    "TravelFlowResearchBot/1.0 "
+    "(+https://travelflowapp.netlify.app/contact)"
+)
+
+
+class PermittedDestinationSpider(Spider):
+    name = "permitted_destinations"
+    start_urls = ["https://publisher.example/permitted-page"]
+    allowed_domains = ["publisher.example"]
+
+    robots_txt_obey = True
+    concurrent_requests = 1
+    concurrent_requests_per_domain = 1
+    download_delay = 5.0
+    max_blocked_retries = 0
+    development_mode = False
+
+    def configure_sessions(self, manager):
+        manager.add(
+            "default",
+            FetcherSession(
+                stealthy_headers=False,
+                headers={"User-Agent": BOT_USER_AGENT},
+                retries=0,
+            ),
+            default=True,
+        )
+
+    async def parse(self, response: Response):
+        yield {
+            "source_url": response.url,
+            "title": response.css("h1::text").get(""),
+            # Add only licensed/independently verifiable factual fields.
+        }
+```
+
+This disables generated stealth headers, identifies the crawler, serializes each domain, applies a five-second floor, enables robots, avoids retrying server blocks, and disables the development cache. The underlying `FetcherSession` still documents Chrome TLS impersonation as its default; Scrapling does not present this profile as a fully plain transport. If a publisher or internal policy requires no impersonation at the TLS layer, use a simpler disclosed HTTP client or validate a pinned Scrapling version's supported impersonation override before adoption.
+
+Treat 401/403/407/429/444/5xx responses as terminal audit outcomes in this workflow, not invitations to rotate proxies or escalate to a stealth browser. Record the requested URL, outcome, status, configured user agent, crawler version, robots preflight result, and timestamp. Also compare `stats.robots_disallowed_count` with the preflight audit at crawl completion; a mismatch is a failed ingestion run.
 
 ## Recommended decision
 
