@@ -200,6 +200,162 @@ Return typed, versioned facts and provenance; paginate large child/place collect
 5. Treat maps and images as separate licensed assets. A publicly reachable PNG is not automatically reusable.
 6. Run automated consistency checks (for example FAQ vs entry rule), expiry checks for event occurrences/advisories, and manual review for high-stakes fields.
 
+## Crawl4AI: compliant crawl configuration
+
+This section applies only to pages that the publisher permits us to crawl and content we are licensed to store. It does not make the disallowed AtoBeach `/api/` routes eligible for ingestion.
+
+Use the asynchronous API and make robots compliance explicit. Crawl4AI's current v0.9.x parameter reference says `check_robots_txt` defaults to `False`; when enabled, it checks the configured user agent and caches robots rules in SQLite. Its official multi-URL example reports a robots denial as `success == False`, `status_code == 403`, with `"robots.txt"` in `error_message`. See the official [configuration reference](https://docs.crawl4ai.com/api/parameters/), [multi-URL/robots example](https://docs.crawl4ai.com/advanced/multi-url-crawling/), [CrawlResult contract](https://docs.crawl4ai.com/api/crawl-result/), and [project changelog](https://github.com/unclecode/crawl4ai/blob/main/CHANGELOG.md).
+
+### Observed Crawl4AI 0.9.2 robots compatibility failure
+
+On 2026-08-17, a clean Crawl4AI 0.9.2 diagnostic run used `check_robots_txt=True`, `CacheMode.BYPASS`, and an identifying user agent against the Indonesia country API, the country-list API, and the public Thailand page. Crawl4AI returned HTTP 200/success for all three. This is **not** permission to ingest the API: AtoBeach's current `robots.txt` still places `Allow: /` before the more-specific `Disallow: /api/`, and `/api/` remains explicitly disallowed.
+
+The installed Crawl4AI source explains the mismatch: its `RobotsParser` delegates rule evaluation to Python's `urllib.robotparser.RobotFileParser`. For this particular rule order, that parser accepts the broad earlier allow instead of enforcing the later, longer `/api/` disallow. Crawl4AI therefore did not emit the documented synthetic 403. The run was stopped after one diagnostic request per URL; no response content was retained or imported. See Crawl4AI's official [`RobotsParser` source](https://github.com/unclecode/crawl4ai/blob/main/crawl4ai/utils.py) and AtoBeach's live [`robots.txt`](https://atobeach.com/robots.txt).
+
+Production ingestion must consequently apply an independent longest-specific-path robots preflight and a publisher/legal allowlist **before** calling Crawl4AI. The built-in `check_robots_txt=True` remains defense in depth, but is not sufficient for AtoBeach. A preflight denial must be recorded and must never reach `AsyncWebCrawler`.
+
+Recommended conservative configuration for one publisher/domain:
+
+```python
+import json
+from datetime import datetime, timezone
+from importlib.metadata import version
+
+from crawl4ai import (
+    AsyncWebCrawler,
+    BrowserConfig,
+    CacheMode,
+    CrawlerRunConfig,
+    JsonCssExtractionStrategy,
+    RateLimiter,
+)
+from crawl4ai.async_dispatcher import MemoryAdaptiveDispatcher
+
+BOT_USER_AGENT = (
+    "TravelFlowResearchBot/1.0 "
+    "(+https://travelflowapp.netlify.app/contact)"
+)
+CRAWLER_VERSION = version("crawl4ai")
+
+DESTINATION_SCHEMA = {
+    "name": "destination-page",
+    "baseSelector": "html",
+    "fields": [
+        {"name": "title", "selector": "h1", "type": "text"},
+        {
+            "name": "canonical_url",
+            "selector": "link[rel='canonical']",
+            "type": "attribute",
+            "attribute": "href",
+        },
+        {
+            "name": "meta_description",
+            "selector": "meta[name='description']",
+            "type": "attribute",
+            "attribute": "content",
+        },
+    ],
+}
+
+browser_config = BrowserConfig(
+    headless=True,
+    verbose=False,
+    user_agent=BOT_USER_AGENT,
+)
+
+run_config = CrawlerRunConfig(
+    check_robots_txt=True,
+    user_agent=BOT_USER_AGENT,
+    cache_mode=CacheMode.ENABLED,
+    extraction_strategy=JsonCssExtractionStrategy(DESTINATION_SCHEMA),
+    stream=False,
+)
+
+dispatcher = MemoryAdaptiveDispatcher(
+    memory_threshold_percent=70.0,
+    check_interval=1.0,
+    max_session_permit=1,
+    rate_limiter=RateLimiter(
+        base_delay=(3.0, 7.0),
+        max_delay=60.0,
+        max_retries=3,
+        rate_limit_codes=[429, 503],
+    ),
+)
+
+
+async def crawl_allowed_pages(urls: list[str]) -> tuple[list[dict], list[dict]]:
+    extracted = []
+    audit = []
+
+    async with AsyncWebCrawler(config=browser_config) as crawler:
+        results = await crawler.arun_many(
+            urls=urls,
+            config=run_config,
+            dispatcher=dispatcher,
+        )
+
+    observed_at = datetime.now(timezone.utc).isoformat()
+    for result in results:
+        if (
+            not result.success
+            and result.status_code == 403
+            and "robots.txt" in (result.error_message or "").lower()
+        ):
+            audit.append(
+                {
+                    "url": result.url,
+                    "outcome": "robots_blocked",
+                    "status_code": 403,
+                    "reason": result.error_message,
+                    "crawler_version": CRAWLER_VERSION,
+                    "user_agent": BOT_USER_AGENT,
+                    "observed_at": observed_at,
+                }
+            )
+            continue  # Policy decision: never retry or bypass a robots denial.
+
+        if not result.success:
+            audit.append(
+                {
+                    "url": result.url,
+                    "outcome": "failed",
+                    "status_code": result.status_code,
+                    "reason": result.error_message,
+                    "crawler_version": CRAWLER_VERSION,
+                    "user_agent": BOT_USER_AGENT,
+                    "observed_at": observed_at,
+                }
+            )
+            continue
+
+        rows = json.loads(result.extracted_content or "[]")
+        extracted.extend(rows)
+        audit.append(
+            {
+                "url": result.url,
+                "outcome": "extracted",
+                "status_code": result.status_code,
+                "row_count": len(rows),
+                "crawler_version": CRAWLER_VERSION,
+                "user_agent": BOT_USER_AGENT,
+                "observed_at": observed_at,
+            }
+        )
+
+    return extracted, audit
+```
+
+Why these settings:
+
+- `check_robots_txt=True` is mandatory because the library default is false. Use the same identifiable `user_agent` in browser and run configuration so fetching and robots evaluation are consistent. Crawl4AI caches robots rules independently for efficiency. Pair this with the independent preflight described above; the AtoBeach diagnostic proves the built-in parser is not sufficient on its own. [Official parameters](https://docs.crawl4ai.com/api/parameters/)
+- `CacheMode.ENABLED` reads and writes Crawl4AI's page cache, reducing repeat requests during a backfill or a re-run. The enum also supports `DISABLED`, `READ_ONLY`, `WRITE_ONLY`, and `BYPASS`; deprecated boolean cache flags should not be used. For a scheduled freshness refresh, use `WRITE_ONLY` so the fetch is fresh but its result replaces/populates cache. [Official cache guide](https://docs.crawl4ai.com/core/cache-modes/)
+- `max_session_permit=1` deliberately serialises requests to one publisher. The `RateLimiter` adds a 3-7 second same-domain delay and exponential backoff with jitter for 429/503, capped at 60 seconds and three retries. Crawl4AI documents these dispatcher/rate-limiter controls and recommends `arun_many()` for multi-URL work. [Official multi-URL guide](https://docs.crawl4ai.com/advanced/multi-url-crawling/)
+- `JsonCssExtractionStrategy` is deterministic and LLM-free. It emits JSON text through `result.extracted_content`, which must be parsed and then validated against our own schema before persistence. Keep selectors narrow, test them on representative permitted pages, and version every extraction schema. [Official LLM-free extraction guide](https://docs.crawl4ai.com/extraction/no-llm-strategies/) and [CrawlResult contract](https://docs.crawl4ai.com/api/crawl-result/)
+- A robots-blocked URL is an expected **skip**, not a transient fetch failure. Persist the URL, `outcome=robots_blocked`, synthetic/returned 403, reason, crawler version, configured user agent, and timestamp. Do not send it to retry, proxy, stealth, fallback-fetch, or browser-automation paths. Crawl4AI's official example identifies this exact result shape. [Official robots example](https://docs.crawl4ai.com/advanced/multi-url-crawling/)
+
+Pin and test a specific Crawl4AI 0.9.x patch release before production because its public API has evolved across releases. The configuration above follows the current v0.9.x documentation; record the installed version in every crawl run. Also preflight the seed set against our legal allowlist: Crawl4AI's robots check is a technical floor, not a substitute for terms/licence review or permission.
+
 ## Recommended decision
 
 Proceed with the destination hierarchy, referral-normalisation model, country/locality page split, monthly seasonality UI, and dated event occurrences. Do **not** proceed with a wholesale AtoBeach/Rove data clone until licences or written permissions exist. Seed an initial country set from an explicit TravelFlow-owned ranking and populate it from official/open/licensed sources with provenance.
