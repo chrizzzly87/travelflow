@@ -14,6 +14,7 @@ summary: "Explore when to go, where to arrive, and which cities and islands fit 
 - [x] [New feature] 🧭 Explore practical guides for 50 countries with month-by-month timing, events, and arrival hubs.
 - [x] [New feature] 🏝️ Dive from countries into city and island guides, including Mallorca, Phuket, and Koh Samui.
 - [x] [Improved] 🗓️ See the best, shoulder, and less ideal travel months at a glance before building your trip.
+- [x] [Improved] 🧳 Check entry rules, safety, weather, health, payments, connectivity, local essentials, beaches, and recent travel updates in one guide.
 - [ ] [Internal] 🗂️ Added reviewed destination provenance, validation, and query-ready storage.
 - [ ] [Internal] 🔄 Added versioned source imports with canonical referral URLs and original-source attribution.
 - [ ] [Internal] 🧱 Defined the next normalized place model for cities, islands, districts, and neighbourhoods.

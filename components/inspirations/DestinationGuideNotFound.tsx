@@ -15,11 +15,10 @@ export const DestinationGuideNotFound: React.FC<{ locale: AppLanguage; destinati
       <p className="mt-4 text-slate-500">
         {t('inspirations.subpages.country.notFoundDescription', { country: decodeURIComponent(destination) })}
       </p>
-      <Link to={buildLocalizedMarketingPath('inspirationsCountries', locale)} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-accent-600 px-6 py-3 text-sm font-bold text-white shadow-lg transition-all hover:bg-accent-700">
+      <Link to={buildLocalizedMarketingPath('inspirationsCountries', locale)} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-accent-600 px-6 py-3 text-sm font-bold text-white shadow-lg transition-colors hover:bg-accent-700">
         <ArrowLeft className="rtl:rotate-180" size={16} weight="bold" />
         {t('inspirations.subpages.guide.backToCountries')}
       </Link>
     </section>
   );
 };
-

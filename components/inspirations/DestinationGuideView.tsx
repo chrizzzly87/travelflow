@@ -20,6 +20,8 @@ import { buildLocalizedMarketingPath } from '../../config/routes';
 import { buildCreateTripUrl } from '../../utils';
 import { FlagIcon } from '../flags/FlagIcon';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import { useDestinationCountryProfile } from '../../hooks/useDestinationCountryProfile';
+import { DestinationCountryProfileSections } from './DestinationCountryProfileSections';
 
 interface DestinationGuideViewProps {
   resolved: ResolvedDestinationGuide;
@@ -52,6 +54,7 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
   const { t } = useTranslation('pages');
   const { guide, country, children, effectiveSeasonality, effectiveEvents } = resolved;
   const isCountry = guide.kind === 'country';
+  const countryProfile = useDestinationCountryProfile(country.slug, isCountry);
   const monthLabels = getMonthLabels(locale);
   const countriesPath = buildLocalizedMarketingPath('inspirationsCountries', locale);
   const countryPath = buildLocalizedMarketingPath('inspirationsCountryDetail', locale, { countryName: country.slug });
@@ -92,7 +95,7 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
           {guide.name}
         </h1>
         <p className="mt-5 max-w-3xl text-lg leading-relaxed text-slate-600">
-          {t('inspirations.subpages.guide.intro')}
+          {countryProfile.result?.profile.summary || guide.summary || t('inspirations.subpages.guide.intro')}
         </p>
 
         <div className="mt-7 flex flex-wrap gap-3">
@@ -145,6 +148,30 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
             {effectiveSeasonality.note ? <p className="mt-4 text-sm leading-relaxed text-slate-500">{effectiveSeasonality.note}</p> : null}
           </div>
         </section>
+      ) : null}
+
+      {isCountry && countryProfile.isLoading ? (
+        <section aria-label={t('inspirations.subpages.guide.loadingProfile')} className="pb-10">
+          <div className="grid animate-pulse gap-4 md:grid-cols-3">
+            {Array.from({ length: 3 }, (_, index) => (
+              <div key={index} className="h-32 rounded-2xl border border-slate-100 bg-slate-100" />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {isCountry && countryProfile.result ? (
+        <DestinationCountryProfileSections
+          countryName={country.name}
+          locale={locale}
+          result={countryProfile.result}
+        />
+      ) : null}
+
+      {isCountry && countryProfile.hasError ? (
+        <p className="mb-10 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          {t('inspirations.subpages.guide.profileUnavailable')}
+        </p>
       ) : null}
 
       {children.length > 0 ? (
@@ -258,4 +285,3 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
     </>
   );
 };
-
