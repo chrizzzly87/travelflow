@@ -86,6 +86,33 @@
         "description": "Все для планирования поездки в {country}: лучшие месяцы, популярные маршруты и полезные советы.",
         "comingSoonDescription": "Скоро появятся подробные гиды по {country} - города, культура, визы и готовые маршруты на несколько дней.",
         "cta": "Спланировать поездку в {country}"
+      },
+      "guide": {
+        "breadcrumbLabel": "Навигация по гиду",
+        "backToCountries": "Все страны",
+        "countryPill": "Гид по стране",
+        "cityPill": "Гид по городу",
+        "islandPill": "Гид по острову",
+        "intro": "Узнайте, когда ехать, где остановиться и вокруг каких событий строить поездку.",
+        "suggestedStay": "Рекомендуется {count} дней",
+        "destinationsCount": "Города и острова: {count}",
+        "timingEyebrow": "По месяцам",
+        "bestTime": "Лучшее время для поездки",
+        "ideal": "Идеально",
+        "shoulder": "Межсезонье",
+        "avoid": "Менее удачно",
+        "goDeeperEyebrow": "Узнать больше",
+        "exploreChildren": "Города и острова",
+        "highlights": "Главное",
+        "arrivalAirports": "Аэропорты прибытия",
+        "planAroundEyebrow": "Стоит учесть",
+        "events": "События и сезонные моменты",
+        "readyEyebrow": "От идеи к маршруту",
+        "planTitle": "Создать поездку в {destination}",
+        "sourcesLabel": "Источники:",
+        "planCta": "Создать поездку",
+        "countryCount": "Доступно гидов по странам: {count}",
+        "daysShort": "{count} дней"
       }
     }
   },

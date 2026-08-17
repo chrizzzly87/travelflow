@@ -86,6 +86,33 @@
         "description": "{country} 여행 계획에 필요한 모든 것 — 최적 여행 시기, 인기 일정, 여행 팁.",
         "comingSoonDescription": "{country}에 대한 도시별 분석, 문화 팁, 비자 정보, 엄선된 다일 일정을 포함한 상세 가이드가 준비 중입니다.",
         "cta": "{country} 여행 계획하기"
+      },
+      "guide": {
+        "breadcrumbLabel": "여행지 가이드 탐색",
+        "backToCountries": "모든 국가",
+        "countryPill": "국가 가이드",
+        "cityPill": "도시 가이드",
+        "islandPill": "섬 가이드",
+        "intro": "언제 떠날지, 어디에 머물지, 무엇을 중심으로 계획할지 알아보세요.",
+        "suggestedStay": "추천 {count}일",
+        "destinationsCount": "도시와 섬 {count}곳",
+        "timingEyebrow": "월별 안내",
+        "bestTime": "여행하기 좋은 시기",
+        "ideal": "최적",
+        "shoulder": "준성수기",
+        "avoid": "덜 추천",
+        "goDeeperEyebrow": "더 자세히",
+        "exploreChildren": "도시와 섬 둘러보기",
+        "highlights": "하이라이트",
+        "arrivalAirports": "도착 공항",
+        "planAroundEyebrow": "일정에 담을 순간",
+        "events": "행사와 계절별 볼거리",
+        "readyEyebrow": "영감을 실제 일정으로",
+        "planTitle": "{destination} 여행 만들기",
+        "sourcesLabel": "여행 정보 출처:",
+        "planCta": "여행 만들기",
+        "countryCount": "둘러볼 국가 가이드 {count}개",
+        "daysShort": "{count}일"
       }
     }
   },

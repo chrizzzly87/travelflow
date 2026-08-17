@@ -86,6 +86,33 @@
         "description": "Tudo o que precisa para planear a sua viagem a {country}: melhores meses para visitar, itinerários populares e dicas úteis.",
         "comingSoonDescription": "Guias detalhados para {country}, incluindo cidades recomendadas, dicas culturais, informações de visto e itinerários selecionados de vários dias, estão a caminho.",
         "cta": "Planear uma viagem para {country}"
+      },
+      "guide": {
+        "breadcrumbLabel": "Navegação do guia de destino",
+        "backToCountries": "Todos os países",
+        "countryPill": "Guia de país",
+        "cityPill": "Guia de cidade",
+        "islandPill": "Guia de ilha",
+        "intro": "Descubra quando ir, onde ficar e o que vale a pena planear.",
+        "suggestedStay": "{count} dias recomendados",
+        "destinationsCount": "{count} cidades e ilhas",
+        "timingEyebrow": "Mês a mês",
+        "bestTime": "Melhor altura para visitar",
+        "ideal": "Ideal",
+        "shoulder": "Época intermédia",
+        "avoid": "Menos ideal",
+        "goDeeperEyebrow": "Descubra mais",
+        "exploreChildren": "Explorar cidades e ilhas",
+        "highlights": "Destaques",
+        "arrivalAirports": "Aeroportos de chegada",
+        "planAroundEyebrow": "Vale a pena incluir",
+        "events": "Eventos e momentos sazonais",
+        "readyEyebrow": "Da inspiração ao roteiro",
+        "planTitle": "Criar uma viagem para {destination}",
+        "sourcesLabel": "Fontes de planeamento:",
+        "planCta": "Criar uma viagem",
+        "countryCount": "{count} guias de países para explorar",
+        "daysShort": "{count} dias"
       }
     }
   },

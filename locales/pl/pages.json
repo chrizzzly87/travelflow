@@ -86,6 +86,33 @@
         "description": "Wszystko, czego potrzebujesz, aby zaplanować podróż do {country} — najlepsze miesiące, popularne trasy i porady podróżnicze.",
         "comingSoonDescription": "Szczegółowe przewodniki dla {country} — w tym podział na miasta, wskazówki kulturowe, informacje wizowe i gotowe plany wielodniowe — już wkrótce.",
         "cta": "Zaplanuj podróż do {country}"
+      },
+      "guide": {
+        "breadcrumbLabel": "Nawigacja przewodnika",
+        "backToCountries": "Wszystkie kraje",
+        "countryPill": "Przewodnik po kraju",
+        "cityPill": "Przewodnik po mieście",
+        "islandPill": "Przewodnik po wyspie",
+        "intro": "Sprawdź, kiedy jechać, gdzie się zatrzymać i co uwzględnić w planie.",
+        "suggestedStay": "Zalecane {count} dni",
+        "destinationsCount": "Miasta i wyspy: {count}",
+        "timingEyebrow": "Miesiąc po miesiącu",
+        "bestTime": "Najlepszy czas na podróż",
+        "ideal": "Idealnie",
+        "shoulder": "Poza szczytem",
+        "avoid": "Mniej korzystnie",
+        "goDeeperEyebrow": "Odkrywaj dalej",
+        "exploreChildren": "Poznaj miasta i wyspy",
+        "highlights": "Najważniejsze miejsca",
+        "arrivalAirports": "Lotniska przylotu",
+        "planAroundEyebrow": "Warto uwzględnić",
+        "events": "Wydarzenia i sezonowe atrakcje",
+        "readyEyebrow": "Od inspiracji do trasy",
+        "planTitle": "Zaplanuj podróż do {destination}",
+        "sourcesLabel": "Źródła:",
+        "planCta": "Zaplanuj podróż",
+        "countryCount": "Przewodniki po krajach: {count}",
+        "daysShort": "{count} dni"
       }
     }
   },

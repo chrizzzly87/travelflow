@@ -86,6 +86,33 @@
         "description": "Alles für die Reiseplanung nach {country} - beste Reisezeit, beliebte Routen und praktische Tipps.",
         "comingSoonDescription": "Detaillierte Guides für {country} - inklusive Städteüberblick, Kulturtipps, Visa-Infos und kuratierten Mehrtagesrouten - folgen bald.",
         "cta": "Reise nach {country} planen"
+      },
+      "guide": {
+        "breadcrumbLabel": "Navigation im Reiseziel-Guide",
+        "backToCountries": "Alle Länder",
+        "countryPill": "Länderguide",
+        "cityPill": "Städteguide",
+        "islandPill": "Inselguide",
+        "intro": "Finde heraus, wann du reisen solltest, welcher Ort zu dir passt und was du einplanen solltest.",
+        "suggestedStay": "{count} Tage empfohlen",
+        "destinationsCount": "{count} Städte und Inseln",
+        "timingEyebrow": "Monat für Monat",
+        "bestTime": "Beste Reisezeit",
+        "ideal": "Ideal",
+        "shoulder": "Übergangszeit",
+        "avoid": "Weniger ideal",
+        "goDeeperEyebrow": "Mehr entdecken",
+        "exploreChildren": "Städte und Inseln entdecken",
+        "highlights": "Highlights",
+        "arrivalAirports": "Ankunftsflughäfen",
+        "planAroundEyebrow": "Lohnt sich einzuplanen",
+        "events": "Events und saisonale Erlebnisse",
+        "readyEyebrow": "Von der Inspiration zur Route",
+        "planTitle": "Plane deine Reise nach {destination}",
+        "sourcesLabel": "Planungsquellen:",
+        "planCta": "Reise planen",
+        "countryCount": "{count} Länderguides zum Entdecken",
+        "daysShort": "{count} Tage"
       }
     }
   },

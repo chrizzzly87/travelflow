@@ -86,6 +86,33 @@
         "description": "Tout pour planifier votre voyage en {country} : meilleures périodes, itinéraires populaires et conseils utiles.",
         "comingSoonDescription": "Des guides détaillés pour {country} - villes, culture, visas et itinéraires multi-jours - arrivent bientôt.",
         "cta": "Planifier un voyage en {country}"
+      },
+      "guide": {
+        "breadcrumbLabel": "Navigation du guide destination",
+        "backToCountries": "Tous les pays",
+        "countryPill": "Guide pays",
+        "cityPill": "Guide ville",
+        "islandPill": "Guide île",
+        "intro": "Découvrez quand partir, où poser vos valises et quels temps forts prévoir.",
+        "suggestedStay": "{count} jours conseillés",
+        "destinationsCount": "{count} villes et îles",
+        "timingEyebrow": "Mois par mois",
+        "bestTime": "Meilleure période",
+        "ideal": "Idéal",
+        "shoulder": "Intersaison",
+        "avoid": "Moins idéal",
+        "goDeeperEyebrow": "Aller plus loin",
+        "exploreChildren": "Explorer les villes et les îles",
+        "highlights": "Incontournables",
+        "arrivalAirports": "Aéroports d’arrivée",
+        "planAroundEyebrow": "À intégrer au voyage",
+        "events": "Événements et temps forts saisonniers",
+        "readyEyebrow": "De l’inspiration à l’itinéraire",
+        "planTitle": "Créer un voyage à {destination}",
+        "sourcesLabel": "Sources de planification :",
+        "planCta": "Créer un voyage",
+        "countryCount": "{count} guides pays à explorer",
+        "daysShort": "{count} jours"
       }
     }
   },

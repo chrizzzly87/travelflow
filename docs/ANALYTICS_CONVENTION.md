@@ -262,7 +262,8 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### Inspirations
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `inspirations__destination_card` | — | `{ title, country }` | `InspirationsPage.tsx` |
+| `inspirations__destination_card` | — | `{ title?, country, destination?, kind? }` | `InspirationsPage.tsx`, `CountriesPage.tsx`, `DestinationGuideView.tsx` |
+| `inspirations__destination_plan` | — | `{ country, destination, kind }` | `DestinationGuideView.tsx` |
 | `inspirations__festival_card` | — | `{ name, country }` | `InspirationsPage.tsx` |
 | `inspirations__getaway_card` | — | `{ title, destination }` | `InspirationsPage.tsx` |
 | `inspirations__country_pill` | — | `{ country }` | `InspirationsPage.tsx` |

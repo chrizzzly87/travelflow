@@ -36,6 +36,7 @@ describe('config/routes', () => {
       buildPath('inspirationsFestivals'),
       buildPath('inspirationsWeekendGetaways'),
       buildPath('inspirationsCountryDetail', { countryName: 'Costa Rica' }),
+      buildPath('inspirationsDestinationDetail', { countrySlug: 'spain', destinationSlug: 'mallorca' }),
       buildPath('updates'),
       buildPath('blog'),
       buildPath('blogPost', { slug: 'sample-post' }),
