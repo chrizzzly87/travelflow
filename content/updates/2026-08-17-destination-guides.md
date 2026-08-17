@@ -18,3 +18,5 @@ summary: "Explore when to go, where to arrive, and which cities and islands fit 
 - [ ] [Internal] 🗂️ Added reviewed destination provenance, validation, and query-ready storage.
 - [ ] [Internal] 🔄 Added versioned source imports with canonical referral URLs and original-source attribution.
 - [ ] [Internal] 🧱 Defined the next normalized place model for cities, islands, districts, and neighbourhoods.
+- [ ] [Internal] 🛠️ Added a searchable destination workspace with persistent draft and published editorial overrides.
+- [ ] [Internal] 📚 Documented a repeatable, provenance-safe destination refresh workflow.

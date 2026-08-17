@@ -298,8 +298,8 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
             <h2 className="mt-1 text-2xl font-black text-slate-900">{t('inspirations.subpages.guide.recentUpdates')}</h2>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
-            {profile.recentUpdates.map((update, index) => (
-              <article key={`${update.timestamp || 'update'}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            {profile.recentUpdates.map((update) => (
+              <article key={`${update.timestamp || 'update'}-${update.category || 'travel'}-${update.messages.join('|')}`} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent-700">
                   <ClockCounterClockwise size={16} weight="duotone" />
                   {update.category || t('inspirations.subpages.guide.travelUpdate')}
