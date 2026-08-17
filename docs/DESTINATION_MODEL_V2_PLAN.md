@@ -85,22 +85,23 @@ interface ProvenancedFact<T> {
 
 ## Database structure
 
-Add normalized tables alongside the existing source-ingestion tables:
+TravelFlow already has a canonical travel-knowledge model in Supabase. Reuse it rather than creating a parallel place database. The new `destination_*` tables are provider-specific staging and read projections; reviewed source changes should flow into the existing `travel_*` model.
 
 | Table | Purpose |
 | --- | --- |
-| `destination_places` | Canonical identity, type, primary parent, point/boundary, publishing status |
-| `destination_place_names` | Localized names, aliases, exonyms, and search normalization |
-| `destination_place_relations` | Non-tree containment, proximity, gateway, and service relationships |
-| `destination_provider_mappings` | Provider ID/URL to canonical place matching, confidence, matching status |
-| `destination_facts` | Typed, versioned facts with field-level provenance and validity windows |
-| `destination_city_profiles` | Query-optimized city summary, arrival, mobility, cost, and seasonal modules |
-| `destination_neighbourhood_profiles` | Character, audience fit, stay guidance, mobility, noise/nightlife, accessibility |
-| `destination_climate_normals` | Monthly climate observations with station/grid source and methodology |
-| `destination_events` | Stable event definition and official organizer URL |
-| `destination_event_occurrences` | Dated occurrence, status, precision, verification and expiry |
+| `travel_entities` (existing) | Canonical identity, entity type, parent, point/bounds, lifecycle and scoring |
+| `travel_entity_names` (existing) | Localized names, aliases, exonyms, and search normalization |
+| `travel_entity_facts` (existing) | Typed facts with source, confidence, review state and validity windows |
+| `travel_sources` / `travel_source_runs` / `travel_source_snapshots` (existing) | Source licence, crawl audit and immutable source evidence |
+| `travel_change_candidates` (existing) | Human-review queue for ambiguous or conflicting imported changes |
+| `travel_entity_relations` (new) | Non-tree containment, proximity, gateway and service relationships |
+| `travel_provider_mappings` (new) | Provider IDs/URLs to canonical entity matches, confidence and review status |
+| `travel_event_occurrences` (new) | Dated event occurrence, precision, status, verification and expiry |
+| `destination_country_profiles` (existing projection) | Fast country endpoint reads while canonical facts live in `travel_*` |
 
-Keep `destination_source_records` and `destination_source_record_versions` private. They are evidence and update inputs, not the public API contract.
+Extend the existing `travel_entities.entity_type` constraint from its current country/region/city/neighborhood/POI/port/campground set to include `admin_area`, `island`, `municipality`, `district`, `beach`, and `airport`. Keep US-English `neighborhood` as the database enum value while the UI may render localized spelling.
+
+Keep `destination_source_records` and `destination_source_record_versions` private. They are the sanitized AtoBeach staging evidence used by the adapter, not the public API contract or a second canonical knowledge graph.
 
 ## City-level information
 
@@ -140,9 +141,9 @@ AtoBeach does not currently provide a reliable neighbourhood layer. Seed candida
 1. Fetch each authorized/licensed source into a versioned source record.
 2. Sanitize referral URLs before persistence and retain removed parameter names.
 3. Diff sanitized hashes; create a source version only when content changes.
-4. Resolve provider records through `destination_provider_mappings`.
-5. Auto-accept exact stable-ID matches; queue ambiguous name/coordinate matches for review.
-6. Write new fact observations instead of overwriting facts in place.
+4. Resolve provider records through `travel_provider_mappings`.
+5. Auto-accept exact stable-ID matches; write ambiguous name/coordinate matches to `travel_change_candidates` for review.
+6. Write accepted fact observations to `travel_entity_facts` instead of overwriting facts in place.
 7. Select the current canonical fact by source priority, validity, freshness, confidence, and review status.
 8. Rebuild query profiles only after a complete import succeeds.
 9. Expire stale event occurrences, alerts, prices, exchange rates, and weather forecasts automatically.
@@ -176,9 +177,9 @@ Raw provider payloads and internal matching candidates must never be returned by
 
 ## Delivery phases
 
-1. **Canonical place foundation** — places, names, relations, provider mappings, PostGIS indexes, typed API DTOs.
-2. **Source normalization** — convert AtoBeach cities/beaches/airports into mapping candidates without auto-publishing uncertain types.
-3. **City profiles** — migrate the current 482 city guides and attach arrivals, seasonality, events and nearby islands.
+1. **Canonical model extension** — expand `travel_entities` types, add relations/provider mappings, spatial indexes and typed API DTOs.
+2. **Staging adapter** — convert AtoBeach `destination_source_records` cities/beaches/airports into `travel_change_candidates` without auto-publishing uncertain matches.
+3. **City profiles** — migrate the current 482 city guides into reviewed `travel_entities` and `travel_entity_facts`, then attach arrivals, seasonality, events and nearby islands.
 4. **Island corrections** — model Mallorca, Ibiza, Menorca, Phuket, Koh Samui and similar places consistently.
 5. **Neighbourhood pilot** — Bangkok, Palma and one contrasting city; validate boundaries, navigation and content review workflow.
 6. **Events and volatile facts** — occurrence expiry, official-source verification and freshness monitoring.
