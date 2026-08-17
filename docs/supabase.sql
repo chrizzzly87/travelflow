@@ -8942,3 +8942,35 @@ begin
   end loop;
 end
 $$;
+-- Queryable destination-guide snapshots. The reviewed JSON payload remains the
+-- portable source of truth; scripts/sync-destination-guides.ts performs guarded,
+-- additive upserts after this schema is applied.
+create table if not exists public.destination_guides (
+  id text primary key,
+  slug text not null,
+  kind text not null check (kind in ('country', 'city', 'island')),
+  country_code text not null check (char_length(country_code) = 2),
+  parent_id text references public.destination_guides(id) on delete restrict,
+  name text not null,
+  region text not null,
+  priority_rank smallint,
+  source_updated_at timestamptz,
+  reviewed_at timestamptz not null,
+  payload jsonb not null,
+  unique (parent_id, slug)
+);
+
+create index if not exists destination_guides_kind_priority_idx
+  on public.destination_guides(kind, priority_rank nulls last, name);
+create index if not exists destination_guides_country_parent_idx
+  on public.destination_guides(country_code, parent_id, kind);
+create index if not exists destination_guides_payload_gin_idx
+  on public.destination_guides using gin(payload);
+
+alter table public.destination_guides enable row level security;
+
+drop policy if exists "Public destination guides are readable" on public.destination_guides;
+create policy "Public destination guides are readable"
+  on public.destination_guides
+  for select
+  using (true);
