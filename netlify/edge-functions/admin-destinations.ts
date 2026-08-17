@@ -61,7 +61,7 @@ const loadAdminCatalog = async (config: SupabaseConfig) => {
     fetch(`${config.url}/rest/v1/destination_guides?select=${guideFields}&order=name.asc&limit=1000`, { headers }),
     fetch(`${config.url}/rest/v1/destination_country_profiles?select=${profileFields}&order=name.asc&limit=500`, { headers }),
     fetch(`${config.url}/rest/v1/destination_content_overrides?select=*&order=updated_at.desc&limit=1000`, { headers }),
-    fetch(`${config.url}/rest/v1/destination_import_runs?select=id,source_provider,status,started_at,finished_at,records_seen,records_inserted,records_updated,records_failed,metadata&order=started_at.desc&limit=20`, { headers }),
+    fetch(`${config.url}/rest/v1/destination_import_runs?select=id,provider,status,schema_version,expected_records,fetched_records,changed_records,unchanged_records,failed_records,started_at,completed_at,metadata,error_summary&order=started_at.desc&limit=20`, { headers }),
     fetch(`${config.url}/rest/v1/destination_referral_links?select=id&limit=1`, { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } }),
   ]);
   const [guides, profiles, overrides, importRuns] = await Promise.all([

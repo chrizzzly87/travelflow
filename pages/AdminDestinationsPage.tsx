@@ -233,7 +233,7 @@ export const AdminDestinationsPage: React.FC = () => {
                     ))}
                 </div>
 
-                {latestRun && <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">Latest import: <strong>{String(latestRun.source_provider || 'unknown')}</strong> · {String(latestRun.status || 'unknown')} · {formatDate(latestRun.finished_at || latestRun.started_at)}</div>}
+                {latestRun && <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">Latest import: <strong>{String(latestRun.provider || 'unknown')}</strong> · {String(latestRun.status || 'unknown')} · {formatDate(latestRun.completed_at || latestRun.started_at)}</div>}
                 {error && <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><WarningCircle size={18} className="mt-0.5 shrink-0" />{error}</div>}
 
                 <div className="grid min-h-[640px] gap-4 xl:grid-cols-[minmax(380px,0.9fr)_minmax(520px,1.1fr)]">
