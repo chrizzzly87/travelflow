@@ -429,6 +429,17 @@ const buildCreateTripClassicInitialState = (
     if (data.pace) initialState.pace = data.pace as PaceType;
     if (typeof data.roundTrip === 'boolean') initialState.roundTrip = data.roundTrip;
     if (typeof data.notes === 'string') initialState.notes = data.notes;
+    // The classic planner has no dedicated stop list, and its notes field explicitly
+    // asks for the cities a traveller wants included. Seed it from an ordered route so
+    // multi-city prefills are not silently dropped here.
+    const prefilledCities = data.cityList && data.cityList.length > 0
+        ? data.cityList.join(', ')
+        : (typeof data.cities === 'string' ? data.cities.trim() : '');
+    if (prefilledCities) {
+        initialState.notes = initialState.notes
+            ? `${prefilledCities}\n\n${initialState.notes}`
+            : prefilledCities;
+    }
     if (Array.isArray(data.styles) && data.styles.length > 0) {
         const knownStyleIds = new Set(STYLE_CHOICES.map((entry) => entry.id));
         const filteredStyles = data.styles.filter((styleId) => knownStyleIds.has(styleId));

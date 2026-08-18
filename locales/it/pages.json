@@ -171,6 +171,14 @@
           "police": "Polizia",
           "ambulance": "Ambulanza",
           "fire": "Vigili del fuoco"
+        },
+        "routes": {
+          "eyebrow": "Itinerari pronti",
+          "title": "Itinerari in evidenza in {destination}",
+          "subtitle": "Tre itinerari che prenoteremmo noi stessi. Scegline uno e il pianificatore si apre con tutte le tappe in ordine.",
+          "hint": "Si apre nel pianificatore",
+          "bestMonths": "Mesi migliori: {months}",
+          "cardLabel": "Pianifica l'itinerario {title}"
         }
       },
       "explorer": {

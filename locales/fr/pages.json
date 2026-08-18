@@ -171,6 +171,14 @@
           "police": "Police",
           "ambulance": "Ambulance",
           "fire": "Pompiers"
+        },
+        "routes": {
+          "eyebrow": "Itinéraires prêts à partir",
+          "title": "Itinéraires à la une en {destination}",
+          "subtitle": "Trois itinéraires que nous réserverions nous-mêmes. Choisissez-en un et le planificateur s'ouvre avec toutes les étapes dans l'ordre.",
+          "hint": "S'ouvre dans le planificateur",
+          "bestMonths": "Meilleurs mois : {months}",
+          "cardLabel": "Planifier l'itinéraire {title}"
         }
       },
       "explorer": {

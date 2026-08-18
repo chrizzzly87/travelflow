@@ -171,6 +171,14 @@
           "police": "Polícia",
           "ambulance": "Ambulância",
           "fire": "Bombeiros"
+        },
+        "routes": {
+          "eyebrow": "Rotas prontas",
+          "title": "Rotas em destaque em {destination}",
+          "subtitle": "Três rotas que nós próprios reservaríamos. Escolhe uma e o planeador abre com todas as paragens pela ordem certa.",
+          "hint": "Abre no planeador",
+          "bestMonths": "Melhores meses: {months}",
+          "cardLabel": "Planear a rota {title}"
         }
       },
       "explorer": {

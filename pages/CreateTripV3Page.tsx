@@ -393,7 +393,11 @@ const buildCreateTripV3InitialState = (
     if (data.endDate) initialState.endDate = data.endDate;
     if (data.budget) initialState.budget = data.budget as BudgetType;
     if (data.pace) initialState.pace = data.pace as PaceType;
-    if (data.cities) initialState.specificCities = data.cities;
+    if (data.cityList?.length) {
+        initialState.specificCities = data.cityList.join(', ');
+    } else if (data.cities) {
+        initialState.specificCities = data.cities;
+    }
     if (data.notes) initialState.notes = data.notes;
     if (typeof data.roundTrip === 'boolean') initialState.isRoundTrip = data.roundTrip;
     if (Array.isArray(data.styles)) {

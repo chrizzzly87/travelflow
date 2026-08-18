@@ -269,6 +269,7 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `inspirations__country_filter--reset` | — | — | `CountryExplorerControls.tsx` |
 | `inspirations__country_sort` | — | `{ sort }` | `CountryExplorerControls.tsx` |
 | `inspirations__destination_plan` | — | `{ country, destination, kind }` | `DestinationGuideView.tsx` |
+| `inspirations__country_route` | — | `{ route_id, country, style, duration_days, stop_count }` | `CountryRouteCards.tsx` |
 | `inspirations__festival_card` | — | `{ name, country }` | `InspirationsPage.tsx` |
 | `inspirations__getaway_card` | — | `{ title, destination }` | `InspirationsPage.tsx` |
 | `inspirations__country_pill` | — | `{ country }` | `InspirationsPage.tsx` |

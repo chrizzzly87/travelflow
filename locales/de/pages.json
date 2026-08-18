@@ -171,6 +171,14 @@
           "police": "Polizei",
           "ambulance": "Rettungsdienst",
           "fire": "Feuerwehr"
+        },
+        "routes": {
+          "eyebrow": "Fertige Routen",
+          "title": "Empfohlene Routen in {destination}",
+          "subtitle": "Drei Routen, die wir selbst buchen würden. Wähl eine aus und der Planer öffnet sich mit allen Stopps in der richtigen Reihenfolge.",
+          "hint": "Öffnet im Planer",
+          "bestMonths": "Beste Monate: {months}",
+          "cardLabel": "Route {title} planen"
         }
       },
       "explorer": {

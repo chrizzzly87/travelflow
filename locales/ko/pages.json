@@ -171,6 +171,14 @@
           "police": "경찰",
           "ambulance": "구급차",
           "fire": "소방"
+        },
+        "routes": {
+          "eyebrow": "완성된 루트",
+          "title": "{destination} 추천 루트",
+          "subtitle": "저희가 직접 예약할 만한 루트 세 가지입니다. 하나를 고르면 플래너가 모든 경유지를 순서대로 담아 열립니다.",
+          "hint": "플래너에서 열립니다",
+          "bestMonths": "가장 좋은 달: {months}",
+          "cardLabel": "{title} 루트 계획하기"
         }
       },
       "explorer": {

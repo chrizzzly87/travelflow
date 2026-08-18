@@ -171,6 +171,14 @@
           "police": "Policja",
           "ambulance": "Pogotowie",
           "fire": "Straż pożarna"
+        },
+        "routes": {
+          "eyebrow": "Gotowe trasy",
+          "title": "Polecane trasy w {destination}",
+          "subtitle": "Trzy trasy, które sami byśmy zarezerwowali. Wybierz jedną, a planer otworzy się ze wszystkimi przystankami w kolejności.",
+          "hint": "Otwiera się w planerze",
+          "bestMonths": "Najlepsze miesiące: {months}",
+          "cardLabel": "Zaplanuj trasę {title}"
         }
       },
       "explorer": {

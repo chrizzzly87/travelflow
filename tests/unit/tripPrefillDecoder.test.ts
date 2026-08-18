@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decodeTripPrefill } from '../../services/tripPrefillDecoder';
+import { MAX_PREFILL_CITY_LIST, decodeTripPrefill } from '../../services/tripPrefillDecoder';
 
 const encode = (value: unknown): string => {
   const json = JSON.stringify(value);
@@ -111,6 +111,38 @@ describe('services/tripPrefillDecoder', () => {
 
     expect(decodeTripPrefill(encoded)).toEqual({
       countries: ['United Kingdom', 'United States', 'Ivory Coast', 'China', 'Congo (Democratic Republic)', 'Sri Lanka'],
+    });
+  });
+
+  describe('structured city lists', () => {
+    it('keeps a legacy comma-separated list untouched and adds no cityList', () => {
+      const parsed = decodeTripPrefill(encode({ cities: 'Lisbon, Sintra, Porto' }));
+      expect(parsed?.cities).toBe('Lisbon, Sintra, Porto');
+      expect(parsed?.cityList).toBeUndefined();
+    });
+
+    it('accepts an ordered cityList and mirrors it into the legacy string', () => {
+      const parsed = decodeTripPrefill(encode({ cityList: ['Tokyo', ' Hakone ', 'Kyoto', '', 42] }));
+      expect(parsed?.cityList).toEqual(['Tokyo', 'Hakone', 'Kyoto']);
+      expect(parsed?.cities).toBe('Tokyo, Hakone, Kyoto');
+    });
+
+    it('prefers an explicit cities string when both forms are present', () => {
+      const parsed = decodeTripPrefill(encode({ cities: 'Rome, Florence', cityList: ['Rome', 'Florence'] }));
+      expect(parsed?.cities).toBe('Rome, Florence');
+      expect(parsed?.cityList).toEqual(['Rome', 'Florence']);
+    });
+
+    it('caps very long city lists', () => {
+      const cityList = Array.from({ length: MAX_PREFILL_CITY_LIST + 6 }, (_, index) => `City ${index + 1}`);
+      const parsed = decodeTripPrefill(encode({ cityList }));
+      expect(parsed?.cityList).toHaveLength(MAX_PREFILL_CITY_LIST);
+      expect(parsed?.cityList?.[0]).toBe('City 1');
+    });
+
+    it('ignores a malformed cityList', () => {
+      expect(decodeTripPrefill(encode({ cityList: 'Tokyo, Kyoto' }))?.cityList).toBeUndefined();
+      expect(decodeTripPrefill(encode({ cityList: [], notes: 'keep' }))?.cityList).toBeUndefined();
     });
   });
 });
