@@ -214,6 +214,8 @@ Create Trip uses a separate seasonal recommendation layer for empty-state destin
 | `services/destinationService.ts` | Recommendation month selection, score calculation, ranking, and search integration |
 | `data/countryTravelData.ts` | Seasonal best/shoulder/avoid months plus event metadata used as score modifiers |
 
+> Monthly temperature and rainfall normals plus a per-month `high` / `shoulder` / `low` season signal live in a separate dataset — see [`docs/COUNTRY_CLIMATE_DATA.md`](./COUNTRY_CLIMATE_DATA.md) and `services/countryClimateService.ts`. That season signal is derived from the same curated `bestMonths` / `shoulderMonths` / `avoidMonths` documented here, so the two layers stay consistent.
+
 ### Recommendation pool
 
 - The pool starts from all `DESTINATION_OPTIONS`.
@@ -352,3 +354,5 @@ limit large enough to include the new entry.
 | `pages/CreateTripClassicLabPage.tsx` | Reads `?prefill=` param, pre-fills form fields |
 | `components/CountrySelect.tsx` | Destination picker, searches `DESTINATION_OPTIONS` |
 | `netlify/edge-functions/site-og-meta.ts` | Strips `prefill` from canonical URLs |
+| `data/countryClimateNormals.json` | Monthly temperature/rainfall normals + curated season signal per country |
+| `services/countryClimateService.ts` | Memoized read API for the climate dataset (see `docs/COUNTRY_CLIMATE_DATA.md`) |
