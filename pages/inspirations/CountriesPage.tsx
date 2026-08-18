@@ -6,10 +6,10 @@ import { MarketingLayout } from '../../components/marketing/MarketingLayout';
 import { FlagIcon } from '../../components/flags/FlagIcon';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
 import { DEFAULT_LOCALE } from '../../config/locales';
-import { listDestinationGuides } from '../../services/destinationGuideService';
+import { listDestinationGuides, MAX_DESTINATION_GUIDE_LIMIT } from '../../services/destinationGuideService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 
-const countryGuides = listDestinationGuides({ kind: 'country', limit: 50 });
+const countryGuides = listDestinationGuides({ kind: 'country', limit: MAX_DESTINATION_GUIDE_LIMIT });
 
 export const CountriesPage: React.FC = () => {
   const { t } = useTranslation('pages');

@@ -1,9 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { resolveSiteUrl } from '../config/site-url.mjs';
 
 const ROOT = process.cwd();
 const BLOG_DIR = path.join(ROOT, 'content', 'blog');
+const DESTINATION_GUIDES_FILE = path.join(ROOT, 'data', 'destinationGuides.json');
 const OUT_FILE = path.join(ROOT, 'public', 'sitemap.xml');
 const ROUTE_CONFIG_FILES = [
     path.join(ROOT, 'app', 'routes', 'DeferredAppRoutes.tsx'),
@@ -184,6 +186,50 @@ const readPublishedBlogPosts = async ({ supportedLocales, defaultLocale }) => {
     return posts;
 };
 
+/**
+ * Destination guide pages are generated from `data/destinationGuides.json`, so they never
+ * appear in the static marketing route table. Country pages resolve at
+ * `/inspirations/country/<slug>` and city/island pages at
+ * `/inspirations/country/<countrySlug>/<childSlug>`.
+ *
+ * Every country guide is emitted. Child guides are only emitted when they carry curated
+ * content (highlights); the remaining children are derived from the airport reference and
+ * would submit near-duplicate stub pages that inherit all of their data from the parent
+ * country. They stay reachable through the country page's internal links.
+ */
+export const readDestinationGuidePaths = async (filePath = DESTINATION_GUIDES_FILE) => {
+    let document;
+    try {
+        document = JSON.parse(await fs.readFile(filePath, 'utf8'));
+    } catch {
+        return [];
+    }
+
+    const guides = Array.isArray(document?.guides) ? document.guides : [];
+    const countrySlugs = new Set(
+        guides.filter((guide) => guide?.kind === 'country' && guide.slug).map((guide) => guide.slug)
+    );
+
+    const paths = [];
+    for (const slug of countrySlugs) {
+        paths.push(`/inspirations/country/${encodeURIComponent(slug)}`);
+    }
+
+    for (const guide of guides) {
+        if (!guide || guide.kind === 'country') continue;
+        if (!guide.slug || !guide.parentSlug) continue;
+        if (!countrySlugs.has(guide.parentSlug)) continue;
+        const hasCuratedContent = (Array.isArray(guide.highlights) && guide.highlights.length > 0)
+            || Boolean(guide.summary);
+        if (!hasCuratedContent) continue;
+        paths.push(
+            `/inspirations/country/${encodeURIComponent(guide.parentSlug)}/${encodeURIComponent(guide.slug)}`
+        );
+    }
+
+    return Array.from(new Set(paths));
+};
+
 const buildSitemap = async () => {
     const [{ supportedLocales, defaultLocale }, marketingPaths] = await Promise.all([
         readLocalesConfig(),
@@ -193,6 +239,21 @@ const buildSitemap = async () => {
     const nodes = [];
 
     for (const pathName of marketingPaths) {
+        for (const locale of supportedLocales) {
+            const localizedPath = localizePath(pathName, locale, defaultLocale);
+            const loc = toAbsoluteUrl(localizedPath);
+            const alternates = buildAlternateLinks({
+                basePath: pathName,
+                locales: supportedLocales,
+                defaultLocale,
+            });
+            nodes.push(buildUrlNode({ loc, alternates }));
+        }
+    }
+
+    const destinationPaths = await readDestinationGuidePaths();
+
+    for (const pathName of destinationPaths) {
         for (const locale of supportedLocales) {
             const localizedPath = localizePath(pathName, locale, defaultLocale);
             const loc = toAbsoluteUrl(localizedPath);
@@ -238,11 +299,18 @@ const buildSitemap = async () => {
 
     await fs.writeFile(OUT_FILE, xml, 'utf8');
     console.log(
-        `[sitemap:generate] wrote ${OUT_FILE} (${nodes.length} URLs from ${marketingPaths.length} static routes + ${blogPosts.length} blog posts)`
+        `[sitemap:generate] wrote ${OUT_FILE} (${nodes.length} URLs from ${marketingPaths.length} static routes + ${destinationPaths.length} destination guides + ${blogPosts.length} blog posts)`
     );
 };
 
-buildSitemap().catch((error) => {
-    console.error(error);
-    process.exit(1);
-});
+export { buildSitemap };
+
+const isDirectRun = process.argv[1]
+    && pathToFileURL(process.argv[1]).href === import.meta.url;
+
+if (isDirectRun) {
+    buildSitemap().catch((error) => {
+        console.error(error);
+        process.exit(1);
+    });
+}
