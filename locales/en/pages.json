@@ -171,6 +171,14 @@
           "police": "Police",
           "ambulance": "Ambulance",
           "fire": "Fire"
+        },
+        "routes": {
+          "eyebrow": "Ready-made routes",
+          "title": "Featured routes in {destination}",
+          "subtitle": "Three routes we would book ourselves. Pick one and the planner opens with every stop already in order.",
+          "hint": "Opens in the planner",
+          "bestMonths": "Best months: {months}",
+          "cardLabel": "Plan the route {title}"
         }
       }
     }
