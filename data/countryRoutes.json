@@ -1,0 +1,1316 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-08-18T09:00:00Z",
+  "routes": [
+    {
+      "id": "japan-golden-route",
+      "featuredRank": 1,
+      "countryCode": "JP",
+      "countrySlug": "japan",
+      "mapColor": "bg-rose-100",
+      "mapAccent": "bg-rose-400",
+      "avatarColor": "bg-rose-600",
+      "curator": "travelflow",
+      "title": "Golden Route Classic",
+      "pitch": "Tokyo, a night in the mountains, then Kyoto and Osaka - the first-timer route that still surprises.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Tokyo",
+          "nights": 4,
+          "coordinates": {
+            "lat": 35.6762,
+            "lng": 139.6503
+          }
+        },
+        {
+          "name": "Hakone",
+          "nights": 1,
+          "coordinates": {
+            "lat": 35.2324,
+            "lng": 139.1069
+          }
+        },
+        {
+          "name": "Kyoto",
+          "nights": 4,
+          "coordinates": {
+            "lat": 35.0116,
+            "lng": 135.7681
+          }
+        },
+        {
+          "name": "Osaka",
+          "nights": 2,
+          "coordinates": {
+            "lat": 34.6937,
+            "lng": 135.5023
+          }
+        }
+      ],
+      "tags": [
+        "Culture",
+        "Food",
+        "History"
+      ],
+      "bestMonths": [
+        3,
+        4,
+        10,
+        11
+      ],
+      "localized": {
+        "de": {
+          "title": "Klassische Goldene Route",
+          "pitch": "Tokio, eine Nacht in den Bergen, dann Kyoto und Osaka - die Einsteigerroute, die trotzdem überrascht."
+        },
+        "es": {
+          "title": "Ruta Dorada clásica",
+          "pitch": "Tokio, una noche en la montaña y después Kioto y Osaka: la ruta para primerizos que aún sorprende."
+        },
+        "fr": {
+          "title": "Route dorée classique",
+          "pitch": "Tokyo, une nuit en montagne, puis Kyoto et Osaka : l'itinéraire des débutants qui surprend encore."
+        },
+        "it": {
+          "title": "Golden Route classica",
+          "pitch": "Tokyo, una notte in montagna, poi Kyoto e Osaka: l'itinerario per la prima volta che sorprende ancora."
+        },
+        "pt": {
+          "title": "Rota Dourada clássica",
+          "pitch": "Tóquio, uma noite na montanha e depois Quioto e Osaka: a rota de estreia que ainda surpreende."
+        }
+      }
+    },
+    {
+      "id": "japan-kyushu-circuit",
+      "featuredRank": 2,
+      "countryCode": "JP",
+      "countrySlug": "japan",
+      "mapColor": "bg-rose-100",
+      "mapAccent": "bg-rose-400",
+      "avatarColor": "bg-rose-600",
+      "curator": "travelflow",
+      "title": "Kyushu Volcano Circuit",
+      "pitch": "Ramen, hot springs and active volcanoes on the southern island most visitors skip.",
+      "style": "off-the-beaten-path",
+      "pace": "balanced",
+      "durationDays": 11,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Fukuoka",
+          "nights": 2,
+          "coordinates": {
+            "lat": 33.5904,
+            "lng": 130.4017
+          }
+        },
+        {
+          "name": "Nagasaki",
+          "nights": 2,
+          "coordinates": {
+            "lat": 32.7503,
+            "lng": 129.8779
+          }
+        },
+        {
+          "name": "Kumamoto",
+          "nights": 2,
+          "coordinates": {
+            "lat": 32.8032,
+            "lng": 130.7079
+          }
+        },
+        {
+          "name": "Beppu",
+          "nights": 2,
+          "coordinates": {
+            "lat": 33.2846,
+            "lng": 131.4914
+          }
+        },
+        {
+          "name": "Kagoshima",
+          "nights": 2,
+          "coordinates": {
+            "lat": 31.5966,
+            "lng": 130.5571
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Food",
+        "History"
+      ],
+      "bestMonths": [
+        4,
+        5,
+        10,
+        11
+      ],
+      "localized": {
+        "de": {
+          "title": "Kyushu-Vulkanrunde",
+          "pitch": "Ramen, heiße Quellen und aktive Vulkane auf der Südinsel, die die meisten auslassen."
+        },
+        "es": {
+          "title": "Circuito volcánico de Kyushu",
+          "pitch": "Ramen, aguas termales y volcanes activos en la isla del sur que casi nadie visita."
+        },
+        "fr": {
+          "title": "Circuit des volcans de Kyushu",
+          "pitch": "Ramen, sources chaudes et volcans actifs sur l'île du sud que presque personne ne visite."
+        },
+        "it": {
+          "title": "Circuito dei vulcani di Kyushu",
+          "pitch": "Ramen, sorgenti termali e vulcani attivi sull'isola del sud che quasi nessuno visita."
+        },
+        "pt": {
+          "title": "Circuito vulcânico de Kyushu",
+          "pitch": "Ramen, termas e vulcões ativos na ilha do sul que quase ninguém visita."
+        }
+      }
+    },
+    {
+      "id": "japan-alps-and-old-towns",
+      "featuredRank": 3,
+      "countryCode": "JP",
+      "countrySlug": "japan",
+      "mapColor": "bg-rose-100",
+      "mapAccent": "bg-rose-400",
+      "avatarColor": "bg-rose-600",
+      "curator": "travelflow",
+      "title": "Japanese Alps & Old Towns",
+      "pitch": "Trade the bullet-train corridor for samurai districts, thatched farmhouses and mountain air.",
+      "style": "nature-and-hiking",
+      "pace": "relaxed",
+      "durationDays": 11,
+      "isRoundTrip": true,
+      "stops": [
+        {
+          "name": "Tokyo",
+          "nights": 2,
+          "coordinates": {
+            "lat": 35.6762,
+            "lng": 139.6503
+          }
+        },
+        {
+          "name": "Kanazawa",
+          "nights": 2,
+          "coordinates": {
+            "lat": 36.5613,
+            "lng": 136.6562
+          }
+        },
+        {
+          "name": "Takayama",
+          "nights": 2,
+          "coordinates": {
+            "lat": 36.1461,
+            "lng": 137.2522
+          }
+        },
+        {
+          "name": "Shirakawa-go",
+          "nights": 1,
+          "coordinates": {
+            "lat": 36.2578,
+            "lng": 136.9063
+          }
+        },
+        {
+          "name": "Matsumoto",
+          "nights": 2,
+          "coordinates": {
+            "lat": 36.238,
+            "lng": 137.972
+          }
+        },
+        {
+          "name": "Tokyo",
+          "nights": 1,
+          "coordinates": {
+            "lat": 35.6762,
+            "lng": 139.6503
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Culture",
+        "Hiking"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Japanische Alpen & alte Städte",
+          "pitch": "Statt Shinkansen-Korridor: Samurai-Viertel, strohgedeckte Bauernhäuser und Bergluft."
+        },
+        "es": {
+          "title": "Alpes japoneses y pueblos antiguos",
+          "pitch": "Cambia el corredor del tren bala por barrios samuráis, casas de paja y aire de montaña."
+        },
+        "fr": {
+          "title": "Alpes japonaises et villes anciennes",
+          "pitch": "Quittez le couloir du Shinkansen pour les quartiers samouraïs, les fermes de chaume et l'air des montagnes."
+        },
+        "it": {
+          "title": "Alpi giapponesi e borghi antichi",
+          "pitch": "Lascia il corridoio dello Shinkansen per quartieri samurai, case di paglia e aria di montagna."
+        },
+        "pt": {
+          "title": "Alpes japoneses e vilas antigas",
+          "pitch": "Troca o corredor do comboio-bala por bairros samurais, casas de colmo e ar de montanha."
+        }
+      }
+    },
+    {
+      "id": "italy-classic-triangle",
+      "featuredRank": 1,
+      "countryCode": "IT",
+      "countrySlug": "italy",
+      "mapColor": "bg-amber-100",
+      "mapAccent": "bg-amber-500",
+      "avatarColor": "bg-amber-600",
+      "curator": "travelflow",
+      "title": "Rome, Florence & Venice",
+      "pitch": "Three cities, two train rides, and most of the art history you came for.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Rome",
+          "nights": 4,
+          "coordinates": {
+            "lat": 41.9028,
+            "lng": 12.4964
+          }
+        },
+        {
+          "name": "Florence",
+          "nights": 3,
+          "coordinates": {
+            "lat": 43.7696,
+            "lng": 11.2558
+          }
+        },
+        {
+          "name": "Venice",
+          "nights": 2,
+          "coordinates": {
+            "lat": 45.4408,
+            "lng": 12.3155
+          }
+        }
+      ],
+      "tags": [
+        "Art",
+        "History",
+        "Food"
+      ],
+      "bestMonths": [
+        4,
+        5,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Rom, Florenz & Venedig",
+          "pitch": "Drei Städte, zwei Zugfahrten und fast die gesamte Kunstgeschichte, für die du gekommen bist."
+        },
+        "es": {
+          "title": "Roma, Florencia y Venecia",
+          "pitch": "Tres ciudades, dos trayectos en tren y casi toda la historia del arte que venías a ver."
+        },
+        "fr": {
+          "title": "Rome, Florence et Venise",
+          "pitch": "Trois villes, deux trajets en train et presque toute l'histoire de l'art que vous venez voir."
+        },
+        "it": {
+          "title": "Roma, Firenze e Venezia",
+          "pitch": "Tre città, due viaggi in treno e quasi tutta la storia dell'arte che sei venuto a vedere."
+        },
+        "pt": {
+          "title": "Roma, Florença e Veneza",
+          "pitch": "Três cidades, duas viagens de comboio e quase toda a história de arte que vieste ver."
+        }
+      }
+    },
+    {
+      "id": "italy-amalfi-and-bay-of-naples",
+      "featuredRank": 2,
+      "countryCode": "IT",
+      "countrySlug": "italy",
+      "mapColor": "bg-amber-100",
+      "mapAccent": "bg-amber-500",
+      "avatarColor": "bg-amber-600",
+      "curator": "travelflow",
+      "title": "Amalfi Coast & Bay of Naples",
+      "pitch": "Pizza in Naples, ruins at Pompeii, then cliff roads and a slow ferry to Capri.",
+      "style": "beach-and-culture",
+      "pace": "relaxed",
+      "durationDays": 11,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Naples",
+          "nights": 3,
+          "coordinates": {
+            "lat": 40.8518,
+            "lng": 14.2681
+          }
+        },
+        {
+          "name": "Sorrento",
+          "nights": 3,
+          "coordinates": {
+            "lat": 40.6263,
+            "lng": 14.3757
+          }
+        },
+        {
+          "name": "Amalfi",
+          "nights": 2,
+          "coordinates": {
+            "lat": 40.634,
+            "lng": 14.6027
+          }
+        },
+        {
+          "name": "Capri",
+          "nights": 2,
+          "coordinates": {
+            "lat": 40.5532,
+            "lng": 14.2222
+          }
+        }
+      ],
+      "tags": [
+        "Beach",
+        "Food",
+        "History"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Amalfiküste & Golf von Neapel",
+          "pitch": "Pizza in Neapel, Ruinen in Pompeji, dann Klippenstraßen und eine gemächliche Fähre nach Capri."
+        },
+        "es": {
+          "title": "Costa Amalfitana y bahía de Nápoles",
+          "pitch": "Pizza en Nápoles, ruinas en Pompeya y luego carreteras de acantilado y un ferry lento a Capri."
+        },
+        "fr": {
+          "title": "Côte amalfitaine et baie de Naples",
+          "pitch": "Pizza à Naples, ruines de Pompéi, puis routes en corniche et ferry tranquille vers Capri."
+        },
+        "it": {
+          "title": "Costiera amalfitana e golfo di Napoli",
+          "pitch": "Pizza a Napoli, rovine a Pompei, poi strade a picco sul mare e un traghetto lento per Capri."
+        },
+        "pt": {
+          "title": "Costa Amalfitana e baía de Nápoles",
+          "pitch": "Pizza em Nápoles, ruínas em Pompeia e depois estradas de falésia e um ferry lento para Capri."
+        }
+      }
+    },
+    {
+      "id": "italy-sicily-loop",
+      "featuredRank": 3,
+      "countryCode": "IT",
+      "countrySlug": "italy",
+      "mapColor": "bg-amber-100",
+      "mapAccent": "bg-amber-500",
+      "avatarColor": "bg-amber-600",
+      "curator": "travelflow",
+      "title": "Sicily Island Loop",
+      "pitch": "A full circle of the island: Norman palaces, Greek temples, Etna and street food all the way.",
+      "style": "road-trip",
+      "pace": "balanced",
+      "durationDays": 13,
+      "isRoundTrip": true,
+      "stops": [
+        {
+          "name": "Palermo",
+          "nights": 3,
+          "coordinates": {
+            "lat": 38.1157,
+            "lng": 13.3615
+          },
+          "subdivisionCode": "IT-82"
+        },
+        {
+          "name": "Cefalù",
+          "nights": 1,
+          "coordinates": {
+            "lat": 38.0396,
+            "lng": 14.0227
+          },
+          "subdivisionCode": "IT-82"
+        },
+        {
+          "name": "Catania",
+          "nights": 3,
+          "coordinates": {
+            "lat": 37.5079,
+            "lng": 15.083
+          },
+          "subdivisionCode": "IT-82"
+        },
+        {
+          "name": "Taormina",
+          "nights": 2,
+          "coordinates": {
+            "lat": 37.8516,
+            "lng": 15.2853
+          },
+          "subdivisionCode": "IT-82"
+        },
+        {
+          "name": "Syracuse",
+          "nights": 2,
+          "coordinates": {
+            "lat": 37.0755,
+            "lng": 15.2866
+          },
+          "subdivisionCode": "IT-82"
+        },
+        {
+          "name": "Palermo",
+          "nights": 1,
+          "coordinates": {
+            "lat": 38.1157,
+            "lng": 13.3615
+          },
+          "subdivisionCode": "IT-82"
+        }
+      ],
+      "tags": [
+        "History",
+        "Food",
+        "Road Trip"
+      ],
+      "bestMonths": [
+        4,
+        5,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Sizilien-Rundreise",
+          "pitch": "Einmal rund um die Insel: normannische Paläste, griechische Tempel, der Ätna und durchgehend Streetfood."
+        },
+        "es": {
+          "title": "Vuelta a Sicilia",
+          "pitch": "Un círculo completo por la isla: palacios normandos, templos griegos, el Etna y comida callejera sin parar."
+        },
+        "fr": {
+          "title": "Boucle sicilienne",
+          "pitch": "Un tour complet de l'île : palais normands, temples grecs, l'Etna et de la street food partout."
+        },
+        "it": {
+          "title": "Giro della Sicilia",
+          "pitch": "Il giro completo dell'isola: palazzi normanni, templi greci, l'Etna e street food ovunque."
+        },
+        "pt": {
+          "title": "Volta à Sicília",
+          "pitch": "A volta completa à ilha: palácios normandos, templos gregos, o Etna e comida de rua a toda a hora."
+        }
+      }
+    },
+    {
+      "id": "thailand-north-to-south",
+      "featuredRank": 1,
+      "countryCode": "TH",
+      "countrySlug": "thailand",
+      "mapColor": "bg-emerald-100",
+      "mapAccent": "bg-emerald-400",
+      "avatarColor": "bg-emerald-500",
+      "curator": "travelflow",
+      "title": "Bangkok, Chiang Mai & the Andaman",
+      "pitch": "The classic first trip: temples, night markets, jungle, then limestone islands.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Bangkok",
+          "nights": 3,
+          "coordinates": {
+            "lat": 13.7563,
+            "lng": 100.5018
+          }
+        },
+        {
+          "name": "Chiang Mai",
+          "nights": 3,
+          "coordinates": {
+            "lat": 18.7883,
+            "lng": 98.9853
+          }
+        },
+        {
+          "name": "Krabi",
+          "nights": 3,
+          "coordinates": {
+            "lat": 8.0863,
+            "lng": 98.9063
+          }
+        },
+        {
+          "name": "Koh Phi Phi",
+          "nights": 2,
+          "coordinates": {
+            "lat": 7.7407,
+            "lng": 98.7784
+          }
+        }
+      ],
+      "tags": [
+        "Culture",
+        "Beach",
+        "Food"
+      ],
+      "bestMonths": [
+        11,
+        12,
+        1,
+        2
+      ],
+      "localized": {
+        "de": {
+          "title": "Bangkok, Chiang Mai & Andamanensee",
+          "pitch": "Die klassische erste Reise: Tempel, Nachtmärkte, Dschungel und danach Kalksteininseln."
+        },
+        "es": {
+          "title": "Bangkok, Chiang Mai y el Andamán",
+          "pitch": "El primer viaje clásico: templos, mercados nocturnos, selva y después islas de piedra caliza."
+        },
+        "fr": {
+          "title": "Bangkok, Chiang Mai et la mer d'Andaman",
+          "pitch": "Le premier voyage classique : temples, marchés de nuit, jungle, puis îles calcaires."
+        },
+        "it": {
+          "title": "Bangkok, Chiang Mai e il Mare delle Andamane",
+          "pitch": "Il classico primo viaggio: templi, mercati notturni, giungla e poi isole di calcare."
+        },
+        "pt": {
+          "title": "Banguecoque, Chiang Mai e o Andamão",
+          "pitch": "A primeira viagem clássica: templos, mercados noturnos, selva e depois ilhas de calcário."
+        }
+      }
+    },
+    {
+      "id": "thailand-northern-loop",
+      "featuredRank": 2,
+      "countryCode": "TH",
+      "countrySlug": "thailand",
+      "mapColor": "bg-emerald-100",
+      "mapAccent": "bg-emerald-400",
+      "avatarColor": "bg-emerald-500",
+      "curator": "travelflow",
+      "title": "Northern Mountains Loop",
+      "pitch": "Rent a scooter, ride the Mae Hong Son curves, and stay north the whole trip.",
+      "style": "off-the-beaten-path",
+      "pace": "relaxed",
+      "durationDays": 12,
+      "isRoundTrip": true,
+      "stops": [
+        {
+          "name": "Chiang Mai",
+          "nights": 4,
+          "coordinates": {
+            "lat": 18.7883,
+            "lng": 98.9853
+          }
+        },
+        {
+          "name": "Pai",
+          "nights": 3,
+          "coordinates": {
+            "lat": 19.3583,
+            "lng": 98.4406
+          }
+        },
+        {
+          "name": "Chiang Rai",
+          "nights": 3,
+          "coordinates": {
+            "lat": 19.9105,
+            "lng": 99.8406
+          }
+        },
+        {
+          "name": "Chiang Mai",
+          "nights": 1,
+          "coordinates": {
+            "lat": 18.7883,
+            "lng": 98.9853
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Adventure",
+        "Culture"
+      ],
+      "bestMonths": [
+        11,
+        12,
+        1,
+        2
+      ],
+      "localized": {
+        "de": {
+          "title": "Runde durch den Bergnorden",
+          "pitch": "Roller mieten, die Kurven nach Mae Hong Son fahren und die ganze Reise im Norden bleiben."
+        },
+        "es": {
+          "title": "Vuelta por las montañas del norte",
+          "pitch": "Alquila una moto, recorre las curvas de Mae Hong Son y quédate en el norte todo el viaje."
+        },
+        "fr": {
+          "title": "Boucle des montagnes du nord",
+          "pitch": "Louez un scooter, enchaînez les virages de Mae Hong Son et restez au nord tout le voyage."
+        },
+        "it": {
+          "title": "Anello delle montagne del nord",
+          "pitch": "Noleggia uno scooter, affronta le curve di Mae Hong Son e resta al nord per tutto il viaggio."
+        },
+        "pt": {
+          "title": "Volta pelas montanhas do norte",
+          "pitch": "Aluga uma scooter, faz as curvas de Mae Hong Son e fica no norte a viagem toda."
+        }
+      }
+    },
+    {
+      "id": "thailand-gulf-islands",
+      "featuredRank": 3,
+      "countryCode": "TH",
+      "countrySlug": "thailand",
+      "mapColor": "bg-emerald-100",
+      "mapAccent": "bg-emerald-400",
+      "avatarColor": "bg-emerald-500",
+      "curator": "travelflow",
+      "title": "Gulf Island Hopper",
+      "pitch": "Three islands, one ferry line: party beaches, dive sites and long slow mornings.",
+      "style": "island-hopping",
+      "pace": "relaxed",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Bangkok",
+          "nights": 2,
+          "coordinates": {
+            "lat": 13.7563,
+            "lng": 100.5018
+          }
+        },
+        {
+          "name": "Koh Samui",
+          "nights": 3,
+          "coordinates": {
+            "lat": 9.512,
+            "lng": 100.0136
+          }
+        },
+        {
+          "name": "Koh Phangan",
+          "nights": 3,
+          "coordinates": {
+            "lat": 9.75,
+            "lng": 100.0333
+          }
+        },
+        {
+          "name": "Koh Tao",
+          "nights": 3,
+          "coordinates": {
+            "lat": 10.0956,
+            "lng": 99.8403
+          }
+        }
+      ],
+      "tags": [
+        "Beach",
+        "Adventure",
+        "Nature"
+      ],
+      "bestMonths": [
+        12,
+        1,
+        2,
+        3
+      ],
+      "localized": {
+        "de": {
+          "title": "Inselhopping im Golf",
+          "pitch": "Drei Inseln, eine Fährlinie: Partystrände, Tauchplätze und sehr lange Vormittage."
+        },
+        "es": {
+          "title": "Salto de islas en el Golfo",
+          "pitch": "Tres islas y una línea de ferry: playas de fiesta, buceo y mañanas muy largas."
+        },
+        "fr": {
+          "title": "Îles du golfe en ferry",
+          "pitch": "Trois îles, une ligne de ferry : plages festives, sites de plongée et matinées interminables."
+        },
+        "it": {
+          "title": "Isole del Golfo in traghetto",
+          "pitch": "Tre isole, una linea di traghetti: spiagge da festa, immersioni e mattine lunghissime."
+        },
+        "pt": {
+          "title": "Ilhas do Golfo de ferry",
+          "pitch": "Três ilhas, uma linha de ferry: praias de festa, mergulho e manhãs muito longas."
+        }
+      }
+    },
+    {
+      "id": "iceland-ring-road",
+      "featuredRank": 1,
+      "countryCode": "IS",
+      "countrySlug": "iceland",
+      "mapColor": "bg-indigo-100",
+      "mapAccent": "bg-indigo-400",
+      "avatarColor": "bg-indigo-600",
+      "curator": "travelflow",
+      "title": "Ring Road Full Circle",
+      "pitch": "Route 1 the whole way around: waterfalls, glacier lagoons, fjords and almost no traffic.",
+      "style": "road-trip",
+      "pace": "balanced",
+      "durationDays": 11,
+      "isRoundTrip": true,
+      "stops": [
+        {
+          "name": "Reykjavík",
+          "nights": 2,
+          "coordinates": {
+            "lat": 64.1466,
+            "lng": -21.9426
+          }
+        },
+        {
+          "name": "Vík",
+          "nights": 2,
+          "coordinates": {
+            "lat": 63.4187,
+            "lng": -19.006
+          }
+        },
+        {
+          "name": "Höfn",
+          "nights": 2,
+          "coordinates": {
+            "lat": 64.2539,
+            "lng": -15.2082
+          }
+        },
+        {
+          "name": "Egilsstaðir",
+          "nights": 1,
+          "coordinates": {
+            "lat": 65.2653,
+            "lng": -14.3948
+          }
+        },
+        {
+          "name": "Akureyri",
+          "nights": 2,
+          "coordinates": {
+            "lat": 65.6835,
+            "lng": -18.0878
+          }
+        },
+        {
+          "name": "Reykjavík",
+          "nights": 1,
+          "coordinates": {
+            "lat": 64.1466,
+            "lng": -21.9426
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Road Trip",
+        "Photography"
+      ],
+      "bestMonths": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "localized": {
+        "de": {
+          "title": "Ringstraße einmal komplett",
+          "pitch": "Die Route 1 einmal ganz herum: Wasserfälle, Gletscherlagunen, Fjorde und fast kein Verkehr."
+        },
+        "es": {
+          "title": "Ring Road, la vuelta completa",
+          "pitch": "La Ruta 1 entera: cascadas, lagunas glaciares, fiordos y casi nada de tráfico."
+        },
+        "fr": {
+          "title": "Ring Road, le tour complet",
+          "pitch": "La route 1 dans son intégralité : cascades, lagunes glaciaires, fjords et presque aucun trafic."
+        },
+        "it": {
+          "title": "Ring Road, giro completo",
+          "pitch": "La Route 1 per intero: cascate, lagune glaciali, fiordi e quasi nessun traffico."
+        },
+        "pt": {
+          "title": "Ring Road, a volta completa",
+          "pitch": "A Rota 1 até ao fim: cascatas, lagoas glaciares, fiordes e quase nenhum trânsito."
+        }
+      }
+    },
+    {
+      "id": "iceland-south-coast-escape",
+      "featuredRank": 2,
+      "countryCode": "IS",
+      "countrySlug": "iceland",
+      "mapColor": "bg-indigo-100",
+      "mapAccent": "bg-indigo-400",
+      "avatarColor": "bg-indigo-600",
+      "curator": "travelflow",
+      "title": "South Coast Short Escape",
+      "pitch": "A long weekend that still gets you black sand, glaciers and a shot at the northern lights.",
+      "style": "city-break",
+      "pace": "relaxed",
+      "durationDays": 6,
+      "isRoundTrip": true,
+      "stops": [
+        {
+          "name": "Reykjavík",
+          "nights": 2,
+          "coordinates": {
+            "lat": 64.1466,
+            "lng": -21.9426
+          }
+        },
+        {
+          "name": "Vík",
+          "nights": 2,
+          "coordinates": {
+            "lat": 63.4187,
+            "lng": -19.006
+          }
+        },
+        {
+          "name": "Reykjavík",
+          "nights": 1,
+          "coordinates": {
+            "lat": 64.1466,
+            "lng": -21.9426
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Photography"
+      ],
+      "bestMonths": [
+        2,
+        3,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Kurztrip an die Südküste",
+          "pitch": "Ein langes Wochenende mit schwarzem Sand, Gletschern und echter Nordlicht-Chance."
+        },
+        "es": {
+          "title": "Escapada corta a la costa sur",
+          "pitch": "Un fin de semana largo con arena negra, glaciares y opciones reales de ver auroras."
+        },
+        "fr": {
+          "title": "Escapade sur la côte sud",
+          "pitch": "Un long week-end avec sable noir, glaciers et de vraies chances d'aurores boréales."
+        },
+        "it": {
+          "title": "Fuga breve sulla costa sud",
+          "pitch": "Un weekend lungo con sabbia nera, ghiacciai e vere possibilità di aurora boreale."
+        },
+        "pt": {
+          "title": "Escapadinha à costa sul",
+          "pitch": "Um fim de semana prolongado com areia negra, glaciares e hipóteses reais de auroras."
+        }
+      }
+    },
+    {
+      "id": "iceland-westfjords-loop",
+      "featuredRank": 3,
+      "countryCode": "IS",
+      "countrySlug": "iceland",
+      "mapColor": "bg-indigo-100",
+      "mapAccent": "bg-indigo-400",
+      "avatarColor": "bg-indigo-600",
+      "curator": "travelflow",
+      "title": "Westfjords & Snaefellsnes",
+      "pitch": "Iceland's emptiest corner: cliff colonies, gravel passes and hot pots with nobody in them.",
+      "style": "off-the-beaten-path",
+      "pace": "balanced",
+      "durationDays": 9,
+      "isRoundTrip": true,
+      "stops": [
+        {
+          "name": "Reykjavík",
+          "nights": 1,
+          "coordinates": {
+            "lat": 64.1466,
+            "lng": -21.9426
+          }
+        },
+        {
+          "name": "Grundarfjörður",
+          "nights": 2,
+          "coordinates": {
+            "lat": 64.9214,
+            "lng": -23.2508
+          }
+        },
+        {
+          "name": "Ísafjörður",
+          "nights": 3,
+          "coordinates": {
+            "lat": 66.0748,
+            "lng": -23.1355
+          }
+        },
+        {
+          "name": "Hólmavík",
+          "nights": 1,
+          "coordinates": {
+            "lat": 65.706,
+            "lng": -21.6836
+          }
+        },
+        {
+          "name": "Reykjavík",
+          "nights": 1,
+          "coordinates": {
+            "lat": 64.1466,
+            "lng": -21.9426
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Hiking",
+        "Road Trip"
+      ],
+      "bestMonths": [
+        6,
+        7,
+        8
+      ],
+      "localized": {
+        "de": {
+          "title": "Westfjorde & Snaefellsnes",
+          "pitch": "Islands leerste Ecke: Vogelfelsen, Schotterpässe und Hot Pots ganz für dich allein."
+        },
+        "es": {
+          "title": "Fiordos del oeste y Snaefellsnes",
+          "pitch": "El rincón más vacío de Islandia: colonias de aves, pasos de grava y piscinas termales sin nadie."
+        },
+        "fr": {
+          "title": "Fjords de l'Ouest et Snaefellsnes",
+          "pitch": "Le coin le plus vide d'Islande : falaises à oiseaux, cols de gravier et bains chauds déserts."
+        },
+        "it": {
+          "title": "Fiordi occidentali e Snaefellsnes",
+          "pitch": "L'angolo più vuoto d'Islanda: colonie di uccelli, passi sterrati e vasche termali deserte."
+        },
+        "pt": {
+          "title": "Fiordes do oeste e Snaefellsnes",
+          "pitch": "O canto mais vazio da Islândia: colónias de aves, estradas de gravilha e piscinas termais desertas."
+        }
+      }
+    },
+    {
+      "id": "portugal-lisbon-to-porto",
+      "featuredRank": 1,
+      "countryCode": "PT",
+      "countrySlug": "portugal",
+      "mapColor": "bg-sky-100",
+      "mapAccent": "bg-sky-400",
+      "avatarColor": "bg-sky-600",
+      "curator": "travelflow",
+      "title": "Lisbon to Porto by Rail",
+      "pitch": "No car needed: palaces, a walled town, a university city and port cellars at the end.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Lisbon",
+          "nights": 3,
+          "coordinates": {
+            "lat": 38.7223,
+            "lng": -9.1393
+          }
+        },
+        {
+          "name": "Sintra",
+          "nights": 1,
+          "coordinates": {
+            "lat": 38.8029,
+            "lng": -9.3817
+          }
+        },
+        {
+          "name": "Óbidos",
+          "nights": 1,
+          "coordinates": {
+            "lat": 39.3606,
+            "lng": -9.157
+          }
+        },
+        {
+          "name": "Coimbra",
+          "nights": 1,
+          "coordinates": {
+            "lat": 40.2033,
+            "lng": -8.4103
+          }
+        },
+        {
+          "name": "Porto",
+          "nights": 3,
+          "coordinates": {
+            "lat": 41.1579,
+            "lng": -8.6291
+          }
+        }
+      ],
+      "tags": [
+        "Culture",
+        "Food",
+        "Wine"
+      ],
+      "bestMonths": [
+        4,
+        5,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Mit der Bahn von Lissabon nach Porto",
+          "pitch": "Ganz ohne Auto: Paläste, eine Stadtmauer, eine Universitätsstadt und am Ende die Portweinkeller."
+        },
+        "es": {
+          "title": "De Lisboa a Oporto en tren",
+          "pitch": "Sin coche: palacios, una villa amurallada, una ciudad universitaria y bodegas de oporto al final."
+        },
+        "fr": {
+          "title": "De Lisbonne à Porto en train",
+          "pitch": "Sans voiture : palais, cité fortifiée, ville universitaire et caves à porto pour finir."
+        },
+        "it": {
+          "title": "Da Lisbona a Porto in treno",
+          "pitch": "Senza auto: palazzi, un borgo murato, una città universitaria e le cantine del porto alla fine."
+        },
+        "pt": {
+          "title": "De Lisboa ao Porto de comboio",
+          "pitch": "Sem carro: palácios, uma vila muralhada, uma cidade universitária e caves do Porto no fim."
+        }
+      }
+    },
+    {
+      "id": "portugal-algarve-coast",
+      "featuredRank": 2,
+      "countryCode": "PT",
+      "countrySlug": "portugal",
+      "mapColor": "bg-sky-100",
+      "mapAccent": "bg-sky-400",
+      "avatarColor": "bg-sky-600",
+      "curator": "travelflow",
+      "title": "Algarve Cliffs & Beaches",
+      "pitch": "East to west along the south coast, from salt-marsh towns to the surf at the end of Europe.",
+      "style": "beach-and-culture",
+      "pace": "relaxed",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Faro",
+          "nights": 2,
+          "coordinates": {
+            "lat": 37.0194,
+            "lng": -7.9304
+          }
+        },
+        {
+          "name": "Tavira",
+          "nights": 2,
+          "coordinates": {
+            "lat": 37.1281,
+            "lng": -7.6506
+          }
+        },
+        {
+          "name": "Lagos",
+          "nights": 3,
+          "coordinates": {
+            "lat": 37.1028,
+            "lng": -8.6737
+          }
+        },
+        {
+          "name": "Sagres",
+          "nights": 2,
+          "coordinates": {
+            "lat": 37.0086,
+            "lng": -8.9457
+          }
+        }
+      ],
+      "tags": [
+        "Beach",
+        "Surf",
+        "Nature"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Algarve: Klippen & Strände",
+          "pitch": "Von Ost nach West entlang der Südküste, von Salzwiesenstädtchen bis zum Surf am Ende Europas."
+        },
+        "es": {
+          "title": "Acantilados y playas del Algarve",
+          "pitch": "De este a oeste por la costa sur, de los pueblos de marisma al surf del fin de Europa."
+        },
+        "fr": {
+          "title": "Falaises et plages de l'Algarve",
+          "pitch": "D'est en ouest le long de la côte sud, des villages de marais salants au surf du bout de l'Europe."
+        },
+        "it": {
+          "title": "Scogliere e spiagge dell'Algarve",
+          "pitch": "Da est a ovest lungo la costa sud, dai paesi delle saline al surf ai confini d'Europa."
+        },
+        "pt": {
+          "title": "Falésias e praias do Algarve",
+          "pitch": "De leste a oeste pela costa sul, das vilas da ria ao surf no fim da Europa."
+        }
+      }
+    },
+    {
+      "id": "portugal-madeira-levadas",
+      "featuredRank": 3,
+      "countryCode": "PT",
+      "countrySlug": "portugal",
+      "mapColor": "bg-sky-100",
+      "mapAccent": "bg-sky-400",
+      "avatarColor": "bg-sky-600",
+      "curator": "travelflow",
+      "title": "Madeira Levada Trails",
+      "pitch": "Hike the irrigation channels through laurel forest, then eat very well back in Funchal.",
+      "style": "nature-and-hiking",
+      "pace": "balanced",
+      "durationDays": 10,
+      "isRoundTrip": true,
+      "stops": [
+        {
+          "name": "Funchal",
+          "nights": 4,
+          "coordinates": {
+            "lat": 32.6669,
+            "lng": -16.9241
+          },
+          "subdivisionCode": "PT-30"
+        },
+        {
+          "name": "Ponta do Sol",
+          "nights": 2,
+          "coordinates": {
+            "lat": 32.68,
+            "lng": -17.1
+          },
+          "subdivisionCode": "PT-30"
+        },
+        {
+          "name": "Santana",
+          "nights": 2,
+          "coordinates": {
+            "lat": 32.8,
+            "lng": -16.8833
+          },
+          "subdivisionCode": "PT-30"
+        },
+        {
+          "name": "Funchal",
+          "nights": 1,
+          "coordinates": {
+            "lat": 32.6669,
+            "lng": -16.9241
+          },
+          "subdivisionCode": "PT-30"
+        }
+      ],
+      "tags": [
+        "Hiking",
+        "Nature",
+        "Food"
+      ],
+      "bestMonths": [
+        3,
+        4,
+        5,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Madeiras Levada-Wege",
+          "pitch": "Entlang der Wasserkanäle durch Lorbeerwald wandern und danach in Funchal richtig gut essen."
+        },
+        "es": {
+          "title": "Senderos de las levadas de Madeira",
+          "pitch": "Camina junto a los canales de riego entre laurisilva y luego come muy bien en Funchal."
+        },
+        "fr": {
+          "title": "Sentiers des levadas de Madère",
+          "pitch": "Marchez le long des canaux d'irrigation dans la forêt de lauriers, puis régalez-vous à Funchal."
+        },
+        "it": {
+          "title": "Sentieri delle levadas di Madeira",
+          "pitch": "Cammina lungo i canali d'irrigazione nella foresta di alloro e poi mangia benissimo a Funchal."
+        },
+        "pt": {
+          "title": "Trilhos das levadas da Madeira",
+          "pitch": "Caminha ao longo das levadas pela laurissilva e depois come muito bem no Funchal."
+        }
+      }
+    }
+  ]
+}
