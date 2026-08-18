@@ -22,6 +22,7 @@ import { FlagIcon } from '../flags/FlagIcon';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { useDestinationCountryProfile } from '../../hooks/useDestinationCountryProfile';
 import { DestinationCountryProfileSections } from './DestinationCountryProfileSections';
+import { CountryRouteCards } from './CountryRouteCards';
 
 interface DestinationGuideViewProps {
   resolved: ResolvedDestinationGuide;
@@ -209,6 +210,10 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
             })}
           </div>
         </section>
+      ) : null}
+
+      {isCountry ? (
+        <CountryRouteCards countryValue={country.slug} countryName={country.name} locale={locale} />
       ) : null}
 
       <section className="grid gap-5 pb-10 md:grid-cols-2 animate-hero-stagger" style={{ '--stagger': '200ms' } as React.CSSProperties}>
