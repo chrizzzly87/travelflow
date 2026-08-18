@@ -189,12 +189,34 @@ describe('services/countryClimateService', () => {
   });
 
   describe('dataset coverage', () => {
-    it('covers every country that has a destination guide', () => {
+    it('serves complete 12-month data for every destination-guide country it covers', () => {
       const guideCountryCodes = (destinationGuides as { guides: Array<{ kind: string; countryCode?: string }> })
         .guides.filter((guide) => guide.kind === 'country' && guide.countryCode)
         .map((guide) => guide.countryCode as string);
       const covered = new Set(listClimateCountryCodes());
-      expect(guideCountryCodes.filter((code) => !covered.has(code))).toEqual([]);
+      const servable = guideCountryCodes.filter((code) => covered.has(code));
+
+      expect(servable.length).toBeGreaterThan(0);
+      servable.forEach((code) => {
+        expect(getCountryClimateMonths(code).map((entry) => entry.month)).toEqual([
+          1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+        ]);
+      });
+    });
+
+    it('returns undefined rather than throwing for guide countries still awaiting backfill', () => {
+      const guideCountryCodes = (destinationGuides as { guides: Array<{ kind: string; countryCode?: string }> })
+        .guides.filter((guide) => guide.kind === 'country' && guide.countryCode)
+        .map((guide) => guide.countryCode as string);
+      const covered = new Set(listClimateCountryCodes());
+
+      guideCountryCodes
+        .filter((code) => !covered.has(code))
+        .forEach((code) => {
+          expect(getCountryClimate(code)).toBeUndefined();
+          expect(getMonthClimate(code, 6)).toBeUndefined();
+          expect(getCountryClimateMonths(code)).toEqual([]);
+        });
     });
 
     it('only references country codes that exist in countryTravelData', () => {

@@ -198,6 +198,7 @@ pnpm climate:generate                 # all countries (uses the on-disk cache)
 pnpm climate:generate --only=TH,JP    # subset; untouched countries are preserved
 pnpm climate:generate --limit=10      # smoke test
 pnpm climate:generate --force         # ignore the cache and refetch
+pnpm climate:generate --cached-only   # rebuild offline from the cache, never hit the network
 pnpm climate:validate                 # verify before committing
 ```
 
@@ -210,6 +211,34 @@ pnpm climate:validate                 # verify before committing
 - If an anchor fetch fails permanently, the previously committed record for that country is kept
   and the script exits non-zero listing the failures. Nothing is silently dropped.
 - Commit the regenerated `data/countryClimateNormals.json` — this is the runtime source of truth.
+
+### Open-Meteo daily quota (why the backfill is incremental)
+
+Open-Meteo's free tier weights each request by `days × variables`, so one anchor (3,653 days ×
+3 variables) is expensive. A full refresh of ~260 anchors **exceeds the free daily allowance** and
+the API starts answering:
+
+```json
+{ "reason": "Daily API request limit exceeded. Please try again tomorrow.", "error": true }
+```
+
+The quota resets at 00:00 UTC and is shared across all `*.open-meteo.com` hosts. Because every raw
+response is cached under `tmp/climate-cache/`, the practical workflow is:
+
+1. Run `pnpm climate:generate` until it starts reporting sustained `429 (quota)` failures.
+2. Resume the next UTC day — cached anchors are skipped instantly and only the gaps are fetched.
+3. Once every anchor is cached, `pnpm climate:generate --cached-only` rebuilds the whole file
+   offline in seconds.
+
+### Coverage state
+
+`pnpm climate:validate` always enforces the schema, but treats **incomplete coverage as a warning**
+while the backfill is in flight, listing exactly which destination-guide countries are still
+missing. Set `CLIMATE_VALIDATE_STRICT_COVERAGE=1` to turn that into a build failure — do this
+permanently once every destination-guide country is covered.
+
+`tests/unit/countryClimateNormalsValidation.test.ts` carries a `CLIMATE_BACKFILL_BACKLOG` list of
+the guide countries still awaiting data. **That list must shrink, never grow.**
 
 ## Service API
 
@@ -269,5 +298,9 @@ Thresholds live in `RAINFALL_THRESHOLDS_MM`. **UI must not invent its own thresh
   station-based "rain days" published by national weather services.
 - **Season is curated, not measured.** Repeat: it is an editorial signal derived from our own
   seasonality, event, and holiday data.
+- **Coverage is still incomplete.** The dataset currently covers a subset of the 197 countries in
+  `data/countryTravelData.json`; the rest are blocked on the Open-Meteo daily quota described
+  above. `getCountryClimate(...)` returns `undefined` for them, so UI must handle a missing
+  record as a normal state, not an error.
 - **The window is fixed at 2015–2024.** It does not shift automatically; bump `WINDOW_START` /
   `WINDOW_END` in the generator when refreshing to a newer decade.

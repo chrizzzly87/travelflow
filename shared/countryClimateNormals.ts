@@ -250,6 +250,22 @@ export interface ValidateCountryClimateOptions {
   requiredCountryCodes?: Set<string> | string[];
 }
 
+/**
+ * Reports required country codes that the document does not cover. Kept separate from
+ * {@link validateCountryClimateDocument} so callers can decide whether an incomplete backfill
+ * is a hard error or a warning.
+ */
+export const findMissingClimateCoverage = (
+  document: CountryClimateDocument | null | undefined,
+  requiredCountryCodes: Set<string> | string[],
+): string[] => {
+  const required = requiredCountryCodes instanceof Set ? requiredCountryCodes : new Set(requiredCountryCodes);
+  const covered = new Set((document?.countries || []).map((country) => country?.countryCode));
+  return Array.from(required)
+    .filter((code) => !covered.has(code))
+    .sort();
+};
+
 const toSet = (value: Set<string> | string[] | undefined): Set<string> | undefined => {
   if (!value) return undefined;
   return value instanceof Set ? value : new Set(value);

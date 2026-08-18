@@ -7,6 +7,7 @@
  *   pnpm climate:generate --only=TH,JP     # refresh a subset
  *   pnpm climate:generate --force          # ignore the cache and refetch
  *   pnpm climate:generate --limit=10       # smoke test against the first N countries
+ *   pnpm climate:generate --cached-only    # rebuild offline from tmp/climate-cache, never fetch
  *
  * The generated JSON is COMMITTED. This script is a manual refresh tool, never a build step,
  * so the production build never depends on a live network call.
@@ -48,7 +49,7 @@ const WINDOW_YEARS = 10;
 const REQUEST_DELAY_MS = Number(process.env.CLIMATE_REQUEST_DELAY_MS || 1200);
 /** Open-Meteo's free tier is quota-weighted by days x variables, so 429s are expected. */
 const RATE_LIMIT_COOLDOWN_MS = Number(process.env.CLIMATE_RATE_LIMIT_COOLDOWN_MS || 65_000);
-const MAX_RETRIES = 12;
+const MAX_RETRIES = 40;
 const RAINY_DAY_THRESHOLD_MM = 1;
 
 const SOURCE_LICENSE = 'CC BY 4.0 (Open-Meteo) — underlying ERA5 data © Copernicus Climate Change Service';
@@ -372,10 +373,12 @@ const airportLabel = (airport: AirportEntry): string => {
 const parseArgs = (argv: string[]) => {
   const only = new Set<string>();
   let force = false;
+  let cachedOnly = false;
   let limit = Number.POSITIVE_INFINITY;
 
   argv.forEach((arg) => {
     if (arg === '--force') force = true;
+    else if (arg === '--cached-only') cachedOnly = true;
     else if (arg.startsWith('--only=')) {
       arg
         .slice('--only='.length)
@@ -389,7 +392,7 @@ const parseArgs = (argv: string[]) => {
     }
   });
 
-  return { only, force, limit };
+  return { only, force, cachedOnly, limit };
 };
 
 /**
@@ -659,7 +662,7 @@ const toMonths = (aggregates: MonthAggregate[], country: CountryTravelEntry): Co
   }));
 
 const main = async (): Promise<void> => {
-  const { only, force, limit } = parseArgs(process.argv.slice(2));
+  const { only, force, cachedOnly, limit } = parseArgs(process.argv.slice(2));
 
   const travelDocument = JSON.parse(await readFile(COUNTRY_TRAVEL_DATA_PATH, 'utf8')) as CountryTravelDocument;
   const airports = JSON.parse(await readFile(AIRPORTS_PATH, 'utf8')) as AirportEntry[];
@@ -707,6 +710,11 @@ const main = async (): Promise<void> => {
 
     for (const plan of plans) {
       let daily = await loadCachedSeries(plan, force);
+      if (!daily && cachedOnly) {
+        failures.push(`${country.countryCode} anchor ${plan.id}: not cached (--cached-only)`);
+        failed = true;
+        break;
+      }
       if (!daily) {
         try {
           console.log(`[${processed}/${targets.length}] fetching ${plan.id} (${plan.label})`);
