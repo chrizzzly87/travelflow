@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   AirplaneTilt,
   ArrowLeft,
@@ -23,6 +23,11 @@ import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analytic
 import { useDestinationCountryProfile } from '../../hooks/useDestinationCountryProfile';
 import { DestinationCountryProfileSections } from './DestinationCountryProfileSections';
 import { CountryRouteCards } from './CountryRouteCards';
+import {
+  buildDestinationStructuredData,
+  resolveStructuredDataOrigin,
+  serializeStructuredData,
+} from '../../services/destinationStructuredData';
 
 interface DestinationGuideViewProps {
   resolved: ResolvedDestinationGuide;
@@ -53,6 +58,7 @@ const getChildIcon = (kind: DestinationGuideEntry['kind']) => (
 
 export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ resolved, locale }) => {
   const { t } = useTranslation('pages');
+  const location = useLocation();
   const { guide, country, children, effectiveSeasonality, effectiveEvents } = resolved;
   const isCountry = guide.kind === 'country';
   const countryProfile = useDestinationCountryProfile(country.slug, isCountry);
@@ -70,9 +76,15 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
     : guide.kind === 'island'
       ? t('inspirations.subpages.guide.islandPill')
       : t('inspirations.subpages.guide.cityPill');
+  const structuredData = React.useMemo(() => serializeStructuredData(buildDestinationStructuredData({
+    resolved,
+    canonicalUrl: `${resolveStructuredDataOrigin()}${location.pathname}`,
+    description: countryProfile.result?.profile.summary || guide.summary,
+  })), [resolved, location.pathname, countryProfile.result?.profile.summary, guide.summary]);
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData }} />
       <section className="pt-8 pb-8 md:pt-14 md:pb-12 animate-hero-entrance">
         <nav aria-label={t('inspirations.subpages.guide.breadcrumbLabel')} className="mb-6 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-500">
           <Link to={countriesPath} className="inline-flex items-center gap-1.5 transition-colors hover:text-accent-700">

@@ -56,6 +56,44 @@ const ROUTES = [
   { path: '/ur', dests: ['ur.html', 'ur/index.html'] }
 ];
 
+// Destination guide country pages are data-driven, so they never appear in the
+// static route table above. Each prerendered route costs roughly 2-3s of build
+// time, so we prerender the highest-priority country guides plus the newest
+// additions instead of all 52 — the rest still render client-side and receive
+// canonical/OG metadata from the site OG edge function.
+const PRERENDERED_COUNTRY_GUIDE_LIMIT = 10;
+const ALWAYS_PRERENDERED_COUNTRY_SLUGS = ['china', 'taiwan'];
+
+function readCountryGuideRoutes() {
+  try {
+    const raw = fs.readFileSync(path.join(projectRoot, 'data', 'destinationGuides.json'), 'utf8');
+    const guides = JSON.parse(raw)?.guides;
+    if (!Array.isArray(guides)) return [];
+
+    const countries = guides
+      .filter((guide) => guide?.kind === 'country' && guide.slug)
+      .sort((left, right) => (left.priorityRank || Number.MAX_SAFE_INTEGER) - (right.priorityRank || Number.MAX_SAFE_INTEGER));
+
+    const slugs = new Set(countries.slice(0, PRERENDERED_COUNTRY_GUIDE_LIMIT).map((guide) => guide.slug));
+    for (const slug of ALWAYS_PRERENDERED_COUNTRY_SLUGS) {
+      if (countries.some((guide) => guide.slug === slug)) slugs.add(slug);
+    }
+
+    return Array.from(slugs).map((slug) => ({
+      path: `/inspirations/country/${slug}`,
+      dests: [
+        `inspirations/country/${slug}.html`,
+        `inspirations/country/${slug}/index.html`,
+      ],
+    }));
+  } catch (err) {
+    console.warn('WARNING: Could not derive destination guide prerender routes.', err.message);
+    return [];
+  }
+}
+
+ROUTES.push(...readCountryGuideRoutes());
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function ensurePlaywrightChromiumInstalled() {
