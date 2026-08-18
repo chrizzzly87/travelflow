@@ -18,7 +18,7 @@ const OUTPUT_PATH = resolve(ROOT, 'data/destinationGuides.json');
 const REVIEWED_AT = new Date().toISOString();
 
 // Launch order: the 29 non-zero countries observed in the referenced source's
-// popularity field, followed by 21 destinations already represented by
+// popularity field, followed by 23 destinations already represented by
 // TravelFlow inspiration content or common multi-country routes. This is a
 // product launch set, not an objective global tourism ranking.
 const TOP_COUNTRY_CODES = [
@@ -27,6 +27,7 @@ const TOP_COUNTRY_CODES = [
   'HR', 'MA', 'EG', 'ZA', 'TZ', 'SC', 'MU', 'FJ', 'LK',
   'JP', 'NZ', 'US', 'CA', 'GB', 'DE', 'CH', 'NL', 'IS', 'NO',
   'SE', 'DK', 'IN', 'MY', 'SG', 'KH', 'PE', 'AR', 'CL', 'CO', 'AE',
+  'CN', 'TW',
 ] as const;
 
 const REGION_BY_CODE: Record<(typeof TOP_COUNTRY_CODES)[number], string> = {
@@ -38,7 +39,7 @@ const REGION_BY_CODE: Record<(typeof TOP_COUNTRY_CODES)[number], string> = {
   US: 'North America', CA: 'North America', GB: 'Europe', DE: 'Europe', CH: 'Europe', NL: 'Europe',
   IS: 'Europe', NO: 'Europe', SE: 'Europe', DK: 'Europe', IN: 'Asia', MY: 'Asia', SG: 'Asia',
   KH: 'Asia', PE: 'South America', AR: 'South America', CL: 'South America', CO: 'South America',
-  AE: 'Middle East',
+  AE: 'Middle East', CN: 'Asia', TW: 'Asia',
 };
 
 interface CountryTravelRow {
@@ -74,6 +75,7 @@ const COUNTRY_TAGS: Record<string, string[]> = {
   NZ: ['nature', 'hiking', 'road trip'], IS: ['nature', 'road trip', 'photography'],
   NO: ['fjords', 'nature', 'rail'], IN: ['culture', 'food', 'history'],
   MX: ['food', 'culture', 'beaches'], MA: ['culture', 'food', 'desert'],
+  CN: ['culture', 'history', 'rail'], TW: ['food', 'nature', 'cities'],
 };
 
 const CURATED_CHILDREN: Record<string, Array<{ name: string; kind: 'city' | 'island' }>> = {
@@ -90,6 +92,20 @@ const CURATED_CHILDREN: Record<string, Array<{ name: string; kind: 'city' | 'isl
     { name: 'Seville', kind: 'city' },
     { name: 'Mallorca', kind: 'island' },
   ],
+  CN: [
+    { name: 'Beijing', kind: 'city' },
+    { name: 'Shanghai', kind: 'city' },
+    { name: 'Xi’an', kind: 'city' },
+    { name: 'Chengdu', kind: 'city' },
+    { name: 'Guilin', kind: 'city' },
+  ],
+  TW: [
+    { name: 'Taipei', kind: 'city' },
+    { name: 'Tainan', kind: 'city' },
+    { name: 'Taichung', kind: 'city' },
+    { name: 'Hualien', kind: 'city' },
+    { name: 'Kaohsiung', kind: 'city' },
+  ],
 };
 
 const CURATED_HIGHLIGHTS: Record<string, string[]> = {
@@ -101,6 +117,16 @@ const CURATED_HIGHLIGHTS: Record<string, string[]> = {
   'spain/mallorca': ['Serra de Tramuntana', 'Palma Old Town', 'Cala beaches'],
   'spain/barcelona': ['Sagrada Família', 'Gothic Quarter', 'Montjuïc'],
   'spain/seville': ['Real Alcázar', 'Santa Cruz', 'Plaza de España'],
+  'china/beijing': ['Forbidden City', 'Temple of Heaven', 'Great Wall at Mutianyu'],
+  'china/shanghai': ['The Bund', 'Yu Garden', 'Shanghai Museum'],
+  'china/xi-an': ['Terracotta Army', 'Xi’an City Wall', 'Muslim Quarter'],
+  'china/chengdu': ['Chengdu Research Base of Giant Panda Breeding', 'Wuhou Shrine', 'Jinli Street'],
+  'china/guilin': ['Li River', 'Longji Rice Terraces', 'Reed Flute Cave'],
+  'taiwan/taipei': ['Taipei 101', 'National Palace Museum', 'Shilin Night Market'],
+  'taiwan/tainan': ['Anping Fort', 'Chihkan Tower', 'Tainan Confucius Temple'],
+  'taiwan/taichung': ['National Taichung Theater', 'Rainbow Village', 'Gaomei Wetlands'],
+  'taiwan/hualien': ['Taroko Gorge', 'Qingshui Cliffs', 'Qixingtan Beach'],
+  'taiwan/kaohsiung': ['Lotus Pond', 'Pier-2 Art Center', 'Cijin Island'],
 };
 
 const THAILAND_EVENTS: DestinationEvent[] = [
@@ -158,6 +184,38 @@ const buildCountryLinks = (countryCode: string): DestinationGuideEntry['sourceLi
         purpose: 'connectivity',
         accessedAt: REVIEWED_AT,
         referralHint: true,
+      }),
+    );
+  }
+  if (countryCode === 'CN') {
+    links.push(
+      buildDestinationSourceLink({
+        label: 'Ministry of Culture and Tourism of China',
+        rawUrl: 'https://www.mct.gov.cn/',
+        purpose: 'guide',
+        accessedAt: REVIEWED_AT,
+      }),
+      buildDestinationSourceLink({
+        label: 'China National Immigration Administration',
+        rawUrl: 'https://en.nia.gov.cn/',
+        purpose: 'entry_requirements',
+        accessedAt: REVIEWED_AT,
+      }),
+    );
+  }
+  if (countryCode === 'TW') {
+    links.push(
+      buildDestinationSourceLink({
+        label: 'Taiwan Tourism Administration official guide',
+        rawUrl: 'https://eng.taiwan.net.tw/',
+        purpose: 'guide',
+        accessedAt: REVIEWED_AT,
+      }),
+      buildDestinationSourceLink({
+        label: 'Taiwan Bureau of Consular Affairs entry information',
+        rawUrl: 'https://www.boca.gov.tw/',
+        purpose: 'entry_requirements',
+        accessedAt: REVIEWED_AT,
       }),
     );
   }
@@ -310,7 +368,7 @@ const main = async (): Promise<void> => {
     generatedAt: REVIEWED_AT,
     selection: {
       countryCount: TOP_COUNTRY_CODES.length,
-      method: 'TravelFlow launch priority: 29 referenced popularity leaders plus 21 destinations represented by existing product content.',
+      method: 'TravelFlow launch priority: 29 referenced popularity leaders plus 23 destinations represented by existing product content.',
       countryCodes: [...TOP_COUNTRY_CODES],
     },
     sourceCatalog,
