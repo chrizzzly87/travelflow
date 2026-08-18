@@ -317,7 +317,10 @@ export interface TripPrefillData {
     endDate?: string;
     budget?: string;
     pace?: string;
+    /** Legacy comma-separated city list. Still written for backward compatibility. */
     cities?: string;
+    /** Ordered, structured city list. Preferred over `cities` when both are present. */
+    cityList?: string[];
     notes?: string;
     roundTrip?: boolean;
     mode?: 'classic' | 'wizard';

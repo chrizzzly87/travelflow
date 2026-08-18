@@ -166,7 +166,20 @@
         "fetchedOn": "consultada el {date}",
         "yes": "Sí",
         "no": "No",
-        "emergency": { "universal": "Emergencias", "police": "Policía", "ambulance": "Ambulancia", "fire": "Bomberos" }
+        "emergency": {
+          "universal": "Emergencias",
+          "police": "Policía",
+          "ambulance": "Ambulancia",
+          "fire": "Bomberos"
+        },
+        "routes": {
+          "eyebrow": "Rutas listas",
+          "title": "Rutas destacadas en {destination}",
+          "subtitle": "Tres rutas que reservaríamos nosotros mismos. Elige una y el planificador se abre con todas las paradas en orden.",
+          "hint": "Se abre en el planificador",
+          "bestMonths": "Mejores meses: {months}",
+          "cardLabel": "Planificar la ruta {title}"
+        }
       }
     }
   },
