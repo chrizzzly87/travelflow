@@ -300,6 +300,15 @@ const buildChildGuide = (
   };
 };
 
+// Airport municipalities carry disambiguating airport qualifiers ("Chengdu (Shuangliu)",
+// "Taipei (Songshan)") and administrative suffixes ("Hualien City"). Those are airport
+// labels, not destination names, so they are stripped before a child guide is created.
+// Once stripped, the entry usually collapses onto a curated or already-added child.
+const cleanMunicipalityName = (value: string): string => value
+  .replace(/\s*\([^)]*\)\s*/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
 const buildChildGuides = (
   country: DestinationGuideEntry,
   islands: IslandSeed[],
@@ -308,6 +317,9 @@ const buildChildGuides = (
   const add = (name: string, kind: 'city' | 'island', sourcedFromAirports = false) => {
     const slug = normalizeSlug(name);
     if (!slug || children.has(slug)) return;
+    // "Hualien City" is the same destination as an already-added "Hualien".
+    const baseSlug = slug.replace(/-city$/, '');
+    if (sourcedFromAirports && baseSlug !== slug && children.has(baseSlug)) return;
     const links = sourcedFromAirports
       ? country.sourceLinks.filter((link) => link.label.startsWith('OurAirports'))
       : [];
@@ -323,8 +335,8 @@ const buildChildGuides = (
       .map(normalizeSlug),
   );
   getCountryAirports(country.countryCode)
-    .map((airport) => airport.municipality)
-    .filter((municipality): municipality is string => Boolean(municipality?.trim()))
+    .map((airport) => cleanMunicipalityName(airport.municipality || ''))
+    .filter((municipality): municipality is string => Boolean(municipality))
     .slice(0, 12)
     .forEach((municipality) => add(
       municipality,
