@@ -7,6 +7,32 @@ import type { FestivalOccurrence } from '../../services/festivalDateService';
 
 const parseIsoDay = (iso: string): Date => new Date(`${iso}T00:00:00Z`);
 
+interface FestivalFormatters {
+  month: Intl.DateTimeFormat;
+  dayMonth: Intl.DateTimeFormat;
+  fullDate: Intl.DateTimeFormat;
+}
+
+/**
+ * `Intl.DateTimeFormat` construction is expensive and the festivals grid mounts
+ * this hook once per card, so formatters are cached per locale for the lifetime
+ * of the module rather than rebuilt per component.
+ */
+const formatterCache = new Map<string, FestivalFormatters>();
+
+const getFormatters = (intlLocale: string): FestivalFormatters => {
+  const cached = formatterCache.get(intlLocale);
+  if (cached) return cached;
+
+  const formatters: FestivalFormatters = {
+    month: new Intl.DateTimeFormat(intlLocale, { month: 'long', timeZone: 'UTC' }),
+    dayMonth: new Intl.DateTimeFormat(intlLocale, { day: 'numeric', month: 'short', timeZone: 'UTC' }),
+    fullDate: new Intl.DateTimeFormat(intlLocale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }),
+  };
+  formatterCache.set(intlLocale, formatters);
+  return formatters;
+};
+
 /**
  * Turns a resolved occurrence into display copy.
  *
@@ -18,16 +44,8 @@ export const useFestivalDateLabels = (locale: AppLanguage) => {
   const { t } = useTranslation('pages');
   const intlLocale = localeToIntlLocale(locale);
 
-  const monthFormatter = useMemo(
-    () => new Intl.DateTimeFormat(intlLocale, { month: 'long', timeZone: 'UTC' }),
-    [intlLocale],
-  );
-  const dayMonthFormatter = useMemo(
-    () => new Intl.DateTimeFormat(intlLocale, { day: 'numeric', month: 'short', timeZone: 'UTC' }),
-    [intlLocale],
-  );
-  const fullDateFormatter = useMemo(
-    () => new Intl.DateTimeFormat(intlLocale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }),
+  const { month: monthFormatter, dayMonth: dayMonthFormatter, fullDate: fullDateFormatter } = useMemo(
+    () => getFormatters(intlLocale),
     [intlLocale],
   );
 
