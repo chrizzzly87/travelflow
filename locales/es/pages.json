@@ -70,7 +70,45 @@
         "pill": "Eventos y festivales",
         "title": "Planea tu viaje alrededor de un festival",
         "description": "Las mejores celebraciones del mundo merecen más que un vuelo de última hora. Descubre festivales próximos por fecha y diseña tu itinerario alrededor del evento.",
-        "comingSoonDescription": "Pronto añadiremos guías completas de festivales con horarios, recomendaciones de alojamiento y propuestas de plan por días."
+        "counts": "{total} fiestas investigadas: {exact} ya tienen fecha confirmada.",
+        "accuracyNote": "Cuando una fiesta sigue un calendario lunar o móvil y todavía no podemos confirmar la fecha exacta, te decimos cuándo suele caer en lugar de inventarla.",
+        "filtersLabel": "Filtrar fiestas por región y mes",
+        "filterRegion": "Región",
+        "filterMonth": "Mes",
+        "filterAll": "Todas",
+        "resultCount": "{count, plural, one {# fiesta, la más próxima primero} other {# fiestas, las más próximas primero}}",
+        "emptyState": "Todavía no hay nada con esa combinación. Prueba otro mes u otra región.",
+        "happeningNow": "Está ocurriendo",
+        "countryInRegion": "{country} · {region}",
+        "planCta": "Planear el viaje",
+        "guideCta": "Guía del país",
+        "sourceCta": "Info oficial",
+        "precision": {
+          "exact": "Fecha confirmada",
+          "approximate": "Fechas habituales"
+        },
+        "date": {
+          "usually": "Normalmente en {month} de {year}",
+          "usually_early": "Normalmente a principios de {month} de {year}",
+          "usually_mid": "Normalmente a mediados de {month} de {year}",
+          "usually_late": "Normalmente a finales de {month} de {year}",
+          "throughout": "Durante todo {month} de {year}"
+        },
+        "recurrence": {
+          "fixed": "Las mismas fechas cada año",
+          "lunar": "La marca un calendario lunar",
+          "movable": "Las fechas se anuncian cada año",
+          "seasonal": "Se vive como una temporada"
+        },
+        "regions": {
+          "africa": "África",
+          "asia": "Asia",
+          "europe": "Europa",
+          "middle-east": "Oriente Medio",
+          "north-america": "América del Norte",
+          "oceania": "Oceanía",
+          "south-america": "América del Sur"
+        }
       },
       "weekendGetaways": {
         "pill": "Escapadas de fin de semana",
@@ -166,7 +204,12 @@
         "fetchedOn": "consultada el {date}",
         "yes": "Sí",
         "no": "No",
-        "emergency": { "universal": "Emergencias", "police": "Policía", "ambulance": "Ambulancia", "fire": "Bomberos" }
+        "emergency": {
+          "universal": "Emergencias",
+          "police": "Policía",
+          "ambulance": "Ambulancia",
+          "fire": "Bomberos"
+        }
       }
     }
   },

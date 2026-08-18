@@ -70,7 +70,45 @@
         "pill": "Events & Festivals",
         "title": "Plan Your Trip Around a Festival",
         "description": "The world's greatest celebrations deserve more than a last-minute flight. Discover upcoming festivals by date and build your itinerary around the event.",
-        "comingSoonDescription": "Detailed festival guides with schedules, accommodation tips, and day-by-day itinerary suggestions are on the way."
+        "counts": "{total} جشنواره بررسی شده — {exact} مورد با تاریخ قطعی.",
+        "accuracyNote": "وقتی جشنواره‌ای از تقویم قمری یا متغیر پیروی می‌کند و هنوز نمی‌توانیم تاریخ دقیقش را تأیید کنیم، به‌جای حدس زدن می‌گوییم معمولاً چه زمانی برگزار می‌شود.",
+        "filtersLabel": "فیلتر جشنواره‌ها بر اساس منطقه و ماه",
+        "filterRegion": "منطقه",
+        "filterMonth": "ماه",
+        "filterAll": "همه",
+        "resultCount": "{count, plural, one {# جشنواره، نزدیک‌ترین اول} other {# جشنواره، نزدیک‌ترین اول}}",
+        "emptyState": "هنوز چیزی با این ترکیب پیدا نشد. ماه یا منطقه دیگری را امتحان کنید.",
+        "happeningNow": "در حال برگزاری",
+        "countryInRegion": "{country} · {region}",
+        "planCta": "برنامه‌ریزی سفر",
+        "guideCta": "راهنمای کشور",
+        "sourceCta": "اطلاعات رسمی",
+        "precision": {
+          "exact": "تاریخ قطعی",
+          "approximate": "زمان معمول"
+        },
+        "date": {
+          "usually": "معمولاً در {month} {year}",
+          "usually_early": "معمولاً اوایل {month} {year}",
+          "usually_mid": "معمولاً اواسط {month} {year}",
+          "usually_late": "معمولاً اواخر {month} {year}",
+          "throughout": "در سراسر {month} {year}"
+        },
+        "recurrence": {
+          "fixed": "هر سال در همان روزها",
+          "lunar": "بر اساس تقویم قمری تعیین می‌شود",
+          "movable": "تاریخ‌ها هر سال اعلام می‌شود",
+          "seasonal": "مثل یک فصل ادامه دارد"
+        },
+        "regions": {
+          "africa": "آفریقا",
+          "asia": "آسیا",
+          "europe": "اروپا",
+          "middle-east": "خاورمیانه",
+          "north-america": "آمریکای شمالی",
+          "oceania": "اقیانوسیه",
+          "south-america": "آمریکای جنوبی"
+        }
       },
       "weekendGetaways": {
         "pill": "Weekend Getaways",
@@ -166,7 +204,12 @@
         "fetchedOn": "دریافت‌شده در {date}",
         "yes": "بله",
         "no": "خیر",
-        "emergency": { "universal": "اضطراری عمومی", "police": "پلیس", "ambulance": "اورژانس", "fire": "آتش‌نشانی" }
+        "emergency": {
+          "universal": "اضطراری عمومی",
+          "police": "پلیس",
+          "ambulance": "اورژانس",
+          "fire": "آتش‌نشانی"
+        }
       }
     }
   },

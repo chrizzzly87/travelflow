@@ -265,6 +265,11 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `inspirations__destination_card` | — | `{ title?, country, destination?, kind? }` | `InspirationsPage.tsx`, `CountriesPage.tsx`, `DestinationGuideView.tsx` |
 | `inspirations__destination_plan` | — | `{ country, destination, kind }` | `DestinationGuideView.tsx` |
 | `inspirations__festival_card` | — | `{ name, country }` | `InspirationsPage.tsx` |
+| `inspirations__festival_card--guide` | — | `{ name, country, region, precision }` | `FestivalCalendarCard.tsx` |
+| `inspirations__festival_plan` | — | `{ name, country, region, precision }` | `FestivalCalendarCard.tsx` |
+| `inspirations__festival_source` | — | `{ name, country, region, precision }` | `FestivalCalendarCard.tsx` |
+| `inspirations__festival_filter--region` | — | `{ region }` | `FestivalsPage.tsx` |
+| `inspirations__festival_filter--month` | — | `{ month }` | `FestivalsPage.tsx` |
 | `inspirations__getaway_card` | — | `{ title, destination }` | `InspirationsPage.tsx` |
 | `inspirations__country_pill` | — | `{ country }` | `InspirationsPage.tsx` |
 | `inspirations__quick_pill` | — | `{ label }` | `InspirationsPage.tsx` |

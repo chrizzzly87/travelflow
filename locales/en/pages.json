@@ -70,7 +70,45 @@
         "pill": "Events & Festivals",
         "title": "Plan Your Trip Around a Festival",
         "description": "The world's greatest celebrations deserve more than a last-minute flight. Discover upcoming festivals by date and build your itinerary around the event.",
-        "comingSoonDescription": "Detailed festival guides with schedules, accommodation tips, and day-by-day itinerary suggestions are on the way."
+        "counts": "{total} festivals researched — {exact} already pinned to a confirmed date.",
+        "accuracyNote": "When a festival follows a lunar or movable calendar and we cannot confirm the exact date yet, we tell you when it usually falls instead of guessing.",
+        "filtersLabel": "Filter festivals by region and month",
+        "filterRegion": "Region",
+        "filterMonth": "Month",
+        "filterAll": "All",
+        "resultCount": "{count, plural, one {# festival, soonest first} other {# festivals, soonest first}}",
+        "emptyState": "Nothing matches that combination yet. Try another month or region.",
+        "happeningNow": "Happening now",
+        "countryInRegion": "{country} · {region}",
+        "planCta": "Plan around it",
+        "guideCta": "Country guide",
+        "sourceCta": "Official info",
+        "precision": {
+          "exact": "Confirmed date",
+          "approximate": "Usual timing"
+        },
+        "date": {
+          "usually": "Usually in {month} {year}",
+          "usually_early": "Usually early {month} {year}",
+          "usually_mid": "Usually mid-{month} {year}",
+          "usually_late": "Usually late {month} {year}",
+          "throughout": "Throughout {month} {year}"
+        },
+        "recurrence": {
+          "fixed": "Same dates every year",
+          "lunar": "Set by a lunar calendar",
+          "movable": "Dates announced each year",
+          "seasonal": "Runs as a season"
+        },
+        "regions": {
+          "africa": "Africa",
+          "asia": "Asia",
+          "europe": "Europe",
+          "middle-east": "Middle East",
+          "north-america": "North America",
+          "oceania": "Oceania",
+          "south-america": "South America"
+        }
       },
       "weekendGetaways": {
         "pill": "Weekend Getaways",
