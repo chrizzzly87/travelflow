@@ -180,6 +180,58 @@
           "bestMonths": "Najlepsze miesiące: {months}",
           "cardLabel": "Zaplanuj trasę {title}"
         }
+      },
+      "explorer": {
+        "searchLabel": "Szukaj krajów",
+        "searchPlaceholder": "Wpisz kraj, region lub styl podróży",
+        "clearSearch": "Wyczyść wyszukiwanie",
+        "monthTitle": "Kiedy chcesz jechać?",
+        "monthSubtitle": "Wybierz miesiąc, a każda karta pokaże, czego się spodziewać.",
+        "anyMonth": "Dowolny miesiąc",
+        "dataDisclaimer": "Temperatura i opady to średnie z 10 lat, nie prognoza. Sezon to nasza redakcyjna ocena na podstawie danych o najlepszym czasie na wyjazd, a nie zmierzona liczba turystów.",
+        "filtersTitle": "Filtry",
+        "facets": {
+          "region": "Region",
+          "style": "Styl podróży",
+          "length": "Długość wyjazdu"
+        },
+        "tripLength": {
+          "short": "Do {max} dni",
+          "medium": "{min}-{max} dni",
+          "long": "{min} dni lub więcej"
+        },
+        "resultCount": "{count} z {total} krajów",
+        "sortLabel": "Sortuj",
+        "sort": {
+          "popular": "Najpopularniejsze",
+          "month": "Najlepsze w tym miesiącu",
+          "name": "Od A do Z"
+        },
+        "resetAll": "Wyczyść wszystko",
+        "temperature": "{high}/{low} °C typowo",
+        "rainfall": {
+          "dry": "Sucho",
+          "light": "Lekki deszcz",
+          "wet": "Wilgotno",
+          "very-wet": "Bardzo deszczowo"
+        },
+        "season": {
+          "high": "Ruchliwy sezon",
+          "shoulder": "Sezon przejściowy",
+          "low": "Spokojniejszy sezon"
+        },
+        "band": {
+          "ideal": "Idealny miesiąc",
+          "shoulder": "Miesiąc przejściowy",
+          "avoid": "Mniej udany miesiąc"
+        },
+        "climateUnavailable": "Dane pogodowe wkrótce",
+        "bestMonths": "Najlepiej: {months}",
+        "bestMonthsUnknown": "Najlepsze miesiące wkrótce",
+        "stripLabel": "Najlepsze miesiące na wyjazd do {country}: {months}",
+        "stripLabelUnknown": "Najlepsze miesiące na wyjazd do {country} nie są jeszcze dostępne",
+        "emptyTitle": "Brak wyników",
+        "emptyDescription": "Spróbuj innego miesiąca, usuń filtr albo poszukaj czegoś szerszego."
       }
     }
   },

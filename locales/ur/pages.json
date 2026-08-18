@@ -180,6 +180,58 @@
           "bestMonths": "بہترین مہینے: {months}",
           "cardLabel": "{title} کا راستہ ترتیب دیں"
         }
+      },
+      "explorer": {
+        "searchLabel": "ممالک تلاش کریں",
+        "searchPlaceholder": "ملک، خطہ یا سفر کا انداز تلاش کریں",
+        "clearSearch": "تلاش صاف کریں",
+        "monthTitle": "آپ کب جانا چاہتے ہیں؟",
+        "monthSubtitle": "مہینہ منتخب کریں اور ہر کارڈ وہاں کی توقع دکھائے گا۔",
+        "anyMonth": "کوئی بھی مہینہ",
+        "dataDisclaimer": "درجہ حرارت اور بارش دس سال کے اوسط ہیں، پیش گوئی نہیں۔ سیزن کا لیبل بہترین وقتِ سفر کے اعداد و شمار پر ہمارا ادارتی اندازہ ہے، ناپی گئی سیاحوں کی تعداد نہیں۔",
+        "filtersTitle": "فلٹرز",
+        "facets": {
+          "region": "خطہ",
+          "style": "سفر کا انداز",
+          "length": "دورانیہ"
+        },
+        "tripLength": {
+          "short": "{max} دن تک",
+          "medium": "{min}-{max} دن",
+          "long": "{min} دن یا زیادہ"
+        },
+        "resultCount": "{total} میں سے {count} ممالک",
+        "sortLabel": "ترتیب",
+        "sort": {
+          "popular": "سب سے مقبول",
+          "month": "اس مہینے کے لیے بہترین",
+          "name": "حروفِ تہجی"
+        },
+        "resetAll": "سب ری سیٹ کریں",
+        "temperature": "عام طور پر {high}/{low} ڈگری",
+        "rainfall": {
+          "dry": "خشک",
+          "light": "ہلکی بارش",
+          "wet": "مرطوب",
+          "very-wet": "بہت بارش"
+        },
+        "season": {
+          "high": "مصروف سیزن",
+          "shoulder": "درمیانی سیزن",
+          "low": "پُرسکون سیزن"
+        },
+        "band": {
+          "ideal": "بہترین مہینہ",
+          "shoulder": "درمیانی مہینہ",
+          "avoid": "کم موزوں مہینہ"
+        },
+        "climateUnavailable": "موسم کی تفصیل جلد آ رہی ہے",
+        "bestMonths": "بہترین: {months}",
+        "bestMonthsUnknown": "بہترین مہینے جلد",
+        "stripLabel": "{country} جانے کے بہترین مہینے: {months}",
+        "stripLabelUnknown": "{country} جانے کے بہترین مہینے ابھی دستیاب نہیں",
+        "emptyTitle": "ابھی کوئی نتیجہ نہیں",
+        "emptyDescription": "کوئی اور مہینہ آزمائیں، فلٹر ہٹائیں یا وسیع تلاش کریں۔"
       }
     }
   },

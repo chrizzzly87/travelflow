@@ -180,6 +180,58 @@
           "bestMonths": "Best months: {months}",
           "cardLabel": "Plan the route {title}"
         }
+      },
+      "explorer": {
+        "searchLabel": "Search countries",
+        "searchPlaceholder": "Search a country, region or travel style",
+        "clearSearch": "Clear search",
+        "monthTitle": "When do you want to go?",
+        "monthSubtitle": "Pick a month and every card shows what to expect there.",
+        "anyMonth": "Any month",
+        "dataDisclaimer": "Temperature and rain are 10-year averages, not a forecast. The season label is our editorial estimate from best-time-to-visit data, not measured visitor numbers.",
+        "filtersTitle": "Filters",
+        "facets": {
+          "region": "Region",
+          "style": "Travel style",
+          "length": "Trip length"
+        },
+        "tripLength": {
+          "short": "Up to {max} days",
+          "medium": "{min}-{max} days",
+          "long": "{min} days or more"
+        },
+        "resultCount": "Showing {count} of {total} countries",
+        "sortLabel": "Sort",
+        "sort": {
+          "popular": "Most popular",
+          "month": "Best for this month",
+          "name": "A to Z"
+        },
+        "resetAll": "Reset all",
+        "temperature": "{high}/{low}°C typical",
+        "rainfall": {
+          "dry": "Dry",
+          "light": "Light rain",
+          "wet": "Wet",
+          "very-wet": "Very wet"
+        },
+        "season": {
+          "high": "Busy travel season",
+          "shoulder": "Shoulder season",
+          "low": "Quieter season"
+        },
+        "band": {
+          "ideal": "Ideal month",
+          "shoulder": "Shoulder month",
+          "avoid": "Less ideal month"
+        },
+        "climateUnavailable": "Weather details coming soon",
+        "bestMonths": "Best: {months}",
+        "bestMonthsUnknown": "Best months coming soon",
+        "stripLabel": "Best months to visit {country}: {months}",
+        "stripLabelUnknown": "Best months to visit {country} are not available yet",
+        "emptyTitle": "Nothing matches yet",
+        "emptyDescription": "Try another month, drop a filter, or search for something broader."
       }
     }
   },

@@ -180,6 +180,58 @@
           "bestMonths": "Meilleurs mois : {months}",
           "cardLabel": "Planifier l'itinéraire {title}"
         }
+      },
+      "explorer": {
+        "searchLabel": "Rechercher un pays",
+        "searchPlaceholder": "Cherchez un pays, une région ou un style de voyage",
+        "clearSearch": "Effacer la recherche",
+        "monthTitle": "Vous partez quand ?",
+        "monthSubtitle": "Choisissez un mois et chaque carte montre ce qui vous attend.",
+        "anyMonth": "N'importe quel mois",
+        "dataDisclaimer": "La température et la pluie sont des moyennes sur 10 ans, pas des prévisions. La saison est notre estimation éditoriale issue des meilleures périodes de voyage, pas un nombre de visiteurs mesuré.",
+        "filtersTitle": "Filtres",
+        "facets": {
+          "region": "Région",
+          "style": "Style de voyage",
+          "length": "Durée du voyage"
+        },
+        "tripLength": {
+          "short": "Jusqu'à {max} jours",
+          "medium": "{min}-{max} jours",
+          "long": "{min} jours ou plus"
+        },
+        "resultCount": "{count} sur {total} pays",
+        "sortLabel": "Tri",
+        "sort": {
+          "popular": "Les plus populaires",
+          "month": "Idéal ce mois-ci",
+          "name": "De A à Z"
+        },
+        "resetAll": "Tout réinitialiser",
+        "temperature": "{high}/{low} °C en moyenne",
+        "rainfall": {
+          "dry": "Sec",
+          "light": "Pluie légère",
+          "wet": "Humide",
+          "very-wet": "Très pluvieux"
+        },
+        "season": {
+          "high": "Forte affluence",
+          "shoulder": "Saison intermédiaire",
+          "low": "Plus calme"
+        },
+        "band": {
+          "ideal": "Mois idéal",
+          "shoulder": "Mois intermédiaire",
+          "avoid": "Mois moins favorable"
+        },
+        "climateUnavailable": "Météo bientôt disponible",
+        "bestMonths": "Idéal : {months}",
+        "bestMonthsUnknown": "Meilleurs mois bientôt disponibles",
+        "stripLabel": "Meilleurs mois pour visiter {country} : {months}",
+        "stripLabelUnknown": "Les meilleurs mois pour visiter {country} ne sont pas encore disponibles",
+        "emptyTitle": "Aucun résultat pour le moment",
+        "emptyDescription": "Essayez un autre mois, retirez un filtre ou élargissez votre recherche."
       }
     }
   },
