@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ensureModelAllowed,
+  ensureModelAllowedForGeneration,
   generateProviderItinerary,
 } from '../../netlify/edge-lib/ai-provider-runtime.ts';
 
@@ -67,14 +68,25 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('openrouter', 'openai/gpt-chat-latest')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'anthropic/claude-opus-4.8')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'anthropic/claude-opus-4.8-fast')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'anthropic/claude-opus-5')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'anthropic/claude-sonnet-5')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'google/gemini-3.5-flash')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'google/gemini-3.7-flash')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'google/gemini-3.6-flash')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'google/gemini-3.5-flash-lite')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'google/gemini-3.1-flash-lite')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'nvidia/nemotron-3-super-120b-a12b:free')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5.2')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'moonshotai/kimi-k3')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'deepseek/deepseek-v4-pro-0813')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'deepseek/deepseek-v4-flash-0731')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.3')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.5')).toBeNull();
-    expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.20-beta')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.6')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.20')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.1-fast')?.code).toBe('MODEL_NOT_ALLOWED');
+    expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.20-beta')?.code).toBe('MODEL_NOT_ALLOWED');
     expect(ensureModelAllowed('openrouter', 'qwen/qwen3.5-9b')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'qwen/qwen3.5-plus-20260420')).toBeNull();
     expect(ensureModelAllowed('openai', 'gpt-5.4')).toBeNull();
@@ -84,6 +96,20 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('qwen', 'qwen/qwen-3.5-plus')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'missing-model')?.code).toBe('MODEL_NOT_ALLOWED');
     expect(ensureModelAllowed('unknown-provider', 'x')?.code).toBe('PROVIDER_NOT_SUPPORTED');
+  });
+
+  it('allows an admin-approved live OpenRouter model without weakening other providers', async () => {
+    stubDenoEnv({
+      VITE_SUPABASE_URL: 'https://travelflow.supabase.co',
+      VITE_SUPABASE_ANON_KEY: 'anon-key',
+    });
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse([{ ai_approved_openrouter_models: ['future/model-v1'] }]))
+      .mockResolvedValueOnce(jsonResponse([{ ai_approved_openrouter_models: ['future/model-v1'] }]));
+
+    expect(await ensureModelAllowedForGeneration('openrouter', 'future/model-v1')).toBeNull();
+    expect((await ensureModelAllowedForGeneration('openrouter', 'future/unapproved'))?.code).toBe('MODEL_NOT_ALLOWED');
+    expect((await ensureModelAllowedForGeneration('openai', 'future/model-v1'))?.code).toBe('MODEL_NOT_ALLOWED');
   });
 
   it('maps anthropic sonnet 4.6 to provider model id', async () => {
@@ -812,7 +838,38 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     const body = JSON.parse(String(init.body));
     expect(body.model).toBe('google/gemini-3.5-flash');
     expect(body.response_format).toEqual({ type: 'json_object' });
+    expect(body.provider).toEqual({ require_parameters: true, sort: 'throughput' });
     expect(body.temperature).toBe(0);
+    expect(result.ok).toBe(true);
+  });
+
+  it('omits unsupported sampling parameters for OpenRouter Claude Sonnet 5', async () => {
+    stubDenoEnv({
+      OPENROUTER_API_KEY: 'test-key',
+    });
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        model: 'anthropic/claude-sonnet-5',
+        choices: [{ message: { content: '{"title":"Claude itinerary"}' } }],
+        usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3 },
+      }),
+    );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"claude-openrouter"}',
+      provider: 'openrouter',
+      model: 'anthropic/claude-sonnet-5',
+      timeoutMs: 30_000,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const init = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
+    const body = JSON.parse(String(init.body));
+    expect(body.model).toBe('anthropic/claude-sonnet-5');
+    expect(body.response_format).toEqual({ type: 'json_object' });
+    expect(body.provider).toEqual({ require_parameters: true, sort: 'throughput' });
+    expect(body).not.toHaveProperty('temperature');
     expect(result.ok).toBe(true);
   });
 
@@ -1038,6 +1095,40 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     if (!('status' in result)) return;
     expect(result.status).toBe(502);
     expect(result.value.code).toBe('OPENROUTER_PARSE_FAILED');
+  });
+
+  it('sends the trip JSON schema to OpenRouter instead of relying on retry parsing', async () => {
+    stubDenoEnv({
+      OPENROUTER_API_KEY: 'test-key',
+    });
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        model: 'google/gemini-3.7-flash',
+        choices: [{ message: { content: '{"tripTitle":"Fast structured trip"}' } }],
+        usage: {},
+      }),
+    );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"demo"}',
+      provider: 'openrouter',
+      model: 'google/gemini-3.7-flash',
+      timeoutMs: 60_000,
+      jsonSchema: testStructuredOutputSchema,
+      reasoningEffort: 'low',
+    });
+
+    expect(result.ok).toBe(true);
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(String(request.body));
+    expect(body.response_format).toEqual({
+      type: 'json_schema',
+      json_schema: testStructuredOutputSchema,
+    });
+    expect(body.reasoning).toEqual({ effort: 'low', exclude: true });
+    expect(body.provider).toEqual({ require_parameters: true, sort: 'throughput' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('returns timeout when response parsing stalls after headers', async () => {

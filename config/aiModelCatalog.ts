@@ -3,6 +3,7 @@ import {
     getAiProviderMetadata,
     getAiProviderSortOrder,
 } from './aiProviderCatalog.ts';
+import type { AiReasoningEffort } from '../shared/aiReasoning';
 
 export type AiModelAvailability = 'active' | 'planned';
 
@@ -19,6 +20,20 @@ export interface AiModelCatalogItem {
     isCurrentRuntime?: boolean;
     estimatedCostPerQueryLabel: string;
     costNote?: string;
+    catalogSource?: 'openrouter-live';
+    contextLength?: number | null;
+    inputPricePerMillion?: number | null;
+    outputPricePerMillion?: number | null;
+    supportedParameters?: string[];
+    supportsStructuredOutput?: boolean;
+    supportsTools?: boolean;
+    supportsReasoning?: boolean;
+    reasoningEfforts?: AiReasoningEffort[];
+    defaultReasoningEffort?: AiReasoningEffort | null;
+    reasoningMandatory?: boolean;
+    supportsReasoningMaxTokens?: boolean;
+    isFree?: boolean;
+    expirationDate?: string | null;
 }
 
 export const CURRENT_RUNTIME_MODEL_ID = 'gpt-5.4';
@@ -27,6 +42,14 @@ export const DEFAULT_CREATE_TRIP_MODEL_ID = `${'openai'}:${CURRENT_RUNTIME_MODEL
 
 export const CREATE_TRIP_PREFERRED_MODEL_IDS = [
     DEFAULT_CREATE_TRIP_MODEL_ID,
+    'openrouter:anthropic/claude-opus-5',
+    'openrouter:anthropic/claude-sonnet-5',
+    'openrouter:x-ai/grok-4.6',
+    'openrouter:deepseek/deepseek-v4-pro-0813',
+    'openrouter:deepseek/deepseek-v4-flash-0731',
+    'openrouter:google/gemini-3.7-flash',
+    'openrouter:google/gemini-3.5-flash-lite',
+    'openrouter:moonshotai/kimi-k3',
     'openrouter:openai/gpt-5.6-luna-pro',
     'openrouter:openai/gpt-5.6-terra-pro',
     'openrouter:openai/gpt-5.6-sol-pro',
@@ -422,6 +445,32 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
         costNote: 'Requires OPENROUTER_API_KEY on server. This rolling alias can change as OpenAI updates ChatGPT.',
     },
     {
+        id: 'openrouter:anthropic/claude-opus-5',
+        provider: 'openrouter',
+        providerLabel: 'Anthropic',
+        providerShortName: 'Anthropic',
+        model: 'anthropic/claude-opus-5',
+        label: 'Claude Opus 5',
+        availability: 'active',
+        releasedAt: '2026-07-24',
+        isPreferred: true,
+        estimatedCostPerQueryLabel: '~$0.12 - $0.45',
+        costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing and routing can vary by account and region.',
+    },
+    {
+        id: 'openrouter:anthropic/claude-sonnet-5',
+        provider: 'openrouter',
+        providerLabel: 'Anthropic',
+        providerShortName: 'Anthropic',
+        model: 'anthropic/claude-sonnet-5',
+        label: 'Claude Sonnet 5',
+        availability: 'active',
+        releasedAt: '2026-06-30',
+        isPreferred: true,
+        estimatedCostPerQueryLabel: '~$0.05 - $0.18',
+        costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing and routing can vary by account and region.',
+    },
+    {
         id: 'openrouter:anthropic/claude-opus-4.8-fast',
         provider: 'openrouter', providerLabel: 'Anthropic', providerShortName: 'Anthropic',
         model: 'anthropic/claude-opus-4.8-fast', label: 'Claude Opus 4.8 Fast', availability: 'active',
@@ -473,6 +522,44 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
         costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing and routing can vary by account and region.',
     },
     {
+        id: 'openrouter:google/gemini-3.7-flash',
+        provider: 'openrouter',
+        providerLabel: 'Google Gemini',
+        providerShortName: 'Gemini',
+        model: 'google/gemini-3.7-flash',
+        label: 'Gemini 3.7 Flash',
+        availability: 'active',
+        releasedAt: '2026-08-13',
+        isPreferred: true,
+        estimatedCostPerQueryLabel: '~$0.01 - $0.05',
+        costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing and routing can vary by account and region.',
+    },
+    {
+        id: 'openrouter:google/gemini-3.6-flash',
+        provider: 'openrouter',
+        providerLabel: 'Google Gemini',
+        providerShortName: 'Gemini',
+        model: 'google/gemini-3.6-flash',
+        label: 'Gemini 3.6 Flash',
+        availability: 'active',
+        releasedAt: '2026-07-21',
+        estimatedCostPerQueryLabel: '~$0.02 - $0.08',
+        costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing and routing can vary by account and region.',
+    },
+    {
+        id: 'openrouter:google/gemini-3.5-flash-lite',
+        provider: 'openrouter',
+        providerLabel: 'Google Gemini',
+        providerShortName: 'Gemini',
+        model: 'google/gemini-3.5-flash-lite',
+        label: 'Gemini 3.5 Flash Lite',
+        availability: 'active',
+        releasedAt: '2026-07-21',
+        isPreferred: true,
+        estimatedCostPerQueryLabel: '~$0.005 - $0.03',
+        costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing and routing can vary by account and region.',
+    },
+    {
         id: 'openrouter:google/gemini-3.1-flash-lite',
         provider: 'openrouter',
         providerLabel: 'Google Gemini',
@@ -483,6 +570,19 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
         releasedAt: '2026-05-07',
         isPreferred: true,
         estimatedCostPerQueryLabel: '~$0.006 - $0.03',
+        costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing and routing can vary by account and region.',
+    },
+    {
+        id: 'openrouter:x-ai/grok-4.6',
+        provider: 'openrouter',
+        providerLabel: 'xAI',
+        providerShortName: 'xAI',
+        model: 'x-ai/grok-4.6',
+        label: 'Grok 4.6',
+        availability: 'active',
+        releasedAt: '2026-08-12',
+        isPreferred: true,
+        estimatedCostPerQueryLabel: '~$0.03 - $0.12',
         costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing and routing can vary by account and region.',
     },
     {
@@ -564,6 +664,32 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
         costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing and routing can vary by account and region.',
     },
     {
+        id: 'openrouter:deepseek/deepseek-v4-pro-0813',
+        provider: 'openrouter',
+        providerLabel: 'DeepSeek',
+        providerShortName: 'DeepSeek',
+        model: 'deepseek/deepseek-v4-pro-0813',
+        label: 'DeepSeek V4 Pro 0813',
+        availability: 'active',
+        releasedAt: '2026-08-12',
+        isPreferred: true,
+        estimatedCostPerQueryLabel: '~$0.006 - $0.04',
+        costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing changes by time of day for this model.',
+    },
+    {
+        id: 'openrouter:deepseek/deepseek-v4-flash-0731',
+        provider: 'openrouter',
+        providerLabel: 'DeepSeek',
+        providerShortName: 'DeepSeek',
+        model: 'deepseek/deepseek-v4-flash-0731',
+        label: 'DeepSeek V4 Flash 0731',
+        availability: 'active',
+        releasedAt: '2026-07-31',
+        isPreferred: true,
+        estimatedCostPerQueryLabel: '~$0.001 - $0.01',
+        costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing and routing can vary by account and region.',
+    },
+    {
         id: 'openrouter:deepseek/deepseek-v3.2',
         provider: 'openrouter',
         providerLabel: 'DeepSeek',
@@ -577,27 +703,15 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
         costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing and routing can vary by account and region.',
     },
     {
-        id: 'openrouter:x-ai/grok-4.1-fast',
+        id: 'openrouter:x-ai/grok-4.20',
         provider: 'openrouter',
         providerLabel: 'xAI',
         providerShortName: 'xAI',
-        model: 'x-ai/grok-4.1-fast',
-        label: 'Grok 4.1 Fast',
+        model: 'x-ai/grok-4.20',
+        label: 'Grok 4.20',
         availability: 'active',
-        releasedAt: '2025-11-19',
+        releasedAt: '2026-03-31',
         isPreferred: true,
-        estimatedCostPerQueryLabel: '~$0.003 - $0.02',
-        costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing and routing can vary by account and region.',
-    },
-    {
-        id: 'openrouter:x-ai/grok-4.20-beta',
-        provider: 'openrouter',
-        providerLabel: 'xAI',
-        providerShortName: 'xAI',
-        model: 'x-ai/grok-4.20-beta',
-        label: 'Grok 4.20 Beta',
-        availability: 'active',
-        releasedAt: '2026-03-12',
         estimatedCostPerQueryLabel: '~$0.03 - $0.12',
         costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing and routing can vary by account and region.',
     },
@@ -628,6 +742,19 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
         costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing and routing can vary by account and region.',
     },
     {
+        id: 'openrouter:moonshotai/kimi-k3',
+        provider: 'openrouter',
+        providerLabel: 'Moonshot AI',
+        providerShortName: 'Kimi',
+        model: 'moonshotai/kimi-k3',
+        label: 'Kimi K3',
+        availability: 'active',
+        releasedAt: '2026-07-16',
+        isPreferred: true,
+        estimatedCostPerQueryLabel: '~$0.08 - $0.30',
+        costNote: 'Requires OPENROUTER_API_KEY on server. OpenRouter pricing and routing can vary by account and region.',
+    },
+    {
         id: 'openrouter:qwen/qwen3.5-9b',
         provider: 'openrouter',
         providerLabel: 'Qwen',
@@ -649,6 +776,28 @@ export const AI_MODEL_CATALOG: AiModelCatalogItem[] = RAW_AI_MODEL_CATALOG.map((
         providerShortName: item.providerShortName || providerMeta.shortName,
     };
 });
+
+const RUNTIME_AI_MODEL_CATALOG = new Map<string, AiModelCatalogItem>();
+let runtimeDefaultCreateTripModelId = DEFAULT_CREATE_TRIP_MODEL_ID;
+
+export const registerRuntimeAiModels = (items: AiModelCatalogItem[]): void => {
+    items.forEach((item) => {
+        if (item?.id && item.availability === 'active') {
+            RUNTIME_AI_MODEL_CATALOG.set(item.id, item);
+        }
+    });
+};
+
+export const getAllAiModels = (): AiModelCatalogItem[] => {
+    const byId = new Map(AI_MODEL_CATALOG.map((item) => [item.id, item]));
+    RUNTIME_AI_MODEL_CATALOG.forEach((item, id) => byId.set(id, item));
+    return Array.from(byId.values());
+};
+
+export const setRuntimeDefaultCreateTripModelId = (modelId: string): void => {
+    const normalized = modelId.trim();
+    runtimeDefaultCreateTripModelId = normalized || DEFAULT_CREATE_TRIP_MODEL_ID;
+};
 
 const toReleaseTs = (releasedAt: string): number => {
     const parsed = Date.parse(releasedAt);
@@ -679,12 +828,13 @@ export const sortAiModels = (items: AiModelCatalogItem[]): AiModelCatalogItem[] 
 };
 
 export const getAiModelById = (id: string): AiModelCatalogItem | null => {
-    return AI_MODEL_CATALOG.find((item) => item.id === id) || null;
+    return RUNTIME_AI_MODEL_CATALOG.get(id) || AI_MODEL_CATALOG.find((item) => item.id === id) || null;
 };
 
 export const getDefaultCreateTripModel = (): AiModelCatalogItem => {
     return (
-        getAiModelById(DEFAULT_CREATE_TRIP_MODEL_ID)
+        getAiModelById(runtimeDefaultCreateTripModelId)
+        || getAiModelById(DEFAULT_CREATE_TRIP_MODEL_ID)
         || AI_MODEL_CATALOG.find((item) => item.isCurrentRuntime)
         || AI_MODEL_CATALOG[0]
     );

@@ -41,6 +41,7 @@ import {
     type WizardGenerateOptions,
 } from '../services/geminiService';
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
+import { loadPublicAiRuntimeSettings } from '../services/aiRuntimeSettingsService';
 import { ITrip, ITimelineItem, TripPrefillData } from '../types';
 import {
     addDays,
@@ -1279,6 +1280,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return;
         }
 
+        await loadPublicAiRuntimeSettings();
         const defaultModel = getDefaultCreateTripModel();
         const destinationLabel = orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination)).join(', ') || t('wizard.flowLabel');
 

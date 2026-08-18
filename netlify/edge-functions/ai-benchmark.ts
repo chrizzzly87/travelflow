@@ -16,6 +16,7 @@ import {
   type BenchmarkRunCommentTelemetryGroup,
 } from "../../shared/aiBenchmarkValidation.ts";
 import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
+import { isAiReasoningEffort, type AiReasoningEffort } from "../../shared/aiReasoning.ts";
 import {
   buildAiTelemetrySeries,
   summarizeAiTelemetry,
@@ -35,11 +36,16 @@ import {
   type BenchmarkPreferencesPayload,
 } from "../../services/aiBenchmarkPreferencesService.ts";
 import { AI_MODEL_CATALOG } from "../../config/aiModelCatalog.ts";
+import {
+  fetchOpenRouterCatalog,
+  type OpenRouterCatalogModel,
+} from "../../services/openRouterModelCatalogService.ts";
 
 interface BenchmarkTarget {
   provider: string;
   model: string;
   label?: string;
+  reasoningEffort?: AiReasoningEffort;
 }
 
 interface BenchmarkScenario {
@@ -132,6 +138,14 @@ interface BenchmarkPreferencesRow {
   updated_at: string;
 }
 
+interface AiRuntimeSettingsPayload {
+  defaultModelId: string;
+  approvedOpenRouterModels: string[];
+  modelMaxAgeMonths: number;
+  showOlderModels: boolean;
+  updatedAt: string | null;
+}
+
 const JSON_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
   "Cache-Control": "no-store",
@@ -202,6 +216,14 @@ const ACTIVE_BENCHMARK_MODEL_ID_SET = new Set(
     .filter((model) => model.availability === "active")
     .map((model) => model.id),
 );
+
+const DEFAULT_AI_RUNTIME_SETTINGS: AiRuntimeSettingsPayload = {
+  defaultModelId: "openai:gpt-5.4",
+  approvedOpenRouterModels: [],
+  modelMaxAgeMonths: 6,
+  showOlderModels: false,
+  updatedAt: null,
+};
 
 export const resolveBenchmarkMaxOutputTokens = (
   provider: string,
@@ -396,7 +418,7 @@ const normalizeBenchmarkTimeoutMs = (value: unknown): number | null => {
 
 const normalizeTarget = (value: unknown): BenchmarkTarget | null => {
   if (!value || typeof value !== "object") return null;
-  const typed = value as { provider?: unknown; model?: unknown; label?: unknown };
+  const typed = value as { provider?: unknown; model?: unknown; label?: unknown; reasoningEffort?: unknown };
   const provider = typeof typed.provider === "string" ? typed.provider.trim().toLowerCase() : "";
   const model = typeof typed.model === "string" ? typed.model.trim() : "";
   const label = typeof typed.label === "string" ? typed.label.trim() : "";
@@ -405,6 +427,7 @@ const normalizeTarget = (value: unknown): BenchmarkTarget | null => {
     provider,
     model,
     label: label || undefined,
+    reasoningEffort: isAiReasoningEffort(typed.reasoningEffort) ? typed.reasoningEffort : undefined,
   };
 };
 
@@ -973,6 +996,11 @@ const runGeneration = async (
   }
 
   const startedMs = Date.now();
+  const requestTarget = run.request_payload?.target;
+  const reasoningEffort = requestTarget && typeof requestTarget === "object"
+    && isAiReasoningEffort((requestTarget as Record<string, unknown>).reasoningEffort)
+    ? (requestTarget as { reasoningEffort: AiReasoningEffort }).reasoningEffort
+    : undefined;
   const persistRunTelemetry = async (
     input: {
       status: "success" | "failed";
@@ -1021,6 +1049,7 @@ const runGeneration = async (
       timeoutMs: providerTimeoutMs,
       maxOutputTokens: resolveBenchmarkMaxOutputTokens(run.provider, run.model, providerTimeoutMs),
       jsonSchema: TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
+      reasoningEffort,
     });
     const latencyMs = Date.now() - startedMs;
 
@@ -1653,7 +1682,6 @@ const normalizeBenchmarkPreferencesForStorage = (
     fallbackPresets,
     defaultStartDate: options.defaultStartDate,
     defaultEndDate: options.defaultEndDate,
-    allowedModelIds: ACTIVE_BENCHMARK_MODEL_ID_SET,
     mergeFallbackModelIds: options.mergeFallbackModelIds,
   });
 };
@@ -1783,6 +1811,133 @@ const saveBenchmarkPreferencesRow = async (
   return {
     row: toBenchmarkPreferencesRow(Array.isArray(rows) ? rows[0] : rows),
   };
+};
+
+const normalizeAiRuntimeSettingsRow = (value: unknown): AiRuntimeSettingsPayload => {
+  const row = Array.isArray(value) ? value[0] : value;
+  if (!row || typeof row !== "object") return DEFAULT_AI_RUNTIME_SETTINGS;
+  const typed = row as Record<string, unknown>;
+  const rawAge = Number(typed.ai_model_max_age_months);
+  const approved = Array.isArray(typed.ai_approved_openrouter_models)
+    ? typed.ai_approved_openrouter_models.flatMap((entry) => (
+      typeof entry === "string" && entry.trim() ? [entry.trim()] : []
+    ))
+    : [];
+  return {
+    defaultModelId: typeof typed.ai_default_model_id === "string" && typed.ai_default_model_id.includes(":")
+      ? typed.ai_default_model_id.trim()
+      : DEFAULT_AI_RUNTIME_SETTINGS.defaultModelId,
+    approvedOpenRouterModels: Array.from(new Set(approved)),
+    modelMaxAgeMonths: Number.isFinite(rawAge) ? clampNumber(Math.round(rawAge), 1, 36) : 6,
+    showOlderModels: typed.ai_show_older_models === true,
+    updatedAt: typeof typed.updated_at === "string" ? typed.updated_at : null,
+  };
+};
+
+const fetchAiRuntimeSettings = async (
+  config: { url: string; anonKey: string },
+  authToken: string,
+): Promise<AiRuntimeSettingsPayload> => {
+  const response = await supabaseFetch(
+    config,
+    authToken,
+    "/rest/v1/app_runtime_settings?singleton=eq.true&select=ai_default_model_id,ai_approved_openrouter_models,ai_model_max_age_months,ai_show_older_models,updated_at&limit=1",
+    { method: "GET" },
+  );
+  if (!response.ok) {
+    throw new Error(`AI runtime settings request failed (${response.status}).`);
+  }
+  return normalizeAiRuntimeSettingsRow(await safeJsonParse(response));
+};
+
+const saveAiRuntimeSettings = async (
+  config: { url: string; anonKey: string },
+  authToken: string,
+  settings: AiRuntimeSettingsPayload,
+): Promise<AiRuntimeSettingsPayload> => {
+  const response = await supabaseFetch(
+    config,
+    authToken,
+    "/rest/v1/rpc/admin_update_ai_runtime_settings",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        p_default_model_id: settings.defaultModelId,
+        p_approved_openrouter_models: settings.approvedOpenRouterModels,
+        p_model_max_age_months: settings.modelMaxAgeMonths,
+        p_show_older_models: settings.showOlderModels,
+      }),
+    },
+  );
+  if (!response.ok) {
+    const payload = await safeJsonParse(response);
+    throw new Error(payload?.message || payload?.error || `AI runtime settings update failed (${response.status}).`);
+  }
+  return normalizeAiRuntimeSettingsRow(await safeJsonParse(response));
+};
+
+const fetchLiveOpenRouterModels = async (): Promise<OpenRouterCatalogModel[]> => {
+  const apiKey = readEnv("OPENROUTER_API_KEY").trim();
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured.");
+  return await fetchOpenRouterCatalog(apiKey);
+};
+
+const handleModels = async (
+  request: Request,
+  config: { url: string; anonKey: string },
+  authToken: string,
+): Promise<Response> => {
+  if (request.method !== "GET" && request.method !== "POST") {
+    return json(405, { error: "Method not allowed. Use GET or POST." });
+  }
+
+  const [liveModels, currentSettings] = await Promise.all([
+    fetchLiveOpenRouterModels(),
+    fetchAiRuntimeSettings(config, authToken),
+  ]);
+  if (request.method === "GET") {
+    return json(200, { ok: true, models: liveModels, settings: currentSettings });
+  }
+
+  const body = (await safeJsonParse(request)) as Record<string, unknown> | null;
+  if (!body || typeof body !== "object") {
+    return json(400, { error: "Invalid AI runtime settings body." });
+  }
+
+  const liveModelById = new Map(liveModels.map((model) => [model.id, model]));
+  const approvedOpenRouterModels = Array.isArray(body.approvedOpenRouterModels)
+    ? body.approvedOpenRouterModels.flatMap((entry) => {
+      if (typeof entry !== "string") return [];
+      const slug = entry.trim().replace(/^openrouter:/, "");
+      return liveModelById.has(`openrouter:${slug}`) ? [slug] : [];
+    })
+    : currentSettings.approvedOpenRouterModels;
+  const defaultModelId = typeof body.defaultModelId === "string" ? body.defaultModelId.trim() : currentSettings.defaultModelId;
+  const isStaticDefault = ACTIVE_BENCHMARK_MODEL_ID_SET.has(defaultModelId);
+  const isApprovedLiveDefault = defaultModelId.startsWith("openrouter:")
+    && approvedOpenRouterModels.includes(defaultModelId.slice("openrouter:".length))
+    && liveModelById.has(defaultModelId);
+  if (!isStaticDefault && !isApprovedLiveDefault) {
+    return json(400, {
+      error: "Choose a current catalog model before making it the frontend default.",
+      code: "AI_DEFAULT_MODEL_NOT_APPROVED",
+    });
+  }
+
+  const rawAge = Number(body.modelMaxAgeMonths);
+  const saved = await saveAiRuntimeSettings(config, authToken, {
+    defaultModelId,
+    approvedOpenRouterModels: Array.from(new Set(approvedOpenRouterModels)),
+    modelMaxAgeMonths: Number.isFinite(rawAge)
+      ? clampNumber(Math.round(rawAge), 1, 36)
+      : currentSettings.modelMaxAgeMonths,
+    showOlderModels: typeof body.showOlderModels === "boolean"
+      ? body.showOlderModels
+      : currentSettings.showOlderModels,
+    updatedAt: currentSettings.updatedAt,
+  });
+
+  return json(200, { ok: true, models: liveModels, settings: saved });
 };
 
 const handlePreferences = async (
@@ -2664,6 +2819,10 @@ export default async (request: Request, context?: EdgeContextLike) => {
   const pathname = new URL(request.url).pathname;
 
   try {
+    if (pathname.endsWith("/models")) {
+      return await handleModels(request, config, authToken);
+    }
+
     if (pathname.endsWith("/preferences")) {
       return await handlePreferences(request, config, authToken);
     }

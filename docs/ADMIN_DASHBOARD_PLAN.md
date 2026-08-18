@@ -2,6 +2,8 @@
 
 This document defines the purpose and scope of the future authenticated admin dashboard.
 
+All dashboard surfaces follow the shared interaction and visual rules in [`DESIGN.md`](./DESIGN.md).
+
 ## Primary goal
 Give admins one at-a-glance view of product health, growth, and usage risk so issues can be detected before they become outages or runaway cost spikes.
 

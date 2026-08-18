@@ -114,8 +114,10 @@ import {
     CREATE_TRIP_PREFERRED_MODEL_IDS,
     DEFAULT_CREATE_TRIP_MODEL_ID,
     getAiModelById,
+    getDefaultCreateTripModel,
     getCreateTripModelOptions,
 } from '../config/aiModelCatalog';
+import { loadPublicAiRuntimeSettings } from '../services/aiRuntimeSettingsService';
 import {
     type CreateTripPrefillDraft,
     isCreateTripCoupleOccasion,
@@ -653,7 +655,17 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const prefillHydrated = true;
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
-    const [selectedModelId, setSelectedModelId] = useState<string>(DEFAULT_CREATE_TRIP_MODEL_ID);
+    const [selectedModelId, setSelectedModelId] = useState<string>(() => getDefaultCreateTripModel().id);
+
+    useEffect(() => {
+        let cancelled = false;
+        void loadPublicAiRuntimeSettings().then(() => {
+            if (!cancelled) setSelectedModelId(getDefaultCreateTripModel().id);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const [sectionExpanded, setSectionExpanded] = useState<Record<CollapsibleSection, boolean>>({
         traveler: false,

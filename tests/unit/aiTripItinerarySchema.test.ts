@@ -64,12 +64,17 @@ describe('shared/aiTripItinerarySchema', () => {
   it('stays inside the OpenAI strict structured-output JSON Schema subset', () => {
     const unsupportedUsages: string[] = [];
     const objectShapeMismatches: string[] = [];
+    const unsupportedRegexes: string[] = [];
 
     visitSchema(TRIP_ITINERARY_JSON_SCHEMA, 'root', (schemaNode, path) => {
       for (const key of OPENAI_STRICT_SCHEMA_UNSUPPORTED_KEYS) {
         if (key in schemaNode) {
           unsupportedUsages.push(`${path}.${key}`);
         }
+      }
+
+      if (typeof schemaNode.pattern === 'string' && schemaNode.pattern.includes('(?')) {
+        unsupportedRegexes.push(`${path}.pattern`);
       }
 
       if (!isRecord(schemaNode.properties)) return;
@@ -91,6 +96,7 @@ describe('shared/aiTripItinerarySchema', () => {
     });
 
     expect(unsupportedUsages).toEqual([]);
+    expect(unsupportedRegexes).toEqual([]);
     expect(objectShapeMismatches).toEqual([]);
   });
 });
