@@ -192,7 +192,7 @@
           "medium": "{min}-{max} روز",
           "long": "{min} روز و بیشتر"
         },
-        "resultCount": "{count, plural, one {# کشور} other {# کشور}}",
+        "resultCount": "{count} از {total} کشور",
         "sortLabel": "مرتب‌سازی",
         "sort": {
           "popular": "محبوب‌ترین",

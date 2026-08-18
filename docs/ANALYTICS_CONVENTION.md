@@ -262,7 +262,12 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### Inspirations
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `inspirations__destination_card` | — | `{ title?, country, destination?, kind? }` | `InspirationsPage.tsx`, `CountriesPage.tsx`, `DestinationGuideView.tsx` |
+| `inspirations__destination_card` | — | `{ title?, country, destination?, kind?, month?, season? }` | `InspirationsPage.tsx`, `CountryExplorerCard.tsx`, `DestinationGuideView.tsx` |
+| `inspirations__country_search` | — | `{ query_length, result_count }` | `CountryExplorerControls.tsx` |
+| `inspirations__country_month` | — | `{ month }` (`0` = any month) | `CountryExplorerControls.tsx` |
+| `inspirations__country_filter` | — | `{ facet, value }` | `CountryExplorerControls.tsx` |
+| `inspirations__country_filter--reset` | — | — | `CountryExplorerControls.tsx` |
+| `inspirations__country_sort` | — | `{ sort }` | `CountryExplorerControls.tsx` |
 | `inspirations__destination_plan` | — | `{ country, destination, kind }` | `DestinationGuideView.tsx` |
 | `inspirations__festival_card` | — | `{ name, country }` | `InspirationsPage.tsx` |
 | `inspirations__getaway_card` | — | `{ title, destination }` | `InspirationsPage.tsx` |

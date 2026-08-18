@@ -192,7 +192,7 @@
           "medium": "{min}-{max} дней",
           "long": "От {min} дней"
         },
-        "resultCount": "{count, plural, one {# страна} few {# страны} many {# стран} other {# страны}}",
+        "resultCount": "{count} из {total} стран",
         "sortLabel": "Сортировка",
         "sort": {
           "popular": "Популярные",

@@ -21,6 +21,7 @@ interface CountryExplorerControlsProps {
   availableTags: string[];
   monthLabels: string[];
   resultCount: number;
+  totalCount: number;
 }
 
 const chipClass = (isActive: boolean): string => [
@@ -79,6 +80,7 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
   availableTags,
   monthLabels,
   resultCount,
+  totalCount,
 }) => {
   const { t } = useTranslation('pages');
   const searchId = useId();
@@ -219,7 +221,7 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
         <p className="text-sm font-bold text-slate-700" aria-live="polite">
-          {t('inspirations.subpages.explorer.resultCount', { count: resultCount })}
+          {t('inspirations.subpages.explorer.resultCount', { count: resultCount, total: totalCount })}
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-xs font-bold text-slate-500" htmlFor={sortId}>

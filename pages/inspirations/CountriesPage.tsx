@@ -118,6 +118,7 @@ export const CountriesPage: React.FC = () => {
           availableTags={availableTags}
           monthLabels={monthLabels}
           resultCount={visibleEntries.length}
+          totalCount={countryEntries.length}
         />
       </section>
 

@@ -192,7 +192,7 @@
           "medium": "{min}-{max} días",
           "long": "{min} días o más"
         },
-        "resultCount": "{count, plural, one {# país} other {# países}}",
+        "resultCount": "{count} de {total} países",
         "sortLabel": "Orden",
         "sort": {
           "popular": "Más populares",

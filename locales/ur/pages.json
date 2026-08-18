@@ -192,7 +192,7 @@
           "medium": "{min}-{max} دن",
           "long": "{min} دن یا زیادہ"
         },
-        "resultCount": "{count, plural, one {# ملک} other {# ممالک}}",
+        "resultCount": "{total} میں سے {count} ممالک",
         "sortLabel": "ترتیب",
         "sort": {
           "popular": "سب سے مقبول",

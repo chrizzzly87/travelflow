@@ -192,7 +192,7 @@
           "medium": "{min}-{max} jours",
           "long": "{min} jours ou plus"
         },
-        "resultCount": "{count, plural, one {# pays} other {# pays}}",
+        "resultCount": "{count} sur {total} pays",
         "sortLabel": "Tri",
         "sort": {
           "popular": "Les plus populaires",

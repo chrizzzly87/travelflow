@@ -192,7 +192,7 @@
           "medium": "{min}~{max}일",
           "long": "{min}일 이상"
         },
-        "resultCount": "{count, plural, other {#개국}}",
+        "resultCount": "{total}개국 중 {count}개국",
         "sortLabel": "정렬",
         "sort": {
           "popular": "인기순",
