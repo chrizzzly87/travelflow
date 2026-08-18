@@ -28,6 +28,9 @@ dist-ssr
 # Performance artifacts
 /perf/
 /tmp/perf/
+
+# Raw Open-Meteo responses cached by `pnpm climate:generate`
+/tmp/climate-cache/
 public/images/og/site/generated/
 .promptfoo/
 artifacts/promptfoo/

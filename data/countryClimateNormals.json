@@ -1,0 +1,338 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-18T06:04:19.135Z",
+  "units": {
+    "temperature": "celsius",
+    "precipitation": "millimeters",
+    "note": "Celsius and millimetres only. Fahrenheit and inches are derived at render time — never duplicate units in this file."
+  },
+  "source": {
+    "provider": "Open-Meteo",
+    "endpoint": "https://archive-api.open-meteo.com/v1/archive",
+    "dataset": "ERA5 / ERA5-Land reanalysis (Historical Weather API)",
+    "window": {
+      "startDate": "2015-01-01",
+      "endDate": "2024-12-31",
+      "years": 10
+    },
+    "accessedAt": "2026-08-18T06:04:19.135Z",
+    "license": "CC BY 4.0 (Open-Meteo) — underlying ERA5 data © Copernicus Climate Change Service",
+    "attribution": "Weather data by Open-Meteo.com (ERA5 reanalysis, Copernicus Climate Change Service)"
+  },
+  "seasonDerivation": {
+    "signal": "curated",
+    "rule": "Per country and month: base = 2 if the month is in curated bestMonths, 0 if in avoidMonths, otherwise 1. boost = 0.5 for >=1 curated event in that month, +0.5 for >=2 events, +0.5 for >=1 public holiday, capped at 1.0. score = base + boost; season = high when score >= 2, shoulder when score >= 1, otherwise low. A month listed in avoidMonths can never be promoted above shoulder.",
+    "disclaimer": "Curated editorial signal derived from TravelFlow seasonality data, events, and public holidays. It is NOT measured visitor volume and must not be presented as measured data."
+  },
+  "anchors": [
+    {
+      "id": "NO-OSL",
+      "countryCode": "NO",
+      "role": "primary",
+      "label": "Oslo (south) (OSL)",
+      "latitude": 60.193901,
+      "longitude": 11.1004,
+      "airportIata": "OSL",
+      "airportIcao": "ENGM",
+      "airportTier": "major",
+      "derivation": "curated-region"
+    },
+    {
+      "id": "NO-TOS",
+      "countryCode": "NO",
+      "role": "secondary",
+      "label": "Tromso (Arctic north) (TOS)",
+      "latitude": 69.683296,
+      "longitude": 18.9189,
+      "airportIata": "TOS",
+      "airportIcao": "ENTC",
+      "airportTier": "major",
+      "derivation": "curated-region"
+    },
+    {
+      "id": "TH-BKK",
+      "countryCode": "TH",
+      "role": "primary",
+      "label": "Bangkok (BKK)",
+      "latitude": 13.6811,
+      "longitude": 100.747002,
+      "airportIata": "BKK",
+      "airportIcao": "VTBS",
+      "airportTier": "major",
+      "derivation": "curated-region"
+    },
+    {
+      "id": "US-JFK",
+      "countryCode": "US",
+      "role": "primary",
+      "label": "New York (northeast) (JFK)",
+      "latitude": 40.639447,
+      "longitude": -73.779317,
+      "airportIata": "JFK",
+      "airportIcao": "KJFK",
+      "airportTier": "major",
+      "derivation": "curated-region"
+    },
+    {
+      "id": "US-LAX",
+      "countryCode": "US",
+      "role": "secondary",
+      "label": "Los Angeles (west coast) (LAX)",
+      "latitude": 33.942501,
+      "longitude": -118.407997,
+      "airportIata": "LAX",
+      "airportIcao": "KLAX",
+      "airportTier": "major",
+      "derivation": "curated-region"
+    },
+    {
+      "id": "US-MIA",
+      "countryCode": "US",
+      "role": "secondary",
+      "label": "Miami (southeast) (MIA)",
+      "latitude": 25.796011,
+      "longitude": -80.289751,
+      "airportIata": "MIA",
+      "airportIcao": "KMIA",
+      "airportTier": "major",
+      "derivation": "curated-region"
+    },
+    {
+      "id": "US-ORD",
+      "countryCode": "US",
+      "role": "secondary",
+      "label": "Chicago (midwest) (ORD)",
+      "latitude": 41.9786,
+      "longitude": -87.9048,
+      "airportIata": "ORD",
+      "airportIcao": "KORD",
+      "airportTier": "major",
+      "derivation": "curated-region"
+    }
+  ],
+  "countries": [
+    {
+      "countryCode": "NO",
+      "countryName": "Norway",
+      "anchor": {
+        "id": "NO-OSL",
+        "label": "Oslo (south) (OSL)",
+        "latitude": 60.193901,
+        "longitude": 11.1004
+      },
+      "anchorCount": 2,
+      "months": [
+        { "month": 1, "avgHighC": -1.4, "avgLowC": -7.3, "avgTempC": -4.3, "precipitationMm": 69.3, "rainyDays": 11.5, "season": "shoulder" },
+        { "month": 2, "avgHighC": 0.4, "avgLowC": -6.1, "avgTempC": -2.9, "precipitationMm": 60.2, "rainyDays": 10.6, "season": "low" },
+        { "month": 3, "avgHighC": 4.1, "avgLowC": -4.3, "avgTempC": -0.1, "precipitationMm": 57.8, "rainyDays": 9.7, "season": "low" },
+        { "month": 4, "avgHighC": 9.5, "avgLowC": -0.5, "avgTempC": 4.5, "precipitationMm": 53.8, "rainyDays": 8.8, "season": "low" },
+        { "month": 5, "avgHighC": 15.5, "avgLowC": 5.1, "avgTempC": 10.3, "precipitationMm": 77.7, "rainyDays": 11.6, "season": "shoulder" },
+        { "month": 6, "avgHighC": 20.1, "avgLowC": 10.1, "avgTempC": 15.1, "precipitationMm": 89.4, "rainyDays": 11.6, "season": "high" },
+        { "month": 7, "avgHighC": 20.6, "avgLowC": 11.5, "avgTempC": 16, "precipitationMm": 117, "rainyDays": 13.6, "season": "high" },
+        { "month": 8, "avgHighC": 19.3, "avgLowC": 10.7, "avgTempC": 15, "precipitationMm": 105.3, "rainyDays": 13.2, "season": "high" },
+        { "month": 9, "avgHighC": 15.3, "avgLowC": 8, "avgTempC": 11.7, "precipitationMm": 117.6, "rainyDays": 12, "season": "high" },
+        { "month": 10, "avgHighC": 8.7, "avgLowC": 3, "avgTempC": 5.9, "precipitationMm": 86.9, "rainyDays": 12.1, "season": "shoulder" },
+        { "month": 11, "avgHighC": 3.1, "avgLowC": -1.2, "avgTempC": 1, "precipitationMm": 89.8, "rainyDays": 12.2, "season": "low" },
+        { "month": 12, "avgHighC": -0.4, "avgLowC": -5.1, "avgTempC": -2.7, "precipitationMm": 69.5, "rainyDays": 13.1, "season": "low" }
+      ],
+      "regions": [
+        {
+          "key": "osl",
+          "label": "Oslo (south)",
+          "anchor": {
+            "id": "NO-OSL",
+            "label": "Oslo (south) (OSL)",
+            "latitude": 60.193901,
+            "longitude": 11.1004
+          },
+          "months": [
+            { "month": 1, "avgHighC": -1.4, "avgLowC": -7.3, "avgTempC": -4.3, "precipitationMm": 69.3, "rainyDays": 11.5, "season": "shoulder" },
+            { "month": 2, "avgHighC": 0.4, "avgLowC": -6.1, "avgTempC": -2.9, "precipitationMm": 60.2, "rainyDays": 10.6, "season": "low" },
+            { "month": 3, "avgHighC": 4.1, "avgLowC": -4.3, "avgTempC": -0.1, "precipitationMm": 57.8, "rainyDays": 9.7, "season": "low" },
+            { "month": 4, "avgHighC": 9.5, "avgLowC": -0.5, "avgTempC": 4.5, "precipitationMm": 53.8, "rainyDays": 8.8, "season": "low" },
+            { "month": 5, "avgHighC": 15.5, "avgLowC": 5.1, "avgTempC": 10.3, "precipitationMm": 77.7, "rainyDays": 11.6, "season": "shoulder" },
+            { "month": 6, "avgHighC": 20.1, "avgLowC": 10.1, "avgTempC": 15.1, "precipitationMm": 89.4, "rainyDays": 11.6, "season": "high" },
+            { "month": 7, "avgHighC": 20.6, "avgLowC": 11.5, "avgTempC": 16, "precipitationMm": 117, "rainyDays": 13.6, "season": "high" },
+            { "month": 8, "avgHighC": 19.3, "avgLowC": 10.7, "avgTempC": 15, "precipitationMm": 105.3, "rainyDays": 13.2, "season": "high" },
+            { "month": 9, "avgHighC": 15.3, "avgLowC": 8, "avgTempC": 11.7, "precipitationMm": 117.6, "rainyDays": 12, "season": "high" },
+            { "month": 10, "avgHighC": 8.7, "avgLowC": 3, "avgTempC": 5.9, "precipitationMm": 86.9, "rainyDays": 12.1, "season": "shoulder" },
+            { "month": 11, "avgHighC": 3.1, "avgLowC": -1.2, "avgTempC": 1, "precipitationMm": 89.8, "rainyDays": 12.2, "season": "low" },
+            { "month": 12, "avgHighC": -0.4, "avgLowC": -5.1, "avgTempC": -2.7, "precipitationMm": 69.5, "rainyDays": 13.1, "season": "low" }
+          ]
+        },
+        {
+          "key": "tos",
+          "label": "Tromso (Arctic north)",
+          "anchor": {
+            "id": "NO-TOS",
+            "label": "Tromso (Arctic north) (TOS)",
+            "latitude": 69.683296,
+            "longitude": 18.9189
+          },
+          "months": [
+            { "month": 1, "avgHighC": -3.9, "avgLowC": -8.4, "avgTempC": -6.1, "precipitationMm": 134.1, "rainyDays": 15.5, "season": "shoulder" },
+            { "month": 2, "avgHighC": -2.7, "avgLowC": -7.2, "avgTempC": -4.9, "precipitationMm": 117.1, "rainyDays": 15.2, "season": "low" },
+            { "month": 3, "avgHighC": -0.7, "avgLowC": -5.6, "avgTempC": -3.1, "precipitationMm": 126.4, "rainyDays": 18.2, "season": "low" },
+            { "month": 4, "avgHighC": 2.8, "avgLowC": -2.5, "avgTempC": 0.1, "precipitationMm": 99.8, "rainyDays": 16.2, "season": "low" },
+            { "month": 5, "avgHighC": 7.8, "avgLowC": 1.8, "avgTempC": 4.8, "precipitationMm": 109, "rainyDays": 17.5, "season": "shoulder" },
+            { "month": 6, "avgHighC": 12.8, "avgLowC": 6.9, "avgTempC": 9.9, "precipitationMm": 111.8, "rainyDays": 19, "season": "high" },
+            { "month": 7, "avgHighC": 16.7, "avgLowC": 10.2, "avgTempC": 13.5, "precipitationMm": 102.5, "rainyDays": 15.1, "season": "high" },
+            { "month": 8, "avgHighC": 15.6, "avgLowC": 9.7, "avgTempC": 12.7, "precipitationMm": 124.8, "rainyDays": 18.3, "season": "high" },
+            { "month": 9, "avgHighC": 11.5, "avgLowC": 6.3, "avgTempC": 8.9, "precipitationMm": 116.4, "rainyDays": 17.7, "season": "high" },
+            { "month": 10, "avgHighC": 4.6, "avgLowC": 0.6, "avgTempC": 2.6, "precipitationMm": 111.5, "rainyDays": 16.9, "season": "shoulder" },
+            { "month": 11, "avgHighC": 0.5, "avgLowC": -3.6, "avgTempC": -1.5, "precipitationMm": 107.1, "rainyDays": 16.4, "season": "low" },
+            { "month": 12, "avgHighC": -1.8, "avgLowC": -6.3, "avgTempC": -4, "precipitationMm": 113.7, "rainyDays": 16.3, "season": "low" }
+          ]
+        }
+      ]
+    },
+    {
+      "countryCode": "TH",
+      "countryName": "Thailand",
+      "anchor": {
+        "id": "TH-BKK",
+        "label": "Bangkok (BKK)",
+        "latitude": 13.6811,
+        "longitude": 100.747002
+      },
+      "anchorCount": 1,
+      "months": [
+        { "month": 1, "avgHighC": 31.4, "avgLowC": 21.6, "avgTempC": 26.5, "precipitationMm": 29.5, "rainyDays": 4.9, "season": "high" },
+        { "month": 2, "avgHighC": 32.1, "avgLowC": 22.8, "avgTempC": 27.4, "precipitationMm": 37.4, "rainyDays": 5.9, "season": "high" },
+        { "month": 3, "avgHighC": 33.2, "avgLowC": 25.3, "avgTempC": 29.2, "precipitationMm": 60.9, "rainyDays": 11.8, "season": "high" },
+        { "month": 4, "avgHighC": 34, "avgLowC": 26.4, "avgTempC": 30.2, "precipitationMm": 93.6, "rainyDays": 13, "season": "high" },
+        { "month": 5, "avgHighC": 33.6, "avgLowC": 26.6, "avgTempC": 30.1, "precipitationMm": 168.5, "rainyDays": 21.3, "season": "low" },
+        { "month": 6, "avgHighC": 32.4, "avgLowC": 26.1, "avgTempC": 29.3, "precipitationMm": 143, "rainyDays": 23.1, "season": "low" },
+        { "month": 7, "avgHighC": 31.6, "avgLowC": 25.7, "avgTempC": 28.6, "precipitationMm": 220.8, "rainyDays": 25.8, "season": "low" },
+        { "month": 8, "avgHighC": 31.4, "avgLowC": 25.6, "avgTempC": 28.5, "precipitationMm": 211.2, "rainyDays": 27.1, "season": "low" },
+        { "month": 9, "avgHighC": 31, "avgLowC": 24.9, "avgTempC": 28, "precipitationMm": 330, "rainyDays": 26.8, "season": "low" },
+        { "month": 10, "avgHighC": 30.9, "avgLowC": 24.1, "avgTempC": 27.5, "precipitationMm": 252.7, "rainyDays": 22.5, "season": "shoulder" },
+        { "month": 11, "avgHighC": 31.3, "avgLowC": 23.3, "avgTempC": 27.3, "precipitationMm": 78.2, "rainyDays": 10.5, "season": "high" },
+        { "month": 12, "avgHighC": 30.9, "avgLowC": 21.5, "avgTempC": 26.2, "precipitationMm": 19.7, "rainyDays": 3, "season": "high" }
+      ]
+    },
+    {
+      "countryCode": "US",
+      "countryName": "United States",
+      "anchor": {
+        "id": "US-JFK",
+        "label": "New York (northeast) (JFK)",
+        "latitude": 40.639447,
+        "longitude": -73.779317
+      },
+      "anchorCount": 4,
+      "months": [
+        { "month": 1, "avgHighC": 4.7, "avgLowC": -2.4, "avgTempC": 1.1, "precipitationMm": 104.3, "rainyDays": 10.6, "season": "low" },
+        { "month": 2, "avgHighC": 5.9, "avgLowC": -2.3, "avgTempC": 1.8, "precipitationMm": 90.7, "rainyDays": 10.1, "season": "low" },
+        { "month": 3, "avgHighC": 9.5, "avgLowC": 0.9, "avgTempC": 5.2, "precipitationMm": 114.8, "rainyDays": 11.2, "season": "low" },
+        { "month": 4, "avgHighC": 14.6, "avgLowC": 6, "avgTempC": 10.3, "precipitationMm": 108.1, "rainyDays": 11.9, "season": "shoulder" },
+        { "month": 5, "avgHighC": 20, "avgLowC": 11.6, "avgTempC": 15.8, "precipitationMm": 91.7, "rainyDays": 11.5, "season": "high" },
+        { "month": 6, "avgHighC": 24.8, "avgLowC": 17, "avgTempC": 20.9, "precipitationMm": 90.8, "rainyDays": 10.7, "season": "high" },
+        { "month": 7, "avgHighC": 28.2, "avgLowC": 21, "avgTempC": 24.6, "precipitationMm": 115.1, "rainyDays": 12.8, "season": "high" },
+        { "month": 8, "avgHighC": 27.6, "avgLowC": 20.5, "avgTempC": 24, "precipitationMm": 104.8, "rainyDays": 12.3, "season": "high" },
+        { "month": 9, "avgHighC": 24.3, "avgLowC": 17.2, "avgTempC": 20.7, "precipitationMm": 113.5, "rainyDays": 10.4, "season": "high" },
+        { "month": 10, "avgHighC": 18.8, "avgLowC": 11.5, "avgTempC": 15.1, "precipitationMm": 122.6, "rainyDays": 9.8, "season": "shoulder" },
+        { "month": 11, "avgHighC": 12.5, "avgLowC": 5, "avgTempC": 8.7, "precipitationMm": 77.9, "rainyDays": 8.5, "season": "shoulder" },
+        { "month": 12, "avgHighC": 7.6, "avgLowC": 0.9, "avgTempC": 4.2, "precipitationMm": 120.8, "rainyDays": 11.2, "season": "low" }
+      ],
+      "regions": [
+        {
+          "key": "jfk",
+          "label": "New York (northeast)",
+          "anchor": {
+            "id": "US-JFK",
+            "label": "New York (northeast) (JFK)",
+            "latitude": 40.639447,
+            "longitude": -73.779317
+          },
+          "months": [
+            { "month": 1, "avgHighC": 4.7, "avgLowC": -2.4, "avgTempC": 1.1, "precipitationMm": 104.3, "rainyDays": 10.6, "season": "low" },
+            { "month": 2, "avgHighC": 5.9, "avgLowC": -2.3, "avgTempC": 1.8, "precipitationMm": 90.7, "rainyDays": 10.1, "season": "low" },
+            { "month": 3, "avgHighC": 9.5, "avgLowC": 0.9, "avgTempC": 5.2, "precipitationMm": 114.8, "rainyDays": 11.2, "season": "low" },
+            { "month": 4, "avgHighC": 14.6, "avgLowC": 6, "avgTempC": 10.3, "precipitationMm": 108.1, "rainyDays": 11.9, "season": "shoulder" },
+            { "month": 5, "avgHighC": 20, "avgLowC": 11.6, "avgTempC": 15.8, "precipitationMm": 91.7, "rainyDays": 11.5, "season": "high" },
+            { "month": 6, "avgHighC": 24.8, "avgLowC": 17, "avgTempC": 20.9, "precipitationMm": 90.8, "rainyDays": 10.7, "season": "high" },
+            { "month": 7, "avgHighC": 28.2, "avgLowC": 21, "avgTempC": 24.6, "precipitationMm": 115.1, "rainyDays": 12.8, "season": "high" },
+            { "month": 8, "avgHighC": 27.6, "avgLowC": 20.5, "avgTempC": 24, "precipitationMm": 104.8, "rainyDays": 12.3, "season": "high" },
+            { "month": 9, "avgHighC": 24.3, "avgLowC": 17.2, "avgTempC": 20.7, "precipitationMm": 113.5, "rainyDays": 10.4, "season": "high" },
+            { "month": 10, "avgHighC": 18.8, "avgLowC": 11.5, "avgTempC": 15.1, "precipitationMm": 122.6, "rainyDays": 9.8, "season": "shoulder" },
+            { "month": 11, "avgHighC": 12.5, "avgLowC": 5, "avgTempC": 8.7, "precipitationMm": 77.9, "rainyDays": 8.5, "season": "shoulder" },
+            { "month": 12, "avgHighC": 7.6, "avgLowC": 0.9, "avgTempC": 4.2, "precipitationMm": 120.8, "rainyDays": 11.2, "season": "low" }
+          ]
+        },
+        {
+          "key": "ord",
+          "label": "Chicago (midwest)",
+          "anchor": {
+            "id": "US-ORD",
+            "label": "Chicago (midwest) (ORD)",
+            "latitude": 41.9786,
+            "longitude": -87.9048
+          },
+          "months": [
+            { "month": 1, "avgHighC": 0.3, "avgLowC": -7.2, "avgTempC": -3.4, "precipitationMm": 62.1, "rainyDays": 9.7, "season": "low" },
+            { "month": 2, "avgHighC": 2.8, "avgLowC": -6.6, "avgTempC": -1.9, "precipitationMm": 55.3, "rainyDays": 8.3, "season": "low" },
+            { "month": 3, "avgHighC": 8.7, "avgLowC": -0.6, "avgTempC": 4, "precipitationMm": 86.3, "rainyDays": 10.7, "season": "low" },
+            { "month": 4, "avgHighC": 14.4, "avgLowC": 3.8, "avgTempC": 9.1, "precipitationMm": 101.9, "rainyDays": 14, "season": "shoulder" },
+            { "month": 5, "avgHighC": 20.9, "avgLowC": 10.3, "avgTempC": 15.6, "precipitationMm": 132.6, "rainyDays": 14.1, "season": "high" },
+            { "month": 6, "avgHighC": 26.7, "avgLowC": 16.1, "avgTempC": 21.4, "precipitationMm": 115.2, "rainyDays": 13.1, "season": "high" },
+            { "month": 7, "avgHighC": 28.1, "avgLowC": 18.6, "avgTempC": 23.4, "precipitationMm": 148.8, "rainyDays": 12.7, "season": "high" },
+            { "month": 8, "avgHighC": 27.4, "avgLowC": 18.1, "avgTempC": 22.8, "precipitationMm": 94.4, "rainyDays": 12.7, "season": "high" },
+            { "month": 9, "avgHighC": 24.6, "avgLowC": 15.6, "avgTempC": 20.1, "precipitationMm": 92.5, "rainyDays": 9.7, "season": "high" },
+            { "month": 10, "avgHighC": 17.1, "avgLowC": 8.8, "avgTempC": 12.9, "precipitationMm": 111.3, "rainyDays": 10.9, "season": "shoulder" },
+            { "month": 11, "avgHighC": 9.4, "avgLowC": 1.6, "avgTempC": 5.5, "precipitationMm": 59.1, "rainyDays": 7.2, "season": "shoulder" },
+            { "month": 12, "avgHighC": 4.1, "avgLowC": -3.1, "avgTempC": 0.5, "precipitationMm": 67.6, "rainyDays": 9.1, "season": "low" }
+          ]
+        },
+        {
+          "key": "mia",
+          "label": "Miami (southeast)",
+          "anchor": {
+            "id": "US-MIA",
+            "label": "Miami (southeast) (MIA)",
+            "latitude": 25.796011,
+            "longitude": -80.289751
+          },
+          "months": [
+            { "month": 1, "avgHighC": 24.2, "avgLowC": 16.4, "avgTempC": 20.3, "precipitationMm": 75, "rainyDays": 9.6, "season": "low" },
+            { "month": 2, "avgHighC": 25.4, "avgLowC": 17.9, "avgTempC": 21.7, "precipitationMm": 62.4, "rainyDays": 10.4, "season": "low" },
+            { "month": 3, "avgHighC": 27, "avgLowC": 19, "avgTempC": 23, "precipitationMm": 65.1, "rainyDays": 8.9, "season": "low" },
+            { "month": 4, "avgHighC": 28.5, "avgLowC": 20.7, "avgTempC": 24.6, "precipitationMm": 85.3, "rainyDays": 11.5, "season": "shoulder" },
+            { "month": 5, "avgHighC": 29.6, "avgLowC": 22.3, "avgTempC": 26, "precipitationMm": 158.3, "rainyDays": 17.3, "season": "high" },
+            { "month": 6, "avgHighC": 30.2, "avgLowC": 24, "avgTempC": 27.1, "precipitationMm": 243.3, "rainyDays": 24.5, "season": "high" },
+            { "month": 7, "avgHighC": 31.2, "avgLowC": 24.9, "avgTempC": 28, "precipitationMm": 173.6, "rainyDays": 24, "season": "high" },
+            { "month": 8, "avgHighC": 31.2, "avgLowC": 25.1, "avgTempC": 28.1, "precipitationMm": 204.8, "rainyDays": 25.7, "season": "high" },
+            { "month": 9, "avgHighC": 30.5, "avgLowC": 24.3, "avgTempC": 27.4, "precipitationMm": 235.9, "rainyDays": 23.5, "season": "high" },
+            { "month": 10, "avgHighC": 28.8, "avgLowC": 23, "avgTempC": 25.9, "precipitationMm": 149.7, "rainyDays": 19.4, "season": "shoulder" },
+            { "month": 11, "avgHighC": 27, "avgLowC": 20.6, "avgTempC": 23.8, "precipitationMm": 107.9, "rainyDays": 11.8, "season": "shoulder" },
+            { "month": 12, "avgHighC": 25.4, "avgLowC": 18.4, "avgTempC": 21.9, "precipitationMm": 92.9, "rainyDays": 10.1, "season": "low" }
+          ]
+        },
+        {
+          "key": "lax",
+          "label": "Los Angeles (west coast)",
+          "anchor": {
+            "id": "US-LAX",
+            "label": "Los Angeles (west coast) (LAX)",
+            "latitude": 33.942501,
+            "longitude": -118.407997
+          },
+          "months": [
+            { "month": 1, "avgHighC": 17.7, "avgLowC": 8.6, "avgTempC": 13.2, "precipitationMm": 79.2, "rainyDays": 5.7, "season": "low" },
+            { "month": 2, "avgHighC": 18.5, "avgLowC": 8.9, "avgTempC": 13.7, "precipitationMm": 60, "rainyDays": 5, "season": "low" },
+            { "month": 3, "avgHighC": 18.5, "avgLowC": 10.2, "avgTempC": 14.4, "precipitationMm": 64, "rainyDays": 7.2, "season": "low" },
+            { "month": 4, "avgHighC": 20.1, "avgLowC": 12, "avgTempC": 16.1, "precipitationMm": 16.1, "rainyDays": 2.2, "season": "shoulder" },
+            { "month": 5, "avgHighC": 19.9, "avgLowC": 13.6, "avgTempC": 16.8, "precipitationMm": 7.2, "rainyDays": 1.6, "season": "high" },
+            { "month": 6, "avgHighC": 22.8, "avgLowC": 16, "avgTempC": 19.4, "precipitationMm": 1.5, "rainyDays": 0.4, "season": "high" },
+            { "month": 7, "avgHighC": 24.9, "avgLowC": 18, "avgTempC": 21.4, "precipitationMm": 1.4, "rainyDays": 0.5, "season": "high" },
+            { "month": 8, "avgHighC": 25.7, "avgLowC": 18.4, "avgTempC": 22.1, "precipitationMm": 6.6, "rainyDays": 0.5, "season": "high" },
+            { "month": 9, "avgHighC": 25.5, "avgLowC": 18, "avgTempC": 21.8, "precipitationMm": 8.9, "rainyDays": 1.3, "season": "high" },
+            { "month": 10, "avgHighC": 24.5, "avgLowC": 15.3, "avgTempC": 19.9, "precipitationMm": 7.9, "rainyDays": 1.5, "season": "shoulder" },
+            { "month": 11, "avgHighC": 21.4, "avgLowC": 11.1, "avgTempC": 16.2, "precipitationMm": 18.7, "rainyDays": 2.2, "season": "shoulder" },
+            { "month": 12, "avgHighC": 18.1, "avgLowC": 8.6, "avgTempC": 13.4, "precipitationMm": 68.8, "rainyDays": 4.6, "season": "low" }
+          ]
+        }
+      ]
+    }
+  ]
+}
