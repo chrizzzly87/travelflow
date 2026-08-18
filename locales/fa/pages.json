@@ -166,7 +166,64 @@
         "fetchedOn": "دریافت‌شده در {date}",
         "yes": "بله",
         "no": "خیر",
-        "emergency": { "universal": "اضطراری عمومی", "police": "پلیس", "ambulance": "اورژانس", "fire": "آتش‌نشانی" }
+        "emergency": {
+          "universal": "اضطراری عمومی",
+          "police": "پلیس",
+          "ambulance": "اورژانس",
+          "fire": "آتش‌نشانی"
+        }
+      },
+      "explorer": {
+        "searchLabel": "جست‌وجوی کشورها",
+        "searchPlaceholder": "کشور، منطقه یا سبک سفر را جست‌وجو کنید",
+        "clearSearch": "پاک کردن جست‌وجو",
+        "monthTitle": "کی می‌خواهید سفر کنید؟",
+        "monthSubtitle": "یک ماه را انتخاب کنید تا هر کارت وضعیت آن مقصد را نشان دهد.",
+        "anyMonth": "هر ماهی",
+        "dataDisclaimer": "دما و بارش میانگین ده‌ساله هستند، نه پیش‌بینی. برچسب فصل برآورد تحریریه ما بر پایه داده‌های بهترین زمان سفر است، نه شمار واقعی گردشگران.",
+        "filtersTitle": "فیلترها",
+        "facets": {
+          "region": "منطقه",
+          "style": "سبک سفر",
+          "length": "مدت سفر"
+        },
+        "tripLength": {
+          "short": "تا {max} روز",
+          "medium": "{min}-{max} روز",
+          "long": "{min} روز و بیشتر"
+        },
+        "resultCount": "{count, plural, one {# کشور} other {# کشور}}",
+        "sortLabel": "مرتب‌سازی",
+        "sort": {
+          "popular": "محبوب‌ترین",
+          "month": "مناسب این ماه",
+          "name": "الفبایی"
+        },
+        "resetAll": "بازنشانی همه",
+        "temperature": "معمولاً {high}/{low} درجه",
+        "rainfall": {
+          "dry": "خشک",
+          "light": "باران کم",
+          "wet": "مرطوب",
+          "very-wet": "بسیار بارانی"
+        },
+        "season": {
+          "high": "فصل شلوغ",
+          "shoulder": "فصل میانی",
+          "low": "فصل آرام‌تر"
+        },
+        "band": {
+          "ideal": "ماه ایده‌آل",
+          "shoulder": "ماه میانی",
+          "avoid": "ماه کم‌مناسب"
+        },
+        "climateUnavailable": "اطلاعات آب‌وهوا به‌زودی",
+        "bestMonths": "بهترین: {months}",
+        "bestMonthsUnknown": "بهترین ماه‌ها به‌زودی",
+        "stripLabel": "بهترین ماه‌های سفر به {country}: {months}",
+        "stripLabelUnknown": "بهترین ماه‌های سفر به {country} هنوز در دسترس نیست",
+        "emptyTitle": "هنوز نتیجه‌ای نیست",
+        "emptyDescription": "ماه دیگری را امتحان کنید، یک فیلتر را بردارید یا گسترده‌تر جست‌وجو کنید."
       }
     }
   },

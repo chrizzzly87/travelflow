@@ -166,7 +166,64 @@
         "fetchedOn": "consultadas em {date}",
         "yes": "Sim",
         "no": "Não",
-        "emergency": { "universal": "Emergência geral", "police": "Polícia", "ambulance": "Ambulância", "fire": "Bombeiros" }
+        "emergency": {
+          "universal": "Emergência geral",
+          "police": "Polícia",
+          "ambulance": "Ambulância",
+          "fire": "Bombeiros"
+        }
+      },
+      "explorer": {
+        "searchLabel": "Pesquisar países",
+        "searchPlaceholder": "Pesquise um país, uma região ou um estilo de viagem",
+        "clearSearch": "Limpar pesquisa",
+        "monthTitle": "Quando queres viajar?",
+        "monthSubtitle": "Escolhe um mês e cada cartão mostra o que esperar por lá.",
+        "anyMonth": "Qualquer mês",
+        "dataDisclaimer": "Temperatura e chuva são médias de 10 anos, não uma previsão. A época é a nossa estimativa editorial a partir dos dados de melhor altura para visitar, não números de visitantes medidos.",
+        "filtersTitle": "Filtros",
+        "facets": {
+          "region": "Região",
+          "style": "Estilo de viagem",
+          "length": "Duração"
+        },
+        "tripLength": {
+          "short": "Até {max} dias",
+          "medium": "{min}-{max} dias",
+          "long": "{min} dias ou mais"
+        },
+        "resultCount": "{count, plural, one {# país} other {# países}}",
+        "sortLabel": "Ordenar",
+        "sort": {
+          "popular": "Mais populares",
+          "month": "Melhor para este mês",
+          "name": "De A a Z"
+        },
+        "resetAll": "Repor tudo",
+        "temperature": "{high}/{low} °C habitual",
+        "rainfall": {
+          "dry": "Seco",
+          "light": "Chuva fraca",
+          "wet": "Húmido",
+          "very-wet": "Muito chuvoso"
+        },
+        "season": {
+          "high": "Época movimentada",
+          "shoulder": "Época intermédia",
+          "low": "Época mais calma"
+        },
+        "band": {
+          "ideal": "Mês ideal",
+          "shoulder": "Mês intermédio",
+          "avoid": "Mês menos ideal"
+        },
+        "climateUnavailable": "Dados de clima em breve",
+        "bestMonths": "Melhor: {months}",
+        "bestMonthsUnknown": "Melhores meses em breve",
+        "stripLabel": "Melhores meses para visitar {country}: {months}",
+        "stripLabelUnknown": "Os melhores meses para visitar {country} ainda não estão disponíveis",
+        "emptyTitle": "Ainda sem resultados",
+        "emptyDescription": "Experimenta outro mês, remove um filtro ou pesquisa algo mais amplo."
       }
     }
   },

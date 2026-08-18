@@ -166,7 +166,64 @@
         "fetchedOn": "{date}에 가져옴",
         "yes": "예",
         "no": "아니요",
-        "emergency": { "universal": "통합 긴급전화", "police": "경찰", "ambulance": "구급차", "fire": "소방" }
+        "emergency": {
+          "universal": "통합 긴급전화",
+          "police": "경찰",
+          "ambulance": "구급차",
+          "fire": "소방"
+        }
+      },
+      "explorer": {
+        "searchLabel": "국가 검색",
+        "searchPlaceholder": "국가, 지역, 여행 스타일 검색",
+        "clearSearch": "검색어 지우기",
+        "monthTitle": "언제 떠나고 싶으세요?",
+        "monthSubtitle": "월을 고르면 각 카드가 그곳의 상황을 보여줍니다.",
+        "anyMonth": "아무 때나",
+        "dataDisclaimer": "기온과 강수량은 10년 평균이며 예보가 아닙니다. 시즌 표시는 여행 적기 데이터를 바탕으로 한 편집팀의 판단이며, 실제 관광객 수를 측정한 값이 아닙니다.",
+        "filtersTitle": "필터",
+        "facets": {
+          "region": "지역",
+          "style": "여행 스타일",
+          "length": "여행 기간"
+        },
+        "tripLength": {
+          "short": "최대 {max}일",
+          "medium": "{min}~{max}일",
+          "long": "{min}일 이상"
+        },
+        "resultCount": "{count, plural, other {#개국}}",
+        "sortLabel": "정렬",
+        "sort": {
+          "popular": "인기순",
+          "month": "이번 달 추천순",
+          "name": "이름순"
+        },
+        "resetAll": "전체 초기화",
+        "temperature": "평균 {high}/{low}°C",
+        "rainfall": {
+          "dry": "건조",
+          "light": "약한 비",
+          "wet": "비 잦음",
+          "very-wet": "비 매우 많음"
+        },
+        "season": {
+          "high": "붐비는 시즌",
+          "shoulder": "중간 시즌",
+          "low": "한산한 시즌"
+        },
+        "band": {
+          "ideal": "최적의 달",
+          "shoulder": "중간 시즌의 달",
+          "avoid": "덜 좋은 달"
+        },
+        "climateUnavailable": "날씨 정보 준비 중",
+        "bestMonths": "추천: {months}",
+        "bestMonthsUnknown": "추천 시기 준비 중",
+        "stripLabel": "{country} 여행 추천 시기: {months}",
+        "stripLabelUnknown": "{country} 여행 추천 시기는 아직 준비 중입니다",
+        "emptyTitle": "아직 결과가 없어요",
+        "emptyDescription": "다른 달을 골라 보거나 필터를 줄이거나 더 넓게 검색해 보세요."
       }
     }
   },
