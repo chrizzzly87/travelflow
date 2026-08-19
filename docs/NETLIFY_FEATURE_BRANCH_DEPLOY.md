@@ -52,6 +52,30 @@ Run these from the feature branch before pushing:
 2. `pnpm test:core`
 3. `pnpm build`
 
+## Edge functions are NOT deployed by manual CLI alias deploys
+
+**Verified 2026-08-19.** `netlify deploy --no-build --dir=dist --alias <name>` ships the static bundle but **no Netlify edge functions**. Every `/api/*` route on such a preview returns the SPA `index.html` with `content-type: text/html` instead of JSON.
+
+Confirmed failing on an alias while all three worked on production:
+
+- `/api/destinations` and `/api/destinations/<slug>`
+- `/api/runtime/location`
+- `/api/health`
+
+Linking the project first (`netlify link --id ...`) and running a full `netlify build` beforehand did **not** help; the deploy still reported `CDN requesting 0 edge functions`.
+
+### What this looks like in the product
+
+- Country guide pages render "Practical destination information is temporarily unavailable. The core guide remains available."
+- Anything depending on `runtime-location` (geolocation, nearby airports, distance sorting) silently does nothing.
+
+**This is a preview artifact, not an application bug.** Do not debug it as a code regression, and tell anyone verifying on an alias preview to expect it.
+
+### Rule
+
+- Use alias deploys only to check **static and client-side rendering**.
+- Verify anything touching `/api/*` on a real Netlify **Deploy Preview** or on production.
+
 ## Manual CLI deploy with env parity (mandatory for auth flows)
 Use this when you need to push a draft deploy immediately (without waiting for Netlify PR checks), and the frontend requires `VITE_*` keys at build time.
 
