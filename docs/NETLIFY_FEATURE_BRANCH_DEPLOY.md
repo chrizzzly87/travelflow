@@ -107,6 +107,33 @@ Notes:
 - Never commit `.env.local` or pulled env files.
 - Symptom of missing env injection: login fails, `Supabase auth is not configured`, or JS chunk errors caused by bad runtime config.
 
+## Diagnosing a Netlify-only build failure
+
+`pnpm build:netlify` uses your local env, so it can pass while Netlify fails. To reproduce Netlify's build with the **linked site's real environment**:
+
+```bash
+pnpm dlx netlify build
+```
+
+This runs the `netlify.toml` build command with Netlify's own env injection and surfaces the failing step directly, which makes the (often unreachable) Netlify build log unnecessary.
+
+### Known cause: `is_secret` on `VITE_*` variables
+
+Netlify's per-variable **secret** flag makes values resolve **masked** into the build. The `VITE_*` client variables in this project are public by design (see the comments in `netlify.toml`), so flagging them secret breaks the build at the first step:
+
+```
+> pnpm runtime-env:validate
+Production build blocked: VITE_SUPABASE_URL must be a valid HTTP(S) URL.
+```
+
+`SECRETS_SCAN_OMIT_KEYS` only exempts a key from the secrets *scanner* — it does **not** undo the `is_secret` flag. Fix by clearing "secret" on the `VITE_*` variables in Site config → Environment variables. Keep genuinely server-side keys (`SUPABASE_SERVICE_ROLE_KEY`, `TF_ADMIN_API_KEY`, provider API keys) secret.
+
+Inspect the flag without printing secrets:
+
+```bash
+pnpm dlx netlify env:list --json
+```
+
 ## Useful checks
 - PR checks:
   - `gh pr checks <PR_NUMBER>`
