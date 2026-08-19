@@ -234,6 +234,8 @@ Create Trip uses a separate seasonal recommendation layer for empty-state destin
 | `services/destinationService.ts` | Recommendation month selection, score calculation, ranking, and search integration |
 | `data/countryTravelData.ts` | Seasonal best/shoulder/avoid months plus event metadata used as score modifiers |
 
+> Monthly temperature and rainfall normals plus a per-month `high` / `shoulder` / `low` season signal live in a separate dataset — see [`docs/COUNTRY_CLIMATE_DATA.md`](./COUNTRY_CLIMATE_DATA.md) and `services/countryClimateService.ts`. That season signal is derived from the same curated `bestMonths` / `shoulderMonths` / `avoidMonths` documented here, so the two layers stay consistent.
+
 ### Recommendation pool
 
 - The pool starts from all `DESTINATION_OPTIONS`.
@@ -334,6 +336,32 @@ The current system is month-driven, but it is designed to support additional lay
 
 ---
 
+## Destination Guide Discoverability
+
+Destination guide pages are data-driven, so they never appear in the static marketing route
+table. Three places keep them crawlable, all fed from `data/destinationGuides.json`:
+
+| Concern | Where | Behaviour |
+|---------|-------|-----------|
+| Sitemap | `scripts/generate-sitemap.mjs` | Emits `/inspirations/country/<slug>` for every country guide and `/inspirations/country/<countrySlug>/<childSlug>` for children that carry curated content, each with hreflang alternates for all supported locales |
+| Structured data | `services/destinationStructuredData.ts` rendered by `components/inspirations/DestinationGuideView.tsx` | `TouristDestination` JSON-LD with region/country, curated highlights, and `Event` entries at month precision |
+| Prerendering | `scripts/prerender-routes.mjs` | Prerenders the highest-priority country guides plus an explicit always-on list; the rest render client-side |
+
+Two deliberate limits keep build output sane:
+
+- Children derived from the airport reference inherit all of their data from the parent country
+  and are excluded from the sitemap to avoid submitting near-duplicate stub pages. They remain
+  reachable through the country page's internal links.
+- Only a capped set of country routes is prerendered, because each route costs roughly 2-3s of
+  build time. Non-prerendered country pages still get canonical and OG metadata from
+  `netlify/edge-functions/site-og-meta.ts`.
+
+When adding a country to `TOP_COUNTRY_CODES`, no sitemap or prerender change is needed — both
+read the regenerated dataset. Do check that any page querying `listDestinationGuides` uses a
+limit large enough to include the new entry.
+
+---
+
 ## File Reference
 
 | File | Role |
@@ -346,3 +374,5 @@ The current system is month-driven, but it is designed to support additional lay
 | `pages/CreateTripClassicLabPage.tsx` | Reads `?prefill=` param, pre-fills form fields |
 | `components/CountrySelect.tsx` | Destination picker, searches `DESTINATION_OPTIONS` |
 | `netlify/edge-functions/site-og-meta.ts` | Strips `prefill` from canonical URLs |
+| `data/countryClimateNormals.json` | Monthly temperature/rainfall normals + curated season signal per country |
+| `services/countryClimateService.ts` | Memoized read API for the climate dataset (see `docs/COUNTRY_CLIMATE_DATA.md`) |

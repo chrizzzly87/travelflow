@@ -677,6 +677,9 @@ const getLocalizedTag = (tag: string, locale: AppLanguage): string => {
   return localeMap?.[tag] || englishMap[tag] || tag;
 };
 
+/** Canonical example-card tag vocabulary. Any tag outside this set renders untranslated. */
+export const EXAMPLE_TRIP_TAG_VOCABULARY: string[] = Object.keys(TAG_TRANSLATIONS.en || {});
+
 export const getExampleTripUiCopy = (locale?: string): ExampleTripUiCopy =>
   EXAMPLE_TRIP_UI_COPY[normalizeLocale(locale)] || DEFAULT_UI_COPY;
 

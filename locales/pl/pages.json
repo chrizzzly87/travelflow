@@ -72,14 +72,12 @@
         "description": "Największe święta świata zasługują na coś więcej niż lot na ostatnią chwilę. Odkrywaj nadchodzące festiwale według dat i buduj wokół nich swój plan podróży.",
         "counts": "Zbadaliśmy {total} świąt – {exact} ma już potwierdzoną datę.",
         "accuracyNote": "Jeśli święto zależy od kalendarza księżycowego lub ruchomego, a dokładnej daty nie da się jeszcze potwierdzić, podajemy zwykły termin zamiast zgadywać.",
-        "filtersLabel": "Filtruj święta według regionu i miesiąca",
         "filterRegion": "Region",
         "filterMonth": "Miesiąc",
         "filterAll": "Wszystkie",
         "resultCount": "{count, plural, one {# święto, najbliższe najpierw} few {# święta, najbliższe najpierw} many {# świąt, najbliższe najpierw} other {# święta, najbliższe najpierw}}",
         "emptyState": "Nic tu jeszcze nie pasuje. Wybierz inny miesiąc lub region.",
         "happeningNow": "Trwa teraz",
-        "countryInRegion": "{country} · {region}",
         "planCta": "Zaplanuj podróż",
         "guideCta": "Przewodnik po kraju",
         "sourceCta": "Oficjalne informacje",
@@ -108,7 +106,9 @@
           "north-america": "Ameryka Północna",
           "oceania": "Oceania",
           "south-america": "Ameryka Południowa"
-        }
+        },
+        "ofTotal": "z {total}",
+        "clearFilters": "Wyczyść filtry"
       },
       "weekendGetaways": {
         "pill": "Weekendowe wypady",
@@ -209,7 +209,67 @@
           "police": "Policja",
           "ambulance": "Pogotowie",
           "fire": "Straż pożarna"
+        },
+        "routes": {
+          "eyebrow": "Gotowe trasy",
+          "title": "Polecane trasy w {destination}",
+          "subtitle": "Trzy trasy, które sami byśmy zarezerwowali. Wybierz jedną, a planer otworzy się ze wszystkimi przystankami w kolejności.",
+          "hint": "Otwiera się w planerze",
+          "bestMonths": "Najlepsze miesiące: {months}",
+          "cardLabel": "Zaplanuj trasę {title}"
         }
+      },
+      "explorer": {
+        "searchLabel": "Szukaj krajów",
+        "searchPlaceholder": "Wpisz kraj, region lub styl podróży",
+        "clearSearch": "Wyczyść wyszukiwanie",
+        "monthTitle": "Kiedy chcesz jechać?",
+        "monthSubtitle": "Wybierz miesiąc, a każda karta pokaże, czego się spodziewać.",
+        "anyMonth": "Dowolny miesiąc",
+        "dataDisclaimer": "Temperatura i opady to średnie z 10 lat, nie prognoza. Sezon to nasza redakcyjna ocena na podstawie danych o najlepszym czasie na wyjazd, a nie zmierzona liczba turystów.",
+        "filtersTitle": "Filtry",
+        "facets": {
+          "region": "Region",
+          "style": "Styl podróży",
+          "length": "Długość wyjazdu"
+        },
+        "tripLength": {
+          "short": "Do {max} dni",
+          "medium": "{min}-{max} dni",
+          "long": "{min} dni lub więcej"
+        },
+        "resultCount": "{count} z {total} krajów",
+        "sortLabel": "Sortuj",
+        "sort": {
+          "popular": "Najpopularniejsze",
+          "month": "Najlepsze w tym miesiącu",
+          "name": "Od A do Z"
+        },
+        "resetAll": "Wyczyść wszystko",
+        "temperature": "{high}/{low} °C typowo",
+        "rainfall": {
+          "dry": "Sucho",
+          "light": "Lekki deszcz",
+          "wet": "Wilgotno",
+          "very-wet": "Bardzo deszczowo"
+        },
+        "season": {
+          "high": "Ruchliwy sezon",
+          "shoulder": "Sezon przejściowy",
+          "low": "Spokojniejszy sezon"
+        },
+        "band": {
+          "ideal": "Idealny miesiąc",
+          "shoulder": "Miesiąc przejściowy",
+          "avoid": "Mniej udany miesiąc"
+        },
+        "climateUnavailable": "Dane pogodowe wkrótce",
+        "bestMonths": "Najlepiej: {months}",
+        "bestMonthsUnknown": "Najlepsze miesiące wkrótce",
+        "stripLabel": "Najlepsze miesiące na wyjazd do {country}: {months}",
+        "stripLabelUnknown": "Najlepsze miesiące na wyjazd do {country} nie są jeszcze dostępne",
+        "emptyTitle": "Brak wyników",
+        "emptyDescription": "Spróbuj innego miesiąca, usuń filtr albo poszukaj czegoś szerszego."
       }
     }
   },

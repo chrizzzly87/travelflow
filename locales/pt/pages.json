@@ -72,14 +72,12 @@
         "description": "As melhores celebrações do mundo merecem mais do que um voo de última hora. Descubra festivais por data e construa o itinerário em torno do evento.",
         "counts": "{total} festas pesquisadas – {exact} já com data confirmada.",
         "accuracyNote": "Quando uma festa segue um calendário lunar ou móvel e ainda não conseguimos confirmar a data exata, dizemos quando costuma acontecer em vez de inventar.",
-        "filtersLabel": "Filtrar festas por região e mês",
         "filterRegion": "Região",
         "filterMonth": "Mês",
         "filterAll": "Todas",
         "resultCount": "{count, plural, one {# festa, a mais próxima primeiro} other {# festas, as mais próximas primeiro}}",
         "emptyState": "Ainda não há nada com essa combinação. Experimente outro mês ou outra região.",
         "happeningNow": "A acontecer agora",
-        "countryInRegion": "{country} · {region}",
         "planCta": "Planear a viagem",
         "guideCta": "Guia do país",
         "sourceCta": "Info oficial",
@@ -108,7 +106,9 @@
           "north-america": "América do Norte",
           "oceania": "Oceania",
           "south-america": "América do Sul"
-        }
+        },
+        "ofTotal": "de {total}",
+        "clearFilters": "Limpar filtros"
       },
       "weekendGetaways": {
         "pill": "Escapadinhas de fim de semana",
@@ -209,7 +209,67 @@
           "police": "Polícia",
           "ambulance": "Ambulância",
           "fire": "Bombeiros"
+        },
+        "routes": {
+          "eyebrow": "Rotas prontas",
+          "title": "Rotas em destaque em {destination}",
+          "subtitle": "Três rotas que nós próprios reservaríamos. Escolhe uma e o planeador abre com todas as paragens pela ordem certa.",
+          "hint": "Abre no planeador",
+          "bestMonths": "Melhores meses: {months}",
+          "cardLabel": "Planear a rota {title}"
         }
+      },
+      "explorer": {
+        "searchLabel": "Pesquisar países",
+        "searchPlaceholder": "Pesquise um país, uma região ou um estilo de viagem",
+        "clearSearch": "Limpar pesquisa",
+        "monthTitle": "Quando queres viajar?",
+        "monthSubtitle": "Escolhe um mês e cada cartão mostra o que esperar por lá.",
+        "anyMonth": "Qualquer mês",
+        "dataDisclaimer": "Temperatura e chuva são médias de 10 anos, não uma previsão. A época é a nossa estimativa editorial a partir dos dados de melhor altura para visitar, não números de visitantes medidos.",
+        "filtersTitle": "Filtros",
+        "facets": {
+          "region": "Região",
+          "style": "Estilo de viagem",
+          "length": "Duração"
+        },
+        "tripLength": {
+          "short": "Até {max} dias",
+          "medium": "{min}-{max} dias",
+          "long": "{min} dias ou mais"
+        },
+        "resultCount": "{count} de {total} países",
+        "sortLabel": "Ordenar",
+        "sort": {
+          "popular": "Mais populares",
+          "month": "Melhor para este mês",
+          "name": "De A a Z"
+        },
+        "resetAll": "Repor tudo",
+        "temperature": "{high}/{low} °C habitual",
+        "rainfall": {
+          "dry": "Seco",
+          "light": "Chuva fraca",
+          "wet": "Húmido",
+          "very-wet": "Muito chuvoso"
+        },
+        "season": {
+          "high": "Época movimentada",
+          "shoulder": "Época intermédia",
+          "low": "Época mais calma"
+        },
+        "band": {
+          "ideal": "Mês ideal",
+          "shoulder": "Mês intermédio",
+          "avoid": "Mês menos ideal"
+        },
+        "climateUnavailable": "Dados de clima em breve",
+        "bestMonths": "Melhor: {months}",
+        "bestMonthsUnknown": "Melhores meses em breve",
+        "stripLabel": "Melhores meses para visitar {country}: {months}",
+        "stripLabelUnknown": "Os melhores meses para visitar {country} ainda não estão disponíveis",
+        "emptyTitle": "Ainda sem resultados",
+        "emptyDescription": "Experimenta outro mês, remove um filtro ou pesquisa algo mais amplo."
       }
     }
   },

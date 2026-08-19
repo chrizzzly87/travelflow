@@ -72,14 +72,12 @@
         "description": "Die größten Feste der Welt verdienen mehr als einen Last-Minute-Flug. Finde kommende Events nach Datum und plane deine Route darum herum.",
         "counts": "{total} Feste recherchiert – {exact} davon mit bestätigtem Datum.",
         "accuracyNote": "Wenn ein Fest einem Mond- oder beweglichen Kalender folgt und wir das genaue Datum noch nicht belegen können, nennen wir den üblichen Zeitraum statt zu raten.",
-        "filtersLabel": "Feste nach Region und Monat filtern",
         "filterRegion": "Region",
         "filterMonth": "Monat",
         "filterAll": "Alle",
         "resultCount": "{count, plural, one {# Fest, nächste zuerst} other {# Feste, nächste zuerst}}",
         "emptyState": "Zu dieser Auswahl gibt es noch nichts. Probiere einen anderen Monat oder eine andere Region.",
         "happeningNow": "Läuft gerade",
-        "countryInRegion": "{country} · {region}",
         "planCta": "Reise dazu planen",
         "guideCta": "Länderguide",
         "sourceCta": "Offizielle Infos",
@@ -108,7 +106,9 @@
           "north-america": "Nordamerika",
           "oceania": "Ozeanien",
           "south-america": "Südamerika"
-        }
+        },
+        "ofTotal": "von {total}",
+        "clearFilters": "Filter zurücksetzen"
       },
       "weekendGetaways": {
         "pill": "Wochenendtrips",
@@ -209,7 +209,67 @@
           "police": "Polizei",
           "ambulance": "Rettungsdienst",
           "fire": "Feuerwehr"
+        },
+        "routes": {
+          "eyebrow": "Fertige Routen",
+          "title": "Empfohlene Routen in {destination}",
+          "subtitle": "Drei Routen, die wir selbst buchen würden. Wähl eine aus und der Planer öffnet sich mit allen Stopps in der richtigen Reihenfolge.",
+          "hint": "Öffnet im Planer",
+          "bestMonths": "Beste Monate: {months}",
+          "cardLabel": "Route {title} planen"
         }
+      },
+      "explorer": {
+        "searchLabel": "Länder durchsuchen",
+        "searchPlaceholder": "Land, Region oder Reisestil suchen",
+        "clearSearch": "Suche zurücksetzen",
+        "monthTitle": "Wann willst du los?",
+        "monthSubtitle": "Wähle einen Monat und jede Karte zeigt, was dich dort erwartet.",
+        "anyMonth": "Egal wann",
+        "dataDisclaimer": "Temperatur und Regen sind 10-Jahres-Mittelwerte, keine Vorhersage. Die Saison-Angabe ist unsere redaktionelle Einschätzung aus Reisezeit-Daten, keine gemessenen Besucherzahlen.",
+        "filtersTitle": "Filter",
+        "facets": {
+          "region": "Region",
+          "style": "Reisestil",
+          "length": "Reisedauer"
+        },
+        "tripLength": {
+          "short": "Bis {max} Tage",
+          "medium": "{min}-{max} Tage",
+          "long": "Ab {min} Tagen"
+        },
+        "resultCount": "{count} von {total} Ländern",
+        "sortLabel": "Sortierung",
+        "sort": {
+          "popular": "Beliebteste",
+          "month": "Passend zum Monat",
+          "name": "A bis Z"
+        },
+        "resetAll": "Alles zurücksetzen",
+        "temperature": "{high}/{low} °C typisch",
+        "rainfall": {
+          "dry": "Trocken",
+          "light": "Wenig Regen",
+          "wet": "Feucht",
+          "very-wet": "Sehr nass"
+        },
+        "season": {
+          "high": "Viel los",
+          "shoulder": "Nebensaison",
+          "low": "Ruhiger"
+        },
+        "band": {
+          "ideal": "Idealer Monat",
+          "shoulder": "Nebensaison-Monat",
+          "avoid": "Weniger ideal"
+        },
+        "climateUnavailable": "Wetterdaten folgen bald",
+        "bestMonths": "Am besten: {months}",
+        "bestMonthsUnknown": "Beste Monate folgen bald",
+        "stripLabel": "Beste Reisemonate für {country}: {months}",
+        "stripLabelUnknown": "Beste Reisemonate für {country} sind noch nicht verfügbar",
+        "emptyTitle": "Noch kein Treffer",
+        "emptyDescription": "Probiere einen anderen Monat, entferne einen Filter oder suche breiter."
       }
     }
   },

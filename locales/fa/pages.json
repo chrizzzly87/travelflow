@@ -72,14 +72,12 @@
         "description": "The world's greatest celebrations deserve more than a last-minute flight. Discover upcoming festivals by date and build your itinerary around the event.",
         "counts": "{total} جشنواره بررسی شده — {exact} مورد با تاریخ قطعی.",
         "accuracyNote": "وقتی جشنواره‌ای از تقویم قمری یا متغیر پیروی می‌کند و هنوز نمی‌توانیم تاریخ دقیقش را تأیید کنیم، به‌جای حدس زدن می‌گوییم معمولاً چه زمانی برگزار می‌شود.",
-        "filtersLabel": "فیلتر جشنواره‌ها بر اساس منطقه و ماه",
         "filterRegion": "منطقه",
         "filterMonth": "ماه",
         "filterAll": "همه",
         "resultCount": "{count, plural, one {# جشنواره، نزدیک‌ترین اول} other {# جشنواره، نزدیک‌ترین اول}}",
         "emptyState": "هنوز چیزی با این ترکیب پیدا نشد. ماه یا منطقه دیگری را امتحان کنید.",
         "happeningNow": "در حال برگزاری",
-        "countryInRegion": "{country} · {region}",
         "planCta": "برنامه‌ریزی سفر",
         "guideCta": "راهنمای کشور",
         "sourceCta": "اطلاعات رسمی",
@@ -108,7 +106,9 @@
           "north-america": "آمریکای شمالی",
           "oceania": "اقیانوسیه",
           "south-america": "آمریکای جنوبی"
-        }
+        },
+        "ofTotal": "از {total}",
+        "clearFilters": "پاک کردن فیلترها"
       },
       "weekendGetaways": {
         "pill": "Weekend Getaways",
@@ -209,7 +209,67 @@
           "police": "پلیس",
           "ambulance": "اورژانس",
           "fire": "آتش‌نشانی"
+        },
+        "routes": {
+          "eyebrow": "مسیرهای آماده",
+          "title": "مسیرهای منتخب در {destination}",
+          "subtitle": "سه مسیر که خودمان هم رزرو می‌کردیم. یکی را انتخاب کنید تا برنامه‌ریز با همهٔ توقف‌ها به ترتیب باز شود.",
+          "hint": "در برنامه‌ریز باز می‌شود",
+          "bestMonths": "بهترین ماه‌ها: {months}",
+          "cardLabel": "برنامه‌ریزی مسیر {title}"
         }
+      },
+      "explorer": {
+        "searchLabel": "جست‌وجوی کشورها",
+        "searchPlaceholder": "کشور، منطقه یا سبک سفر را جست‌وجو کنید",
+        "clearSearch": "پاک کردن جست‌وجو",
+        "monthTitle": "کی می‌خواهید سفر کنید؟",
+        "monthSubtitle": "یک ماه را انتخاب کنید تا هر کارت وضعیت آن مقصد را نشان دهد.",
+        "anyMonth": "هر ماهی",
+        "dataDisclaimer": "دما و بارش میانگین ده‌ساله هستند، نه پیش‌بینی. برچسب فصل برآورد تحریریه ما بر پایه داده‌های بهترین زمان سفر است، نه شمار واقعی گردشگران.",
+        "filtersTitle": "فیلترها",
+        "facets": {
+          "region": "منطقه",
+          "style": "سبک سفر",
+          "length": "مدت سفر"
+        },
+        "tripLength": {
+          "short": "تا {max} روز",
+          "medium": "{min}-{max} روز",
+          "long": "{min} روز و بیشتر"
+        },
+        "resultCount": "{count} از {total} کشور",
+        "sortLabel": "مرتب‌سازی",
+        "sort": {
+          "popular": "محبوب‌ترین",
+          "month": "مناسب این ماه",
+          "name": "الفبایی"
+        },
+        "resetAll": "بازنشانی همه",
+        "temperature": "معمولاً {high}/{low} درجه",
+        "rainfall": {
+          "dry": "خشک",
+          "light": "باران کم",
+          "wet": "مرطوب",
+          "very-wet": "بسیار بارانی"
+        },
+        "season": {
+          "high": "فصل شلوغ",
+          "shoulder": "فصل میانی",
+          "low": "فصل آرام‌تر"
+        },
+        "band": {
+          "ideal": "ماه ایده‌آل",
+          "shoulder": "ماه میانی",
+          "avoid": "ماه کم‌مناسب"
+        },
+        "climateUnavailable": "اطلاعات آب‌وهوا به‌زودی",
+        "bestMonths": "بهترین: {months}",
+        "bestMonthsUnknown": "بهترین ماه‌ها به‌زودی",
+        "stripLabel": "بهترین ماه‌های سفر به {country}: {months}",
+        "stripLabelUnknown": "بهترین ماه‌های سفر به {country} هنوز در دسترس نیست",
+        "emptyTitle": "هنوز نتیجه‌ای نیست",
+        "emptyDescription": "ماه دیگری را امتحان کنید، یک فیلتر را بردارید یا گسترده‌تر جست‌وجو کنید."
       }
     }
   },

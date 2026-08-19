@@ -72,14 +72,12 @@
         "description": "The world's greatest celebrations deserve more than a last-minute flight. Discover upcoming festivals by date and build your itinerary around the event.",
         "counts": "{total} festivals researched — {exact} already pinned to a confirmed date.",
         "accuracyNote": "When a festival follows a lunar or movable calendar and we cannot confirm the exact date yet, we tell you when it usually falls instead of guessing.",
-        "filtersLabel": "Filter festivals by region and month",
         "filterRegion": "Region",
         "filterMonth": "Month",
         "filterAll": "All",
         "resultCount": "{count, plural, one {# festival, soonest first} other {# festivals, soonest first}}",
         "emptyState": "Nothing matches that combination yet. Try another month or region.",
         "happeningNow": "Happening now",
-        "countryInRegion": "{country} · {region}",
         "planCta": "Plan around it",
         "guideCta": "Country guide",
         "sourceCta": "Official info",
@@ -108,7 +106,9 @@
           "north-america": "North America",
           "oceania": "Oceania",
           "south-america": "South America"
-        }
+        },
+        "ofTotal": "of {total}",
+        "clearFilters": "Clear filters"
       },
       "weekendGetaways": {
         "pill": "Weekend Getaways",
@@ -209,7 +209,67 @@
           "police": "Police",
           "ambulance": "Ambulance",
           "fire": "Fire"
+        },
+        "routes": {
+          "eyebrow": "Ready-made routes",
+          "title": "Featured routes in {destination}",
+          "subtitle": "Three routes we would book ourselves. Pick one and the planner opens with every stop already in order.",
+          "hint": "Opens in the planner",
+          "bestMonths": "Best months: {months}",
+          "cardLabel": "Plan the route {title}"
         }
+      },
+      "explorer": {
+        "searchLabel": "Search countries",
+        "searchPlaceholder": "Search a country, region or travel style",
+        "clearSearch": "Clear search",
+        "monthTitle": "When do you want to go?",
+        "monthSubtitle": "Pick a month and every card shows what to expect there.",
+        "anyMonth": "Any month",
+        "dataDisclaimer": "Temperature and rain are 10-year averages, not a forecast. The season label is our editorial estimate from best-time-to-visit data, not measured visitor numbers.",
+        "filtersTitle": "Filters",
+        "facets": {
+          "region": "Region",
+          "style": "Travel style",
+          "length": "Trip length"
+        },
+        "tripLength": {
+          "short": "Up to {max} days",
+          "medium": "{min}-{max} days",
+          "long": "{min} days or more"
+        },
+        "resultCount": "Showing {count} of {total} countries",
+        "sortLabel": "Sort",
+        "sort": {
+          "popular": "Most popular",
+          "month": "Best for this month",
+          "name": "A to Z"
+        },
+        "resetAll": "Reset all",
+        "temperature": "{high}/{low}°C typical",
+        "rainfall": {
+          "dry": "Dry",
+          "light": "Light rain",
+          "wet": "Wet",
+          "very-wet": "Very wet"
+        },
+        "season": {
+          "high": "Busy travel season",
+          "shoulder": "Shoulder season",
+          "low": "Quieter season"
+        },
+        "band": {
+          "ideal": "Ideal month",
+          "shoulder": "Shoulder month",
+          "avoid": "Less ideal month"
+        },
+        "climateUnavailable": "Weather details coming soon",
+        "bestMonths": "Best: {months}",
+        "bestMonthsUnknown": "Best months coming soon",
+        "stripLabel": "Best months to visit {country}: {months}",
+        "stripLabelUnknown": "Best months to visit {country} are not available yet",
+        "emptyTitle": "Nothing matches yet",
+        "emptyDescription": "Try another month, drop a filter, or search for something broader."
       }
     }
   },

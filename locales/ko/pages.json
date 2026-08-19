@@ -72,14 +72,12 @@
         "description": "세계 최고의 축제는 막바지 항공권 이상의 가치가 있습니다. 날짜별 축제를 찾아보고 이벤트를 중심으로 일정을 만들어 보세요.",
         "counts": "축제 {total}개를 조사했고, 그중 {exact}개는 날짜가 확정되어 있어요.",
         "accuracyNote": "음력이나 해마다 바뀌는 일정을 따르는 축제는 정확한 날짜가 확인되기 전까지 추측 대신 보통 열리는 시기를 알려드려요.",
-        "filtersLabel": "지역과 월로 축제 거르기",
         "filterRegion": "지역",
         "filterMonth": "월",
         "filterAll": "전체",
         "resultCount": "{count, plural, other {축제 #개, 가까운 순}}",
         "emptyState": "아직 이 조건에 맞는 축제가 없어요. 다른 달이나 지역을 골라 보세요.",
         "happeningNow": "지금 진행 중",
-        "countryInRegion": "{country} · {region}",
         "planCta": "일정 짜기",
         "guideCta": "국가 가이드",
         "sourceCta": "공식 정보",
@@ -108,7 +106,9 @@
           "north-america": "북아메리카",
           "oceania": "오세아니아",
           "south-america": "남아메리카"
-        }
+        },
+        "ofTotal": "전체 {total}개 중",
+        "clearFilters": "필터 지우기"
       },
       "weekendGetaways": {
         "pill": "주말 여행",
@@ -209,7 +209,67 @@
           "police": "경찰",
           "ambulance": "구급차",
           "fire": "소방"
+        },
+        "routes": {
+          "eyebrow": "완성된 루트",
+          "title": "{destination} 추천 루트",
+          "subtitle": "저희가 직접 예약할 만한 루트 세 가지입니다. 하나를 고르면 플래너가 모든 경유지를 순서대로 담아 열립니다.",
+          "hint": "플래너에서 열립니다",
+          "bestMonths": "가장 좋은 달: {months}",
+          "cardLabel": "{title} 루트 계획하기"
         }
+      },
+      "explorer": {
+        "searchLabel": "국가 검색",
+        "searchPlaceholder": "국가, 지역, 여행 스타일 검색",
+        "clearSearch": "검색어 지우기",
+        "monthTitle": "언제 떠나고 싶으세요?",
+        "monthSubtitle": "월을 고르면 각 카드가 그곳의 상황을 보여줍니다.",
+        "anyMonth": "아무 때나",
+        "dataDisclaimer": "기온과 강수량은 10년 평균이며 예보가 아닙니다. 시즌 표시는 여행 적기 데이터를 바탕으로 한 편집팀의 판단이며, 실제 관광객 수를 측정한 값이 아닙니다.",
+        "filtersTitle": "필터",
+        "facets": {
+          "region": "지역",
+          "style": "여행 스타일",
+          "length": "여행 기간"
+        },
+        "tripLength": {
+          "short": "최대 {max}일",
+          "medium": "{min}~{max}일",
+          "long": "{min}일 이상"
+        },
+        "resultCount": "{total}개국 중 {count}개국",
+        "sortLabel": "정렬",
+        "sort": {
+          "popular": "인기순",
+          "month": "이번 달 추천순",
+          "name": "이름순"
+        },
+        "resetAll": "전체 초기화",
+        "temperature": "평균 {high}/{low}°C",
+        "rainfall": {
+          "dry": "건조",
+          "light": "약한 비",
+          "wet": "비 잦음",
+          "very-wet": "비 매우 많음"
+        },
+        "season": {
+          "high": "붐비는 시즌",
+          "shoulder": "중간 시즌",
+          "low": "한산한 시즌"
+        },
+        "band": {
+          "ideal": "최적의 달",
+          "shoulder": "중간 시즌의 달",
+          "avoid": "덜 좋은 달"
+        },
+        "climateUnavailable": "날씨 정보 준비 중",
+        "bestMonths": "추천: {months}",
+        "bestMonthsUnknown": "추천 시기 준비 중",
+        "stripLabel": "{country} 여행 추천 시기: {months}",
+        "stripLabelUnknown": "{country} 여행 추천 시기는 아직 준비 중입니다",
+        "emptyTitle": "아직 결과가 없어요",
+        "emptyDescription": "다른 달을 골라 보거나 필터를 줄이거나 더 넓게 검색해 보세요."
       }
     }
   },
