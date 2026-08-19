@@ -34,6 +34,35 @@ pnpm tsx scripts/sync-destination-guides.ts --apply
 
 Guide imports must not touch `destination_content_overrides`. Editors work against stable target IDs, and the public endpoint deep-merges published patches over the latest imported base record.
 
+## Publishing destination changes is a two-step job
+
+**The public API reads from Supabase, not from the repo.** `netlify/edge-functions/destinations.ts` resolves:
+
+| Response part | Supabase table | Populated by |
+| --- | --- | --- |
+| the guide itself | `destination_guides` | `scripts/sync-destination-guides.ts` |
+| `?include=source-profile` ("Practical destination information") | `destination_country_profiles` | the AtoBeach crawl + `scripts/import-atobeach-country-sources.ts` |
+
+`data/destinationGuides.json` only feeds client rendering and the build. **Regenerating it with `pnpm destinations:import` and merging to `main` does not make a new country available through the API.**
+
+That gap is exactly what happened on 2026-08-19: China and Taiwan guides were generated, merged and rendering client-side, yet `/api/destinations/taiwan` still returned `{"ok":false,"error":"Destination country not found"}` in production because the Supabase sync had never run. In the same check, **every** country returned `sourceProfile: ABSENT` — the crawl had never been imported at all.
+
+### Definition of done when destination coverage changes
+
+1. `pnpm destinations:import` — regenerate `data/destinationGuides.json`
+2. `pnpm destinations:validate`
+3. `pnpm tsx scripts/sync-destination-guides.ts --apply` — publish guides to Supabase (additive: `merge-duplicates`, never deletes)
+4. Refresh source profiles when the source data changed (see "Refresh an authorized source" above)
+5. **Verify against the live API, not the page.** A country page returns HTTP 200 and renders from local JSON whether or not Supabase knows about it, so a 200 proves nothing:
+
+```bash
+curl -s "https://travelflowapp.netlify.app/api/destinations/<slug>?include=source-profile" | head -c 200
+```
+
+Expect a JSON body containing `data`, and `sourceProfile` when the profile exists. An HTML body means you are looking at a deploy without edge functions — see `NETLIFY_FEATURE_BRANCH_DEPLOY.md`.
+
+Both sync scripts require `SUPABASE_SERVICE_ROLE_KEY` and `VITE_SUPABASE_URL` (or `SUPABASE_URL`). They write to the **production** database — treat them as a release step, not a local experiment.
+
 ## Verification checklist
 
 - Every source-derived row retains provider, `origin_url`, retrieval time, and source hash.
