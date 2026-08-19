@@ -205,7 +205,8 @@
         "sort": {
           "popular": "Najpopularniejsze",
           "month": "Najlepsze w tym miesiącu",
-          "name": "Od A do Z"
+          "name": "Od A do Z",
+          "distance": "Najbliżej mnie"
         },
         "resetAll": "Wyczyść wszystko",
         "temperature": "{high}/{low} °C typowo",
@@ -231,7 +232,36 @@
         "stripLabel": "Najlepsze miesiące na wyjazd do {country}: {months}",
         "stripLabelUnknown": "Najlepsze miesiące na wyjazd do {country} nie są jeszcze dostępne",
         "emptyTitle": "Brak wyników",
-        "emptyDescription": "Spróbuj innego miesiąca, usuń filtr albo poszukaj czegoś szerszego."
+        "emptyDescription": "Spróbuj innego miesiąca, usuń filtr albo poszukaj czegoś szerszego.",
+        "origin": {
+          "loading": "Ustalamy w przybliżeniu, gdzie jesteś…",
+          "ready": "Posortowano od okolic {place}. To szacunek na podstawie Twojego połączenia internetowego, a nie lokalizacji urządzenia.",
+          "dismissed": "Pomijamy szacowaną lokalizację. Lista wróciła do zwykłej kolejności.",
+          "unavailable": "Nie udało się oszacować, gdzie jesteś, więc ta lista nie jest posortowana według odległości.",
+          "notMe": "To nie ja",
+          "useAnyway": "Użyj mimo to",
+          "straightLine": "Odległości podajemy w linii prostej, a nie jako trasę lotu czy podróży.",
+          "distance": "ok. {distance} km stąd",
+          "sortInactive": "Pokazujemy zwykłą kolejność: nie mamy szacowanej lokalizacji, od której moglibyśmy mierzyć."
+        }
+      },
+      "map": {
+        "heading": "Odkryj mapę świata",
+        "ariaLabel": "Mapa świata z krajami, dla których mamy przewodniki",
+        "openGuide": "Otwórz przewodnik →",
+        "noGuide": "Brak przewodnika",
+        "noGuideFor": "Nie mamy jeszcze przewodnika po kraju {country}.",
+        "dismissNotice": "Rozumiem",
+        "filteredOut": "ukryty przez Twoje filtry",
+        "keyboardHint": "Strzałkami przechodź między krajami, Enterem otwórz przewodnik.",
+        "legend": {
+          "ideal": "Idealny w tym miesiącu",
+          "shoulder": "Sezon przejściowy",
+          "avoid": "Mniej sprzyjający",
+          "match": "Ma przewodnik",
+          "muted": "Odfiltrowany",
+          "land": "Brak przewodnika"
+        }
       }
     }
   },

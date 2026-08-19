@@ -1,5 +1,5 @@
 import React, { useId } from 'react';
-import { ArrowsClockwise, CalendarHeart, Funnel, MagnifyingGlass, X } from '@phosphor-icons/react';
+import { ArrowsClockwise, CalendarHeart, Funnel, MagnifyingGlass, NavigationArrow, X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
@@ -13,6 +13,17 @@ import {
   type CountryExplorerSort,
   type CountryExplorerState,
 } from '../../services/countryExplorerFilters';
+import type { CountryOriginStatus } from '../../services/countryOriginService';
+
+export interface CountryExplorerOriginControl {
+  status: CountryOriginStatus;
+  /** What the lookup inferred, shown verbatim so the guess is never hidden from the traveller. */
+  inferredCity: string | null;
+  inferredCountry: string | null;
+  canSortByDistance: boolean;
+  onDismiss: () => void;
+  onRestore: () => void;
+}
 
 interface CountryExplorerControlsProps {
   state: CountryExplorerState;
@@ -22,6 +33,8 @@ interface CountryExplorerControlsProps {
   monthLabels: string[];
   resultCount: number;
   totalCount: number;
+  /** Absent on the server render and in tests that do not exercise distance sorting. */
+  origin?: CountryExplorerOriginControl;
 }
 
 const chipClass = (isActive: boolean): string => [
@@ -64,6 +77,72 @@ const FacetGroup: React.FC<{
 };
 
 /**
+ * The honesty panel for distance sorting.
+ *
+ * IP geolocation is approximate and is regularly wrong behind a VPN or a mobile carrier, so this
+ * never presents itself as "your location". It names the city the lookup guessed, says where the
+ * guess came from, offers a one-click way out, and — when the lookup gives us nothing — says so
+ * and admits the list is not actually sorted by distance instead of showing a confident order.
+ */
+const OriginNotice: React.FC<{ origin: CountryExplorerOriginControl }> = ({ origin }) => {
+  const { t } = useTranslation('pages');
+  const { status, inferredCity, inferredCountry } = origin;
+  const place = [inferredCity, inferredCountry].filter(Boolean).join(', ');
+
+  const tone = status === 'ready'
+    ? 'border-accent-200 bg-accent-50 text-accent-800'
+    : 'border-amber-200 bg-amber-50 text-amber-900';
+
+  return (
+    <div
+      role="status"
+      className={`mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border px-4 py-3 text-xs font-semibold ${tone}`}
+    >
+      <NavigationArrow className="shrink-0" size={15} weight="duotone" />
+      <span className="min-w-0 flex-1 text-start leading-relaxed">
+        {status === 'loading' ? t('inspirations.subpages.explorer.origin.loading') : null}
+        {status === 'ready' && place ? t('inspirations.subpages.explorer.origin.ready', { place }) : null}
+        {status === 'dismissed' ? t('inspirations.subpages.explorer.origin.dismissed') : null}
+        {(status === 'unavailable' || status === 'idle' || (status === 'ready' && !place))
+          ? t('inspirations.subpages.explorer.origin.unavailable')
+          : null}
+      </span>
+      {status === 'ready' ? (
+        <button
+          type="button"
+          onClick={() => {
+            trackEvent('inspirations__country_sort--origin_dismiss');
+            origin.onDismiss();
+          }}
+          className="shrink-0 rounded-full border border-accent-300 px-2.5 py-1 text-[11px] font-bold transition-colors hover:bg-white"
+          {...getAnalyticsDebugAttributes('inspirations__country_sort--origin_dismiss')}
+        >
+          {t('inspirations.subpages.explorer.origin.notMe')}
+        </button>
+      ) : null}
+      {status === 'dismissed' ? (
+        <button
+          type="button"
+          onClick={() => {
+            trackEvent('inspirations__country_sort--origin_restore');
+            origin.onRestore();
+          }}
+          className="shrink-0 rounded-full border border-amber-300 px-2.5 py-1 text-[11px] font-bold transition-colors hover:bg-white"
+          {...getAnalyticsDebugAttributes('inspirations__country_sort--origin_restore')}
+        >
+          {t('inspirations.subpages.explorer.origin.useAnyway')}
+        </button>
+      ) : null}
+      {origin.canSortByDistance ? (
+        <span className="w-full text-[11px] font-medium opacity-80">
+          {t('inspirations.subpages.explorer.origin.straightLine')}
+        </span>
+      ) : null}
+    </div>
+  );
+};
+
+/**
  * Search, month picker, facets and sort for the countries explorer.
  *
  * Purely presentational: every interaction dispatches into the explorer reducer that the page
@@ -81,6 +160,7 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
   monthLabels,
   resultCount,
   totalCount,
+  origin,
 }) => {
   const { t } = useTranslation('pages');
   const searchId = useId();
@@ -233,7 +313,13 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
               className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-accent-400"
             >
               {COUNTRY_EXPLORER_SORTS.map((sort) => (
-                <option key={sort} value={sort} disabled={sort === 'month' && state.month === null}>
+                <option
+                  key={sort}
+                  value={sort}
+                  // `distance` is never disabled: choosing it is what asks for the location
+                  // lookup in the first place, and the notice below explains any failure.
+                  disabled={sort === 'month' && state.month === null}
+                >
                   {t(`inspirations.subpages.explorer.sort.${sort}`)}
                 </option>
               ))}
@@ -255,6 +341,8 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
           ) : null}
         </div>
       </div>
+
+      {state.sort === 'distance' && origin ? <OriginNotice origin={origin} /> : null}
     </div>
   );
 };

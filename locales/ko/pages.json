@@ -205,7 +205,8 @@
         "sort": {
           "popular": "인기순",
           "month": "이번 달 추천순",
-          "name": "이름순"
+          "name": "이름순",
+          "distance": "가까운 순"
         },
         "resetAll": "전체 초기화",
         "temperature": "평균 {high}/{low}°C",
@@ -231,7 +232,36 @@
         "stripLabel": "{country} 여행 추천 시기: {months}",
         "stripLabelUnknown": "{country} 여행 추천 시기는 아직 준비 중입니다",
         "emptyTitle": "아직 결과가 없어요",
-        "emptyDescription": "다른 달을 골라 보거나 필터를 줄이거나 더 넓게 검색해 보세요."
+        "emptyDescription": "다른 달을 골라 보거나 필터를 줄이거나 더 넓게 검색해 보세요.",
+        "origin": {
+          "loading": "대략적인 위치를 확인하는 중입니다…",
+          "ready": "{place} 부근을 기준으로 정렬했습니다. 기기 위치가 아니라 인터넷 연결로 추정한 값입니다.",
+          "dismissed": "추정 위치를 사용하지 않습니다. 목록이 기본 순서로 돌아왔습니다.",
+          "unavailable": "위치를 추정하지 못해 이 목록은 거리순으로 정렬되지 않았습니다.",
+          "notMe": "제가 아니에요",
+          "useAnyway": "그래도 사용",
+          "straightLine": "거리는 직선거리이며 항공편이나 실제 이동 거리가 아닙니다.",
+          "distance": "약 {distance} km",
+          "sortInactive": "기본 순서로 표시합니다. 거리를 잴 추정 위치가 없습니다."
+        }
+      },
+      "map": {
+        "heading": "세계 지도 살펴보기",
+        "ariaLabel": "여행 가이드가 있는 국가의 세계 지도",
+        "openGuide": "가이드 열기 →",
+        "noGuide": "아직 가이드 없음",
+        "noGuideFor": "{country} 가이드는 아직 준비되지 않았습니다.",
+        "dismissNotice": "확인",
+        "filteredOut": "필터로 가려짐",
+        "keyboardHint": "화살표 키로 국가를 이동하고 Enter 키로 가이드를 엽니다.",
+        "legend": {
+          "ideal": "이번 달에 좋음",
+          "shoulder": "준성수기",
+          "avoid": "덜 좋음",
+          "match": "가이드 있음",
+          "muted": "필터로 제외됨",
+          "land": "아직 가이드 없음"
+        }
       }
     }
   },

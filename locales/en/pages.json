@@ -205,7 +205,8 @@
         "sort": {
           "popular": "Most popular",
           "month": "Best for this month",
-          "name": "A to Z"
+          "name": "A to Z",
+          "distance": "Nearest to me"
         },
         "resetAll": "Reset all",
         "temperature": "{high}/{low}°C typical",
@@ -231,7 +232,36 @@
         "stripLabel": "Best months to visit {country}: {months}",
         "stripLabelUnknown": "Best months to visit {country} are not available yet",
         "emptyTitle": "Nothing matches yet",
-        "emptyDescription": "Try another month, drop a filter, or search for something broader."
+        "emptyDescription": "Try another month, drop a filter, or search for something broader.",
+        "origin": {
+          "loading": "Working out roughly where you are…",
+          "ready": "Sorted from around {place}. That is an estimate from your internet connection, not your device location.",
+          "dismissed": "Ignoring the estimated location. The list is back in its usual order.",
+          "unavailable": "We could not estimate where you are, so this list is not sorted by distance.",
+          "notMe": "Not me",
+          "useAnyway": "Use it anyway",
+          "straightLine": "Distances are straight-line, as the crow flies — not flight or travel distance.",
+          "distance": "≈ {distance} km away",
+          "sortInactive": "Showing the usual order: we have no estimated location to measure from."
+        }
+      },
+      "map": {
+        "heading": "Explore the world map",
+        "ariaLabel": "World map of countries with travel guides",
+        "openGuide": "Open guide →",
+        "noGuide": "No guide yet",
+        "noGuideFor": "We do not have a guide for {country} yet.",
+        "dismissNotice": "Got it",
+        "filteredOut": "hidden by your filters",
+        "keyboardHint": "Use the arrow keys to move between countries, Enter to open a guide.",
+        "legend": {
+          "ideal": "Ideal this month",
+          "shoulder": "Shoulder month",
+          "avoid": "Less ideal",
+          "match": "Has a guide",
+          "muted": "Filtered out",
+          "land": "No guide yet"
+        }
       }
     }
   },

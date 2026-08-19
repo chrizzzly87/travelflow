@@ -205,7 +205,8 @@
         "sort": {
           "popular": "Beliebteste",
           "month": "Passend zum Monat",
-          "name": "A bis Z"
+          "name": "A bis Z",
+          "distance": "Am nächsten zu mir"
         },
         "resetAll": "Alles zurücksetzen",
         "temperature": "{high}/{low} °C typisch",
@@ -231,7 +232,36 @@
         "stripLabel": "Beste Reisemonate für {country}: {months}",
         "stripLabelUnknown": "Beste Reisemonate für {country} sind noch nicht verfügbar",
         "emptyTitle": "Noch kein Treffer",
-        "emptyDescription": "Probiere einen anderen Monat, entferne einen Filter oder suche breiter."
+        "emptyDescription": "Probiere einen anderen Monat, entferne einen Filter oder suche breiter.",
+        "origin": {
+          "loading": "Wir ermitteln ungefähr, wo du bist …",
+          "ready": "Sortiert ab ungefähr {place}. Das ist eine Schätzung aus deiner Internetverbindung, nicht der Standort deines Geräts.",
+          "dismissed": "Der geschätzte Standort wird ignoriert. Die Liste ist wieder in der üblichen Reihenfolge.",
+          "unavailable": "Wir konnten nicht schätzen, wo du bist. Diese Liste ist deshalb nicht nach Entfernung sortiert.",
+          "notMe": "Das bin nicht ich",
+          "useAnyway": "Trotzdem verwenden",
+          "straightLine": "Entfernungen sind Luftlinie – keine Flug- oder Reisestrecke.",
+          "distance": "ca. {distance} km entfernt",
+          "sortInactive": "Übliche Reihenfolge: Uns fehlt ein geschätzter Standort als Ausgangspunkt."
+        }
+      },
+      "map": {
+        "heading": "Die Weltkarte erkunden",
+        "ariaLabel": "Weltkarte der Länder mit Reiseführern",
+        "openGuide": "Guide öffnen →",
+        "noGuide": "Noch kein Guide",
+        "noGuideFor": "Für {country} haben wir noch keinen Guide.",
+        "dismissNotice": "Alles klar",
+        "filteredOut": "durch deine Filter ausgeblendet",
+        "keyboardHint": "Mit den Pfeiltasten zwischen Ländern wechseln, mit Enter einen Guide öffnen.",
+        "legend": {
+          "ideal": "Ideal in diesem Monat",
+          "shoulder": "Nebensaison",
+          "avoid": "Weniger ideal",
+          "match": "Hat einen Guide",
+          "muted": "Ausgefiltert",
+          "land": "Noch kein Guide"
+        }
       }
     }
   },
