@@ -52,6 +52,12 @@ Use this guide whenever you add or change maps in planner, profile/admin cards, 
 2. Keep cache usage mode-aware and coordinate-aware.
 3. Avoid unnecessary recomputation by preserving no-op guards in update handlers.
 
+## Committed static previews
+1. Homepage example trip cards (`pnpm maps:generate`) and featured country route cards (`pnpm maps:routes:generate`) ship pre-rendered PNGs under `public/images/trip-maps/`. The build must never call the Static Maps API.
+2. Both generators share `scripts/lib/staticMapPreview.ts`; change style tokens, dimensions or marker treatment there so both surfaces stay identical.
+3. Both support `--dry-run` to inspect URLs without spending quota.
+4. Never draw a route with partially resolved coordinates — skip it and let the card fall back to its decorative header.
+
 ## Blog and marketing usage
 1. For static visual previews, prefer `/api/trip-map-preview` over direct external Static Maps URLs.
 2. For interactive canvases, still use `GoogleMapsLoader` + `Map` from `@vis.gl/react-google-maps`.
