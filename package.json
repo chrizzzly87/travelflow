@@ -47,6 +47,7 @@
     "preview": "vite preview",
     "maps:generate": "tsx scripts/generate-trip-maps.ts",
     "maps:routes:generate": "tsx scripts/generate-country-route-maps.ts",
+    "routes:stops:resolve": "tsx scripts/resolve-country-route-stops.ts",
     "trips:enrich-locations": "tsx scripts/enrich-trip-city-locations.ts",
     "airports:generate": "tsx scripts/generate-airports-reference.ts",
     "countries:search:generate": "tsx scripts/generate-country-search-metadata.ts",
