@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import countryRoutesJson from '../../data/countryRoutes.json';
@@ -83,6 +86,34 @@ describe('country route document', () => {
   it('keeps durations consistent with the sum of stop nights', () => {
     document.routes.forEach((route) => {
       expect(route.durationDays).toBe(getCountryRouteExpectedDurationDays(route));
+    });
+  });
+
+  it('only uses card colors that Tailwind is told to generate', () => {
+    // Route palettes live in JSON, which Tailwind never scans, so index.css
+    // declares them explicitly. A palette outside that list ships unstyled.
+    const css = readFileSync(resolve(import.meta.dirname, '../../index.css'), 'utf-8');
+    const inlineSource = css.match(/@source inline\("([^"]+)"\)/)?.[1];
+    expect(inlineSource, 'index.css must declare the route palette').toBeTruthy();
+
+    const [, hues, shades] = inlineSource!.match(/^bg-\{([^}]+)\}-\{([^}]+)\}$/) || [];
+    const generated = new Set(
+      hues.split(',').flatMap((hue) => shades.split(',').map((shade) => `bg-${hue}-${shade}`)),
+    );
+
+    document.routes.forEach((route) => {
+      [route.mapColor, route.mapAccent, route.avatarColor].forEach((token) => {
+        expect(generated, `${route.id} uses ungenerated class ${token}`).toContain(token);
+      });
+    });
+  });
+
+  it('gives every stop of a route its own coordinates', () => {
+    // Two stops sharing a point mean a name resolved to the wrong place.
+    document.routes.forEach((route) => {
+      const points = route.stops.map((stop) => `${stop.coordinates?.lat},${stop.coordinates?.lng}`);
+      const distinctNames = new Set(route.stops.map((stop) => normalizeCountryRouteStopName(stop.name)));
+      expect(new Set(points).size, `${route.id} has stops sharing coordinates`).toBe(distinctNames.size);
     });
   });
 });

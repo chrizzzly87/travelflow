@@ -52,7 +52,7 @@
  * which Tailwind never scans. Keep the whole route palette generated so a new
  * curated route never ships with an unstyled card header.
  */
-@source inline("bg-{rose,amber,emerald,indigo,sky,teal,red,lime,blue,violet,orange,yellow,cyan,pink,green,purple,slate,stone}-{100,400,500,600}");
+@source inline("bg-{rose,amber,emerald,indigo,sky,teal,red,lime,blue,violet,orange,yellow,cyan,pink,fuchsia,green,purple,slate,stone}-{100,400,500,600}");
 
 @font-face {
   font-family: "Bricolage Grotesque";
