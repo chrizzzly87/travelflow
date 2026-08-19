@@ -75,7 +75,6 @@
         "filterRegion": "خطہ",
         "filterMonth": "مہینہ",
         "filterAll": "سب",
-        "resultCount": "{count, plural, one {# تہوار، قریب ترین پہلے} other {# تہوار، قریب ترین پہلے}}",
         "emptyState": "اس امتزاج کے لیے ابھی کچھ نہیں ہے۔ کوئی اور مہینہ یا خطہ آزمائیں۔",
         "happeningNow": "ابھی جاری ہے",
         "planCta": "سفر کی منصوبہ بندی",
@@ -107,8 +106,8 @@
           "oceania": "اوشیانا",
           "south-america": "جنوبی امریکہ"
         },
-        "ofTotal": "{total} میں سے",
-        "clearFilters": "فلٹر ہٹائیں"
+        "clearFilters": "فلٹر ہٹائیں",
+        "resultSummary": "{total} میں سے {count} تہوار، قریب ترین پہلے"
       },
       "weekendGetaways": {
         "pill": "Weekend Getaways",

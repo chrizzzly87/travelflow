@@ -75,7 +75,6 @@
         "filterRegion": "지역",
         "filterMonth": "월",
         "filterAll": "전체",
-        "resultCount": "{count, plural, other {축제 #개, 가까운 순}}",
         "emptyState": "아직 이 조건에 맞는 축제가 없어요. 다른 달이나 지역을 골라 보세요.",
         "happeningNow": "지금 진행 중",
         "planCta": "일정 짜기",
@@ -107,8 +106,8 @@
           "oceania": "오세아니아",
           "south-america": "남아메리카"
         },
-        "ofTotal": "전체 {total}개 중",
-        "clearFilters": "필터 지우기"
+        "clearFilters": "필터 지우기",
+        "resultSummary": "축제 {total}개 중 {count}개, 가까운 순"
       },
       "weekendGetaways": {
         "pill": "주말 여행",

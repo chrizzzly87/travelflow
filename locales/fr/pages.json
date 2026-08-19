@@ -75,7 +75,6 @@
         "filterRegion": "Région",
         "filterMonth": "Mois",
         "filterAll": "Toutes",
-        "resultCount": "{count, plural, one {# fête, la plus proche d’abord} other {# fêtes, les plus proches d’abord}}",
         "emptyState": "Rien ne correspond encore à cette sélection. Essayez un autre mois ou une autre région.",
         "happeningNow": "En cours",
         "planCta": "Organiser le voyage",
@@ -107,8 +106,8 @@
           "oceania": "Océanie",
           "south-america": "Amérique du Sud"
         },
-        "ofTotal": "sur {total}",
-        "clearFilters": "Effacer les filtres"
+        "clearFilters": "Effacer les filtres",
+        "resultSummary": "{count} sur {total} fêtes, les plus proches d’abord"
       },
       "weekendGetaways": {
         "pill": "Escapades week-end",

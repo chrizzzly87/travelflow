@@ -75,7 +75,6 @@
         "filterRegion": "Region",
         "filterMonth": "Monat",
         "filterAll": "Alle",
-        "resultCount": "{count, plural, one {# Fest, nächste zuerst} other {# Feste, nächste zuerst}}",
         "emptyState": "Zu dieser Auswahl gibt es noch nichts. Probiere einen anderen Monat oder eine andere Region.",
         "happeningNow": "Läuft gerade",
         "planCta": "Reise dazu planen",
@@ -107,8 +106,8 @@
           "oceania": "Ozeanien",
           "south-america": "Südamerika"
         },
-        "ofTotal": "von {total}",
-        "clearFilters": "Filter zurücksetzen"
+        "clearFilters": "Filter zurücksetzen",
+        "resultSummary": "{count} von {total} Festen, nächste zuerst"
       },
       "weekendGetaways": {
         "pill": "Wochenendtrips",

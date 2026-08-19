@@ -75,7 +75,6 @@
         "filterRegion": "Region",
         "filterMonth": "Month",
         "filterAll": "All",
-        "resultCount": "{count, plural, one {# festival, soonest first} other {# festivals, soonest first}}",
         "emptyState": "Nothing matches that combination yet. Try another month or region.",
         "happeningNow": "Happening now",
         "planCta": "Plan around it",
@@ -107,8 +106,8 @@
           "oceania": "Oceania",
           "south-america": "South America"
         },
-        "ofTotal": "of {total}",
-        "clearFilters": "Clear filters"
+        "clearFilters": "Clear filters",
+        "resultSummary": "{count} of {total} festivals, soonest first"
       },
       "weekendGetaways": {
         "pill": "Weekend Getaways",

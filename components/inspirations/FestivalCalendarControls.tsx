@@ -64,10 +64,10 @@ export const FestivalCalendarControls: React.FC<FestivalCalendarControlsProps> =
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="inline-flex items-center gap-2 text-sm font-bold text-slate-700">
           <Funnel size={16} weight="duotone" className="text-accent-600" />
-          {t('inspirations.subpages.festivals.resultCount', { count: resultCount })}
-          <span className="font-medium text-slate-400">
-            {t('inspirations.subpages.festivals.ofTotal', { total: totalCount })}
-          </span>
+          {t('inspirations.subpages.festivals.resultSummary', {
+            count: resultCount,
+            total: totalCount,
+          })}
         </p>
         {hasActiveFestivalFilters(state) ? (
           <button

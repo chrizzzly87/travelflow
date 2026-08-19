@@ -75,7 +75,6 @@
         "filterRegion": "منطقه",
         "filterMonth": "ماه",
         "filterAll": "همه",
-        "resultCount": "{count, plural, one {# جشنواره، نزدیک‌ترین اول} other {# جشنواره، نزدیک‌ترین اول}}",
         "emptyState": "هنوز چیزی با این ترکیب پیدا نشد. ماه یا منطقه دیگری را امتحان کنید.",
         "happeningNow": "در حال برگزاری",
         "planCta": "برنامه‌ریزی سفر",
@@ -107,8 +106,8 @@
           "oceania": "اقیانوسیه",
           "south-america": "آمریکای جنوبی"
         },
-        "ofTotal": "از {total}",
-        "clearFilters": "پاک کردن فیلترها"
+        "clearFilters": "پاک کردن فیلترها",
+        "resultSummary": "{count} از {total} جشنواره، نزدیک‌ترین اول"
       },
       "weekendGetaways": {
         "pill": "Weekend Getaways",

@@ -75,7 +75,6 @@
         "filterRegion": "Регион",
         "filterMonth": "Месяц",
         "filterAll": "Все",
-        "resultCount": "{count, plural, one {# праздник, ближайшие первыми} few {# праздника, ближайшие первыми} many {# праздников, ближайшие первыми} other {# праздника, ближайшие первыми}}",
         "emptyState": "По этому сочетанию пока ничего нет. Выберите другой месяц или регион.",
         "happeningNow": "Идёт сейчас",
         "planCta": "Спланировать поездку",
@@ -107,8 +106,8 @@
           "oceania": "Океания",
           "south-america": "Южная Америка"
         },
-        "ofTotal": "из {total}",
-        "clearFilters": "Сбросить фильтры"
+        "clearFilters": "Сбросить фильтры",
+        "resultSummary": "{count} из {total} праздников, ближайшие первыми"
       },
       "weekendGetaways": {
         "pill": "Поездки на выходные",
