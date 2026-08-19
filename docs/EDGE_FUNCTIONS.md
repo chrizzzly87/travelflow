@@ -3,6 +3,28 @@
 All Netlify Edge Functions live in `netlify/edge-functions/`.
 Shared helpers live in `netlify/edge-lib/`.
 
+## Relative imports must carry explicit file extensions
+
+Deno's edge bundler does **not** resolve extensionless specifiers. Vite and `tsc` do (this repo sets `moduleResolution: "bundler"` and `allowImportingTsExtensions`), so an extensionless import compiles and tests fine locally and only fails on Netlify:
+
+```
+error: Module not found "file:///opt/build/repo/shared/aiReasoning".
+```
+
+When that happens the whole edge bundle fails, so **no edge functions deploy at all** and every `/api/*` route falls through to the SPA shell — which looks like unrelated application breakage rather than a build error.
+
+Rules for any module reachable from `netlify/edge-functions/`, including files in `shared/`, `services/`, `config/`, `lib/` and `data/`:
+
+- **Value imports must include the extension**: `import { thing } from "../shared/thing.ts";`
+- **`import type` is exempt** — type-only statements are erased before bundling, which is why many extensionless `import type { X } from "../types"` specifiers in this repo are harmless.
+- Converting an `import type` to a value import on an edge-reachable path is a breaking change unless you add the extension at the same time.
+
+`pnpm edge:validate` enforces this: it walks every relative import transitively from each edge function entry and fails on an extensionless value import or a specifier that does not exist on disk.
+
+### History
+
+The 2026-08-18 outage: an edge function began importing `config/aiModelCatalog.ts`, which pulled in `services/openRouterModelCatalogService.ts`, which imported `"../shared/aiReasoning"` with no extension. Every Netlify build failed from then on, and because the edge bundle never built, the destination API silently returned the SPA shell.
+
 ## Inventory
 
 | Function file | Route(s) | Purpose | Type |
