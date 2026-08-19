@@ -8,6 +8,9 @@ import {
   MAX_ROUTES_PER_COUNTRY,
   getCountryRouteCityCount,
   getCountryRouteExpectedDurationDays,
+  getCountryRouteMapImagePath,
+  getCountryRouteMapStops,
+  getCountryRouteUnresolvedStopNames,
   normalizeCountryRouteStopName,
   validateCountryRouteDocument,
   type CountryRoute,
@@ -159,6 +162,59 @@ describe('validateCountryRouteDocument', () => {
       localized: { de: { tags: ['Kultur'] } },
     }]));
     expect(errors.some((error) => error.includes('localized.de.tags length'))).toBe(true);
+  });
+});
+
+describe('country route map previews', () => {
+  it('derives the public image path from the route id', () => {
+    expect(getCountryRouteMapImagePath('spain-andalusia-rail'))
+      .toBe('/images/trip-maps/routes/spain-andalusia-rail.png');
+  });
+
+  it('returns drawable stops in itinerary order', () => {
+    const route = baseRoute();
+    const stops = getCountryRouteMapStops(route);
+
+    expect(stops?.map((stop) => stop.name)).toEqual(['Tokyo', 'Kyoto']);
+    expect(stops?.[0]).toMatchObject({ lat: 35.6762, lng: 139.6503 });
+    expect(getCountryRouteUnresolvedStopNames(route)).toEqual([]);
+  });
+
+  it('refuses to draw a route with an unresolved stop', () => {
+    const route = baseRoute();
+    route.stops = [
+      { name: 'Tokyo', nights: 2, coordinates: { lat: 35.6762, lng: 139.6503 } },
+      { name: 'Nowhere', nights: 1 },
+    ];
+
+    expect(getCountryRouteMapStops(route)).toBeNull();
+    expect(getCountryRouteUnresolvedStopNames(route)).toEqual(['Nowhere']);
+  });
+
+  it('rejects a map path that does not match the route id', () => {
+    const route = baseRoute();
+    route.mapImagePath = '/images/trip-maps/routes/other-route.png';
+
+    expect(validateCountryRouteDocument(wrap([route])).some((error) => error.includes('mapImagePath must be'))).toBe(true);
+  });
+
+  it('rejects a declared map on a route that cannot be drawn', () => {
+    const route = baseRoute();
+    route.mapImagePath = getCountryRouteMapImagePath(route.id);
+    route.stops = [
+      { name: 'Tokyo', nights: 2, coordinates: { lat: 35.6762, lng: 139.6503 } },
+      { name: 'Nowhere', nights: 1, coordinates: undefined },
+    ];
+
+    const errors = validateCountryRouteDocument(wrap([route]));
+    expect(errors.some((error) => error.includes('mapImagePath is set but stops are missing coordinates'))).toBe(true);
+  });
+
+  it('ships a committed map for every curated route', () => {
+    document.routes.forEach((route) => {
+      expect(route.mapImagePath, `${route.id} has no map preview`).toBe(getCountryRouteMapImagePath(route.id));
+      expect(getCountryRouteMapStops(route), `${route.id} is not drawable`).not.toBeNull();
+    });
   });
 });
 

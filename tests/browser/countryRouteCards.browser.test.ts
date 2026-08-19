@@ -18,7 +18,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../../components/ProgressiveImage', () => ({
-  ProgressiveImage: ({ alt }: { alt: string }) => React.createElement('img', { alt }),
+  ProgressiveImage: ({ alt, src }: { alt: string; src?: string }) => React.createElement('img', { alt, src }),
 }));
 
 vi.mock('../../components/flags/FlagIcon', () => ({
@@ -62,6 +62,17 @@ describe('CountryRouteCards', () => {
 
     expect(prefill?.countries).toEqual(['Japan']);
     expect(prefill?.cityList).toEqual(['Tokyo', 'Hakone', 'Kyoto', 'Osaka']);
+  });
+
+  it('renders the committed map preview on every route card', () => {
+    renderCards('japan', 'Japan');
+
+    const maps = screen.getAllByRole('img')
+      .map((image) => image.getAttribute('src') || '')
+      .filter((src) => src.startsWith('/images/trip-maps/routes/'));
+
+    expect(maps).toHaveLength(3);
+    expect(maps.some((src) => src.startsWith('/images/trip-maps/routes/japan-golden-route.png'))).toBe(true);
   });
 
   it('renders nothing for a country without curated routes', () => {

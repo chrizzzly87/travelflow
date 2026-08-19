@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import countryRoutesJson from '../data/countryRoutes.json';
 import destinationGuidesJson from '../data/destinationGuides.json';
 import type { DestinationGuideDocument } from '../shared/destinationGuides';
@@ -39,14 +41,24 @@ const errors = validateCountryRouteDocument(routeDocument, {
   },
 });
 
+// A declared map preview must exist in the repo: the build never calls the Maps API.
+routeDocument.routes.forEach((route) => {
+  if (!route.mapImagePath) return;
+  const filePath = path.resolve(import.meta.dirname, '..', 'public', ...route.mapImagePath.split('/').filter(Boolean));
+  if (!fs.existsSync(filePath)) {
+    errors.push(`${route.id}: mapImagePath ${route.mapImagePath} has no committed image (run pnpm maps:routes:generate)`);
+  }
+});
+
 if (errors.length > 0) {
   console.error(`Country route validation failed:\n${errors.map((error) => `  - ${error}`).join('\n')}`);
   process.exitCode = 1;
 } else {
   const countries = new Set(routeDocument.routes.map((route) => route.countryCode));
   const stops = routeDocument.routes.reduce((total, route) => total + route.stops.length, 0);
+  const withMaps = routeDocument.routes.filter((route) => Boolean(route.mapImagePath)).length;
   console.log(
     `Country route validation passed (${routeDocument.routes.length} routes across ${countries.size} countries, `
-    + `${stops} stops, max ${MAX_ROUTES_PER_COUNTRY} per country).`,
+    + `${stops} stops, ${withMaps} with map previews, max ${MAX_ROUTES_PER_COUNTRY} per country).`,
   );
 }
