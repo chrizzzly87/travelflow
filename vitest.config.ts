@@ -39,6 +39,7 @@ export default defineConfig({
         'utils/flagUtils.ts',
         'services/destinationService.ts',
         'services/festivalDateService.ts',
+        'services/festivalFilters.ts',
         'services/festivalCatalogService.ts',
         'services/tripPrefillDecoder.ts',
         'services/releaseNotesService.ts',

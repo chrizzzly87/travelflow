@@ -2,7 +2,7 @@
 import React from 'react';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -37,10 +37,22 @@ import { sortFestivalsByNextOccurrence } from '../../services/festivalDateServic
 // silently changes meaning as real time passes.
 const FIXED_NOW = new Date('2026-08-18T00:00:00Z');
 
-const renderPage = () => render(
-  React.createElement(MemoryRouter, { initialEntries: ['/inspirations/events-and-festivals'] },
-    React.createElement(FestivalsPage)),
+/** Surfaces the router's current query string so URL state can be asserted. */
+const LocationProbe: React.FC = () => {
+  const location = useLocation();
+  return React.createElement('output', { 'data-testid': 'location-search' }, location.search);
+};
+
+const renderAt = (entry: string) => render(
+  React.createElement(
+    MemoryRouter,
+    { initialEntries: [entry] },
+    React.createElement(FestivalsPage),
+    React.createElement(LocationProbe),
+  ),
 );
+
+const renderPage = () => renderAt('/inspirations/events-and-festivals');
 
 describe('pages/inspirations/FestivalsPage', () => {
   beforeEach(() => {
@@ -101,13 +113,18 @@ describe('pages/inspirations/FestivalsPage', () => {
     const payload = JSON.parse(script?.textContent || '{}');
 
     expect(payload['@type']).toBe('ItemList');
+    expect(payload.numberOfItems).toBe(FESTIVAL_CATALOG.length);
     expect(payload.itemListElement).toHaveLength(FESTIVAL_CATALOG.length);
 
+    // Holi is lunar and unsourced for upcoming years: month precision only, never a day.
     const holi = payload.itemListElement.find((entry: { item: { name: string } }) => entry.item.name === 'Holi');
-    expect(holi.item.startDate).toBeUndefined();
+    expect(holi.item.startDate).toBe('2027-03');
+    expect(holi.item.endDate).toBeUndefined();
 
+    // Songkran is pinned to 13-15 April, so the graph publishes the real days.
     const songkran = payload.itemListElement.find((entry: { item: { name: string } }) => entry.item.name === 'Songkran');
     expect(songkran.item.startDate).toBe('2027-04-13');
+    expect(songkran.item.endDate).toBe('2027-04-15');
   });
 
   it('filters by region and tracks the interaction', async () => {
@@ -126,12 +143,31 @@ describe('pages/inspirations/FestivalsPage', () => {
     renderPage();
 
     const aprilCount = FESTIVAL_CATALOG.filter((entry) => entry.event.month === 4).length;
-    await user.click(screen.getByRole('button', { name: 'April' }));
+    await user.click(screen.getByRole('button', { name: 'Apr' }));
     expect(screen.getAllByRole('article')).toHaveLength(aprilCount);
     expect(mocks.trackEvent).toHaveBeenCalledWith('inspirations__festival_filter--month', { month: 4 });
 
-    await user.click(screen.getAllByRole('button', { name: 'inspirations.subpages.festivals.filterAll' })[1]);
+    await user.click(screen.getByRole('button', { name: /festivals\.clearFilters/ }));
     expect(screen.getAllByRole('article')).toHaveLength(FESTIVAL_CATALOG.length);
+  });
+
+  it('mirrors the active filters into the query string so the view is shareable', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'inspirations.subpages.festivals.regions.oceania' }));
+    await user.click(screen.getByRole('button', { name: 'Apr' }));
+
+    const search = screen.getByTestId('location-search').textContent || '';
+    expect(search).toContain('region=oceania');
+    expect(search).toContain('month=4');
+  });
+
+  it('restores state from the query string on first render', () => {
+    renderAt('/inspirations/events-and-festivals?region=oceania');
+
+    const oceaniaCount = FESTIVAL_CATALOG.filter((entry) => entry.regionId === 'oceania').length;
+    expect(screen.getAllByRole('article')).toHaveLength(oceaniaCount);
   });
 
   it('links festival cards to a prefilled create-trip URL', () => {
