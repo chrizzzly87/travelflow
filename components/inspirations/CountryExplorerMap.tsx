@@ -90,11 +90,17 @@ interface CountryExplorerMapProps {
   direction: 'ltr' | 'rtl';
 }
 
-interface HoverTarget {
-  countryCode: string;
-  /** Whether the pointer or the keyboard put us here — keyboard focus keeps the tooltip pinned. */
-  source: 'pointer' | 'focus';
+/**
+ * Pointer and keyboard hovers are tracked separately and the pointer simply wins while it is over
+ * a country. Merging them into one slot loses the keyboard's place: moving the mouse across the
+ * map and off again would silently drop the tooltip belonging to the still-focused country.
+ */
+interface HoverState {
+  pointerCountryCode: string | null;
+  focusCountryCode: string | null;
 }
+
+const NO_HOVER: HoverState = { pointerCountryCode: null, focusCountryCode: null };
 
 const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
   entries,
@@ -111,9 +117,21 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
   const navigate = useNavigate();
   const svgRef = useRef<SVGSVGElement | null>(null);
 
-  const [hovered, setHovered] = useState<HoverTarget | null>(null);
+  const [hover, setHover] = useState<HoverState>(NO_HOVER);
   /** Set when a country we have no guide for is clicked, so the click is never a silent no-op. */
   const [missingGuideName, setMissingGuideName] = useState<string | null>(null);
+
+  const hoveredCountryCode = hover.pointerCountryCode ?? hover.focusCountryCode;
+
+  const enterPointer = useCallback((countryCode: string) => {
+    setHover((current) => ({ ...current, pointerCountryCode: countryCode }));
+  }, []);
+
+  const leavePointer = useCallback((countryCode: string) => {
+    setHover((current) => (
+      current.pointerCountryCode === countryCode ? { ...current, pointerCountryCode: null } : current
+    ));
+  }, []);
 
   const guidesByCountryCode = useMemo(() => {
     const index = new Map<string, CountryExplorerEntry>();
@@ -143,7 +161,17 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
     const points = new Map<string, { x: number; y: number }>();
     const dots: Array<{ countryCode: string; name: string; x: number; y: number; tone: CountryMapTone }> = [];
 
-    guidesByCountryCode.forEach((entry, countryCode) => {
+    // Every country on the atlas, not just the ones with a guide: the tooltip has to be able to
+    // anchor itself over a country we do not cover so its "no guide yet" hint can be seen at all.
+    GEOMETRY.forEach((shape) => {
+      const anchor = getCountryAnchor(shape.countryCode);
+      if (!anchor) return;
+      const point = projectToMapPoint(anchor.latitude, anchor.longitude, PROJECTION);
+      if (point) points.set(shape.countryCode, point);
+    });
+
+    guidesByCountryCode.forEach((_entry, countryCode) => {
+      if (points.has(countryCode)) return;
       const anchor = getCountryAnchor(countryCode);
       if (!anchor) return;
       const point = projectToMapPoint(anchor.latitude, anchor.longitude, PROJECTION);
@@ -192,7 +220,7 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
 
   const focusCountry = useCallback((countryCode: string) => {
     setRovingCountryCode(countryCode);
-    setHovered({ countryCode, source: 'focus' });
+    setHover((current) => ({ ...current, focusCountryCode: countryCode }));
     const target = svgRef.current?.querySelector<SVGElement>(`[data-country-code="${countryCode}"]`);
     target?.focus();
   }, []);
@@ -207,7 +235,7 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
     else if (event.key === 'Home') nextIndex = 0;
     else if (event.key === 'End') nextIndex = keyboardOrder.length - 1;
     else if (event.key === 'Escape') {
-      setHovered(null);
+      setHover(NO_HOVER);
       setMissingGuideName(null);
       return;
     } else return;
@@ -240,12 +268,14 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
     setMissingGuideName(countryName);
   }, []);
 
-  const hoveredEntry = hovered ? guidesByCountryCode.get(hovered.countryCode) : undefined;
-  const hoveredPoint = hovered ? pointByCountryCode.get(hovered.countryCode) : undefined;
+  const hoveredEntry = hoveredCountryCode ? guidesByCountryCode.get(hoveredCountryCode) : undefined;
+  const hoveredPoint = hoveredCountryCode ? pointByCountryCode.get(hoveredCountryCode) : undefined;
   const hoveredInsight = hoveredEntry && month !== null ? getInsight(hoveredEntry) : undefined;
   const hoveredDistanceKm = hoveredEntry ? distanceKmByCountry?.get(hoveredEntry.countryCode) : undefined;
   const hoveredName = hoveredEntry?.name
-    ?? (hovered ? GEOMETRY.find((shape) => shape.countryCode === hovered.countryCode)?.name : undefined);
+    ?? (hoveredCountryCode
+      ? GEOMETRY.find((shape) => shape.countryCode === hoveredCountryCode)?.name
+      : undefined);
 
   /**
    * One sentence per country, reused verbatim as the link's accessible name and as the live-region
@@ -280,12 +310,12 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
         className="cursor-pointer outline-none [&:focus-visible>*]:stroke-accent-700 [&:focus-visible>*]:[stroke-width:1.6] [&:hover>*]:stroke-slate-900 [&:hover>*]:[stroke-width:1.2]"
         onClick={(event) => handleActivateGuide(event, entry, href)}
         onKeyDown={(event) => handleKeyDown(event, countryCode)}
-        onFocus={() => setHovered({ countryCode, source: 'focus' })}
-        onBlur={() => setHovered((current) => (current?.countryCode === countryCode ? null : current))}
-        onPointerEnter={() => setHovered({ countryCode, source: 'pointer' })}
-        onPointerLeave={() => setHovered((current) => (
-          current?.countryCode === countryCode && current.source === 'pointer' ? null : current
+        onFocus={() => setHover((current) => ({ ...current, focusCountryCode: countryCode }))}
+        onBlur={() => setHover((current) => (
+          current.focusCountryCode === countryCode ? { ...current, focusCountryCode: null } : current
         ))}
+        onPointerEnter={() => enterPointer(countryCode)}
+        onPointerLeave={() => leavePointer(countryCode)}
       >
         {child}
       </a>
@@ -329,10 +359,8 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
                   key={shape.countryCode}
                   aria-hidden="true"
                   className="cursor-help"
-                  onPointerEnter={() => setHovered({ countryCode: shape.countryCode, source: 'pointer' })}
-                  onPointerLeave={() => setHovered((current) => (
-                    current?.countryCode === shape.countryCode ? null : current
-                  ))}
+                  onPointerEnter={() => enterPointer(shape.countryCode)}
+                  onPointerLeave={() => leavePointer(shape.countryCode)}
                   onClick={() => handleActivateMissing(shape.name)}
                 >
                   {path}
@@ -359,7 +387,7 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
           </g>
         </svg>
 
-        {hovered && hoveredName && hoveredPoint ? (
+        {hoveredCountryCode && hoveredName && hoveredPoint ? (
           <div
             role="presentation"
             className="pointer-events-none absolute z-10 w-max max-w-56 -translate-x-1/2 -translate-y-[calc(100%+10px)] rounded-xl border border-slate-200 bg-white/95 px-3 py-2 shadow-lg backdrop-blur-sm"
