@@ -1,9 +1,9 @@
 ---
-id: rel-2026-08-18-festivals-upcoming-dates
-version: v0.160.0
+id: rel-2026-08-19-festivals-upcoming-dates
+version: v0.162.0
 title: "Festivals with real dates"
-date: 2026-08-18
-published_at: 2026-08-18T12:00:00Z
+date: 2026-08-19
+published_at: 2026-08-19T12:00:00Z
 status: draft
 notify_in_app: true
 in_app_hours: 24
