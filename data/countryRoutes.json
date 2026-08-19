@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-19T09:10:09.616Z",
+  "updatedAt": "2026-08-19T09:13:34.429Z",
   "routes": [
     {
       "id": "japan-golden-route",
@@ -5351,6 +5351,1594 @@
         }
       },
       "mapImagePath": "/images/trip-maps/routes/indonesia-komodo-and-flores.png"
+    },
+    {
+      "id": "turkey-istanbul-and-cappadocia",
+      "featuredRank": 1,
+      "countryCode": "TR",
+      "countrySlug": "turkey",
+      "mapColor": "bg-orange-100",
+      "mapAccent": "bg-orange-400",
+      "avatarColor": "bg-orange-600",
+      "curator": "travelflow",
+      "title": "Istanbul and Cappadocia",
+      "pitch": "Two ferries, one short flight: the Bosphorus at both ends and balloons over the rock valleys in between.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Istanbul",
+          "nights": 4,
+          "coordinates": {
+            "lat": 41.2749,
+            "lng": 28.7321
+          }
+        },
+        {
+          "name": "Göreme",
+          "nights": 3,
+          "coordinates": {
+            "lat": 38.6431,
+            "lng": 34.8289
+          }
+        },
+        {
+          "name": "Konya",
+          "nights": 1,
+          "coordinates": {
+            "lat": 37.979,
+            "lng": 32.5619
+          }
+        },
+        {
+          "name": "Antalya",
+          "nights": 3,
+          "coordinates": {
+            "lat": 36.8987,
+            "lng": 30.8005
+          }
+        }
+      ],
+      "tags": [
+        "History",
+        "Culture",
+        "Photography"
+      ],
+      "bestMonths": [
+        4,
+        5,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Istanbul und Kappadokien",
+          "pitch": "Zwei Fähren, ein Kurzflug: der Bosporus an beiden Enden und dazwischen Ballons über den Felsentälern."
+        },
+        "es": {
+          "title": "Estambul y Capadocia",
+          "pitch": "Dos ferris y un vuelo corto: el Bósforo a ambos extremos y globos sobre los valles de roca en medio."
+        },
+        "fr": {
+          "title": "Istanbul et la Cappadoce",
+          "pitch": "Deux ferries, un vol court : le Bosphore aux deux bouts et des montgolfières au-dessus des vallées de tuf."
+        },
+        "it": {
+          "title": "Istanbul e Cappadocia",
+          "pitch": "Due traghetti e un volo breve: il Bosforo alle due estremità e le mongolfiere sulle valli di roccia nel mezzo."
+        },
+        "pt": {
+          "title": "Istambul e Capadócia",
+          "pitch": "Dois ferries e um voo curto: o Bósforo nas duas pontas e balões sobre os vales de rocha pelo meio."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/turkey-istanbul-and-cappadocia.png"
+    },
+    {
+      "id": "turkey-turquoise-coast",
+      "featuredRank": 2,
+      "countryCode": "TR",
+      "countrySlug": "turkey",
+      "mapColor": "bg-orange-100",
+      "mapAccent": "bg-orange-400",
+      "avatarColor": "bg-orange-600",
+      "curator": "travelflow",
+      "title": "Turquoise Coast",
+      "pitch": "Lycian ruins right on the beach, a gulet night at anchor and the coast road west to the marble terraces.",
+      "style": "beach-and-culture",
+      "pace": "relaxed",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Antalya",
+          "nights": 2,
+          "coordinates": {
+            "lat": 36.8987,
+            "lng": 30.8005
+          }
+        },
+        {
+          "name": "Kaş",
+          "nights": 3,
+          "coordinates": {
+            "lat": 36.1999,
+            "lng": 29.6395
+          }
+        },
+        {
+          "name": "Fethiye",
+          "nights": 3,
+          "coordinates": {
+            "lat": 36.6592,
+            "lng": 29.1263
+          }
+        },
+        {
+          "name": "Bodrum",
+          "nights": 3,
+          "coordinates": {
+            "lat": 37.2493,
+            "lng": 27.664
+          }
+        }
+      ],
+      "tags": [
+        "Beach",
+        "History",
+        "Adventure"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Türkisküste",
+          "pitch": "Lykische Ruinen direkt am Strand, eine Nacht vor Anker auf einer Gulet und die Küstenstraße nach Westen."
+        },
+        "es": {
+          "title": "La costa turquesa",
+          "pitch": "Ruinas licias a pie de playa, una noche fondeados en una goleta y la carretera de la costa hacia el oeste."
+        },
+        "fr": {
+          "title": "La côte turquoise",
+          "pitch": "Des ruines lyciennes sur la plage, une nuit au mouillage en goélette et la route côtière vers l'ouest."
+        },
+        "it": {
+          "title": "La costa turchese",
+          "pitch": "Rovine licie sulla spiaggia, una notte all'ancora su un caicco e la strada costiera verso ovest."
+        },
+        "pt": {
+          "title": "A costa turquesa",
+          "pitch": "Ruínas lícias à beira-mar, uma noite fundeados num gulet e a estrada costeira para oeste."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/turkey-turquoise-coast.png"
+    },
+    {
+      "id": "turkey-aegean-antiquity",
+      "featuredRank": 3,
+      "countryCode": "TR",
+      "countrySlug": "turkey",
+      "mapColor": "bg-orange-100",
+      "mapAccent": "bg-orange-400",
+      "avatarColor": "bg-orange-600",
+      "curator": "travelflow",
+      "title": "Aegean Antiquity",
+      "pitch": "Ephesus without the cruise crowds, the white travertine pools at Pamukkale and vineyard lunches around İzmir.",
+      "style": "off-the-beaten-path",
+      "pace": "balanced",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "İzmir",
+          "nights": 3,
+          "coordinates": {
+            "lat": 38.4237,
+            "lng": 27.1428
+          }
+        },
+        {
+          "name": "Selçuk",
+          "nights": 2,
+          "coordinates": {
+            "lat": 37.9508,
+            "lng": 27.37
+          }
+        },
+        {
+          "name": "Pamukkale",
+          "nights": 2,
+          "coordinates": {
+            "lat": 37.9137,
+            "lng": 29.1187
+          }
+        },
+        {
+          "name": "Çanakkale",
+          "nights": 2,
+          "coordinates": {
+            "lat": 40.1377,
+            "lng": 26.4268
+          }
+        }
+      ],
+      "tags": [
+        "History",
+        "Wine",
+        "Culture"
+      ],
+      "bestMonths": [
+        4,
+        5,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Antike an der Ägäis",
+          "pitch": "Ephesos ohne Kreuzfahrtandrang, die weißen Sinterterrassen von Pamukkale und Weingutessen rund um Izmir."
+        },
+        "es": {
+          "title": "Antigüedad en el Egeo",
+          "pitch": "Éfeso sin las multitudes de crucero, las terrazas blancas de Pamukkale y comidas entre viñedos junto a Esmirna."
+        },
+        "fr": {
+          "title": "L'Antiquité égéenne",
+          "pitch": "Éphèse sans les foules de croisiéristes, les vasques blanches de Pamukkale et des déjeuners au vignoble près d'Izmir."
+        },
+        "it": {
+          "title": "Antichità sull'Egeo",
+          "pitch": "Efeso senza la folla delle crociere, le vasche bianche di Pamukkale e pranzi tra i vigneti attorno a Smirne."
+        },
+        "pt": {
+          "title": "Antiguidade no Egeu",
+          "pitch": "Éfeso sem as multidões dos cruzeiros, os tanques brancos de Pamukkale e almoços entre vinhas perto de Esmirna."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/turkey-aegean-antiquity.png"
+    },
+    {
+      "id": "egypt-nile-classic",
+      "featuredRank": 1,
+      "countryCode": "EG",
+      "countrySlug": "egypt",
+      "mapColor": "bg-yellow-100",
+      "mapAccent": "bg-yellow-500",
+      "avatarColor": "bg-yellow-600",
+      "curator": "travelflow",
+      "title": "Down the Nile",
+      "pitch": "Cairo's pyramids first, then the river itself: tombs at Luxor, temples at Edfu and a felucca evening at Aswan.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 11,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Cairo",
+          "nights": 3,
+          "coordinates": {
+            "lat": 30.1115,
+            "lng": 31.3967
+          }
+        },
+        {
+          "name": "Luxor",
+          "nights": 3,
+          "coordinates": {
+            "lat": 25.671,
+            "lng": 32.7064
+          }
+        },
+        {
+          "name": "Edfu",
+          "nights": 1,
+          "coordinates": {
+            "lat": 24.9792,
+            "lng": 32.8758
+          }
+        },
+        {
+          "name": "Aswan",
+          "nights": 3,
+          "coordinates": {
+            "lat": 23.9611,
+            "lng": 32.8204
+          }
+        }
+      ],
+      "tags": [
+        "History",
+        "Culture",
+        "Desert"
+      ],
+      "bestMonths": [
+        11,
+        12,
+        1,
+        2,
+        3
+      ],
+      "localized": {
+        "de": {
+          "title": "Den Nil hinunter",
+          "pitch": "Erst die Pyramiden von Kairo, dann der Fluss selbst: Gräber in Luxor, Tempel in Edfu und ein Feluken-Abend in Assuan."
+        },
+        "es": {
+          "title": "Nilo abajo",
+          "pitch": "Primero las pirámides de El Cairo y luego el río: tumbas en Luxor, templos en Edfú y una tarde en faluca en Asuán."
+        },
+        "fr": {
+          "title": "Descente du Nil",
+          "pitch": "D'abord les pyramides du Caire, puis le fleuve : les tombes de Louxor, les temples d'Edfou et une felouque au soir à Assouan."
+        },
+        "it": {
+          "title": "Lungo il Nilo",
+          "pitch": "Prima le piramidi del Cairo, poi il fiume: le tombe di Luxor, i templi di Edfu e una sera in feluca ad Assuan."
+        },
+        "pt": {
+          "title": "Nilo abaixo",
+          "pitch": "Primeiro as pirâmides do Cairo e depois o rio: túmulos em Luxor, templos em Edfu e um fim de tarde de faluca em Assuão."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/egypt-nile-classic.png"
+    },
+    {
+      "id": "egypt-red-sea-and-sinai",
+      "featuredRank": 2,
+      "countryCode": "EG",
+      "countrySlug": "egypt",
+      "mapColor": "bg-yellow-100",
+      "mapAccent": "bg-yellow-500",
+      "avatarColor": "bg-yellow-600",
+      "curator": "travelflow",
+      "title": "Red Sea and Sinai",
+      "pitch": "Reef diving on both sides of the gulf, a desert monastery and a pre-dawn walk up Mount Sinai.",
+      "style": "beach-and-culture",
+      "pace": "relaxed",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Hurghada",
+          "nights": 3,
+          "coordinates": {
+            "lat": 27.1768,
+            "lng": 33.7967
+          }
+        },
+        {
+          "name": "El Gouna",
+          "nights": 2,
+          "coordinates": {
+            "lat": 27.4025,
+            "lng": 33.6511
+          }
+        },
+        {
+          "name": "Sharm El Sheikh",
+          "nights": 3,
+          "coordinates": {
+            "lat": 27.9773,
+            "lng": 34.3947
+          }
+        },
+        {
+          "name": "Dahab",
+          "nights": 3,
+          "coordinates": {
+            "lat": 28.5091,
+            "lng": 34.5136
+          }
+        }
+      ],
+      "tags": [
+        "Beach",
+        "Adventure",
+        "Desert"
+      ],
+      "bestMonths": [
+        10,
+        11,
+        3,
+        4,
+        5
+      ],
+      "localized": {
+        "de": {
+          "title": "Rotes Meer und Sinai",
+          "pitch": "Riff-Tauchgänge auf beiden Seiten des Golfs, ein Wüstenkloster und der Aufstieg auf den Sinai vor Sonnenaufgang."
+        },
+        "es": {
+          "title": "Mar Rojo y Sinaí",
+          "pitch": "Buceo en arrecifes a ambos lados del golfo, un monasterio en el desierto y la subida al Sinaí antes del amanecer."
+        },
+        "fr": {
+          "title": "Mer Rouge et Sinaï",
+          "pitch": "Plongée sur les récifs des deux côtés du golfe, un monastère du désert et la montée du Sinaï avant l'aube."
+        },
+        "it": {
+          "title": "Mar Rosso e Sinai",
+          "pitch": "Immersioni sulle barriere di entrambi i lati del golfo, un monastero nel deserto e la salita al Sinai prima dell'alba."
+        },
+        "pt": {
+          "title": "Mar Vermelho e Sinai",
+          "pitch": "Mergulho nos recifes dos dois lados do golfo, um mosteiro no deserto e a subida ao Sinai antes do amanhecer."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/egypt-red-sea-and-sinai.png"
+    },
+    {
+      "id": "egypt-western-desert-oases",
+      "featuredRank": 3,
+      "countryCode": "EG",
+      "countrySlug": "egypt",
+      "mapColor": "bg-yellow-100",
+      "mapAccent": "bg-yellow-500",
+      "avatarColor": "bg-yellow-600",
+      "curator": "travelflow",
+      "title": "Western Desert Oases",
+      "pitch": "Chalk formations in the White Desert, salt lakes at Siwa and a night under more stars than you can quite believe.",
+      "style": "off-the-beaten-path",
+      "pace": "balanced",
+      "durationDays": 11,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Cairo",
+          "nights": 2,
+          "coordinates": {
+            "lat": 30.1115,
+            "lng": 31.3967
+          }
+        },
+        {
+          "name": "Bahariya Oasis",
+          "nights": 2,
+          "coordinates": {
+            "lat": 28.385,
+            "lng": 28.9085
+          }
+        },
+        {
+          "name": "Farafra",
+          "nights": 2,
+          "coordinates": {
+            "lat": 27.0567,
+            "lng": 27.9703
+          }
+        },
+        {
+          "name": "Siwa Oasis",
+          "nights": 4,
+          "coordinates": {
+            "lat": 29.3462,
+            "lng": 25.5056
+          }
+        }
+      ],
+      "tags": [
+        "Desert",
+        "Adventure",
+        "Photography"
+      ],
+      "bestMonths": [
+        10,
+        11,
+        2,
+        3,
+        4
+      ],
+      "localized": {
+        "de": {
+          "title": "Oasen der Westwüste",
+          "pitch": "Kreidefiguren in der Weißen Wüste, Salzseen in Siwa und eine Nacht unter kaum glaublich vielen Sternen."
+        },
+        "es": {
+          "title": "Oasis del desierto occidental",
+          "pitch": "Formaciones calizas en el Desierto Blanco, lagos salados en Siwa y una noche con más estrellas de las que parecen posibles."
+        },
+        "fr": {
+          "title": "Oasis du désert occidental",
+          "pitch": "Formations de craie du Désert Blanc, lacs salés de Siwa et une nuit sous un ciel d'étoiles à peine croyable."
+        },
+        "it": {
+          "title": "Oasi del deserto occidentale",
+          "pitch": "Formazioni di gesso nel Deserto Bianco, laghi salati a Siwa e una notte sotto più stelle del credibile."
+        },
+        "pt": {
+          "title": "Oásis do deserto ocidental",
+          "pitch": "Formações de giz no Deserto Branco, lagos salgados em Siwa e uma noite sob mais estrelas do que parece possível."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/egypt-western-desert-oases.png"
+    },
+    {
+      "id": "india-golden-triangle-and-rajasthan",
+      "featuredRank": 1,
+      "countryCode": "IN",
+      "countrySlug": "india",
+      "mapColor": "bg-fuchsia-100",
+      "mapAccent": "bg-fuchsia-400",
+      "avatarColor": "bg-fuchsia-600",
+      "curator": "travelflow",
+      "title": "Golden Triangle and Rajasthan",
+      "pitch": "The Taj at sunrise, then west into fort country - pink Jaipur, blue Jodhpur and a lake palace at Udaipur.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 14,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Delhi",
+          "nights": 3,
+          "coordinates": {
+            "lat": 28.7041,
+            "lng": 77.1025
+          }
+        },
+        {
+          "name": "Agra",
+          "nights": 2,
+          "coordinates": {
+            "lat": 27.158,
+            "lng": 77.961
+          }
+        },
+        {
+          "name": "Jaipur",
+          "nights": 3,
+          "coordinates": {
+            "lat": 26.8242,
+            "lng": 75.8122
+          }
+        },
+        {
+          "name": "Jodhpur",
+          "nights": 2,
+          "coordinates": {
+            "lat": 26.2511,
+            "lng": 73.0489
+          }
+        },
+        {
+          "name": "Udaipur",
+          "nights": 3,
+          "coordinates": {
+            "lat": 24.6177,
+            "lng": 73.8961
+          }
+        }
+      ],
+      "tags": [
+        "History",
+        "Culture",
+        "Photography"
+      ],
+      "bestMonths": [
+        11,
+        12,
+        1,
+        2,
+        3
+      ],
+      "localized": {
+        "de": {
+          "title": "Goldenes Dreieck und Rajasthan",
+          "pitch": "Der Taj im Morgenlicht, dann westwärts ins Land der Forts - rosa Jaipur, blaues Jodhpur und ein Seepalast in Udaipur."
+        },
+        "es": {
+          "title": "Triángulo Dorado y Rajastán",
+          "pitch": "El Taj al amanecer y luego al oeste, al país de los fuertes: Jaipur en rosa, Jodhpur en azul y un palacio sobre el lago en Udaipur."
+        },
+        "fr": {
+          "title": "Triangle d'or et Rajasthan",
+          "pitch": "Le Taj au lever du jour, puis cap à l'ouest vers les forts : Jaipur la rose, Jodhpur la bleue et un palais sur le lac à Udaipur."
+        },
+        "it": {
+          "title": "Triangolo d'oro e Rajasthan",
+          "pitch": "Il Taj all'alba, poi a ovest nel paese dei forti: Jaipur rosa, Jodhpur blu e un palazzo sul lago a Udaipur."
+        },
+        "pt": {
+          "title": "Triângulo Dourado e Rajastão",
+          "pitch": "O Taj ao amanhecer e depois para oeste, ao país dos fortes: Jaipur cor-de-rosa, Jodhpur azul e um palácio no lago em Udaipur."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/india-golden-triangle-and-rajasthan.png"
+    },
+    {
+      "id": "india-kerala-backwaters",
+      "featuredRank": 2,
+      "countryCode": "IN",
+      "countrySlug": "india",
+      "mapColor": "bg-fuchsia-100",
+      "mapAccent": "bg-fuchsia-400",
+      "avatarColor": "bg-fuchsia-600",
+      "curator": "travelflow",
+      "title": "Kerala Backwaters",
+      "pitch": "A slower south: spice hills at Munnar, a houseboat night on the canals and Fort Kochi's colonial lanes.",
+      "style": "nature-and-hiking",
+      "pace": "relaxed",
+      "durationDays": 14,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Kochi",
+          "nights": 3,
+          "coordinates": {
+            "lat": 10.151,
+            "lng": 76.4008
+          }
+        },
+        {
+          "name": "Munnar",
+          "nights": 3,
+          "coordinates": {
+            "lat": 10.0889,
+            "lng": 77.0595
+          }
+        },
+        {
+          "name": "Thekkady",
+          "nights": 2,
+          "coordinates": {
+            "lat": 9.6031,
+            "lng": 77.1615
+          }
+        },
+        {
+          "name": "Alappuzha",
+          "nights": 2,
+          "coordinates": {
+            "lat": 9.4981,
+            "lng": 76.3388
+          }
+        },
+        {
+          "name": "Varkala",
+          "nights": 3,
+          "coordinates": {
+            "lat": 8.7379,
+            "lng": 76.7163
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Food",
+        "Beach"
+      ],
+      "bestMonths": [
+        11,
+        12,
+        1,
+        2,
+        3
+      ],
+      "localized": {
+        "de": {
+          "title": "Keralas Backwaters",
+          "pitch": "Der langsamere Süden: Gewürzberge in Munnar, eine Hausbootnacht auf den Kanälen und Fort Kochis Kolonialgassen."
+        },
+        "es": {
+          "title": "Los backwaters de Kerala",
+          "pitch": "Un sur más lento: colinas de especias en Munnar, una noche de casa flotante y las calles coloniales de Fort Kochi."
+        },
+        "fr": {
+          "title": "Les backwaters du Kerala",
+          "pitch": "Un sud plus lent : collines à épices de Munnar, une nuit en péniche sur les canaux et les ruelles coloniales de Fort Kochi."
+        },
+        "it": {
+          "title": "Le backwaters del Kerala",
+          "pitch": "Un sud più lento: colline delle spezie a Munnar, una notte in houseboat sui canali e i vicoli coloniali di Fort Kochi."
+        },
+        "pt": {
+          "title": "Os backwaters do Kerala",
+          "pitch": "Um sul mais lento: colinas de especiarias em Munnar, uma noite de casa-barco nos canais e as ruelas coloniais de Fort Kochi."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/india-kerala-backwaters.png"
+    },
+    {
+      "id": "india-himalayan-foothills",
+      "featuredRank": 3,
+      "countryCode": "IN",
+      "countrySlug": "india",
+      "mapColor": "bg-fuchsia-100",
+      "mapAccent": "bg-fuchsia-400",
+      "avatarColor": "bg-fuchsia-600",
+      "curator": "travelflow",
+      "title": "Himalayan Foothills",
+      "pitch": "Up out of the heat: riverside Rishikesh, tea gardens on the ridge and monasteries with the high peaks behind them.",
+      "style": "off-the-beaten-path",
+      "pace": "relaxed",
+      "durationDays": 15,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Delhi",
+          "nights": 2,
+          "coordinates": {
+            "lat": 28.7041,
+            "lng": 77.1025
+          }
+        },
+        {
+          "name": "Rishikesh",
+          "nights": 3,
+          "coordinates": {
+            "lat": 30.1158,
+            "lng": 78.2853
+          }
+        },
+        {
+          "name": "Shimla",
+          "nights": 3,
+          "coordinates": {
+            "lat": 31.1044,
+            "lng": 77.1748
+          }
+        },
+        {
+          "name": "Manali",
+          "nights": 3,
+          "coordinates": {
+            "lat": 32.2432,
+            "lng": 77.1892
+          }
+        },
+        {
+          "name": "Dharamshala",
+          "nights": 3,
+          "coordinates": {
+            "lat": 32.219,
+            "lng": 76.3234
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Hiking",
+        "Culture"
+      ],
+      "bestMonths": [
+        3,
+        4,
+        5,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Vorberge des Himalaya",
+          "pitch": "Raus aus der Hitze: Rishikesh am Fluss, Teegärten auf dem Grat und Klöster mit den hohen Gipfeln dahinter."
+        },
+        "es": {
+          "title": "Estribaciones del Himalaya",
+          "pitch": "Escapar del calor: Rishikesh junto al río, jardines de té en la loma y monasterios con las grandes cumbres detrás."
+        },
+        "fr": {
+          "title": "Contreforts de l'Himalaya",
+          "pitch": "Sortir de la chaleur : Rishikesh au bord du fleuve, des jardins de thé sur la crête et des monastères devant les hauts sommets."
+        },
+        "it": {
+          "title": "Ai piedi dell'Himalaya",
+          "pitch": "Via dal caldo: Rishikesh sul fiume, giardini di tè sul crinale e monasteri con le grandi cime alle spalle."
+        },
+        "pt": {
+          "title": "Sopé dos Himalaias",
+          "pitch": "Fugir do calor: Rishikesh à beira-rio, jardins de chá na crista e mosteiros com os grandes picos atrás."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/india-himalayan-foothills.png"
+    },
+    {
+      "id": "malaysia-peninsula-classic",
+      "featuredRank": 1,
+      "countryCode": "MY",
+      "countrySlug": "malaysia",
+      "mapColor": "bg-emerald-100",
+      "mapAccent": "bg-emerald-400",
+      "avatarColor": "bg-emerald-600",
+      "curator": "travelflow",
+      "title": "Peninsula Classic",
+      "pitch": "Kuala Lumpur's food courts, tea plantations in the highlands and two heritage ports before the Andaman beaches.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Kuala Lumpur",
+          "nights": 3,
+          "coordinates": {
+            "lat": 3.1319,
+            "lng": 101.6841
+          }
+        },
+        {
+          "name": "Cameron Highlands",
+          "nights": 2,
+          "coordinates": {
+            "lat": 4.4721,
+            "lng": 101.3801
+          }
+        },
+        {
+          "name": "Penang",
+          "nights": 3,
+          "coordinates": {
+            "lat": 5.2963,
+            "lng": 100.2762
+          }
+        },
+        {
+          "name": "Langkawi",
+          "nights": 3,
+          "coordinates": {
+            "lat": 6.3297,
+            "lng": 99.7287
+          }
+        }
+      ],
+      "tags": [
+        "Food",
+        "Culture",
+        "Beach"
+      ],
+      "bestMonths": [
+        12,
+        1,
+        2,
+        3
+      ],
+      "localized": {
+        "de": {
+          "title": "Klassische Halbinsel",
+          "pitch": "Die Foodcourts von Kuala Lumpur, Teeplantagen im Hochland und zwei Hafenstädte vor den Andamanenstränden."
+        },
+        "es": {
+          "title": "La península clásica",
+          "pitch": "Los patios de comidas de Kuala Lumpur, plantaciones de té en las tierras altas y dos puertos históricos antes de la playa."
+        },
+        "fr": {
+          "title": "La péninsule classique",
+          "pitch": "Les food courts de Kuala Lumpur, les plantations de thé des hautes terres et deux ports historiques avant les plages."
+        },
+        "it": {
+          "title": "La penisola classica",
+          "pitch": "I food court di Kuala Lumpur, le piantagioni di tè sugli altopiani e due porti storici prima delle spiagge."
+        },
+        "pt": {
+          "title": "A península clássica",
+          "pitch": "As praças de comida de Kuala Lumpur, plantações de chá nas terras altas e dois portos históricos antes das praias."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/malaysia-peninsula-classic.png"
+    },
+    {
+      "id": "malaysia-borneo-wildlife",
+      "featuredRank": 2,
+      "countryCode": "MY",
+      "countrySlug": "malaysia",
+      "mapColor": "bg-emerald-100",
+      "mapAccent": "bg-emerald-400",
+      "avatarColor": "bg-emerald-600",
+      "curator": "travelflow",
+      "title": "Borneo Wildlife",
+      "pitch": "Orangutans on the Kinabatangan, a mountain climb at dawn and reef time off the north-east coast.",
+      "style": "nature-and-hiking",
+      "pace": "balanced",
+      "durationDays": 11,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Kota Kinabalu",
+          "nights": 3,
+          "coordinates": {
+            "lat": 5.9327,
+            "lng": 116.0493
+          }
+        },
+        {
+          "name": "Sandakan",
+          "nights": 2,
+          "coordinates": {
+            "lat": 5.9009,
+            "lng": 118.059
+          }
+        },
+        {
+          "name": "Sepilok",
+          "nights": 2,
+          "coordinates": {
+            "lat": 5.8761,
+            "lng": 117.9495
+          }
+        },
+        {
+          "name": "Semporna",
+          "nights": 3,
+          "coordinates": {
+            "lat": 4.4794,
+            "lng": 118.6115
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Adventure",
+        "Photography"
+      ],
+      "bestMonths": [
+        3,
+        4,
+        5,
+        8,
+        9
+      ],
+      "localized": {
+        "de": {
+          "title": "Tierwelt auf Borneo",
+          "pitch": "Orang-Utans am Kinabatangan, ein Berg im Morgengrauen und Riffzeit an der Nordostküste."
+        },
+        "es": {
+          "title": "Fauna de Borneo",
+          "pitch": "Orangutanes en el Kinabatangan, una cumbre al amanecer y días de arrecife en la costa nororiental."
+        },
+        "fr": {
+          "title": "La faune de Bornéo",
+          "pitch": "Des orangs-outans sur le Kinabatangan, une ascension à l'aube et des jours de récif sur la côte nord-est."
+        },
+        "it": {
+          "title": "La fauna del Borneo",
+          "pitch": "Oranghi sul Kinabatangan, una vetta all'alba e giorni di barriera sulla costa nord-orientale."
+        },
+        "pt": {
+          "title": "Vida selvagem no Bornéu",
+          "pitch": "Orangotangos no Kinabatangan, uma subida ao amanhecer e dias de recife na costa nordeste."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/malaysia-borneo-wildlife.png"
+    },
+    {
+      "id": "malaysia-east-coast-islands",
+      "featuredRank": 3,
+      "countryCode": "MY",
+      "countrySlug": "malaysia",
+      "mapColor": "bg-emerald-100",
+      "mapAccent": "bg-emerald-400",
+      "avatarColor": "bg-emerald-600",
+      "curator": "travelflow",
+      "title": "East Coast Islands",
+      "pitch": "The quieter South China Sea side, timed for the dry half of the year: clear water, small jetties and no crowds.",
+      "style": "island-hopping",
+      "pace": "relaxed",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Kuala Lumpur",
+          "nights": 2,
+          "coordinates": {
+            "lat": 3.1319,
+            "lng": 101.6841
+          }
+        },
+        {
+          "name": "Kuala Besut",
+          "nights": 1,
+          "coordinates": {
+            "lat": 5.8287,
+            "lng": 102.5542
+          }
+        },
+        {
+          "name": "Perhentian Islands",
+          "nights": 4,
+          "coordinates": {
+            "lat": 5.9092,
+            "lng": 102.748
+          }
+        },
+        {
+          "name": "Redang",
+          "nights": 3,
+          "coordinates": {
+            "lat": 5.7844,
+            "lng": 103.0069
+          }
+        },
+        {
+          "name": "Kuala Terengganu",
+          "nights": 1,
+          "coordinates": {
+            "lat": 5.3826,
+            "lng": 103.103
+          }
+        }
+      ],
+      "tags": [
+        "Beach",
+        "Nature",
+        "Food"
+      ],
+      "bestMonths": [
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "localized": {
+        "de": {
+          "title": "Inseln der Ostküste",
+          "pitch": "Die ruhigere Südchinesische-See-Seite, passend zur Trockenzeit: klares Wasser, kleine Stege, kein Gedränge."
+        },
+        "es": {
+          "title": "Islas de la costa este",
+          "pitch": "El lado tranquilo del mar de China Meridional, en la mitad seca del año: agua clara, embarcaderos pequeños y nada de multitudes."
+        },
+        "fr": {
+          "title": "Îles de la côte est",
+          "pitch": "Le versant tranquille de la mer de Chine méridionale, à la saison sèche : eau claire, petits pontons et personne."
+        },
+        "it": {
+          "title": "Isole della costa est",
+          "pitch": "Il lato tranquillo del Mar Cinese Meridionale, nella metà secca dell'anno: acqua limpida, piccoli pontili e niente folla."
+        },
+        "pt": {
+          "title": "Ilhas da costa leste",
+          "pitch": "O lado calmo do mar da China Meridional, na metade seca do ano: água limpa, pequenos pontões e nada de multidões."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/malaysia-east-coast-islands.png"
+    },
+    {
+      "id": "cambodia-temples-and-coast",
+      "featuredRank": 1,
+      "countryCode": "KH",
+      "countrySlug": "cambodia",
+      "mapColor": "bg-amber-100",
+      "mapAccent": "bg-amber-500",
+      "avatarColor": "bg-amber-600",
+      "curator": "travelflow",
+      "title": "Temples and Coast",
+      "pitch": "Three days of Angkor at first light, the capital's riverfront and a slow week on the southern islands.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 13,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Siem Reap",
+          "nights": 4,
+          "coordinates": {
+            "lat": 13.3633,
+            "lng": 103.8564
+          }
+        },
+        {
+          "name": "Phnom Penh",
+          "nights": 2,
+          "coordinates": {
+            "lat": 11.5564,
+            "lng": 104.9282
+          }
+        },
+        {
+          "name": "Kampot",
+          "nights": 2,
+          "coordinates": {
+            "lat": 10.6104,
+            "lng": 104.1814
+          }
+        },
+        {
+          "name": "Koh Rong Island",
+          "nights": 4,
+          "coordinates": {
+            "lat": 10.7291,
+            "lng": 103.2317
+          }
+        }
+      ],
+      "tags": [
+        "History",
+        "Beach",
+        "Food"
+      ],
+      "bestMonths": [
+        11,
+        12,
+        1,
+        2
+      ],
+      "localized": {
+        "de": {
+          "title": "Tempel und Küste",
+          "pitch": "Drei Tage Angkor im ersten Licht, die Uferpromenade der Hauptstadt und eine ruhige Woche auf den Südinseln."
+        },
+        "es": {
+          "title": "Templos y costa",
+          "pitch": "Tres días de Angkor al alba, el paseo fluvial de la capital y una semana tranquila en las islas del sur."
+        },
+        "fr": {
+          "title": "Temples et littoral",
+          "pitch": "Trois jours d'Angkor aux premières lueurs, les quais de la capitale et une semaine tranquille sur les îles du sud."
+        },
+        "it": {
+          "title": "Templi e costa",
+          "pitch": "Tre giorni ad Angkor alle prime luci, il lungofiume della capitale e una settimana lenta sulle isole del sud."
+        },
+        "pt": {
+          "title": "Templos e costa",
+          "pitch": "Três dias em Angkor às primeiras luzes, a marginal da capital e uma semana lenta nas ilhas do sul."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/cambodia-temples-and-coast.png"
+    },
+    {
+      "id": "cambodia-mekong-and-north",
+      "featuredRank": 2,
+      "countryCode": "KH",
+      "countrySlug": "cambodia",
+      "mapColor": "bg-amber-100",
+      "mapAccent": "bg-amber-500",
+      "avatarColor": "bg-amber-600",
+      "curator": "travelflow",
+      "title": "Mekong and the North",
+      "pitch": "Freshwater dolphins at Kratie, jungle temples near the Thai border and almost nobody else on the road.",
+      "style": "off-the-beaten-path",
+      "pace": "relaxed",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Phnom Penh",
+          "nights": 2,
+          "coordinates": {
+            "lat": 11.5564,
+            "lng": 104.9282
+          }
+        },
+        {
+          "name": "Kratie",
+          "nights": 2,
+          "coordinates": {
+            "lat": 12.4946,
+            "lng": 106.0209
+          }
+        },
+        {
+          "name": "Banlung",
+          "nights": 3,
+          "coordinates": {
+            "lat": 13.7375,
+            "lng": 106.9863
+          }
+        },
+        {
+          "name": "Preah Vihear",
+          "nights": 1,
+          "coordinates": {
+            "lat": 13.7919,
+            "lng": 104.9824
+          }
+        },
+        {
+          "name": "Siem Reap",
+          "nights": 3,
+          "coordinates": {
+            "lat": 13.3633,
+            "lng": 103.8564
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "History",
+        "Adventure"
+      ],
+      "bestMonths": [
+        11,
+        12,
+        1,
+        2
+      ],
+      "localized": {
+        "de": {
+          "title": "Mekong und der Norden",
+          "pitch": "Süßwasserdelfine bei Kratie, Dschungeltempel nahe der thailändischen Grenze und sonst fast niemand unterwegs."
+        },
+        "es": {
+          "title": "El Mekong y el norte",
+          "pitch": "Delfines de río en Kratie, templos entre la selva junto a la frontera tailandesa y casi nadie más en la carretera."
+        },
+        "fr": {
+          "title": "Le Mékong et le nord",
+          "pitch": "Des dauphins d'eau douce à Kratie, des temples dans la jungle près de la frontière thaïe et presque personne sur la route."
+        },
+        "it": {
+          "title": "Il Mekong e il nord",
+          "pitch": "Delfini d'acqua dolce a Kratie, templi nella giungla vicino al confine thailandese e quasi nessun altro sulla strada."
+        },
+        "pt": {
+          "title": "O Mekong e o norte",
+          "pitch": "Golfinhos de água doce em Kratie, templos na selva junto à fronteira tailandesa e quase mais ninguém na estrada."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/cambodia-mekong-and-north.png"
+    },
+    {
+      "id": "cambodia-southern-islands",
+      "featuredRank": 3,
+      "countryCode": "KH",
+      "countrySlug": "cambodia",
+      "mapColor": "bg-amber-100",
+      "mapAccent": "bg-amber-500",
+      "avatarColor": "bg-amber-600",
+      "curator": "travelflow",
+      "title": "Southern Islands",
+      "pitch": "Pepper farms and a colonial hill station, then boats out to two islands that still switch the generator off at night.",
+      "style": "island-hopping",
+      "pace": "relaxed",
+      "durationDays": 13,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Kampot",
+          "nights": 3,
+          "coordinates": {
+            "lat": 10.6104,
+            "lng": 104.1814
+          }
+        },
+        {
+          "name": "Kep",
+          "nights": 2,
+          "coordinates": {
+            "lat": 10.5411,
+            "lng": 104.32
+          }
+        },
+        {
+          "name": "Sihanoukville",
+          "nights": 1,
+          "coordinates": {
+            "lat": 10.7582,
+            "lng": 103.8216
+          }
+        },
+        {
+          "name": "Koh Rong Island",
+          "nights": 3,
+          "coordinates": {
+            "lat": 10.7291,
+            "lng": 103.2317
+          }
+        },
+        {
+          "name": "Koh Rong Samloem",
+          "nights": 3,
+          "coordinates": {
+            "lat": 10.5886,
+            "lng": 103.2952
+          }
+        }
+      ],
+      "tags": [
+        "Beach",
+        "Food",
+        "Nature"
+      ],
+      "bestMonths": [
+        11,
+        12,
+        1,
+        2,
+        3
+      ],
+      "localized": {
+        "de": {
+          "title": "Die Südinseln",
+          "pitch": "Pfefferfarmen und eine koloniale Bergstation, dann Boote zu zwei Inseln, die den Generator nachts noch abstellen."
+        },
+        "es": {
+          "title": "Las islas del sur",
+          "pitch": "Fincas de pimienta y una estación colonial de montaña y luego barcos a dos islas que aún apagan el generador de noche."
+        },
+        "fr": {
+          "title": "Les îles du sud",
+          "pitch": "Des plantations de poivre, une station coloniale d'altitude, puis deux îles qui coupent encore le générateur la nuit."
+        },
+        "it": {
+          "title": "Le isole del sud",
+          "pitch": "Piantagioni di pepe e una stazione coloniale di collina, poi due isole che di notte spengono ancora il generatore."
+        },
+        "pt": {
+          "title": "As ilhas do sul",
+          "pitch": "Quintas de pimenta e uma estância colonial de montanha e depois duas ilhas que ainda desligam o gerador à noite."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/cambodia-southern-islands.png"
+    },
+    {
+      "id": "costa-rica-two-coasts",
+      "featuredRank": 1,
+      "countryCode": "CR",
+      "countrySlug": "costa-rica",
+      "mapColor": "bg-lime-100",
+      "mapAccent": "bg-lime-400",
+      "avatarColor": "bg-lime-600",
+      "curator": "travelflow",
+      "title": "Two Coasts and a Volcano",
+      "pitch": "Cloud forest, hot springs under a volcano and both coastlines - the classic first trip, driven at a sane pace.",
+      "style": "road-trip",
+      "pace": "balanced",
+      "durationDays": 13,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "San José",
+          "nights": 1,
+          "coordinates": {
+            "lat": 9.9939,
+            "lng": -84.2088
+          }
+        },
+        {
+          "name": "La Fortuna",
+          "nights": 3,
+          "coordinates": {
+            "lat": 10.4693,
+            "lng": -84.5791
+          }
+        },
+        {
+          "name": "Monteverde",
+          "nights": 2,
+          "coordinates": {
+            "lat": 10.2973,
+            "lng": -84.8255
+          }
+        },
+        {
+          "name": "Manuel Antonio",
+          "nights": 3,
+          "coordinates": {
+            "lat": 9.4098,
+            "lng": -84.1557
+          }
+        },
+        {
+          "name": "Puerto Viejo de Talamanca",
+          "nights": 3,
+          "coordinates": {
+            "lat": 9.654,
+            "lng": -82.7549
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Adventure",
+        "Beach"
+      ],
+      "bestMonths": [
+        12,
+        1,
+        2,
+        3,
+        4
+      ],
+      "localized": {
+        "de": {
+          "title": "Zwei Küsten und ein Vulkan",
+          "pitch": "Nebelwald, heiße Quellen unter dem Vulkan und beide Küsten - die klassische erste Reise, in vernünftigem Tempo."
+        },
+        "es": {
+          "title": "Dos costas y un volcán",
+          "pitch": "Bosque nuboso, aguas termales bajo el volcán y ambas costas: el primer viaje clásico, a un ritmo sensato."
+        },
+        "fr": {
+          "title": "Deux côtes et un volcan",
+          "pitch": "Forêt de nuages, sources chaudes au pied du volcan et les deux côtes : le premier voyage classique, à un rythme raisonnable."
+        },
+        "it": {
+          "title": "Due coste e un vulcano",
+          "pitch": "Foresta nebulosa, terme ai piedi del vulcano ed entrambe le coste: il primo viaggio classico, a un ritmo sensato."
+        },
+        "pt": {
+          "title": "Duas costas e um vulcão",
+          "pitch": "Floresta nublada, termas ao pé do vulcão e as duas costas: a primeira viagem clássica, a um ritmo sensato."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/costa-rica-two-coasts.png"
+    },
+    {
+      "id": "costa-rica-pacific-surf",
+      "featuredRank": 2,
+      "countryCode": "CR",
+      "countrySlug": "costa-rica",
+      "mapColor": "bg-lime-100",
+      "mapAccent": "bg-lime-400",
+      "avatarColor": "bg-lime-600",
+      "curator": "travelflow",
+      "title": "Pacific Surf Run",
+      "pitch": "Down the Nicoya coast one break at a time, ending on the peninsula where the road turns to gravel.",
+      "style": "beach-and-culture",
+      "pace": "relaxed",
+      "durationDays": 13,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Tamarindo",
+          "nights": 3,
+          "coordinates": {
+            "lat": 10.2976,
+            "lng": -85.8412
+          }
+        },
+        {
+          "name": "Nosara",
+          "nights": 3,
+          "coordinates": {
+            "lat": 9.9705,
+            "lng": -85.6438
+          }
+        },
+        {
+          "name": "Santa Teresa",
+          "nights": 4,
+          "coordinates": {
+            "lat": 9.6415,
+            "lng": -85.1653
+          }
+        },
+        {
+          "name": "Montezuma",
+          "nights": 2,
+          "coordinates": {
+            "lat": 9.6567,
+            "lng": -85.0656
+          }
+        }
+      ],
+      "tags": [
+        "Surf",
+        "Beach",
+        "Nature"
+      ],
+      "bestMonths": [
+        12,
+        1,
+        2,
+        3,
+        4
+      ],
+      "localized": {
+        "de": {
+          "title": "Surfrunde am Pazifik",
+          "pitch": "Die Nicoya-Küste hinunter, Break für Break, bis dort, wo die Straße zur Schotterpiste wird."
+        },
+        "es": {
+          "title": "Ruta de surf del Pacífico",
+          "pitch": "Bajar la costa de Nicoya ola a ola hasta donde la carretera se convierte en pista de grava."
+        },
+        "fr": {
+          "title": "Le circuit surf du Pacifique",
+          "pitch": "Descendre la côte de Nicoya spot après spot, jusqu'à l'endroit où la route devient piste."
+        },
+        "it": {
+          "title": "Giro surf sul Pacifico",
+          "pitch": "Giù per la costa di Nicoya un'onda alla volta, fino a dove la strada diventa sterrato."
+        },
+        "pt": {
+          "title": "Rota de surf do Pacífico",
+          "pitch": "Descer a costa de Nicoya onda a onda, até onde a estrada passa a saibro."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/costa-rica-pacific-surf.png"
+    },
+    {
+      "id": "costa-rica-osa-wildlife",
+      "featuredRank": 3,
+      "countryCode": "CR",
+      "countrySlug": "costa-rica",
+      "mapColor": "bg-lime-100",
+      "mapAccent": "bg-lime-400",
+      "avatarColor": "bg-lime-600",
+      "curator": "travelflow",
+      "title": "Osa and the Wild South",
+      "pitch": "The rainforest at its densest: Corcovado on foot, whale watching from Uvita and a canal boat up the Caribbean side.",
+      "style": "nature-and-hiking",
+      "pace": "balanced",
+      "durationDays": 14,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "San José",
+          "nights": 1,
+          "coordinates": {
+            "lat": 9.9939,
+            "lng": -84.2088
+          }
+        },
+        {
+          "name": "Tortuguero",
+          "nights": 3,
+          "coordinates": {
+            "lat": 10.54,
+            "lng": -83.5022
+          }
+        },
+        {
+          "name": "Uvita",
+          "nights": 3,
+          "coordinates": {
+            "lat": 9.1674,
+            "lng": -83.7365
+          }
+        },
+        {
+          "name": "Drake Bay",
+          "nights": 3,
+          "coordinates": {
+            "lat": 8.7119,
+            "lng": -83.6614
+          }
+        },
+        {
+          "name": "Puerto Jiménez",
+          "nights": 3,
+          "coordinates": {
+            "lat": 8.5333,
+            "lng": -83.3
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Adventure",
+        "Hiking"
+      ],
+      "bestMonths": [
+        12,
+        1,
+        2,
+        3,
+        4
+      ],
+      "localized": {
+        "de": {
+          "title": "Osa und der wilde Süden",
+          "pitch": "Regenwald in seiner dichtesten Form: Corcovado zu Fuß, Wale vor Uvita und ein Kanalboot an der Karibikseite."
+        },
+        "es": {
+          "title": "Osa y el sur salvaje",
+          "pitch": "La selva en su punto más denso: Corcovado a pie, ballenas frente a Uvita y una lancha por los canales del Caribe."
+        },
+        "fr": {
+          "title": "Osa et le sud sauvage",
+          "pitch": "La forêt à son plus dense : Corcovado à pied, les baleines au large d'Uvita et un bateau sur les canaux côté caraïbe."
+        },
+        "it": {
+          "title": "Osa e il sud selvaggio",
+          "pitch": "La foresta al suo massimo: Corcovado a piedi, le balene al largo di Uvita e una barca sui canali caraibici."
+        },
+        "pt": {
+          "title": "Osa e o sul selvagem",
+          "pitch": "A floresta no seu ponto mais denso: Corcovado a pé, baleias ao largo de Uvita e um barco pelos canais das Caraíbas."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/costa-rica-osa-wildlife.png"
     }
   ]
 }
