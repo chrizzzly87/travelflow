@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-19T04:34:48.776Z",
+  "updatedAt": "2026-08-19T09:02:04.736Z",
   "routes": [
     {
       "id": "japan-golden-route",
@@ -1418,6 +1418,695 @@
         }
       },
       "mapImagePath": "/images/trip-maps/routes/spain-andalusia-rail.png"
+    },
+    {
+      "id": "taiwan-round-the-island-rail",
+      "featuredRank": 1,
+      "countryCode": "TW",
+      "countrySlug": "taiwan",
+      "mapColor": "bg-teal-100",
+      "mapAccent": "bg-teal-400",
+      "avatarColor": "bg-teal-600",
+      "curator": "travelflow",
+      "title": "Round the Island by Rail",
+      "pitch": "One loop, one rail pass: Taipei night markets, the Pacific cliffs of the east coast and temple-dense Tainan on the way back north.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 13,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Taipei",
+          "nights": 3,
+          "coordinates": {
+            "lat": 25.0672,
+            "lng": 121.5528
+          }
+        },
+        {
+          "name": "Hualien",
+          "nights": 2,
+          "coordinates": {
+            "lat": 24.0232,
+            "lng": 121.618
+          }
+        },
+        {
+          "name": "Taitung",
+          "nights": 2,
+          "coordinates": {
+            "lat": 22.755,
+            "lng": 121.102
+          }
+        },
+        {
+          "name": "Kaohsiung",
+          "nights": 2,
+          "coordinates": {
+            "lat": 22.5771,
+            "lng": 120.35
+          }
+        },
+        {
+          "name": "Tainan",
+          "nights": 2,
+          "coordinates": {
+            "lat": 22.9504,
+            "lng": 120.206
+          }
+        },
+        {
+          "name": "Taichung",
+          "nights": 1,
+          "coordinates": {
+            "lat": 24.2647,
+            "lng": 120.621
+          }
+        }
+      ],
+      "tags": [
+        "Culture",
+        "Food",
+        "History"
+      ],
+      "bestMonths": [
+        3,
+        4,
+        10,
+        11
+      ],
+      "localized": {
+        "de": {
+          "title": "Mit der Bahn um die Insel",
+          "pitch": "Eine Runde, ein Bahnpass: Taipeis Nachtmärkte, die Pazifikklippen der Ostküste und das tempelreiche Tainan auf dem Rückweg."
+        },
+        "es": {
+          "title": "La vuelta a la isla en tren",
+          "pitch": "Una vuelta y un pase de tren: mercados nocturnos de Taipéi, los acantilados del Pacífico y Tainan y sus templos a la vuelta."
+        },
+        "fr": {
+          "title": "Le tour de l'île en train",
+          "pitch": "Une boucle, un pass ferroviaire : marchés de nuit de Taipei, falaises du Pacifique et Tainan et ses temples au retour."
+        },
+        "it": {
+          "title": "Il giro dell'isola in treno",
+          "pitch": "Un anello, un pass ferroviario: mercati notturni di Taipei, le scogliere del Pacifico e Tainan piena di templi al ritorno."
+        },
+        "pt": {
+          "title": "A volta à ilha de comboio",
+          "pitch": "Uma volta, um passe de comboio: mercados nocturnos de Taipé, as falésias do Pacífico e Tainan cheia de templos no regresso."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/taiwan-round-the-island-rail.png"
+    },
+    {
+      "id": "taiwan-east-coast-and-gorge",
+      "featuredRank": 2,
+      "countryCode": "TW",
+      "countrySlug": "taiwan",
+      "mapColor": "bg-teal-100",
+      "mapAccent": "bg-teal-400",
+      "avatarColor": "bg-teal-600",
+      "curator": "travelflow",
+      "title": "East Coast and Taroko Gorge",
+      "pitch": "Marble walls in Taroko, rice terraces down the East Rift Valley and a coast road where the traffic simply stops.",
+      "style": "nature-and-hiking",
+      "pace": "relaxed",
+      "durationDays": 9,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Taipei",
+          "nights": 2,
+          "coordinates": {
+            "lat": 25.0672,
+            "lng": 121.5528
+          }
+        },
+        {
+          "name": "Yilan",
+          "nights": 1,
+          "coordinates": {
+            "lat": 24.7021,
+            "lng": 121.7378
+          }
+        },
+        {
+          "name": "Hualien",
+          "nights": 3,
+          "coordinates": {
+            "lat": 24.0232,
+            "lng": 121.618
+          }
+        },
+        {
+          "name": "Taitung",
+          "nights": 2,
+          "coordinates": {
+            "lat": 22.755,
+            "lng": 121.102
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Hiking",
+        "Photography"
+      ],
+      "bestMonths": [
+        3,
+        4,
+        10,
+        11
+      ],
+      "localized": {
+        "de": {
+          "title": "Ostküste und Taroko-Schlucht",
+          "pitch": "Marmorwände in Taroko, Reisterrassen im East Rift Valley und eine Küstenstraße, auf der der Verkehr einfach aufhört."
+        },
+        "es": {
+          "title": "Costa este y garganta de Taroko",
+          "pitch": "Paredes de mármol en Taroko, arrozales en terraza del valle del Rift y una carretera costera donde el tráfico desaparece."
+        },
+        "fr": {
+          "title": "Côte est et gorges de Taroko",
+          "pitch": "Parois de marbre à Taroko, rizières en terrasses de la vallée du Rift et une route côtière où le trafic disparaît."
+        },
+        "it": {
+          "title": "Costa est e gola di Taroko",
+          "pitch": "Pareti di marmo a Taroko, risaie terrazzate nella valle del Rift e una strada costiera dove il traffico sparisce."
+        },
+        "pt": {
+          "title": "Costa leste e desfiladeiro de Taroko",
+          "pitch": "Paredes de mármore em Taroko, socalcos de arroz no vale do Rift e uma estrada costeira onde o trânsito desaparece."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/taiwan-east-coast-and-gorge.png"
+    },
+    {
+      "id": "taiwan-tea-and-mountains",
+      "featuredRank": 3,
+      "countryCode": "TW",
+      "countrySlug": "taiwan",
+      "mapColor": "bg-teal-100",
+      "mapAccent": "bg-teal-400",
+      "avatarColor": "bg-teal-600",
+      "curator": "travelflow",
+      "title": "Tea Country and Mountain Towns",
+      "pitch": "Lantern-lit Jiufen, a lake that fills a mountain basin and a sunrise above the clouds at Alishan.",
+      "style": "off-the-beaten-path",
+      "pace": "relaxed",
+      "durationDays": 9,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Taipei",
+          "nights": 2,
+          "coordinates": {
+            "lat": 25.0672,
+            "lng": 121.5528
+          }
+        },
+        {
+          "name": "Jiufen",
+          "nights": 1,
+          "coordinates": {
+            "lat": 25.1092,
+            "lng": 121.8463
+          }
+        },
+        {
+          "name": "Sun Moon Lake",
+          "nights": 2,
+          "coordinates": {
+            "lat": 23.8655,
+            "lng": 120.9121
+          }
+        },
+        {
+          "name": "Alishan",
+          "nights": 2,
+          "coordinates": {
+            "lat": 23.4355,
+            "lng": 120.781
+          }
+        },
+        {
+          "name": "Chiayi",
+          "nights": 1,
+          "coordinates": {
+            "lat": 23.4797,
+            "lng": 120.4496
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Food",
+        "Photography"
+      ],
+      "bestMonths": [
+        3,
+        4,
+        10,
+        11
+      ],
+      "localized": {
+        "de": {
+          "title": "Teeberge und Bergstädtchen",
+          "pitch": "Das laternenhelle Jiufen, ein See mitten im Bergkessel und ein Sonnenaufgang über den Wolken von Alishan."
+        },
+        "es": {
+          "title": "País del té y pueblos de montaña",
+          "pitch": "Jiufen y sus faroles, un lago en pleno circo montañoso y un amanecer sobre las nubes de Alishan."
+        },
+        "fr": {
+          "title": "Pays du thé et villages de montagne",
+          "pitch": "Jiufen et ses lanternes, un lac au creux des montagnes et un lever de soleil au-dessus des nuages d'Alishan."
+        },
+        "it": {
+          "title": "Paese del tè e borghi di montagna",
+          "pitch": "Jiufen illuminata dalle lanterne, un lago incastonato tra i monti e un'alba sopra le nuvole ad Alishan."
+        },
+        "pt": {
+          "title": "País do chá e aldeias de montanha",
+          "pitch": "Jiufen e as suas lanternas, um lago encaixado na montanha e um nascer do sol acima das nuvens em Alishan."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/taiwan-tea-and-mountains.png"
+    },
+    {
+      "id": "china-classic-three-cities",
+      "featuredRank": 1,
+      "countryCode": "CN",
+      "countrySlug": "china",
+      "mapColor": "bg-red-100",
+      "mapAccent": "bg-red-400",
+      "avatarColor": "bg-red-600",
+      "curator": "travelflow",
+      "title": "Beijing, Xi'an and Shanghai",
+      "pitch": "The Great Wall, the Terracotta Army and a riverfront skyline - three headline cities linked by high-speed rail.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Beijing",
+          "nights": 4,
+          "coordinates": {
+            "lat": 39.5013,
+            "lng": 116.414
+          }
+        },
+        {
+          "name": "Xi'an",
+          "nights": 2,
+          "coordinates": {
+            "lat": 34.2658,
+            "lng": 108.9541
+          }
+        },
+        {
+          "name": "Shanghai",
+          "nights": 3,
+          "coordinates": {
+            "lat": 31.1981,
+            "lng": 121.3343
+          }
+        }
+      ],
+      "tags": [
+        "Culture",
+        "History",
+        "Food"
+      ],
+      "bestMonths": [
+        4,
+        5,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Peking, Xi'an und Shanghai",
+          "pitch": "Große Mauer, Terrakotta-Armee und eine Skyline am Fluss - drei Schlagzeilenstädte, verbunden per Schnellzug."
+        },
+        "es": {
+          "title": "Pekín, Xi'an y Shanghái",
+          "pitch": "La Gran Muralla, los guerreros de terracota y un perfil urbano junto al río: tres grandes ciudades unidas por tren de alta velocidad."
+        },
+        "fr": {
+          "title": "Pékin, Xi'an et Shanghai",
+          "pitch": "La Grande Muraille, l'armée de terre cuite et une skyline au bord du fleuve : trois villes phares reliées par le train à grande vitesse."
+        },
+        "it": {
+          "title": "Pechino, Xi'an e Shanghai",
+          "pitch": "La Grande Muraglia, l'esercito di terracotta e uno skyline sul fiume: tre città simbolo unite dall'alta velocità."
+        },
+        "pt": {
+          "title": "Pequim, Xi'an e Xangai",
+          "pitch": "A Grande Muralha, os guerreiros de terracota e uma silhueta urbana à beira-rio: três cidades maiores ligadas por comboio rápido."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/china-classic-three-cities.png"
+    },
+    {
+      "id": "china-karst-rivers-and-the-south",
+      "featuredRank": 2,
+      "countryCode": "CN",
+      "countrySlug": "china",
+      "mapColor": "bg-red-100",
+      "mapAccent": "bg-red-400",
+      "avatarColor": "bg-red-600",
+      "curator": "travelflow",
+      "title": "Karst Rivers and the South",
+      "pitch": "Limestone peaks over the Li River, bamboo-raft mornings in Yangshuo, then Cantonese kitchens and sea-facing Xiamen.",
+      "style": "nature-and-hiking",
+      "pace": "balanced",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Guilin",
+          "nights": 2,
+          "coordinates": {
+            "lat": 25.2198,
+            "lng": 110.0396
+          }
+        },
+        {
+          "name": "Yangshuo",
+          "nights": 3,
+          "coordinates": {
+            "lat": 24.7784,
+            "lng": 110.4966
+          }
+        },
+        {
+          "name": "Guangzhou",
+          "nights": 2,
+          "coordinates": {
+            "lat": 23.3924,
+            "lng": 113.299
+          }
+        },
+        {
+          "name": "Xiamen",
+          "nights": 2,
+          "coordinates": {
+            "lat": 24.5439,
+            "lng": 118.1275
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Food",
+        "Photography"
+      ],
+      "bestMonths": [
+        4,
+        5,
+        10,
+        11
+      ],
+      "localized": {
+        "de": {
+          "title": "Karstflüsse und der Süden",
+          "pitch": "Kalksteinkegel über dem Li-Fluss, Bambusfloß-Morgen in Yangshuo, dann kantonesische Küchen und das Meer vor Xiamen."
+        },
+        "es": {
+          "title": "Ríos kársticos y el sur",
+          "pitch": "Picos calizos sobre el río Li, mañanas en balsa de bambú en Yangshuo y luego cocina cantonesa y el mar de Xiamen."
+        },
+        "fr": {
+          "title": "Rivières karstiques et grand sud",
+          "pitch": "Pitons calcaires sur la rivière Li, matins en radeau de bambou à Yangshuo, puis cuisine cantonaise et la mer à Xiamen."
+        },
+        "it": {
+          "title": "Fiumi carsici e il sud",
+          "pitch": "Pinnacoli calcarei sul fiume Li, mattine in zattera di bambù a Yangshuo, poi cucina cantonese e il mare di Xiamen."
+        },
+        "pt": {
+          "title": "Rios cársicos e o sul",
+          "pitch": "Picos calcários sobre o rio Li, manhãs de jangada de bambu em Yangshuo e depois cozinha cantonesa e o mar de Xiamen."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/china-karst-rivers-and-the-south.png"
+    },
+    {
+      "id": "china-yunnan-highlands",
+      "featuredRank": 3,
+      "countryCode": "CN",
+      "countrySlug": "china",
+      "mapColor": "bg-red-100",
+      "mapAccent": "bg-red-400",
+      "avatarColor": "bg-red-600",
+      "curator": "travelflow",
+      "title": "Yunnan Highlands",
+      "pitch": "Old towns under snow peaks: Dali on its lake, Lijiang's cobbled canals and the first ridge of the Tibetan plateau at Shangri-La.",
+      "style": "off-the-beaten-path",
+      "pace": "relaxed",
+      "durationDays": 11,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Kunming",
+          "nights": 2,
+          "coordinates": {
+            "lat": 25.1103,
+            "lng": 102.9367
+          }
+        },
+        {
+          "name": "Dali",
+          "nights": 3,
+          "coordinates": {
+            "lat": 25.6494,
+            "lng": 100.319
+          }
+        },
+        {
+          "name": "Lijiang",
+          "nights": 3,
+          "coordinates": {
+            "lat": 26.6775,
+            "lng": 100.2449
+          }
+        },
+        {
+          "name": "Shangri-La",
+          "nights": 2,
+          "coordinates": {
+            "lat": 27.8425,
+            "lng": 99.7432
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Culture",
+        "Hiking"
+      ],
+      "bestMonths": [
+        3,
+        4,
+        5,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Hochland von Yunnan",
+          "pitch": "Altstädte unter Schneegipfeln: Dali am See, Lijiangs Kanalgassen und bei Shangri-La die erste Stufe des tibetischen Hochlands."
+        },
+        "es": {
+          "title": "Tierras altas de Yunnan",
+          "pitch": "Cascos antiguos bajo cumbres nevadas: Dali junto a su lago, los canales de Lijiang y el primer escalón del Tíbet en Shangri-La."
+        },
+        "fr": {
+          "title": "Hautes terres du Yunnan",
+          "pitch": "Vieilles villes sous les sommets enneigés : Dali au bord du lac, les canaux de Lijiang et le premier gradin tibétain à Shangri-La."
+        },
+        "it": {
+          "title": "Altopiani dello Yunnan",
+          "pitch": "Città vecchie sotto cime innevate: Dali sul lago, i canali di Lijiang e il primo gradino dell'altopiano tibetano a Shangri-La."
+        },
+        "pt": {
+          "title": "Planaltos de Yunnan",
+          "pitch": "Centros históricos sob picos nevados: Dali à beira do lago, os canais de Lijiang e o primeiro degrau tibetano em Shangri-La."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/china-yunnan-highlands.png"
+    },
+    {
+      "id": "spain-green-north-coast",
+      "featuredRank": 2,
+      "countryCode": "ES",
+      "countrySlug": "spain",
+      "mapColor": "bg-amber-100",
+      "mapAccent": "bg-amber-400",
+      "avatarColor": "bg-amber-600",
+      "curator": "travelflow",
+      "title": "The Green North Coast",
+      "pitch": "Spain's rainy side along the Bay of Biscay - pintxos counters, Atlantic surf beaches and a finish under Santiago's cathedral.",
+      "style": "food-and-wine",
+      "pace": "balanced",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Bilbao",
+          "nights": 2,
+          "coordinates": {
+            "lat": 43.3011,
+            "lng": -2.9106
+          }
+        },
+        {
+          "name": "San Sebastián",
+          "nights": 3,
+          "coordinates": {
+            "lat": 43.3182,
+            "lng": -1.9817
+          }
+        },
+        {
+          "name": "Santander",
+          "nights": 2,
+          "coordinates": {
+            "lat": 43.4271,
+            "lng": -3.82
+          }
+        },
+        {
+          "name": "Oviedo",
+          "nights": 2,
+          "coordinates": {
+            "lat": 43.3623,
+            "lng": -5.8485
+          }
+        },
+        {
+          "name": "Santiago de Compostela",
+          "nights": 2,
+          "coordinates": {
+            "lat": 42.8963,
+            "lng": -8.4151
+          }
+        }
+      ],
+      "tags": [
+        "Food",
+        "Nature",
+        "Culture"
+      ],
+      "bestMonths": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "localized": {
+        "de": {
+          "title": "Die grüne Nordküste",
+          "pitch": "Spaniens regnerische Seite am Golf von Biskaya - Pintxos-Theken, Atlantikstrände zum Surfen und zum Schluss die Kathedrale von Santiago."
+        },
+        "es": {
+          "title": "La costa verde del norte",
+          "pitch": "La cara lluviosa de España en el Cantábrico: barras de pintxos, playas de surf atlánticas y final bajo la catedral de Santiago."
+        },
+        "fr": {
+          "title": "La côte verte du nord",
+          "pitch": "La façade pluvieuse de l'Espagne sur le golfe de Gascogne : comptoirs à pintxos, plages de surf atlantiques et arrivée sous la cathédrale de Saint-Jacques."
+        },
+        "it": {
+          "title": "La costa verde del nord",
+          "pitch": "Il lato piovoso della Spagna sul golfo di Biscaglia: banconi di pintxos, spiagge da surf atlantiche e arrivo sotto la cattedrale di Santiago."
+        },
+        "pt": {
+          "title": "A costa verde do norte",
+          "pitch": "O lado chuvoso de Espanha no golfo da Biscaia: balcões de pintxos, praias de surf atlânticas e chegada sob a catedral de Santiago."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/spain-green-north-coast.png"
+    },
+    {
+      "id": "spain-balearic-island-hop",
+      "featuredRank": 3,
+      "countryCode": "ES",
+      "countrySlug": "spain",
+      "mapColor": "bg-amber-100",
+      "mapAccent": "bg-amber-400",
+      "avatarColor": "bg-amber-600",
+      "curator": "travelflow",
+      "title": "Balearic Island Hop",
+      "pitch": "Three islands by ferry: Mallorca's mountain villages, the quiet north of Ibiza and Menorca's coves at the end.",
+      "style": "island-hopping",
+      "pace": "relaxed",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Palma de Mallorca",
+          "nights": 3,
+          "coordinates": {
+            "lat": 39.5696,
+            "lng": 2.6502
+          }
+        },
+        {
+          "name": "Ibiza",
+          "nights": 3,
+          "coordinates": {
+            "lat": 38.8729,
+            "lng": 1.3731
+          }
+        },
+        {
+          "name": "Menorca",
+          "nights": 3,
+          "coordinates": {
+            "lat": 39.9496,
+            "lng": 4.1104
+          }
+        }
+      ],
+      "tags": [
+        "Beach",
+        "Nature",
+        "Food"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Balearen-Inselhüpfen",
+          "pitch": "Drei Inseln per Fähre: Mallorcas Bergdörfer, der stille Norden von Ibiza und zum Abschluss die Buchten Menorcas."
+        },
+        "es": {
+          "title": "Salto entre islas Baleares",
+          "pitch": "Tres islas en ferry: los pueblos de la sierra mallorquina, el norte tranquilo de Ibiza y las calas de Menorca al final."
+        },
+        "fr": {
+          "title": "Cabotage aux Baléares",
+          "pitch": "Trois îles en ferry : les villages de montagne de Majorque, le nord tranquille d'Ibiza et les criques de Minorque pour finir."
+        },
+        "it": {
+          "title": "Isole Baleari in traghetto",
+          "pitch": "Tre isole in traghetto: i paesi di montagna di Maiorca, il nord tranquillo di Ibiza e le cale di Minorca alla fine."
+        },
+        "pt": {
+          "title": "Ilhas Baleares de ferry",
+          "pitch": "Três ilhas de ferry: as aldeias serranas de Maiorca, o norte tranquilo de Ibiza e as enseadas de Menorca no fim."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/spain-balearic-island-hop.png"
     }
   ]
 }
