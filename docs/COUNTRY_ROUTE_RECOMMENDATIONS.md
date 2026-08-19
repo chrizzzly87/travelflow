@@ -146,9 +146,19 @@ A unit test asserts that every entry of `COUNTRY_ROUTE_TAGS` has a translation i
 
 Lane colours come from the shared city palette (`getRandomCityColor` → `getHexFromColorClass`), with **repeated stop names reusing the same colour** — the same rule `normalizeCityColors` applies to real trips, so a round trip visually closes.
 
-**No map image.** `mapImagePath` is intentionally left unset, so `ExampleTripCard` falls back to its decorative dotted-route header tinted by `mapColor`/`mapAccent`. Generating real static maps per route is future work (§9); the fallback is a first-class state of the existing component, not a degradation.
+**Map image.** `mapImagePath` points at a committed PNG under `public/images/trip-maps/routes/<id>.png`, rendered by `pnpm maps:routes:generate` (see §5.1). The card consumes it exactly like a homepage example card. When a route has no generated map the field stays unset and `ExampleTripCard` falls back to its decorative dotted-route header tinted by `mapColor`/`mapAccent` — a first-class state of the component, not a degradation. The same fallback covers a missing file at runtime, via the card's image `onError` handler.
 
-**Curator identity.** Curated routes have no user behind them. Rendering a fake username would be dishonest. The card slot that normally shows an avatar + handle shows the brand curator handle (`travelflow`) with the route's `avatarColor`, and `showCreatorAttribution` is left `false`, so it renders as plain text rather than a link to a non-existent profile.
+### 5.1 Static map previews
+
+`scripts/generate-country-route-maps.ts` (`pnpm maps:routes:generate`) renders one Static Maps PNG per route and writes `mapImagePath` back into `data/countryRoutes.json`.
+
+- **Shared treatment.** The URL builder lives in `scripts/lib/staticMapPreview.ts` and is shared with `scripts/generate-trip-maps.ts`, so route cards and homepage cards get identical dimensions (680×288 @2x), style tokens, path weights and S/E markers. Country routes always use the `clean` basemap so the three cards of a country read as a set.
+- **Route mode.** `realistic` (Directions polylines) for everything except `island-hopping`, which has no drivable geometry and falls back to straight legs anyway.
+- **Colours.** Marker colours come from `buildCountryRouteMiniCalendar`, so the pins match the coloured city lanes underneath the map.
+- **Unresolved stops.** A route whose stops do not all carry `coordinates` is skipped with a warning and keeps the decorative header. The generator never draws a partial line.
+- **Committed output.** PNGs are committed; the build must not call the Maps API. `pnpm routes:validate` fails if a declared `mapImagePath` has no committed file, and `--dry-run` prints the URLs without spending quota.
+
+**Curator identity. Curated routes have no user behind them. Rendering a fake username would be dishonest. The card slot that normally shows an avatar + handle shows the brand curator handle (`travelflow`) with the route's `avatarColor`, and `showCreatorAttribution` is left `false`, so it renders as plain text rather than a link to a non-existent profile.
 
 **Direction safety.** The section adds no new physical-direction CSS: it uses the existing grid utilities and the card component, whose only directional affordances (`rtl:rotate-180` on arrows) are already handled. The section CTA arrow reuses the same `rtl:rotate-180` pattern used elsewhere in `DestinationGuideView`.
 
@@ -221,9 +231,10 @@ Reasons:
    - Colours: keep one palette family per country so the three cards read as a set.
 4. Add `localized` entries for at least `de` (EN/DE are the sign-off languages).
 5. Bump `updatedAt`.
-6. Run `pnpm routes:validate`, then `pnpm test:core`.
-7. User-facing copy → EN/DE style approval per `CLAUDE.md` before merge.
-8. Add a release-note line in `content/updates/*.md`.
+6. Run `pnpm maps:routes:generate --dry-run` to inspect the map URL, then `pnpm maps:routes:generate --route=<id>` to render and commit the PNG.
+7. Run `pnpm routes:validate`, then `pnpm test:core`.
+8. User-facing copy → EN/DE style approval per `CLAUDE.md` before merge.
+9. Add a release-note line in `content/updates/*.md`.
 
 Nothing else needs touching: the service, the card, the analytics and the prefill all read from the document generically.
 
@@ -232,7 +243,7 @@ Nothing else needs touching: the service, the card, the analytics and the prefil
 ## 9. Open questions / future work
 
 - **Premade trip templates.** `templateId` is reserved but unused. The intended shape is one `data/exampleTripTemplates/<id>.ts` per featured route, so "Plan this route" can hand over a fully built itinerary (activities, travel legs, mini calendar from real data) instead of a prefilled form. That changes the CTA target, not the schema.
-- **Per-route static maps.** Stops carry coordinates specifically so `scripts/generate-trip-maps.ts` can render `/images/trip-maps/routes/<id>.png` and populate `mapImagePath`. Until then the decorative header is used.
+- **Per-route static maps.** Shipped — see §5.1. Remaining: regenerate when a route's stops change (the generator keeps existing PNGs unless `--force` is passed).
 - **Translation backlog.** `ru`, `pl`, `ko`, `fa`, `ur` route titles/pitches.
 - **Content coverage.** 5 countries × 3 routes ship with this system. ~45 guide countries remain.
 - **AI-generated variants.** A route is a good seed for "make this trip mine" — same stops, user's dates, pace and traveller type. Needs the premade templates first.

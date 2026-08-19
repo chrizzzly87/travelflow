@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import countryRoutesJson from '../../data/countryRoutes.json';
@@ -8,6 +11,9 @@ import {
   MAX_ROUTES_PER_COUNTRY,
   getCountryRouteCityCount,
   getCountryRouteExpectedDurationDays,
+  getCountryRouteMapImagePath,
+  getCountryRouteMapStops,
+  getCountryRouteUnresolvedStopNames,
   normalizeCountryRouteStopName,
   validateCountryRouteDocument,
   type CountryRoute,
@@ -80,6 +86,34 @@ describe('country route document', () => {
   it('keeps durations consistent with the sum of stop nights', () => {
     document.routes.forEach((route) => {
       expect(route.durationDays).toBe(getCountryRouteExpectedDurationDays(route));
+    });
+  });
+
+  it('only uses card colors that Tailwind is told to generate', () => {
+    // Route palettes live in JSON, which Tailwind never scans, so index.css
+    // declares them explicitly. A palette outside that list ships unstyled.
+    const css = readFileSync(resolve(import.meta.dirname, '../../index.css'), 'utf-8');
+    const inlineSource = css.match(/@source inline\("([^"]+)"\)/)?.[1];
+    expect(inlineSource, 'index.css must declare the route palette').toBeTruthy();
+
+    const [, hues, shades] = inlineSource!.match(/^bg-\{([^}]+)\}-\{([^}]+)\}$/) || [];
+    const generated = new Set(
+      hues.split(',').flatMap((hue) => shades.split(',').map((shade) => `bg-${hue}-${shade}`)),
+    );
+
+    document.routes.forEach((route) => {
+      [route.mapColor, route.mapAccent, route.avatarColor].forEach((token) => {
+        expect(generated, `${route.id} uses ungenerated class ${token}`).toContain(token);
+      });
+    });
+  });
+
+  it('gives every stop of a route its own coordinates', () => {
+    // Two stops sharing a point mean a name resolved to the wrong place.
+    document.routes.forEach((route) => {
+      const points = route.stops.map((stop) => `${stop.coordinates?.lat},${stop.coordinates?.lng}`);
+      const distinctNames = new Set(route.stops.map((stop) => normalizeCountryRouteStopName(stop.name)));
+      expect(new Set(points).size, `${route.id} has stops sharing coordinates`).toBe(distinctNames.size);
     });
   });
 });
@@ -159,6 +193,59 @@ describe('validateCountryRouteDocument', () => {
       localized: { de: { tags: ['Kultur'] } },
     }]));
     expect(errors.some((error) => error.includes('localized.de.tags length'))).toBe(true);
+  });
+});
+
+describe('country route map previews', () => {
+  it('derives the public image path from the route id', () => {
+    expect(getCountryRouteMapImagePath('spain-andalusia-rail'))
+      .toBe('/images/trip-maps/routes/spain-andalusia-rail.png');
+  });
+
+  it('returns drawable stops in itinerary order', () => {
+    const route = baseRoute();
+    const stops = getCountryRouteMapStops(route);
+
+    expect(stops?.map((stop) => stop.name)).toEqual(['Tokyo', 'Kyoto']);
+    expect(stops?.[0]).toMatchObject({ lat: 35.6762, lng: 139.6503 });
+    expect(getCountryRouteUnresolvedStopNames(route)).toEqual([]);
+  });
+
+  it('refuses to draw a route with an unresolved stop', () => {
+    const route = baseRoute();
+    route.stops = [
+      { name: 'Tokyo', nights: 2, coordinates: { lat: 35.6762, lng: 139.6503 } },
+      { name: 'Nowhere', nights: 1 },
+    ];
+
+    expect(getCountryRouteMapStops(route)).toBeNull();
+    expect(getCountryRouteUnresolvedStopNames(route)).toEqual(['Nowhere']);
+  });
+
+  it('rejects a map path that does not match the route id', () => {
+    const route = baseRoute();
+    route.mapImagePath = '/images/trip-maps/routes/other-route.png';
+
+    expect(validateCountryRouteDocument(wrap([route])).some((error) => error.includes('mapImagePath must be'))).toBe(true);
+  });
+
+  it('rejects a declared map on a route that cannot be drawn', () => {
+    const route = baseRoute();
+    route.mapImagePath = getCountryRouteMapImagePath(route.id);
+    route.stops = [
+      { name: 'Tokyo', nights: 2, coordinates: { lat: 35.6762, lng: 139.6503 } },
+      { name: 'Nowhere', nights: 1, coordinates: undefined },
+    ];
+
+    const errors = validateCountryRouteDocument(wrap([route]));
+    expect(errors.some((error) => error.includes('mapImagePath is set but stops are missing coordinates'))).toBe(true);
+  });
+
+  it('ships a committed map for every curated route', () => {
+    document.routes.forEach((route) => {
+      expect(route.mapImagePath, `${route.id} has no map preview`).toBe(getCountryRouteMapImagePath(route.id));
+      expect(getCountryRouteMapStops(route), `${route.id} is not drawable`).not.toBeNull();
+    });
   });
 });
 

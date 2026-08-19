@@ -67,7 +67,7 @@ describe('countryRouteService card adapter', () => {
     expect(card.cityCount).toBe(5);
     expect(card.isRoundTrip).toBe(true);
     expect(card.username).toBe('travelflow');
-    expect(card.mapImagePath).toBeUndefined();
+    expect(card.mapImagePath).toBe('/images/trip-maps/routes/iceland-ring-road.png');
   });
 
   it('builds mini calendar lanes that reuse a colour for repeated stops', () => {
@@ -79,6 +79,22 @@ describe('countryRouteService card adapter', () => {
     expect(cityLanes[0].color).toBe(cityLanes[cityLanes.length - 1].color);
     expect(cityLanes[0].color).not.toBe(cityLanes[1].color);
     expect(cityLanes.map((lane) => lane.title)).toEqual(route.stops.map((stop) => stop.name));
+  });
+});
+
+describe('countryRouteService map previews', () => {
+  it('passes the committed map preview through to the card', () => {
+    const route = getCountryRouteById('spain-andalusia-rail')!;
+    const card = buildCountryRouteExampleCard(route);
+
+    expect(card.mapImagePath).toBe('/images/trip-maps/routes/spain-andalusia-rail.png');
+  });
+
+  it('leaves the card map unset when a route has no generated preview', () => {
+    const route = getCountryRouteById('japan-golden-route')!;
+    const card = buildCountryRouteExampleCard({ ...route, mapImagePath: undefined });
+
+    expect(card.mapImagePath).toBeUndefined();
   });
 });
 
