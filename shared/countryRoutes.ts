@@ -55,6 +55,11 @@ export interface CountryRoute {
   avatarColor: string;
   curator: string;
   templateId?: string;
+  /**
+   * Pre-generated static map preview, committed under `public/`. Written by
+   * `pnpm maps:routes:generate`; absent while a route has no rendered map.
+   */
+  mapImagePath?: string;
   localized?: Partial<Record<AppLanguage, CountryRouteLocalization>>;
 }
 
@@ -77,6 +82,41 @@ export const MAX_ROUTES_PER_COUNTRY = 3;
 export const MIN_STOP_NIGHTS = 0.5;
 export const MIN_ROUTE_TAGS = 2;
 export const MAX_ROUTE_TAGS = 4;
+
+/** Public directory holding the pre-generated per-route static map previews. */
+export const COUNTRY_ROUTE_MAP_IMAGE_DIR = '/images/trip-maps/routes';
+
+/** Deterministic public path of a route's static map preview. */
+export const getCountryRouteMapImagePath = (routeId: string): string => (
+  `${COUNTRY_ROUTE_MAP_IMAGE_DIR}/${routeId}.png`
+);
+
+export interface CountryRouteMapStop {
+  name: string;
+  lat: number;
+  lng: number;
+}
+
+/**
+ * Ordered drawable geography for a route, or `null` when at least one stop has
+ * no coordinates. Callers must skip such routes instead of drawing a partial
+ * line through the wrong places.
+ */
+export const getCountryRouteMapStops = (route: CountryRoute): CountryRouteMapStop[] | null => {
+  const stops: CountryRouteMapStop[] = [];
+  for (const stop of route.stops) {
+    const coordinates = stop.coordinates;
+    if (!coordinates || typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') return null;
+    if (!Number.isFinite(coordinates.lat) || !Number.isFinite(coordinates.lng)) return null;
+    stops.push({ name: stop.name, lat: coordinates.lat, lng: coordinates.lng });
+  }
+  return stops.length >= 2 ? stops : null;
+};
+
+/** Stop names of a route that cannot be drawn because they carry no coordinates. */
+export const getCountryRouteUnresolvedStopNames = (route: CountryRoute): string[] => (
+  route.stops.filter((stop) => !stop.coordinates).map((stop) => stop.name)
+);
 
 export const COUNTRY_ROUTE_STYLES: CountryRouteStyle[] = [
   'classic',
@@ -283,6 +323,14 @@ export const validateCountryRouteDocument = (
         errors.push(`${route.id}: ${field} must be a tailwind background class (got ${String(value)})`);
       }
     });
+
+    if (route.mapImagePath !== undefined) {
+      if (typeof route.mapImagePath !== 'string' || route.mapImagePath !== getCountryRouteMapImagePath(route.id)) {
+        errors.push(`${route.id}: mapImagePath must be ${getCountryRouteMapImagePath(route.id)} (got ${String(route.mapImagePath)})`);
+      } else if (getCountryRouteMapStops(route) === null) {
+        errors.push(`${route.id}: mapImagePath is set but stops are missing coordinates (${getCountryRouteUnresolvedStopNames(route).join(', ') || 'fewer than 2 stops'})`);
+      }
+    }
 
     if (!Array.isArray(route.tags) || route.tags.length < MIN_ROUTE_TAGS || route.tags.length > MAX_ROUTE_TAGS) {
       errors.push(`${route.id}: tags must contain between ${MIN_ROUTE_TAGS} and ${MAX_ROUTE_TAGS} entries`);

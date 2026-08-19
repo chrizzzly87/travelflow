@@ -157,6 +157,7 @@ export const buildCountryRouteExampleCard = (route: CountryRoute): ExampleTripCa
   avatarColor: route.avatarColor,
   tags: route.tags,
   templateId: route.templateId,
+  mapImagePath: route.mapImagePath,
   isRoundTrip: route.isRoundTrip,
   localized: toExampleCardLocalization(route),
 });
