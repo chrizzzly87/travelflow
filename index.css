@@ -47,6 +47,13 @@
 @source not "./pages/CreateTripSplitWorkspaceLabPage.tsx";
 @source not "./pages/CreateTripJourneyArchitectLabPage.tsx";
 
+/*
+ * Featured country route cards read their palette from data/countryRoutes.json,
+ * which Tailwind never scans. Keep the whole route palette generated so a new
+ * curated route never ships with an unstyled card header.
+ */
+@source inline("bg-{rose,amber,emerald,indigo,sky,teal,red,lime,blue,violet,orange,yellow,cyan,pink,green,purple,slate,stone}-{100,400,500,600}");
+
 @font-face {
   font-family: "Bricolage Grotesque";
   font-style: normal;

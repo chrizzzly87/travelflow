@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-19T09:05:57.899Z",
+  "updatedAt": "2026-08-19T09:10:09.616Z",
   "routes": [
     {
       "id": "japan-golden-route",
@@ -3744,6 +3744,1613 @@
         }
       },
       "mapImagePath": "/images/trip-maps/routes/new-zealand-both-islands.png"
+    },
+    {
+      "id": "croatia-dalmatian-coast",
+      "featuredRank": 1,
+      "countryCode": "HR",
+      "countrySlug": "croatia",
+      "mapColor": "bg-sky-100",
+      "mapAccent": "bg-sky-400",
+      "avatarColor": "bg-sky-600",
+      "curator": "travelflow",
+      "title": "Dalmatian Coast Run",
+      "pitch": "Split to Dubrovnik the slow way, with a waterfall park inland and two islands slotted in before the city walls.",
+      "style": "beach-and-culture",
+      "pace": "balanced",
+      "durationDays": 13,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Zadar",
+          "nights": 2,
+          "coordinates": {
+            "lat": 44.097,
+            "lng": 15.3536
+          }
+        },
+        {
+          "name": "Split",
+          "nights": 3,
+          "coordinates": {
+            "lat": 43.5389,
+            "lng": 16.298
+          }
+        },
+        {
+          "name": "Hvar",
+          "nights": 2,
+          "coordinates": {
+            "lat": 43.1726,
+            "lng": 16.4446
+          }
+        },
+        {
+          "name": "Korčula",
+          "nights": 2,
+          "coordinates": {
+            "lat": 42.9591,
+            "lng": 17.1351
+          }
+        },
+        {
+          "name": "Dubrovnik",
+          "nights": 3,
+          "coordinates": {
+            "lat": 42.5622,
+            "lng": 18.2655
+          }
+        }
+      ],
+      "tags": [
+        "Beach",
+        "History",
+        "Food"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Dalmatinische Küste",
+          "pitch": "Von Split nach Dubrovnik auf die langsame Art, mit Wasserfällen im Hinterland und zwei Inseln vor der Stadtmauer."
+        },
+        "es": {
+          "title": "Recorrido por la costa dálmata",
+          "pitch": "De Split a Dubrovnik sin prisa, con un parque de cascadas tierra adentro y dos islas antes de las murallas."
+        },
+        "fr": {
+          "title": "La côte dalmate",
+          "pitch": "De Split à Dubrovnik sans se presser, avec un parc de cascades dans les terres et deux îles avant les remparts."
+        },
+        "it": {
+          "title": "La costa dalmata",
+          "pitch": "Da Spalato a Dubrovnik con calma, un parco di cascate nell'entroterra e due isole prima delle mura."
+        },
+        "pt": {
+          "title": "A costa dálmata",
+          "pitch": "De Split a Dubrovnik sem pressa, com um parque de cascatas no interior e duas ilhas antes das muralhas."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/croatia-dalmatian-coast.png"
+    },
+    {
+      "id": "croatia-istria-and-lakes",
+      "featuredRank": 2,
+      "countryCode": "HR",
+      "countrySlug": "croatia",
+      "mapColor": "bg-sky-100",
+      "mapAccent": "bg-sky-400",
+      "avatarColor": "bg-sky-600",
+      "curator": "travelflow",
+      "title": "Istria and the Lakes",
+      "pitch": "Truffles and Venetian hill towns in the north, then the boardwalks of Plitvice on the way down to the capital.",
+      "style": "food-and-wine",
+      "pace": "relaxed",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Pula",
+          "nights": 2,
+          "coordinates": {
+            "lat": 44.8935,
+            "lng": 13.9222
+          }
+        },
+        {
+          "name": "Rovinj",
+          "nights": 3,
+          "coordinates": {
+            "lat": 45.0812,
+            "lng": 13.6387
+          }
+        },
+        {
+          "name": "Opatija",
+          "nights": 2,
+          "coordinates": {
+            "lat": 45.3378,
+            "lng": 14.3052
+          }
+        },
+        {
+          "name": "Plitvice Lakes",
+          "nights": 2,
+          "coordinates": {
+            "lat": 44.8592,
+            "lng": 15.6555
+          }
+        },
+        {
+          "name": "Zagreb",
+          "nights": 2,
+          "coordinates": {
+            "lat": 45.815,
+            "lng": 15.9819
+          }
+        }
+      ],
+      "tags": [
+        "Food",
+        "Nature",
+        "Culture"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Istrien und die Seen",
+          "pitch": "Trüffel und venezianische Hügelstädtchen im Norden, danach die Stege von Plitvice auf dem Weg in die Hauptstadt."
+        },
+        "es": {
+          "title": "Istria y los lagos",
+          "pitch": "Trufas y pueblos venecianos de altura en el norte y luego las pasarelas de Plitvice camino de la capital."
+        },
+        "fr": {
+          "title": "L'Istrie et les lacs",
+          "pitch": "Truffes et villages vénitiens perchés au nord, puis les passerelles de Plitvice en descendant vers la capitale."
+        },
+        "it": {
+          "title": "Istria e i laghi",
+          "pitch": "Tartufi e borghi veneti di collina a nord, poi le passerelle di Plitvice scendendo verso la capitale."
+        },
+        "pt": {
+          "title": "Ístria e os lagos",
+          "pitch": "Trufas e aldeias venezianas de encosta a norte e depois os passadiços de Plitvice a caminho da capital."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/croatia-istria-and-lakes.png"
+    },
+    {
+      "id": "croatia-island-hop-south",
+      "featuredRank": 3,
+      "countryCode": "HR",
+      "countrySlug": "croatia",
+      "mapColor": "bg-sky-100",
+      "mapAccent": "bg-sky-400",
+      "avatarColor": "bg-sky-600",
+      "curator": "travelflow",
+      "title": "Southern Island Hop",
+      "pitch": "Catamarans out of Split: Brač for the beach, Vis for the quiet and Hvar when you want the evening back.",
+      "style": "island-hopping",
+      "pace": "relaxed",
+      "durationDays": 11,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Split",
+          "nights": 2,
+          "coordinates": {
+            "lat": 43.5389,
+            "lng": 16.298
+          }
+        },
+        {
+          "name": "Brač",
+          "nights": 2,
+          "coordinates": {
+            "lat": 43.3049,
+            "lng": 16.6527
+          }
+        },
+        {
+          "name": "Vis",
+          "nights": 3,
+          "coordinates": {
+            "lat": 43.0459,
+            "lng": 16.1541
+          }
+        },
+        {
+          "name": "Hvar",
+          "nights": 3,
+          "coordinates": {
+            "lat": 43.1726,
+            "lng": 16.4446
+          }
+        }
+      ],
+      "tags": [
+        "Beach",
+        "Nature",
+        "Food"
+      ],
+      "bestMonths": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "localized": {
+        "de": {
+          "title": "Inselhüpfen im Süden",
+          "pitch": "Katamarane ab Split: Brač für den Strand, Vis für die Ruhe und Hvar, wenn der Abend wieder länger werden darf."
+        },
+        "es": {
+          "title": "Islas del sur en catamarán",
+          "pitch": "Catamaranes desde Split: Brač por la playa, Vis por la calma y Hvar cuando apetece noche."
+        },
+        "fr": {
+          "title": "Cabotage dans le sud",
+          "pitch": "Catamarans au départ de Split : Brač pour la plage, Vis pour le calme et Hvar quand on veut des soirées."
+        },
+        "it": {
+          "title": "Isole del sud in catamarano",
+          "pitch": "Catamarani da Spalato: Brač per la spiaggia, Vis per la quiete e Hvar quando torna voglia di serate."
+        },
+        "pt": {
+          "title": "Ilhas do sul de catamarã",
+          "pitch": "Catamarãs a partir de Split: Brač pela praia, Vis pela calma e Hvar quando apetece noite."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/croatia-island-hop-south.png"
+    },
+    {
+      "id": "mexico-yucatan-loop",
+      "featuredRank": 1,
+      "countryCode": "MX",
+      "countrySlug": "mexico",
+      "mapColor": "bg-pink-100",
+      "mapAccent": "bg-pink-400",
+      "avatarColor": "bg-pink-600",
+      "curator": "travelflow",
+      "title": "Yucatán Loop",
+      "pitch": "Cenotes, a colonial capital and Maya cities inland - the Caribbean version that isn't only a resort.",
+      "style": "road-trip",
+      "pace": "balanced",
+      "durationDays": 13,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Cancún",
+          "nights": 2,
+          "coordinates": {
+            "lat": 21.0408,
+            "lng": -86.8735
+          }
+        },
+        {
+          "name": "Valladolid",
+          "nights": 2,
+          "coordinates": {
+            "lat": 20.6896,
+            "lng": -88.2022
+          }
+        },
+        {
+          "name": "Mérida",
+          "nights": 3,
+          "coordinates": {
+            "lat": 20.9305,
+            "lng": -89.6455
+          }
+        },
+        {
+          "name": "Bacalar",
+          "nights": 2,
+          "coordinates": {
+            "lat": 18.6779,
+            "lng": -88.3901
+          }
+        },
+        {
+          "name": "Tulum",
+          "nights": 3,
+          "coordinates": {
+            "lat": 20.1721,
+            "lng": -87.6603
+          }
+        }
+      ],
+      "tags": [
+        "History",
+        "Beach",
+        "Road Trip"
+      ],
+      "bestMonths": [
+        11,
+        12,
+        1,
+        2,
+        3
+      ],
+      "localized": {
+        "de": {
+          "title": "Yucatán-Runde",
+          "pitch": "Cenoten, eine Kolonialhauptstadt und Mayastädte im Landesinneren - die Karibikversion, die nicht nur aus Resorts besteht."
+        },
+        "es": {
+          "title": "Vuelta por Yucatán",
+          "pitch": "Cenotes, una capital colonial y ciudades mayas tierra adentro: el Caribe que no se reduce a los resorts."
+        },
+        "fr": {
+          "title": "Boucle du Yucatán",
+          "pitch": "Cénotes, une capitale coloniale et des cités mayas dans les terres : la version caraïbe qui ne se limite pas aux resorts."
+        },
+        "it": {
+          "title": "Anello dello Yucatán",
+          "pitch": "Cenote, una capitale coloniale e città maya nell'entroterra: i Caraibi che non sono solo resort."
+        },
+        "pt": {
+          "title": "Volta pelo Iucatão",
+          "pitch": "Cenotes, uma capital colonial e cidades maias no interior: as Caraíbas que não são só resorts."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/mexico-yucatan-loop.png"
+    },
+    {
+      "id": "mexico-colonial-highlands",
+      "featuredRank": 2,
+      "countryCode": "MX",
+      "countrySlug": "mexico",
+      "mapColor": "bg-pink-100",
+      "mapAccent": "bg-pink-400",
+      "avatarColor": "bg-pink-600",
+      "curator": "travelflow",
+      "title": "Colonial Highlands",
+      "pitch": "Mexico City's museums, then the silver towns: pastel Guanajuato, stone Querétaro and a monarch butterfly detour in season.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Mexico City",
+          "nights": 4,
+          "coordinates": {
+            "lat": 19.7438,
+            "lng": -99.0151
+          }
+        },
+        {
+          "name": "Querétaro",
+          "nights": 2,
+          "coordinates": {
+            "lat": 20.6188,
+            "lng": -100.1864
+          }
+        },
+        {
+          "name": "San Miguel de Allende",
+          "nights": 2,
+          "coordinates": {
+            "lat": 20.9144,
+            "lng": -100.7452
+          }
+        },
+        {
+          "name": "Guanajuato",
+          "nights": 3,
+          "coordinates": {
+            "lat": 20.917,
+            "lng": -101.1617
+          }
+        }
+      ],
+      "tags": [
+        "Culture",
+        "History",
+        "Art"
+      ],
+      "bestMonths": [
+        10,
+        11,
+        2,
+        3,
+        4
+      ],
+      "localized": {
+        "de": {
+          "title": "Koloniales Hochland",
+          "pitch": "Museen in Mexiko-Stadt, dann die Silberstädte: das pastellene Guanajuato, das steinerne Querétaro und zur Saison ein Abstecher zu den Monarchfaltern."
+        },
+        "es": {
+          "title": "El altiplano colonial",
+          "pitch": "Los museos de la Ciudad de México y luego las ciudades de plata: Guanajuato en pastel, Querétaro en piedra y, en temporada, las mariposas monarca."
+        },
+        "fr": {
+          "title": "Hauts plateaux coloniaux",
+          "pitch": "Les musées de Mexico, puis les villes de l'argent : Guanajuato en pastel, Querétaro en pierre et, en saison, les papillons monarques."
+        },
+        "it": {
+          "title": "Altopiani coloniali",
+          "pitch": "I musei di Città del Messico e poi le città dell'argento: Guanajuato pastello, Querétaro di pietra e, in stagione, le farfalle monarca."
+        },
+        "pt": {
+          "title": "Planalto colonial",
+          "pitch": "Os museus da Cidade do México e depois as cidades da prata: Guanajuato em tons pastel, Querétaro em pedra e, na época, as borboletas-monarca."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/mexico-colonial-highlands.png"
+    },
+    {
+      "id": "mexico-oaxaca-and-pacific",
+      "featuredRank": 3,
+      "countryCode": "MX",
+      "countrySlug": "mexico",
+      "mapColor": "bg-pink-100",
+      "mapAccent": "bg-pink-400",
+      "avatarColor": "bg-pink-600",
+      "curator": "travelflow",
+      "title": "Oaxaca and the Pacific",
+      "pitch": "Mole and mezcal in the valleys, a mountain road down to the coast and surf-town evenings at Puerto Escondido.",
+      "style": "food-and-wine",
+      "pace": "relaxed",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Oaxaca",
+          "nights": 4,
+          "coordinates": {
+            "lat": 16.9988,
+            "lng": -96.7261
+          }
+        },
+        {
+          "name": "Puerto Escondido",
+          "nights": 3,
+          "coordinates": {
+            "lat": 15.8768,
+            "lng": -97.0891
+          }
+        },
+        {
+          "name": "Mazunte",
+          "nights": 2,
+          "coordinates": {
+            "lat": 15.6677,
+            "lng": -96.5545
+          }
+        },
+        {
+          "name": "Huatulco",
+          "nights": 2,
+          "coordinates": {
+            "lat": 15.7754,
+            "lng": -96.2605
+          }
+        }
+      ],
+      "tags": [
+        "Food",
+        "Surf",
+        "Beach"
+      ],
+      "bestMonths": [
+        11,
+        12,
+        1,
+        2,
+        3
+      ],
+      "localized": {
+        "de": {
+          "title": "Oaxaca und der Pazifik",
+          "pitch": "Mole und Mezcal in den Tälern, eine Bergstraße hinunter an die Küste und Surferabende in Puerto Escondido."
+        },
+        "es": {
+          "title": "Oaxaca y el Pacífico",
+          "pitch": "Mole y mezcal en los valles, una carretera de montaña hasta la costa y noches surferas en Puerto Escondido."
+        },
+        "fr": {
+          "title": "Oaxaca et le Pacifique",
+          "pitch": "Mole et mezcal dans les vallées, une route de montagne vers la côte et des soirées surf à Puerto Escondido."
+        },
+        "it": {
+          "title": "Oaxaca e il Pacifico",
+          "pitch": "Mole e mezcal nelle valli, una strada di montagna fino alla costa e serate da surfisti a Puerto Escondido."
+        },
+        "pt": {
+          "title": "Oaxaca e o Pacífico",
+          "pitch": "Mole e mezcal nos vales, uma estrada de montanha até à costa e noites de surf em Puerto Escondido."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/mexico-oaxaca-and-pacific.png"
+    },
+    {
+      "id": "sri-lanka-hill-country-and-coast",
+      "featuredRank": 1,
+      "countryCode": "LK",
+      "countrySlug": "sri-lanka",
+      "mapColor": "bg-green-100",
+      "mapAccent": "bg-green-400",
+      "avatarColor": "bg-green-600",
+      "curator": "travelflow",
+      "title": "Hill Country and South Coast",
+      "pitch": "The blue train up through the tea estates, then straight down to a fort town and a week of southern beaches.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 13,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Colombo",
+          "nights": 1,
+          "coordinates": {
+            "lat": 6.8216,
+            "lng": 79.8859
+          }
+        },
+        {
+          "name": "Kandy",
+          "nights": 2,
+          "coordinates": {
+            "lat": 7.2906,
+            "lng": 80.6337
+          }
+        },
+        {
+          "name": "Nuwara Eliya",
+          "nights": 2,
+          "coordinates": {
+            "lat": 6.9607,
+            "lng": 80.7693
+          }
+        },
+        {
+          "name": "Ella",
+          "nights": 2,
+          "coordinates": {
+            "lat": 6.8731,
+            "lng": 81.0491
+          }
+        },
+        {
+          "name": "Galle",
+          "nights": 2,
+          "coordinates": {
+            "lat": 5.9937,
+            "lng": 80.3203
+          }
+        },
+        {
+          "name": "Mirissa",
+          "nights": 3,
+          "coordinates": {
+            "lat": 5.9483,
+            "lng": 80.4716
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Beach",
+        "Culture"
+      ],
+      "bestMonths": [
+        12,
+        1,
+        2,
+        3
+      ],
+      "localized": {
+        "de": {
+          "title": "Bergland und Südküste",
+          "pitch": "Mit dem blauen Zug hinauf durch die Teegärten und dann direkt hinunter zur Festungsstadt und einer Woche Südstrand."
+        },
+        "es": {
+          "title": "Montañas y costa sur",
+          "pitch": "El tren azul entre plantaciones de té y, después, directos a la ciudad fortificada y a una semana de playas del sur."
+        },
+        "fr": {
+          "title": "Hautes terres et côte sud",
+          "pitch": "Le train bleu à travers les plantations de thé, puis descente directe vers la ville fortifiée et une semaine de plages."
+        },
+        "it": {
+          "title": "Altopiani e costa sud",
+          "pitch": "Il treno blu su per le piantagioni di tè e poi giù dritti alla città fortificata e a una settimana di spiagge."
+        },
+        "pt": {
+          "title": "Serra e costa sul",
+          "pitch": "O comboio azul pelas plantações de chá e depois direitos à cidade fortificada e a uma semana de praias do sul."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/sri-lanka-hill-country-and-coast.png"
+    },
+    {
+      "id": "sri-lanka-cultural-triangle",
+      "featuredRank": 2,
+      "countryCode": "LK",
+      "countrySlug": "sri-lanka",
+      "mapColor": "bg-green-100",
+      "mapAccent": "bg-green-400",
+      "avatarColor": "bg-green-600",
+      "curator": "travelflow",
+      "title": "Cultural Triangle",
+      "pitch": "Ancient capitals and a rock fortress at sunrise, with a safari afternoon on the way back to the hills.",
+      "style": "off-the-beaten-path",
+      "pace": "balanced",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Negombo",
+          "nights": 1,
+          "coordinates": {
+            "lat": 7.2055,
+            "lng": 79.8513
+          }
+        },
+        {
+          "name": "Anuradhapura",
+          "nights": 2,
+          "coordinates": {
+            "lat": 8.3114,
+            "lng": 80.4037
+          }
+        },
+        {
+          "name": "Polonnaruwa",
+          "nights": 2,
+          "coordinates": {
+            "lat": 7.9147,
+            "lng": 81.0001
+          }
+        },
+        {
+          "name": "Sigiriya",
+          "nights": 2,
+          "coordinates": {
+            "lat": 7.9456,
+            "lng": 80.7616
+          }
+        },
+        {
+          "name": "Kandy",
+          "nights": 2,
+          "coordinates": {
+            "lat": 7.2906,
+            "lng": 80.6337
+          }
+        }
+      ],
+      "tags": [
+        "History",
+        "Culture",
+        "Nature"
+      ],
+      "bestMonths": [
+        1,
+        2,
+        3,
+        7,
+        8
+      ],
+      "localized": {
+        "de": {
+          "title": "Kulturelles Dreieck",
+          "pitch": "Alte Hauptstädte und ein Felsenfort im Morgenlicht, dazu ein Safari-Nachmittag auf dem Rückweg in die Berge."
+        },
+        "es": {
+          "title": "El triángulo cultural",
+          "pitch": "Capitales antiguas y una fortaleza sobre roca al amanecer, con una tarde de safari camino de las montañas."
+        },
+        "fr": {
+          "title": "Le triangle culturel",
+          "pitch": "Capitales anciennes et une forteresse rocheuse au lever du jour, avec un après-midi de safari sur le retour."
+        },
+        "it": {
+          "title": "Il triangolo culturale",
+          "pitch": "Capitali antiche e una fortezza sulla roccia all'alba, con un pomeriggio di safari tornando verso i monti."
+        },
+        "pt": {
+          "title": "O triângulo cultural",
+          "pitch": "Capitais antigas e uma fortaleza sobre rocha ao amanhecer, com uma tarde de safari no regresso à serra."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/sri-lanka-cultural-triangle.png"
+    },
+    {
+      "id": "sri-lanka-east-coast-season",
+      "featuredRank": 3,
+      "countryCode": "LK",
+      "countrySlug": "sri-lanka",
+      "mapColor": "bg-green-100",
+      "mapAccent": "bg-green-400",
+      "avatarColor": "bg-green-600",
+      "curator": "travelflow",
+      "title": "East Coast in Season",
+      "pitch": "The summer half of the island: leopards out of Tissamaharama, point breaks at Arugam Bay and empty sand up at Trincomalee.",
+      "style": "beach-and-culture",
+      "pace": "relaxed",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Colombo",
+          "nights": 1,
+          "coordinates": {
+            "lat": 6.8216,
+            "lng": 79.8859
+          }
+        },
+        {
+          "name": "Tissamaharama",
+          "nights": 2,
+          "coordinates": {
+            "lat": 6.2776,
+            "lng": 81.286
+          }
+        },
+        {
+          "name": "Arugam Bay",
+          "nights": 4,
+          "coordinates": {
+            "lat": 6.838,
+            "lng": 81.8252
+          }
+        },
+        {
+          "name": "Batticaloa",
+          "nights": 1,
+          "coordinates": {
+            "lat": 7.7051,
+            "lng": 81.6772
+          }
+        },
+        {
+          "name": "Trincomalee",
+          "nights": 3,
+          "coordinates": {
+            "lat": 8.5392,
+            "lng": 81.1813
+          }
+        }
+      ],
+      "tags": [
+        "Surf",
+        "Beach",
+        "Nature"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "localized": {
+        "de": {
+          "title": "Ostküste zur richtigen Zeit",
+          "pitch": "Die Sommerseite der Insel: Leoparden ab Tissamaharama, Pointbreaks in Arugam Bay und leerer Sand oben in Trincomalee."
+        },
+        "es": {
+          "title": "Costa este en temporada",
+          "pitch": "La mitad veraniega de la isla: leopardos desde Tissamaharama, olas en Arugam Bay y arena vacía en Trincomalee."
+        },
+        "fr": {
+          "title": "Côte est en saison",
+          "pitch": "La moitié estivale de l'île : léopards au départ de Tissamaharama, spots d'Arugam Bay et sable désert à Trincomalee."
+        },
+        "it": {
+          "title": "Costa est in stagione",
+          "pitch": "La metà estiva dell'isola: leopardi da Tissamaharama, onde ad Arugam Bay e sabbia deserta a Trincomalee."
+        },
+        "pt": {
+          "title": "Costa leste na época",
+          "pitch": "A metade de verão da ilha: leopardos a partir de Tissamaharama, ondas em Arugam Bay e areia deserta em Trincomalee."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/sri-lanka-east-coast-season.png"
+    },
+    {
+      "id": "norway-fjords-by-rail-and-ferry",
+      "featuredRank": 1,
+      "countryCode": "NO",
+      "countrySlug": "norway",
+      "mapColor": "bg-slate-100",
+      "mapAccent": "bg-slate-400",
+      "avatarColor": "bg-slate-600",
+      "curator": "travelflow",
+      "title": "Fjords by Rail and Ferry",
+      "pitch": "Oslo to Bergen the long way, swapping the mountain train for a fjord boat and back again - no car needed at any point.",
+      "style": "classic",
+      "pace": "relaxed",
+      "durationDays": 9,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Oslo",
+          "nights": 2,
+          "coordinates": {
+            "lat": 60.1939,
+            "lng": 11.1004
+          }
+        },
+        {
+          "name": "Flåm",
+          "nights": 2,
+          "coordinates": {
+            "lat": 60.8608,
+            "lng": 7.1118
+          }
+        },
+        {
+          "name": "Balestrand",
+          "nights": 1,
+          "coordinates": {
+            "lat": 61.198,
+            "lng": 6.4249
+          }
+        },
+        {
+          "name": "Bergen",
+          "nights": 3,
+          "coordinates": {
+            "lat": 60.2934,
+            "lng": 5.2181
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Photography",
+        "Culture"
+      ],
+      "bestMonths": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "localized": {
+        "de": {
+          "title": "Fjorde per Bahn und Fähre",
+          "pitch": "Von Oslo nach Bergen auf dem langen Weg, mit Wechsel zwischen Bergbahn und Fjordboot - ganz ohne Auto."
+        },
+        "es": {
+          "title": "Fiordos en tren y ferry",
+          "pitch": "De Oslo a Bergen por el camino largo, alternando tren de montaña y barco por el fiordo, sin coche en ningún momento."
+        },
+        "fr": {
+          "title": "Les fjords en train et en ferry",
+          "pitch": "D'Oslo à Bergen par le chemin le plus long, entre train de montagne et bateau de fjord, sans voiture."
+        },
+        "it": {
+          "title": "Fiordi in treno e traghetto",
+          "pitch": "Da Oslo a Bergen per la via lunga, alternando treno di montagna e battello sul fiordo, senza mai un'auto."
+        },
+        "pt": {
+          "title": "Fiordes de comboio e ferry",
+          "pitch": "De Oslo a Bergen pelo caminho longo, alternando comboio de montanha e barco no fiorde, sem carro nenhum."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/norway-fjords-by-rail-and-ferry.png"
+    },
+    {
+      "id": "norway-lofoten-and-the-north",
+      "featuredRank": 2,
+      "countryCode": "NO",
+      "countrySlug": "norway",
+      "mapColor": "bg-slate-100",
+      "mapAccent": "bg-slate-400",
+      "avatarColor": "bg-slate-600",
+      "curator": "travelflow",
+      "title": "Lofoten and the Arctic North",
+      "pitch": "Red fishing cabins under granite peaks, then far enough north that the sun either never sets or never rises.",
+      "style": "nature-and-hiking",
+      "pace": "balanced",
+      "durationDays": 11,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Bodø",
+          "nights": 1,
+          "coordinates": {
+            "lat": 67.2692,
+            "lng": 14.3653
+          }
+        },
+        {
+          "name": "Svolvær",
+          "nights": 3,
+          "coordinates": {
+            "lat": 68.2433,
+            "lng": 14.6692
+          }
+        },
+        {
+          "name": "Reine",
+          "nights": 3,
+          "coordinates": {
+            "lat": 67.9324,
+            "lng": 13.0887
+          }
+        },
+        {
+          "name": "Tromsø",
+          "nights": 3,
+          "coordinates": {
+            "lat": 69.6833,
+            "lng": 18.9189
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Hiking",
+        "Photography"
+      ],
+      "bestMonths": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "localized": {
+        "de": {
+          "title": "Lofoten und der hohe Norden",
+          "pitch": "Rote Fischerhütten unter Granitgipfeln und danach so weit nördlich, dass die Sonne gar nicht mehr untergeht."
+        },
+        "es": {
+          "title": "Lofoten y el norte ártico",
+          "pitch": "Cabañas rojas de pescadores bajo cumbres de granito y luego tan al norte que el sol ya no se pone."
+        },
+        "fr": {
+          "title": "Lofoten et le Grand Nord",
+          "pitch": "Cabanes de pêcheurs rouges sous des sommets de granit, puis assez au nord pour que le soleil ne se couche plus."
+        },
+        "it": {
+          "title": "Lofoten e l'estremo nord",
+          "pitch": "Capanne rosse da pesca sotto cime di granito e poi così a nord che il sole non tramonta più."
+        },
+        "pt": {
+          "title": "Lofoten e o norte árctico",
+          "pitch": "Cabanas vermelhas de pesca sob picos de granito e depois tão a norte que o sol já não se põe."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/norway-lofoten-and-the-north.png"
+    },
+    {
+      "id": "norway-southern-road-trip",
+      "featuredRank": 3,
+      "countryCode": "NO",
+      "countrySlug": "norway",
+      "mapColor": "bg-slate-100",
+      "mapAccent": "bg-slate-400",
+      "avatarColor": "bg-slate-600",
+      "curator": "travelflow",
+      "title": "Southern Fjord Road Trip",
+      "pitch": "A rental car and the big three hikes: the pulpit rock, the glacier tongue at Loen and the Atlantic Road at the end.",
+      "style": "road-trip",
+      "pace": "fast",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Stavanger",
+          "nights": 2,
+          "coordinates": {
+            "lat": 58.8767,
+            "lng": 5.6378
+          }
+        },
+        {
+          "name": "Odda",
+          "nights": 2,
+          "coordinates": {
+            "lat": 59.9373,
+            "lng": 6.9177
+          }
+        },
+        {
+          "name": "Loen",
+          "nights": 2,
+          "coordinates": {
+            "lat": 61.8711,
+            "lng": 6.848
+          }
+        },
+        {
+          "name": "Ålesund",
+          "nights": 2,
+          "coordinates": {
+            "lat": 62.5604,
+            "lng": 6.1108
+          }
+        },
+        {
+          "name": "Molde",
+          "nights": 1,
+          "coordinates": {
+            "lat": 62.7403,
+            "lng": 7.1808
+          }
+        }
+      ],
+      "tags": [
+        "Road Trip",
+        "Hiking",
+        "Nature"
+      ],
+      "bestMonths": [
+        6,
+        7,
+        8
+      ],
+      "localized": {
+        "de": {
+          "title": "Fjord-Roadtrip im Süden",
+          "pitch": "Mietwagen und die drei großen Wanderungen: Preikestolen, die Gletscherzunge bei Loen und zum Schluss die Atlantikstraße."
+        },
+        "es": {
+          "title": "Ruta por los fiordos del sur",
+          "pitch": "Coche de alquiler y las tres grandes caminatas: el Púlpito, la lengua glaciar de Loen y la Carretera del Atlántico al final."
+        },
+        "fr": {
+          "title": "Road trip des fjords du sud",
+          "pitch": "Une voiture et les trois grandes randos : le Preikestolen, la langue glaciaire de Loen et la route de l'Atlantique pour finir."
+        },
+        "it": {
+          "title": "Road trip nei fiordi del sud",
+          "pitch": "Un'auto a noleggio e le tre grandi escursioni: il Preikestolen, la lingua glaciale di Loen e la strada dell'Atlantico alla fine."
+        },
+        "pt": {
+          "title": "Viagem pelos fiordes do sul",
+          "pitch": "Carro alugado e as três grandes caminhadas: o Preikestolen, a língua glaciar de Loen e a Estrada do Atlântico no fim."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/norway-southern-road-trip.png"
+    },
+    {
+      "id": "switzerland-grand-train-tour",
+      "featuredRank": 1,
+      "countryCode": "CH",
+      "countrySlug": "switzerland",
+      "mapColor": "bg-red-100",
+      "mapAccent": "bg-red-400",
+      "avatarColor": "bg-red-600",
+      "curator": "travelflow",
+      "title": "Grand Train Tour",
+      "pitch": "Panorama carriages end to end: Lucerne's lake, the Bernese peaks, the Matterhorn and a palm-lined finish in the south.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 13,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Lucerne",
+          "nights": 2,
+          "coordinates": {
+            "lat": 47.0502,
+            "lng": 8.3093
+          }
+        },
+        {
+          "name": "Interlaken",
+          "nights": 3,
+          "coordinates": {
+            "lat": 46.6863,
+            "lng": 7.8632
+          }
+        },
+        {
+          "name": "Zermatt",
+          "nights": 3,
+          "coordinates": {
+            "lat": 46.0207,
+            "lng": 7.7491
+          }
+        },
+        {
+          "name": "St. Moritz",
+          "nights": 2,
+          "coordinates": {
+            "lat": 46.4908,
+            "lng": 9.8355
+          }
+        },
+        {
+          "name": "Lugano",
+          "nights": 2,
+          "coordinates": {
+            "lat": 46.0037,
+            "lng": 8.9511
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Photography",
+        "Culture"
+      ],
+      "bestMonths": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "localized": {
+        "de": {
+          "title": "Grand Train Tour",
+          "pitch": "Panoramawagen von Anfang bis Ende: Luzerner See, Berner Gipfel, Matterhorn und zum Schluss Palmen im Süden."
+        },
+        "es": {
+          "title": "Gran Tour en tren",
+          "pitch": "Vagones panorámicos de punta a punta: el lago de Lucerna, los picos berneses, el Cervino y un final entre palmeras."
+        },
+        "fr": {
+          "title": "Grand Tour en train",
+          "pitch": "Voitures panoramiques d'un bout à l'autre : le lac de Lucerne, les sommets bernois, le Cervin et une fin sous les palmiers."
+        },
+        "it": {
+          "title": "Grand Train Tour",
+          "pitch": "Carrozze panoramiche da un capo all'altro: il lago di Lucerna, le cime bernesi, il Cervino e un finale tra le palme."
+        },
+        "pt": {
+          "title": "Grande Volta de comboio",
+          "pitch": "Carruagens panorâmicas de ponta a ponta: o lago de Lucerna, os picos berneses, o Matterhorn e um final entre palmeiras."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/switzerland-grand-train-tour.png"
+    },
+    {
+      "id": "switzerland-alpine-hiking-week",
+      "featuredRank": 2,
+      "countryCode": "CH",
+      "countrySlug": "switzerland",
+      "mapColor": "bg-red-100",
+      "mapAccent": "bg-red-400",
+      "avatarColor": "bg-red-600",
+      "curator": "travelflow",
+      "title": "Alpine Hiking Week",
+      "pitch": "Cable car up, walk down, repeat - three valleys of marked trails with a hot dinner waiting at the bottom.",
+      "style": "nature-and-hiking",
+      "pace": "relaxed",
+      "durationDays": 11,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Grindelwald",
+          "nights": 3,
+          "coordinates": {
+            "lat": 46.6242,
+            "lng": 8.0414
+          }
+        },
+        {
+          "name": "Mürren",
+          "nights": 2,
+          "coordinates": {
+            "lat": 46.5594,
+            "lng": 7.8927
+          }
+        },
+        {
+          "name": "Kandersteg",
+          "nights": 2,
+          "coordinates": {
+            "lat": 46.4947,
+            "lng": 7.6744
+          }
+        },
+        {
+          "name": "Zermatt",
+          "nights": 3,
+          "coordinates": {
+            "lat": 46.0207,
+            "lng": 7.7491
+          }
+        }
+      ],
+      "tags": [
+        "Hiking",
+        "Nature",
+        "Photography"
+      ],
+      "bestMonths": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "localized": {
+        "de": {
+          "title": "Wanderwoche in den Alpen",
+          "pitch": "Mit der Bahn hoch, zu Fuß runter, und das dreimal - drei Täler voller markierter Wege und abends ein warmes Essen."
+        },
+        "es": {
+          "title": "Semana de senderismo alpino",
+          "pitch": "Subir en teleférico, bajar andando y repetir: tres valles de senderos marcados y una cena caliente al final."
+        },
+        "fr": {
+          "title": "Semaine de randonnée alpine",
+          "pitch": "Monter en téléphérique, descendre à pied, recommencer : trois vallées de sentiers balisés et un dîner chaud en bas."
+        },
+        "it": {
+          "title": "Settimana di trekking alpino",
+          "pitch": "Su in funivia, giù a piedi, e da capo: tre valli di sentieri segnati e una cena calda ad aspettare."
+        },
+        "pt": {
+          "title": "Semana de caminhadas alpinas",
+          "pitch": "Subir de teleférico, descer a pé e repetir: três vales de trilhos marcados e um jantar quente à espera."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/switzerland-alpine-hiking-week.png"
+    },
+    {
+      "id": "switzerland-lakes-and-cities",
+      "featuredRank": 3,
+      "countryCode": "CH",
+      "countrySlug": "switzerland",
+      "mapColor": "bg-red-100",
+      "mapAccent": "bg-red-400",
+      "avatarColor": "bg-red-600",
+      "curator": "travelflow",
+      "title": "Lakes and Cities",
+      "pitch": "A gentler Switzerland at lake level: Zurich's old town, vineyard terraces above Lausanne and Bern's arcades in between.",
+      "style": "city-break",
+      "pace": "relaxed",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Zurich",
+          "nights": 3,
+          "coordinates": {
+            "lat": 47.4581,
+            "lng": 8.5481
+          }
+        },
+        {
+          "name": "Bern",
+          "nights": 2,
+          "coordinates": {
+            "lat": 46.9127,
+            "lng": 7.4988
+          }
+        },
+        {
+          "name": "Lausanne",
+          "nights": 2,
+          "coordinates": {
+            "lat": 46.5197,
+            "lng": 6.6323
+          }
+        },
+        {
+          "name": "Geneva",
+          "nights": 2,
+          "coordinates": {
+            "lat": 46.2381,
+            "lng": 6.109
+          }
+        }
+      ],
+      "tags": [
+        "Culture",
+        "Wine",
+        "Art"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Seen und Städte",
+          "pitch": "Die sanftere Schweiz auf Seehöhe: Zürichs Altstadt, Weinterrassen über Lausanne und dazwischen Berns Lauben."
+        },
+        "es": {
+          "title": "Lagos y ciudades",
+          "pitch": "La Suiza tranquila a nivel del lago: el casco viejo de Zúrich, los viñedos sobre Lausana y los soportales de Berna."
+        },
+        "fr": {
+          "title": "Lacs et villes",
+          "pitch": "La Suisse douce au bord de l'eau : la vieille ville de Zurich, les terrasses de vignes au-dessus de Lausanne et les arcades de Berne."
+        },
+        "it": {
+          "title": "Laghi e città",
+          "pitch": "La Svizzera più tranquilla a livello del lago: la città vecchia di Zurigo, i vigneti sopra Losanna e i portici di Berna."
+        },
+        "pt": {
+          "title": "Lagos e cidades",
+          "pitch": "A Suíça mais calma ao nível do lago: o centro velho de Zurique, as vinhas sobre Lausana e as arcadas de Berna."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/switzerland-lakes-and-cities.png"
+    },
+    {
+      "id": "indonesia-bali-and-neighbours",
+      "featuredRank": 1,
+      "countryCode": "ID",
+      "countrySlug": "indonesia",
+      "mapColor": "bg-purple-100",
+      "mapAccent": "bg-purple-400",
+      "avatarColor": "bg-purple-600",
+      "curator": "travelflow",
+      "title": "Bali and the Gilis",
+      "pitch": "Rice terraces and temples inland, then a fast boat east to three car-free islands and their reefs.",
+      "style": "island-hopping",
+      "pace": "relaxed",
+      "durationDays": 14,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Ubud",
+          "nights": 4,
+          "coordinates": {
+            "lat": -8.5069,
+            "lng": 115.2625
+          }
+        },
+        {
+          "name": "Canggu",
+          "nights": 3,
+          "coordinates": {
+            "lat": -8.649,
+            "lng": 115.1379
+          }
+        },
+        {
+          "name": "Gili Trawangan",
+          "nights": 3,
+          "coordinates": {
+            "lat": -8.3483,
+            "lng": 116.0384
+          }
+        },
+        {
+          "name": "Kuta Lombok",
+          "nights": 3,
+          "coordinates": {
+            "lat": -8.8879,
+            "lng": 116.2838
+          }
+        }
+      ],
+      "tags": [
+        "Beach",
+        "Culture",
+        "Surf"
+      ],
+      "bestMonths": [
+        4,
+        5,
+        6,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Bali und die Gilis",
+          "pitch": "Reisterrassen und Tempel im Landesinneren, dann per Schnellboot nach Osten zu drei autofreien Inseln und ihren Riffen."
+        },
+        "es": {
+          "title": "Bali y las Gili",
+          "pitch": "Arrozales y templos tierra adentro y luego una lancha rápida al este, a tres islas sin coches y sus arrecifes."
+        },
+        "fr": {
+          "title": "Bali et les Gili",
+          "pitch": "Rizières et temples à l'intérieur, puis un bateau rapide vers l'est et trois îles sans voitures et leurs récifs."
+        },
+        "it": {
+          "title": "Bali e le Gili",
+          "pitch": "Risaie e templi nell'entroterra, poi un motoscafo verso est e tre isole senza auto con le loro barriere."
+        },
+        "pt": {
+          "title": "Bali e as Gili",
+          "pitch": "Arrozais e templos no interior e depois um barco rápido para leste, até três ilhas sem carros e os seus recifes."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/indonesia-bali-and-neighbours.png"
+    },
+    {
+      "id": "indonesia-java-volcano-line",
+      "featuredRank": 2,
+      "countryCode": "ID",
+      "countrySlug": "indonesia",
+      "mapColor": "bg-purple-100",
+      "mapAccent": "bg-purple-400",
+      "avatarColor": "bg-purple-600",
+      "curator": "travelflow",
+      "title": "Java Volcano Line",
+      "pitch": "Overnight trains across Java: Borobudur at first light, the caldera at Bromo and the blue fire crater at the far end.",
+      "style": "off-the-beaten-path",
+      "pace": "fast",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Jakarta",
+          "nights": 2,
+          "coordinates": {
+            "lat": -6.2672,
+            "lng": 106.8917
+          }
+        },
+        {
+          "name": "Yogyakarta",
+          "nights": 3,
+          "coordinates": {
+            "lat": -7.7882,
+            "lng": 110.432
+          }
+        },
+        {
+          "name": "Malang",
+          "nights": 2,
+          "coordinates": {
+            "lat": -7.9291,
+            "lng": 112.7142
+          }
+        },
+        {
+          "name": "Probolinggo",
+          "nights": 2,
+          "coordinates": {
+            "lat": -7.7764,
+            "lng": 113.2037
+          }
+        },
+        {
+          "name": "Banyuwangi",
+          "nights": 2,
+          "coordinates": {
+            "lat": -8.2192,
+            "lng": 114.3692
+          }
+        }
+      ],
+      "tags": [
+        "Adventure",
+        "Nature",
+        "History"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "localized": {
+        "de": {
+          "title": "Javas Vulkanlinie",
+          "pitch": "Nachtzüge quer über Java: Borobudur im ersten Licht, die Caldera am Bromo und ganz am Ende der blaue Feuerkrater."
+        },
+        "es": {
+          "title": "La línea volcánica de Java",
+          "pitch": "Trenes nocturnos por Java: Borobudur al alba, la caldera del Bromo y, al final, el cráter de fuego azul."
+        },
+        "fr": {
+          "title": "La ligne des volcans de Java",
+          "pitch": "Trains de nuit à travers Java : Borobudur aux premières lueurs, la caldeira du Bromo et, tout au bout, le cratère au feu bleu."
+        },
+        "it": {
+          "title": "La linea dei vulcani di Giava",
+          "pitch": "Treni notturni attraverso Giava: Borobudur alle prime luci, la caldera del Bromo e, in fondo, il cratere dal fuoco blu."
+        },
+        "pt": {
+          "title": "A linha vulcânica de Java",
+          "pitch": "Comboios nocturnos por Java: Borobudur às primeiras luzes, a caldeira do Bromo e, no fim, a cratera de fogo azul."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/indonesia-java-volcano-line.png"
+    },
+    {
+      "id": "indonesia-komodo-and-flores",
+      "featuredRank": 3,
+      "countryCode": "ID",
+      "countrySlug": "indonesia",
+      "mapColor": "bg-purple-100",
+      "mapAccent": "bg-purple-400",
+      "avatarColor": "bg-purple-600",
+      "curator": "travelflow",
+      "title": "Komodo and Flores",
+      "pitch": "A liveaboard week around the dragons, then the road inland past three crater lakes that change colour.",
+      "style": "nature-and-hiking",
+      "pace": "balanced",
+      "durationDays": 13,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Labuan Bajo",
+          "nights": 4,
+          "coordinates": {
+            "lat": -8.4925,
+            "lng": 119.8773
+          }
+        },
+        {
+          "name": "Ruteng",
+          "nights": 2,
+          "coordinates": {
+            "lat": -8.6144,
+            "lng": 120.4665
+          }
+        },
+        {
+          "name": "Bajawa",
+          "nights": 2,
+          "coordinates": {
+            "lat": -8.7923,
+            "lng": 120.9606
+          }
+        },
+        {
+          "name": "Ende",
+          "nights": 2,
+          "coordinates": {
+            "lat": -8.8491,
+            "lng": 121.661
+          }
+        },
+        {
+          "name": "Maumere",
+          "nights": 2,
+          "coordinates": {
+            "lat": -8.6246,
+            "lng": 122.2147
+          }
+        }
+      ],
+      "tags": [
+        "Adventure",
+        "Nature",
+        "Photography"
+      ],
+      "bestMonths": [
+        4,
+        5,
+        6,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Komodo und Flores",
+          "pitch": "Eine Woche an Bord bei den Waranen und danach die Straße landeinwärts vorbei an drei farbwechselnden Kraterseen."
+        },
+        "es": {
+          "title": "Komodo y Flores",
+          "pitch": "Una semana a bordo entre dragones y luego la carretera al interior, pasando por tres lagos de cráter que cambian de color."
+        },
+        "fr": {
+          "title": "Komodo et Florès",
+          "pitch": "Une semaine à bord chez les dragons, puis la route intérieure et ses trois lacs de cratère qui changent de couleur."
+        },
+        "it": {
+          "title": "Komodo e Flores",
+          "pitch": "Una settimana a bordo tra i draghi e poi la strada interna con tre laghi vulcanici che cambiano colore."
+        },
+        "pt": {
+          "title": "Komodo e Flores",
+          "pitch": "Uma semana a bordo entre os dragões e depois a estrada interior com três lagos de cratera que mudam de cor."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/indonesia-komodo-and-flores.png"
     }
   ]
 }
