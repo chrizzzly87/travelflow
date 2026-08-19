@@ -50,7 +50,7 @@ interface CountryTravelRow {
   avoidMonths: number[];
   suggestedTripDays: { min: number; max: number; recommended: number };
   climateNotes?: string;
-  events?: Array<{ id: string; name: string; month: number; type: string; summary: string }>;
+  events?: DestinationEvent[];
 }
 
 interface IslandSeed {
@@ -137,6 +137,9 @@ const THAILAND_EVENTS: DestinationEvent[] = [
     type: 'festival',
     summary: 'Thai New Year combines family and temple traditions with public water celebrations.',
     sourceUrl: 'https://www.tourismthailand.org/Experiences/Details/festivals/29',
+    startDay: 13,
+    endDay: 15,
+    recurrence: { kind: 'fixed', rule: '13 to 15 April, extended by several days in Chiang Mai and Pattaya' },
   },
   {
     id: 'loi-krathong',
@@ -145,6 +148,8 @@ const THAILAND_EVENTS: DestinationEvent[] = [
     type: 'festival',
     summary: 'Communities gather for candlelit floating-basket ceremonies after the rainy season.',
     sourceUrl: 'https://www.tourismthailand.org/Experiences/Details/festivals/29',
+    recurrence: { kind: 'lunar', rule: 'Full moon of the twelfth Thai lunar month — usually November' },
+    monthQualifier: 'mid',
   },
 ];
 
