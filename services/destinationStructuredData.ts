@@ -1,5 +1,6 @@
 import type { DestinationGuideEntry, DestinationEvent } from '../shared/destinationGuides';
 import type { ResolvedDestinationGuide } from './destinationGuideService';
+import { resolveNextOccurrence } from './festivalDateService';
 
 export interface DestinationStructuredDataOptions {
   resolved: ResolvedDestinationGuide;
@@ -39,8 +40,8 @@ export const resolveStructuredDataOrigin = (): string => {
 };
 
 /**
- * Guide events only carry a month, so we publish the next upcoming occurrence at
- * month precision (ISO 8601 `YYYY-MM`) instead of inventing an exact day.
+ * Month-precision fallback (ISO 8601 `YYYY-MM`) for events that carry nothing but
+ * a month. Publishing `2027-02` is honest; inventing `2027-02-14` is not.
  */
 export const resolveEventStartDate = (month: number, now: Date): string | undefined => {
   if (!Number.isInteger(month) || month < 1 || month > 12) return undefined;
@@ -49,22 +50,38 @@ export const resolveEventStartDate = (month: number, now: Date): string | undefi
   return `${year}-${MONTH_PAD(month)}`;
 };
 
+/**
+ * Schema.org dates for one event, at the best precision the data supports:
+ * a real `YYYY-MM-DD` range when the event is pinned to days, and the
+ * `YYYY-MM` fallback otherwise. Never a fabricated day.
+ */
+export const resolveEventSchemaDates = (
+  event: DestinationEvent,
+  now: Date,
+): { startDate?: string; endDate?: string } => {
+  const occurrence = resolveNextOccurrence(event, now);
+  if (occurrence.kind === 'exact') {
+    return { startDate: occurrence.date, endDate: occurrence.endDate };
+  }
+  const startDate = resolveEventStartDate(occurrence.month, now);
+  return startDate ? { startDate } : {};
+};
+
 const buildEventNode = (
   event: DestinationEvent,
   placeName: string,
   now: Date,
-): Record<string, unknown> => {
-  const startDate = resolveEventStartDate(event.month, now);
-  return {
-    '@type': 'Event',
-    name: event.name,
-    ...(event.summary ? { description: event.summary } : {}),
-    ...(startDate ? { startDate } : {}),
-    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-    location: { '@type': 'Place', name: placeName },
-    ...(event.sourceUrl ? { url: event.sourceUrl } : {}),
-  };
-};
+  locationType: 'Place' | 'Country' = 'Place',
+): Record<string, unknown> => ({
+  '@type': 'Event',
+  name: event.name,
+  ...(event.summary ? { description: event.summary } : {}),
+  ...resolveEventSchemaDates(event, now),
+  eventStatus: 'https://schema.org/EventScheduled',
+  eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+  location: { '@type': locationType, name: placeName },
+  ...(event.sourceUrl ? { url: event.sourceUrl } : {}),
+});
 
 const buildGeoNode = (guide: DestinationGuideEntry): Record<string, unknown> | undefined => {
   const latitude = guide.facts?.latitude;
@@ -116,3 +133,36 @@ export const buildDestinationStructuredData = ({
 export const serializeStructuredData = (data: Record<string, unknown>): string => (
   JSON.stringify(data).replace(/</g, '\\u003c')
 );
+
+export interface FestivalStructuredDataItem {
+  event: DestinationEvent;
+  countryName: string;
+}
+
+/**
+ * `ItemList` of `Event` nodes for the festivals index. Reuses the same event node
+ * builder as the destination guides so both surfaces describe a festival
+ * identically — and inherit the same refusal to publish a date we cannot back up.
+ */
+export const buildFestivalListStructuredData = ({
+  items,
+  canonicalUrl,
+  name,
+  now = new Date(),
+}: {
+  items: FestivalStructuredDataItem[];
+  canonicalUrl: string;
+  name: string;
+  now?: Date;
+}): Record<string, unknown> => ({
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name,
+  url: canonicalUrl,
+  numberOfItems: items.length,
+  itemListElement: items.map((item, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    item: buildEventNode(item.event, item.countryName, now, 'Country'),
+  })),
+});

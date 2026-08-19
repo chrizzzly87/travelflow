@@ -142,6 +142,26 @@ These are purely for rendering. All form prefill logic uses `destinationCodes` /
 
 ---
 
+## Festival Event Dates
+
+`DestinationEvent` (`shared/destinationGuides.ts`) carries optional date information so the UI can state either a real date or an honest generalization. The same type backs `data/countryTravelData.json` events via `CountryTravelEvent`.
+
+| Field | Use |
+|-------|-----|
+| `day` | Fixed single-day events (Bastille Day = `14`) |
+| `startDay` / `endDay` | Fixed multi-day events inside one month (Songkran = `13`–`15`) |
+| `durationDays` | Window length, paired with `knownDates` |
+| `recurrence.kind` | `fixed`, `lunar`, `movable`, or `seasonal` |
+| `recurrence.rule` | Plain-language rule, e.g. "Last Wednesday of August" |
+| `knownDates` | `{ "2027": "2027-02-06" }` — sourced start dates for specific years |
+| `monthQualifier` | `early`, `mid`, `late`, `throughout` — how "usually in <month>" reads |
+
+**Accuracy rule: never fabricate a precise date.** If a date cannot be sourced confidently, leave `day` / `startDay` / `knownDates` unset and let the event resolve as approximate. Half the catalogue is movable or lunar; guessing a day would be worse than saying "usually in March".
+
+`services/festivalDateService.ts` resolves the next (or currently running) occurrence from these fields with an injected clock, and `services/festivalCatalogService.ts` promotes any event carrying a `recurrence` into the festivals index at `/inspirations/events-and-festivals`. Events without a `recurrence` stay out of the index, which is how the generic per-country filler entries are excluded.
+
+---
+
 ## Trip Prefill Pipeline
 
 ```

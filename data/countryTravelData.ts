@@ -1,4 +1,14 @@
 import countryTravelDataJson from './countryTravelData.json';
+import type { DestinationEvent } from '../shared/destinationGuides';
+
+/**
+ * Country events reuse the shared `DestinationEvent` model (including the
+ * optional date/recurrence fields) and only add the precomputed month label
+ * used by the seasonal UI.
+ */
+export interface CountryTravelEvent extends DestinationEvent {
+  monthLabel: string;
+}
 
 export interface CountrySeasonEntry {
   countryCode: string;
@@ -15,14 +25,7 @@ export interface CountrySeasonEntry {
     recommended: number;
   };
   climateNotes: string;
-  events: Array<{
-    id: string;
-    name: string;
-    month: number;
-    monthLabel: string;
-    type: string;
-    summary: string;
-  }>;
+  events: CountryTravelEvent[];
   publicHolidays: Array<{
     id: string;
     name: string;

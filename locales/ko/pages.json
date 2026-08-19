@@ -70,7 +70,44 @@
         "pill": "이벤트 & 축제",
         "title": "축제 중심으로 여행 계획하기",
         "description": "세계 최고의 축제는 막바지 항공권 이상의 가치가 있습니다. 날짜별 축제를 찾아보고 이벤트를 중심으로 일정을 만들어 보세요.",
-        "comingSoonDescription": "일정표, 숙소 팁, 일별 일정 제안이 포함된 상세 축제 가이드가 준비 중입니다."
+        "counts": "축제 {total}개를 조사했고, 그중 {exact}개는 날짜가 확정되어 있어요.",
+        "accuracyNote": "음력이나 해마다 바뀌는 일정을 따르는 축제는 정확한 날짜가 확인되기 전까지 추측 대신 보통 열리는 시기를 알려드려요.",
+        "filterRegion": "지역",
+        "filterMonth": "월",
+        "filterAll": "전체",
+        "emptyState": "아직 이 조건에 맞는 축제가 없어요. 다른 달이나 지역을 골라 보세요.",
+        "happeningNow": "지금 진행 중",
+        "planCta": "일정 짜기",
+        "guideCta": "국가 가이드",
+        "sourceCta": "공식 정보",
+        "precision": {
+          "exact": "확정 날짜",
+          "approximate": "보통 시기"
+        },
+        "date": {
+          "usually": "보통 {year}년 {month}",
+          "usually_early": "보통 {year}년 {month} 초",
+          "usually_mid": "보통 {year}년 {month} 중순",
+          "usually_late": "보통 {year}년 {month} 말",
+          "throughout": "{year}년 {month} 내내"
+        },
+        "recurrence": {
+          "fixed": "매년 같은 날짜",
+          "lunar": "음력에 따라 정해져요",
+          "movable": "해마다 날짜가 발표돼요",
+          "seasonal": "한 시즌처럼 이어져요"
+        },
+        "regions": {
+          "africa": "아프리카",
+          "asia": "아시아",
+          "europe": "유럽",
+          "middle-east": "중동",
+          "north-america": "북아메리카",
+          "oceania": "오세아니아",
+          "south-america": "남아메리카"
+        },
+        "clearFilters": "필터 지우기",
+        "resultSummary": "축제 {total}개 중 {count}개, 가까운 순"
       },
       "weekendGetaways": {
         "pill": "주말 여행",
