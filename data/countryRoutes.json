@@ -1311,6 +1311,97 @@
           "pitch": "Caminha ao longo das levadas pela laurissilva e depois come muito bem no Funchal."
         }
       }
+    },
+    {
+      "id": "spain-andalusia-rail",
+      "featuredRank": 1,
+      "countryCode": "ES",
+      "countrySlug": "spain",
+      "mapColor": "bg-amber-100",
+      "mapAccent": "bg-amber-400",
+      "avatarColor": "bg-amber-600",
+      "curator": "travelflow",
+      "title": "Andalusia by High-Speed Rail",
+      "pitch": "Madrid to the Moorish south without a rental car - three hours of track between each stop and no parking to worry about.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 11,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Madrid",
+          "nights": 3,
+          "subdivisionCode": "ES-MD",
+          "coordinates": {
+            "lat": 40.493407,
+            "lng": -3.572249
+          },
+          "note": "Reference route for the static map pipeline. Coordinates from public/data/airports/commercialAirports.generated.json (MAD)."
+        },
+        {
+          "name": "Seville",
+          "nights": 3,
+          "subdivisionCode": "ES-AN",
+          "coordinates": {
+            "lat": 37.417999,
+            "lng": -5.89311
+          },
+          "note": "Coordinates from commercialAirports.generated.json (SVQ)."
+        },
+        {
+          "name": "Granada",
+          "nights": 2,
+          "subdivisionCode": "ES-AN",
+          "coordinates": {
+            "lat": 37.188702,
+            "lng": -3.77736
+          },
+          "note": "Coordinates from commercialAirports.generated.json (GRX)."
+        },
+        {
+          "name": "Málaga",
+          "nights": 2,
+          "subdivisionCode": "ES-AN",
+          "coordinates": {
+            "lat": 36.6749,
+            "lng": -4.49911
+          },
+          "note": "Coordinates from commercialAirports.generated.json (AGP)."
+        }
+      ],
+      "tags": [
+        "Culture",
+        "History",
+        "Food"
+      ],
+      "bestMonths": [
+        3,
+        4,
+        5,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Andalusien mit dem Schnellzug",
+          "pitch": "Von Madrid in den maurischen Süden ganz ohne Mietwagen - drei Stunden Schiene zwischen den Stationen und keine Parkplatzsuche."
+        },
+        "es": {
+          "title": "Andalucía en tren de alta velocidad",
+          "pitch": "De Madrid al sur morisco sin coche de alquiler: tres horas de vía entre paradas y ni un aparcamiento del que preocuparse."
+        },
+        "fr": {
+          "title": "L'Andalousie en train à grande vitesse",
+          "pitch": "De Madrid au sud mauresque sans voiture de location : trois heures de rail entre chaque étape et aucun stationnement à gérer."
+        },
+        "it": {
+          "title": "Andalusia in treno ad alta velocità",
+          "pitch": "Da Madrid al sud moresco senza auto a noleggio: tre ore di binari tra una tappa e l'altra e nessun parcheggio da cercare."
+        },
+        "pt": {
+          "title": "Andaluzia de comboio de alta velocidade",
+          "pitch": "De Madrid ao sul mouro sem carro alugado: três horas de carris entre paragens e nenhum estacionamento para resolver."
+        }
+      }
     }
   ]
 }
