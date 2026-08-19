@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Drop, MapPin, ThermometerSimple } from '@phosphor-icons/react';
+import { ArrowRight, Drop, MapPin, NavigationArrow, ThermometerSimple } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { FlagIcon } from '../flags/FlagIcon';
 import { CountryMonthStrip } from './CountryMonthStrip';
@@ -16,6 +16,11 @@ interface CountryExplorerCardProps {
   selectedMonth: number | null;
   /** Localized short month names, index 0 = January. */
   monthLabels: string[];
+  /**
+   * Pre-formatted straight-line distance, present only while sorting by distance. Already carries
+   * its own approximation marker — the card must not imply travel distance.
+   */
+  distanceLabel?: string;
 }
 
 const SEASON_DOT_CLASS: Record<ClimateSeason, string> = {
@@ -35,6 +40,7 @@ const CountryExplorerCardComponent: React.FC<CountryExplorerCardProps> = ({
   insight,
   selectedMonth,
   monthLabels,
+  distanceLabel,
 }) => {
   const { t } = useTranslation('pages');
 
@@ -83,6 +89,12 @@ const CountryExplorerCardComponent: React.FC<CountryExplorerCardProps> = ({
             {tag}
           </span>
         ))}
+        {distanceLabel ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2.5 py-1">
+            <NavigationArrow size={13} weight="duotone" className="text-slate-400" />
+            {distanceLabel}
+          </span>
+        ) : null}
       </div>
 
       <div className="mt-auto pt-5">

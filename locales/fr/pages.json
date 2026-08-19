@@ -242,7 +242,8 @@
         "sort": {
           "popular": "Les plus populaires",
           "month": "Idéal ce mois-ci",
-          "name": "De A à Z"
+          "name": "De A à Z",
+          "distance": "Le plus près de moi"
         },
         "resetAll": "Tout réinitialiser",
         "temperature": "{high}/{low} °C en moyenne",
@@ -268,7 +269,36 @@
         "stripLabel": "Meilleurs mois pour visiter {country} : {months}",
         "stripLabelUnknown": "Les meilleurs mois pour visiter {country} ne sont pas encore disponibles",
         "emptyTitle": "Aucun résultat pour le moment",
-        "emptyDescription": "Essayez un autre mois, retirez un filtre ou élargissez votre recherche."
+        "emptyDescription": "Essayez un autre mois, retirez un filtre ou élargissez votre recherche.",
+        "origin": {
+          "loading": "Estimation de votre position approximative…",
+          "ready": "Trié depuis les environs de {place}. Il s’agit d’une estimation basée sur votre connexion internet, pas sur la position de votre appareil.",
+          "dismissed": "Position estimée ignorée. La liste retrouve son ordre habituel.",
+          "unavailable": "Nous n’avons pas pu estimer votre position, cette liste n’est donc pas triée par distance.",
+          "notMe": "Ce n’est pas moi",
+          "useAnyway": "L’utiliser quand même",
+          "straightLine": "Les distances sont à vol d’oiseau, et non des distances de vol ou de trajet.",
+          "distance": "≈ {distance} km",
+          "sortInactive": "Ordre habituel affiché : aucune position estimée ne permet de mesurer."
+        }
+      },
+      "map": {
+        "heading": "Explorer la carte du monde",
+        "ariaLabel": "Carte du monde des pays avec des guides de voyage",
+        "openGuide": "Ouvrir le guide →",
+        "noGuide": "Pas encore de guide",
+        "noGuideFor": "Nous n’avons pas encore de guide pour {country}.",
+        "dismissNotice": "D’accord",
+        "filteredOut": "masqué par vos filtres",
+        "keyboardHint": "Utilisez les flèches pour passer d’un pays à l’autre et Entrée pour ouvrir un guide.",
+        "legend": {
+          "ideal": "Idéal ce mois-ci",
+          "shoulder": "Moyenne saison",
+          "avoid": "Moins favorable",
+          "match": "Guide disponible",
+          "muted": "Filtré",
+          "land": "Pas encore de guide"
+        }
       }
     }
   },

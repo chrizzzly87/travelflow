@@ -1,4 +1,4 @@
-import React, { useCallback, useDeferredValue, useMemo } from 'react';
+import React, { Suspense, lazy, useCallback, useDeferredValue, useMemo } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Compass, Globe } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -6,15 +6,20 @@ import { MarketingLayout } from '../../components/marketing/MarketingLayout';
 import { CountryExplorerCard } from '../../components/inspirations/CountryExplorerCard';
 import { CountryExplorerControls } from '../../components/inspirations/CountryExplorerControls';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
-import { DEFAULT_LOCALE } from '../../config/locales';
+import { DEFAULT_LOCALE, localeToDir } from '../../config/locales';
+import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
+import { useCountryOrigin } from '../../hooks/useCountryOrigin';
+import { roundDistanceForDisplayKm } from '../../services/countryDistanceService';
 import {
   getCountryMonthInsight,
   listCountryExplorerEntries,
   listCountryExplorerRegions,
   listCountryExplorerTags,
+  type CountryExplorerEntry,
 } from '../../services/countryExplorerService';
 import {
   applyCountryExplorerState,
+  canApplyCountryExplorerSort,
   countryExplorerReducer,
   parseCountryExplorerState,
   serializeCountryExplorerState,
@@ -26,6 +31,17 @@ const MONTH_LABEL_SEED_YEAR = 2026;
 const countryEntries = listCountryExplorerEntries();
 const availableRegions = listCountryExplorerRegions(countryEntries);
 const availableTags = listCountryExplorerTags(countryEntries);
+const countryCodes = countryEntries.map((entry) => entry.countryCode);
+
+/**
+ * The map carries ~100 kB of raw path geometry. It is a nice-to-have on top of a grid that is
+ * already complete on its own, so it is split into its own chunk and streamed in after the page
+ * is interactive — nothing below depends on it having loaded.
+ */
+const CountryExplorerMap = lazy(() => loadLazyComponentWithRecovery(
+  'CountryExplorerMap',
+  () => import('../../components/inspirations/CountryExplorerMap'),
+));
 
 const buildMonthLabels = (locale: string): string[] => {
   const formatter = new Intl.DateTimeFormat(locale, { month: 'short' });
@@ -44,7 +60,8 @@ export const CountriesPage: React.FC = () => {
 
   /**
    * The query string is the single source of truth: the view is shareable, back/forward works for
-   * free, and no effect is needed to keep state and URL in sync.
+   * free, and no effect is needed to keep state and URL in sync. The map reads the very same
+   * state, so it can never drift from the grid.
    */
   const state = useMemo(
     () => parseCountryExplorerState(searchParams, { availableRegions, availableTags }),
@@ -71,16 +88,64 @@ export const CountriesPage: React.FC = () => {
     [state, deferredQuery],
   );
 
-  const visibleEntries = useMemo(
-    () => applyCountryExplorerState(countryEntries, filterState),
-    [filterState],
+  /**
+   * The location lookup only runs once the traveller actually asks to sort by distance, so an
+   * ordinary visit never triggers a geolocation call.
+   */
+  const origin = useCountryOrigin(countryCodes, state.sort === 'distance');
+  const sortContext = useMemo(
+    () => ({ distanceKmByCountry: origin.distanceKmByCountry }),
+    [origin.distanceKmByCountry],
   );
+
+  const visibleEntries = useMemo(
+    () => applyCountryExplorerState(countryEntries, filterState, sortContext),
+    [filterState, sortContext],
+  );
+
+  const visibleCountryCodes = useMemo(
+    () => new Set(visibleEntries.map((entry) => entry.countryCode)),
+    [visibleEntries],
+  );
+
+  const numberFormatter = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const formatDistance = useCallback((distanceKm: number) => t(
+    'inspirations.subpages.explorer.origin.distance',
+    { distance: numberFormatter.format(roundDistanceForDisplayKm(distanceKm)) },
+  ), [numberFormatter, t]);
+
+  const buildHref = useCallback((slug: string) => buildLocalizedMarketingPath(
+    'inspirationsCountryDetail',
+    locale,
+    { countryName: slug },
+  ), [locale]);
+
+  const getInsight = useCallback((entry: CountryExplorerEntry) => (
+    filterState.month === null ? undefined : getCountryMonthInsight(entry, filterState.month)
+  ), [filterState.month]);
 
   const cards = useMemo(() => visibleEntries.map((entry) => ({
     entry,
-    href: buildLocalizedMarketingPath('inspirationsCountryDetail', locale, { countryName: entry.slug }),
+    href: buildHref(entry.slug),
     insight: filterState.month === null ? undefined : getCountryMonthInsight(entry, filterState.month),
-  })), [visibleEntries, locale, filterState.month]);
+    distanceKm: state.sort === 'distance' ? origin.distanceKmByCountry.get(entry.countryCode) : undefined,
+  })), [visibleEntries, buildHref, filterState.month, state.sort, origin.distanceKmByCountry]);
+
+  const originControl = useMemo(() => ({
+    status: origin.status,
+    inferredCity: origin.inferred?.city ?? null,
+    inferredCountry: origin.inferred?.countryName ?? null,
+    canSortByDistance: origin.canSortByDistance,
+    onDismiss: origin.dismiss,
+    onRestore: origin.restore,
+  }), [origin]);
+
+  /**
+   * Surfaced so the results heading can admit that a requested distance sort is not actually in
+   * effect, rather than showing the editorial order under a "nearest to me" label.
+   */
+  const distanceSortInactive = state.sort === 'distance'
+    && !canApplyCountryExplorerSort('distance', sortContext);
 
   return (
     <MarketingLayout>
@@ -110,6 +175,29 @@ export const CountriesPage: React.FC = () => {
         </p>
       </section>
 
+      <section className="pb-8" aria-labelledby="countries-map-heading">
+        <h2 id="countries-map-heading" className="sr-only">
+          {t('inspirations.subpages.map.heading')}
+        </h2>
+        {/*
+          No spinner and no reserved skeleton copy: the grid below is the real content, and a map
+          that never arrives should cost the page nothing but the picture.
+        */}
+        <Suspense fallback={<div className="aspect-[1000/389] w-full rounded-3xl bg-slate-100" />}>
+          <CountryExplorerMap
+            entries={countryEntries}
+            visibleCountryCodes={visibleCountryCodes}
+            month={filterState.month}
+            monthLabels={monthLabels}
+            buildHref={buildHref}
+            getInsight={getInsight}
+            distanceKmByCountry={state.sort === 'distance' ? origin.distanceKmByCountry : undefined}
+            formatDistance={formatDistance}
+            direction={localeToDir(locale)}
+          />
+        </Suspense>
+      </section>
+
       <section className="pb-8">
         <CountryExplorerControls
           state={state}
@@ -119,8 +207,15 @@ export const CountriesPage: React.FC = () => {
           monthLabels={monthLabels}
           resultCount={visibleEntries.length}
           totalCount={countryEntries.length}
+          origin={originControl}
         />
       </section>
+
+      {distanceSortInactive ? (
+        <p className="mb-6 text-sm font-semibold text-amber-700" role="status">
+          {t('inspirations.subpages.explorer.origin.sortInactive')}
+        </p>
+      ) : null}
 
       {cards.length > 0 ? (
         <section className="grid gap-4 pb-16 sm:grid-cols-2 lg:grid-cols-3 md:pb-24">
@@ -132,6 +227,7 @@ export const CountriesPage: React.FC = () => {
               insight={card.insight}
               selectedMonth={filterState.month}
               monthLabels={monthLabels}
+              distanceLabel={card.distanceKm === undefined ? undefined : formatDistance(card.distanceKm)}
             />
           ))}
         </section>

@@ -242,7 +242,8 @@
         "sort": {
           "popular": "Más populares",
           "month": "Mejor para este mes",
-          "name": "De la A a la Z"
+          "name": "De la A a la Z",
+          "distance": "Más cerca de mí"
         },
         "resetAll": "Restablecer todo",
         "temperature": "{high}/{low} °C habitual",
@@ -268,7 +269,36 @@
         "stripLabel": "Mejores meses para visitar {country}: {months}",
         "stripLabelUnknown": "Los mejores meses para visitar {country} aún no están disponibles",
         "emptyTitle": "Todavía no hay coincidencias",
-        "emptyDescription": "Prueba otro mes, quita un filtro o busca algo más amplio."
+        "emptyDescription": "Prueba otro mes, quita un filtro o busca algo más amplio.",
+        "origin": {
+          "loading": "Calculando aproximadamente dónde estás…",
+          "ready": "Ordenado desde cerca de {place}. Es una estimación basada en tu conexión a internet, no en la ubicación de tu dispositivo.",
+          "dismissed": "Ignoramos la ubicación estimada. La lista vuelve a su orden habitual.",
+          "unavailable": "No pudimos estimar dónde estás, así que esta lista no está ordenada por distancia.",
+          "notMe": "No soy yo",
+          "useAnyway": "Usarla igualmente",
+          "straightLine": "Las distancias son en línea recta, a vuelo de pájaro, no distancia de vuelo o de viaje.",
+          "distance": "≈ {distance} km de distancia",
+          "sortInactive": "Mostrando el orden habitual: no tenemos una ubicación estimada desde la que medir."
+        }
+      },
+      "map": {
+        "heading": "Explora el mapa del mundo",
+        "ariaLabel": "Mapa mundial de países con guías de viaje",
+        "openGuide": "Abrir guía →",
+        "noGuide": "Todavía sin guía",
+        "noGuideFor": "Todavía no tenemos una guía de {country}.",
+        "dismissNotice": "Entendido",
+        "filteredOut": "oculto por tus filtros",
+        "keyboardHint": "Usa las flechas para moverte entre países y Enter para abrir una guía.",
+        "legend": {
+          "ideal": "Ideal este mes",
+          "shoulder": "Temporada media",
+          "avoid": "Menos ideal",
+          "match": "Tiene guía",
+          "muted": "Filtrado",
+          "land": "Todavía sin guía"
+        }
       }
     }
   },

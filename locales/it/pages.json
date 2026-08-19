@@ -242,7 +242,8 @@
         "sort": {
           "popular": "Più popolari",
           "month": "Ideali questo mese",
-          "name": "Dalla A alla Z"
+          "name": "Dalla A alla Z",
+          "distance": "Più vicini a me"
         },
         "resetAll": "Reimposta tutto",
         "temperature": "{high}/{low} °C tipici",
@@ -268,7 +269,36 @@
         "stripLabel": "Mesi migliori per visitare {country}: {months}",
         "stripLabelUnknown": "I mesi migliori per visitare {country} non sono ancora disponibili",
         "emptyTitle": "Ancora nessun risultato",
-        "emptyDescription": "Prova un altro mese, togli un filtro o cerca qualcosa di più ampio."
+        "emptyDescription": "Prova un altro mese, togli un filtro o cerca qualcosa di più ampio.",
+        "origin": {
+          "loading": "Stiamo stimando all’incirca dove ti trovi…",
+          "ready": "Ordinato da circa {place}. È una stima ricavata dalla tua connessione internet, non dalla posizione del dispositivo.",
+          "dismissed": "La posizione stimata viene ignorata. L’elenco è tornato all’ordine abituale.",
+          "unavailable": "Non siamo riusciti a stimare dove ti trovi, quindi questo elenco non è ordinato per distanza.",
+          "notMe": "Non sono io",
+          "useAnyway": "Usala comunque",
+          "straightLine": "Le distanze sono in linea d’aria, non distanze di volo o di viaggio.",
+          "distance": "≈ {distance} km di distanza",
+          "sortInactive": "Mostriamo l’ordine abituale: non abbiamo una posizione stimata da cui misurare."
+        }
+      },
+      "map": {
+        "heading": "Esplora la mappa del mondo",
+        "ariaLabel": "Mappa del mondo dei paesi con guide di viaggio",
+        "openGuide": "Apri la guida →",
+        "noGuide": "Ancora nessuna guida",
+        "noGuideFor": "Non abbiamo ancora una guida per {country}.",
+        "dismissNotice": "Ho capito",
+        "filteredOut": "nascosto dai tuoi filtri",
+        "keyboardHint": "Usa le frecce per spostarti tra i paesi e Invio per aprire una guida.",
+        "legend": {
+          "ideal": "Ideale questo mese",
+          "shoulder": "Bassa stagione",
+          "avoid": "Meno ideale",
+          "match": "Ha una guida",
+          "muted": "Filtrato",
+          "land": "Ancora nessuna guida"
+        }
       }
     }
   },

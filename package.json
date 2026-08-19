@@ -52,6 +52,7 @@
     "airports:generate": "tsx scripts/generate-airports-reference.ts",
     "countries:search:generate": "tsx scripts/generate-country-search-metadata.ts",
     "climate:generate": "tsx scripts/generate-country-climate-normals.ts",
+    "countries:map:generate": "tsx scripts/generate-country-map-geometry.ts",
     "climate:validate": "tsx scripts/validate-country-climate.ts",
     "destinations:import": "tsx scripts/import-destination-guides.ts",
     "destinations:validate": "tsx scripts/validate-destination-guides.ts",

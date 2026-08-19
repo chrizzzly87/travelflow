@@ -211,6 +211,14 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       notes: 'Approximate Netlify-derived location only; no raw IP is stored.',
     },
     {
+      name: 'tf_country_origin_dismissed_v1',
+      purpose: 'Remembers that the visitor rejected the approximate location used for distance sorting on the countries explorer.',
+      duration: 'Session',
+      provider: 'TravelFlow',
+      storage: 'sessionStorage',
+      notes: 'Stores a single flag only; no location data is written by this key.',
+    },
+    {
       name: 'tf_map_style',
       purpose: 'Persists selected map visual style.',
       duration: 'Persistent',

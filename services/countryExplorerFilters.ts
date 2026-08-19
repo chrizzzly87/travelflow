@@ -14,7 +14,7 @@ import { searchCountryCandidates } from './countryExplorerSearch';
 
 export type TripLengthBand = 'short' | 'medium' | 'long';
 export type CountryExplorerFacet = 'regions' | 'tags' | 'tripLengths';
-export type CountryExplorerSort = 'popular' | 'month' | 'name';
+export type CountryExplorerSort = 'popular' | 'month' | 'name' | 'distance';
 
 export const TRIP_LENGTH_BANDS: Record<TripLengthBand, { minDays?: number; maxDays?: number }> = {
   short: { maxDays: 9 },
@@ -23,7 +23,7 @@ export const TRIP_LENGTH_BANDS: Record<TripLengthBand, { minDays?: number; maxDa
 };
 
 export const TRIP_LENGTH_BAND_ORDER: TripLengthBand[] = ['short', 'medium', 'long'];
-export const COUNTRY_EXPLORER_SORTS: CountryExplorerSort[] = ['popular', 'month', 'name'];
+export const COUNTRY_EXPLORER_SORTS: CountryExplorerSort[] = ['popular', 'month', 'name', 'distance'];
 
 export interface CountryExplorerState {
   query: string;
@@ -122,17 +122,49 @@ export const matchesTripLengthBand = (
   return true;
 };
 
+export interface CountryExplorerSortContext {
+  /**
+   * Straight-line distance in km per country code. Absent countries sort last rather than being
+   * guessed at, and an empty/omitted index disables the distance sort entirely (see
+   * {@link applyCountryExplorerState}).
+   */
+  distanceKmByCountry?: ReadonlyMap<string, number>;
+}
+
 const compareBySort = (
   sort: CountryExplorerSort,
   month: number | null,
+  context: CountryExplorerSortContext,
 ) => (left: CountryExplorerEntry, right: CountryExplorerEntry): number => {
   if (sort === 'name') return left.name.localeCompare(right.name);
   if (sort === 'month') {
     const delta = getMonthMatchScore(right, month) - getMonthMatchScore(left, month);
     if (delta !== 0) return delta;
   }
+  if (sort === 'distance') {
+    const distances = context.distanceKmByCountry;
+    const leftDistance = distances?.get(left.countryCode);
+    const rightDistance = distances?.get(right.countryCode);
+    // Countries we cannot place sink to the bottom instead of pretending to be at 0 km.
+    if (leftDistance === undefined && rightDistance === undefined) return 0;
+    if (leftDistance === undefined) return 1;
+    if (rightDistance === undefined) return -1;
+    if (leftDistance !== rightDistance) return leftDistance - rightDistance;
+  }
   return 0;
 };
+
+/**
+ * A distance sort is only meaningful with a known origin. Without one we must not silently emit a
+ * plausible-but-wrong order, so the caller falls back to the editorial order and the UI explains
+ * that the option is unavailable.
+ */
+export const canApplyCountryExplorerSort = (
+  sort: CountryExplorerSort,
+  context: CountryExplorerSortContext = {},
+): boolean => (
+  sort !== 'distance' || (context.distanceKmByCountry?.size ?? 0) > 0
+);
 
 /**
  * Search → facet filter → sort. Input order is the editorial popularity order, and both the
@@ -141,6 +173,7 @@ const compareBySort = (
 export const applyCountryExplorerState = (
   entries: CountryExplorerEntry[],
   state: CountryExplorerState,
+  context: CountryExplorerSortContext = {},
 ): CountryExplorerEntry[] => {
   const searched = searchCountryCandidates(
     entries.map((entry) => ({ item: entry, tokens: entry.searchTokens })),
@@ -158,7 +191,8 @@ export const applyCountryExplorerState = (
   });
 
   if (state.sort === 'popular') return filtered;
-  return filtered.slice().sort(compareBySort(state.sort, state.month));
+  if (!canApplyCountryExplorerSort(state.sort, context)) return filtered;
+  return filtered.slice().sort(compareBySort(state.sort, state.month, context));
 };
 
 // --- URL codec -------------------------------------------------------------------------------

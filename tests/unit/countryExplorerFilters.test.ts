@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  COUNTRY_EXPLORER_SORTS,
   INITIAL_COUNTRY_EXPLORER_STATE,
   applyCountryExplorerState,
+  canApplyCountryExplorerSort,
   areCountryExplorerStatesEqual,
   countActiveFilters,
   countryExplorerReducer,
@@ -17,6 +19,7 @@ import {
   listCountryExplorerRegions,
   listCountryExplorerTags,
 } from '../../services/countryExplorerService';
+import { buildCountryDistanceIndex } from '../../services/countryDistanceService';
 
 const entries = listCountryExplorerEntries();
 const availableRegions = listCountryExplorerRegions(entries);
@@ -193,5 +196,97 @@ describe('applyCountryExplorerState', () => {
   it('does not reorder while the sort stays on popular', () => {
     const popular = applyCountryExplorerState(entries, stateWith({ month: 1, sort: 'popular' }));
     expect(popular.map((entry) => entry.name)).toEqual(entries.map((entry) => entry.name));
+  });
+});
+
+describe('distance sort', () => {
+  const london = { latitude: 51.5074, longitude: -0.1278 };
+  const countryCodes = entries.map((entry) => entry.countryCode);
+  const distanceContext = { distanceKmByCountry: buildCountryDistanceIndex(countryCodes, london) };
+
+  it('is offered as a sort mode', () => {
+    expect(COUNTRY_EXPLORER_SORTS).toContain('distance');
+  });
+
+  it('round-trips through the query string like every other sort', () => {
+    const params = serializeCountryExplorerState(stateWith({ sort: 'distance' }));
+    const parsed = parseCountryExplorerState(params, { availableRegions, availableTags });
+    expect(parsed.sort).toBe('distance');
+  });
+
+  it('orders the grid by ascending straight-line distance', () => {
+    const result = applyCountryExplorerState(entries, stateWith({ sort: 'distance' }), distanceContext);
+    const distances = result
+      .map((entry) => distanceContext.distanceKmByCountry.get(entry.countryCode))
+      .filter((distance): distance is number => distance !== undefined);
+
+    expect(distances.length).toBeGreaterThan(10);
+    expect(distances).toEqual([...distances].sort((left, right) => left - right));
+  });
+
+  it('puts a near country ahead of a far one from the same origin', () => {
+    const order = applyCountryExplorerState(entries, stateWith({ sort: 'distance' }), distanceContext)
+      .map((entry) => entry.countryCode);
+    const france = order.indexOf('FR');
+    const newZealand = order.indexOf('NZ');
+    expect(france).toBeGreaterThanOrEqual(0);
+    expect(newZealand).toBeGreaterThanOrEqual(0);
+    expect(france).toBeLessThan(newZealand);
+  });
+
+  it('follows the origin: sorting from Auckland reverses that relationship', () => {
+    const auckland = { latitude: -36.8485, longitude: 174.7633 };
+    const context = { distanceKmByCountry: buildCountryDistanceIndex(countryCodes, auckland) };
+    const order = applyCountryExplorerState(entries, stateWith({ sort: 'distance' }), context)
+      .map((entry) => entry.countryCode);
+    expect(order.indexOf('NZ')).toBeLessThan(order.indexOf('FR'));
+  });
+
+  it('sinks countries we cannot place to the bottom rather than treating them as 0 km', () => {
+    const partial = { distanceKmByCountry: new Map([[entries[3].countryCode, 100]]) };
+    const result = applyCountryExplorerState(entries, stateWith({ sort: 'distance' }), partial);
+    expect(result[0]?.countryCode).toBe(entries[3].countryCode);
+  });
+
+  it('still respects the active filters', () => {
+    const result = applyCountryExplorerState(
+      entries,
+      stateWith({ sort: 'distance', regions: ['Europe'] }),
+      distanceContext,
+    );
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.every((entry) => entry.region === 'Europe')).toBe(true);
+  });
+
+  describe('graceful degradation when no location is known', () => {
+    it('reports that the sort cannot be applied', () => {
+      expect(canApplyCountryExplorerSort('distance', {})).toBe(false);
+      expect(canApplyCountryExplorerSort('distance', { distanceKmByCountry: new Map() })).toBe(false);
+      expect(canApplyCountryExplorerSort('distance', distanceContext)).toBe(true);
+    });
+
+    it('never gates the sorts that need no location', () => {
+      expect(canApplyCountryExplorerSort('popular', {})).toBe(true);
+      expect(canApplyCountryExplorerSort('name', {})).toBe(true);
+      expect(canApplyCountryExplorerSort('month', {})).toBe(true);
+    });
+
+    it('falls back to the editorial order instead of inventing one', () => {
+      const withoutOrigin = applyCountryExplorerState(entries, stateWith({ sort: 'distance' }));
+      expect(withoutOrigin.map((entry) => entry.name)).toEqual(entries.map((entry) => entry.name));
+
+      const emptyIndex = applyCountryExplorerState(
+        entries,
+        stateWith({ sort: 'distance' }),
+        { distanceKmByCountry: new Map() },
+      );
+      expect(emptyIndex.map((entry) => entry.name)).toEqual(entries.map((entry) => entry.name));
+    });
+
+    it('keeps filtering correctly even with the sort inert', () => {
+      const result = applyCountryExplorerState(entries, stateWith({ sort: 'distance', regions: ['Europe'] }));
+      expect(result.length).toBeGreaterThan(0);
+      expect(result.every((entry) => entry.region === 'Europe')).toBe(true);
+    });
   });
 });
