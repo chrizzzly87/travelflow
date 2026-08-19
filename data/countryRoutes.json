@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-19T09:02:04.736Z",
+  "updatedAt": "2026-08-19T09:05:57.899Z",
   "routes": [
     {
       "id": "japan-golden-route",
@@ -2107,6 +2107,1643 @@
         }
       },
       "mapImagePath": "/images/trip-maps/routes/spain-balearic-island-hop.png"
+    },
+    {
+      "id": "vietnam-north-to-south",
+      "featuredRank": 1,
+      "countryCode": "VN",
+      "countrySlug": "vietnam",
+      "mapColor": "bg-lime-100",
+      "mapAccent": "bg-lime-400",
+      "avatarColor": "bg-lime-600",
+      "curator": "travelflow",
+      "title": "Hanoi to the Mekong",
+      "pitch": "The full length of the country: old-quarter Hanoi, a limestone bay, imperial Hue, tailors in Hoi An and a last night on the delta.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 13,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Hanoi",
+          "nights": 3,
+          "coordinates": {
+            "lat": 21.0278,
+            "lng": 105.8342
+          }
+        },
+        {
+          "name": "Ha Long Bay",
+          "nights": 1,
+          "coordinates": {
+            "lat": 20.9101,
+            "lng": 107.1839
+          }
+        },
+        {
+          "name": "Hue",
+          "nights": 2,
+          "coordinates": {
+            "lat": 16.4006,
+            "lng": 107.7031
+          }
+        },
+        {
+          "name": "Hoi An",
+          "nights": 3,
+          "coordinates": {
+            "lat": 15.8801,
+            "lng": 108.338
+          }
+        },
+        {
+          "name": "Ho Chi Minh City",
+          "nights": 3,
+          "coordinates": {
+            "lat": 10.8231,
+            "lng": 106.6297
+          }
+        }
+      ],
+      "tags": [
+        "Culture",
+        "Food",
+        "History"
+      ],
+      "bestMonths": [
+        2,
+        3,
+        4,
+        11
+      ],
+      "localized": {
+        "de": {
+          "title": "Von Hanoi ins Mekong-Delta",
+          "pitch": "Einmal das ganze Land: Hanois Altstadt, eine Kalksteinbucht, das kaiserliche Hue, Schneider in Hoi An und zum Schluss das Delta."
+        },
+        "es": {
+          "title": "De Hanói al Mekong",
+          "pitch": "El país de punta a punta: el casco antiguo de Hanói, una bahía de piedra caliza, Hue imperial, los sastres de Hoi An y el delta al final."
+        },
+        "fr": {
+          "title": "De Hanoï au Mékong",
+          "pitch": "Le pays sur toute sa longueur : le vieux quartier de Hanoï, une baie calcaire, Hue l'impériale, les tailleurs de Hoi An et le delta pour finir."
+        },
+        "it": {
+          "title": "Da Hanoi al Mekong",
+          "pitch": "Il paese per intero: il quartiere vecchio di Hanoi, una baia calcarea, Hue imperiale, i sarti di Hoi An e il delta alla fine."
+        },
+        "pt": {
+          "title": "De Hanói ao Mekong",
+          "pitch": "O país de ponta a ponta: o bairro antigo de Hanói, uma baía calcária, Hue imperial, os alfaiates de Hoi An e o delta no fim."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/vietnam-north-to-south.png"
+    },
+    {
+      "id": "vietnam-northern-mountains",
+      "featuredRank": 2,
+      "countryCode": "VN",
+      "countrySlug": "vietnam",
+      "mapColor": "bg-lime-100",
+      "mapAccent": "bg-lime-400",
+      "avatarColor": "bg-lime-600",
+      "curator": "travelflow",
+      "title": "Northern Mountain Loop",
+      "pitch": "Rice terraces above Sapa, the switchbacks of the Ha Giang loop up to Dong Van and a slow finish on a lake in the karst.",
+      "style": "nature-and-hiking",
+      "pace": "relaxed",
+      "durationDays": 12,
+      "isRoundTrip": true,
+      "stops": [
+        {
+          "name": "Hanoi",
+          "nights": 2,
+          "coordinates": {
+            "lat": 21.0278,
+            "lng": 105.8342
+          }
+        },
+        {
+          "name": "Sapa",
+          "nights": 3,
+          "coordinates": {
+            "lat": 22.3364,
+            "lng": 103.8438
+          }
+        },
+        {
+          "name": "Dong Van",
+          "nights": 3,
+          "coordinates": {
+            "lat": 23.2618,
+            "lng": 105.3365
+          }
+        },
+        {
+          "name": "Ninh Binh",
+          "nights": 2,
+          "coordinates": {
+            "lat": 20.2506,
+            "lng": 105.9745
+          }
+        },
+        {
+          "name": "Hanoi",
+          "nights": 1,
+          "coordinates": {
+            "lat": 21.0278,
+            "lng": 105.8342
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Hiking",
+        "Photography"
+      ],
+      "bestMonths": [
+        3,
+        4,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Runde durch den Bergnorden",
+          "pitch": "Reisterrassen über Sapa, die Serpentinen der Ha-Giang-Schleife hinauf nach Dong Van und zum Ausklang ein See mitten im Karst."
+        },
+        "es": {
+          "title": "Vuelta por las montañas del norte",
+          "pitch": "Arrozales en terraza sobre Sapa, las curvas del circuito de Ha Giang hasta Dong Van y un final tranquilo junto a un lago kárstico."
+        },
+        "fr": {
+          "title": "Boucle des montagnes du nord",
+          "pitch": "Rizières en terrasses au-dessus de Sapa, les lacets de la boucle de Ha Giang jusqu'à Dong Van et une fin paisible sur un lac karstique."
+        },
+        "it": {
+          "title": "Anello delle montagne del nord",
+          "pitch": "Risaie terrazzate sopra Sapa, i tornanti dell'anello di Ha Giang fino a Dong Van e un finale lento su un lago tra le rocce carsiche."
+        },
+        "pt": {
+          "title": "Volta pelas montanhas do norte",
+          "pitch": "Socalcos de arroz sobre Sapa, as curvas do circuito de Ha Giang até Dong Van e um fim tranquilo num lago cársico."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/vietnam-northern-mountains.png"
+    },
+    {
+      "id": "vietnam-central-coast-and-islands",
+      "featuredRank": 3,
+      "countryCode": "VN",
+      "countrySlug": "vietnam",
+      "mapColor": "bg-lime-100",
+      "mapAccent": "bg-lime-400",
+      "avatarColor": "bg-lime-600",
+      "curator": "travelflow",
+      "title": "Central Coast and Islands",
+      "pitch": "Lantern nights in Hoi An, seafood on the Da Nang sand and a week of nothing much on Phu Quoc.",
+      "style": "beach-and-culture",
+      "pace": "relaxed",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Da Nang",
+          "nights": 2,
+          "coordinates": {
+            "lat": 16.0439,
+            "lng": 108.199
+          }
+        },
+        {
+          "name": "Hoi An",
+          "nights": 3,
+          "coordinates": {
+            "lat": 15.8801,
+            "lng": 108.338
+          }
+        },
+        {
+          "name": "Nha Trang",
+          "nights": 2,
+          "coordinates": {
+            "lat": 12.241,
+            "lng": 109.1964
+          }
+        },
+        {
+          "name": "Phu Quoc",
+          "nights": 4,
+          "coordinates": {
+            "lat": 10.2899,
+            "lng": 103.984
+          }
+        }
+      ],
+      "tags": [
+        "Beach",
+        "Food",
+        "Culture"
+      ],
+      "bestMonths": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "localized": {
+        "de": {
+          "title": "Zentralküste und Inseln",
+          "pitch": "Laternenabende in Hoi An, Meeresfrüchte am Strand von Da Nang und eine Woche Nichtstun auf Phu Quoc."
+        },
+        "es": {
+          "title": "Costa central e islas",
+          "pitch": "Noches de farolillos en Hoi An, marisco en la arena de Da Nang y una semana sin hacer nada en Phu Quoc."
+        },
+        "fr": {
+          "title": "Côte centrale et îles",
+          "pitch": "Soirées lanternes à Hoi An, fruits de mer sur le sable de Da Nang et une semaine à ne rien faire à Phu Quoc."
+        },
+        "it": {
+          "title": "Costa centrale e isole",
+          "pitch": "Serate di lanterne a Hoi An, frutti di mare sulla sabbia di Da Nang e una settimana di niente a Phu Quoc."
+        },
+        "pt": {
+          "title": "Costa central e ilhas",
+          "pitch": "Noites de lanternas em Hoi An, marisco na areia de Da Nang e uma semana sem fazer nada em Phu Quoc."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/vietnam-central-coast-and-islands.png"
+    },
+    {
+      "id": "greece-cyclades-hop",
+      "featuredRank": 1,
+      "countryCode": "GR",
+      "countrySlug": "greece",
+      "mapColor": "bg-blue-100",
+      "mapAccent": "bg-blue-400",
+      "avatarColor": "bg-blue-600",
+      "curator": "travelflow",
+      "title": "Classic Cyclades Hop",
+      "pitch": "Athens for the Acropolis, then ferries west to east - Paros for tavernas, Naxos for mountain villages, Santorini for the last sunset.",
+      "style": "island-hopping",
+      "pace": "relaxed",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Athens",
+          "nights": 2,
+          "coordinates": {
+            "lat": 37.9838,
+            "lng": 23.7275
+          }
+        },
+        {
+          "name": "Paros",
+          "nights": 3,
+          "coordinates": {
+            "lat": 37.0205,
+            "lng": 25.1132
+          }
+        },
+        {
+          "name": "Naxos",
+          "nights": 3,
+          "coordinates": {
+            "lat": 37.0811,
+            "lng": 25.3681
+          }
+        },
+        {
+          "name": "Santorini",
+          "nights": 3,
+          "coordinates": {
+            "lat": 36.3932,
+            "lng": 25.4615
+          }
+        }
+      ],
+      "tags": [
+        "Beach",
+        "Food",
+        "History"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Klassisches Kykladen-Hüpfen",
+          "pitch": "Athen für die Akropolis, dann per Fähre weiter - Paros für Tavernen, Naxos für Bergdörfer, Santorin für den letzten Sonnenuntergang."
+        },
+        "es": {
+          "title": "Salto clásico por las Cícladas",
+          "pitch": "Atenas por la Acrópolis y luego en ferry: Paros por sus tabernas, Naxos por sus pueblos de montaña y Santorini para el último atardecer."
+        },
+        "fr": {
+          "title": "Cyclades, l'enchaînement classique",
+          "pitch": "Athènes pour l'Acropole, puis les ferries : Paros pour les tavernes, Naxos pour les villages de montagne, Santorin pour le dernier coucher de soleil."
+        },
+        "it": {
+          "title": "Cicladi, il salto classico",
+          "pitch": "Atene per l'Acropoli, poi i traghetti: Paros per le taverne, Naxos per i paesi di montagna, Santorini per l'ultimo tramonto."
+        },
+        "pt": {
+          "title": "Cíclades, o salto clássico",
+          "pitch": "Atenas pela Acrópole e depois de ferry: Paros pelas tabernas, Naxos pelas aldeias serranas e Santorini para o último pôr do sol."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/greece-cyclades-hop.png"
+    },
+    {
+      "id": "greece-crete-road-trip",
+      "featuredRank": 2,
+      "countryCode": "GR",
+      "countrySlug": "greece",
+      "mapColor": "bg-blue-100",
+      "mapAccent": "bg-blue-400",
+      "avatarColor": "bg-blue-600",
+      "curator": "travelflow",
+      "title": "Crete End to End",
+      "pitch": "One island, one rental car: Venetian harbours in the west, a gorge walk in the middle and Minoan ruins before the flight home.",
+      "style": "road-trip",
+      "pace": "balanced",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Chania",
+          "nights": 3,
+          "coordinates": {
+            "lat": 35.5138,
+            "lng": 24.0203
+          }
+        },
+        {
+          "name": "Rethymno",
+          "nights": 2,
+          "coordinates": {
+            "lat": 35.3656,
+            "lng": 24.492
+          }
+        },
+        {
+          "name": "Heraklion",
+          "nights": 2,
+          "coordinates": {
+            "lat": 35.3397,
+            "lng": 25.1803
+          }
+        },
+        {
+          "name": "Agios Nikolaos",
+          "nights": 2,
+          "coordinates": {
+            "lat": 35.1891,
+            "lng": 25.7171
+          }
+        }
+      ],
+      "tags": [
+        "Road Trip",
+        "History",
+        "Beach"
+      ],
+      "bestMonths": [
+        4,
+        5,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Kreta von West nach Ost",
+          "pitch": "Eine Insel, ein Mietwagen: venezianische Häfen im Westen, eine Schluchtwanderung in der Mitte und minoische Ruinen vor dem Rückflug."
+        },
+        "es": {
+          "title": "Creta de punta a punta",
+          "pitch": "Una isla y un coche: puertos venecianos al oeste, una caminata por el desfiladero en el centro y ruinas minoicas antes de volver."
+        },
+        "fr": {
+          "title": "La Crète d'ouest en est",
+          "pitch": "Une île, une voiture : ports vénitiens à l'ouest, une randonnée dans les gorges au centre et des ruines minoennes avant le retour."
+        },
+        "it": {
+          "title": "Creta da un capo all'altro",
+          "pitch": "Un'isola, un'auto a noleggio: porti veneziani a ovest, una gola da percorrere a piedi al centro e rovine minoiche prima del volo."
+        },
+        "pt": {
+          "title": "Creta de ponta a ponta",
+          "pitch": "Uma ilha, um carro alugado: portos venezianos a oeste, uma garganta a pé no meio e ruínas minóicas antes do voo."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/greece-crete-road-trip.png"
+    },
+    {
+      "id": "greece-mainland-antiquity",
+      "featuredRank": 3,
+      "countryCode": "GR",
+      "countrySlug": "greece",
+      "mapColor": "bg-blue-100",
+      "mapAccent": "bg-blue-400",
+      "avatarColor": "bg-blue-600",
+      "curator": "travelflow",
+      "title": "Mainland Antiquity",
+      "pitch": "The classical sites without the ferry queues: Delphi on its mountainside, Olympia in the pines and monasteries on rock pillars.",
+      "style": "off-the-beaten-path",
+      "pace": "balanced",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Athens",
+          "nights": 3,
+          "coordinates": {
+            "lat": 37.9838,
+            "lng": 23.7275
+          }
+        },
+        {
+          "name": "Delphi",
+          "nights": 1,
+          "coordinates": {
+            "lat": 38.4801,
+            "lng": 22.4941
+          }
+        },
+        {
+          "name": "Meteora",
+          "nights": 2,
+          "coordinates": {
+            "lat": 39.7828,
+            "lng": 21.5707
+          }
+        },
+        {
+          "name": "Nafplio",
+          "nights": 2,
+          "coordinates": {
+            "lat": 37.5673,
+            "lng": 22.8016
+          }
+        },
+        {
+          "name": "Olympia",
+          "nights": 1,
+          "coordinates": {
+            "lat": 37.6447,
+            "lng": 21.6255
+          }
+        }
+      ],
+      "tags": [
+        "History",
+        "Culture",
+        "Nature"
+      ],
+      "bestMonths": [
+        4,
+        5,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Antike auf dem Festland",
+          "pitch": "Die klassischen Stätten ohne Fährschlangen: Delphi am Berghang, Olympia in den Pinien und Klöster auf Felsnadeln."
+        },
+        "es": {
+          "title": "Antigüedad en el continente",
+          "pitch": "Los grandes yacimientos sin colas de ferry: Delfos en su ladera, Olimpia entre pinos y monasterios sobre agujas de roca."
+        },
+        "fr": {
+          "title": "L'Antiquité continentale",
+          "pitch": "Les grands sites sans files d'attente : Delphes à flanc de montagne, Olympie sous les pins et des monastères sur des pitons rocheux."
+        },
+        "it": {
+          "title": "Antichità sulla terraferma",
+          "pitch": "I grandi siti senza code ai traghetti: Delfi sul fianco della montagna, Olimpia tra i pini e monasteri su guglie di roccia."
+        },
+        "pt": {
+          "title": "Antiguidade no continente",
+          "pitch": "Os grandes sítios sem filas de ferry: Delfos na encosta, Olímpia entre pinheiros e mosteiros sobre agulhas de rocha."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/greece-mainland-antiquity.png"
+    },
+    {
+      "id": "france-paris-and-the-loire",
+      "featuredRank": 1,
+      "countryCode": "FR",
+      "countrySlug": "france",
+      "mapColor": "bg-violet-100",
+      "mapAccent": "bg-violet-400",
+      "avatarColor": "bg-violet-600",
+      "curator": "travelflow",
+      "title": "Paris and the Loire",
+      "pitch": "A first week in France: Paris on foot, then châteaux, cave cellars and river towns an hour down the line.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Paris",
+          "nights": 4,
+          "coordinates": {
+            "lat": 48.7295,
+            "lng": 2.359
+          }
+        },
+        {
+          "name": "Tours",
+          "nights": 2,
+          "coordinates": {
+            "lat": 47.3898,
+            "lng": 0.6892
+          }
+        },
+        {
+          "name": "Amboise",
+          "nights": 1,
+          "coordinates": {
+            "lat": 47.4103,
+            "lng": 0.9799
+          }
+        },
+        {
+          "name": "Angers",
+          "nights": 2,
+          "coordinates": {
+            "lat": 47.4712,
+            "lng": -0.5518
+          }
+        }
+      ],
+      "tags": [
+        "Culture",
+        "History",
+        "Wine"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Paris und die Loire",
+          "pitch": "Eine erste Woche Frankreich: Paris zu Fuß, dann Schlösser, Tuffsteinkeller und Flussstädtchen eine Zugstunde weiter."
+        },
+        "es": {
+          "title": "París y el Loira",
+          "pitch": "Una primera semana en Francia: París a pie y luego castillos, bodegas excavadas y pueblos de ribera a una hora de tren."
+        },
+        "fr": {
+          "title": "Paris et la Loire",
+          "pitch": "Une première semaine en France : Paris à pied, puis les châteaux, les caves troglodytes et les villes de bord de fleuve."
+        },
+        "it": {
+          "title": "Parigi e la Loira",
+          "pitch": "Una prima settimana in Francia: Parigi a piedi, poi castelli, cantine scavate nel tufo e cittadine sul fiume."
+        },
+        "pt": {
+          "title": "Paris e o Loire",
+          "pitch": "Uma primeira semana em França: Paris a pé e depois castelos, adegas escavadas e vilas ribeirinhas a uma hora de comboio."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/france-paris-and-the-loire.png"
+    },
+    {
+      "id": "france-provence-and-the-riviera",
+      "featuredRank": 2,
+      "countryCode": "FR",
+      "countrySlug": "france",
+      "mapColor": "bg-violet-100",
+      "mapAccent": "bg-violet-400",
+      "avatarColor": "bg-violet-600",
+      "curator": "travelflow",
+      "title": "Provence and the Riviera",
+      "pitch": "Market mornings in Aix, a Roman arena at Arles and the coast road east until the sea turns properly blue.",
+      "style": "food-and-wine",
+      "pace": "relaxed",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Avignon",
+          "nights": 2,
+          "coordinates": {
+            "lat": 43.9073,
+            "lng": 4.9018
+          }
+        },
+        {
+          "name": "Arles",
+          "nights": 2,
+          "coordinates": {
+            "lat": 43.6766,
+            "lng": 4.6278
+          }
+        },
+        {
+          "name": "Aix-en-Provence",
+          "nights": 2,
+          "coordinates": {
+            "lat": 43.5323,
+            "lng": 5.451
+          }
+        },
+        {
+          "name": "Nice",
+          "nights": 3,
+          "coordinates": {
+            "lat": 43.7102,
+            "lng": 7.262
+          }
+        }
+      ],
+      "tags": [
+        "Food",
+        "Wine",
+        "Beach"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Provence und Côte d'Azur",
+          "pitch": "Markttage in Aix, die römische Arena von Arles und die Küstenstraße nach Osten, bis das Meer richtig blau wird."
+        },
+        "es": {
+          "title": "Provenza y la Riviera",
+          "pitch": "Mañanas de mercado en Aix, el anfiteatro romano de Arlés y la carretera de la costa hasta que el mar se vuelve azul de verdad."
+        },
+        "fr": {
+          "title": "Provence et Riviera",
+          "pitch": "Les marchés d'Aix, les arènes romaines d'Arles et la route côtière vers l'est jusqu'à ce que la mer devienne franchement bleue."
+        },
+        "it": {
+          "title": "Provenza e Costa Azzurra",
+          "pitch": "Mattine di mercato ad Aix, l'arena romana di Arles e la strada costiera verso est finché il mare non diventa davvero blu."
+        },
+        "pt": {
+          "title": "Provença e Riviera",
+          "pitch": "Manhãs de mercado em Aix, a arena romana de Arles e a estrada costeira para leste até o mar ficar mesmo azul."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/france-provence-and-the-riviera.png"
+    },
+    {
+      "id": "france-brittany-and-normandy",
+      "featuredRank": 3,
+      "countryCode": "FR",
+      "countrySlug": "france",
+      "mapColor": "bg-violet-100",
+      "mapAccent": "bg-violet-400",
+      "avatarColor": "bg-violet-600",
+      "curator": "travelflow",
+      "title": "Brittany and Normandy",
+      "pitch": "Cool-weather France: the landing beaches, an abbey in the tidal flats and cider country on the way back to walled Saint-Malo.",
+      "style": "road-trip",
+      "pace": "balanced",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Rouen",
+          "nights": 2,
+          "coordinates": {
+            "lat": 49.4435,
+            "lng": 1.0984
+          }
+        },
+        {
+          "name": "Bayeux",
+          "nights": 2,
+          "coordinates": {
+            "lat": 49.2764,
+            "lng": -0.7031
+          }
+        },
+        {
+          "name": "Mont-Saint-Michel",
+          "nights": 1,
+          "coordinates": {
+            "lat": 48.6361,
+            "lng": -1.5115
+          }
+        },
+        {
+          "name": "Saint-Malo",
+          "nights": 2,
+          "coordinates": {
+            "lat": 48.6492,
+            "lng": -2.0184
+          }
+        },
+        {
+          "name": "Quimper",
+          "nights": 2,
+          "coordinates": {
+            "lat": 47.9976,
+            "lng": -4.0973
+          }
+        }
+      ],
+      "tags": [
+        "Road Trip",
+        "History",
+        "Food"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "localized": {
+        "de": {
+          "title": "Bretagne und Normandie",
+          "pitch": "Frankreich bei kühlem Wetter: die Landungsstrände, eine Abtei im Watt und Cidre-Land auf dem Weg zum ummauerten Saint-Malo."
+        },
+        "es": {
+          "title": "Bretaña y Normandía",
+          "pitch": "La Francia fresca: las playas del desembarco, una abadía en la marisma y el país de la sidra camino de Saint-Malo."
+        },
+        "fr": {
+          "title": "Bretagne et Normandie",
+          "pitch": "La France fraîche : les plages du Débarquement, une abbaye dans les grèves et le pays du cidre avant Saint-Malo intra-muros."
+        },
+        "it": {
+          "title": "Bretagna e Normandia",
+          "pitch": "La Francia fresca: le spiagge dello sbarco, un'abbazia tra le maree e il paese del sidro prima della cinta muraria di Saint-Malo."
+        },
+        "pt": {
+          "title": "Bretanha e Normandia",
+          "pitch": "A França fresca: as praias do desembarque, uma abadia entre marés e o país da cidra a caminho da amuralhada Saint-Malo."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/france-brittany-and-normandy.png"
+    },
+    {
+      "id": "morocco-imperial-cities",
+      "featuredRank": 1,
+      "countryCode": "MA",
+      "countrySlug": "morocco",
+      "mapColor": "bg-orange-100",
+      "mapAccent": "bg-orange-400",
+      "avatarColor": "bg-orange-600",
+      "curator": "travelflow",
+      "title": "Imperial Cities",
+      "pitch": "Four capitals in one trip: Marrakech's souks, the blue lanes of Chefchaouen and the tanneries of Fes in between.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Marrakech",
+          "nights": 3,
+          "coordinates": {
+            "lat": 31.6295,
+            "lng": -7.9811
+          }
+        },
+        {
+          "name": "Casablanca",
+          "nights": 1,
+          "coordinates": {
+            "lat": 33.3675,
+            "lng": -7.59
+          }
+        },
+        {
+          "name": "Rabat",
+          "nights": 2,
+          "coordinates": {
+            "lat": 34.0515,
+            "lng": -6.7515
+          }
+        },
+        {
+          "name": "Fes",
+          "nights": 3,
+          "coordinates": {
+            "lat": 34.0181,
+            "lng": -5.0078
+          }
+        },
+        {
+          "name": "Chefchaouen",
+          "nights": 2,
+          "coordinates": {
+            "lat": 35.1688,
+            "lng": -5.2636
+          }
+        }
+      ],
+      "tags": [
+        "Culture",
+        "History",
+        "Food"
+      ],
+      "bestMonths": [
+        3,
+        4,
+        10,
+        11
+      ],
+      "localized": {
+        "de": {
+          "title": "Die Königsstädte",
+          "pitch": "Vier Hauptstädte in einer Reise: die Souks von Marrakesch, die blauen Gassen von Chefchaouen und dazwischen die Gerbereien von Fès."
+        },
+        "es": {
+          "title": "Las ciudades imperiales",
+          "pitch": "Cuatro capitales en un viaje: los zocos de Marrakech, las callejuelas azules de Chauen y, entremedias, las tenerías de Fez."
+        },
+        "fr": {
+          "title": "Les villes impériales",
+          "pitch": "Quatre capitales en un voyage : les souks de Marrakech, les ruelles bleues de Chefchaouen et, entre les deux, les tanneries de Fès."
+        },
+        "it": {
+          "title": "Le città imperiali",
+          "pitch": "Quattro capitali in un viaggio: i souk di Marrakech, i vicoli azzurri di Chefchaouen e nel mezzo le concerie di Fes."
+        },
+        "pt": {
+          "title": "As cidades imperiais",
+          "pitch": "Quatro capitais numa viagem: os souks de Marraquexe, as ruelas azuis de Chefchaouen e, pelo meio, os curtumes de Fez."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/morocco-imperial-cities.png"
+    },
+    {
+      "id": "morocco-sahara-and-atlas",
+      "featuredRank": 2,
+      "countryCode": "MA",
+      "countrySlug": "morocco",
+      "mapColor": "bg-orange-100",
+      "mapAccent": "bg-orange-400",
+      "avatarColor": "bg-orange-600",
+      "curator": "travelflow",
+      "title": "Sahara and the Atlas",
+      "pitch": "Over the High Atlas passes to the kasbahs, a night on the dunes at Merzouga and back through the gorges.",
+      "style": "road-trip",
+      "pace": "fast",
+      "durationDays": 9,
+      "isRoundTrip": true,
+      "stops": [
+        {
+          "name": "Marrakech",
+          "nights": 2,
+          "coordinates": {
+            "lat": 31.6295,
+            "lng": -7.9811
+          }
+        },
+        {
+          "name": "Ouarzazate",
+          "nights": 1,
+          "coordinates": {
+            "lat": 30.9391,
+            "lng": -6.9094
+          }
+        },
+        {
+          "name": "Merzouga",
+          "nights": 2,
+          "coordinates": {
+            "lat": 31.0802,
+            "lng": -4.0134
+          }
+        },
+        {
+          "name": "Tinghir",
+          "nights": 1,
+          "coordinates": {
+            "lat": 31.5205,
+            "lng": -5.5302
+          }
+        },
+        {
+          "name": "Marrakech",
+          "nights": 2,
+          "coordinates": {
+            "lat": 31.6295,
+            "lng": -7.9811
+          }
+        }
+      ],
+      "tags": [
+        "Desert",
+        "Road Trip",
+        "Adventure"
+      ],
+      "bestMonths": [
+        3,
+        4,
+        10,
+        11
+      ],
+      "localized": {
+        "de": {
+          "title": "Sahara und Hoher Atlas",
+          "pitch": "Über die Atlaspässe zu den Kasbahs, eine Nacht auf den Dünen bei Merzouga und durch die Schluchten zurück."
+        },
+        "es": {
+          "title": "Sáhara y Atlas",
+          "pitch": "Cruzar los puertos del Alto Atlas hasta las kasbahs, una noche en las dunas de Merzouga y vuelta por las gargantas."
+        },
+        "fr": {
+          "title": "Sahara et Haut Atlas",
+          "pitch": "Par les cols du Haut Atlas jusqu'aux kasbahs, une nuit sur les dunes de Merzouga et retour par les gorges."
+        },
+        "it": {
+          "title": "Sahara e Alto Atlante",
+          "pitch": "Oltre i passi dell'Alto Atlante fino alle kasbah, una notte sulle dune di Merzouga e ritorno per le gole."
+        },
+        "pt": {
+          "title": "Sara e Alto Atlas",
+          "pitch": "Pelos desfiladeiros do Alto Atlas até às kasbahs, uma noite nas dunas de Merzouga e regresso pelas gargantas."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/morocco-sahara-and-atlas.png"
+    },
+    {
+      "id": "morocco-atlantic-coast",
+      "featuredRank": 3,
+      "countryCode": "MA",
+      "countrySlug": "morocco",
+      "mapColor": "bg-orange-100",
+      "mapAccent": "bg-orange-400",
+      "avatarColor": "bg-orange-600",
+      "curator": "travelflow",
+      "title": "Atlantic Coast and Surf",
+      "pitch": "Windy ramparts at Essaouira, argan country inland and point breaks down the coast at Taghazout.",
+      "style": "beach-and-culture",
+      "pace": "relaxed",
+      "durationDays": 11,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Essaouira",
+          "nights": 3,
+          "coordinates": {
+            "lat": 31.3975,
+            "lng": -9.6817
+          }
+        },
+        {
+          "name": "Agadir",
+          "nights": 2,
+          "coordinates": {
+            "lat": 30.3225,
+            "lng": -9.412
+          }
+        },
+        {
+          "name": "Taghazout",
+          "nights": 3,
+          "coordinates": {
+            "lat": 30.545,
+            "lng": -9.7085
+          }
+        },
+        {
+          "name": "Marrakech",
+          "nights": 2,
+          "coordinates": {
+            "lat": 31.6295,
+            "lng": -7.9811
+          }
+        }
+      ],
+      "tags": [
+        "Surf",
+        "Beach",
+        "Food"
+      ],
+      "bestMonths": [
+        4,
+        5,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Atlantikküste und Surf",
+          "pitch": "Windige Wehrmauern in Essaouira, Arganland im Hinterland und Pointbreaks weiter südlich bei Taghazout."
+        },
+        "es": {
+          "title": "Costa atlántica y surf",
+          "pitch": "Murallas con viento en Esauira, el país del argán tierra adentro y olas de derecha en Taghazout."
+        },
+        "fr": {
+          "title": "Côte atlantique et surf",
+          "pitch": "Les remparts venteux d'Essaouira, le pays de l'arganier à l'intérieur et les spots de Taghazout plus au sud."
+        },
+        "it": {
+          "title": "Costa atlantica e surf",
+          "pitch": "Le mura ventose di Essaouira, il paese dell'argan nell'entroterra e le onde di Taghazout più a sud."
+        },
+        "pt": {
+          "title": "Costa atlântica e surf",
+          "pitch": "As muralhas ventosas de Essaouira, o país do argão no interior e as ondas de Taghazout mais a sul."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/morocco-atlantic-coast.png"
+    },
+    {
+      "id": "peru-inca-heartland",
+      "featuredRank": 1,
+      "countryCode": "PE",
+      "countrySlug": "peru",
+      "mapColor": "bg-yellow-100",
+      "mapAccent": "bg-yellow-500",
+      "avatarColor": "bg-yellow-600",
+      "curator": "travelflow",
+      "title": "Inca Heartland",
+      "pitch": "Lima's kitchens, then altitude: the Sacred Valley to acclimatise, Machu Picchu at dawn and Lake Titicaca to finish.",
+      "style": "classic",
+      "pace": "balanced",
+      "durationDays": 11,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Lima",
+          "nights": 2,
+          "coordinates": {
+            "lat": -12.0464,
+            "lng": -77.0428
+          }
+        },
+        {
+          "name": "Cusco",
+          "nights": 3,
+          "coordinates": {
+            "lat": -13.532,
+            "lng": -71.9675
+          }
+        },
+        {
+          "name": "Ollantaytambo",
+          "nights": 2,
+          "coordinates": {
+            "lat": -13.2584,
+            "lng": -72.2643
+          }
+        },
+        {
+          "name": "Aguas Calientes",
+          "nights": 1,
+          "coordinates": {
+            "lat": -13.1547,
+            "lng": -72.5254
+          }
+        },
+        {
+          "name": "Puno",
+          "nights": 2,
+          "coordinates": {
+            "lat": -15.8402,
+            "lng": -70.0219
+          }
+        }
+      ],
+      "tags": [
+        "History",
+        "Culture",
+        "Hiking"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "localized": {
+        "de": {
+          "title": "Im Herzen der Inka",
+          "pitch": "Limas Küchen, dann Höhe: das Heilige Tal zum Akklimatisieren, Machu Picchu im Morgengrauen und zum Schluss der Titicacasee."
+        },
+        "es": {
+          "title": "El corazón inca",
+          "pitch": "Las cocinas de Lima y luego la altura: el Valle Sagrado para aclimatarse, Machu Picchu al amanecer y el Titicaca al final."
+        },
+        "fr": {
+          "title": "Au cœur inca",
+          "pitch": "Les cuisines de Lima, puis l'altitude : la Vallée sacrée pour s'acclimater, le Machu Picchu à l'aube et le Titicaca pour finir."
+        },
+        "it": {
+          "title": "Nel cuore inca",
+          "pitch": "Le cucine di Lima, poi la quota: la Valle Sacra per acclimatarsi, Machu Picchu all'alba e il Titicaca alla fine."
+        },
+        "pt": {
+          "title": "No coração inca",
+          "pitch": "As cozinhas de Lima e depois a altitude: o Vale Sagrado para aclimatar, Machu Picchu ao amanhecer e o Titicaca no fim."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/peru-inca-heartland.png"
+    },
+    {
+      "id": "peru-southern-desert-and-canyon",
+      "featuredRank": 2,
+      "countryCode": "PE",
+      "countrySlug": "peru",
+      "mapColor": "bg-yellow-100",
+      "mapAccent": "bg-yellow-500",
+      "avatarColor": "bg-yellow-600",
+      "curator": "travelflow",
+      "title": "Southern Desert and Canyon",
+      "pitch": "Dune buggies at Huacachina, the Nazca lines from a small plane and condors over the Colca before white-stone Arequipa.",
+      "style": "off-the-beaten-path",
+      "pace": "balanced",
+      "durationDays": 10,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Lima",
+          "nights": 2,
+          "coordinates": {
+            "lat": -12.0464,
+            "lng": -77.0428
+          }
+        },
+        {
+          "name": "Paracas",
+          "nights": 2,
+          "coordinates": {
+            "lat": -13.8332,
+            "lng": -76.2478
+          }
+        },
+        {
+          "name": "Huacachina",
+          "nights": 1,
+          "coordinates": {
+            "lat": -14.0875,
+            "lng": -75.7626
+          }
+        },
+        {
+          "name": "Nazca",
+          "nights": 1,
+          "coordinates": {
+            "lat": -14.854,
+            "lng": -74.9615
+          }
+        },
+        {
+          "name": "Arequipa",
+          "nights": 3,
+          "coordinates": {
+            "lat": -16.3408,
+            "lng": -71.5695
+          }
+        }
+      ],
+      "tags": [
+        "Desert",
+        "Adventure",
+        "Nature"
+      ],
+      "bestMonths": [
+        4,
+        5,
+        6,
+        9,
+        10
+      ],
+      "localized": {
+        "de": {
+          "title": "Wüstensüden und Canyon",
+          "pitch": "Buggys in Huacachina, die Nazca-Linien aus der Cessna und Kondore über dem Colca vor dem weißen Arequipa."
+        },
+        "es": {
+          "title": "Desierto del sur y cañón",
+          "pitch": "Areneros en Huacachina, las líneas de Nazca desde avioneta y cóndores sobre el Colca antes de la blanca Arequipa."
+        },
+        "fr": {
+          "title": "Désert du sud et canyon",
+          "pitch": "Buggys à Huacachina, les lignes de Nazca vues d'avion et des condors au-dessus du Colca avant Arequipa la blanche."
+        },
+        "it": {
+          "title": "Deserto del sud e canyon",
+          "pitch": "Buggy a Huacachina, le linee di Nazca dall'aereo e i condor sul Colca prima della bianca Arequipa."
+        },
+        "pt": {
+          "title": "Deserto do sul e cânion",
+          "pitch": "Buggies em Huacachina, as linhas de Nazca de avioneta e condores sobre o Colca antes da branca Arequipa."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/peru-southern-desert-and-canyon.png"
+    },
+    {
+      "id": "peru-amazon-and-highlands",
+      "featuredRank": 3,
+      "countryCode": "PE",
+      "countrySlug": "peru",
+      "mapColor": "bg-yellow-100",
+      "mapAccent": "bg-yellow-500",
+      "avatarColor": "bg-yellow-600",
+      "curator": "travelflow",
+      "title": "Amazon and Highlands",
+      "pitch": "Down from the Andes into the rainforest: river lodges out of Puerto Maldonado, then back up for Cusco's markets.",
+      "style": "nature-and-hiking",
+      "pace": "relaxed",
+      "durationDays": 13,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Lima",
+          "nights": 2,
+          "coordinates": {
+            "lat": -12.0464,
+            "lng": -77.0428
+          }
+        },
+        {
+          "name": "Cusco",
+          "nights": 3,
+          "coordinates": {
+            "lat": -13.532,
+            "lng": -71.9675
+          }
+        },
+        {
+          "name": "Puerto Maldonado",
+          "nights": 4,
+          "coordinates": {
+            "lat": -12.6136,
+            "lng": -69.2286
+          }
+        },
+        {
+          "name": "Iquitos",
+          "nights": 3,
+          "coordinates": {
+            "lat": -3.7847,
+            "lng": -73.3088
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Adventure",
+        "Photography"
+      ],
+      "bestMonths": [
+        5,
+        6,
+        7,
+        8
+      ],
+      "localized": {
+        "de": {
+          "title": "Amazonas und Anden",
+          "pitch": "Von den Anden hinunter in den Regenwald: Flusslodges ab Puerto Maldonado und danach zurück zu Cuscos Märkten."
+        },
+        "es": {
+          "title": "Amazonía y sierra",
+          "pitch": "De los Andes a la selva: albergues fluviales desde Puerto Maldonado y vuelta arriba para los mercados de Cusco."
+        },
+        "fr": {
+          "title": "Amazonie et hauts plateaux",
+          "pitch": "Des Andes à la forêt : lodges fluviaux au départ de Puerto Maldonado, puis retour vers les marchés de Cusco."
+        },
+        "it": {
+          "title": "Amazzonia e altopiani",
+          "pitch": "Dalle Ande alla foresta: lodge sul fiume da Puerto Maldonado e poi di nuovo su, ai mercati di Cusco."
+        },
+        "pt": {
+          "title": "Amazónia e serra",
+          "pitch": "Dos Andes à floresta: lodges fluviais a partir de Puerto Maldonado e de volta às feiras de Cusco."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/peru-amazon-and-highlands.png"
+    },
+    {
+      "id": "new-zealand-south-island-loop",
+      "featuredRank": 1,
+      "countryCode": "NZ",
+      "countrySlug": "new-zealand",
+      "mapColor": "bg-cyan-100",
+      "mapAccent": "bg-cyan-400",
+      "avatarColor": "bg-cyan-600",
+      "curator": "travelflow",
+      "title": "South Island Loop",
+      "pitch": "Glacier country, a fiord at dawn and the road over the Lindis Pass - the drive that sells New Zealand to everyone.",
+      "style": "road-trip",
+      "pace": "balanced",
+      "durationDays": 14,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Christchurch",
+          "nights": 2,
+          "coordinates": {
+            "lat": -43.5321,
+            "lng": 172.6362
+          }
+        },
+        {
+          "name": "Franz Josef",
+          "nights": 2,
+          "coordinates": {
+            "lat": -43.3872,
+            "lng": 170.1834
+          }
+        },
+        {
+          "name": "Wanaka",
+          "nights": 2,
+          "coordinates": {
+            "lat": -44.698,
+            "lng": 169.132
+          }
+        },
+        {
+          "name": "Queenstown",
+          "nights": 3,
+          "coordinates": {
+            "lat": -45.0312,
+            "lng": 168.6626
+          }
+        },
+        {
+          "name": "Te Anau",
+          "nights": 2,
+          "coordinates": {
+            "lat": -45.4144,
+            "lng": 167.718
+          }
+        },
+        {
+          "name": "Dunedin",
+          "nights": 2,
+          "coordinates": {
+            "lat": -45.929,
+            "lng": 170.1978
+          }
+        }
+      ],
+      "tags": [
+        "Road Trip",
+        "Nature",
+        "Hiking"
+      ],
+      "bestMonths": [
+        1,
+        2,
+        3,
+        11,
+        12
+      ],
+      "localized": {
+        "de": {
+          "title": "Südinsel-Runde",
+          "pitch": "Gletscherland, ein Fjord im Morgenlicht und die Straße über den Lindis Pass - die Fahrt, die Neuseeland verkauft."
+        },
+        "es": {
+          "title": "Vuelta a la Isla Sur",
+          "pitch": "País de glaciares, un fiordo al amanecer y la carretera del paso Lindis: el viaje que convence a cualquiera."
+        },
+        "fr": {
+          "title": "Boucle de l'île du Sud",
+          "pitch": "Pays des glaciers, un fjord à l'aube et la route du col de Lindis : le trajet qui vend la Nouvelle-Zélande."
+        },
+        "it": {
+          "title": "Anello dell'Isola del Sud",
+          "pitch": "Terra di ghiacciai, un fiordo all'alba e la strada del passo Lindis: il viaggio che convince chiunque."
+        },
+        "pt": {
+          "title": "Volta à Ilha do Sul",
+          "pitch": "Terra de glaciares, um fiorde ao amanhecer e a estrada do desfiladeiro de Lindis: a viagem que convence qualquer um."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/new-zealand-south-island-loop.png"
+    },
+    {
+      "id": "new-zealand-north-island-geothermal",
+      "featuredRank": 2,
+      "countryCode": "NZ",
+      "countrySlug": "new-zealand",
+      "mapColor": "bg-cyan-100",
+      "mapAccent": "bg-cyan-400",
+      "avatarColor": "bg-cyan-600",
+      "curator": "travelflow",
+      "title": "North Island Geothermal",
+      "pitch": "Steam vents at Rotorua, a volcanic crossing at Tongariro and glow-worm caves on the way through the Waikato.",
+      "style": "nature-and-hiking",
+      "pace": "balanced",
+      "durationDays": 12,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Auckland",
+          "nights": 2,
+          "coordinates": {
+            "lat": -37.012,
+            "lng": 174.7863
+          }
+        },
+        {
+          "name": "Waitomo",
+          "nights": 1,
+          "coordinates": {
+            "lat": -38.2607,
+            "lng": 175.1113
+          }
+        },
+        {
+          "name": "Rotorua",
+          "nights": 3,
+          "coordinates": {
+            "lat": -38.1092,
+            "lng": 176.317
+          }
+        },
+        {
+          "name": "Taupo",
+          "nights": 2,
+          "coordinates": {
+            "lat": -38.7397,
+            "lng": 176.084
+          }
+        },
+        {
+          "name": "Wellington",
+          "nights": 3,
+          "coordinates": {
+            "lat": -41.3268,
+            "lng": 174.8069
+          }
+        }
+      ],
+      "tags": [
+        "Nature",
+        "Hiking",
+        "Adventure"
+      ],
+      "bestMonths": [
+        1,
+        2,
+        3,
+        11,
+        12
+      ],
+      "localized": {
+        "de": {
+          "title": "Nordinsel und Geothermie",
+          "pitch": "Dampfschlote in Rotorua, die Vulkanüberquerung am Tongariro und Glühwürmchenhöhlen unterwegs im Waikato."
+        },
+        "es": {
+          "title": "Isla Norte geotérmica",
+          "pitch": "Fumarolas en Rotorua, la travesía volcánica del Tongariro y cuevas de luciérnagas de camino por Waikato."
+        },
+        "fr": {
+          "title": "Île du Nord géothermique",
+          "pitch": "Fumerolles à Rotorua, la traversée volcanique du Tongariro et des grottes à vers luisants sur la route du Waikato."
+        },
+        "it": {
+          "title": "Isola del Nord geotermica",
+          "pitch": "Fumarole a Rotorua, la traversata vulcanica del Tongariro e grotte di lucciole lungo il Waikato."
+        },
+        "pt": {
+          "title": "Ilha do Norte geotérmica",
+          "pitch": "Fumarolas em Rotorua, a travessia vulcânica do Tongariro e grutas de pirilampos a caminho pelo Waikato."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/new-zealand-north-island-geothermal.png"
+    },
+    {
+      "id": "new-zealand-both-islands",
+      "featuredRank": 3,
+      "countryCode": "NZ",
+      "countrySlug": "new-zealand",
+      "mapColor": "bg-cyan-100",
+      "mapAccent": "bg-cyan-400",
+      "avatarColor": "bg-cyan-600",
+      "curator": "travelflow",
+      "title": "Both Islands in Three Weeks",
+      "pitch": "Auckland to Queenstown with the Cook Strait ferry in the middle - the version that finally gets both islands done properly.",
+      "style": "road-trip",
+      "pace": "fast",
+      "durationDays": 18,
+      "isRoundTrip": false,
+      "stops": [
+        {
+          "name": "Auckland",
+          "nights": 2,
+          "coordinates": {
+            "lat": -37.012,
+            "lng": 174.7863
+          }
+        },
+        {
+          "name": "Rotorua",
+          "nights": 2,
+          "coordinates": {
+            "lat": -38.1092,
+            "lng": 176.317
+          }
+        },
+        {
+          "name": "Wellington",
+          "nights": 2,
+          "coordinates": {
+            "lat": -41.3268,
+            "lng": 174.8069
+          }
+        },
+        {
+          "name": "Nelson",
+          "nights": 2,
+          "coordinates": {
+            "lat": -41.2983,
+            "lng": 173.221
+          }
+        },
+        {
+          "name": "Franz Josef",
+          "nights": 2,
+          "coordinates": {
+            "lat": -43.3872,
+            "lng": 170.1834
+          }
+        },
+        {
+          "name": "Wanaka",
+          "nights": 2,
+          "coordinates": {
+            "lat": -44.698,
+            "lng": 169.132
+          }
+        },
+        {
+          "name": "Queenstown",
+          "nights": 3,
+          "coordinates": {
+            "lat": -45.0312,
+            "lng": 168.6626
+          }
+        },
+        {
+          "name": "Christchurch",
+          "nights": 2,
+          "coordinates": {
+            "lat": -43.5321,
+            "lng": 172.6362
+          }
+        }
+      ],
+      "tags": [
+        "Road Trip",
+        "Nature",
+        "Adventure"
+      ],
+      "bestMonths": [
+        1,
+        2,
+        11,
+        12
+      ],
+      "localized": {
+        "de": {
+          "title": "Beide Inseln in drei Wochen",
+          "pitch": "Von Auckland nach Queenstown, in der Mitte die Fähre über die Cookstraße - die Version, bei der beide Inseln wirklich drankommen."
+        },
+        "es": {
+          "title": "Las dos islas en tres semanas",
+          "pitch": "De Auckland a Queenstown con el ferry del estrecho de Cook en medio: la versión que sí cubre las dos islas."
+        },
+        "fr": {
+          "title": "Les deux îles en trois semaines",
+          "pitch": "D'Auckland à Queenstown avec le ferry du détroit de Cook au milieu : la version qui fait vraiment les deux îles."
+        },
+        "it": {
+          "title": "Entrambe le isole in tre settimane",
+          "pitch": "Da Auckland a Queenstown con il traghetto dello stretto di Cook nel mezzo: la versione che copre davvero entrambe le isole."
+        },
+        "pt": {
+          "title": "As duas ilhas em três semanas",
+          "pitch": "De Auckland a Queenstown com o ferry do estreito de Cook pelo meio: a versão que faz mesmo as duas ilhas."
+        }
+      },
+      "mapImagePath": "/images/trip-maps/routes/new-zealand-both-islands.png"
     }
   ]
 }
