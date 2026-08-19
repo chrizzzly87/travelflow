@@ -70,7 +70,44 @@
         "pill": "Wydarzenia i festiwale",
         "title": "Zaplanuj podróż wokół festiwalu",
         "description": "Największe święta świata zasługują na coś więcej niż lot na ostatnią chwilę. Odkrywaj nadchodzące festiwale według dat i buduj wokół nich swój plan podróży.",
-        "comingSoonDescription": "Szczegółowe przewodniki festiwalowe z harmonogramami, poradami noclegowymi i propozycjami planu dzień po dniu już wkrótce."
+        "counts": "Zbadaliśmy {total} świąt – {exact} ma już potwierdzoną datę.",
+        "accuracyNote": "Jeśli święto zależy od kalendarza księżycowego lub ruchomego, a dokładnej daty nie da się jeszcze potwierdzić, podajemy zwykły termin zamiast zgadywać.",
+        "filterRegion": "Region",
+        "filterMonth": "Miesiąc",
+        "filterAll": "Wszystkie",
+        "emptyState": "Nic tu jeszcze nie pasuje. Wybierz inny miesiąc lub region.",
+        "happeningNow": "Trwa teraz",
+        "planCta": "Zaplanuj podróż",
+        "guideCta": "Przewodnik po kraju",
+        "sourceCta": "Oficjalne informacje",
+        "precision": {
+          "exact": "Potwierdzona data",
+          "approximate": "Zwykły termin"
+        },
+        "date": {
+          "usually": "Zwykle {month} {year}",
+          "usually_early": "Zwykle {month} {year}, początek miesiąca",
+          "usually_mid": "Zwykle {month} {year}, połowa miesiąca",
+          "usually_late": "Zwykle {month} {year}, koniec miesiąca",
+          "throughout": "Cały {month} {year}"
+        },
+        "recurrence": {
+          "fixed": "Co roku te same dni",
+          "lunar": "Wyznacza ją kalendarz księżycowy",
+          "movable": "Terminy ogłaszane co roku",
+          "seasonal": "Trwa jak cały sezon"
+        },
+        "regions": {
+          "africa": "Afryka",
+          "asia": "Azja",
+          "europe": "Europa",
+          "middle-east": "Bliski Wschód",
+          "north-america": "Ameryka Północna",
+          "oceania": "Oceania",
+          "south-america": "Ameryka Południowa"
+        },
+        "clearFilters": "Wyczyść filtry",
+        "resultSummary": "{count} z {total} świąt, najbliższe najpierw"
       },
       "weekendGetaways": {
         "pill": "Weekendowe wypady",

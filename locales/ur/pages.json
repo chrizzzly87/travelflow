@@ -70,7 +70,44 @@
         "pill": "Events & Festivals",
         "title": "Plan Your Trip Around a Festival",
         "description": "The world's greatest celebrations deserve more than a last-minute flight. Discover upcoming festivals by date and build your itinerary around the event.",
-        "comingSoonDescription": "Detailed festival guides with schedules, accommodation tips, and day-by-day itinerary suggestions are on the way."
+        "counts": "{total} تہواروں پر تحقیق کی گئی — {exact} کی تاریخ طے شدہ ہے۔",
+        "accuracyNote": "جب کوئی تہوار قمری یا بدلتے کیلنڈر کے مطابق ہو اور ہم درست تاریخ کی تصدیق نہ کر سکیں، تو اندازہ لگانے کے بجائے ہم بتاتے ہیں کہ یہ عام طور پر کب ہوتا ہے۔",
+        "filterRegion": "خطہ",
+        "filterMonth": "مہینہ",
+        "filterAll": "سب",
+        "emptyState": "اس امتزاج کے لیے ابھی کچھ نہیں ہے۔ کوئی اور مہینہ یا خطہ آزمائیں۔",
+        "happeningNow": "ابھی جاری ہے",
+        "planCta": "سفر کی منصوبہ بندی",
+        "guideCta": "ملکی گائیڈ",
+        "sourceCta": "سرکاری معلومات",
+        "precision": {
+          "exact": "طے شدہ تاریخ",
+          "approximate": "عام وقت"
+        },
+        "date": {
+          "usually": "عام طور پر {month} {year} میں",
+          "usually_early": "عام طور پر {month} {year} کے شروع میں",
+          "usually_mid": "عام طور پر {month} {year} کے وسط میں",
+          "usually_late": "عام طور پر {month} {year} کے آخر میں",
+          "throughout": "پورے {month} {year} کے دوران"
+        },
+        "recurrence": {
+          "fixed": "ہر سال وہی تاریخیں",
+          "lunar": "قمری کیلنڈر سے طے ہوتا ہے",
+          "movable": "تاریخوں کا اعلان ہر سال ہوتا ہے",
+          "seasonal": "ایک پورے موسم کی طرح چلتا ہے"
+        },
+        "regions": {
+          "africa": "افریقہ",
+          "asia": "ایشیا",
+          "europe": "یورپ",
+          "middle-east": "مشرق وسطیٰ",
+          "north-america": "شمالی امریکہ",
+          "oceania": "اوشیانا",
+          "south-america": "جنوبی امریکہ"
+        },
+        "clearFilters": "فلٹر ہٹائیں",
+        "resultSummary": "{total} میں سے {count} تہوار، قریب ترین پہلے"
       },
       "weekendGetaways": {
         "pill": "Weekend Getaways",

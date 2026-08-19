@@ -70,7 +70,44 @@
         "pill": "Eventos e festivais",
         "title": "Planeie a sua viagem à volta de um festival",
         "description": "As melhores celebrações do mundo merecem mais do que um voo de última hora. Descubra festivais por data e construa o itinerário em torno do evento.",
-        "comingSoonDescription": "Guias completos de festivais com horários, dicas de alojamento e sugestões de itinerário por dia estão a caminho."
+        "counts": "{total} festas pesquisadas – {exact} já com data confirmada.",
+        "accuracyNote": "Quando uma festa segue um calendário lunar ou móvel e ainda não conseguimos confirmar a data exata, dizemos quando costuma acontecer em vez de inventar.",
+        "filterRegion": "Região",
+        "filterMonth": "Mês",
+        "filterAll": "Todas",
+        "emptyState": "Ainda não há nada com essa combinação. Experimente outro mês ou outra região.",
+        "happeningNow": "A acontecer agora",
+        "planCta": "Planear a viagem",
+        "guideCta": "Guia do país",
+        "sourceCta": "Info oficial",
+        "precision": {
+          "exact": "Data confirmada",
+          "approximate": "Época habitual"
+        },
+        "date": {
+          "usually": "Normalmente em {month} de {year}",
+          "usually_early": "Normalmente no início de {month} de {year}",
+          "usually_mid": "Normalmente em meados de {month} de {year}",
+          "usually_late": "Normalmente no final de {month} de {year}",
+          "throughout": "Durante todo o mês de {month} de {year}"
+        },
+        "recurrence": {
+          "fixed": "As mesmas datas todos os anos",
+          "lunar": "Definida por um calendário lunar",
+          "movable": "Datas anunciadas todos os anos",
+          "seasonal": "Decorre como uma temporada"
+        },
+        "regions": {
+          "africa": "África",
+          "asia": "Ásia",
+          "europe": "Europa",
+          "middle-east": "Médio Oriente",
+          "north-america": "América do Norte",
+          "oceania": "Oceania",
+          "south-america": "América do Sul"
+        },
+        "clearFilters": "Limpar filtros",
+        "resultSummary": "{count} de {total} festas, as mais próximas primeiro"
       },
       "weekendGetaways": {
         "pill": "Escapadinhas de fim de semana",

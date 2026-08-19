@@ -1,5 +1,5 @@
-import type { AiModelCatalogItem } from '../config/aiModelCatalog';
-import { isAiReasoningEffort, type AiReasoningEffort } from '../shared/aiReasoning';
+import type { AiModelCatalogItem } from '../config/aiModelCatalog.ts';
+import { isAiReasoningEffort, type AiReasoningEffort } from '../shared/aiReasoning.ts';
 
 export const OPENROUTER_PUBLIC_MODELS_URL = 'https://openrouter.ai/api/v1/models';
 export const OPENROUTER_USER_MODELS_URL = 'https://openrouter.ai/api/v1/models/user';

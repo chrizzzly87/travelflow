@@ -70,7 +70,44 @@
         "pill": "Events & Festivals",
         "title": "Plane deine Reise rund um ein Festival",
         "description": "Die größten Feste der Welt verdienen mehr als einen Last-Minute-Flug. Finde kommende Events nach Datum und plane deine Route darum herum.",
-        "comingSoonDescription": "Detaillierte Festival-Guides mit Zeitplänen, Unterkunftstipps und Tagesplänen folgen bald."
+        "counts": "{total} Feste recherchiert – {exact} davon mit bestätigtem Datum.",
+        "accuracyNote": "Wenn ein Fest einem Mond- oder beweglichen Kalender folgt und wir das genaue Datum noch nicht belegen können, nennen wir den üblichen Zeitraum statt zu raten.",
+        "filterRegion": "Region",
+        "filterMonth": "Monat",
+        "filterAll": "Alle",
+        "emptyState": "Zu dieser Auswahl gibt es noch nichts. Probiere einen anderen Monat oder eine andere Region.",
+        "happeningNow": "Läuft gerade",
+        "planCta": "Reise dazu planen",
+        "guideCta": "Länderguide",
+        "sourceCta": "Offizielle Infos",
+        "precision": {
+          "exact": "Bestätigtes Datum",
+          "approximate": "Üblicher Zeitraum"
+        },
+        "date": {
+          "usually": "Meist im {month} {year}",
+          "usually_early": "Meist Anfang {month} {year}",
+          "usually_mid": "Meist Mitte {month} {year}",
+          "usually_late": "Meist Ende {month} {year}",
+          "throughout": "Den ganzen {month} {year}"
+        },
+        "recurrence": {
+          "fixed": "Jedes Jahr dieselben Tage",
+          "lunar": "Richtet sich nach dem Mondkalender",
+          "movable": "Termine werden jährlich bekannt gegeben",
+          "seasonal": "Läuft als ganze Saison"
+        },
+        "regions": {
+          "africa": "Afrika",
+          "asia": "Asien",
+          "europe": "Europa",
+          "middle-east": "Naher Osten",
+          "north-america": "Nordamerika",
+          "oceania": "Ozeanien",
+          "south-america": "Südamerika"
+        },
+        "clearFilters": "Filter zurücksetzen",
+        "resultSummary": "{count} von {total} Festen, nächste zuerst"
       },
       "weekendGetaways": {
         "pill": "Wochenendtrips",

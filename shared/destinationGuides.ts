@@ -28,14 +28,97 @@ export interface DestinationSeasonality {
   note?: string;
 }
 
+/**
+ * How an event repeats. Most festivals are NOT fixed to a Gregorian day:
+ * - `fixed`     same calendar day(s) every year (Bastille Day, Songkran)
+ * - `lunar`     tied to a lunar/lunisolar calendar (Lunar New Year, Diwali, Vesak)
+ * - `movable`   tied to a movable anchor or an annually announced programme
+ *               (Easter-linked carnivals, Oktoberfest, Edinburgh Fringe)
+ * - `seasonal`  a season rather than an event with a start day (cherry blossom,
+ *               Christmas markets, Vienna ball season)
+ */
+export type DestinationEventRecurrenceKind = 'fixed' | 'lunar' | 'movable' | 'seasonal';
+
+/** Where inside the month a non-exact event usually lands. */
+export type DestinationEventMonthQualifier = 'early' | 'mid' | 'late' | 'throughout';
+
+export interface DestinationEventRecurrence {
+  kind: DestinationEventRecurrenceKind;
+  /** Plain-language rule, e.g. "Last Wednesday of August". Never a fabricated date. */
+  rule?: string;
+}
+
 export interface DestinationEvent {
   id: string;
   name: string;
+  /** Month the event usually falls in (1-12). Always present, even for movable events. */
   month: number;
   type: string;
   summary: string;
   sourceUrl?: string;
+  /** Fixed single-day events (1-31). */
+  day?: number;
+  /** Fixed multi-day events inside one month (1-31). */
+  startDay?: number;
+  endDay?: number;
+  /** Length of the celebration window in days, used with `knownDates`. */
+  durationDays?: number;
+  recurrence?: DestinationEventRecurrence;
+  /**
+   * Confirmed start dates for specific years, keyed by 4-digit year with an
+   * ISO `YYYY-MM-DD` value. Only populate with sourced dates — a missing year
+   * degrades to an honest "usually in <month>" rendering.
+   */
+  knownDates?: Record<string, string>;
+  /** Used when no exact date can be resolved, e.g. "usually late August". */
+  monthQualifier?: DestinationEventMonthQualifier;
 }
+
+const ISO_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const RECURRENCE_KINDS: DestinationEventRecurrenceKind[] = ['fixed', 'lunar', 'movable', 'seasonal'];
+const MONTH_QUALIFIERS: DestinationEventMonthQualifier[] = ['early', 'mid', 'late', 'throughout'];
+
+const isValidDayOfMonth = (value: number): boolean => Number.isInteger(value) && value >= 1 && value <= 31;
+
+export const validateDestinationEventDates = (event: DestinationEvent): string[] => {
+  const errors: string[] = [];
+
+  ([['day', event.day], ['startDay', event.startDay], ['endDay', event.endDay]] as const).forEach(([label, value]) => {
+    if (value === undefined) return;
+    if (!isValidDayOfMonth(value)) errors.push(`event ${event.id}: ${label} must be between 1 and 31`);
+  });
+
+  if (event.startDay !== undefined && event.endDay === undefined) errors.push(`event ${event.id}: startDay requires endDay`);
+  if (event.endDay !== undefined && event.startDay === undefined) errors.push(`event ${event.id}: endDay requires startDay`);
+  if (event.startDay !== undefined && event.endDay !== undefined && event.endDay < event.startDay) {
+    errors.push(`event ${event.id}: endDay must not be before startDay`);
+  }
+  if (event.day !== undefined && event.startDay !== undefined) {
+    errors.push(`event ${event.id}: use either day or startDay/endDay, not both`);
+  }
+  if (event.durationDays !== undefined && (!Number.isInteger(event.durationDays) || event.durationDays < 1)) {
+    errors.push(`event ${event.id}: durationDays must be a positive integer`);
+  }
+  if (event.recurrence && !RECURRENCE_KINDS.includes(event.recurrence.kind)) {
+    errors.push(`event ${event.id}: unknown recurrence kind ${event.recurrence.kind}`);
+  }
+  if (event.monthQualifier && !MONTH_QUALIFIERS.includes(event.monthQualifier)) {
+    errors.push(`event ${event.id}: unknown monthQualifier ${event.monthQualifier}`);
+  }
+
+  Object.entries(event.knownDates || {}).forEach(([year, isoDate]) => {
+    if (!/^\d{4}$/.test(year)) errors.push(`event ${event.id}: knownDates key ${year} must be a 4-digit year`);
+    if (!ISO_DAY_PATTERN.test(isoDate)) {
+      errors.push(`event ${event.id}: knownDates.${year} must be an ISO YYYY-MM-DD date`);
+      return;
+    }
+    if (!isoDate.startsWith(`${year}-`)) {
+      errors.push(`event ${event.id}: knownDates.${year} must fall inside year ${year}`);
+    }
+  });
+
+  return errors;
+};
 
 export interface DestinationGuideFacts {
   currencyCode?: string;
@@ -219,6 +302,7 @@ export const validateDestinationGuideDocument = (
       if (!Number.isInteger(event.month) || event.month < 1 || event.month > 12) {
         errors.push(`${guide.id}: event ${event.id} has invalid month ${event.month}`);
       }
+      validateDestinationEventDates(event).forEach((error) => errors.push(`${guide.id}: ${error}`));
     });
 
     guide.sourceLinks.forEach((link) => {
