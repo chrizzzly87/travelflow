@@ -41,6 +41,8 @@ Before finalizing, ensure all applicable code changes are represented in release
 - Docs-only, copy-only, and style-only edits are exempt from mandatory test additions.
 - For PRs adding files under `services/` or `config/`, include corresponding `tests/**` entries in the PR checklist/description.
 - For TripView/route-loader orchestration changes, follow `docs/TESTING_PHASE2_SCOPE.md` for phase-2 regression coverage.
+- For destination coverage changes (new countries, cities, islands, or refreshed source data), regenerating `data/destinationGuides.json` is not enough: the public API reads from Supabase. Run the sync steps in `docs/DESTINATION_INGESTION_RUNBOOK.md` and verify with `curl /api/destinations/<slug>?include=source-profile`, not by checking that the page returns 200.
+- Manual CLI alias deploys (`netlify deploy --no-build --dir=dist --alias ...`) do not serve Netlify edge functions, so every `/api/*` route returns the SPA shell. Verify API-dependent behaviour on a real Deploy Preview or production — see `docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md`.
 
 ## Direction-Safety Requirement
 - For any new or modified component, evaluate whether CSS logical properties should be used for direction-aware layouts.
