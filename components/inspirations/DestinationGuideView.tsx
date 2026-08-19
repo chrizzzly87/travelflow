@@ -70,6 +70,8 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
     cities: isCountry ? undefined : guide.name,
     meta: { source: 'inspirations', label: guide.name },
   });
+  const hasHighlights = guide.highlights.length > 0;
+  const hasAirports = country.airports.length > 0;
   const visibleSources = guide.sourceLinks.filter((source) => !source.isReferral);
   const typeLabel = guide.kind === 'country'
     ? t('inspirations.subpages.guide.countryPill')
@@ -224,11 +226,16 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
         </section>
       ) : null}
 
+      {/* Both cards are optional, so only claim two columns when both actually render.
+          Otherwise the single card sat in a half-width column next to an empty gap. */}
       {isCountry ? (
         <CountryRouteCards countryValue={country.slug} countryName={country.name} locale={locale} />
       ) : null}
 
-      <section className="grid gap-5 pb-10 md:grid-cols-2 animate-hero-stagger" style={{ '--stagger': '200ms' } as React.CSSProperties}>
+      <section
+        className={`grid gap-5 pb-10 animate-hero-stagger${hasHighlights && hasAirports ? ' md:grid-cols-2' : ''}`}
+        style={{ '--stagger': '200ms' } as React.CSSProperties}
+      >
         {guide.highlights.length > 0 ? (
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="flex items-center gap-2 text-xl font-black text-slate-900"><Sparkle size={20} weight="duotone" className="text-accent-700" />{t('inspirations.subpages.guide.highlights')}</h2>
