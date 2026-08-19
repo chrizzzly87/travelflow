@@ -3,7 +3,7 @@ import {
     getAiProviderMetadata,
     getAiProviderSortOrder,
 } from './aiProviderCatalog.ts';
-import type { AiReasoningEffort } from '../shared/aiReasoning';
+import type { AiReasoningEffort } from '../shared/aiReasoning.ts';
 
 export type AiModelAvailability = 'active' | 'planned';
 
