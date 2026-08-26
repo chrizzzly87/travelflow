@@ -3092,7 +3092,7 @@ const useTripViewRender = ({
     return (
         <GoogleMapsLoader language={appLanguage} enabled={isMapBootstrapEnabled}>
             <div
-                className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900"
+                className="tf-vercel-system relative h-screen w-screen flex flex-col bg-zinc-50 overflow-hidden text-zinc-950 selection:bg-zinc-200 selection:text-zinc-950"
                 data-tf-handoff-ready="true"
             >
                 

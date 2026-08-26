@@ -2044,14 +2044,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     };
 
     return (
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#eef2ff_0%,#f8fafc_50%,#ffffff_100%)] text-slate-900">
-            <div className="pointer-events-none fixed inset-0 opacity-60">
-                <div className="absolute -left-16 top-12 size-56 rounded-full bg-accent-200/50 blur-3xl" />
-                <div className="absolute right-0 top-24 size-64 rounded-full bg-cyan-200/40 blur-3xl" />
-            </div>
-
+        <div className="tf-vercel-system tf-create-trip min-h-screen bg-white text-slate-950">
             <div className="relative z-10">
-                <SiteHeader variant="glass" onMyTripsClick={onOpenManager} />
+                <SiteHeader variant="glass" hideCreateTrip onMyTripsClick={onOpenManager} />
                 <ConnectivityStatusBanner
                     isPlannerRoute
                     connectivity={connectivitySnapshot}
@@ -2060,7 +2055,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                     showDeveloperDetails={IS_DEV}
                 />
 
-                <main className="mx-auto w-full max-w-[1260px] px-4 pb-28 pt-8 sm:px-6 sm:pb-32 lg:px-8 lg:pb-14">
+                <main className="mx-auto w-full max-w-[1400px] px-5 pb-28 pt-10 sm:pb-32 md:px-8 lg:px-12 lg:pb-16">
                     {prefillMeta?.label && (
                         <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-medium text-accent-800">
                             <Sparkle size={13} weight="duotone" />
@@ -2073,7 +2068,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                         </div>
                     )}
 
-                    <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start">
+                    <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
                         <div className="space-y-5">
                             <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
                                 <div className="mb-4 flex items-start justify-between gap-3">
@@ -2602,7 +2597,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                         </div>
 
                         <aside className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
-                            <div className="space-y-4 rounded-2xl border border-indigo-300/20 bg-gradient-to-b from-[#0d1330] via-[#090f26] to-[#060915] p-4 text-slate-100 shadow-2xl sm:p-5">
+                            <div className="space-y-4 rounded-lg bg-slate-950 p-4 text-slate-100 sm:p-5">
                                 <div>
                                     <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-indigo-300/30 bg-white/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-100">
                                         <Compass size={13} weight="duotone" />
@@ -2832,7 +2827,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     type="button"
                                     onClick={handleGenerateTrip}
                                         disabled={isSubmitting || !destinationComplete || isGenerationBlockedOffline || (dateInputMode === 'exact' && totalNights < 1)}
-                                    className="inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold text-indigo-900 transition-colors hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="inline-flex w-full items-center justify-center rounded-md bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                                     {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
                                         destination_count: orderedDestinations.length,
                                         date_mode: dateInputMode,
@@ -2855,7 +2850,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 </main>
 
                 <div
-                    className="fixed inset-x-0 z-40 border-t border-indigo-300/25 bg-gradient-to-b from-[#0d1330]/95 via-[#090f26]/95 to-[#060915]/95 px-3 pb-4 pt-4 text-slate-100 backdrop-blur lg:hidden"
+                    className="fixed inset-x-0 z-40 border-t border-slate-700 bg-slate-950 px-3 pb-4 pt-4 text-slate-100 lg:hidden"
                     style={{ bottom: `${mobileSnapshotFooterOffset}px` }}
                 >
                     <div className="mx-auto max-w-[1260px]">
@@ -2958,7 +2953,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 type="button"
                                 onClick={handleGenerateTrip}
                                 disabled={isSubmitting || !destinationComplete || isGenerationBlockedOffline || (dateInputMode === 'exact' && totalNights < 1)}
-                                className="rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold text-indigo-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
                                 {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
                                     destination_count: orderedDestinations.length,
                                     date_mode: dateInputMode,

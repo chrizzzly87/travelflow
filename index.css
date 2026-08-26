@@ -1,4 +1,6 @@
 @import "tailwindcss" source(none);
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
 @import "./styles/flagpack.css";
 @import "./styles/tremor-theme.css";
 @import "tw-animate-css";
@@ -214,22 +216,23 @@
 }
 
 :root {
-  --tf-font-heading: "Bricolage Grotesque", "Space Grotesk", "TravelFlow Global Fallback", "Noto Sans", "Avenir Next", "Segoe UI", sans-serif;
-  --tf-font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "TravelFlow Global Fallback", "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  --tf-font-heading: "Geist Variable", "TravelFlow Global Fallback", "Noto Sans", "Avenir Next", "Segoe UI", sans-serif;
+  --tf-font-body: "Geist Variable", "TravelFlow Global Fallback", "Noto Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --tf-font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --tf-layer-cookie-consent: 12000;
-  /* Global accent currently uses an indigo palette. */
-  --tf-accent-50: #eef2ff;
-  --tf-accent-100: #e0e7ff;
-  --tf-accent-200: #c7d2fe;
-  --tf-accent-300: #a5b4fc;
-  --tf-accent-400: #818cf8;
-  --tf-accent-500: #6366f1;
-  --tf-accent-600: #4f46e5;
-  --tf-accent-700: #4338ca;
-  --tf-accent-800: #3730a3;
-  --tf-accent-900: #312e81;
-  --tf-accent-950: #1e1b4b;
-  --tf-accent-rgb: 79 70 229;
+  /* Monochrome action scale. Color is reserved for semantic state and maps. */
+  --tf-accent-50: #fafafa;
+  --tf-accent-100: #f4f4f5;
+  --tf-accent-200: #e4e4e7;
+  --tf-accent-300: #d4d4d8;
+  --tf-accent-400: #a1a1aa;
+  --tf-accent-500: #71717a;
+  --tf-accent-600: #18181b;
+  --tf-accent-700: #09090b;
+  --tf-accent-800: #09090b;
+  --tf-accent-900: #09090b;
+  --tf-accent-950: #000000;
+  --tf-accent-rgb: 24 24 27;
 
   --tf-primary: var(--tf-accent-600);
   --tf-primary-hover: var(--tf-accent-700);
@@ -240,7 +243,7 @@
   --tf-primary-contrast: #ffffff;
   --tf-primary-glow-sm: rgb(var(--tf-accent-rgb) / 0.2);
   --tf-primary-glow-md: rgb(var(--tf-accent-rgb) / 0.28);
-  --radius: 0.625rem;
+  --radius: 0.5rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -356,7 +359,7 @@ html[lang^="ur-"] {
 }
 
 .tracking-tight {
-  letter-spacing: 0;
+  letter-spacing: -0.025em;
 }
 
 @layer base {
@@ -451,8 +454,16 @@ h5,
 h6,
 .font-heading {
   font-family: var(--tf-font-heading);
-  letter-spacing: 0;
+  letter-spacing: -0.025em;
   text-wrap: balance;
+}
+
+code,
+kbd,
+samp,
+pre,
+.font-mono {
+  font-family: var(--tf-font-mono);
 }
 
 /* ── Scroll-driven animations ── */
@@ -1601,4 +1612,47 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
 .lazy-site-footer {
   content-visibility: auto;
   contain-intrinsic-size: auto 250px;
+}
+
+/* Vercel-inspired product system: typography and hierarchy do the work. */
+.tf-vercel-system :is(button, a, input, textarea, [role="button"]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tf-create-trip .text-center:not(.tabular-nums) {
+  text-align: start;
+}
+
+.tf-create-trip .uppercase {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.tf-create-trip :is(.rounded-3xl, .rounded-2xl, .rounded-\[2rem\]) {
+  border-radius: 0.5rem;
+}
+
+.tf-create-trip :is(.shadow-sm, .shadow-lg, .shadow-xl) {
+  box-shadow: none;
+}
+
+.tf-create-trip :is(h1, h2) {
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.tf-create-trip label,
+.tf-create-trip .font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tf-vercel-system *,
+  .tf-vercel-system *::before,
+  .tf-vercel-system *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

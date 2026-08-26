@@ -131,9 +131,9 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
     }, [mapPreviewUrl]);
 
     return (
-        <article className="cursor-pointer rounded-2xl border border-slate-200 bg-white shadow-sm transition-[box-shadow] duration-200 ease-out hover:shadow-lg">
+        <article className="cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-white transition-colors hover:border-slate-400">
             <div
-                className={`relative h-36 rounded-t-2xl overflow-hidden ${mapImageSrc ? 'bg-slate-100' : card.mapColor}`}
+                className={`relative h-36 overflow-hidden border-b border-slate-200 ${mapImageSrc ? 'bg-slate-100' : card.mapColor}`}
                 style={mapViewTransitionName ? ({ viewTransitionName: mapViewTransitionName } as React.CSSProperties) : undefined}
             >
                 {mapImageSrc ? (
@@ -208,7 +208,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                     {localizedCard.tags.map((tag) => (
                         <span
                             key={tag}
-                            className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600"
+                            className="border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600"
                         >
                             {tag}
                         </span>

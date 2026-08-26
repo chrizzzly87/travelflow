@@ -20,19 +20,16 @@ export const CreateTripWizardCtaBanner: React.FC<CreateTripWizardCtaBannerProps>
 }) => {
     return (
         <section className={className}>
-            <div className="relative overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 p-5 text-white shadow-lg">
-                <div className="pointer-events-none absolute -right-14 -top-16 size-40 rounded-full bg-white/15 blur-2xl" />
-                <div className="pointer-events-none absolute -bottom-12 -left-12 size-36 rounded-full bg-indigo-200/20 blur-2xl" />
-
-                <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="border-y border-slate-200 py-8 text-slate-950">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                     <div className="min-w-0">
                         <p className="text-base font-semibold sm:text-lg">{title}</p>
-                        <p className="mt-1 text-sm text-indigo-100">{description}</p>
+                        <p className="mt-2 max-w-[64ch] text-sm leading-6 text-slate-600">{description}</p>
                     </div>
                     <Link
                         to={buildPath('createTripWizard')}
                         onClick={() => trackEvent(WIZARD_CTA_EVENT, { source: 'create_trip_page' })}
-                        className="inline-flex shrink-0 items-center justify-center rounded-xl border border-white/30 bg-white px-4 py-2 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-50"
+                        className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
                         {...getAnalyticsDebugAttributes(WIZARD_CTA_EVENT, { source: 'create_trip_page' })}
                     >
                         {ctaLabel}

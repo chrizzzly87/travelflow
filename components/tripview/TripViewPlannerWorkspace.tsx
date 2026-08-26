@@ -63,10 +63,10 @@ interface TripViewPlannerWorkspaceProps {
 
 const TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED = true;
 const formatZoomLevelLabel = (value: number): string => `×${Number.isFinite(value) ? value.toFixed(1) : '1.0'}`;
-const CONTROL_GROUP_CLASS_NAME = 'inline-flex flex-col items-center gap-1 rounded-xl border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur';
-const CONTROL_TOGGLE_BUTTON_CLASS_NAME = 'inline-flex size-10 items-center justify-center rounded-lg transition-colors';
-const CONTROL_TOGGLE_ACTIVE_CLASS_NAME = 'border-accent-700 bg-accent-600 text-white';
-const CONTROL_TOGGLE_INACTIVE_CLASS_NAME = 'text-gray-600 hover:bg-gray-100 hover:text-accent-600';
+const CONTROL_GROUP_CLASS_NAME = 'inline-flex flex-col items-center gap-1 rounded-md border border-slate-200 bg-white p-1';
+const CONTROL_TOGGLE_BUTTON_CLASS_NAME = 'inline-flex size-10 items-center justify-center rounded-sm transition-colors';
+const CONTROL_TOGGLE_ACTIVE_CLASS_NAME = 'bg-slate-950 text-white';
+const CONTROL_TOGGLE_INACTIVE_CLASS_NAME = 'text-slate-600 hover:bg-slate-100 hover:text-slate-950';
 
 export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> = ({
     isPaywallLocked,
@@ -144,7 +144,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
         <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-2">
             {timelineMode === 'calendar' && (
                 <>
-                    <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+                    <div className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
                         <button
                             type="button"
                             onClick={() => onTimelineViewChange('horizontal')}
@@ -174,7 +174,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             <ArrowUpDown size={16} />
                         </button>
                     </div>
-                    <div className="inline-flex items-center gap-0.5 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+                    <div className="inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-white p-1">
                         <button
                             type="button"
                             onClick={onZoomOut}
@@ -205,7 +205,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     </div>
                 </>
             )}
-            <div className="ms-auto inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+            <div className="ms-auto inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white p-1">
                 <button
                     type="button"
                     onClick={() => onTimelineModeChange('calendar')}

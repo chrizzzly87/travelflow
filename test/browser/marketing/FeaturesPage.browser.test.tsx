@@ -185,36 +185,20 @@ describe('pages/FeaturesPage', () => {
         expect(trackEventMock).toHaveBeenCalledWith('features__hero_cta--see_examples');
     });
 
-    it('shows the globe fallback card when interactive globe setup fails', async () => {
+    it('keeps the product claim and actions as the first-read hierarchy', () => {
         render(
             <MemoryRouter initialEntries={['/features']}>
                 <FeaturesPage />
             </MemoryRouter>
         );
 
-        expect(screen.getByRole('heading', { name: /ready to go/i })).toBeInTheDocument();
+        const heading = screen.getByRole('heading', { name: /ready to go/i });
+        const hero = heading.closest('section');
 
-        await waitFor(() => {
-            expect(screen.getByText(featuresLocale.globe.fallbackTitle)).toBeInTheDocument();
-        });
-
-        expect(screen.getByText(featuresLocale.globe.fallbackDescription)).toBeInTheDocument();
-    });
-
-    it('keeps the globe compact enough for the original hero layout while reducing dead space', () => {
-        render(
-            <MemoryRouter initialEntries={['/features']}>
-                <FeaturesPage />
-            </MemoryRouter>
-        );
-
-        const globe = screen.getByRole('img', { name: featuresLocale.globe.accessibility });
-
-        expect(globe.className).toContain('w-full');
-        expect(globe.className).toContain('max-w-[35rem]');
-        expect(globe.className).toContain('h-[min(90vw,25rem)]');
-        expect(globe.className).not.toContain('aspect-[1.02/0.98]');
-        expect(globe.className).not.toContain('min-h-[480px]');
+        expect(hero).toHaveClass('border-b', 'border-slate-200');
+        expect(heading).toHaveClass('tracking-[-0.055em]', 'md:text-8xl');
+        expect(screen.getAllByRole('link', { name: featuresLocale.hero.primaryCta })[0]).toHaveClass('bg-slate-950');
+        expect(screen.queryByRole('img', { name: featuresLocale.globe.accessibility })).not.toBeInTheDocument();
     });
 
     it('prefetches the nearby-airport lookup before full visibility but flips the departure board only when the card is visible enough', async () => {
@@ -307,17 +291,4 @@ describe('pages/FeaturesPage', () => {
         expect(screen.queryByText(/starting near berlin/i)).not.toBeInTheDocument();
     });
 
-    it('keeps the origin marker above the globe canvas', () => {
-        render(
-            <MemoryRouter initialEntries={['/features']}>
-                <FeaturesPage />
-            </MemoryRouter>
-        );
-
-        const globe = screen.getByRole('img', { name: featuresLocale.globe.accessibility });
-        const originMarkerLayer = globe.firstElementChild;
-
-        expect(originMarkerLayer).not.toBeNull();
-        expect(originMarkerLayer).toHaveClass('z-20');
-    });
 });

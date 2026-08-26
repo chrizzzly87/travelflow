@@ -10,7 +10,6 @@ import { ExampleTripCard } from './ExampleTripCard';
 
 const INSPIRATIONS_LINK = '/inspirations';
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
-const DESKTOP_AUTO_SCROLL_PX_PER_SECOND = 52;
 const DRAG_CLICK_THRESHOLD_PX = 8;
 const MOBILE_QUERY = '(max-width: 767px)';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
@@ -379,31 +378,6 @@ export const ExampleTripsCarousel: React.FC = () => {
         };
     }, [measureDesktopTrack, measureMobileSetWidth, normalizeMobileLoopPosition, scheduleMobileLoopNormalization]);
 
-    useEffect(() => {
-        let rafId = 0;
-        let lastFrameTime = performance.now();
-
-        const tick = (timeMs: number) => {
-            const deltaSeconds = Math.min(0.05, (timeMs - lastFrameTime) / 1000);
-            lastFrameTime = timeMs;
-
-            if (!isMobileViewportRef.current && loopWidthRef.current > 0) {
-                if (!isHoveredRef.current && !prefersReducedMotionRef.current) {
-                    offsetRef.current += DESKTOP_AUTO_SCROLL_PX_PER_SECOND * deltaSeconds;
-                }
-                offsetRef.current = normalizeLoopOffset(offsetRef.current, loopWidthRef.current);
-                applyDesktopTransforms();
-            }
-
-            rafId = window.requestAnimationFrame(tick);
-        };
-
-        rafId = window.requestAnimationFrame(tick);
-        return () => {
-            window.cancelAnimationFrame(rafId);
-        };
-    }, [applyDesktopTransforms]);
-
     const handleMobilePointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
         if (!isMobileViewportRef.current) return;
         if (event.button !== 0 || !event.isPrimary) return;
@@ -446,23 +420,20 @@ export const ExampleTripsCarousel: React.FC = () => {
     }, [handleCardClick]);
 
     return (
-        <section id="examples" className="py-16 md:py-24 overflow-x-hidden md:overflow-x-visible">
-            <div className="animate-scroll-blur-in">
-                <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
+        <section id="examples" className="py-20 md:py-28">
+            <div className="grid gap-5 lg:grid-cols-12">
+                <h2 className="text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl lg:col-span-7">
                     {t('examples.title')}
                 </h2>
-                <p className="mt-3 max-w-xl text-base text-slate-600">
+                <p className="max-w-[64ch] text-base leading-7 text-slate-600 lg:col-span-5 lg:pt-2">
                     {t('examples.subtitle')}
                 </p>
             </div>
 
-            <div className="relative mt-12 -mx-5 md:-mx-8 lg:mx-[calc(-50vw+50%)] overflow-hidden">
-                <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-10 bg-gradient-to-r from-slate-50 via-slate-50/85 to-transparent sm:w-14 md:w-24" />
-                <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-10 bg-gradient-to-l from-slate-50 via-slate-50/85 to-transparent sm:w-14 md:w-24" />
-
+            <div className="relative mt-12">
                 <div
                     ref={containerRef}
-                    className="group relative hidden md:block py-8"
+                    className="group relative hidden overflow-x-auto pb-3 md:block"
                     onMouseEnter={() => {
                         isHoveredRef.current = true;
                     }}
@@ -470,7 +441,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                         isHoveredRef.current = false;
                     }}
                 >
-                    <div ref={trackRef} className="flex w-max gap-6 will-change-transform">
+                    <div ref={trackRef} className="flex w-max gap-4">
                         {doubledCards.map(({ card, loopId }, index) => {
                             const miniCalendar = card.templateId
                                 ? getExampleTemplateMiniCalendar(card.templateId)
@@ -486,7 +457,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                                     ref={(node) => {
                                         motionCardRefs.current[index] = node;
                                     }}
-                                    className="w-[340px] flex-shrink-0 transform-gpu will-change-transform origin-center"
+                                    className="w-[340px] flex-shrink-0 transform-gpu origin-center"
                                     style={{ transform: 'translate3d(0, 0, 0) scale(1)' }}
                                 >
                                     <button
@@ -496,7 +467,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                                         onFocus={prewarmTripView}
                                         onTouchStart={prewarmTripView}
                                         data-prefetch-href={examplePath}
-                                        className="block w-full cursor-pointer select-none text-left transition-transform duration-150 ease-out [-webkit-touch-callout:none] [-webkit-user-select:none] hover:scale-[1.02] active:scale-[0.96] [&_*]:select-none [&_*]:[-webkit-touch-callout:none] [&_*]:[-webkit-user-select:none]"
+                                        className="block w-full cursor-pointer select-none text-left [-webkit-touch-callout:none] [-webkit-user-select:none] active:opacity-80 [&_*]:select-none [&_*]:[-webkit-touch-callout:none] [&_*]:[-webkit-user-select:none]"
                                         {...(card.templateId
                                             ? getAnalyticsDebugAttributes('home__carousel_card', { template: card.templateId })
                                             : {})}

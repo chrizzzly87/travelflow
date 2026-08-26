@@ -82,7 +82,6 @@ import {
     requestTripReadyNotificationPermission,
 } from '../services/tripGenerationTabFeedbackService';
 import { useAuth } from '../hooks/useAuth';
-import { HeroWebGLBackground } from '../components/HeroWebGLBackground';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { FlagIcon } from '../components/flags/FlagIcon';
@@ -609,7 +608,7 @@ const StepDots: React.FC<{
     totalSteps: number;
     onStepClick: (step: number) => void;
 }> = ({ currentStep, totalSteps, onStepClick }) => (
-    <div className="mb-4 flex items-center justify-center gap-2">
+    <div className="mb-5 flex items-center justify-center gap-2">
         {Array.from({ length: totalSteps }).map((_, index) => {
             const isActive = currentStep === index;
             const isCompleted = index < currentStep;
@@ -620,8 +619,8 @@ const StepDots: React.FC<{
                     onClick={() => index <= currentStep && onStepClick(index)}
                     disabled={index > currentStep}
                     className={[
-                        'h-2.5 rounded-full transition-all',
-                        isActive ? 'w-8 bg-accent-600' : isCompleted ? 'w-3 bg-accent-300 hover:bg-accent-400' : 'w-3 bg-slate-200',
+                        'h-0.5 transition-all',
+                        isActive ? 'w-10 bg-slate-950' : isCompleted ? 'w-5 bg-slate-500 hover:bg-slate-700' : 'w-5 bg-slate-200',
                         index > currentStep ? 'cursor-default' : '',
                     ].join(' ')}
                     aria-label={`${index + 1}/${totalSteps}`}
@@ -2219,14 +2218,12 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     const stepContent = renderStepContent();
 
     return (
-        <div className="relative isolate flex min-h-screen w-full flex-col overflow-hidden bg-slate-50">
-            <HeroWebGLBackground className="z-0" />
-            <div className="pointer-events-none absolute inset-0 z-[1] bg-white/35" />
+        <div className="tf-vercel-system tf-create-trip relative isolate flex min-h-screen w-full flex-col overflow-hidden bg-white">
             <div className="relative z-20">
                 <SiteHeader variant="glass" hideCreateTrip onMyTripsClick={onOpenManager} />
             </div>
 
-            <div className="relative z-10 flex flex-1 flex-col items-center px-4 pb-16 pt-8">
+            <main className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col items-center px-5 pb-20 pt-10 md:px-8 lg:px-12">
                 <div className="mb-4 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
                     <span>{t('wizard.flowLabel')}</span>
                     <span className="text-slate-300">•</span>
@@ -2241,7 +2238,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     {t('wizard.stepBadge', { current: currentStepIndex + 1, total: steps.length })}
                 </div>
 
-                <div className="w-full max-w-5xl rounded-[2rem] border border-white/70 bg-white/90 p-5 shadow-[0_30px_90px_rgba(15,23,42,0.12)] backdrop-blur md:p-8">
+                <div className="w-full max-w-5xl rounded-lg border border-slate-200 bg-white p-5 md:p-8 lg:p-10">
                     {stepContent}
 
                     {currentStepId !== 'intent' && (
@@ -2294,7 +2291,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                         </div>
                     )}
                 </div>
-            </div>
+            </main>
 
             <div className="relative z-10">
                 <SiteFooter />

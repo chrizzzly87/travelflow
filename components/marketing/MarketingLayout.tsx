@@ -58,7 +58,7 @@ export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children, root
     }, [shouldLoadFooter]);
 
     return (
-        <div className={cn('min-h-screen scroll-smooth bg-slate-50 text-slate-900 flex flex-col overflow-x-clip', rootClassName)}>
+        <div className={cn('tf-vercel-system min-h-screen scroll-smooth bg-white text-slate-950 flex flex-col overflow-x-clip', rootClassName)}>
             <a
                 href="#main-content"
                 className="sr-only fixed left-4 top-4 z-[2000] rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-lg focus:not-sr-only focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
@@ -73,7 +73,7 @@ export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children, root
                 </div>
             </div>
 
-            <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 px-5 pb-16 pt-10 md:px-8 md:pt-14">
+            <main id="main-content" className="mx-auto w-full max-w-[1400px] flex-1 px-5 pb-16 pt-8 md:px-8 md:pt-12 lg:px-12">
                 {children}
             </main>
 

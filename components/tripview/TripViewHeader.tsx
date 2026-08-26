@@ -47,8 +47,8 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
     isTripLockedByExpiry,
 }) => {
     const { t } = useTranslation('common');
-    const headerSecondaryButtonClassName = 'inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition-[scale,border-color,background-color,color,box-shadow] duration-150 ease-out hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100';
-    const headerPrimaryButtonClassName = 'inline-flex min-h-10 items-center gap-2 rounded-md bg-accent-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-[scale,background-color,box-shadow] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100';
+    const headerSecondaryButtonClassName = 'inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-400 hover:text-slate-950 active:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+    const headerPrimaryButtonClassName = 'inline-flex min-h-10 items-center gap-2 rounded-md bg-slate-950 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 active:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
     const titleStyle = titleViewTransitionName
         ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties)
         : undefined;
@@ -77,7 +77,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
         : t('tripView.header.titleTooltipReadonly');
 
     return (
-        <header className="relative z-[1600] isolate shrink-0 border-b border-gray-200 bg-white px-4 py-2.5 sm:px-6">
+        <header className="relative z-[1600] isolate shrink-0 border-b border-slate-200 bg-white px-4 py-2 sm:px-6">
             <div className="flex items-center justify-between gap-4">
             <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2.5">
                 <Link
@@ -99,7 +99,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                     onMouseEnter={onPrewarmTripInfo}
                     onFocus={onPrewarmTripInfo}
                     onTouchStart={onPrewarmTripInfo}
-                    className="group flex min-h-10 min-w-0 flex-1 items-start gap-1 rounded-xl p-1 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 sm:gap-2 sm:px-2"
+                    className="group flex min-h-10 min-w-0 flex-1 items-start gap-1 rounded-md p-1 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 sm:gap-2 sm:px-2"
                     aria-label={titleTooltip}
                     data-tooltip={titleTooltip}
                     data-no-press-scale="true"
@@ -107,18 +107,18 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                 >
                     <div className="min-w-0 flex-1">
                         <h1
-                            className={`${isMobile ? 'line-clamp-1 text-lg' : 'line-clamp-2 text-[1.35rem]'} text-balance break-words font-bold leading-tight text-gray-900 transition-colors group-hover:text-accent-700`}
+                            className={`${isMobile ? 'line-clamp-1 text-lg' : 'line-clamp-2 text-[1.35rem]'} text-balance break-words font-semibold leading-tight tracking-tight text-slate-950`}
                             style={titleStyle}
                         >
                             {tripTitle}
                         </h1>
                         {!isMobile && showTripSummary && (
-                            <div className="mt-1 text-xs font-semibold tabular-nums text-accent-600">
+                            <div className="mt-1 font-mono text-xs tabular-nums text-slate-500">
                                 {tripSummary}
                             </div>
                         )}
                     </div>
-                    <span className="mt-1 hidden shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-2 py-1 text-[11px] font-semibold text-slate-500 opacity-0 shadow-sm transition-[opacity,color,background-color,box-shadow] group-hover:opacity-100 group-focus-visible:opacity-100 md:inline-flex">
+                    <span className="mt-1 hidden shrink-0 items-center gap-1 border-s border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-500 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 md:inline-flex">
                         {canManageTripMetadata ? <Pencil size={12} /> : <Info size={12} />}
                         <span className="hidden lg:inline">
                             {canManageTripMetadata ? t('tripView.header.editTitleCta') : t('tripView.header.openDetailsCta')}

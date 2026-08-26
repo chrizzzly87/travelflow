@@ -43,7 +43,7 @@ interface SiteHeaderProps {
 }
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) => {
-    const baseClass = 'relative inline-flex min-h-10 items-center font-semibold text-slate-500 transition-colors hover:text-slate-900 after:pointer-events-none after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-full after:origin-center after:scale-x-0 after:rounded-full after:bg-accent-600 after:transition-transform';
+    const baseClass = 'relative inline-flex min-h-10 items-center font-medium text-slate-500 transition-colors hover:text-slate-950 after:pointer-events-none after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:origin-center after:scale-x-0 after:bg-slate-950 after:transition-transform';
     if (isActive) return `${baseClass} text-slate-900 after:scale-x-100`;
     return baseClass;
 };
@@ -160,8 +160,8 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const isGlass = variant === 'glass';
 
     const headerClass = isGlass
-        ? 'sticky top-0 z-[1600] isolate border-b border-white/20 bg-white/80 backdrop-blur'
-        : 'sticky top-0 z-[1600] isolate border-b border-slate-200/70 bg-white/90 backdrop-blur';
+        ? 'sticky top-0 z-[1600] isolate border-b border-slate-200 bg-white/95 backdrop-blur'
+        : 'sticky top-0 z-[1600] isolate border-b border-slate-200 bg-white/95 backdrop-blur';
 
     const loginClass = isGlass
         ? 'hidden min-h-10 items-center rounded-lg border border-slate-200/70 bg-white/60 px-3 py-2 text-sm font-medium text-slate-600 transition-[scale,border-color,color] duration-150 ease-out hover:border-slate-300 hover:text-slate-900 active:scale-[0.96] sm:inline-flex'
@@ -177,7 +177,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                 className={headerClass}
                 style={{ viewTransitionName: 'site-header' }}
             >
-                <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
+                <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between px-5 py-3 lg:px-12">
                     <NavLink
                         to={buildLocalizedMarketingPath('home', activeLocale)}
                         onClick={() => handleNavClick('brand')}

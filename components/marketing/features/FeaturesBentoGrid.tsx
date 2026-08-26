@@ -23,7 +23,6 @@ interface BentoVisualProps {
 
 interface FeatureCardShellProps {
     IconComponent?: Icon;
-    index: number;
     item: FeatureBentoItem;
     children: React.ReactNode;
     hideEyebrow?: boolean;
@@ -233,20 +232,19 @@ const BentoVisual: React.FC<BentoVisualProps> = ({ item }) => {
     }
 };
 
-const FeatureCardShell: React.FC<FeatureCardShellProps> = ({ IconComponent, index, item, children, hideEyebrow = false }) => (
+const FeatureCardShell: React.FC<FeatureCardShellProps> = ({ IconComponent, item, children, hideEyebrow = false }) => (
     <Card
-        className="group h-full animate-scroll-fade-up overflow-hidden rounded-[18px] border-slate-200 bg-white py-0 shadow-sm shadow-slate-200/60 transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200/80"
-        style={{ animationDelay: `${index * 90}ms` }}
+        className="group h-full overflow-hidden rounded-lg border-slate-200 bg-white py-0 transition-colors hover:border-slate-400"
     >
         <CardContent className="flex h-full flex-col gap-6 px-6 pb-6 pt-6">
             <div className="flex items-start justify-between gap-4">
                 <div>
                     {!hideEyebrow && item.eyebrow ? (
-                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-accent-700">
+                        <p className="text-xs font-medium text-slate-500">
                             {item.eyebrow}
                         </p>
                     ) : null}
-                    <h3 className={cn('text-balance text-2xl font-black text-slate-950', hideEyebrow ? '' : 'mt-2')}>
+                    <h3 className={cn('text-balance text-2xl font-semibold tracking-tight text-slate-950', hideEyebrow ? '' : 'mt-2')}>
                         {item.title}
                     </h3>
                     <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600">
@@ -254,7 +252,7 @@ const FeatureCardShell: React.FC<FeatureCardShellProps> = ({ IconComponent, inde
                     </p>
                 </div>
                 {IconComponent ? (
-                    <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-accent-700 shadow-sm">
+                    <div className="flex size-8 shrink-0 items-center justify-center text-slate-700">
                         <IconComponent size={20} weight="regular" />
                     </div>
                 ) : null}
@@ -264,8 +262,7 @@ const FeatureCardShell: React.FC<FeatureCardShellProps> = ({ IconComponent, inde
     </Card>
 );
 
-const AirportBentoCard: React.FC<{ index: number; item: FeatureBentoItem }> = ({
-    index,
+const AirportBentoCard: React.FC<{ item: FeatureBentoItem }> = ({
     item,
 }) => {
     const cardRef = useRef<HTMLDivElement | null>(null);
@@ -386,8 +383,7 @@ const AirportBentoCard: React.FC<{ index: number; item: FeatureBentoItem }> = ({
             data-testid="features-airport-card"
         >
             <Card
-                className="group h-full animate-scroll-fade-up overflow-hidden rounded-[18px] border-slate-200 bg-white py-0 shadow-sm shadow-slate-200/60 transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200/80"
-                style={{ animationDelay: `${index * 90}ms` }}
+                className="group h-full overflow-hidden rounded-lg border-slate-200 bg-white py-0 transition-colors hover:border-slate-400"
             >
                 <CardContent className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(420px,auto)] lg:items-center lg:gap-12 xl:grid-cols-[minmax(0,0.95fr)_minmax(500px,auto)]">
                     <div className="min-w-0">
@@ -414,14 +410,13 @@ const AirportBentoCard: React.FC<{ index: number; item: FeatureBentoItem }> = ({
 export const FeaturesBentoGrid: React.FC<{ items: FeatureBentoItem[] }> = ({ items }) => {
     return (
         <div className="grid gap-5 md:grid-cols-6 md:auto-rows-[minmax(220px,auto)]">
-            {items.map((item, index) => {
+            {items.map((item) => {
                 const IconComponent = iconMap[item.id];
 
                 if (item.id === 'airport') {
                     return (
                         <AirportBentoCard
                             key={item.id}
-                            index={index}
                             item={item}
                         />
                     );
@@ -429,7 +424,7 @@ export const FeaturesBentoGrid: React.FC<{ items: FeatureBentoItem[] }> = ({ ite
 
                 return (
                     <div key={item.id} className={layoutClasses[item.id]}>
-                        <FeatureCardShell IconComponent={IconComponent} index={index} item={item}>
+                        <FeatureCardShell IconComponent={IconComponent} item={item}>
                             <BentoVisual item={item} />
                         </FeatureCardShell>
                     </div>
