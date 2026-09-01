@@ -15,6 +15,48 @@ const buildRequest = (body: unknown, headers: Record<string, string> = {}) =>
     body: JSON.stringify(body),
   });
 
+const buildProviderDraft = () => ({
+  tripTitle: 'Japan by rail',
+  countryInfo: {
+    currencyCode: 'JPY',
+    currencyName: 'Japanese Yen',
+    exchangeRate: 165,
+    languages: ['Japanese'],
+    electricSockets: 'Type A, B',
+    visaInfoUrl: 'https://example.com/visa',
+    auswaertigesAmtUrl: 'https://example.com/advice',
+  },
+  cities: [{
+    name: 'Tokyo',
+    days: 3,
+    recommendations: {
+      mustSee: ['Meiji Shrine', 'Senso-ji', 'Shibuya Crossing'],
+      mustTry: ['Sushi breakfast', 'Ramen', 'Tempura'],
+      mustDo: ['Explore Yanaka', 'Walk Omotesando', 'Visit TeamLab'],
+      headsUp: [],
+    },
+    countryCode: 'JP',
+    lat: 35.6762,
+    lng: 139.6503,
+  }],
+  travelSegments: [],
+  activities: [{
+    title: 'Tsukiji food walk',
+    cityIndex: 0,
+    dayOffsetInCity: 1,
+    duration: 0.5,
+    description: 'Taste market specialties with a local guide.',
+    activityTypes: ['food'],
+  }],
+});
+
+const mockGeminiDraft = (draft: Record<string, unknown>) => {
+  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({
+    candidates: [{ content: { parts: [{ text: JSON.stringify(draft) }] }, finishReason: 'STOP' }],
+    usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 80, totalTokenCount: 180 },
+  }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+};
+
 describe('netlify/edge-functions/ai-generate hardening (regression)', () => {
   beforeEach(() => {
     fetchMock.mockReset();
@@ -103,5 +145,29 @@ describe('netlify/edge-functions/ai-generate hardening (regression)', () => {
     const response = await handler(buildRequest({ prompt: 'Trip to Japan' }), { ip: '10.99.1.7' });
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toMatchObject({ code: 'GEMINI_KEY_MISSING' });
+  });
+
+  it('compiles a valid provider draft into the stable client contract', async () => {
+    vi.stubEnv('GEMINI_API_KEY', 'test-key');
+    mockGeminiDraft(buildProviderDraft());
+
+    const response = await handler(buildRequest({ prompt: 'Trip to Japan' }), { ip: '10.99.2.7' });
+    const payload = await response.json() as { data: { cities: Array<Record<string, unknown>> } };
+
+    expect(response.status).toBe(200);
+    expect(payload.data.cities[0]).toMatchObject({ countryName: 'Japan', countryCode: 'JP' });
+    expect(payload.data.cities[0].description).toContain('### Must See\n- [ ] Meiji Shrine');
+  });
+
+  it('fails closed when structured provider output is semantically invalid', async () => {
+    vi.stubEnv('GEMINI_API_KEY', 'test-key');
+    const draft = buildProviderDraft();
+    draft.activities[0].cityIndex = 4;
+    mockGeminiDraft(draft);
+
+    const response = await handler(buildRequest({ prompt: 'Trip to Japan' }), { ip: '10.99.3.7' });
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toMatchObject({ code: 'TRIP_DRAFT_VALIDATION_FAILED' });
   });
 });

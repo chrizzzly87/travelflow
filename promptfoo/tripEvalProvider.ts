@@ -1,6 +1,10 @@
 import { buildClassicItineraryPrompt, type GenerateOptions } from '../services/aiService.ts';
 import { generateProviderItinerary, resolveTimeoutMs } from '../netlify/edge-lib/ai-provider-runtime.ts';
-import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from '../shared/aiTripItinerarySchema.ts';
+import {
+    TRIP_ITINERARY_COMPACT_STRUCTURED_OUTPUT_SCHEMA,
+    TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
+} from '../shared/aiTripItinerarySchema.ts';
+import { prepareTripItineraryModelData } from '../shared/aiTripItineraryPreparation.ts';
 import type { TripEvalVars } from './tripEvalFixtures.ts';
 
 const PROMPTFOO_TIMEOUT_MS = resolveTimeoutMs('AI_PROMPTFOO_TIMEOUT_MS', 90_000, 20_000, 180_000);
@@ -100,7 +104,9 @@ export default class TravelFlowTripEvalProvider {
                 model: this.model,
                 timeoutMs: PROMPTFOO_TIMEOUT_MS,
                 maxOutputTokens: PROMPTFOO_TIMEOUT_MS <= 60_000 ? SHORT_TIMEOUT_MAX_OUTPUT_TOKENS : undefined,
-                jsonSchema: TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
+                jsonSchema: vars.generationOptions.promptMode === 'benchmark_compact'
+                    ? TRIP_ITINERARY_COMPACT_STRUCTURED_OUTPUT_SCHEMA
+                    : TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
             });
 
             if (!result.ok) {
@@ -115,6 +121,22 @@ export default class TravelFlowTripEvalProvider {
                 };
             }
 
+            const prepared = prepareTripItineraryModelData(result.value.data, {
+                roundTrip: vars.roundTrip,
+                minimumRecommendations: vars.generationOptions.promptMode === 'benchmark_compact' ? 1 : 3,
+            });
+            if (!prepared.ok) {
+                return {
+                    error: `Trip draft validation failed: ${prepared.errors.join('; ')}`,
+                    metadata: {
+                        scenarioId: vars.scenarioId,
+                        provider: result.value.meta.provider,
+                        model: result.value.meta.model,
+                        validationErrors: prepared.errors,
+                    },
+                };
+            }
+
             return {
                 output: JSON.stringify(result.value.data),
                 tokenUsage: toTokenUsage(result.value.meta.usage),
@@ -125,6 +147,7 @@ export default class TravelFlowTripEvalProvider {
                     model: result.value.meta.model,
                     providerModel: result.value.meta.providerModel || null,
                     selectedDestinations: vars.selectedDestinations,
+                    tripCompiler: prepared.value.metrics,
                 },
             };
         } catch (error) {

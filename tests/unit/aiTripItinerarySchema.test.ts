@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  TRIP_ITINERARY_COMPACT_JSON_SCHEMA,
   TRIP_ITINERARY_JSON_SCHEMA,
   TRIP_ITINERARY_SCHEMA_NAME,
   TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
@@ -52,13 +53,38 @@ describe('shared/aiTripItinerarySchema', () => {
     });
   });
 
-  it('requires canonical country metadata for every generated city', () => {
+  it('requires only model-owned city data and derives country names later', () => {
     const cities = (TRIP_ITINERARY_JSON_SCHEMA.properties.cities as {
       items: { properties: Record<string, unknown>; required: readonly string[] };
     }).items;
 
-    expect(cities.required).toEqual(expect.arrayContaining(['countryName', 'countryCode', 'lat', 'lng']));
+    expect(cities.required).toEqual(expect.arrayContaining(['recommendations', 'countryCode', 'lat', 'lng']));
+    expect(cities.required).not.toContain('countryName');
     expect(cities.properties.countryCode).toEqual({ type: 'string', pattern: '^[A-Z]{2}$' });
+  });
+
+  it('keeps production recommendation quality while allowing compact eval output', () => {
+    const recommendationMinimum = (schema: Record<string, unknown>) => {
+      const properties = schema.properties as Record<string, Record<string, unknown>>;
+      const city = (properties.cities.items as Record<string, unknown>);
+      const cityProperties = city.properties as Record<string, Record<string, unknown>>;
+      const recommendations = cityProperties.recommendations.properties as Record<string, Record<string, unknown>>;
+      return recommendations.mustSee.minItems;
+    };
+
+    expect(recommendationMinimum(TRIP_ITINERARY_JSON_SCHEMA)).toBe(3);
+    expect(recommendationMinimum(TRIP_ITINERARY_COMPACT_JSON_SCHEMA)).toBe(1);
+  });
+
+  it('derives segment indices and descriptions instead of asking the model', () => {
+    const segments = (TRIP_ITINERARY_JSON_SCHEMA.properties.travelSegments as {
+      items: { properties: Record<string, unknown>; required: readonly string[] };
+    }).items;
+
+    expect(segments.required).toEqual(['transportMode', 'duration']);
+    expect(segments.properties).not.toHaveProperty('fromCityIndex');
+    expect(segments.properties).not.toHaveProperty('toCityIndex');
+    expect(segments.properties).not.toHaveProperty('description');
   });
 
   it('stays inside the OpenAI strict structured-output JSON Schema subset', () => {

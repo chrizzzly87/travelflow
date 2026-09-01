@@ -11,6 +11,7 @@ import {
 } from "../edge-lib/ai-generate-guard.ts";
 import { persistAiGenerationTelemetry } from "../edge-lib/ai-generation-telemetry.ts";
 import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
+import { prepareTripItineraryModelData } from "../../shared/aiTripItineraryPreparation.ts";
 
 interface GenerateTarget {
   provider?: string;
@@ -19,6 +20,7 @@ interface GenerateTarget {
 
 interface GenerateRequestBody {
   prompt?: string;
+  roundTrip?: boolean;
   target?: GenerateTarget;
   requestId?: string;
   context?: {
@@ -154,6 +156,47 @@ export default async (request: Request, context?: { ip?: string }) => {
       });
     }
 
+    const prepared = prepareTripItineraryModelData(result.value.data, { roundTrip: body.roundTrip === true });
+    if (!prepared.ok) {
+      const validationMessage = prepared.errors.slice(0, 12).join("; ");
+      await persistAiGenerationTelemetry({
+        source: "create_trip",
+        requestId,
+        provider: result.value.meta.provider,
+        model: result.value.meta.model,
+        providerModel: result.value.meta.providerModel,
+        status: "failed",
+        latencyMs: durationMs,
+        httpStatus: 502,
+        errorCode: "TRIP_DRAFT_VALIDATION_FAILED",
+        errorMessage: validationMessage,
+        promptTokens: result.value.meta.usage?.promptTokens,
+        completionTokens: result.value.meta.usage?.completionTokens,
+        totalTokens: result.value.meta.usage?.totalTokens,
+        estimatedCostUsd: result.value.meta.usage?.estimatedCostUsd,
+        metadata: {
+          endpoint: "/api/ai/generate",
+          trip_id: requestContext?.tripId || null,
+          attempt_id: requestContext?.attemptId || null,
+          flow: requestContext?.flow || null,
+          validation_error_count: prepared.errors.length,
+        },
+      });
+      return json(502, {
+        error: "Generated trip draft failed validation.",
+        code: "TRIP_DRAFT_VALIDATION_FAILED",
+        details: validationMessage,
+        meta: {
+          requestId,
+          durationMs,
+          provider: result.value.meta.provider,
+          model: result.value.meta.model,
+          providerModel: result.value.meta.providerModel || null,
+          status: 502,
+        },
+      });
+    }
+
     await persistAiGenerationTelemetry({
       source: "create_trip",
       requestId,
@@ -178,11 +221,12 @@ export default async (request: Request, context?: { ip?: string }) => {
         flow: requestContext?.flow || null,
         source: requestContext?.source || null,
         retry_of_attempt_id: requestContext?.retryOfAttemptId || null,
+        trip_compiler: prepared.value.metrics,
       },
     });
 
     return json(200, {
-      data: result.value.data,
+      data: prepared.value.data,
       meta: {
         ...result.value.meta,
         requestId,

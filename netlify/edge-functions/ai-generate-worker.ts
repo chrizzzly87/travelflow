@@ -1,6 +1,7 @@
 import { parseFlexibleDurationDays, parseFlexibleDurationHours } from "../../shared/durationParsing.ts";
 import { parseAiTripCityLocation } from "../../shared/aiTripCityLocation.ts";
 import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
+import { prepareTripItineraryModelData } from "../../shared/aiTripItineraryPreparation.ts";
 import { normalizeTransportMode } from "../../shared/transportModes.ts";
 import {
   generateProviderItinerary,
@@ -274,9 +275,11 @@ const classifyFailureKind = (params: {
   if (
     code.includes("parse")
     || code.includes("quality")
+    || code.includes("validation")
     || code.includes("refusal")
     || code.includes("incomplete")
     || message.includes("quality")
+    || message.includes("validation")
     || message.includes("refused")
     || message.includes("incomplete")
   ) {
@@ -1314,6 +1317,17 @@ const processJob = async (
   const provider = payload.target.provider || DEFAULT_PROVIDER;
   const model = payload.target.model || DEFAULT_MODEL;
   const startedAt = Date.now();
+  let successfulGenerationMeta: {
+    provider: string;
+    model: string;
+    providerModel?: string;
+    usage?: {
+      promptTokens?: number;
+      completionTokens?: number;
+      totalTokens?: number;
+      estimatedCostUsd?: number;
+    };
+  } | null = null;
 
   try {
     const generation = await generateProviderItinerary({
@@ -1427,7 +1441,16 @@ const processJob = async (
       };
     }
 
-    const builtTrip = buildTripFromModelData(generation.value.data, {
+    successfulGenerationMeta = generation.value.meta;
+
+    const prepared = prepareTripItineraryModelData(generation.value.data, { roundTrip: payload.roundTrip });
+    if (!prepared.ok) {
+      const validationError = new Error(prepared.errors.slice(0, 12).join("; "));
+      validationError.name = "TRIP_DRAFT_VALIDATION_FAILED";
+      throw validationError;
+    }
+
+    const builtTrip = buildTripFromModelData(prepared.value.data, {
       tripId: job.trip_id,
       startDate: payload.startDate || tripRow.start_date || new Date().toISOString(),
       roundTrip: payload.roundTrip,
@@ -1449,6 +1472,7 @@ const processJob = async (
         statusCode: 200,
         metadata: {
           source: WORKER_SOURCE,
+          trip_compiler: prepared.value.metrics,
         },
       },
     );
@@ -1512,6 +1536,7 @@ const processJob = async (
         queue_request_id: payload.queueRequestId,
         flow: payload.flow,
         source: payload.source,
+        trip_compiler: prepared.value.metrics,
       },
     });
     return {
@@ -1529,19 +1554,23 @@ const processJob = async (
     const durationMs = Math.max(0, Date.now() - startedAt);
     const message = error instanceof Error ? error.message : "Unexpected async worker error";
     const errorCode = error instanceof Error ? error.name : "ASYNC_WORKER_UNKNOWN_ERROR";
+    const statusCode = errorCode === "TRIP_DRAFT_VALIDATION_FAILED" ? 502 : 500;
+    const failureProvider = successfulGenerationMeta?.provider || provider;
+    const failureModel = successfulGenerationMeta?.model || model;
+    const failureProviderModel = successfulGenerationMeta?.providerModel || null;
     const failureKind = classifyFailureKind({
       code: errorCode,
-      status: 500,
+      status: statusCode,
       message,
     });
     const failedTrip = applyFailedGenerationState(tripData, {
       flow: payload.flow,
       attemptId: payload.attemptId,
       requestId: payload.requestId,
-      provider,
-      model,
-      providerModel: null,
-      statusCode: 500,
+      provider: failureProvider,
+      model: failureModel,
+      providerModel: failureProviderModel,
+      statusCode,
       failureKind,
       errorCode,
       errorMessage: message,
@@ -1557,12 +1586,12 @@ const processJob = async (
     const attemptLogged = await finishAttempt(config, {
       p_attempt_id: payload.attemptId,
       p_state: "failed",
-      p_provider: provider,
-      p_model: model,
-      p_provider_model: null,
+      p_provider: failureProvider,
+      p_model: failureModel,
+      p_provider_model: failureProviderModel,
       p_request_id: payload.requestId,
       p_duration_ms: durationMs,
-      p_status_code: 500,
+      p_status_code: statusCode,
       p_failure_kind: failureKind,
       p_error_code: errorCode,
       p_error_message: message.slice(0, 1200),
@@ -1592,13 +1621,18 @@ const processJob = async (
     await persistAiGenerationTelemetry({
       source: "create_trip",
       requestId: payload.requestId,
-      provider,
-      model,
+      provider: failureProvider,
+      model: failureModel,
+      providerModel: failureProviderModel || undefined,
       status: "failed",
       latencyMs: durationMs,
-      httpStatus: 500,
+      httpStatus: statusCode,
       errorCode,
       errorMessage: message,
+      promptTokens: successfulGenerationMeta?.usage?.promptTokens,
+      completionTokens: successfulGenerationMeta?.usage?.completionTokens,
+      totalTokens: successfulGenerationMeta?.usage?.totalTokens,
+      estimatedCostUsd: successfulGenerationMeta?.usage?.estimatedCostUsd,
       metadata: {
         endpoint: "/api/internal/ai/generation-worker",
         trip_id: job.trip_id,

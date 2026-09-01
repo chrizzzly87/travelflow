@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  buildProviderCompatibleSchema,
   ensureModelAllowed,
   ensureModelAllowedForGeneration,
   generateProviderItinerary,
 } from '../../netlify/edge-lib/ai-provider-runtime.ts';
+import { TRIP_ITINERARY_JSON_SCHEMA } from '../../shared/aiTripItinerarySchema.ts';
 
 const jsonResponse = (payload: unknown, status = 200): Response =>
   new Response(JSON.stringify(payload), {
@@ -98,6 +100,20 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('unknown-provider', 'x')?.code).toBe('PROVIDER_NOT_SUPPORTED');
   });
 
+  it('removes unsupported grammar constraints only from narrow provider schemas', () => {
+    const geminiSchema = JSON.stringify(buildProviderCompatibleSchema(TRIP_ITINERARY_JSON_SCHEMA, 'gemini'));
+    const anthropicSchema = JSON.stringify(buildProviderCompatibleSchema(TRIP_ITINERARY_JSON_SCHEMA, 'anthropic'));
+
+    expect(geminiSchema).not.toContain('exclusiveMinimum');
+    expect(geminiSchema).not.toContain('minLength');
+    expect(geminiSchema).not.toContain('pattern');
+    expect(geminiSchema).toContain('"minimum"');
+    expect(anthropicSchema).not.toContain('"minimum"');
+    expect(anthropicSchema).not.toContain('"maximum"');
+    expect(anthropicSchema).toContain('additionalProperties');
+    expect(JSON.stringify(TRIP_ITINERARY_JSON_SCHEMA)).toContain('exclusiveMinimum');
+  });
+
   it('allows an admin-approved live OpenRouter model without weakening other providers', async () => {
     stubDenoEnv({
       VITE_SUPABASE_URL: 'https://travelflow.supabase.co',
@@ -151,6 +167,39 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(result.value.meta.providerModel).toBe('claude-sonnet-4-6');
   });
 
+  it('forces a strict Anthropic submission tool when a schema is supplied', async () => {
+    stubDenoEnv({ ANTHROPIC_API_KEY: 'anthropic-key' });
+    fetchMock.mockResolvedValueOnce(jsonResponse({
+      content: [{
+        type: 'tool_use',
+        name: 'submit_trip_itinerary',
+        input: { tripTitle: 'Strict Anthropic trip' },
+      }],
+      usage: { input_tokens: 10, output_tokens: 5 },
+    }));
+
+    const result = await generateProviderItinerary({
+      prompt: 'Plan a trip',
+      provider: 'anthropic',
+      model: 'claude-sonnet-4.6',
+      timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    const body = JSON.parse(String((fetchMock.mock.calls[0] as [string, RequestInit])[1].body));
+    expect(body.tools).toEqual([expect.objectContaining({
+      name: 'submit_trip_itinerary',
+      input_schema: testStructuredOutputSchema.schema,
+      strict: true,
+    })]);
+    expect(body.tool_choice).toEqual({
+      type: 'tool',
+      name: 'submit_trip_itinerary',
+      disable_parallel_tool_use: true,
+    });
+    expect(result).toMatchObject({ ok: true, value: { data: { tripTitle: 'Strict Anthropic trip' } } });
+  });
+
   it('retries gemini once with strict JSON instructions after parse failure', async () => {
     stubDenoEnv({
       GEMINI_API_KEY: 'gemini-key',
@@ -183,11 +232,11 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     const firstBody = JSON.parse(String(firstInit.body));
     expect(firstBody.generationConfig.responseMimeType).toBe('application/json');
     expect(firstBody.generationConfig.temperature).toBe(0);
-    expect(firstBody.generationConfig).not.toHaveProperty('responseSchema');
+    expect(firstBody.generationConfig.responseJsonSchema).toEqual(testStructuredOutputSchema.schema);
     const retryInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
     const retryBody = JSON.parse(String(retryInit.body));
     expect(retryBody.generationConfig.temperature).toBe(0);
-    expect(retryBody.generationConfig).not.toHaveProperty('responseSchema');
+    expect(retryBody.generationConfig.responseJsonSchema).toEqual(testStructuredOutputSchema.schema);
     expect(retryBody.contents?.[0]?.parts?.[0]?.text).toContain('IMPORTANT RETRY INSTRUCTIONS');
 
     expect(result.ok).toBe(true);

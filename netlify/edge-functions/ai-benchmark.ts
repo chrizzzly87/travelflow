@@ -15,7 +15,11 @@ import {
   validateModelData,
   type BenchmarkRunCommentTelemetryGroup,
 } from "../../shared/aiBenchmarkValidation.ts";
-import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
+import {
+  TRIP_ITINERARY_COMPACT_STRUCTURED_OUTPUT_SCHEMA,
+  TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
+} from "../../shared/aiTripItinerarySchema.ts";
+import { prepareTripItineraryModelData } from "../../shared/aiTripItineraryPreparation.ts";
 import { isAiReasoningEffort, type AiReasoningEffort } from "../../shared/aiReasoning.ts";
 import {
   buildAiTelemetrySeries,
@@ -1041,6 +1045,14 @@ const runGeneration = async (
     }
   };
 
+  const scenarioExecution = scenario.input?.execution;
+  const compactOutput = Boolean(
+    scenarioExecution
+    && typeof scenarioExecution === "object"
+    && !Array.isArray(scenarioExecution)
+    && (scenarioExecution as Record<string, unknown>).compactOutput === true
+  );
+
   try {
     const result = await generateProviderItinerary({
       prompt: scenario.prompt,
@@ -1048,7 +1060,9 @@ const runGeneration = async (
       model: run.model,
       timeoutMs: providerTimeoutMs,
       maxOutputTokens: resolveBenchmarkMaxOutputTokens(run.provider, run.model, providerTimeoutMs),
-      jsonSchema: TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
+      jsonSchema: compactOutput
+        ? TRIP_ITINERARY_COMPACT_STRUCTURED_OUTPUT_SCHEMA
+        : TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
       reasoningEffort,
     });
     const latencyMs = Date.now() - startedMs;
@@ -1085,10 +1099,10 @@ const runGeneration = async (
       return;
     }
 
-    const modelData = result.value.data;
+    const draftData = result.value.data;
     const usage: ProviderUsage = result.value.meta?.usage || {};
 
-    if (!modelData || typeof modelData !== "object") {
+    if (!draftData || typeof draftData !== "object") {
       await persistRunTelemetry({
         status: "failed",
         latencyMs,
@@ -1116,6 +1130,40 @@ const runGeneration = async (
       return;
     }
 
+    const prepared = prepareTripItineraryModelData(draftData as Record<string, unknown>, {
+      roundTrip: scenario.roundTrip,
+      minimumRecommendations: compactOutput ? 1 : 3,
+    });
+    if (!prepared.ok) {
+      await persistRunTelemetry({
+        status: "failed",
+        latencyMs,
+        httpStatus: 200,
+        provider: result.value.meta.provider,
+        model: result.value.meta.model,
+        providerModel: result.value.meta.providerModel,
+        usage,
+        errorCode: "BENCHMARK_DRAFT_VALIDATION_FAILED",
+        errorMessage: prepared.errors.join("; "),
+        metadata: {
+          reason: "draft_validation_failed",
+          validationErrorCount: prepared.errors.length,
+          timeoutMs: providerTimeoutMs,
+        },
+      });
+      await updateRunRow(config, authToken, run.id, {
+        status: "failed",
+        finished_at: new Date().toISOString(),
+        latency_ms: latencyMs,
+        schema_valid: false,
+        validation_errors: prepared.errors,
+        raw_output: draftData,
+        error_message: `Model draft failed validation: ${prepared.errors.join("; ")}`,
+      });
+      return;
+    }
+    const modelData = prepared.value.data;
+
     const validation = validateModelData(modelData as Record<string, unknown>, {
       roundTrip: scenario.roundTrip,
     });
@@ -1134,6 +1182,7 @@ const runGeneration = async (
           reason: "validation_failed",
           validationErrorCount: validation.errors.length,
           timeoutMs: providerTimeoutMs,
+          tripCompiler: prepared.value.metrics,
         },
       });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
@@ -1232,6 +1281,7 @@ const runGeneration = async (
       metadata: {
         reason: "completed",
         timeoutMs: providerTimeoutMs,
+        tripCompiler: prepared.value.metrics,
       },
     });
   } catch (error) {
