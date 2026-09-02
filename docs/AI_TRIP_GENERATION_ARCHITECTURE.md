@@ -30,7 +30,7 @@ This boundary keeps the existing planner contract stable while reducing generate
 - OpenRouter and the remaining providers continue through the shared structured-output runtime.
 - The complete contract is always revalidated locally, regardless of provider enforcement.
 
-If the first schema-valid draft fails semantic validation, production generation makes exactly one bounded repair call with the compiler errors and the original request. The synchronous endpoint, queued worker, admin benchmark page, and Promptfoo provider all use this same orchestration. Repaired runs count as eventual successes but remain visible as first-pass failures, with combined latency, token use, and cost.
+If the first schema-valid draft fails semantic validation, TravelFlow first normalizes safe numeric invariants locally (for example zero activity durations, overflowing offsets, and excess transfer entries). If route or reference judgment is still missing, production generation makes exactly one bounded repair call using a smaller `schedule_repair` function schema. That call returns only transfer legs and activity schedule fields; the server merges them into the original draft, preserving valid route content and copy, then validates the complete result again. Other semantic failures use one bounded full regeneration. The synchronous endpoint, queued worker, admin benchmark page, and Promptfoo provider all use this same orchestration.
 
 ## Agent and tool decision
 
@@ -39,6 +39,8 @@ TravelFlow does use modern provider-native tool mechanics where they improve rel
 The production trip path does not run an MCP server or an open-ended autonomous agent loop. MCP is a protocol for connecting models to external capabilities; it would add orchestration latency without improving the deterministic fields handled by the compiler. The next useful tool layer is a small, allowlisted set of TravelFlow-owned lookup functions for dynamic facts such as destination records, coordinates, current advisories, and exchange rates. Those tools should return compact IDs/facts from authoritative services, after which the model chooses a route and the same compiler validates the result. Static formatting, indices, labels, and Markdown stay outside the model entirely.
 
 Production generation requires 3–4 items in each core recommendation category. Compact benchmark runs use a separate schema that permits one item, so evaluation speed settings cannot lower production quality.
+
+Large itineraries should eventually use a route-first pipeline: validate one compact route skeleton, then run bounded per-city activity/recommendation tools in parallel and assemble them deterministically. This is tracked separately because it changes provider request count, cost, cancellation, and partial-retry behavior; it should be enabled only after repeated p50/p95 and quality comparisons.
 
 ## Failure and rollout behavior
 
@@ -72,6 +74,19 @@ Authenticated OpenRouter structured-output smoke runs used the v3 schema with re
 | `qwen/qwen3.8-flash` | Parsed at full budget | 78.38 s | 7,022 | $0.003317 |
 
 Mercury and Qwen both truncated at a 1,800-token cap; GLM completed. Mercury is the speed candidate for a larger quality evaluation, while GLM is the resilience/cost candidate. Qwen is not a speed candidate for this workload. TravelFlow should keep `gpt-5.4` as the production baseline until Mercury and GLM pass the full regression and human itinerary-quality matrix with repeated runs.
+
+## Repair-path latency check
+
+GLM 5.3 Flash was also exercised against a two-city/four-activity scenario that produced zero durations. These live observations are diagnostic runs rather than statistically comparable model generations, because provider output and load varied between calls.
+
+| Path | Result | Model calls | Wall time | Total tokens |
+| --- | --- | ---: | ---: | ---: |
+| Sequential constrained repair | Repaired | 2 | 69.64 s | 6,897 |
+| Valid first pass | Accepted | 1 | 26.35 s | 3,305 |
+| Later valid first pass | Accepted | 1 | 19.51 s | 1,982 |
+| Large 10-stop/20-activity request | Provider timeout | 1 | 120.18 s | unavailable |
+
+The validator/compiler itself runs locally and is not the source of the 60-second timeout. Avoiding a second provider call for safe numeric normalization removes one complete sequential inference. The large-trip result also shows why parallel route-first enrichment must be benchmarked before making GLM the default for long itineraries.
 
 ## Next benchmark gate
 
