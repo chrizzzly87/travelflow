@@ -1,7 +1,7 @@
 import {
-  generateProviderItinerary,
   resolveTimeoutMs,
 } from "../edge-lib/ai-provider-runtime.ts";
+import { generatePreparedTripItinerary } from "../edge-lib/ai-trip-generation.ts";
 import {
   createTokenBucketRateLimiter,
   getBearerToken,
@@ -11,7 +11,6 @@ import {
 } from "../edge-lib/ai-generate-guard.ts";
 import { persistAiGenerationTelemetry } from "../edge-lib/ai-generation-telemetry.ts";
 import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
-import { prepareTripItineraryModelData } from "../../shared/aiTripItineraryPreparation.ts";
 
 interface GenerateTarget {
   provider?: string;
@@ -113,27 +112,73 @@ export default async (request: Request, context?: { ip?: string }) => {
     : undefined;
 
   try {
-    const result = await generateProviderItinerary({
+    const result = await generatePreparedTripItinerary({
       prompt,
       provider,
       model,
       timeoutMs: EDGE_REQUEST_PROVIDER_TIMEOUT_MS,
       jsonSchema: TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
+      preparation: { roundTrip: body.roundTrip === true },
     });
     const durationMs = Date.now() - startedAtMs;
 
     if (!result.ok) {
+      if (result.kind === "validation") {
+        const validationMessage = result.errors.slice(0, 12).join("; ");
+        await persistAiGenerationTelemetry({
+          source: "create_trip",
+          requestId,
+          provider: result.meta.provider,
+          model: result.meta.model,
+          providerModel: result.meta.providerModel,
+          status: "failed",
+          latencyMs: durationMs,
+          httpStatus: 502,
+          errorCode: "TRIP_DRAFT_VALIDATION_FAILED",
+          errorMessage: validationMessage,
+          promptTokens: result.meta.usage?.promptTokens,
+          completionTokens: result.meta.usage?.completionTokens,
+          totalTokens: result.meta.usage?.totalTokens,
+          estimatedCostUsd: result.meta.usage?.estimatedCostUsd,
+          metadata: {
+            endpoint: "/api/ai/generate",
+            trip_id: requestContext?.tripId || null,
+            attempt_id: requestContext?.attemptId || null,
+            flow: requestContext?.flow || null,
+            validation_error_count: result.errors.length,
+            semantic_repair: result.repair,
+          },
+        });
+        return json(502, {
+          error: "Generated trip draft failed validation.",
+          code: "TRIP_DRAFT_VALIDATION_FAILED",
+          details: validationMessage,
+          meta: {
+            requestId,
+            durationMs,
+            provider: result.meta.provider,
+            model: result.meta.model,
+            providerModel: result.meta.providerModel || null,
+            status: 502,
+            semanticRepair: result.repair,
+          },
+        });
+      }
       await persistAiGenerationTelemetry({
         source: "create_trip",
         requestId,
         provider,
         model,
-        providerModel: result.value.providerModel,
+        providerModel: result.failure.providerModel,
         status: "failed",
         latencyMs: durationMs,
         httpStatus: result.status,
-        errorCode: result.value.code,
-        errorMessage: result.value.error,
+        errorCode: result.failure.code,
+        errorMessage: result.failure.error,
+        promptTokens: result.usage?.promptTokens,
+        completionTokens: result.usage?.completionTokens,
+        totalTokens: result.usage?.totalTokens,
+        estimatedCostUsd: result.usage?.estimatedCostUsd,
         metadata: {
           endpoint: "/api/ai/generate",
           trip_id: requestContext?.tripId || null,
@@ -141,75 +186,39 @@ export default async (request: Request, context?: { ip?: string }) => {
           flow: requestContext?.flow || null,
           source: requestContext?.source || null,
           retry_of_attempt_id: requestContext?.retryOfAttemptId || null,
+          semantic_repair: result.repair,
         },
       });
       return json(result.status, {
-        ...result.value,
+        ...result.failure,
         meta: {
           requestId,
           durationMs,
           provider,
           model,
-          providerModel: result.value.providerModel || null,
+          providerModel: result.failure.providerModel || null,
           status: result.status,
+          semanticRepair: result.repair,
         },
       });
     }
 
-    const prepared = prepareTripItineraryModelData(result.value.data, { roundTrip: body.roundTrip === true });
-    if (!prepared.ok) {
-      const validationMessage = prepared.errors.slice(0, 12).join("; ");
-      await persistAiGenerationTelemetry({
-        source: "create_trip",
-        requestId,
-        provider: result.value.meta.provider,
-        model: result.value.meta.model,
-        providerModel: result.value.meta.providerModel,
-        status: "failed",
-        latencyMs: durationMs,
-        httpStatus: 502,
-        errorCode: "TRIP_DRAFT_VALIDATION_FAILED",
-        errorMessage: validationMessage,
-        promptTokens: result.value.meta.usage?.promptTokens,
-        completionTokens: result.value.meta.usage?.completionTokens,
-        totalTokens: result.value.meta.usage?.totalTokens,
-        estimatedCostUsd: result.value.meta.usage?.estimatedCostUsd,
-        metadata: {
-          endpoint: "/api/ai/generate",
-          trip_id: requestContext?.tripId || null,
-          attempt_id: requestContext?.attemptId || null,
-          flow: requestContext?.flow || null,
-          validation_error_count: prepared.errors.length,
-        },
-      });
-      return json(502, {
-        error: "Generated trip draft failed validation.",
-        code: "TRIP_DRAFT_VALIDATION_FAILED",
-        details: validationMessage,
-        meta: {
-          requestId,
-          durationMs,
-          provider: result.value.meta.provider,
-          model: result.value.meta.model,
-          providerModel: result.value.meta.providerModel || null,
-          status: 502,
-        },
-      });
-    }
+    const prepared = result.value.data;
+    const generationMeta = result.value.meta;
 
     await persistAiGenerationTelemetry({
       source: "create_trip",
       requestId,
-      provider: result.value.meta.provider,
-      model: result.value.meta.model,
-      providerModel: result.value.meta.providerModel,
+      provider: generationMeta.provider,
+      model: generationMeta.model,
+      providerModel: generationMeta.providerModel,
       status: "success",
       latencyMs: durationMs,
       httpStatus: 200,
-      estimatedCostUsd: result.value.meta.usage?.estimatedCostUsd,
-      promptTokens: result.value.meta.usage?.promptTokens,
-      completionTokens: result.value.meta.usage?.completionTokens,
-      totalTokens: result.value.meta.usage?.totalTokens,
+      estimatedCostUsd: generationMeta.usage?.estimatedCostUsd,
+      promptTokens: generationMeta.usage?.promptTokens,
+      completionTokens: generationMeta.usage?.completionTokens,
+      totalTokens: generationMeta.usage?.totalTokens,
       metadata: {
         endpoint: "/api/ai/generate",
         user_id: verifiedUserId,
@@ -221,16 +230,18 @@ export default async (request: Request, context?: { ip?: string }) => {
         flow: requestContext?.flow || null,
         source: requestContext?.source || null,
         retry_of_attempt_id: requestContext?.retryOfAttemptId || null,
-        trip_compiler: prepared.value.metrics,
+        trip_compiler: prepared.metrics,
+        semantic_repair: result.value.repair,
       },
     });
 
     return json(200, {
-      data: prepared.value.data,
+      data: prepared.data,
       meta: {
-        ...result.value.meta,
+        ...generationMeta,
         requestId,
         durationMs,
+        semanticRepair: result.value.repair,
       },
     });
   } catch (error) {

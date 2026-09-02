@@ -272,6 +272,8 @@ const BASE_ITINERARY_RULES_PROMPT = `
       5. For EVERY activity, you MUST return "activityTypes" as an array with 1-3 values ONLY from this list:
          [${ACTIVITY_TYPES_PROMPT_LIST}]
          Do not return unknown activity types and do not leave activityTypes empty.
+         activity duration is measured in days; typical values are 0.125, 0.25, or 0.5.
+         Every activity MUST fit inside its stop: dayOffsetInCity + duration must be less than or equal to that city's days.
       6. For EVERY travel segment, you MUST return "transportMode" in lowercase from:
          [${TRANSPORT_MODES_PROMPT_LIST}]
       7. Follow strict duration formatting.
@@ -296,6 +298,7 @@ const BASE_ITINERARY_RULES_PROMPT_COMPACT = `
       5. For EVERY activity, you MUST return "activityTypes" as an array with 1-3 values ONLY from this list:
          [${ACTIVITY_TYPES_PROMPT_LIST}]
          Do not return unknown activity types and do not leave activityTypes empty.
+         Every activity MUST satisfy dayOffsetInCity + duration <= that city's days.
       6. For EVERY travel segment, you MUST return "transportMode" in lowercase from:
          [${TRANSPORT_MODES_PROMPT_LIST}]
       7. Follow strict duration formatting.
@@ -309,6 +312,7 @@ const STRICT_JSON_OBJECT_CONTRACT_PROMPT = `
       - cities[].days means nights stayed.
       - Return one travelSegments entry per consecutive pair of cities, plus the final return leg when round-trip instructions request it; TravelFlow derives indices and labels.
       - Durations are numbers: travel hours and activity days.
+      - Every activity fits within its stop: dayOffsetInCity + duration <= cities[cityIndex].days.
       - countryInfo uses the canonical keys and a numeric exchangeRate for 1 EUR.
       - TravelFlow derives country names, recommendation Markdown, transfer descriptions, and route indices.
     `;

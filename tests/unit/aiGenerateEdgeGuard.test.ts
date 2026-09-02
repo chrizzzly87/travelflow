@@ -125,7 +125,7 @@ describe('netlify/edge-functions/ai-generate hardening (regression)', () => {
 
   it('rate limits unauthenticated callers per IP with 429 and Retry-After', async () => {
     // No provider keys configured: allowed requests fail fast with 500
-    // GEMINI_KEY_MISSING instead of hitting the network.
+    // OPENAI_KEY_MISSING instead of hitting the network.
     const statuses: number[] = [];
     let lastResponse: Response | null = null;
     for (let i = 0; i < 6; i += 1) {
@@ -144,14 +144,17 @@ describe('netlify/edge-functions/ai-generate hardening (regression)', () => {
   it('does not rate limit a fresh IP after another IP is exhausted', async () => {
     const response = await handler(buildRequest({ prompt: 'Trip to Japan' }), { ip: '10.99.1.7' });
     expect(response.status).toBe(500);
-    await expect(response.json()).resolves.toMatchObject({ code: 'GEMINI_KEY_MISSING' });
+    await expect(response.json()).resolves.toMatchObject({ code: 'OPENAI_KEY_MISSING' });
   });
 
   it('compiles a valid provider draft into the stable client contract', async () => {
     vi.stubEnv('GEMINI_API_KEY', 'test-key');
     mockGeminiDraft(buildProviderDraft());
 
-    const response = await handler(buildRequest({ prompt: 'Trip to Japan' }), { ip: '10.99.2.7' });
+    const response = await handler(buildRequest({
+      prompt: 'Trip to Japan',
+      target: { provider: 'gemini', model: 'gemini-3.1-pro-preview' },
+    }), { ip: '10.99.2.7' });
     const payload = await response.json() as { data: { cities: Array<Record<string, unknown>> } };
 
     expect(response.status).toBe(200);
@@ -164,10 +167,18 @@ describe('netlify/edge-functions/ai-generate hardening (regression)', () => {
     const draft = buildProviderDraft();
     draft.activities[0].cityIndex = 4;
     mockGeminiDraft(draft);
+    mockGeminiDraft(draft);
 
-    const response = await handler(buildRequest({ prompt: 'Trip to Japan' }), { ip: '10.99.3.7' });
+    const response = await handler(buildRequest({
+      prompt: 'Trip to Japan',
+      target: { provider: 'gemini', model: 'gemini-3.1-pro-preview' },
+    }), { ip: '10.99.3.7' });
 
     expect(response.status).toBe(502);
-    await expect(response.json()).resolves.toMatchObject({ code: 'TRIP_DRAFT_VALIDATION_FAILED' });
+    await expect(response.json()).resolves.toMatchObject({
+      code: 'TRIP_DRAFT_VALIDATION_FAILED',
+      meta: { semanticRepair: { attempted: true, succeeded: false } },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

@@ -99,8 +99,8 @@ const tripActivityJsonSchema = {
   properties: {
     title: { type: "string", minLength: 1 },
     cityIndex: { type: "integer", minimum: 0 },
-    dayOffsetInCity: { type: "number", minimum: 0 },
-    duration: { type: "number", exclusiveMinimum: 0 },
+    dayOffsetInCity: { type: "number", minimum: 0, description: "Day offset within the city; offset plus duration must not exceed city days." },
+    duration: { type: "number", exclusiveMinimum: 0, description: "Duration in days, typically 0.125, 0.25, or 0.5; must fit within the city stay." },
     description: { type: "string", minLength: 1, maxLength: 90 },
     activityTypes: {
       type: "array",
@@ -223,8 +223,8 @@ export const createGeminiTripItineraryResponseSchema = <TValue extends string | 
         properties: {
           title: { type: Type.STRING },
           cityIndex: { type: Type.NUMBER, description: "Index of the city this activity belongs to (0-based)" },
-          dayOffsetInCity: { type: Type.NUMBER, description: "Day number within the city stay (starts at 0)" },
-          duration: { type: Type.NUMBER, description: "Duration in days (usually 1)" },
+          dayOffsetInCity: { type: Type.NUMBER, description: "Day offset within the city; offset plus duration must not exceed city days" },
+          duration: { type: Type.NUMBER, description: "Duration in days, typically 0.125, 0.25, or 0.5; must fit within the city stay" },
           description: { type: Type.STRING },
           activityTypes: {
             type: Type.ARRAY,

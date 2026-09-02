@@ -18,6 +18,7 @@ describe('services/aiService buildClassicItineraryPrompt', () => {
     expect(prompt).toContain('TravelFlow derives recommendation Markdown and travel-segment descriptions');
     expect(prompt).toContain('activities.description must be a single short sentence (hard max 90 characters');
     expect(prompt).toContain('recommendations.mustSee');
+    expect(prompt).toContain("dayOffsetInCity + duration <= that city's days");
     expect(prompt).toContain('Required keys inside countryInfo: currencyCode, currencyName, exchangeRate, languages, electricSockets, visaInfoUrl, auswaertigesAmtUrl');
     expect(prompt).not.toContain('### Must See (3-4 items)');
   });
@@ -29,6 +30,7 @@ describe('services/aiService buildClassicItineraryPrompt', () => {
     });
 
     expect(prompt).not.toContain('Benchmark compact-output mode');
+    expect(prompt).toContain("dayOffsetInCity + duration must be less than or equal to that city's days");
   });
 
   it('uses total nights as the stay budget for exact-date trips', () => {

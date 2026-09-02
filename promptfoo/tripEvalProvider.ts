@@ -1,10 +1,10 @@
 import { buildClassicItineraryPrompt, type GenerateOptions } from '../services/aiService.ts';
-import { generateProviderItinerary, resolveTimeoutMs } from '../netlify/edge-lib/ai-provider-runtime.ts';
+import { resolveTimeoutMs } from '../netlify/edge-lib/ai-provider-runtime.ts';
+import { generatePreparedTripItinerary } from '../netlify/edge-lib/ai-trip-generation.ts';
 import {
     TRIP_ITINERARY_COMPACT_STRUCTURED_OUTPUT_SCHEMA,
     TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
 } from '../shared/aiTripItinerarySchema.ts';
-import { prepareTripItineraryModelData } from '../shared/aiTripItineraryPreparation.ts';
 import type { TripEvalVars } from './tripEvalFixtures.ts';
 
 const PROMPTFOO_TIMEOUT_MS = resolveTimeoutMs('AI_PROMPTFOO_TIMEOUT_MS', 90_000, 20_000, 180_000);
@@ -98,7 +98,7 @@ export default class TravelFlowTripEvalProvider {
         try {
             const vars = getTripEvalVars(context?.vars);
             const prompt = buildClassicItineraryPrompt(vars.destinationPrompt, vars.generationOptions);
-            const result = await generateProviderItinerary({
+            const result = await generatePreparedTripItinerary({
                 prompt,
                 provider: this.provider,
                 model: this.model,
@@ -107,38 +107,30 @@ export default class TravelFlowTripEvalProvider {
                 jsonSchema: vars.generationOptions.promptMode === 'benchmark_compact'
                     ? TRIP_ITINERARY_COMPACT_STRUCTURED_OUTPUT_SCHEMA
                     : TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
+                preparation: {
+                    roundTrip: vars.roundTrip,
+                    minimumRecommendations: vars.generationOptions.promptMode === 'benchmark_compact' ? 1 : 3,
+                },
             });
 
             if (!result.ok) {
+                const error = result.kind === 'validation'
+                    ? `Trip draft validation failed: ${result.errors.join('; ')}`
+                    : `${result.failure.error} (${result.failure.code})`;
                 return {
-                    error: `${result.value.error} (${result.value.code})`,
+                    error,
                     metadata: {
                         scenarioId: vars.scenarioId,
                         provider: this.provider,
                         model: this.model,
-                        details: result.value.details || null,
-                    },
-                };
-            }
-
-            const prepared = prepareTripItineraryModelData(result.value.data, {
-                roundTrip: vars.roundTrip,
-                minimumRecommendations: vars.generationOptions.promptMode === 'benchmark_compact' ? 1 : 3,
-            });
-            if (!prepared.ok) {
-                return {
-                    error: `Trip draft validation failed: ${prepared.errors.join('; ')}`,
-                    metadata: {
-                        scenarioId: vars.scenarioId,
-                        provider: result.value.meta.provider,
-                        model: result.value.meta.model,
-                        validationErrors: prepared.errors,
+                        details: result.kind === 'validation' ? result.errors : result.failure.details || null,
+                        semanticRepair: result.repair,
                     },
                 };
             }
 
             return {
-                output: JSON.stringify(result.value.data),
+                output: JSON.stringify(result.value.draft),
                 tokenUsage: toTokenUsage(result.value.meta.usage),
                 cost: result.value.meta.usage?.estimatedCostUsd,
                 metadata: {
@@ -147,7 +139,8 @@ export default class TravelFlowTripEvalProvider {
                     model: result.value.meta.model,
                     providerModel: result.value.meta.providerModel || null,
                     selectedDestinations: vars.selectedDestinations,
-                    tripCompiler: prepared.value.metrics,
+                    tripCompiler: result.value.data.metrics,
+                    semanticRepair: result.value.repair,
                 },
             };
         } catch (error) {

@@ -30,6 +30,14 @@ This boundary keeps the existing planner contract stable while reducing generate
 - OpenRouter and the remaining providers continue through the shared structured-output runtime.
 - The complete contract is always revalidated locally, regardless of provider enforcement.
 
+If the first schema-valid draft fails semantic validation, production generation makes exactly one bounded repair call with the compiler errors and the original request. The synchronous endpoint, queued worker, admin benchmark page, and Promptfoo provider all use this same orchestration. Repaired runs count as eventual successes but remain visible as first-pass failures, with combined latency, token use, and cost.
+
+## Agent and tool decision
+
+TravelFlow does use modern provider-native tool mechanics where they improve reliability: Anthropic is forced to call a strict `submit_trip_itinerary` tool, while OpenAI, Gemini, and OpenRouter use their equivalent structured-output schemas. These are function/tool calls, not free-form JSON parsing.
+
+The production trip path does not run an MCP server or an open-ended autonomous agent loop. MCP is a protocol for connecting models to external capabilities; it would add orchestration latency without improving the deterministic fields handled by the compiler. The next useful tool layer is a small, allowlisted set of TravelFlow-owned lookup functions for dynamic facts such as destination records, coordinates, current advisories, and exchange rates. Those tools should return compact IDs/facts from authoritative services, after which the model chooses a route and the same compiler validates the result. Static formatting, indices, labels, and Markdown stay outside the model entirely.
+
 Production generation requires 3–4 items in each core recommendation category. Compact benchmark runs use a separate schema that permits one item, so evaluation speed settings cannot lower production quality.
 
 ## Failure and rollout behavior
