@@ -67,11 +67,19 @@ describe('shared/tripMapCityResolution', () => {
       items: [makeCity({ id: 'jp', location: 'Japan' }), makeCity({ id: 'kr', location: 'South Korea' })],
       aiMeta: {
         provider: 'openai', model: 'gpt-5.4', generatedAt: '2026-03-10T21:01:34.438Z',
-        generation: { state: 'running' },
+        generation: {
+          state: 'running',
+          inputSnapshot: {
+            flow: 'wizard',
+            destinationLabel: 'Bali',
+            createdAt: '2026-03-10T21:00:48.665Z',
+            payload: { initialMapCountryFocus: 'Indonesia' },
+          },
+        },
       },
     } satisfies ITrip;
 
-    expect(resolveTripInitialMapFocusQuery(trip)).toBe('Japan');
+    expect(resolveTripInitialMapFocusQuery(trip)).toBe('Indonesia');
     expect(resolveTripInitialMapFocusQuery({
       ...trip,
       aiMeta: { ...trip.aiMeta, generation: { state: 'succeeded' } },

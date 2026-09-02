@@ -120,7 +120,6 @@ describe('generatePreparedTripItinerary', () => {
 
   it('normalizes safe activity timing defects without paying for a second model call', async () => {
     const invalid = draft();
-    invalid.activities[0].dayOffsetInCity = 99;
     invalid.activities[0].duration = 0;
     const generate = vi.fn().mockResolvedValueOnce(success(invalid));
 
@@ -136,8 +135,30 @@ describe('generatePreparedTripItinerary', () => {
       strategy: 'deterministic_normalization',
     });
     expect((result.value.draft.activities as Array<Record<string, unknown>>)[0]).toMatchObject({
-      dayOffsetInCity: 2.875,
-      duration: 0.125,
+      dayOffsetInCity: 1,
+      duration: 0.25,
+    });
+  });
+
+  it('does not silently clamp a grossly invalid activity offset', async () => {
+    const invalid = draft();
+    invalid.activities[0].dayOffsetInCity = 99;
+    const generate = vi.fn()
+      .mockResolvedValueOnce(success(invalid))
+      .mockResolvedValueOnce({ ok: false, status: 503, value: { error: 'Unavailable', code: 'PROVIDER_UNAVAILABLE' } });
+
+    const result = await generatePreparedTripItinerary({ ...options, generate });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(result.repair).toMatchObject({
+      attempted: true,
+      succeeded: false,
+      strategy: 'targeted_schedule_patch',
+      initialErrors: expect.arrayContaining([
+        expect.stringContaining('falls outside the stop'),
+      ]),
     });
   });
 

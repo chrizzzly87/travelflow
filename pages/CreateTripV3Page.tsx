@@ -1343,6 +1343,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             startDate,
             endDate,
             payload: {
+                initialMapCountryFocus: mapFocus,
                 options: wizardOptions,
                 wizardBranch,
             },

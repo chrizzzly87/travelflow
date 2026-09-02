@@ -123,9 +123,11 @@ export const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined
   if (uniqueLocations.length === 0) return undefined;
 
   const generationState = trip.aiMeta?.generation?.state;
-  return generationState === 'queued' || generationState === 'running'
-    ? uniqueLocations[0]
-    : uniqueLocations.join(' || ');
+  if (generationState === 'queued' || generationState === 'running') {
+    const payload = asRecord(trip.aiMeta?.generation?.inputSnapshot?.payload);
+    return normalizeText(payload?.initialMapCountryFocus) || uniqueLocations[0];
+  }
+  return uniqueLocations.join(' || ');
 };
 
 export const buildCityGeocodeQueryCandidates = ({

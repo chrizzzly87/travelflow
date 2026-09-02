@@ -1746,7 +1746,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         const localizedDestinationLabels = orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination));
         const destinationLabel = formatDestinationList(localizedDestinationLabels);
         const initialCountryFocus = getDestinationCountryFocusLabel(orderedDestinations[0] || destinationLabel);
-        const mapFocusLocations = [initialCountryFocus, ...localizedDestinationLabels];
         const destinationPrompt = destinationPromptLabels.join(', ');
         const travelerDetails = {
             ...(travelerType === 'solo'
@@ -1812,6 +1811,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             endDate,
             payload: {
                 destinationPrompt,
+                initialMapCountryFocus: initialCountryFocus,
                 options: classicGenerateOptions,
             },
         });
@@ -1833,7 +1833,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 const optimisticBaseTrip = buildLoadingTripPreview({
                     tripId: optimisticTripId,
                     destinationLabel,
-                    focusLocations: mapFocusLocations,
+                    focusLocations: localizedDestinationLabels,
                     startDate,
                     totalNights: Math.max(1, totalNights),
                     requestedStops: Math.max(orderedDestinations.length, 2),
@@ -1910,7 +1910,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         const optimisticBaseTrip = buildLoadingTripPreview({
             tripId: optimisticTripId,
             destinationLabel,
-            focusLocations: mapFocusLocations,
+            focusLocations: localizedDestinationLabels,
             startDate,
             totalNights: Math.max(1, totalNights),
             requestedStops: Math.max(orderedDestinations.length, 2),

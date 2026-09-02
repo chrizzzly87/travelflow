@@ -65,7 +65,6 @@ const asRecord = (value: unknown): Record<string, unknown> | null => (
 
 const normalizeSafeScheduleFields = (
   draft: Record<string, unknown>,
-  preparation: TripItineraryPreparationOptions | undefined,
 ): Record<string, unknown> => {
   const cities = Array.isArray(draft.cities) ? draft.cities : [];
   const activities = Array.isArray(draft.activities) ? draft.activities : [];
@@ -77,44 +76,38 @@ const normalizeSafeScheduleFields = (
     const cityDays = Number(city?.days);
     if (!city || !Number.isFinite(cityDays) || cityDays <= 0) return activity;
 
-    const requestedOffset = Number(entry.dayOffsetInCity);
-    const dayOffsetInCity = Number.isFinite(requestedOffset)
-      ? Math.max(0, Math.min(requestedOffset, Math.max(0, cityDays - 0.125)))
-      : 0;
-    const availableDays = cityDays - dayOffsetInCity;
+    const dayOffsetInCity = Number(entry.dayOffsetInCity);
+    if (!Number.isFinite(dayOffsetInCity) || dayOffsetInCity < 0 || dayOffsetInCity >= cityDays) return activity;
     const requestedDuration = Number(entry.duration);
-    const duration = Math.min(
-      Number.isFinite(requestedDuration) && requestedDuration > 0 ? requestedDuration : 0.25,
-      availableDays,
-    );
+    if (!Number.isFinite(requestedDuration) || requestedDuration > 0) return activity;
+    const duration = Math.min(0.25, cityDays - dayOffsetInCity);
     if (duration <= 0) return activity;
-    if (dayOffsetInCity === entry.dayOffsetInCity && duration === entry.duration) return activity;
     changed = true;
     return { ...entry, dayOffsetInCity, duration };
   });
 
-  const segments = Array.isArray(draft.travelSegments) ? draft.travelSegments : [];
-  const firstCityName = String(asRecord(cities[0])?.name || "").trim().toLocaleLowerCase();
-  const lastCityName = String(asRecord(cities.at(-1))?.name || "").trim().toLocaleLowerCase();
-  const alreadyReturnsToOrigin = Boolean(preparation?.roundTrip && cities.length > 1 && firstCityName && firstCityName === lastCityName);
-  const expectedSegments = Math.max(0, cities.length - 1 + (preparation?.roundTrip && !alreadyReturnsToOrigin ? 1 : 0));
-  const normalizedSegments = segments.length > expectedSegments ? segments.slice(0, expectedSegments) : segments;
-  if (normalizedSegments.length !== segments.length) changed = true;
-
   return changed
-    ? { ...draft, travelSegments: normalizedSegments, activities: normalizedActivities }
+    ? { ...draft, activities: normalizedActivities }
     : draft;
 };
 
 const mergeTargetedScheduleRepair = (
   draft: Record<string, unknown>,
   patch: Record<string, unknown>,
+  errors: string[],
 ): Record<string, unknown> | null => {
   const activities = Array.isArray(draft.activities) ? draft.activities : null;
   const cities = Array.isArray(draft.cities) ? draft.cities : null;
   const travelSegments = Array.isArray(patch.travelSegments) ? patch.travelSegments : null;
+  if (!activities || !cities || !travelSegments) return null;
+
+  const needsActivityRepair = errors.some((error) => error.startsWith("activities["));
+  if (!needsActivityRepair) {
+    return { ...draft, travelSegments };
+  }
+
   const schedules = Array.isArray(patch.activitySchedules) ? patch.activitySchedules : null;
-  if (!activities || !cities || !travelSegments || !schedules || schedules.length !== activities.length) return null;
+  if (!schedules || schedules.length !== activities.length) return null;
 
   const scheduleByIndex = new Map<number, Record<string, unknown>>();
   for (const entry of schedules) {
@@ -135,17 +128,10 @@ const mergeTargetedScheduleRepair = (
     const city = Number.isInteger(cityIndex) ? asRecord(cities[cityIndex]) : null;
     const cityDays = Number(city?.days);
     if (!city || !Number.isFinite(cityDays) || cityDays <= 0) return null;
-    const requestedOffset = Number(schedule.dayOffsetInCity);
-    const dayOffsetInCity = Number.isFinite(requestedOffset)
-      ? Math.max(0, Math.min(requestedOffset, Math.max(0, cityDays - 0.125)))
-      : 0;
-    const availableDays = cityDays - dayOffsetInCity;
-    const requestedDuration = Number(schedule.duration);
-    const duration = Math.min(
-      Number.isFinite(requestedDuration) && requestedDuration > 0 ? requestedDuration : 0.25,
-      availableDays,
-    );
-    if (duration <= 0) return null;
+    const dayOffsetInCity = Number(schedule.dayOffsetInCity);
+    const duration = Number(schedule.duration);
+    if (!Number.isFinite(dayOffsetInCity) || dayOffsetInCity < 0 || !Number.isFinite(duration) || duration <= 0) return null;
+    if (dayOffsetInCity + duration > cityDays) return null;
     return {
       ...original,
       cityIndex,
@@ -261,7 +247,7 @@ export const generatePreparedTripItinerary = async (
     lastMeta = { ...result.value.meta, usage };
     const generatedData = result.value.data;
     const candidateDraft = repairAttempt > 0 && repairStrategy === "targeted_schedule_patch"
-      ? mergeTargetedScheduleRepair(lastDraft ?? {}, generatedData)
+      ? mergeTargetedScheduleRepair(lastDraft ?? {}, generatedData, lastErrors)
       : generatedData;
     lastDraft = candidateDraft ?? lastDraft;
     const prepared = candidateDraft
@@ -288,7 +274,7 @@ export const generatePreparedTripItinerary = async (
 
     let currentErrors = prepared.errors;
     if (repairAttempt === 0 && candidateDraft && canUseTargetedScheduleRepair(prepared.errors)) {
-      const normalizedDraft = normalizeSafeScheduleFields(candidateDraft, preparation);
+      const normalizedDraft = normalizeSafeScheduleFields(candidateDraft);
       if (normalizedDraft !== candidateDraft) {
         const normalized = prepareTripItineraryModelData(normalizedDraft, preparation);
         lastDraft = normalizedDraft;
