@@ -95,8 +95,8 @@ describe('generatePreparedTripItinerary', () => {
       .mockResolvedValueOnce(success({
         travelSegments: [{ transportMode: 'train', duration: 2.25 }],
         activitySchedules: [
-          { activityIndex: 0, cityIndex: 0, dayOffsetInCity: 1, duration: 0.5 },
-          { activityIndex: 1, cityIndex: 1, dayOffsetInCity: 0, duration: 0.25 },
+          { activityIndex: 0, cityIndex: 0, dayOffsetInCity: 1, duration: 0 },
+          { activityIndex: 1, cityIndex: 1, dayOffsetInCity: 0, duration: 0 },
         ],
       }, 45));
 
@@ -115,6 +115,29 @@ describe('generatePreparedTripItinerary', () => {
       attempted: true,
       succeeded: true,
       strategy: 'targeted_schedule_patch',
+    });
+  });
+
+  it('normalizes safe activity timing defects without paying for a second model call', async () => {
+    const invalid = draft();
+    invalid.activities[0].dayOffsetInCity = 99;
+    invalid.activities[0].duration = 0;
+    const generate = vi.fn().mockResolvedValueOnce(success(invalid));
+
+    const result = await generatePreparedTripItinerary({ ...options, generate });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(generate).toHaveBeenCalledTimes(1);
+    expect(result.value.attempts).toBe(1);
+    expect(result.value.repair).toMatchObject({
+      attempted: true,
+      succeeded: true,
+      strategy: 'deterministic_normalization',
+    });
+    expect((result.value.draft.activities as Array<Record<string, unknown>>)[0]).toMatchObject({
+      dayOffsetInCity: 2.875,
+      duration: 0.125,
     });
   });
 

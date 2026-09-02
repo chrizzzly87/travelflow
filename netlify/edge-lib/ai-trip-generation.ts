@@ -39,7 +39,7 @@ Return a complete replacement object that fixes every listed error. For each act
 const isTargetedScheduleError = (error: string): boolean => (
   error.startsWith("travelSegments")
   || /^activities\[\d+\]\.(?:cityIndex|dayOffsetInCity|duration)/.test(error)
-  || /^activities\[\d+\].*(?:city stay|cityIndex|dayOffsetInCity|duration)/.test(error)
+  || /^activities\[\d+\].*(?:city stay|cityIndex|dayOffsetInCity|duration|falls outside|extends beyond)/.test(error)
 );
 
 const canUseTargetedScheduleRepair = (errors: string[]): boolean => (
@@ -63,14 +63,58 @@ const asRecord = (value: unknown): Record<string, unknown> | null => (
   value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null
 );
 
+const normalizeSafeScheduleFields = (
+  draft: Record<string, unknown>,
+  preparation: TripItineraryPreparationOptions | undefined,
+): Record<string, unknown> => {
+  const cities = Array.isArray(draft.cities) ? draft.cities : [];
+  const activities = Array.isArray(draft.activities) ? draft.activities : [];
+  let changed = false;
+  const normalizedActivities = activities.map((activity) => {
+    const entry = asRecord(activity);
+    if (!entry || !Number.isInteger(entry.cityIndex)) return activity;
+    const city = asRecord(cities[Number(entry.cityIndex)]);
+    const cityDays = Number(city?.days);
+    if (!city || !Number.isFinite(cityDays) || cityDays <= 0) return activity;
+
+    const requestedOffset = Number(entry.dayOffsetInCity);
+    const dayOffsetInCity = Number.isFinite(requestedOffset)
+      ? Math.max(0, Math.min(requestedOffset, Math.max(0, cityDays - 0.125)))
+      : 0;
+    const availableDays = cityDays - dayOffsetInCity;
+    const requestedDuration = Number(entry.duration);
+    const duration = Math.min(
+      Number.isFinite(requestedDuration) && requestedDuration > 0 ? requestedDuration : 0.25,
+      availableDays,
+    );
+    if (duration <= 0) return activity;
+    if (dayOffsetInCity === entry.dayOffsetInCity && duration === entry.duration) return activity;
+    changed = true;
+    return { ...entry, dayOffsetInCity, duration };
+  });
+
+  const segments = Array.isArray(draft.travelSegments) ? draft.travelSegments : [];
+  const firstCityName = String(asRecord(cities[0])?.name || "").trim().toLocaleLowerCase();
+  const lastCityName = String(asRecord(cities.at(-1))?.name || "").trim().toLocaleLowerCase();
+  const alreadyReturnsToOrigin = Boolean(preparation?.roundTrip && cities.length > 1 && firstCityName && firstCityName === lastCityName);
+  const expectedSegments = Math.max(0, cities.length - 1 + (preparation?.roundTrip && !alreadyReturnsToOrigin ? 1 : 0));
+  const normalizedSegments = segments.length > expectedSegments ? segments.slice(0, expectedSegments) : segments;
+  if (normalizedSegments.length !== segments.length) changed = true;
+
+  return changed
+    ? { ...draft, travelSegments: normalizedSegments, activities: normalizedActivities }
+    : draft;
+};
+
 const mergeTargetedScheduleRepair = (
   draft: Record<string, unknown>,
   patch: Record<string, unknown>,
 ): Record<string, unknown> | null => {
   const activities = Array.isArray(draft.activities) ? draft.activities : null;
+  const cities = Array.isArray(draft.cities) ? draft.cities : null;
   const travelSegments = Array.isArray(patch.travelSegments) ? patch.travelSegments : null;
   const schedules = Array.isArray(patch.activitySchedules) ? patch.activitySchedules : null;
-  if (!activities || !travelSegments || !schedules || schedules.length !== activities.length) return null;
+  if (!activities || !cities || !travelSegments || !schedules || schedules.length !== activities.length) return null;
 
   const scheduleByIndex = new Map<number, Record<string, unknown>>();
   for (const entry of schedules) {
@@ -87,11 +131,26 @@ const mergeTargetedScheduleRepair = (
     const original = asRecord(activity);
     const schedule = scheduleByIndex.get(index);
     if (!original || !schedule) return null;
+    const cityIndex = Number(schedule.cityIndex);
+    const city = Number.isInteger(cityIndex) ? asRecord(cities[cityIndex]) : null;
+    const cityDays = Number(city?.days);
+    if (!city || !Number.isFinite(cityDays) || cityDays <= 0) return null;
+    const requestedOffset = Number(schedule.dayOffsetInCity);
+    const dayOffsetInCity = Number.isFinite(requestedOffset)
+      ? Math.max(0, Math.min(requestedOffset, Math.max(0, cityDays - 0.125)))
+      : 0;
+    const availableDays = cityDays - dayOffsetInCity;
+    const requestedDuration = Number(schedule.duration);
+    const duration = Math.min(
+      Number.isFinite(requestedDuration) && requestedDuration > 0 ? requestedDuration : 0.25,
+      availableDays,
+    );
+    if (duration <= 0) return null;
     return {
       ...original,
-      cityIndex: schedule.cityIndex,
-      dayOffsetInCity: schedule.dayOffsetInCity,
-      duration: schedule.duration,
+      cityIndex,
+      dayOffsetInCity,
+      duration,
     };
   });
   if (repairedActivities.some((activity) => activity === null)) return null;
@@ -141,7 +200,7 @@ export interface SemanticRepairMetadata {
   initialErrors: string[];
   finalErrors?: string[];
   providerFailureCode?: string;
-  strategy?: "targeted_schedule_patch" | "full_regeneration";
+  strategy?: "deterministic_normalization" | "targeted_schedule_patch" | "full_regeneration";
 }
 
 export const generatePreparedTripItinerary = async (
@@ -227,15 +286,44 @@ export const generatePreparedTripItinerary = async (
       };
     }
 
-    lastErrors = prepared.errors;
+    let currentErrors = prepared.errors;
+    if (repairAttempt === 0 && candidateDraft && canUseTargetedScheduleRepair(prepared.errors)) {
+      const normalizedDraft = normalizeSafeScheduleFields(candidateDraft, preparation);
+      if (normalizedDraft !== candidateDraft) {
+        const normalized = prepareTripItineraryModelData(normalizedDraft, preparation);
+        lastDraft = normalizedDraft;
+        if (normalized.ok === true) {
+          return {
+            ok: true,
+            value: {
+              data: normalized.value,
+              draft: normalizedDraft,
+              meta: lastMeta,
+              attempts,
+              repaired: true,
+              repair: {
+                attempted: true,
+                succeeded: true,
+                initialErrors: prepared.errors,
+                strategy: "deterministic_normalization",
+              },
+            },
+          };
+        }
+        currentErrors = normalized.errors;
+        if (initialErrors.length === 0) initialErrors = prepared.errors;
+      }
+    }
+
+    lastErrors = currentErrors;
     if (initialErrors.length === 0) initialErrors = prepared.errors;
     if (repairAttempt < MAX_SEMANTIC_REPAIR_ATTEMPTS) {
-      repairStrategy = canUseTargetedScheduleRepair(prepared.errors)
+      repairStrategy = canUseTargetedScheduleRepair(currentErrors)
         ? "targeted_schedule_patch"
         : "full_regeneration";
       prompt = repairStrategy === "targeted_schedule_patch"
-        ? buildTargetedScheduleRepairPrompt(lastDraft ?? generatedData, prepared.errors)
-        : buildSemanticRepairPrompt(options.prompt, prepared.errors);
+        ? buildTargetedScheduleRepairPrompt(lastDraft ?? generatedData, currentErrors)
+        : buildSemanticRepairPrompt(options.prompt, currentErrors);
     }
   }
 
