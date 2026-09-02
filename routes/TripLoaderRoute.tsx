@@ -28,6 +28,7 @@ import { normalizeTransportMode } from '../shared/transportModes';
 import type { TripLoaderRouteProps } from './tripRouteTypes';
 import { LazyTripView } from '../components/tripview/LazyTripView';
 import { TripRouteLoadingShell } from '../components/tripview/TripRouteLoadingShell';
+import { resolveTripInitialMapFocusQuery } from '../shared/tripMapCityResolution';
 
 const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => {
     if (!a && !b) return true;
@@ -46,19 +47,6 @@ const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => 
         && a.detailsWidth === b.detailsWidth
         && a.timelineHeight === b.timelineHeight
     );
-};
-
-const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined => {
-    const uniqueLocations = new Set<string>();
-    for (const item of trip.items) {
-        if (item.type !== 'city' || typeof item.location !== 'string') continue;
-        const location = item.location.trim();
-        if (location.length > 0) {
-            uniqueLocations.add(location);
-        }
-    }
-    if (uniqueLocations.size === 0) return undefined;
-    return Array.from(uniqueLocations).join(' || ');
 };
 
 const normalizeTripForRouteLoad = (trip: ITrip): ITrip => {

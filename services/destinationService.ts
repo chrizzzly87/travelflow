@@ -254,6 +254,12 @@ export const getDestinationPromptLabel = (value: string, locale?: string): strin
     return destinationName;
 };
 
+export const getDestinationCountryFocusLabel = (value: string): string => {
+    const destination = getDestinationOptionByName(value);
+    if (!destination) return value.trim();
+    return destination.parentCountryName || destination.name;
+};
+
 export const getDestinationSeasonCountryName = (value: string): string => {
     const destination = getDestinationOptionByName(value);
     if (!destination) return value;

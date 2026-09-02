@@ -14,5 +14,6 @@ summary: "Trip generation now uses a smaller structured plan and builds the fina
 - [x] [Improved] ⚡ Trip generation uses fewer AI tokens while preserving the full itinerary shown in the planner.
 - [x] [Fixed] 🧱 Malformed or incomplete generated trips are stopped before they can create a broken planner view.
 - [x] [Fixed] 🛠️ Trips with a fixable scheduling mistake get one automatic correction attempt within the original time budget.
+- [x] [Improved] 🗺️ New trips immediately focus the map on the first country while the detailed route is being prepared.
 - [x] [Improved] 🔁 Round-trip return stops and transfer labels are now assembled consistently by TravelFlow.
-- [ ] [Internal] 🧰 Added provider-specific structured-output schemas, strict semantic validation, compiler telemetry, and repeatable model benchmarks.
+- [ ] [Internal] 🧰 Added provider-specific structured-output schemas, targeted schedule repair tools, strict semantic validation, compiler telemetry, and repeatable model benchmarks.

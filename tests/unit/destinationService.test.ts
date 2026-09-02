@@ -4,6 +4,7 @@ import {
   ISLAND_DESTINATIONS,
   getDestinationDisplayName,
   getDestinationDisplayNameByCode,
+  getDestinationCountryFocusLabel,
   getDestinationMetaLabel,
   getDestinationOptionByCode,
   getDestinationOptionByName,
@@ -87,6 +88,9 @@ describe('services/destinationService', () => {
     expect(isIslandDestination('Germany')).toBe(false);
     expect(getDestinationMetaLabel('Germany', 'en')).toBeUndefined();
     expect(getDestinationDisplayName('Unknown Place', 'en')).toBe('Unknown Place');
+    expect(getDestinationCountryFocusLabel('Germany')).toBe('Germany');
+    expect(getDestinationCountryFocusLabel('Bali')).toBe('Indonesia');
+    expect(getDestinationCountryFocusLabel('Unknown Place')).toBe('Unknown Place');
   });
 
   it('searches with starts-with precedence, excludes and limits', () => {

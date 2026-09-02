@@ -161,6 +161,36 @@ export const TRIP_ITINERARY_COMPACT_STRUCTURED_OUTPUT_SCHEMA: StructuredOutputJs
   strict: true,
 };
 
+export const TRIP_ITINERARY_SCHEDULE_REPAIR_STRUCTURED_OUTPUT_SCHEMA: StructuredOutputJsonSchema = {
+  name: `${TRIP_ITINERARY_SCHEMA_NAME}_schedule_repair`,
+  strict: true,
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      travelSegments: {
+        type: "array",
+        items: tripTravelSegmentJsonSchema,
+      },
+      activitySchedules: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            activityIndex: { type: "integer", minimum: 0 },
+            cityIndex: { type: "integer", minimum: 0 },
+            dayOffsetInCity: { type: "number", minimum: 0 },
+            duration: { type: "number", exclusiveMinimum: 0 },
+          },
+          required: ["activityIndex", "cityIndex", "dayOffsetInCity", "duration"],
+        },
+      },
+    },
+    required: ["travelSegments", "activitySchedules"],
+  },
+};
+
 export const createGeminiTripItineraryResponseSchema = <TValue extends string | number>(
   Type: GeminiSchemaTypeBag<TValue>,
 ) => ({

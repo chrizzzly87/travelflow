@@ -101,6 +101,7 @@ import { getEstimatedTripNightsFromTotalDays, getExactTripDateSpan } from '../sh
 import {
     DESTINATION_OPTIONS,
     getDestinationMetaLabel,
+    getDestinationCountryFocusLabel,
     getDestinationOptionByName,
     getDestinationPromptLabel,
     getRollingRecommendationMonths,
@@ -1744,6 +1745,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         const destinationPromptLabels = orderedDestinations.map((destination) => getDestinationPromptLabel(destination));
         const localizedDestinationLabels = orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination));
         const destinationLabel = formatDestinationList(localizedDestinationLabels);
+        const initialCountryFocus = getDestinationCountryFocusLabel(orderedDestinations[0] || destinationLabel);
+        const mapFocusLocations = [initialCountryFocus, ...localizedDestinationLabels];
         const destinationPrompt = destinationPromptLabels.join(', ');
         const travelerDetails = {
             ...(travelerType === 'solo'
@@ -1830,7 +1833,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 const optimisticBaseTrip = buildLoadingTripPreview({
                     tripId: optimisticTripId,
                     destinationLabel,
-                    focusLocations: localizedDestinationLabels,
+                    focusLocations: mapFocusLocations,
                     startDate,
                     totalNights: Math.max(1, totalNights),
                     requestedStops: Math.max(orderedDestinations.length, 2),
@@ -1907,7 +1910,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         const optimisticBaseTrip = buildLoadingTripPreview({
             tripId: optimisticTripId,
             destinationLabel,
-            focusLocations: localizedDestinationLabels,
+            focusLocations: mapFocusLocations,
             startDate,
             totalNights: Math.max(1, totalNights),
             requestedStops: Math.max(orderedDestinations.length, 2),

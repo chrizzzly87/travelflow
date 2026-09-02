@@ -5,6 +5,7 @@ import {
   buildCityGeocodeQueryCandidates,
   buildTripMapLocationContextQueries,
   mergeResolvedCityCoordinatesIntoItems,
+  resolveTripInitialMapFocusQuery,
   resolveMissingCityCoordinatesForItems,
 } from '../../shared/tripMapCityResolution';
 
@@ -57,6 +58,24 @@ describe('shared/tripMapCityResolution', () => {
       'Mallorca',
       'Mallorca, Spain',
     ]);
+  });
+
+  it('focuses only the first ordered loading country until generated coordinates arrive', () => {
+    const trip = {
+      id: 'trip-loading', title: 'Japan and Korea', startDate: '2026-06-04',
+      createdAt: 0, updatedAt: 0,
+      items: [makeCity({ id: 'jp', location: 'Japan' }), makeCity({ id: 'kr', location: 'South Korea' })],
+      aiMeta: {
+        provider: 'openai', model: 'gpt-5.4', generatedAt: '2026-03-10T21:01:34.438Z',
+        generation: { state: 'running' },
+      },
+    } satisfies ITrip;
+
+    expect(resolveTripInitialMapFocusQuery(trip)).toBe('Japan');
+    expect(resolveTripInitialMapFocusQuery({
+      ...trip,
+      aiMeta: { ...trip.aiMeta, generation: { state: 'succeeded' } },
+    })).toBe('Japan || South Korea');
   });
 
   it('builds disambiguated geocode candidates for short city names', () => {

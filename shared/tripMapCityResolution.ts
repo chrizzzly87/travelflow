@@ -114,6 +114,20 @@ export const buildTripMapLocationContextQueries = (
   return dedupeCaseInsensitive(queries);
 };
 
+export const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined => {
+  const uniqueLocations = dedupeCaseInsensitive(trip.items.flatMap((item) => {
+    if (item.type !== 'city') return [];
+    const location = normalizeText(item.location);
+    return location ? [location] : [];
+  }));
+  if (uniqueLocations.length === 0) return undefined;
+
+  const generationState = trip.aiMeta?.generation?.state;
+  return generationState === 'queued' || generationState === 'running'
+    ? uniqueLocations[0]
+    : uniqueLocations.join(' || ');
+};
+
 export const buildCityGeocodeQueryCandidates = ({
   city,
   items,
