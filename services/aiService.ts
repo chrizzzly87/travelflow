@@ -254,16 +254,12 @@ export type CityNotesEnhancementMode =
 const BASE_ITINERARY_RULES_PROMPT = `
       Return a list of consecutive cities/stops.
       Important Rules for complex trips:
-      1. Provide accurate Latitude and Longitude plus the English countryName and uppercase ISO 3166-1 alpha-2 countryCode for each city/stop.
+      1. Provide accurate Latitude and Longitude plus the uppercase ISO 3166-1 alpha-2 countryCode for each city/stop. TravelFlow derives the English country name.
       2. Treat multi-day excursions (like treks, cruises, jungle expeditions, or hikes) as separate 'cities/stops' with their own duration and coordinates.
          - In the "cities" array, the "days" field means nights stayed in that stop.
          - Arrival day and departure day each count as calendar days outside that night count.
-      3. For EACH city description, you MUST include these exact markdown sections:
-         ### Must See (3-4 items)
-         ### Must Try (3-4 local foods)
-         ### Must Do (3-4 activities)
-         If needed, you MAY add an additional final section named "### Heads Up" with 1-2 concise practical cautions.
-         Use - [ ] for all items to make them checkboxes.
+      3. For EACH city, return recommendations.mustSee, recommendations.mustTry, and recommendations.mustDo with 3-4 concise items each.
+         Return recommendations.headsUp with 0-2 practical cautions. TravelFlow renders headings and checkboxes deterministically.
       4. Provide Country Info (Currency code, Currency name, Exchange Rate to EUR, Languages, Electric sockets, Visa info URL, Auswärtiges Amt URL).
          - countryInfo MUST be a single OBJECT (not an array, not a map keyed by country code).
          - Required keys inside countryInfo: currencyCode, currencyName, exchangeRate, languages, electricSockets, visaInfoUrl, auswaertigesAmtUrl.
@@ -276,6 +272,8 @@ const BASE_ITINERARY_RULES_PROMPT = `
       5. For EVERY activity, you MUST return "activityTypes" as an array with 1-3 values ONLY from this list:
          [${ACTIVITY_TYPES_PROMPT_LIST}]
          Do not return unknown activity types and do not leave activityTypes empty.
+         activity duration is measured in days; typical values are 0.125, 0.25, or 0.5.
+         Every activity MUST fit inside its stop: dayOffsetInCity + duration must be less than or equal to that city's days.
       6. For EVERY travel segment, you MUST return "transportMode" in lowercase from:
          [${TRANSPORT_MODES_PROMPT_LIST}]
       7. Follow strict duration formatting.
@@ -286,16 +284,12 @@ const BASE_ITINERARY_RULES_PROMPT = `
 const BASE_ITINERARY_RULES_PROMPT_COMPACT = `
       Return a concise list of consecutive cities/stops.
       Important Rules for compact benchmark output:
-      1. Provide accurate Latitude and Longitude plus the English countryName and uppercase ISO 3166-1 alpha-2 countryCode for each city/stop.
+      1. Provide accurate Latitude and Longitude plus the uppercase ISO 3166-1 alpha-2 countryCode for each city/stop.
       2. Treat multi-day excursions (like treks, cruises, jungle expeditions, or hikes) as separate 'cities/stops' with their own duration and coordinates.
          - In the "cities" array, the "days" field means nights stayed in that stop.
          - Arrival day and departure day each count as calendar days outside that night count.
-      3. For EACH city description, you MUST include these exact markdown sections:
-         ### Must See
-         ### Must Try
-         ### Must Do
-         If needed, you MAY add an additional final section named "### Heads Up" with 1 concise practical caution.
-         Use - [ ] checkboxes with exactly 1 bullet per heading. Keep each bullet 3-6 words.
+      3. For EACH city, return recommendations.mustSee, recommendations.mustTry, and recommendations.mustDo with exactly 1 concise item each.
+         Return recommendations.headsUp with 0-1 concise practical caution.
       4. Provide Country Info (Currency code, Currency name, Exchange Rate to EUR, Languages, Electric sockets, Visa info URL, Auswärtiges Amt URL).
          - countryInfo MUST be a single OBJECT (not an array, not a map keyed by country code).
          - Required keys inside countryInfo: currencyCode, currencyName, exchangeRate, languages, electricSockets, visaInfoUrl, auswaertigesAmtUrl.
@@ -304,6 +298,7 @@ const BASE_ITINERARY_RULES_PROMPT_COMPACT = `
       5. For EVERY activity, you MUST return "activityTypes" as an array with 1-3 values ONLY from this list:
          [${ACTIVITY_TYPES_PROMPT_LIST}]
          Do not return unknown activity types and do not leave activityTypes empty.
+         Every activity MUST satisfy dayOffsetInCity + duration <= that city's days.
       6. For EVERY travel segment, you MUST return "transportMode" in lowercase from:
          [${TRANSPORT_MODES_PROMPT_LIST}]
       7. Follow strict duration formatting.
@@ -312,50 +307,14 @@ const BASE_ITINERARY_RULES_PROMPT_COMPACT = `
     `;
 
 const STRICT_JSON_OBJECT_CONTRACT_PROMPT = `
-      Output contract requirements (must be strictly followed):
-      1. Return ONLY a single JSON object. Do NOT return an array as top-level output.
-      2. Do NOT include markdown code fences.
-      3. The root object MUST include exactly these keys:
-         - tripTitle
-         - countryInfo
-         - cities
-         - travelSegments
-         - activities
-      4. "cities" must be an array of objects with:
-         - name
-         - days
-         - description
-         - countryName (English country name)
-         - countryCode (uppercase ISO 3166-1 alpha-2)
-         - lat
-         - lng
-         - IMPORTANT: "days" means nights stayed in that stop.
-      5. "travelSegments" must be an array (can be empty) of objects with:
-         - fromCityIndex
-         - toCityIndex
-         - transportMode
-         - description
-         - duration
-      6. "activities" must be an array (can be empty) of objects with:
-         - title
-         - cityIndex
-         - dayOffsetInCity
-         - duration
-         - description
-         - activityTypes
-      7. transportMode must be lowercase and match:
-         [${TRANSPORT_MODES_PROMPT_LIST}]
-      8. travelSegments.duration must be NUMBER (hours), never a string with units.
-      9. activities.duration must be NUMBER (days), never a string with units.
-      10. countryInfo must use the canonical keys currencyCode, currencyName, exchangeRate, languages, electricSockets, visaInfoUrl, auswaertigesAmtUrl.
-      11. countryInfo.exchangeRate must be NUMBER only (example valid: 163; invalid: "1 EUR ≈ 160 JPY").
-      12. Before finalizing your answer, run a self-check:
-         - Every city.description contains all three headings: "### Must See", "### Must Try", "### Must Do".
-         - Only add "### Heads Up" when a practical warning is genuinely needed.
-         - cities[].days is interpreted as nights stayed, not touched calendar days.
-         - Every city has countryName, countryCode, lat, and lng for unambiguous map placement.
-         - countryInfo is a single object, languages is an array, and the canonical countryInfo keys are used exactly.
-         - Return exactly one JSON object and nothing else.
+      Compact output contract:
+      - Match the supplied schema exactly and return no prose or markdown fences.
+      - cities[].days means nights stayed.
+      - Return one travelSegments entry per consecutive pair of cities, plus the final return leg when round-trip instructions request it; TravelFlow derives indices and labels.
+      - Durations are numbers: travel hours and activity days.
+      - Every activity fits within its stop: dayOffsetInCity + duration <= cities[cityIndex].days.
+      - countryInfo uses the canonical keys and a numeric exchangeRate for 1 EUR.
+      - TravelFlow derives country names, recommendation Markdown, transfer descriptions, and route indices.
     `;
 
 const buildStayBudgetPrompt = (options: Pick<GenerateOptions, 'totalDays' | 'totalNights'>): string => {
@@ -377,11 +336,8 @@ const buildStayBudgetPrompt = (options: Pick<GenerateOptions, 'totalDays' | 'tot
 const BENCHMARK_COMPACT_OUTPUT_PROMPT = `
       Benchmark compact-output mode:
       1. Keep the full JSON concise and valid even under strict timeout budgets.
-      2. For EACH city.description, include all required markdown headings, but keep text short:
-         - exactly 1 checkbox bullet per heading.
-         - each bullet should be short (about 3-6 words; hard max 8 words).
-         - city.description must stay under 500 characters total.
-      3. Keep travelSegments.description short and practical (hard max 60 characters).
+      2. For EACH city recommendation category, return exactly 1 short item (about 3-6 words; hard max 8 words).
+      3. TravelFlow derives recommendation Markdown and travel-segment descriptions.
       4. Keep activities concise:
          - activities.description must be a single short sentence (hard max 90 characters, no line breaks).
       5. Keep tripTitle concise (hard max 80 characters).
@@ -433,9 +389,9 @@ const CREATE_TRIP_SPECIALIST_POLICY_PROMPT = `
       - ${USER_PROMPT_DATA_GUARD_PROMPT}
       - Favor realistic sequencing, practical transfer days, and activities that fit the traveler profile.
       - If a user-selected destination creates suitability, safety, or logistics concerns, do NOT silently drop it.
-      - Keep requested destinations when possible, adapt the route and recommendations, and add a short practical warning under an optional "### Heads Up" section inside the relevant city.description.
+      - Keep requested destinations when possible, adapt the route and recommendations, and add a short practical warning to recommendations.headsUp for the relevant city.
       - When traveler profile and destination fit are clearly in tension, surface it explicitly instead of implying it.
-      - For material profile-specific concerns such as LGBTQ+ legal or social restrictions, accessibility problems, or family-unfriendly logistics, add a final "### Heads Up" section to each affected city.description.
+      - For material profile-specific concerns such as LGBTQ+ legal or social restrictions, accessibility problems, or family-unfriendly logistics, add a concise recommendations.headsUp item to each affected city.
     `;
 
 const TRANSPORT_PREFERENCE_LABELS: Record<CreateTripTransportPreference, string> = {
@@ -582,7 +538,7 @@ const buildTravelerConstraintPrompt = (
         );
         appendPromptSentence(
             lines,
-            'If a selected stop may create material legal, social, or safety constraints for this traveler profile, keep it when user-requested but you MUST add a short practical note in a final "### Heads Up" section for that city description'
+            'If a selected stop may create material legal, social, or safety constraints for this traveler profile, keep it when user-requested but you MUST add a short practical recommendations.headsUp item for that city'
         );
     }
 
@@ -932,6 +888,7 @@ const generateItineraryFromPrompt = async (
   let serverFailureTracked = false;
   const requestBody = {
     prompt: detailedPrompt,
+    roundTrip: options?.roundTrip === true,
     requestId,
     target: options?.aiTarget ? {
         provider: options.aiTarget.provider,
@@ -962,9 +919,11 @@ const generateItineraryFromPrompt = async (
     if (
         normalizedCode.includes('parse')
         || normalizedCode.includes('quality')
+        || normalizedCode.includes('validation')
         || normalizedCode.includes('refusal')
         || normalizedCode.includes('incomplete')
         || normalizedMessage.includes('quality')
+        || normalizedMessage.includes('validation')
         || normalizedMessage.includes('refused')
         || normalizedMessage.includes('incomplete')
     ) {
@@ -1254,7 +1213,7 @@ export const buildClassicItineraryPrompt = (prompt: string, options?: GenerateOp
 
     if (options) {
         if (options.roundTrip) {
-            detailedPrompt += ` Roundtrip is enabled. The FINAL city in "cities" MUST be the same place as the FIRST city (same city name and coordinates), representing the return to start. `;
+            detailedPrompt += ` Roundtrip is enabled. Return each overnight stop once, do NOT duplicate the first city, and include one final travelSegments entry for the return from the last stop to the first. TravelFlow adds the zero-night return marker. `;
         }
         detailedPrompt += buildStayBudgetPrompt(options);
         if (options.numCities) detailedPrompt += ` Visit exactly ${options.numCities} distinct cities/stops. `;
@@ -1312,7 +1271,7 @@ export const buildWizardItineraryPrompt = (options: WizardGenerateOptions): stri
     detailedPrompt += `This request comes from a guided travel wizard, so preference signals are important and should influence route choice, stop durations, and activity suggestions. `;
 
     if (options.roundTrip) {
-        detailedPrompt += `Roundtrip is enabled. The FINAL city in "cities" MUST be the same place as the FIRST city (same city name and coordinates), representing the return to start. `;
+        detailedPrompt += `Roundtrip is enabled. Return each overnight stop once, do NOT duplicate the first city, and include one final travelSegments entry for the return from the last stop to the first. TravelFlow adds the zero-night return marker. `;
     }
     detailedPrompt += buildStayBudgetPrompt(options);
     if (options.budget) {
@@ -1374,6 +1333,7 @@ export const buildSurpriseItineraryPrompt = (options: SurpriseGenerateOptions): 
         formatUserPromptDataBlock('surprise destination', country),
     ].filter(Boolean).join('\n') + ' ';
     detailedPrompt += `This request comes from the "Surprise Me" flow, so the plan should feel exciting, varied, and season-aware while still practical. `;
+    detailedPrompt += `This is a round trip: return each overnight stop once, do NOT duplicate the first city, and include one final travelSegments entry for the return from the last stop to the first. TravelFlow adds the zero-night return marker. `;
     detailedPrompt += `${USER_PROMPT_DATA_GUARD_PROMPT} `;
 
     detailedPrompt += buildStayBudgetPrompt(options);
@@ -1399,6 +1359,7 @@ export const buildSurpriseItineraryPrompt = (options: SurpriseGenerateOptions): 
     `;
 
     detailedPrompt += BASE_ITINERARY_RULES_PROMPT;
+    detailedPrompt += STRICT_JSON_OBJECT_CONTRACT_PROMPT;
     return detailedPrompt;
 };
 

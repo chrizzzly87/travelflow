@@ -2341,8 +2341,8 @@ const useTripViewRender = ({
     }, [displayTrip.items, displayTrip.title]);
     const effectiveMapFocusQuery = useMemo(() => {
         const queries = buildTripMapLocationContextQueries(trip, initialMapFocusQuery);
-        return queries.join(' || ');
-    }, [initialMapFocusQuery, trip]);
+        return (isGenerationInFlight ? queries.slice(0, 1) : queries).join(' || ');
+    }, [initialMapFocusQuery, isGenerationInFlight, trip]);
     const showGenerationOverlay = isTripDetailRoute
         && isGenerationInFlight
         && !isAdminFallbackView

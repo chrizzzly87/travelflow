@@ -226,8 +226,8 @@ IMPORTANT RETRY INSTRUCTIONS:
 - No markdown fences, no prose, no explanation.
 - Keep output compact to avoid truncation.
 - Keep tripTitle at or below 80 characters.
-- Keep each city.description compact with one short checkbox bullet per required heading.
-- Keep travelSegments.description at or below 60 characters.
+- Keep each city recommendation list concise.
+- Return only transportMode and numeric duration for each travel segment.
 - Keep activities.description at or below 90 characters.
 `.trim();
 
@@ -309,6 +309,36 @@ const buildOpenAiResponsesTextFormat = (
     }
     : undefined
 );
+
+const PROVIDER_SCHEMA_UNSUPPORTED_KEYS: Record<"gemini" | "anthropic", ReadonlySet<string>> = {
+  gemini: new Set(["exclusiveMinimum", "exclusiveMaximum", "minLength", "maxLength", "pattern"]),
+  anthropic: new Set([
+    "exclusiveMinimum",
+    "exclusiveMaximum",
+    "minimum",
+    "maximum",
+    "minLength",
+    "maxLength",
+    "pattern",
+  ]),
+};
+
+export const buildProviderCompatibleSchema = (
+  schema: Record<string, unknown>,
+  provider: "gemini" | "anthropic",
+): Record<string, unknown> => {
+  const unsupported = PROVIDER_SCHEMA_UNSUPPORTED_KEYS[provider];
+  const visit = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(visit);
+    if (!value || typeof value !== "object") return value;
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([key]) => !unsupported.has(key))
+        .map(([key, child]) => [key, visit(child)]),
+    );
+  };
+  return visit(schema) as Record<string, unknown>;
+};
 
 const isAbortError = (error: unknown): boolean => {
   if (error instanceof DOMException && error.name === "AbortError") return true;
@@ -552,6 +582,17 @@ const extractAnthropicText = (content: unknown): string => {
     .join("\n");
 };
 
+const extractAnthropicToolInput = (content: unknown, toolName: string): Record<string, unknown> | null => {
+  if (!Array.isArray(content)) return null;
+  for (const entry of content) {
+    const typed = asRecord(entry);
+    if (!typed || typed.type !== "tool_use" || typed.name !== toolName) continue;
+    const input = asRecord(typed.input);
+    if (input) return input;
+  }
+  return null;
+};
+
 const estimateGeminiCost = (
   model: string,
   promptTokens: number | undefined,
@@ -731,6 +772,7 @@ const generateWithGemini = async (
             contents: [{ role: "user", parts: [{ text: promptBody }] }],
             generationConfig: {
               responseMimeType: "application/json",
+              ...(jsonSchema ? { responseJsonSchema: buildProviderCompatibleSchema(jsonSchema.schema, "gemini") } : {}),
               maxOutputTokens: maxOutputTokens,
               temperature: strictParseRetry || jsonSchema ? 0 : 0.2,
             },
@@ -1194,6 +1236,7 @@ const generateWithAnthropic = async (
   model: string,
   timeoutMs: number,
   maxOutputTokens: number,
+  jsonSchema?: StructuredOutputJsonSchema,
 ): Promise<ProviderGenerationResult> => {
   const apiKey = readEnv("ANTHROPIC_API_KEY");
   if (!apiKey) {
@@ -1212,6 +1255,7 @@ const generateWithAnthropic = async (
   const requestStartedAt = Date.now();
   let strictParseRetry = false;
   let ultraCompactParseRetry = false;
+  const submitToolName = "submit_trip_itinerary";
 
   for (let attempt = 1; attempt <= PROVIDER_PARSE_RETRY_MAX_ATTEMPTS; attempt += 1) {
     const attemptTimeoutMs = resolveAttemptTimeoutMs(requestStartedAt, timeoutMs);
@@ -1256,6 +1300,19 @@ const generateWithAnthropic = async (
                   : prompt,
               },
             ],
+            ...(jsonSchema ? {
+              tools: [{
+                name: submitToolName,
+                description: "Submit the completed TravelFlow itinerary plan.",
+                input_schema: buildProviderCompatibleSchema(jsonSchema.schema, "anthropic"),
+                strict: jsonSchema.strict ?? true,
+              }],
+              tool_choice: {
+                type: "tool",
+                name: submitToolName,
+                disable_parallel_tool_use: true,
+              },
+            } : {}),
           }),
         },
         attemptTimeoutMs,
@@ -1301,7 +1358,33 @@ const generateWithAnthropic = async (
     const stopReason = typeof (payload as Record<string, unknown>)?.stop_reason === "string"
       ? String((payload as Record<string, unknown>).stop_reason)
       : "";
-    const rawText = extractAnthropicText((payload as Record<string, unknown>)?.content);
+    const content = (payload as Record<string, unknown>)?.content;
+    const toolInput = jsonSchema ? extractAnthropicToolInput(content, submitToolName) : null;
+    const rawText = extractAnthropicText(content);
+
+    if (toolInput) {
+      const usageMeta = ((payload as Record<string, unknown>)?.usage || {}) as Record<string, unknown>;
+      const promptTokens = Number(usageMeta.input_tokens);
+      const completionTokens = Number(usageMeta.output_tokens);
+      return {
+        ok: true,
+        value: {
+          data: toolInput,
+          meta: {
+            provider: "anthropic",
+            model,
+            providerModel,
+            usage: {
+              promptTokens: Number.isFinite(promptTokens) ? promptTokens : undefined,
+              completionTokens: Number.isFinite(completionTokens) ? completionTokens : undefined,
+              totalTokens: Number.isFinite(promptTokens) && Number.isFinite(completionTokens)
+                ? promptTokens + completionTokens
+                : undefined,
+            },
+          },
+        },
+      };
+    }
 
     let parsed: Record<string, unknown>;
     try {
@@ -1619,7 +1702,7 @@ export const generateProviderItinerary = async (
     return await generateWithOpenAi(options.prompt, model, options.timeoutMs, maxOutputTokens, options.jsonSchema);
   }
   if (provider === "anthropic") {
-    return await generateWithAnthropic(options.prompt, model, options.timeoutMs, maxOutputTokens);
+    return await generateWithAnthropic(options.prompt, model, options.timeoutMs, maxOutputTokens, options.jsonSchema);
   }
   return await generateWithOpenRouter(
     options.prompt,

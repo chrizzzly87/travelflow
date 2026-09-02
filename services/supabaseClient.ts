@@ -20,15 +20,19 @@ const toValidHttpUrl = (value: string): string | null => {
     }
 };
 
-const rawSupabaseUrl = normalizeEnvValue(import.meta.env.VITE_SUPABASE_URL);
+const runtimeEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
+    ?? (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
+    ?? {};
+
+const rawSupabaseUrl = normalizeEnvValue(runtimeEnv.VITE_SUPABASE_URL);
 const supabaseUrl = toValidHttpUrl(rawSupabaseUrl);
-const supabaseAnonKey = normalizeEnvValue(import.meta.env.VITE_SUPABASE_ANON_KEY);
+const supabaseAnonKey = normalizeEnvValue(runtimeEnv.VITE_SUPABASE_ANON_KEY);
 const hasSupabaseAnonKey = !isUnsetEnvValue(supabaseAnonKey);
 const supabaseAuthStorage = createSupabaseAuthStorageAdapter();
 
 export const isSupabaseEnabled = Boolean(supabaseUrl && hasSupabaseAnonKey);
 
-if (rawSupabaseUrl && !supabaseUrl && import.meta.env.DEV) {
+if (rawSupabaseUrl && !supabaseUrl && runtimeEnv.DEV) {
     console.warn('Ignoring invalid VITE_SUPABASE_URL. Database-backed features are disabled.');
 }
 

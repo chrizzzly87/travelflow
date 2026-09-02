@@ -53,6 +53,7 @@ import {
 import { getEstimatedTripNightsFromTotalDays, getExactTripDateSpan } from '../shared/tripSpan';
 import {
     getDestinationOptionByName,
+    getDestinationCountryFocusLabel,
     getDestinationPromptLabel,
     getRollingRecommendationMonths,
     getDestinationSeasonCountryName,
@@ -530,6 +531,7 @@ const buildCreateTripV3InitialState = (
 
 const buildPreviewTrip = (params: {
     destination: string;
+    focusLocation?: string;
     startDate: string;
     endDate: string;
     totalNights: number;
@@ -556,7 +558,7 @@ const buildPreviewTrip = (params: {
             duration,
             color: 'bg-slate-100 border-slate-200 text-slate-400',
             description: params.stopDescription,
-            location: params.destination || params.locationFallback,
+            location: params.focusLocation || params.destination || params.locationFallback,
             loading: true,
         };
         offset += duration;
@@ -693,8 +695,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationError, setGenerationError] = useState<string | null>(null);
     const [previewTrip, setPreviewTrip] = useState<ITrip | null>(null);
-    const [generationSummary, setGenerationSummary] = useState<{ destination: string; startDate: string; endDate: string }>({
+    const [generationSummary, setGenerationSummary] = useState<{ destination: string; mapFocus: string; startDate: string; endDate: string }>({
         destination: '',
+        mapFocus: '',
         startDate: defaultDates.startDate,
         endDate: defaultDates.endDate,
     });
@@ -1287,6 +1290,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         await loadPublicAiRuntimeSettings();
         const defaultModel = getDefaultCreateTripModel();
         const destinationLabel = orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination)).join(', ') || t('wizard.flowLabel');
+        const mapFocus = getDestinationCountryFocusLabel(orderedDestinations[0] || destinationLabel);
 
         const wizardOptions: WizardGenerateOptions = {
             countries: orderedDestinations.map((country) => getDestinationPromptLabel(country)),
@@ -1339,6 +1343,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             startDate,
             endDate,
             payload: {
+                initialMapCountryFocus: mapFocus,
                 options: wizardOptions,
                 wizardBranch,
             },
@@ -1357,6 +1362,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                 const requestId = createTripGenerationRequestId();
                 const optimisticTrip = buildPreviewTrip({
                     destination: destinationLabel,
+                    focusLocation: mapFocus,
                     startDate,
                     endDate,
                     totalNights: Math.max(1, totalNights),
@@ -1424,6 +1430,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
         setPreviewTrip(buildPreviewTrip({
             destination: destinationLabel,
+            focusLocation: mapFocus,
             startDate,
             endDate,
             totalNights: Math.max(1, totalNights),
@@ -1433,7 +1440,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             locationFallback: t('wizard.loading.locationFallback'),
             titleFallback: t('wizard.loading.titleFallback'),
         }));
-        setGenerationSummary({ destination: destinationLabel, startDate, endDate });
+        setGenerationSummary({ destination: destinationLabel, mapFocus, startDate, endDate });
         setGenerationError(null);
         setIsGenerating(true);
 
@@ -1452,6 +1459,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                 inputSnapshot,
                 buildOptimisticTrip: (tripId) => buildPreviewTrip({
                     destination: destinationLabel,
+                    focusLocation: mapFocus,
                     startDate,
                     endDate,
                     totalNights: Math.max(1, totalNights),
@@ -1504,7 +1512,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     onOpenSettings={NOOP}
                     onViewSettingsChange={NOOP}
                     canShare={false}
-                    initialMapFocusQuery={generationSummary.destination}
+                    initialMapFocusQuery={generationSummary.mapFocus || generationSummary.destination}
                 />
                 <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
                     <div className="w-full max-w-xl rounded-3xl border border-accent-100 bg-white/95 px-5 py-4 shadow-xl backdrop-blur-sm">

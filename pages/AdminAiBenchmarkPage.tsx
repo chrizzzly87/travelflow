@@ -900,6 +900,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             costCount: number;
             ratingSum: number;
             ratingCount: number;
+            totalTokensSum: number;
+            totalTokensCount: number;
+            repairAttemptedRuns: number;
         }>();
 
         runs.forEach((run) => {
@@ -916,6 +919,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     costCount: 0,
                     ratingSum: 0,
                     ratingCount: 0,
+                    totalTokensSum: 0,
+                    totalTokensCount: 0,
+                    repairAttemptedRuns: 0,
                 });
             }
 
@@ -938,6 +944,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 entry.ratingSum += SATISFACTION_SCORE[run.satisfaction_rating];
                 entry.ratingCount += 1;
             }
+
+            const totalTokens = Number(run.usage?.totalTokens ?? run.usage?.total_tokens);
+            if (Number.isFinite(totalTokens) && totalTokens >= 0) {
+                entry.totalTokensSum += totalTokens;
+                entry.totalTokensCount += 1;
+            }
+
+            if (run.validation_checks?.semanticRepairAttempted === true) {
+                entry.repairAttemptedRuns += 1;
+            }
         });
 
         return Array.from(bucket.values())
@@ -945,11 +961,17 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 const averageLatencyMs = entry.latencyCount > 0 ? Math.round(entry.latencySum / entry.latencyCount) : null;
                 const averageCostUsd = entry.costCount > 0 ? Number((entry.costSum / entry.costCount).toFixed(6)) : null;
                 const averageRatingScore = entry.ratingCount > 0 ? Number((entry.ratingSum / entry.ratingCount).toFixed(2)) : null;
+                const averageTotalTokens = entry.totalTokensCount > 0 ? Math.round(entry.totalTokensSum / entry.totalTokensCount) : null;
+                const successRate = entry.totalRuns > 0 ? entry.completedRuns / entry.totalRuns : 0;
+                const repairRate = entry.totalRuns > 0 ? entry.repairAttemptedRuns / entry.totalRuns : 0;
                 return {
                     ...entry,
                     averageLatencyMs,
                     averageCostUsd,
                     averageRatingScore,
+                    averageTotalTokens,
+                    successRate,
+                    repairRate,
                 };
             })
             .sort((left, right) => {
@@ -2951,6 +2973,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         <th className="px-2 py-1.5">Model</th>
                                         <th className="px-2 py-1.5">Avg time</th>
                                         <th className="px-2 py-1.5">Avg cost</th>
+                                        <th className="px-2 py-1.5">Avg tokens</th>
+                                        <th className="px-2 py-1.5">Success</th>
+                                        <th className="px-2 py-1.5">Repair</th>
                                         <th className="px-2 py-1.5">Avg satisfaction</th>
                                         <th className="px-2 py-1.5">Votes</th>
                                         <th className="px-2 py-1.5">Runs</th>
@@ -2959,7 +2984,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 <tbody>
                                     {modelDashboardRows.length === 0 && (
                                         <tr>
-                                            <td colSpan={6} className="px-2 py-4 text-center text-slate-500">
+                                            <td colSpan={9} className="px-2 py-4 text-center text-slate-500">
                                                 No model metrics yet.
                                             </td>
                                         </tr>
@@ -2980,6 +3005,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 </td>
                                                 <td className="px-2 py-1.5 text-slate-700">{formatDuration(row.averageLatencyMs)}</td>
                                                 <td className="px-2 py-1.5 text-slate-700">{formatUsd(row.averageCostUsd)}</td>
+                                                <td className="px-2 py-1.5 tabular-nums text-slate-700">{row.averageTotalTokens?.toLocaleString() ?? '—'}</td>
+                                                <td className="px-2 py-1.5 tabular-nums text-slate-700">{Math.round(row.successRate * 100)}%</td>
+                                                <td className="px-2 py-1.5 tabular-nums text-slate-700">{Math.round(row.repairRate * 100)}%</td>
                                                 <td className={`px-2 py-1.5 font-semibold ${satisfactionClass}`}>
                                                     {row.averageRatingScore === null ? 'No votes' : `${row.averageRatingScore.toFixed(2)} / 3`}
                                                 </td>

@@ -15,7 +15,10 @@ import {
   validateModelData,
   type BenchmarkRunCommentTelemetryGroup,
 } from "../../shared/aiBenchmarkValidation.ts";
-import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
+import {
+  TRIP_ITINERARY_COMPACT_STRUCTURED_OUTPUT_SCHEMA,
+  TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
+} from "../../shared/aiTripItinerarySchema.ts";
 import { isAiReasoningEffort, type AiReasoningEffort } from "../../shared/aiReasoning.ts";
 import {
   buildAiTelemetrySeries,
@@ -28,7 +31,8 @@ import {
   type AiTelemetryRow,
 } from "../edge-lib/ai-telemetry-aggregation.ts";
 import { persistAiGenerationTelemetry } from "../edge-lib/ai-generation-telemetry.ts";
-import { generateProviderItinerary, resolveTimeoutMs } from "../edge-lib/ai-provider-runtime.ts";
+import { resolveTimeoutMs } from "../edge-lib/ai-provider-runtime.ts";
+import { generatePreparedTripItinerary } from "../edge-lib/ai-trip-generation.ts";
 import {
   BENCHMARK_DEFAULT_MODEL_IDS,
   createSystemBenchmarkPresets,
@@ -1041,15 +1045,29 @@ const runGeneration = async (
     }
   };
 
+  const scenarioExecution = scenario.input?.execution;
+  const compactOutput = Boolean(
+    scenarioExecution
+    && typeof scenarioExecution === "object"
+    && !Array.isArray(scenarioExecution)
+    && (scenarioExecution as Record<string, unknown>).compactOutput === true
+  );
+
   try {
-    const result = await generateProviderItinerary({
+    const result = await generatePreparedTripItinerary({
       prompt: scenario.prompt,
       provider: run.provider,
       model: run.model,
       timeoutMs: providerTimeoutMs,
       maxOutputTokens: resolveBenchmarkMaxOutputTokens(run.provider, run.model, providerTimeoutMs),
-      jsonSchema: TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
+      jsonSchema: compactOutput
+        ? TRIP_ITINERARY_COMPACT_STRUCTURED_OUTPUT_SCHEMA
+        : TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
       reasoningEffort,
+      preparation: {
+        roundTrip: scenario.roundTrip,
+        minimumRecommendations: compactOutput ? 1 : 3,
+      },
     });
     const latencyMs = Date.now() - startedMs;
 
@@ -1058,19 +1076,28 @@ const runGeneration = async (
     }
 
     if (!result.ok) {
-      const failure = result;
-      const details = JSON.stringify(failure.value);
+      const isValidationFailure = result.kind === "validation";
+      const details = isValidationFailure
+        ? result.errors.join("; ")
+        : JSON.stringify(result.failure);
       const formattedDetails = formatErrorDetailsForMessage(details, { maxLength: 5000 });
+      const failureCode = isValidationFailure ? "BENCHMARK_DRAFT_VALIDATION_FAILED" : result.failure.code;
+      const failureMessage = isValidationFailure ? "Model draft failed semantic validation" : result.failure.error;
+      const failureUsage = isValidationFailure ? result.meta.usage : result.usage;
       await persistRunTelemetry({
         status: "failed",
         latencyMs,
-        httpStatus: failure.status,
-        providerModel: failure.value.providerModel,
-        errorCode: failure.value.code,
-        errorMessage: failure.value.error,
+        httpStatus: result.status,
+        provider: isValidationFailure ? result.meta.provider : run.provider,
+        model: isValidationFailure ? result.meta.model : run.model,
+        providerModel: isValidationFailure ? result.meta.providerModel : result.failure.providerModel,
+        usage: failureUsage,
+        errorCode: failureCode,
+        errorMessage: failureMessage,
         metadata: {
-          reason: "provider_request_failed",
+          reason: isValidationFailure ? "draft_validation_failed" : "provider_request_failed",
           timeoutMs: providerTimeoutMs,
+          semanticRepair: result.repair,
         },
       });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
@@ -1080,41 +1107,32 @@ const runGeneration = async (
         status: "failed",
         finished_at: new Date().toISOString(),
         latency_ms: latencyMs,
-        error_message: `Generation failed (${failure.status}): ${formattedDetails}`,
+        schema_valid: isValidationFailure ? false : null,
+        validation_checks: isValidationFailure ? {
+          draftFirstPassValid: false,
+          semanticRepairAttempted: result.repair.attempted,
+          semanticRepairSucceeded: result.repair.succeeded,
+          semanticRepairAttempts: result.attempts,
+        } : null,
+        validation_errors: isValidationFailure ? result.errors : null,
+        usage: failureUsage || null,
+        raw_output: isValidationFailure ? result.draft || null : null,
+        error_message: `Generation failed (${result.status}): ${formattedDetails}`,
       });
       return;
     }
 
-    const modelData = result.value.data;
+    const draftData = result.value.draft;
     const usage: ProviderUsage = result.value.meta?.usage || {};
-
-    if (!modelData || typeof modelData !== "object") {
-      await persistRunTelemetry({
-        status: "failed",
-        latencyMs,
-        httpStatus: 200,
-        provider: result.value.meta.provider,
-        model: result.value.meta.model,
-        providerModel: result.value.meta.providerModel,
-        usage,
-        errorCode: "BENCHMARK_OUTPUT_INVALID",
-        errorMessage: "Provider response did not include a valid data object",
-        metadata: {
-          reason: "invalid_data_object",
-          timeoutMs: providerTimeoutMs,
-        },
-      });
-      if (await hasRunBeenCancelled(config, authToken, run.id)) {
-        return;
-      }
-      await updateRunRow(config, authToken, run.id, {
-        status: "failed",
-        finished_at: new Date().toISOString(),
-        latency_ms: latencyMs,
-        error_message: "Provider response did not include a valid data object",
-      });
-      return;
-    }
+    const prepared = result.value.data;
+    const modelData = prepared.data;
+    const repairChecks = {
+      draftFirstPassValid: !result.value.repair.attempted,
+      semanticRepairAttempted: result.value.repair.attempted,
+      semanticRepairSucceeded: result.value.repair.succeeded,
+      semanticRepairAttempts: result.value.attempts,
+      semanticRepairInitialErrors: result.value.repair.initialErrors,
+    };
 
     const validation = validateModelData(modelData as Record<string, unknown>, {
       roundTrip: scenario.roundTrip,
@@ -1134,6 +1152,8 @@ const runGeneration = async (
           reason: "validation_failed",
           validationErrorCount: validation.errors.length,
           timeoutMs: providerTimeoutMs,
+          tripCompiler: prepared.metrics,
+          semanticRepair: result.value.repair,
         },
       });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
@@ -1144,9 +1164,9 @@ const runGeneration = async (
         finished_at: new Date().toISOString(),
         latency_ms: latencyMs,
         schema_valid: false,
-        validation_checks: validation.checks,
+        validation_checks: { ...validation.checks, ...repairChecks },
         validation_errors: validation.errors,
-        raw_output: modelData,
+        raw_output: draftData,
         error_message: `Model output failed validation: ${validation.errors.join("; ")}`,
       });
       return;
@@ -1209,11 +1229,11 @@ const runGeneration = async (
       finished_at: finishedAt,
       latency_ms: latencyMs,
       schema_valid: validation.schemaValid,
-      validation_checks: validation.checks,
+      validation_checks: { ...validation.checks, ...repairChecks },
       validation_errors: validation.errors,
       usage,
       cost_usd: estimatedCostUsd,
-      raw_output: modelData,
+      raw_output: draftData,
       normalized_trip: trip,
       trip_id: persistedTrip.tripId,
       trip_ai_meta: (trip.aiMeta as Record<string, unknown>) || null,
@@ -1232,6 +1252,8 @@ const runGeneration = async (
       metadata: {
         reason: "completed",
         timeoutMs: providerTimeoutMs,
+        tripCompiler: prepared.metrics,
+        semanticRepair: result.value.repair,
       },
     });
   } catch (error) {

@@ -101,6 +101,7 @@ import { getEstimatedTripNightsFromTotalDays, getExactTripDateSpan } from '../sh
 import {
     DESTINATION_OPTIONS,
     getDestinationMetaLabel,
+    getDestinationCountryFocusLabel,
     getDestinationOptionByName,
     getDestinationPromptLabel,
     getRollingRecommendationMonths,
@@ -1744,6 +1745,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         const destinationPromptLabels = orderedDestinations.map((destination) => getDestinationPromptLabel(destination));
         const localizedDestinationLabels = orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination));
         const destinationLabel = formatDestinationList(localizedDestinationLabels);
+        const initialCountryFocus = getDestinationCountryFocusLabel(orderedDestinations[0] || destinationLabel);
         const destinationPrompt = destinationPromptLabels.join(', ');
         const travelerDetails = {
             ...(travelerType === 'solo'
@@ -1809,6 +1811,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             endDate,
             payload: {
                 destinationPrompt,
+                initialMapCountryFocus: initialCountryFocus,
                 options: classicGenerateOptions,
             },
         });
