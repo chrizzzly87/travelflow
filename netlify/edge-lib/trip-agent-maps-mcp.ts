@@ -1,6 +1,7 @@
 import { createMCPClient } from '@ai-sdk/mcp';
 import { ToolLoopAgent, isStepCount, type ToolSet } from 'ai';
 import { readEnv } from './ai-provider-runtime.ts';
+import { resolveTripAgentModel } from './trip-agent-model.ts';
 import type { AgentRuntimeDefinition } from './trip-agent-store.ts';
 
 const GOOGLE_MAPS_MCP_URL = 'https://mapstools.googleapis.com/mcp';
@@ -40,21 +41,26 @@ export const runGroundedMapsSpecialist = async (input: {
     if (Object.keys(allowedTools).length === 0) {
       return { status: 'unavailable', summary: 'The Maps provider did not expose an approved capability.' };
     }
+    // Same resolution as the orchestrator: a bare model id only works when the
+    // AI Gateway is configured, which left the specialists unusable elsewhere.
+    const resolved = await resolveTripAgentModel(input.definition.model, input.definition.fallbackModel);
     const specialist = new ToolLoopAgent({
       id: input.definition.agentKey,
-      model: input.definition.model,
+      model: resolved.model,
       instructions: input.definition.instructions,
       tools: allowedTools,
       reasoning: input.definition.reasoningEffort,
-      maxOutputTokens: 2_000,
+      maxOutputTokens: 4_000,
       stopWhen: isStepCount(6),
-      providerOptions: {
-        gateway: {
-          models: [input.definition.model, input.definition.fallbackModel],
-          zeroDataRetention: true,
-          disallowPromptTraining: true,
+      ...(resolved.usingGateway ? {
+        providerOptions: {
+          gateway: {
+            models: [input.definition.model, input.definition.fallbackModel],
+            zeroDataRetention: true,
+            disallowPromptTraining: true,
+          },
         },
-      },
+      } : {}),
     });
     const result = await specialist.generate({
       prompt: input.task.slice(0, 8_000),

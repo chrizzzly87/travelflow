@@ -35,6 +35,7 @@ summary: "Trip Agent brings shared, context-aware planning into each trip while 
 - [ ] [Internal] 🧭 Added allowlisted specialist boundaries for grounded stay and route research, with an explicit unavailable state when Maps grounding is not configured.
 - [ ] [Internal] 🧪 Added typed-operation and history-adoption regression coverage plus deterministic server-side validation paths.
 - [ ] [Internal] 🪵 Accepted empty successful PostgREST write bodies, added quota refunds on pre-stream failures, and added bounded request/run failure logging without prompts or credentials.
+- [ ] [Internal] 🗺️ Resolved the stay and route specialists through the shared model resolution so they can run without the AI Gateway, and documented the runtime in docs/trip-agent/ARCHITECTURE.md.
 - [ ] [Internal] 🔌 Added a flat wire schema for trip-change operations plus a typed converter, because function-calling models could not emit the discriminated union; added a read-only dry-run script that replays one turn against a real trip.
 - [ ] [Internal] 🎚️ Routed the planner through the app-wide default model with an OpenRouter reasoning-effort control and a larger output budget; replaced ICU plural strings, which this app never registered.
 - [ ] [Internal] 🎛️ Grouped chat activity, questionnaire-style proposal review, relative timestamps and recency-grouped thread history; dropped the math/mermaid/shiki markdown plugins and made the shared button forward refs for preact/compat popovers.

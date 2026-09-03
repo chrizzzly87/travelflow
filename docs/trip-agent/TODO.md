@@ -2,6 +2,8 @@
 
 This is the repository mirror of the GitHub epic checklist. The GitHub epic is authoritative; update both when a delivery slice changes state.
 
+How the chat runs, which functions the agents may call, and which trip changes they can propose: [ARCHITECTURE.md](./ARCHITECTURE.md).
+
 ## Testable PoC
 
 - [x] Add versioned context references and allowlisted trip-change operations.
@@ -40,6 +42,7 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 - [x] Move attached context chips into the message box with kind icons.
 - [x] Verify one real trip end to end with `pnpm trip-agent:dry-run` (Taiwan reorder: 32 operations, 21 items, no no-ops).
 - [ ] Verify the deploy preview end to end with an administrator account (transcript reload, retry, apply, quota refund).
+- [x] Resolve the specialist model the same way as the orchestrator; a bare model id only worked with the AI Gateway.
 - [ ] Normalize specialist result cards for stays and routes (#485).
 
 ## Delivery tracks
