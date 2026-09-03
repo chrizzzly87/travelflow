@@ -21,6 +21,10 @@ summary: "Trip Agent brings shared, context-aware planning into each trip while 
 - [x] [Improved] ♻️ Failed requests now appear as a card inside the chat with a named reason and a one-click retry of the same message.
 - [x] [Improved] 🧵 Thinking and tool steps now collapse into one line per stretch of work, with chips you can open for detail, instead of a card per event.
 - [x] [Improved] 👀 Suggested trip changes are now picked first and previewed as a before-and-after result before anything is saved.
+- [x] [Improved] 🗓️ Proposed changes now preview directly in your calendar, timeline and map before you apply them.
+- [x] [Improved] 🧷 Related shifts are grouped into the change that caused them, so shortening a stop is one decision instead of ten.
+- [x] [Improved] ↩️ An applied set collapses to a single line with a Revert button.
+- [x] [Improved] ✍️ Mentions stay inside your message, highlighted as you type and in the sent bubble; a repeated city name asks which one you mean.
 - [x] [Improved] 🕒 Chat bubbles show a short relative time instead of repeating your name.
 - [x] [Improved] 🗂️ Chats are named after your first question and the history menu groups them by today, the last 7 days and older.
 - [x] [Fixed] 🧩 Fixed the proposal step failing outright when a suggested change was shaped slightly wrong; it is now corrected and retried automatically.

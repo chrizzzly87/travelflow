@@ -12,6 +12,7 @@ export type TripAgentMessageBlock =
     | { kind: 'text'; key: string; text: string }
     | { kind: 'activity'; key: string; reasoningText: string; steps: TripAgentActivityStep[]; isStreaming: boolean }
     | { kind: 'proposal'; key: string; changeSet: TripAgentChangeSetV1 }
+    | { kind: 'proposal-pending'; key: string }
     | { kind: 'source'; key: string; url: string; title: string };
 
 export const resolveToolName = (part: ToolPart): string => (
@@ -116,6 +117,12 @@ export const buildTripAgentMessageBlocks = (
                 blocks.push({ kind: 'proposal', key, changeSet: proposal });
                 return;
             }
+            if (resolveToolName(part) === 'create_trip_proposal'
+                && (part.state === 'input-streaming' || part.state === 'input-available')) {
+                closeActivity();
+                blocks.push({ kind: 'proposal-pending', key });
+                return;
+            }
             const group = openActivity(key);
             group.steps.push({
                 key,
@@ -139,6 +146,13 @@ export const buildTripAgentMessageBlocks = (
         }
     });
     closeActivity();
+
+    const isProposal = (block: TripAgentMessageBlock): boolean => (
+        block.kind === 'proposal' || block.kind === 'proposal-pending'
+    );
+    const ordered = [...blocks.filter((block) => !isProposal(block)), ...blocks.filter(isProposal)];
+    blocks.length = 0;
+    blocks.push(...ordered);
 
     if (isStreaming) {
         const last = blocks.at(-1);

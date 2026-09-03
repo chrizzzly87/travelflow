@@ -2,19 +2,16 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import {
     AlertCircle,
-    Archive,
     AtSign,
     BedDouble,
     Bot,
     Check,
     CircleDot,
-    History,
     Lock,
     MapPin,
     MessageCirclePlus,
     Route,
     RotateCcw,
-    Slash,
     Sparkles,
     X,
 } from 'lucide-react';
@@ -29,7 +26,6 @@ import {
 } from '../../shared/tripAgent';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
-    archiveTripAgentThread,
     buildTripAgentChatRequest,
     createTripAgentThread,
     loadTripAgentBootstrap,
@@ -49,9 +45,7 @@ import {
     PromptInput,
     PromptInputBody,
     PromptInputFooter,
-    PromptInputHeader,
     PromptInputSubmit,
-    PromptInputTextarea,
 } from '../ai-elements/prompt-input';
 import { Suggestion, Suggestions } from '../ai-elements/suggestion';
 import { Source } from '../ai-elements/sources';
@@ -60,17 +54,21 @@ import { TripAgentCapabilities } from './TripAgentCapabilities';
 import { TripAgentMentionMenu, type TripAgentMentionItem } from './TripAgentMentionMenu';
 import { buildTripAgentMessageBlocks } from './tripAgentMessageBlocks';
 import { TripAgentProposalCard } from './TripAgentProposalCard';
-import { formatTripAgentTimestamp, groupTripAgentThreads } from './tripAgentTime';
+import { TripAgentProposalSkeleton } from './TripAgentProposalSkeleton';
+import { TripAgentPromptField } from './TripAgentPromptField';
+import { ambiguousMentionLabels, insertMention, mentionedContextRefs } from './tripAgentMentions';
+import {
+    Questionnaire,
+    QuestionnaireChoice,
+    QuestionnaireChoiceDescription,
+    QuestionnaireChoices,
+    QuestionnaireItem,
+    QuestionnaireTitle,
+} from '../ui/questionnaire';
+import { formatTripAgentTimestamp } from './tripAgentTime';
 import { useMinuteTick } from './useMinuteTick';
 import { Button } from '../ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
+
 
 interface TripAgentPanelProps {
     trip: ITrip;
@@ -78,13 +76,23 @@ interface TripAgentPanelProps {
     isOpen: boolean;
     onClose: () => void;
     onAdoptCommittedTripVersion: (input: { trip: ITrip; versionId: string; label: string }) => void;
+    /** Shows a proposed trip in the planner while the reviewer previews it. */
+    onPreviewTrip?: (trip: ITrip | null) => void;
+    /** Steps the trip back one entry after an applied change set. */
+    onRevertLastChange?: () => void;
 }
 
 const contextRefKey = (contextRef: TripAgentContextRef): string => (
     `${contextRef.kind}:${contextRef.id}:${contextRef.cityId || ''}`
 );
 
-const CONTEXT_KIND_ORDER: TripAgentContextRef['kind'][] = ['trip', 'city', 'stay', 'activity', 'travel'];
+// The chat only exists inside one trip, so the trip itself is always implied.
+const CONTEXT_KIND_ORDER: TripAgentContextRef['kind'][] = ['city', 'stay', 'activity', 'travel'];
+
+/** Upright slash, where lucide's Slash icon reads as a 45° stroke. */
+const SlashGlyph: React.FC<{ className?: string }> = ({ className = '' }) => (
+    <span aria-hidden="true" className={`font-mono text-[15px] font-semibold leading-none ${className}`}>/</span>
+);
 
 const ContextKindIcon: React.FC<{ kind: TripAgentContextRef['kind']; className?: string }> = ({ kind, className = 'size-3.5' }) => {
     if (kind === 'trip') return <Sparkles className={className} />;
@@ -92,6 +100,28 @@ const ContextKindIcon: React.FC<{ kind: TripAgentContextRef['kind']; className?:
     if (kind === 'stay') return <BedDouble className={className} />;
     if (kind === 'travel') return <Route className={className} />;
     return <CircleDot className={className} />;
+};
+
+const MENTION_PATTERN = /@[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu;
+
+/** Keeps @mentions readable in a sent message, the way they looked while typing. */
+const MentionText: React.FC<{ text: string }> = ({ text }) => {
+    const pieces: React.ReactNode[] = [];
+    let cursor = 0;
+    let match = MENTION_PATTERN.exec(text);
+    while (match) {
+        if (match.index > cursor) pieces.push(text.slice(cursor, match.index));
+        pieces.push(
+            <mark key={`${match.index}-${match[0]}`} className="rounded-[5px] bg-accent-100 px-0.5 py-px text-accent-900">
+                {match[0]}
+            </mark>,
+        );
+        cursor = match.index + match[0].length;
+        match = MENTION_PATTERN.exec(text);
+    }
+    MENTION_PATTERN.lastIndex = 0;
+    pieces.push(text.slice(cursor));
+    return <span className="whitespace-pre-wrap break-words">{pieces}</span>;
 };
 
 const ChatMessage: React.FC<{
@@ -104,7 +134,9 @@ const ChatMessage: React.FC<{
     now: number;
     onRetry?: () => void;
     onApplied: (trip: ITrip, versionId: string, label: string) => void;
-}> = ({ trip, message, isStreaming, isOwnMessage, hasFailed, locale, now, onRetry, onApplied }) => {
+    onPreviewTrip?: (trip: ITrip | null) => void;
+    onRevertLastChange?: () => void;
+}> = ({ trip, message, isStreaming, isOwnMessage, hasFailed, locale, now, onRetry, onApplied, onPreviewTrip, onRevertLastChange }) => {
     const { t } = useTranslation('common');
     const blocks = useMemo(() => buildTripAgentMessageBlocks(message, isStreaming), [message, isStreaming]);
     const timestamp = formatTripAgentTimestamp(message.metadata?.createdAt as string | undefined, locale, now);
@@ -128,7 +160,9 @@ const ChatMessage: React.FC<{
             <MessageContent className={hasFailed ? 'group-[.is-user]:border group-[.is-user]:border-rose-200 group-[.is-user]:bg-rose-50' : undefined}>
                 {blocks.map((block) => {
                     if (block.kind === 'text') {
-                        return <MessageResponse key={block.key} isAnimating={isStreaming}>{block.text}</MessageResponse>;
+                        return message.role === 'user'
+                            ? <MentionText key={block.key} text={block.text} />
+                            : <MessageResponse key={block.key} isAnimating={isStreaming}>{block.text}</MessageResponse>;
                     }
                     if (block.kind === 'activity') {
                         return (
@@ -141,7 +175,19 @@ const ChatMessage: React.FC<{
                         );
                     }
                     if (block.kind === 'proposal') {
-                        return <TripAgentProposalCard key={block.key} trip={trip} changeSet={block.changeSet} onApplied={onApplied} />;
+                        return (
+                            <TripAgentProposalCard
+                                key={block.key}
+                                trip={trip}
+                                changeSet={block.changeSet}
+                                onApplied={onApplied}
+                                onPreviewTrip={onPreviewTrip}
+                                onRevertLastChange={onRevertLastChange}
+                            />
+                        );
+                    }
+                    if (block.kind === 'proposal-pending') {
+                        return <TripAgentProposalSkeleton key={block.key} />;
                     }
                     return <Source key={block.key} href={block.url} title={block.title} />;
                 })}
@@ -177,12 +223,28 @@ const TripAgentChatSession: React.FC<{
     actorId: string;
     onQuotaMayHaveChanged: () => void;
     onAdoptCommittedTripVersion: TripAgentPanelProps['onAdoptCommittedTripVersion'];
-}> = ({ trip, thread, initialMessages, contextRefs, quota, actorId, onQuotaMayHaveChanged, onAdoptCommittedTripVersion }) => {
+    onPreviewTrip?: TripAgentPanelProps['onPreviewTrip'];
+    onRevertLastChange?: TripAgentPanelProps['onRevertLastChange'];
+}> = ({
+    trip,
+    thread,
+    initialMessages,
+    contextRefs,
+    quota,
+    actorId,
+    onQuotaMayHaveChanged,
+    onAdoptCommittedTripVersion,
+    onPreviewTrip,
+    onRevertLastChange,
+}) => {
     const { t, i18n } = useTranslation('common');
     const now = useMinuteTick();
     const [draftText, setDraftText] = useState('');
     const [commandMenu, setCommandMenu] = useState<'context' | 'commands' | null>(null);
     const [menuQuery, setMenuQuery] = useState('');
+    const [hasSeededSelection, setHasSeededSelection] = useState(false);
+    const [pendingChoice, setPendingChoice] = useState<{ label: string; options: TripAgentContextRef[] } | null>(null);
+    const [chosenByLabel, setChosenByLabel] = useState<Record<string, TripAgentContextRef>>({});
     const [menuIndex, setMenuIndex] = useState(0);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const focusPrompt = useCallback(() => {
@@ -192,20 +254,16 @@ const TripAgentChatSession: React.FC<{
                 : document.querySelector<HTMLTextAreaElement>('textarea[name="message"]'));
         element?.focus();
     }, []);
-    const [manualContextRefs, setManualContextRefs] = useState<TripAgentContextRef[]>([]);
-    const [removedContextKeys, setRemovedContextKeys] = useState<Set<string>>(() => new Set());
-    const selectableContextRefs = useMemo(() => buildTripAgentSelectableContextRefs(trip), [trip]);
-    const activeContextRefs = useMemo(
-        () => {
-            const unique = new Map<string, TripAgentContextRef>();
-            [...contextRefs, ...manualContextRefs].forEach((contextRef) => {
-                const key = contextRefKey(contextRef);
-                if (!removedContextKeys.has(key)) unique.set(key, contextRef);
-            });
-            return Array.from(unique.values()).slice(0, 12);
-        },
-        [contextRefs, manualContextRefs, removedContextKeys],
+    const selectableContextRefs = useMemo(
+        () => buildTripAgentSelectableContextRefs(trip).filter((contextRef) => contextRef.kind !== 'trip'),
+        [trip],
     );
+    // What the message carries is exactly what the draft mentions.
+    const activeContextRefs = useMemo(
+        () => mentionedContextRefs(draftText, selectableContextRefs, chosenByLabel).slice(0, 12),
+        [chosenByLabel, draftText, selectableContextRefs],
+    );
+    const ambiguousLabels = useMemo(() => ambiguousMentionLabels(selectableContextRefs), [selectableContextRefs]);
     const transport = useMemo(() => new DefaultChatTransport<TripAgentMessage>({
         api: '/api/trip-agent',
         fetch: tripAgentFetch,
@@ -237,6 +295,12 @@ const TripAgentChatSession: React.FC<{
     const latestUserMessage = [...messages].reverse().find((message) => message.role === 'user');
     const latestUserText = latestUserMessage?.parts.find((part) => part.type === 'text')?.text || '';
     const errorInfo = useMemo(() => (error ? readTripAgentError(error) : null), [error]);
+
+    if (!hasSeededSelection && draftText === '' && contextRefs.length > 0) {
+        const seed = contextRefs.find((contextRef) => contextRef.kind !== 'trip');
+        if (seed) setDraftText(`@${seed.label} `);
+        setHasSeededSelection(true);
+    }
 
     const submitText = useCallback(async (text: string) => {
         const trimmed = text.trim();
@@ -287,27 +351,19 @@ const TripAgentChatSession: React.FC<{
     };
 
     const selectContext = (contextRef: TripAgentContextRef) => {
-        const key = contextRefKey(contextRef);
-        setRemovedContextKeys((current) => {
-            const next = new Set(current);
-            next.delete(key);
-            return next;
-        });
-        setManualContextRefs((current) => (
-            current.some((candidate) => contextRefKey(candidate) === key) ? current : [...current, contextRef]
-        ));
-        setDraftText((current) => current.replace(/(^|\s)@[^\s]*$/, '$1'));
+        setDraftText((current) => insertMention(current, contextRef.label));
         setCommandMenu(null);
+        const label = contextRef.label.toLowerCase();
+        if (ambiguousLabels.has(label) && !chosenByLabel[label]) {
+            setPendingChoice({
+                label: contextRef.label,
+                options: selectableContextRefs.filter((candidate) => candidate.label.toLowerCase() === label),
+            });
+        }
         trackEvent('trip_agent__context--add', {
             trip_id: trip.id,
             context_kind: contextRef.kind,
         });
-    };
-
-    const removeContext = (contextRef: TripAgentContextRef) => {
-        const key = contextRefKey(contextRef);
-        setRemovedContextKeys((current) => new Set(current).add(key));
-        setManualContextRefs((current) => current.filter((candidate) => contextRefKey(candidate) !== key));
     };
 
     const contextMeta = (contextRef: TripAgentContextRef): string => {
@@ -326,7 +382,7 @@ const TripAgentChatSession: React.FC<{
                     key: `preset:${suggestion}`,
                     group: t('tripAgent.commandMenu'),
                     label: suggestion,
-                    icon: <Slash className="size-4 shrink-0 text-slate-400" />,
+                    icon: <SlashGlyph className="w-4 shrink-0 text-center text-slate-400" />,
                 }));
         }
         if (commandMenu !== 'context') return [];
@@ -409,6 +465,8 @@ const TripAgentChatSession: React.FC<{
                                 ? () => void retryLastMessage()
                                 : undefined}
                             onApplied={(nextTrip, versionId, label) => onAdoptCommittedTripVersion({ trip: nextTrip, versionId, label: `Trip Agent: ${label}` })}
+                            onPreviewTrip={onPreviewTrip}
+                            onRevertLastChange={onRevertLastChange}
                         />
                     ))}
                     {status === 'submitted' && (
@@ -442,6 +500,41 @@ const TripAgentChatSession: React.FC<{
                         ))}
                     </Suggestions>
                 )}
+                {pendingChoice && (
+                    <div className="mb-2 rounded-xl border border-slate-200 bg-white p-3">
+                        <Questionnaire>
+                            <QuestionnaireItem>
+                                <QuestionnaireTitle>
+                                    {t('tripAgent.whichOne', { label: pendingChoice.label })}
+                                </QuestionnaireTitle>
+                                <QuestionnaireChoices
+                                    type="single"
+                                    value={[]}
+                                    onValueChange={(value) => {
+                                        const chosen = pendingChoice.options.find(
+                                            (option) => contextRefKey(option) === value[0],
+                                        );
+                                        if (chosen) {
+                                            setChosenByLabel((current) => ({
+                                                ...current,
+                                                [chosen.label.toLowerCase()]: chosen,
+                                            }));
+                                        }
+                                        setPendingChoice(null);
+                                        focusPrompt();
+                                    }}
+                                >
+                                    {pendingChoice.options.map((option) => (
+                                        <QuestionnaireChoice key={contextRefKey(option)} value={contextRefKey(option)}>
+                                            <span className="text-sm text-slate-900">{option.label}</span>
+                                            <QuestionnaireChoiceDescription>{contextMeta(option)}</QuestionnaireChoiceDescription>
+                                        </QuestionnaireChoice>
+                                    ))}
+                                </QuestionnaireChoices>
+                            </QuestionnaireItem>
+                        </Questionnaire>
+                    </div>
+                )}
                 <div className="relative">
                     {commandMenu && (
                         <>
@@ -465,36 +558,19 @@ const TripAgentChatSession: React.FC<{
                     )}
                     <PromptInput onSubmit={({ text }) => submitText(text)}>
                         <PromptInputBody>
-                            {activeContextRefs.length > 0 && (
-                                <PromptInputHeader aria-label={t('tripAgent.selectedContext')}>
-                                    {activeContextRefs.map((contextRef) => (
-                                        <button
-                                            key={contextRefKey(contextRef)}
-                                            type="button"
-                                            onClick={() => removeContext(contextRef)}
-                                            aria-label={t('tripAgent.removeContext', { label: contextRef.label })}
-                                            title={contextMeta(contextRef)}
-                                            className="inline-flex max-w-full items-center gap-1 rounded-md border border-accent-200 bg-accent-50 px-1.5 py-0.5 text-xs font-medium text-accent-800 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-800"
-                                        >
-                                            <ContextKindIcon kind={contextRef.kind} />
-                                            <span className="truncate">{contextRef.label}</span>
-                                            <X className="size-3 opacity-60" />
-                                        </button>
-                                    ))}
-                                </PromptInputHeader>
-                            )}
-                            <PromptInputTextarea
-                                ref={textareaRef}
-                                name="message"
+                            <TripAgentPromptField
+                                value={draftText}
+                                onValueChange={updateDraft}
+                                onKeyDown={handleMenuKeyDown}
+                                contextRefs={selectableContextRefs}
                                 placeholder={t('tripAgent.placeholder')}
                                 disabled={isQuotaReached}
-                                value={draftText}
-                                onChange={(event) => updateDraft(event.currentTarget.value)}
-                                onKeyDown={handleMenuKeyDown}
-                                role="combobox"
-                                aria-expanded={Boolean(commandMenu)}
-                                aria-controls={commandMenu ? 'trip-agent-mention-menu' : undefined}
-                                aria-activedescendant={commandMenu && menuItems.length > 0 ? `trip-agent-mention-menu-option-${menuIndex}` : undefined}
+                                textareaRef={textareaRef}
+                                ariaExpanded={Boolean(commandMenu)}
+                                ariaControls={commandMenu ? 'trip-agent-mention-menu' : undefined}
+                                ariaActiveDescendant={commandMenu && menuItems.length > 0
+                                    ? `trip-agent-mention-menu-option-${menuIndex}`
+                                    : undefined}
                             />
                         </PromptInputBody>
                         <PromptInputFooter className="justify-between">
@@ -503,7 +579,7 @@ const TripAgentChatSession: React.FC<{
                                     <AtSign className="size-4" />
                                 </Button>
                                 <Button type="button" variant="ghost" size="icon-sm" onClick={() => toggleMenu('commands')} aria-label={t('tripAgent.commandMenu')}>
-                                    <Slash className="size-4" />
+                                    <SlashGlyph />
                                 </Button>
                                 {quota.remaining !== null && (
                                     <span className="truncate px-1 text-[11px] text-slate-500">
@@ -527,6 +603,8 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
     isOpen,
     onClose,
     onAdoptCommittedTripVersion,
+    onPreviewTrip,
+    onRevertLastChange,
 }) => {
     const { t, i18n } = useTranslation('common');
     const now = useMinuteTick();
@@ -568,16 +646,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
         await selectThread(thread.id);
     };
 
-    const archiveCurrent = async () => {
-        if (!currentThreadId) return;
-        await archiveTripAgentThread(trip.id, currentThreadId);
-        trackEvent('trip_agent__thread--archive', { trip_id: trip.id, thread_id: currentThreadId });
-        setCurrentThreadId(null);
-        await refresh(null);
-    };
-
     const currentThread = bootstrap?.threads.find((thread) => thread.id === currentThreadId) || null;
-    const threadSections = useMemo(() => groupTripAgentThreads(bootstrap?.threads || [], now), [bootstrap?.threads, now]);
 
     return (
         <aside
@@ -593,57 +662,16 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                         {currentThread ? currentThread.title : t('tripAgent.subtitle')}
                     </p>
                 </div>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon-sm" aria-label={t('tripAgent.history')}>
-                            <History className="size-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="max-h-[70dvh] w-72 overflow-y-auto">
-                        <DropdownMenuItem onSelect={() => void createThread()}>
-                            <MessageCirclePlus className="size-4" />{t('tripAgent.newChat')}
-                        </DropdownMenuItem>
-                        {threadSections.length === 0 && (
-                            <p className="px-2 py-3 text-xs text-slate-500">{t('tripAgent.historyEmpty')}</p>
-                        )}
-                        {threadSections.map((section) => (
-                            <React.Fragment key={section.key}>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuLabel className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                                    {t(`tripAgent.historySections.${section.key}`)}
-                                </DropdownMenuLabel>
-                                {section.threads.map((thread) => (
-                                    <DropdownMenuItem key={thread.id} onSelect={() => void selectThread(thread.id)} className="items-start gap-2">
-                                        <span className="min-w-0 flex-1">
-                                            <span className="block truncate text-sm">{thread.title}</span>
-                                            <span className="block text-[11px] text-slate-500">
-                                                {formatTripAgentTimestamp(thread.updatedAt, i18n.language, now)}
-                                            </span>
-                                        </span>
-                                        {thread.id === currentThreadId
-                                            ? <Check className="mt-0.5 size-3.5 text-accent-600" />
-                                            : thread.status === 'archived'
-                                                ? <Archive className="mt-0.5 size-3.5 text-slate-400" />
-                                                : null}
-                                    </DropdownMenuItem>
-                                ))}
-                                {section.hiddenCount > 0 && (
-                                    <p className="px-2 pb-1 text-[11px] text-slate-400">
-                                        {t('tripAgent.historyHidden', { count: section.hiddenCount })}
-                                    </p>
-                                )}
-                            </React.Fragment>
-                        ))}
-                        {currentThread?.status === 'active' && (
-                            <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => void archiveCurrent()}>
-                                    <Archive className="size-4" />{t('tripAgent.archive')}
-                                </DropdownMenuItem>
-                            </>
-                        )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => void createThread()}
+                    aria-label={t('tripAgent.newChat')}
+                    title={t('tripAgent.newChat')}
+                >
+                    <MessageCirclePlus className="size-4" />
+                </Button>
                 <Button
                     type="button"
                     variant="ghost"
@@ -672,6 +700,8 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                     actorId={bootstrap.actor.userId}
                     onQuotaMayHaveChanged={() => void refresh(currentThread.id)}
                     onAdoptCommittedTripVersion={onAdoptCommittedTripVersion}
+                    onPreviewTrip={onPreviewTrip}
+                    onRevertLastChange={onRevertLastChange}
                 />
             ) : (
                 <div className="flex flex-1 items-center justify-center text-sm text-slate-500">{t('tripAgent.loading')}</div>

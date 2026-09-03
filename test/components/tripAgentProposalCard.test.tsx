@@ -81,16 +81,37 @@ describe('TripAgentProposalCard', () => {
 
         render(<TripAgentProposalCard trip={trip} changeSet={changeSet} onApplied={vi.fn()} />);
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.previewChanges' }));
+        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
         expect(applyTripAgentProposalMock).not.toHaveBeenCalled();
-        expect(screen.getByText('tripAgent.previewTitle')).toBeTruthy();
+        expect(screen.getByText('tripAgent.previewLive')).toBeTruthy();
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.apply' }));
+        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
         await waitFor(() => expect(applyTripAgentProposalMock).toHaveBeenCalledWith(
             'trip-1',
             '4f1c9d5e-0000-4000-8000-000000000000',
             ['op-1'],
         ));
+    });
+
+    it('shows the proposed trip in the planner while previewing and clears it after apply', async () => {
+        const user = userEvent.setup();
+        const onPreviewTrip = vi.fn();
+        applyTripAgentProposalMock.mockResolvedValue({
+            trip,
+            versionId: 'version-1',
+            status: 'applied',
+            appliedOperationIds: ['op-1'],
+            noOpOperationIds: [],
+        });
+
+        render(<TripAgentProposalCard trip={trip} changeSet={changeSet} onApplied={vi.fn()} onPreviewTrip={onPreviewTrip} />);
+
+        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
+        await waitFor(() => expect(onPreviewTrip).toHaveBeenCalledWith(expect.objectContaining({ id: 'trip-1' })));
+
+        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
+        await waitFor(() => expect(onPreviewTrip).toHaveBeenLastCalledWith(null));
+        expect(screen.getByText('tripAgent.appliedCount')).toBeTruthy();
     });
 
     it('keeps a failed apply retryable and names the failure', async () => {
@@ -102,8 +123,8 @@ describe('TripAgentProposalCard', () => {
 
         render(<TripAgentProposalCard trip={trip} changeSet={changeSet} onApplied={vi.fn()} />);
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.previewChanges' }));
-        await user.click(screen.getByRole('button', { name: 'tripAgent.apply' }));
+        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
+        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
 
         await waitFor(() => expect(screen.getByRole('alert').textContent)
             .toContain('tripAgent.errors.TRIP_AGENT_PROPOSAL_STALE'));

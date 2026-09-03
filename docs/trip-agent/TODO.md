@@ -46,6 +46,13 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 - [x] Render attached context as chips inside the input surface (block-start addon), not beside it.
 - [x] Close out streaming messages and runs left behind by a reload, and offer to ask again.
 - [x] Fall back to the existing Maps key when no dedicated grounding key is set.
+- [x] Preview a proposal in the planner itself (calendar, timeline, map), with editing paused while it shows.
+- [x] Group cascading day shifts under the change that caused them, so a shortened stop reads as one decision.
+- [x] Vendor a shadcn-shaped questionnaire (multi-pick and single-pick) instead of `@shadcn/react`, which needs React 19.
+- [x] Compact an applied proposal to one line and offer Revert.
+- [x] Keep `@` mentions inline in the prompt text, highlighted while typing and in the sent bubble.
+- [x] Ask which stop is meant when a city name occurs more than once.
+- [x] Render the review card below the answer, add a proposal skeleton with a thinking orb, and drop the chat-history menu.
 - [ ] Verify the deploy preview end to end with an administrator account (transcript reload, retry, apply, quota refund).
 - [x] Resolve the specialist model the same way as the orchestrator; a bare model id only worked with the AI Gateway.
 - [ ] Normalize specialist result cards for stays and routes (#485).

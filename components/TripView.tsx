@@ -414,6 +414,9 @@ interface TripViewProps {
     onUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => void;
     onCommitState?: (updatedTrip: ITrip, view: IViewSettings, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void;
     onAdoptAgentTripVersion?: (input: { trip: ITrip; versionId: string; label: string }) => void;
+    /** Set while the Trip Agent previews a proposal in the planner. */
+    agentPreviewTrip?: ITrip | null;
+    onAgentPreviewTrip?: (trip: ITrip | null) => void;
     onOpenManager: () => void;
     onOpenSettings: () => void;
     initialViewSettings?: IViewSettings;
@@ -967,6 +970,8 @@ const useTripViewRender = ({
     onUpdateTrip,
     onCommitState,
     onAdoptAgentTripVersion,
+    agentPreviewTrip,
+    onAgentPreviewTrip,
     onOpenManager,
     onOpenSettings,
     initialViewSettings,
@@ -3372,14 +3377,26 @@ const useTripViewRender = ({
                             <span>{t('tripAgent.title')}</span>
                         </button>
                     )}
+                    {agentPreviewTrip && (
+                        <div
+                            role="status"
+                            className="pointer-events-none fixed inset-x-0 top-2 z-[1600] flex justify-center px-3"
+                        >
+                            <p className="pointer-events-auto rounded-full border border-accent-200 bg-accent-50/95 px-3 py-1.5 text-xs font-medium text-accent-900 shadow-sm backdrop-blur">
+                                {t('tripAgent.previewBanner')}
+                            </p>
+                        </div>
+                    )}
                     {isTripAgentOpen && onAdoptAgentTripVersion && (
                         <Suspense fallback={null}>
                             <TripAgentPanel
-                                trip={trip}
+                                trip={agentPreviewTrip || trip}
                                 contextRefs={tripAgentContextRefs}
                                 isOpen={isTripAgentOpen}
                                 onClose={() => setIsTripAgentOpen(false)}
                                 onAdoptCommittedTripVersion={onAdoptAgentTripVersion}
+                                onPreviewTrip={onAgentPreviewTrip}
+                                onRevertLastChange={() => { navigateHistory('undo'); }}
                             />
                         </Suspense>
                     )}
@@ -3497,4 +3514,15 @@ const useTripViewRender = ({
     );
 };
 
-export const TripView: React.FC<TripViewProps> = (props) => useTripViewRender(props);
+export const TripView: React.FC<TripViewProps> = (props) => {
+    const [agentPreviewTrip, setAgentPreviewTrip] = useState<ITrip | null>(null);
+
+    // The preview swaps the rendered trip, so editing is paused until it ends.
+    return useTripViewRender({
+        ...props,
+        trip: agentPreviewTrip || props.trip,
+        readOnly: props.readOnly || Boolean(agentPreviewTrip),
+        agentPreviewTrip,
+        onAgentPreviewTrip: setAgentPreviewTrip,
+    });
+};
