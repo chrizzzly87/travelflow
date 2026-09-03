@@ -11,7 +11,9 @@ This is the repository mirror of the GitHub epic checklist. The GitHub epic is a
 - [x] Add the floating desktop panel and mobile sheet with selection context, examples, history, authors, and proposal review.
 - [x] Apply selected changes atomically as one remote version and adopt that version once in local undo/redo history.
 - [x] Keep the global rollout disabled while allowing administrator preview.
-- [ ] Deploy and smoke-test the named Netlify feature preview.
+- [x] Deploy and smoke-test the named Netlify feature preview.
+
+Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-agent-collaborative-ai--travelflowapp.netlify.app)
 
 ## Delivery tracks
 
@@ -27,6 +29,6 @@ This is the repository mirror of the GitHub epic checklist. The GitHub epic is a
 - [ ] Configure `AI_GATEWAY_API_KEY` on Netlify and validate approved model discovery/routing.
 - [ ] Configure a server-restricted `GOOGLE_MAPS_GROUNDING_API_KEY` and run grounded specialist smoke tests.
 - [ ] Add deterministic fake Gateway/MCP browser E2E coverage.
-- [ ] Verify transcript reload, cancellation, quota refund, and stale-proposal paths in the deployed environment.
+- [ ] Verify authenticated transcript reload, cancellation, quota refund, and stale-proposal paths in the deployed environment (unauthenticated endpoint guard is verified).
 - [ ] Build the English-only admin transcript and prompt-management workspace.
 - [ ] Enable for all eligible accounts only after persistence, quota, atomic apply, telemetry, and rollback gates pass.

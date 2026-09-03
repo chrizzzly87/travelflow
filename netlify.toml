@@ -100,10 +100,6 @@ exit 1
   function = "ai-generate"
 
 [[edge_functions]]
-  path = "/api/trip-agent"
-  function = "trip-agent"
-
-[[edge_functions]]
   path = "/api/ai/generate/abort"
   function = "ai-generate-abort"
 
