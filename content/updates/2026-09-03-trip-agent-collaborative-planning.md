@@ -26,6 +26,10 @@ summary: "Trip Agent brings shared, context-aware planning into each trip while 
 - [x] [Fixed] 🧩 Fixed the proposal step failing outright when a suggested change was shaped slightly wrong; it is now corrected and retried automatically.
 - [x] [Improved] 🧠 Trip Agent now runs on the same default model as the rest of the app, with light thinking, so answers arrive faster and without a wall of reasoning.
 - [x] [Fixed] 🧱 Fixed requests that ended with nothing at all: complex itinerary edits ran out of room mid-answer before a single change was proposed.
+- [x] [Fixed] 🛰️ Fixed every request failing outright: two conflicting thinking settings were sent to the model provider at once.
+- [x] [Improved] ⌨️ The `@` and `/` menus now filter as you type and respond to arrow keys and Enter.
+- [x] [Improved] 🏷️ Attached context sits inside the message box as removable chips.
+- [x] [Fixed] 🔄 Answers left running when you closed the tab no longer spin forever after a reload; you can simply ask again.
 - [x] [Improved] ⏱️ While it works you now see the running step and a live timer, plus a note when a request takes longer.
 - [x] [Improved] 🔍 Every step chip opens to show what it actually did, and a new panel lists what Trip Agent can read, research and propose.
 - [x] [Improved] 🏷️ Attached trip context now sits as removable chips with icons inside the message box.

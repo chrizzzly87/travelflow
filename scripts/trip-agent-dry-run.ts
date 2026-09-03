@@ -117,6 +117,7 @@ Rules:
                 },
             }),
         },
+        reasoning: (process.env.DRY_RUN_REASONING || 'medium') as never,
         stopWhen: typeof isStepCount === 'function' ? isStepCount(8) : stepCountIs(8),
         maxOutputTokens: 12_000,
     });

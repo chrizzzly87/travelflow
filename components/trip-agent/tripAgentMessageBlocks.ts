@@ -106,7 +106,7 @@ export const buildTripAgentMessageBlocks = (
         if (part.type === 'reasoning') {
             const group = openActivity(key);
             group.reasoningText = [group.reasoningText, part.text || ''].filter(Boolean).join('\n\n');
-            if (part.state === 'streaming') group.isStreaming = true;
+            if (isStreaming && part.state === 'streaming') group.isStreaming = true;
             return;
         }
         if (isToolUIPart(part)) {
@@ -123,7 +123,7 @@ export const buildTripAgentMessageBlocks = (
                 state: part.state,
                 detail: describeToolStep(part) || undefined,
             });
-            if (part.state === 'input-streaming' || part.state === 'input-available' || part.state === 'approval-requested') {
+            if (isStreaming && (part.state === 'input-streaming' || part.state === 'input-available' || part.state === 'approval-requested')) {
                 group.isStreaming = true;
             }
             return;

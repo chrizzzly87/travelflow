@@ -632,7 +632,10 @@
       "segment": "Substituir vários dias",
       "trip": "Título, data de início, ida e volta"
     },
-    "changeKindsFooter": "Cada mudança espera sua aprovação."
+    "changeKindsFooter": "Cada mudança espera sua aprovação.",
+    "noCommand": "Nenhum modelo correspondente.",
+    "runInterrupted": "Esta resposta foi interrompida.",
+    "continueRun": "Perguntar de novo"
   },
   "storageNotice": {
     "tripsPrunedTitle": "O armazenamento do dispositivo esta cheio",

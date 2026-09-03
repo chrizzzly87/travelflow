@@ -630,7 +630,10 @@
       "segment": "Zastąpić kilka dni",
       "trip": "Tytuł, data startu, podróż w obie strony"
     },
-    "changeKindsFooter": "Każda zmiana czeka na Twoją zgodę."
+    "changeKindsFooter": "Każda zmiana czeka na Twoją zgodę.",
+    "noCommand": "Brak pasujących podpowiedzi.",
+    "runInterrupted": "Ta odpowiedź została przerwana.",
+    "continueRun": "Zapytaj ponownie"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",

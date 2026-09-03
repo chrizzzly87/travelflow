@@ -41,6 +41,11 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 - [x] Explain every tool chip, and list the agent's capabilities and possible trip changes in the panel.
 - [x] Move attached context chips into the message box with kind icons.
 - [x] Verify one real trip end to end with `pnpm trip-agent:dry-run` (Taiwan reorder: 32 operations, 21 items, no no-ops).
+- [x] Send one reasoning control to OpenRouter: `reasoning_effort` plus `reasoning.effort` was rejected as a conflict, which failed every deployed run with TRIP_AGENT_REQUEST_FAILED.
+- [x] Drive the `@` and `/` menus from the prompt textarea so arrow keys, filter-as-you-type and Enter work under preact/compat.
+- [x] Render attached context as chips inside the input surface (block-start addon), not beside it.
+- [x] Close out streaming messages and runs left behind by a reload, and offer to ask again.
+- [x] Fall back to the existing Maps key when no dedicated grounding key is set.
 - [ ] Verify the deploy preview end to end with an administrator account (transcript reload, retry, apply, quota refund).
 - [x] Resolve the specialist model the same way as the orchestrator; a bare model id only worked with the AI Gateway.
 - [ ] Normalize specialist result cards for stays and routes (#485).

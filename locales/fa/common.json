@@ -399,7 +399,10 @@
       "segment": "جایگزینی چند روز",
       "trip": "عنوان، تاریخ شروع، رفت و برگشت"
     },
-    "changeKindsFooter": "هر تغییر منتظر تأیید شماست."
+    "changeKindsFooter": "هر تغییر منتظر تأیید شماست.",
+    "noCommand": "الگوی متناسبی نیست.",
+    "runInterrupted": "این پاسخ قطع شد.",
+    "continueRun": "دوباره بپرس"
   },
   "storageNotice": {
     "tripsPrunedTitle": "حافظه دستگاه پر است",

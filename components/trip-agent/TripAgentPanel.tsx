@@ -18,7 +18,7 @@ import {
     Sparkles,
     X,
 } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ITrip } from '../../types';
 import {
@@ -48,13 +48,8 @@ import { Message, MessageContent, MessageResponse } from '../ai-elements/message
 import {
     PromptInput,
     PromptInputBody,
-    PromptInputCommand,
-    PromptInputCommandEmpty,
-    PromptInputCommandGroup,
-    PromptInputCommandInput,
-    PromptInputCommandItem,
-    PromptInputCommandList,
     PromptInputFooter,
+    PromptInputHeader,
     PromptInputSubmit,
     PromptInputTextarea,
 } from '../ai-elements/prompt-input';
@@ -62,6 +57,7 @@ import { Suggestion, Suggestions } from '../ai-elements/suggestion';
 import { Source } from '../ai-elements/sources';
 import { TripAgentActivityGroup } from './TripAgentActivityGroup';
 import { TripAgentCapabilities } from './TripAgentCapabilities';
+import { TripAgentMentionMenu, type TripAgentMentionItem } from './TripAgentMentionMenu';
 import { buildTripAgentMessageBlocks } from './tripAgentMessageBlocks';
 import { TripAgentProposalCard } from './TripAgentProposalCard';
 import { formatTripAgentTimestamp, groupTripAgentThreads } from './tripAgentTime';
@@ -112,6 +108,10 @@ const ChatMessage: React.FC<{
     const { t } = useTranslation('common');
     const blocks = useMemo(() => buildTripAgentMessageBlocks(message, isStreaming), [message, isStreaming]);
     const timestamp = formatTripAgentTimestamp(message.metadata?.createdAt as string | undefined, locale, now);
+    const persistedStatus = message.metadata?.status as string | undefined;
+    const wasInterrupted = message.role === 'assistant'
+        && !isStreaming
+        && (persistedStatus === 'streaming' || persistedStatus === 'cancelled' || persistedStatus === 'failed');
     const authorLabel = message.role === 'assistant'
         ? t('tripAgent.agentName')
         : isOwnMessage ? null : (message.metadata?.authorLabel as string | undefined) || null;
@@ -145,6 +145,16 @@ const ChatMessage: React.FC<{
                     }
                     return <Source key={block.key} href={block.url} title={block.title} />;
                 })}
+                {wasInterrupted && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2">
+                        <span className="text-[11px] font-medium text-amber-800">{t('tripAgent.runInterrupted')}</span>
+                        {onRetry && (
+                            <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+                                <RotateCcw className="size-3.5" />{t('tripAgent.continueRun')}
+                            </Button>
+                        )}
+                    </div>
+                )}
                 {hasFailed && onRetry && (
                     <div className="flex items-center justify-end gap-2 pt-1">
                         <span className="me-auto text-[11px] font-medium text-rose-700">{t('tripAgent.messageFailed')}</span>
@@ -172,6 +182,16 @@ const TripAgentChatSession: React.FC<{
     const now = useMinuteTick();
     const [draftText, setDraftText] = useState('');
     const [commandMenu, setCommandMenu] = useState<'context' | 'commands' | null>(null);
+    const [menuQuery, setMenuQuery] = useState('');
+    const [menuIndex, setMenuIndex] = useState(0);
+    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const focusPrompt = useCallback(() => {
+        const element = textareaRef.current
+            || (typeof document === 'undefined'
+                ? null
+                : document.querySelector<HTMLTextAreaElement>('textarea[name="message"]'));
+        element?.focus();
+    }, []);
     const [manualContextRefs, setManualContextRefs] = useState<TripAgentContextRef[]>([]);
     const [removedContextKeys, setRemovedContextKeys] = useState<Set<string>>(() => new Set());
     const selectableContextRefs = useMemo(() => buildTripAgentSelectableContextRefs(trip), [trip]);
@@ -244,9 +264,26 @@ const TripAgentChatSession: React.FC<{
 
     const updateDraft = (value: string) => {
         setDraftText(value);
-        if (/(^|\s)@[^\s]*$/.test(value)) setCommandMenu('context');
-        else if (/^\s*\/[^\s]*$/.test(value)) setCommandMenu('commands');
+        const mention = /(?:^|\s)@([^\s]*)$/.exec(value);
+        const command = /^\s*\/([^\s]*)$/.exec(value);
+        if (mention) openMenu('context', mention[1]);
+        else if (command) openMenu('commands', command[1]);
         else setCommandMenu(null);
+    };
+
+    const openMenu = (mode: 'context' | 'commands', query = '') => {
+        setCommandMenu(mode);
+        setMenuQuery(query);
+        setMenuIndex(0);
+    };
+
+    const toggleMenu = (mode: 'context' | 'commands') => {
+        if (commandMenu === mode) {
+            setCommandMenu(null);
+            return;
+        }
+        openMenu(mode);
+        focusPrompt();
     };
 
     const selectContext = (contextRef: TripAgentContextRef) => {
@@ -280,6 +317,71 @@ const TripAgentChatSession: React.FC<{
         return [t(`tripAgent.contextKinds.${contextRef.kind}`), city?.title, day].filter(Boolean).join(' · ');
     };
 
+    const menuItems = useMemo((): TripAgentMentionItem[] => {
+        const query = menuQuery.trim().toLowerCase();
+        if (commandMenu === 'commands') {
+            return suggestions
+                .filter((suggestion) => !query || suggestion.toLowerCase().includes(query))
+                .map((suggestion) => ({
+                    key: `preset:${suggestion}`,
+                    group: t('tripAgent.commandMenu'),
+                    label: suggestion,
+                    icon: <Slash className="size-4 shrink-0 text-slate-400" />,
+                }));
+        }
+        if (commandMenu !== 'context') return [];
+        return CONTEXT_KIND_ORDER.flatMap((kind) => selectableContextRefs
+            .filter((contextRef) => contextRef.kind === kind)
+            .filter((contextRef) => {
+                if (!query) return true;
+                return `${contextRef.label} ${contextMeta(contextRef)}`.toLowerCase().includes(query);
+            })
+            .map((contextRef) => ({
+                key: contextRefKey(contextRef),
+                group: t(`tripAgent.contextGroups.${kind}`),
+                label: contextRef.label,
+                meta: contextMeta(contextRef),
+                isSelected: activeContextRefs.some((candidate) => contextRefKey(candidate) === contextRefKey(contextRef)),
+                icon: <ContextKindIcon kind={contextRef.kind} className="size-4 shrink-0 text-slate-400" />,
+            })));
+    }, [activeContextRefs, commandMenu, menuQuery, selectableContextRefs, suggestions, t, trip.items]);
+
+    const selectMenuItem = (index: number) => {
+        const item = menuItems[index];
+        if (!item) return;
+        if (commandMenu === 'commands') {
+            setDraftText(item.label);
+            setCommandMenu(null);
+            trackEvent('trip_agent__preset--select', { trip_id: trip.id });
+            focusPrompt();
+            return;
+        }
+        const contextRef = selectableContextRefs.find((candidate) => contextRefKey(candidate) === item.key);
+        if (contextRef) selectContext(contextRef);
+        focusPrompt();
+    };
+
+    const handleMenuKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (!commandMenu) return;
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            setCommandMenu(null);
+            return;
+        }
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            if (menuItems.length === 0) return;
+            const delta = event.key === 'ArrowDown' ? 1 : -1;
+            setMenuIndex((current) => (current + delta + menuItems.length) % menuItems.length);
+            return;
+        }
+        if (event.key === 'Enter' || event.key === 'Tab') {
+            if (menuItems.length === 0) return;
+            event.preventDefault();
+            selectMenuItem(menuIndex);
+        }
+    };
+
     return (
         <>
             <Conversation className="min-h-0">
@@ -303,7 +405,9 @@ const TripAgentChatSession: React.FC<{
                             hasFailed={Boolean(errorInfo) && message.id === latestUserMessage?.id}
                             locale={i18n.language}
                             now={now}
-                            onRetry={message.id === latestUserMessage?.id ? () => void retryLastMessage() : undefined}
+                            onRetry={message.id === latestUserMessage?.id || index === messages.length - 1
+                                ? () => void retryLastMessage()
+                                : undefined}
                             onApplied={(nextTrip, versionId, label) => onAdoptCommittedTripVersion({ trip: nextTrip, versionId, label: `Trip Agent: ${label}` })}
                         />
                     ))}
@@ -341,79 +445,28 @@ const TripAgentChatSession: React.FC<{
                 <div className="relative">
                     {commandMenu && (
                         <>
-                        <button
-                            type="button"
-                            aria-label={t('tripAgent.closeMenu')}
-                            className="fixed inset-0 z-10 cursor-default"
-                            onClick={() => setCommandMenu(null)}
-                        />
-                        <div className="absolute inset-x-0 bottom-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-                            <PromptInputCommand>
-                                <PromptInputCommandInput
-                                    placeholder={commandMenu === 'context' ? t('tripAgent.searchContext') : t('tripAgent.searchCommand')}
-                                    autoFocus
-                                    onKeyDown={(event) => {
-                                        if (event.key === 'Escape') {
-                                            event.preventDefault();
-                                            setCommandMenu(null);
-                                        }
-                                    }}
+                            <button
+                                type="button"
+                                aria-label={t('tripAgent.closeMenu')}
+                                className="fixed inset-0 z-10 cursor-default"
+                                onClick={() => setCommandMenu(null)}
+                            />
+                            <div className="absolute inset-x-0 bottom-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                                <TripAgentMentionMenu
+                                    items={menuItems}
+                                    activeIndex={menuIndex}
+                                    listId="trip-agent-mention-menu"
+                                    emptyLabel={commandMenu === 'context' ? t('tripAgent.noContext') : t('tripAgent.noCommand')}
+                                    onSelect={selectMenuItem}
+                                    onHover={setMenuIndex}
                                 />
-                                <PromptInputCommandList className="max-h-64">
-                                    <PromptInputCommandEmpty>{t('tripAgent.noContext')}</PromptInputCommandEmpty>
-                                    {commandMenu === 'context' ? (
-                                        CONTEXT_KIND_ORDER
-                                            .map((kind) => ({ kind, refs: selectableContextRefs.filter((contextRef) => contextRef.kind === kind) }))
-                                            .filter((entry) => entry.refs.length > 0)
-                                            .map(({ kind, refs }) => (
-                                                <PromptInputCommandGroup key={kind} heading={t(`tripAgent.contextGroups.${kind}`)}>
-                                                    {refs.map((contextRef) => {
-                                                        const isActive = activeContextRefs.some((candidate) => contextRefKey(candidate) === contextRefKey(contextRef));
-                                                        return (
-                                                            <PromptInputCommandItem
-                                                                key={contextRefKey(contextRef)}
-                                                                value={`${contextRef.label} ${contextMeta(contextRef)}`}
-                                                                onSelect={() => selectContext(contextRef)}
-                                                                disabled={!isActive && activeContextRefs.length >= 12}
-                                                            >
-                                                                <ContextKindIcon kind={contextRef.kind} className="size-4" />
-                                                                <span className="min-w-0 flex-1">
-                                                                    <span className="block truncate text-sm">{contextRef.label}</span>
-                                                                    <span className="block truncate text-[11px] text-slate-500">{contextMeta(contextRef)}</span>
-                                                                </span>
-                                                                {isActive && <Check className="size-3.5 text-accent-600" />}
-                                                            </PromptInputCommandItem>
-                                                        );
-                                                    })}
-                                                </PromptInputCommandGroup>
-                                            ))
-                                    ) : (
-                                        <PromptInputCommandGroup heading={t('tripAgent.commandMenu')}>
-                                            {suggestions.map((suggestion) => (
-                                                <PromptInputCommandItem
-                                                    key={suggestion}
-                                                    value={suggestion}
-                                                    onSelect={() => {
-                                                        setDraftText(suggestion);
-                                                        setCommandMenu(null);
-                                                        trackEvent('trip_agent__preset--select', { trip_id: trip.id });
-                                                    }}
-                                                >
-                                                    <Slash className="size-4" />
-                                                    <span className="text-sm">{suggestion}</span>
-                                                </PromptInputCommandItem>
-                                            ))}
-                                        </PromptInputCommandGroup>
-                                    )}
-                                </PromptInputCommandList>
-                            </PromptInputCommand>
-                        </div>
+                            </div>
                         </>
                     )}
                     <PromptInput onSubmit={({ text }) => submitText(text)}>
                         <PromptInputBody>
                             {activeContextRefs.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5 px-3 pt-3" aria-label={t('tripAgent.selectedContext')}>
+                                <PromptInputHeader aria-label={t('tripAgent.selectedContext')}>
                                     {activeContextRefs.map((contextRef) => (
                                         <button
                                             key={contextRefKey(contextRef)}
@@ -428,28 +481,28 @@ const TripAgentChatSession: React.FC<{
                                             <X className="size-3 opacity-60" />
                                         </button>
                                     ))}
-                                </div>
+                                </PromptInputHeader>
                             )}
                             <PromptInputTextarea
+                                ref={textareaRef}
                                 name="message"
                                 placeholder={t('tripAgent.placeholder')}
                                 disabled={isQuotaReached}
                                 value={draftText}
                                 onChange={(event) => updateDraft(event.currentTarget.value)}
-                                onKeyDown={(event) => {
-                                    if (event.key === 'Escape' && commandMenu) {
-                                        event.preventDefault();
-                                        setCommandMenu(null);
-                                    }
-                                }}
+                                onKeyDown={handleMenuKeyDown}
+                                role="combobox"
+                                aria-expanded={Boolean(commandMenu)}
+                                aria-controls={commandMenu ? 'trip-agent-mention-menu' : undefined}
+                                aria-activedescendant={commandMenu && menuItems.length > 0 ? `trip-agent-mention-menu-option-${menuIndex}` : undefined}
                             />
                         </PromptInputBody>
                         <PromptInputFooter className="justify-between">
                             <div className="flex min-w-0 items-center gap-1">
-                                <Button type="button" variant="ghost" size="icon-sm" onClick={() => setCommandMenu((current) => current === 'context' ? null : 'context')} aria-label={t('tripAgent.contextMenu')}>
+                                <Button type="button" variant="ghost" size="icon-sm" onClick={() => toggleMenu('context')} aria-label={t('tripAgent.contextMenu')}>
                                     <AtSign className="size-4" />
                                 </Button>
-                                <Button type="button" variant="ghost" size="icon-sm" onClick={() => setCommandMenu((current) => current === 'commands' ? null : 'commands')} aria-label={t('tripAgent.commandMenu')}>
+                                <Button type="button" variant="ghost" size="icon-sm" onClick={() => toggleMenu('commands')} aria-label={t('tripAgent.commandMenu')}>
                                     <Slash className="size-4" />
                                 </Button>
                                 {quota.remaining !== null && (

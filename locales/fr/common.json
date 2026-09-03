@@ -632,7 +632,10 @@
       "segment": "Remplacer plusieurs jours",
       "trip": "Titre, date de début, aller-retour"
     },
-    "changeKindsFooter": "Chaque changement attend votre validation."
+    "changeKindsFooter": "Chaque changement attend votre validation.",
+    "noCommand": "Aucun modèle correspondant.",
+    "runInterrupted": "Cette réponse a été interrompue.",
+    "continueRun": "Redemander"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Le stockage de l'appareil est plein",

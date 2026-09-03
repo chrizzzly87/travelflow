@@ -632,7 +632,10 @@
       "segment": "여러 날 교체",
       "trip": "제목, 시작일, 왕복 여부"
     },
-    "changeKindsFooter": "모든 변경은 승인 후에 적용됩니다."
+    "changeKindsFooter": "모든 변경은 승인 후에 적용됩니다.",
+    "noCommand": "일치하는 프리셋이 없습니다.",
+    "runInterrupted": "이 답변은 중단되었습니다.",
+    "continueRun": "다시 묻기"
   },
   "storageNotice": {
     "tripsPrunedTitle": "기기 저장 공간이 가득 찼습니다",

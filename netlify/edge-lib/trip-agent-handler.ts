@@ -6,6 +6,7 @@ import {
   type TripAgentMessage,
 } from '../../shared/tripAgent.ts';
 import {
+  abortStaleTripAgentStreams,
   createTripAgentThread,
   archiveTripAgentThread,
   applyPersistedTripAgentChangeSet,
@@ -139,6 +140,12 @@ export default async (request: Request) => {
       const currentThread = requestedThreadId
         ? threads.find((thread) => thread.id === requestedThreadId)
         : threads.find((thread) => thread.status === 'active');
+      if (currentThread) {
+        const aborted = await abortStaleTripAgentStreams(currentThread.id).catch(() => 0);
+        if (aborted > 0) {
+          console.info('[trip-agent] closed stale streams', { ...logContext, threadId: currentThread.id, aborted });
+        }
+      }
       const [messages, quota] = await Promise.all([
         currentThread ? loadTripAgentMessages(currentThread.id) : Promise.resolve([]),
         getTripAgentQuota(actor.userId),

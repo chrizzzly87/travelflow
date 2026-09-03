@@ -98,12 +98,26 @@ export const readRuntimeDefaultModelId = async (): Promise<string> => {
  * Merges OpenRouter's `reasoning` control into each request body. "none" drops
  * the field so a provider default applies.
  */
+export const applyOpenRouterReasoning = (
+  body: Record<string, unknown>,
+  effort: string,
+): Record<string, unknown> => {
+  if (effort === 'none') return body;
+  // OpenRouter rejects a request that carries both `reasoning_effort` and
+  // `reasoning.effort`, and the AI SDK sends the flat field for the agent's
+  // `reasoning` option, so the two are merged into one here.
+  const next: Record<string, unknown> = { ...body };
+  delete next.reasoning_effort;
+  const existing = next.reasoning as Record<string, unknown> | undefined;
+  next.reasoning = { ...(existing || {}), effort };
+  return next;
+};
+
 export const withOpenRouterReasoning = (effort: string): typeof fetch => async (input, init) => {
   if (!init?.body || typeof init.body !== 'string' || effort === 'none') return fetch(input, init);
   try {
     const body = JSON.parse(init.body) as Record<string, unknown>;
-    if (!body.reasoning) body.reasoning = { effort, exclude: false };
-    return await fetch(input, { ...init, body: JSON.stringify(body) });
+    return await fetch(input, { ...init, body: JSON.stringify(applyOpenRouterReasoning(body, effort)) });
   } catch {
     return await fetch(input, init);
   }

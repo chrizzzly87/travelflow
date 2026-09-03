@@ -228,17 +228,43 @@ type MessageRow = {
   role: 'user' | 'assistant' | 'system';
   parts: TripAgentMessage['parts'];
   metadata: TripAgentMessage['metadata'];
+  status: 'streaming' | 'complete' | 'cancelled' | 'failed';
+};
+
+const STALE_STREAM_MS = 3 * 60 * 1_000;
+
+/**
+ * Closes out runs that were streaming when the tab went away. Without this a
+ * reloaded transcript shows a spinner that can never finish.
+ */
+export const abortStaleTripAgentStreams = async (threadId: string): Promise<number> => {
+  const cutoff = new Date(Date.now() - STALE_STREAM_MS).toISOString();
+  const stale = await rest<Array<{ id: string }>>(
+    `trip_agent_messages?thread_id=eq.${encodeURIComponent(threadId)}&status=eq.streaming&updated_at=lt.${encodeURIComponent(cutoff)}&select=id`,
+  );
+  if (!stale?.length) return 0;
+  await rest(`trip_agent_messages?thread_id=eq.${encodeURIComponent(threadId)}&status=eq.streaming&updated_at=lt.${encodeURIComponent(cutoff)}`, {
+    method: 'PATCH',
+    headers: serviceHeaders('return=minimal'),
+    body: JSON.stringify({ status: 'cancelled', updated_at: new Date().toISOString() }),
+  });
+  await rest(`trip_agent_runs?thread_id=eq.${encodeURIComponent(threadId)}&status=eq.running&started_at=lt.${encodeURIComponent(cutoff)}`, {
+    method: 'PATCH',
+    headers: serviceHeaders('return=minimal'),
+    body: JSON.stringify({ status: 'cancelled', error_code: 'CLIENT_DISCONNECTED', finished_at: new Date().toISOString() }),
+  }).catch(() => undefined);
+  return stale.length;
 };
 
 export const loadTripAgentMessages = async (threadId: string): Promise<TripAgentMessage[]> => {
   const rows = await rest<MessageRow[]>(
-    `trip_agent_messages?thread_id=eq.${encodeURIComponent(threadId)}&select=id,role,parts,metadata&order=sequence.asc&limit=500`,
+    `trip_agent_messages?thread_id=eq.${encodeURIComponent(threadId)}&select=id,role,parts,metadata,status&order=sequence.asc&limit=500`,
   );
   return rows.map((row) => ({
     id: row.id,
     role: row.role === 'system' ? 'assistant' : row.role,
     parts: row.parts,
-    metadata: row.metadata || {},
+    metadata: { ...(row.metadata || {}), status: row.status },
   }));
 };
 

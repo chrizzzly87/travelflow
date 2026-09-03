@@ -632,7 +632,10 @@
       "segment": "Mehrere Tage ersetzen",
       "trip": "Titel, Startdatum, Rundreise"
     },
-    "changeKindsFooter": "Jede Änderung wartet auf deine Freigabe."
+    "changeKindsFooter": "Jede Änderung wartet auf deine Freigabe.",
+    "noCommand": "Keine passende Vorlage.",
+    "runInterrupted": "Diese Antwort wurde unterbrochen.",
+    "continueRun": "Erneut fragen"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Der Geratespeicher ist voll",

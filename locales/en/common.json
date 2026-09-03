@@ -632,7 +632,10 @@
       "segment": "Replace a stretch of days",
       "trip": "Trip title, start date, round trip"
     },
-    "changeKindsFooter": "Every change waits for your approval."
+    "changeKindsFooter": "Every change waits for your approval.",
+    "noCommand": "No matching preset.",
+    "runInterrupted": "This answer was interrupted.",
+    "continueRun": "Ask again"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Device storage is full",
