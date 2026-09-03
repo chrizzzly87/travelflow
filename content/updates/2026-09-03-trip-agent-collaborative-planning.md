@@ -24,12 +24,19 @@ summary: "Trip Agent brings shared, context-aware planning into each trip while 
 - [x] [Improved] 🕒 Chat bubbles show a short relative time instead of repeating your name.
 - [x] [Improved] 🗂️ Chats are named after your first question and the history menu groups them by today, the last 7 days and older.
 - [x] [Fixed] 🧩 Fixed the proposal step failing outright when a suggested change was shaped slightly wrong; it is now corrected and retried automatically.
+- [x] [Improved] 🧠 Trip Agent now runs on the same default model as the rest of the app, with light thinking, so answers arrive faster and without a wall of reasoning.
+- [x] [Fixed] 🧱 Fixed requests that ended with nothing at all: complex itinerary edits ran out of room mid-answer before a single change was proposed.
+- [x] [Improved] ⏱️ While it works you now see the running step and a live timer, plus a note when a request takes longer.
+- [x] [Improved] 🔍 Every step chip opens to show what it actually did, and a new panel lists what Trip Agent can read, research and propose.
+- [x] [Improved] 🏷️ Attached trip context now sits as removable chips with icons inside the message box.
 - [x] [Fixed] 💾 Fixed the failure that saved your message but never started a reply, and restores the used request when a reply cannot start.
 - [x] [Fixed] 🔤 The thinking indicator now uses the same text size as the rest of the conversation.
 - [ ] [Internal] 🔐 Added persistent shared threads, messages, runs, tool records, proposals, prompt versions, quotas, and atomic approval records behind an admin-preview feature flag.
 - [ ] [Internal] 🧭 Added allowlisted specialist boundaries for grounded stay and route research, with an explicit unavailable state when Maps grounding is not configured.
 - [ ] [Internal] 🧪 Added typed-operation and history-adoption regression coverage plus deterministic server-side validation paths.
 - [ ] [Internal] 🪵 Accepted empty successful PostgREST write bodies, added quota refunds on pre-stream failures, and added bounded request/run failure logging without prompts or credentials.
+- [ ] [Internal] 🔌 Added a flat wire schema for trip-change operations plus a typed converter, because function-calling models could not emit the discriminated union; added a read-only dry-run script that replays one turn against a real trip.
+- [ ] [Internal] 🎚️ Routed the planner through the app-wide default model with an OpenRouter reasoning-effort control and a larger output budget; replaced ICU plural strings, which this app never registered.
 - [ ] [Internal] 🎛️ Grouped chat activity, questionnaire-style proposal review, relative timestamps and recency-grouped thread history; dropped the math/mermaid/shiki markdown plugins and made the shared button forward refs for preact/compat popovers.
 - [ ] [Internal] 🧱 Raised the Netlify build to Node 22 with a 4 GB heap; the AI SDK, streamdown and shiki module graph exceeded the default V8 heap and aborted every deploy of this branch.
 - [ ] [Internal] 🔗 Attached chat context is now described in the run instructions as untrusted data, not only exposed through the trip-context tool.

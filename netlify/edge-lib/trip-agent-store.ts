@@ -151,7 +151,29 @@ export const listTripAgentThreads = async (tripId: string): Promise<TripAgentThr
   const rows = await rest<ThreadRow[]>(
     `trip_agent_threads?trip_id=eq.${encodeURIComponent(tripId)}&select=*&order=updated_at.desc&limit=100`,
   );
-  return rows.map(mapThread);
+  const threads = rows.map(mapThread);
+  const untitled = threads.filter((thread) => thread.title === DEFAULT_TRIP_AGENT_THREAD_TITLE);
+  if (untitled.length === 0) return threads;
+
+  // Chats created before prompt-based naming, or created and never used, would
+  // otherwise all read "New trip chat" in the history menu.
+  const ids = untitled.map((thread) => `"${thread.id}"`).join(',');
+  const firstPrompts = await rest<Array<{ thread_id: string; parts: TripAgentMessage['parts'] }>>(
+    `trip_agent_messages?thread_id=in.(${encodeURIComponent(ids)})&role=eq.user&select=thread_id,parts&order=sequence.asc&limit=200`,
+  ).catch(() => [] as Array<{ thread_id: string; parts: TripAgentMessage['parts'] }>);
+
+  const titleByThread = new Map<string, string>();
+  (firstPrompts || []).forEach((row) => {
+    if (titleByThread.has(row.thread_id)) return;
+    const text = (row.parts || []).find((part) => part.type === 'text');
+    const title = text && 'text' in text ? String(text.text).replace(/\s+/g, ' ').trim().slice(0, 60) : '';
+    if (title) titleByThread.set(row.thread_id, title);
+  });
+
+  return threads.map((thread) => {
+    const derived = titleByThread.get(thread.id);
+    return derived ? { ...thread, title: derived } : thread;
+  });
 };
 
 export const DEFAULT_TRIP_AGENT_THREAD_TITLE = 'New trip chat';

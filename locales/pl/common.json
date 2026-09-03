@@ -581,7 +581,7 @@
     "activityWorking": "Pracuje…",
     "activityDone": "Myślał {seconds}s",
     "activityDoneUnknown": "Przemyślał to",
-    "activitySteps": "{count, plural, one {# krok} few {# kroki} many {# kroków} other {# kroku}}",
+    "activitySteps": "{count} kroków",
     "contextGroups": {
       "trip": "Podróż",
       "city": "Miasta",
@@ -595,7 +595,7 @@
       "older": "Starsze",
       "archived": "Zarchiwizowane"
     },
-    "historyHidden": "{count, plural, one {# starszy czat ukryty} few {# starsze czaty ukryte} many {# starszych czatów ukrytych} other {# starszego czatu ukryte}}",
+    "historyHidden": "{count} starszych czatów ukrytych",
     "historyEmpty": "Jeszcze brak czatów.",
     "previewTitle": "Podgląd zmian",
     "previewHint": "Sprawdź wynik, a potem zastosuj.",
@@ -603,13 +603,34 @@
     "previewChanges": "Podgląd {count} zmian",
     "backToSelection": "Wróć",
     "retryApply": "Ponów",
-    "previewNoOp": "{count, plural, one {# wybrana zmiana nie zmieniłaby tej podróży.} few {# wybrane zmiany nie zmieniłyby tej podróży.} many {# wybranych zmian nie zmieniłoby tej podróży.} other {# wybranej zmiany nie zmieniłoby tej podróży.}}",
-    "dayCount": "{count, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}",
+    "previewNoOp": "{count} wybranych zmian nie zmieniłoby tej podróży.",
+    "dayCount": "{count} dni",
     "operationGroups": {
       "itinerary": "Plan podróży",
       "stays": "Noclegi",
       "trip": "Dane podróży"
-    }
+    },
+    "activityRunningStep": "{step}…",
+    "activityElapsed": "{seconds}s",
+    "activityStillWorking": "Nadal pracuje. Dłuższe prośby mogą zająć do minuty.",
+    "capabilitiesTitle": "Co potrafi Trip Agent",
+    "capabilities": {
+      "read": "Odczytać tę podróż: przystanki, dni, atrakcje i noclegi.",
+      "stays": "Wyszukać noclegi w mieście na podstawie zweryfikowanego źródła miejsc.",
+      "routes": "Porównać warianty trasy między przystankami.",
+      "propose": "Zaproponować zmiany do akceptacji. Nigdy nie zmienia podróży sam."
+    },
+    "changeKindsTitle": "Zmiany, które może zaproponować",
+    "changeKinds": {
+      "addItem": "Dodać przystanek lub atrakcję",
+      "moveItem": "Przenieść na inny dzień",
+      "removeItem": "Usunąć",
+      "updateItem": "Zmienić szczegóły",
+      "stays": "Dodać, zmienić lub usunąć nocleg",
+      "segment": "Zastąpić kilka dni",
+      "trip": "Tytuł, data startu, podróż w obie strony"
+    },
+    "changeKindsFooter": "Każda zmiana czeka na Twoją zgodę."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",

@@ -33,6 +33,12 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 - [x] Show relative message timestamps and drop the redundant author label on your own messages.
 - [x] Forward refs from the shared button so preact/compat popovers keep a real anchor element.
 - [x] Drop the math, mermaid and syntax-highlighting markdown plugins from the chat renderer.
+- [x] Emit trip changes through a flat wire schema so function-calling models can produce them, and convert to the typed union server-side.
+- [x] Run the planner on the app-wide default model (`ai_default_model_id`) with a controllable reasoning effort and a 12k output budget.
+- [x] Show the running step, elapsed time and a slow-request note while a run is in flight.
+- [x] Explain every tool chip, and list the agent's capabilities and possible trip changes in the panel.
+- [x] Move attached context chips into the message box with kind icons.
+- [x] Verify one real trip end to end with `pnpm trip-agent:dry-run` (Taiwan reorder: 32 operations, 21 items, no no-ops).
 - [ ] Verify the deploy preview end to end with an administrator account (transcript reload, retry, apply, quota refund).
 - [ ] Normalize specialist result cards for stays and routes (#485).
 

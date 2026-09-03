@@ -28,6 +28,57 @@ export const asProposal = (part: ToolPart): TripAgentChangeSetV1 | null => {
 
 const humanizeToolName = (name: string): string => name.replaceAll('_', ' ');
 
+const asRecord = (value: unknown): Record<string, unknown> => (
+    value && typeof value === 'object' ? value as Record<string, unknown> : {}
+);
+
+const clip = (value: unknown, max = 200): string => {
+    if (typeof value === 'string') return value.slice(0, max);
+    if (value === undefined || value === null) return '';
+    try {
+        return JSON.stringify(value).slice(0, max);
+    } catch {
+        return '';
+    }
+};
+
+/**
+ * One readable line per tool call, so a chip explains what the step actually
+ * did instead of only that it happened.
+ */
+export const describeToolStep = (part: ToolPart): string => {
+    const name = resolveToolName(part);
+    const input = asRecord(part.state === 'input-streaming' ? undefined : (part as { input?: unknown }).input);
+    const output = asRecord(part.state === 'output-available' ? (part as { output?: unknown }).output : undefined);
+
+    if (part.state === 'output-error') return clip((part as { errorText?: string }).errorText, 400);
+
+    if (name === 'read_trip_context') {
+        const trip = asRecord(output.trip);
+        const items = Array.isArray(trip.items) ? trip.items.length : null;
+        return items === null ? 'Reading the current trip.' : `Read the current trip: ${items} timeline items.`;
+    }
+    if (name === 'delegate_hotel_search' || name === 'delegate_route_planning') {
+        const request = name === 'delegate_hotel_search'
+            ? [input.cityId ? `City ${clip(input.cityId, 60)}` : '', clip(input.task, 200)]
+            : [clip(input.task, 200), Array.isArray(input.affectedStopIds) ? `${input.affectedStopIds.length} stops` : ''];
+        const answer = output.status === 'unavailable'
+            ? `Unavailable: ${clip(output.summary, 200)}`
+            : clip(output.summary, 300);
+        return [...request.filter(Boolean), answer].filter(Boolean).join(' · ');
+    }
+    if (name === 'create_trip_proposal') {
+        if (output.kind === 'trip-agent-proposal-invalid') {
+            const issues = Array.isArray(output.issues) ? output.issues : [];
+            return `Rejected: ${issues.map((issue) => clip(issue, 80)).join(' · ').slice(0, 400)}`;
+        }
+        const changeSet = asRecord(output.changeSet);
+        const operations = Array.isArray(changeSet.operations) ? changeSet.operations.length : 0;
+        return operations ? `Proposed ${operations} changes for your review.` : clip(input.summary, 240);
+    }
+    return clip(input, 240);
+};
+
 /**
  * Collapses each contiguous run of reasoning and tool activity into a single
  * block so a long run reads as one line instead of one card per event.
@@ -70,7 +121,7 @@ export const buildTripAgentMessageBlocks = (
                 key,
                 name: humanizeToolName(resolveToolName(part)),
                 state: part.state,
-                detail: part.state === 'output-error' ? part.errorText : undefined,
+                detail: describeToolStep(part) || undefined,
             });
             if (part.state === 'input-streaming' || part.state === 'input-available' || part.state === 'approval-requested') {
                 group.isStreaming = true;

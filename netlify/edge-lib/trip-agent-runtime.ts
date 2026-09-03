@@ -1,11 +1,9 @@
-import { createOpenAI } from '@ai-sdk/openai';
 import {
   ToolLoopAgent,
   consumeStream,
   createAgentUIStreamResponse,
   isStepCount,
   tool,
-  type LanguageModel,
   type UIMessage,
 } from 'ai';
 import { z } from 'zod';
@@ -13,12 +11,16 @@ import { z } from 'zod';
 import {
   tripAgentChangeSetV1Schema,
   tripAgentSourceSchema,
-  tripChangeOperationV1Schema,
   type TripAgentContextRef,
   type TripAgentMessage,
 } from '../../shared/tripAgent.ts';
+import {
+  tripAgentWireOperationSchema,
+  toTypedTripChangeOperations,
+} from '../../shared/tripAgentWireOperations.ts';
 import type { ITrip } from '../../types.ts';
 import { readEnv } from './ai-provider-runtime.ts';
+import { resolveTripAgentModel } from './trip-agent-model.ts';
 import { runGroundedMapsSpecialist } from './trip-agent-maps-mcp.ts';
 import {
   createTripAgentRun,
@@ -33,24 +35,6 @@ import {
 } from './trip-agent-store.ts';
 
 const MAX_HISTORY_MESSAGES = 80;
-
-const resolveModel = (definitionModel: string, fallbackModel: string): {
-  model: LanguageModel;
-  modelId: string;
-  usingGateway: boolean;
-} => {
-  if (readEnv('AI_GATEWAY_API_KEY')) {
-    return { model: definitionModel, modelId: definitionModel, usingGateway: true };
-  }
-  const openAiKey = readEnv('OPENAI_API_KEY');
-  if (!openAiKey) throw new Error('TRIP_AGENT_MODEL_NOT_CONFIGURED');
-  const directModelId = fallbackModel.replace(/^openai\//, '');
-  return {
-    model: createOpenAI({ apiKey: openAiKey }).responses(directModelId),
-    modelId: `openai-direct/${directModelId}`,
-    usingGateway: false,
-  };
-};
 
 const messageHasVisibleContent = (message: UIMessage): boolean => message.parts.some((part) => {
   if (part.type === 'text') return part.text.trim().length > 0;
@@ -82,7 +66,7 @@ export const streamTripAgentResponse = async (input: {
 }): Promise<Response> => {
   const startedAt = Date.now();
   const definition = await loadAgentDefinition('trip_orchestrator');
-  const resolvedModel = resolveModel(definition.model, definition.fallbackModel);
+  const resolvedModel = await resolveTripAgentModel(definition.model, definition.fallbackModel);
   const runId = crypto.randomUUID();
   let proposalCreated = false;
   let streamFinished = false;
@@ -150,33 +134,26 @@ export const streamTripAgentResponse = async (input: {
     }),
     create_trip_proposal: tool({
       description: 'Create a pending, user-reviewable proposal. This never changes the trip directly.',
-      // The payload is accepted loosely and validated inside, so an operation
-      // the model shaped slightly wrong comes back as a fixable answer instead
-      // of an opaque tool failure.
       inputSchema: z.object({
         summary: z.string().trim().min(1).max(2_000),
-        operations: z.array(z.unknown()).min(1).max(100),
-        sources: z.array(z.unknown()).max(30).optional(),
+        operations: z.array(tripAgentWireOperationSchema).min(1).max(100),
+        sources: z.array(tripAgentSourceSchema).max(30).optional(),
       }).strict(),
       execute: async ({ summary, operations, sources }) => {
-        const parsedOperations = z.array(tripChangeOperationV1Schema).min(1).max(100).safeParse(operations);
-        if (!parsedOperations.success) {
-          const issues = parsedOperations.error.issues.slice(0, 8).map((issue) => ({
-            path: issue.path.join('.') || '(root)',
-            message: issue.message.slice(0, 200),
-          }));
+        const parsedOperations = toTypedTripChangeOperations(operations);
+        if (parsedOperations.status === 'invalid') {
           console.error('[trip-agent] proposal rejected as invalid', {
             tripId: input.trip.id,
             threadId: input.threadId,
             requestId: input.requestId,
             runId,
-            operationCount: Array.isArray(operations) ? operations.length : 0,
-            issues,
+            operationCount: operations.length,
+            issues: parsedOperations.issues,
           });
           return {
             kind: 'trip-agent-proposal-invalid' as const,
-            message: 'These operations do not match the trip change schema. Fix the listed fields and call create_trip_proposal once more.',
-            issues,
+            message: 'Some operations are missing required fields. Fix exactly these and call create_trip_proposal once more.',
+            issues: parsedOperations.issues,
           };
         }
         const parsedSources = z.array(tripAgentSourceSchema).max(30).safeParse(sources || []);
@@ -188,7 +165,7 @@ export const streamTripAgentResponse = async (input: {
           runId,
           baseTripUpdatedAt: input.trip.updatedAt,
           summary,
-          operations: parsedOperations.data,
+          operations: parsedOperations.operations,
           sources: parsedSources.success ? parsedSources.data : [],
           status: 'pending',
           selectedOperationIds: [],
@@ -224,14 +201,19 @@ Rules:
 - Answer about the attached context above when the user refers to "this" city, stay, activity, or transfer.
 - Delegate place and route facts. If grounding is unavailable, say so and do not invent them.
 - If the user asks to change the trip, call create_trip_proposal with only the smallest relevant typed operations.
-- Every operation needs an id, a rationale and a targetLabel. New items need id, type, title, startDateOffset, duration and color. Never send fields that are not in the schema.
+- Every operation needs id, kind, rationale and targetLabel, plus the fields its kind requires: remove_item needs itemId; move_item needs itemId and startDateOffset; add_item needs item; update_item needs itemId and itemChanges; add_stay needs cityId and stay; replace_itinerary needs items.
+- startDateOffset counts days from the trip start and begins at 0, so day 1 is 0.
+- Reuse the exact item ids from read_trip_context. Never invent an id for an existing item.
 - If create_trip_proposal answers with kind "trip-agent-proposal-invalid", fix exactly the listed fields and call it once more, then explain in plain text if it still fails.
-- Give a concise public plan and rationale in normal text. Do not expose private chain-of-thought.
+- Give a concise public plan and rationale in normal text: at most four short sentences. Do not expose private chain-of-thought.
+- Before a long tool run, say in one sentence what you are about to do.
 - Nothing changes until the user explicitly applies selected proposal operations.`,
     tools: agentTools,
     activeTools: definition.toolAllowlist.filter((name) => name in agentTools) as Array<keyof typeof agentTools>,
-    reasoning: definition.reasoningEffort,
-    maxOutputTokens: 3_000,
+    // The panel shows a compact activity line, so the planner runs with light
+    // reasoning unless an operator raises it on the definition row.
+    reasoning: definition.reasoningEffort === 'high' ? 'medium' : definition.reasoningEffort,
+    maxOutputTokens: 12_000,
     stopWhen: isStepCount(8),
     ...(resolvedModel.usingGateway ? {
       providerOptions: {

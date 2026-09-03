@@ -63,7 +63,8 @@
     "ai:eval:ci": "tsx scripts/run-ai-eval.ts --ci",
     "ai:eval:security": "tsx scripts/run-ai-eval.ts --pack security",
     "ai:eval:security:ci": "tsx scripts/run-ai-eval.ts --pack security --ci",
-    "doctor": "npx react-doctor@latest"
+    "doctor": "npx react-doctor@latest",
+    "trip-agent:dry-run": "tsx --env-file=.env.local scripts/trip-agent-dry-run.ts"
   },
   "dependencies": {
     "@ai-sdk/mcp": "^2.0.39",

@@ -583,7 +583,7 @@
     "activityWorking": "Trabalhando…",
     "activityDone": "Pensou por {seconds}s",
     "activityDoneUnknown": "Pensou nisso",
-    "activitySteps": "{count, plural, one {# etapa} other {# etapas}}",
+    "activitySteps": "{count} etapas",
     "contextGroups": {
       "trip": "Viagem",
       "city": "Cidades",
@@ -597,7 +597,7 @@
       "older": "Mais antigos",
       "archived": "Arquivados"
     },
-    "historyHidden": "{count, plural, one {# conversa mais antiga não exibida} other {# conversas mais antigas não exibidas}}",
+    "historyHidden": "{count} conversas mais antigas não exibidas",
     "historyEmpty": "Ainda sem conversas.",
     "previewTitle": "Prévia das mudanças",
     "previewHint": "Confira o resultado e depois aplique.",
@@ -605,13 +605,34 @@
     "previewChanges": "Ver {count} mudanças",
     "backToSelection": "Voltar",
     "retryApply": "Tentar de novo",
-    "previewNoOp": "{count, plural, one {# mudança escolhida não alteraria esta viagem.} other {# mudanças escolhidas não alterariam esta viagem.}}",
-    "dayCount": "{count, plural, one {# dia} other {# dias}}",
+    "previewNoOp": "{count} mudanças escolhidas não alterariam esta viagem.",
+    "dayCount": "{count} dias",
     "operationGroups": {
       "itinerary": "Roteiro",
       "stays": "Hospedagens",
       "trip": "Dados da viagem"
-    }
+    },
+    "activityRunningStep": "{step}…",
+    "activityElapsed": "{seconds}s",
+    "activityStillWorking": "Ainda trabalhando. Pedidos longos podem levar até um minuto.",
+    "capabilitiesTitle": "O que o Trip Agent pode fazer",
+    "capabilities": {
+      "read": "Ler esta viagem: paradas, dias, atividades e hospedagens.",
+      "stays": "Pesquisar hospedagens de uma cidade em uma fonte de lugares verificada.",
+      "routes": "Comparar opções de rota entre paradas.",
+      "propose": "Propor mudanças para você revisar. Ele nunca edita a viagem sozinho."
+    },
+    "changeKindsTitle": "Mudanças que pode propor",
+    "changeKinds": {
+      "addItem": "Adicionar parada ou atividade",
+      "moveItem": "Mover para outro dia",
+      "removeItem": "Remover",
+      "updateItem": "Editar detalhes",
+      "stays": "Adicionar, editar ou remover hospedagem",
+      "segment": "Substituir vários dias",
+      "trip": "Título, data de início, ida e volta"
+    },
+    "changeKindsFooter": "Cada mudança espera sua aprovação."
   },
   "storageNotice": {
     "tripsPrunedTitle": "O armazenamento do dispositivo esta cheio",

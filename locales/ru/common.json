@@ -583,7 +583,7 @@
     "activityWorking": "Работает…",
     "activityDone": "Думал {seconds} с",
     "activityDoneUnknown": "Подумал над этим",
-    "activitySteps": "{count, plural, one {# шаг} few {# шага} many {# шагов} other {# шага}}",
+    "activitySteps": "{count} шагов",
     "contextGroups": {
       "trip": "Поездка",
       "city": "Города",
@@ -597,7 +597,7 @@
       "older": "Раньше",
       "archived": "В архиве"
     },
-    "historyHidden": "{count, plural, one {скрыт # старый чат} few {скрыто # старых чата} many {скрыто # старых чатов} other {скрыто # старого чата}}",
+    "historyHidden": "скрыто старых чатов: {count}",
     "historyEmpty": "Чатов пока нет.",
     "previewTitle": "Предпросмотр изменений",
     "previewHint": "Проверьте результат и примените.",
@@ -605,13 +605,34 @@
     "previewChanges": "Показать {count} изменений",
     "backToSelection": "Назад",
     "retryApply": "Повторить",
-    "previewNoOp": "{count, plural, one {# выбранное изменение не изменит поездку.} few {# выбранных изменения не изменят поездку.} many {# выбранных изменений не изменят поездку.} other {# выбранного изменения не изменят поездку.}}",
-    "dayCount": "{count, plural, one {# день} few {# дня} many {# дней} other {# дня}}",
+    "previewNoOp": "Выбранные изменения ({count}) не изменят эту поездку.",
+    "dayCount": "{count} дн.",
     "operationGroups": {
       "itinerary": "Маршрут",
       "stays": "Жильё",
       "trip": "Данные поездки"
-    }
+    },
+    "activityRunningStep": "{step}…",
+    "activityElapsed": "{seconds} с",
+    "activityStillWorking": "Всё ещё работает. Долгие запросы занимают до минуты.",
+    "capabilitiesTitle": "Что умеет Trip Agent",
+    "capabilities": {
+      "read": "Читать поездку: остановки, дни, активности и жильё.",
+      "stays": "Искать жильё для города по проверенному источнику мест.",
+      "routes": "Сравнивать варианты маршрута между остановками.",
+      "propose": "Предлагать изменения на ваше усмотрение. Сам поездку не меняет."
+    },
+    "changeKindsTitle": "Какие изменения предлагает",
+    "changeKinds": {
+      "addItem": "Добавить остановку или активность",
+      "moveItem": "Перенести на другой день",
+      "removeItem": "Удалить",
+      "updateItem": "Изменить детали",
+      "stays": "Добавить, изменить или удалить жильё",
+      "segment": "Заменить несколько дней",
+      "trip": "Название, дата начала, поездка туда-обратно"
+    },
+    "changeKindsFooter": "Каждое изменение ждёт вашего подтверждения."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Память устройства заполнена",

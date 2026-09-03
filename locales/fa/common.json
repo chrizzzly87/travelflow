@@ -350,7 +350,7 @@
     "activityWorking": "در حال کار…",
     "activityDone": "{seconds} ثانیه فکر کرد",
     "activityDoneUnknown": "کمی فکر کرد",
-    "activitySteps": "{count, plural, one {# مرحله} other {# مرحله}}",
+    "activitySteps": "{count} مرحله",
     "contextGroups": {
       "trip": "سفر",
       "city": "شهرها",
@@ -364,7 +364,7 @@
       "older": "قدیمی‌تر",
       "archived": "بایگانی"
     },
-    "historyHidden": "{count, plural, one {# گفت‌وگوی قدیمی نمایش داده نشد} other {# گفت‌وگوی قدیمی نمایش داده نشد}}",
+    "historyHidden": "{count} گفت‌وگوی قدیمی نمایش داده نشد",
     "historyEmpty": "هنوز گفت‌وگویی نیست.",
     "previewTitle": "پیش‌نمایش تغییرها",
     "previewHint": "نتیجه را ببینید و بعد اعمال کنید.",
@@ -372,13 +372,34 @@
     "previewChanges": "پیش‌نمایش {count} تغییر",
     "backToSelection": "بازگشت",
     "retryApply": "تلاش دوباره",
-    "previewNoOp": "{count, plural, one {# تغییر انتخاب‌شده این سفر را عوض نمی‌کند.} other {# تغییر انتخاب‌شده این سفر را عوض نمی‌کند.}}",
-    "dayCount": "{count, plural, one {# روز} other {# روز}}",
+    "previewNoOp": "{count} تغییر انتخاب‌شده این سفر را عوض نمی‌کند.",
+    "dayCount": "{count} روز",
     "operationGroups": {
       "itinerary": "برنامه سفر",
       "stays": "اقامتگاه‌ها",
       "trip": "مشخصات سفر"
-    }
+    },
+    "activityRunningStep": "{step}…",
+    "activityElapsed": "{seconds} ثانیه",
+    "activityStillWorking": "هنوز در حال کار است. درخواست‌های طولانی تا یک دقیقه طول می‌کشد.",
+    "capabilitiesTitle": "Trip Agent چه کاری می‌تواند بکند",
+    "capabilities": {
+      "read": "خواندن این سفر: توقف‌ها، روزها، فعالیت‌ها و اقامتگاه‌ها.",
+      "stays": "جست‌وجوی اقامتگاه یک شهر از منبع مکان معتبر.",
+      "routes": "مقایسه گزینه‌های مسیر بین توقف‌ها.",
+      "propose": "پیشنهاد تغییر برای بررسی شما. هرگز خودش سفر را تغییر نمی‌دهد."
+    },
+    "changeKindsTitle": "تغییرهایی که می‌تواند پیشنهاد کند",
+    "changeKinds": {
+      "addItem": "افزودن توقف یا فعالیت",
+      "moveItem": "انتقال به روز دیگر",
+      "removeItem": "حذف",
+      "updateItem": "ویرایش جزئیات",
+      "stays": "افزودن، ویرایش یا حذف اقامتگاه",
+      "segment": "جایگزینی چند روز",
+      "trip": "عنوان، تاریخ شروع، رفت و برگشت"
+    },
+    "changeKindsFooter": "هر تغییر منتظر تأیید شماست."
   },
   "storageNotice": {
     "tripsPrunedTitle": "حافظه دستگاه پر است",

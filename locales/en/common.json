@@ -583,7 +583,7 @@
     "activityWorking": "Working…",
     "activityDone": "Thought for {seconds}s",
     "activityDoneUnknown": "Thought about this",
-    "activitySteps": "{count, plural, one {# step} other {# steps}}",
+    "activitySteps": "{count} steps",
     "contextGroups": {
       "trip": "Trip",
       "city": "Cities",
@@ -597,7 +597,7 @@
       "older": "Older",
       "archived": "Archived"
     },
-    "historyHidden": "{count, plural, one {# older chat not shown} other {# older chats not shown}}",
+    "historyHidden": "{count} older chats not shown",
     "historyEmpty": "No chats yet.",
     "previewTitle": "Preview changes",
     "previewHint": "Check the result, then apply.",
@@ -605,13 +605,34 @@
     "previewChanges": "Preview {count} changes",
     "backToSelection": "Back",
     "retryApply": "Retry",
-    "previewNoOp": "{count, plural, one {# selected change would not alter this trip.} other {# selected changes would not alter this trip.}}",
-    "dayCount": "{count, plural, one {# day} other {# days}}",
+    "previewNoOp": "{count} selected changes would not alter this trip.",
+    "dayCount": "{count} days",
     "operationGroups": {
       "itinerary": "Itinerary",
       "stays": "Stays",
       "trip": "Trip details"
-    }
+    },
+    "activityRunningStep": "{step}…",
+    "activityElapsed": "{seconds}s",
+    "activityStillWorking": "Still working. Longer requests can take up to a minute.",
+    "capabilitiesTitle": "What Trip Agent can do",
+    "capabilities": {
+      "read": "Read this trip: stops, days, activities and stays.",
+      "stays": "Research stays for a city through a grounded places source.",
+      "routes": "Compare route options between stops.",
+      "propose": "Propose trip changes for your review. It never edits the trip itself."
+    },
+    "changeKindsTitle": "Changes it can propose",
+    "changeKinds": {
+      "addItem": "Add stop or activity",
+      "moveItem": "Move to another day",
+      "removeItem": "Remove",
+      "updateItem": "Edit details",
+      "stays": "Add, edit or remove a stay",
+      "segment": "Replace a stretch of days",
+      "trip": "Trip title, start date, round trip"
+    },
+    "changeKindsFooter": "Every change waits for your approval."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Device storage is full",

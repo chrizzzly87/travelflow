@@ -61,6 +61,7 @@ import {
 import { Suggestion, Suggestions } from '../ai-elements/suggestion';
 import { Source } from '../ai-elements/sources';
 import { TripAgentActivityGroup } from './TripAgentActivityGroup';
+import { TripAgentCapabilities } from './TripAgentCapabilities';
 import { buildTripAgentMessageBlocks } from './tripAgentMessageBlocks';
 import { TripAgentProposalCard } from './TripAgentProposalCard';
 import { formatTripAgentTimestamp, groupTripAgentThreads } from './tripAgentTime';
@@ -89,12 +90,12 @@ const contextRefKey = (contextRef: TripAgentContextRef): string => (
 
 const CONTEXT_KIND_ORDER: TripAgentContextRef['kind'][] = ['trip', 'city', 'stay', 'activity', 'travel'];
 
-const ContextKindIcon: React.FC<{ kind: TripAgentContextRef['kind'] }> = ({ kind }) => {
-    if (kind === 'trip') return <Sparkles className="size-4" />;
-    if (kind === 'city') return <MapPin className="size-4" />;
-    if (kind === 'stay') return <BedDouble className="size-4" />;
-    if (kind === 'travel') return <Route className="size-4" />;
-    return <CircleDot className="size-4" />;
+const ContextKindIcon: React.FC<{ kind: TripAgentContextRef['kind']; className?: string }> = ({ kind, className = 'size-3.5' }) => {
+    if (kind === 'trip') return <Sparkles className={className} />;
+    if (kind === 'city') return <MapPin className={className} />;
+    if (kind === 'stay') return <BedDouble className={className} />;
+    if (kind === 'travel') return <Route className={className} />;
+    return <CircleDot className={className} />;
 };
 
 const ChatMessage: React.FC<{
@@ -284,11 +285,14 @@ const TripAgentChatSession: React.FC<{
             <Conversation className="min-h-0">
                 <ConversationContent className="gap-5 px-4 py-5">
                     {messages.length === 0 ? (
-                        <ConversationEmptyState
-                            icon={<Bot className="size-6" />}
-                            title={t('tripAgent.noMessages')}
-                            description={t('tripAgent.subtitle')}
-                        />
+                        <div className="space-y-3">
+                            <ConversationEmptyState
+                                icon={<Bot className="size-6" />}
+                                title={t('tripAgent.noMessages')}
+                                description={t('tripAgent.subtitle')}
+                            />
+                            <TripAgentCapabilities />
+                        </div>
                     ) : messages.map((message, index) => (
                         <ChatMessage
                             key={message.id}
@@ -327,21 +331,6 @@ const TripAgentChatSession: React.FC<{
             </Conversation>
 
             <div className="border-t border-slate-200 bg-white/95 p-3 backdrop-blur">
-                {activeContextRefs.length > 0 && (
-                    <div className="mb-2 flex flex-wrap gap-1.5" aria-label={t('tripAgent.selectedContext')}>
-                        {activeContextRefs.map((contextRef) => (
-                            <button
-                                key={contextRefKey(contextRef)}
-                                type="button"
-                                onClick={() => removeContext(contextRef)}
-                                aria-label={t('tripAgent.removeContext', { label: contextRef.label })}
-                                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-2.5 py-1 text-xs font-medium text-accent-800 hover:bg-accent-100"
-                            >
-                                <span className="truncate">{contextRef.label}</span><X className="size-3" />
-                            </button>
-                        ))}
-                    </div>
-                )}
                 {messages.length === 0 && (
                     <Suggestions className="mb-2">
                         {suggestions.map((suggestion) => (
@@ -387,7 +376,7 @@ const TripAgentChatSession: React.FC<{
                                                                 onSelect={() => selectContext(contextRef)}
                                                                 disabled={!isActive && activeContextRefs.length >= 12}
                                                             >
-                                                                <ContextKindIcon kind={contextRef.kind} />
+                                                                <ContextKindIcon kind={contextRef.kind} className="size-4" />
                                                                 <span className="min-w-0 flex-1">
                                                                     <span className="block truncate text-sm">{contextRef.label}</span>
                                                                     <span className="block truncate text-[11px] text-slate-500">{contextMeta(contextRef)}</span>
@@ -423,6 +412,24 @@ const TripAgentChatSession: React.FC<{
                     )}
                     <PromptInput onSubmit={({ text }) => submitText(text)}>
                         <PromptInputBody>
+                            {activeContextRefs.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 px-3 pt-3" aria-label={t('tripAgent.selectedContext')}>
+                                    {activeContextRefs.map((contextRef) => (
+                                        <button
+                                            key={contextRefKey(contextRef)}
+                                            type="button"
+                                            onClick={() => removeContext(contextRef)}
+                                            aria-label={t('tripAgent.removeContext', { label: contextRef.label })}
+                                            title={contextMeta(contextRef)}
+                                            className="inline-flex max-w-full items-center gap-1 rounded-md border border-accent-200 bg-accent-50 px-1.5 py-0.5 text-xs font-medium text-accent-800 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-800"
+                                        >
+                                            <ContextKindIcon kind={contextRef.kind} />
+                                            <span className="truncate">{contextRef.label}</span>
+                                            <X className="size-3 opacity-60" />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                             <PromptInputTextarea
                                 name="message"
                                 placeholder={t('tripAgent.placeholder')}
@@ -529,7 +536,9 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                 <div className="flex size-9 items-center justify-center rounded-xl bg-slate-950 text-white"><Sparkles className="size-4" /></div>
                 <div className="min-w-0 flex-1">
                     <h2 className="truncate text-sm font-semibold text-slate-950">{t('tripAgent.title')}</h2>
-                    <p className="truncate text-xs text-slate-500">{t('tripAgent.subtitle')}</p>
+                    <p className="truncate text-xs text-slate-500">
+                        {currentThread ? currentThread.title : t('tripAgent.subtitle')}
+                    </p>
                 </div>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>

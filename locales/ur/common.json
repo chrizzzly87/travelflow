@@ -350,7 +350,7 @@
     "activityWorking": "کام جاری ہے…",
     "activityDone": "{seconds} سیکنڈ سوچا",
     "activityDoneUnknown": "کچھ دیر سوچا",
-    "activitySteps": "{count, plural, one {# مرحلہ} other {# مراحل}}",
+    "activitySteps": "{count} مراحل",
     "contextGroups": {
       "trip": "سفر",
       "city": "شہر",
@@ -364,7 +364,7 @@
       "older": "پرانے",
       "archived": "محفوظ شدہ"
     },
-    "historyHidden": "{count, plural, one {# پرانی چیٹ نہیں دکھائی گئی} other {# پرانی چیٹس نہیں دکھائی گئیں}}",
+    "historyHidden": "{count} پرانی چیٹس نہیں دکھائی گئیں",
     "historyEmpty": "ابھی کوئی چیٹ نہیں۔",
     "previewTitle": "تبدیلیوں کا پیش منظر",
     "previewHint": "نتیجہ دیکھیں، پھر لاگو کریں۔",
@@ -372,13 +372,34 @@
     "previewChanges": "{count} تبدیلیاں دیکھیں",
     "backToSelection": "واپس",
     "retryApply": "دوبارہ کوشش",
-    "previewNoOp": "{count, plural, one {# منتخب تبدیلی اس سفر کو نہیں بدلے گی۔} other {# منتخب تبدیلیاں اس سفر کو نہیں بدلیں گی۔}}",
-    "dayCount": "{count, plural, one {# دن} other {# دن}}",
+    "previewNoOp": "{count} منتخب تبدیلیاں اس سفر کو نہیں بدلیں گی۔",
+    "dayCount": "{count} دن",
     "operationGroups": {
       "itinerary": "سفرنامہ",
       "stays": "قیام",
       "trip": "سفر کی تفصیل"
-    }
+    },
+    "activityRunningStep": "{step}…",
+    "activityElapsed": "{seconds} سیکنڈ",
+    "activityStillWorking": "ابھی کام جاری ہے۔ طویل درخواستیں ایک منٹ تک لے سکتی ہیں۔",
+    "capabilitiesTitle": "Trip Agent کیا کر سکتا ہے",
+    "capabilities": {
+      "read": "یہ سفر پڑھنا: پڑاؤ، دن، سرگرمیاں اور قیام۔",
+      "stays": "مستند مقامات کے ذریعے کسی شہر کے قیام تلاش کرنا۔",
+      "routes": "پڑاؤ کے درمیان راستوں کا موازنہ کرنا۔",
+      "propose": "آپ کے جائزے کے لیے تبدیلیاں تجویز کرنا۔ خود سفر نہیں بدلتا۔"
+    },
+    "changeKindsTitle": "وہ کون سی تبدیلیاں تجویز کر سکتا ہے",
+    "changeKinds": {
+      "addItem": "پڑاؤ یا سرگرمی شامل کریں",
+      "moveItem": "کسی اور دن منتقل کریں",
+      "removeItem": "ہٹائیں",
+      "updateItem": "تفصیلات میں ترمیم",
+      "stays": "قیام شامل، تبدیل یا ختم کریں",
+      "segment": "کئی دن تبدیل کریں",
+      "trip": "عنوان، آغاز کی تاریخ، واپسی کا سفر"
+    },
+    "changeKindsFooter": "ہر تبدیلی آپ کی منظوری کی منتظر رہتی ہے۔"
   },
   "storageNotice": {
     "tripsPrunedTitle": "ڈیوائس کی اسٹوریج بھر گئی ہے",

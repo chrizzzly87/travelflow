@@ -583,7 +583,7 @@
     "activityWorking": "En cours…",
     "activityDone": "Réflexion de {seconds}s",
     "activityDoneUnknown": "A réfléchi",
-    "activitySteps": "{count, plural, one {# étape} other {# étapes}}",
+    "activitySteps": "{count} étapes",
     "contextGroups": {
       "trip": "Voyage",
       "city": "Villes",
@@ -597,7 +597,7 @@
       "older": "Plus ancien",
       "archived": "Archivé"
     },
-    "historyHidden": "{count, plural, one {# conversation plus ancienne masquée} other {# conversations plus anciennes masquées}}",
+    "historyHidden": "{count} conversations plus anciennes masquées",
     "historyEmpty": "Aucune conversation pour le moment.",
     "previewTitle": "Aperçu des changements",
     "previewHint": "Vérifiez le résultat, puis appliquez.",
@@ -605,13 +605,34 @@
     "previewChanges": "Aperçu de {count} changements",
     "backToSelection": "Retour",
     "retryApply": "Réessayer",
-    "previewNoOp": "{count, plural, one {# changement sélectionné ne modifierait pas ce voyage.} other {# changements sélectionnés ne modifieraient pas ce voyage.}}",
-    "dayCount": "{count, plural, one {# jour} other {# jours}}",
+    "previewNoOp": "{count} changements sélectionnés ne modifieraient pas ce voyage.",
+    "dayCount": "{count} jours",
     "operationGroups": {
       "itinerary": "Itinéraire",
       "stays": "Hébergements",
       "trip": "Détails du voyage"
-    }
+    },
+    "activityRunningStep": "{step}…",
+    "activityElapsed": "{seconds}s",
+    "activityStillWorking": "Toujours en cours. Une demande longue peut prendre jusqu’à une minute.",
+    "capabilitiesTitle": "Ce que Trip Agent peut faire",
+    "capabilities": {
+      "read": "Lire ce voyage : étapes, jours, activités et hébergements.",
+      "stays": "Rechercher des hébergements pour une ville via une source de lieux vérifiée.",
+      "routes": "Comparer les options de trajet entre étapes.",
+      "propose": "Proposer des changements à valider. Il ne modifie jamais le voyage lui-même."
+    },
+    "changeKindsTitle": "Changements qu’il peut proposer",
+    "changeKinds": {
+      "addItem": "Ajouter une étape ou activité",
+      "moveItem": "Déplacer vers un autre jour",
+      "removeItem": "Supprimer",
+      "updateItem": "Modifier les détails",
+      "stays": "Ajouter, modifier ou retirer un hébergement",
+      "segment": "Remplacer plusieurs jours",
+      "trip": "Titre, date de début, aller-retour"
+    },
+    "changeKindsFooter": "Chaque changement attend votre validation."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Le stockage de l'appareil est plein",

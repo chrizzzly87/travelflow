@@ -583,7 +583,7 @@
     "activityWorking": "Arbeitet…",
     "activityDone": "{seconds}s nachgedacht",
     "activityDoneUnknown": "Hat nachgedacht",
-    "activitySteps": "{count, plural, one {# Schritt} other {# Schritte}}",
+    "activitySteps": "{count} Schritte",
     "contextGroups": {
       "trip": "Reise",
       "city": "Städte",
@@ -597,7 +597,7 @@
       "older": "Älter",
       "archived": "Archiviert"
     },
-    "historyHidden": "{count, plural, one {# älterer Chat nicht angezeigt} other {# ältere Chats nicht angezeigt}}",
+    "historyHidden": "{count} ältere Chats ausgeblendet",
     "historyEmpty": "Noch keine Chats.",
     "previewTitle": "Änderungen ansehen",
     "previewHint": "Prüfe das Ergebnis und übernimm es dann.",
@@ -605,13 +605,34 @@
     "previewChanges": "{count} Änderungen ansehen",
     "backToSelection": "Zurück",
     "retryApply": "Erneut",
-    "previewNoOp": "{count, plural, one {# gewählte Änderung würde diese Reise nicht verändern.} other {# gewählte Änderungen würden diese Reise nicht verändern.}}",
-    "dayCount": "{count, plural, one {# Tag} other {# Tage}}",
+    "previewNoOp": "{count} gewählte Änderungen würden diese Reise nicht verändern.",
+    "dayCount": "{count} Tage",
     "operationGroups": {
       "itinerary": "Reiseverlauf",
       "stays": "Unterkünfte",
       "trip": "Reisedaten"
-    }
+    },
+    "activityRunningStep": "{step}…",
+    "activityElapsed": "{seconds}s",
+    "activityStillWorking": "Arbeitet noch. Längere Anfragen brauchen bis zu einer Minute.",
+    "capabilitiesTitle": "Was Trip Agent kann",
+    "capabilities": {
+      "read": "Diese Reise lesen: Stopps, Tage, Aktivitäten und Unterkünfte.",
+      "stays": "Unterkünfte für eine Stadt über eine belegte Ortsquelle recherchieren.",
+      "routes": "Routenoptionen zwischen Stopps vergleichen.",
+      "propose": "Änderungen zur Prüfung vorschlagen. Die Reise ändert er nie selbst."
+    },
+    "changeKindsTitle": "Vorschläge, die er machen kann",
+    "changeKinds": {
+      "addItem": "Stopp oder Aktivität hinzufügen",
+      "moveItem": "Auf einen anderen Tag verschieben",
+      "removeItem": "Entfernen",
+      "updateItem": "Details ändern",
+      "stays": "Unterkunft hinzufügen, ändern, entfernen",
+      "segment": "Mehrere Tage ersetzen",
+      "trip": "Titel, Startdatum, Rundreise"
+    },
+    "changeKindsFooter": "Jede Änderung wartet auf deine Freigabe."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Der Geratespeicher ist voll",

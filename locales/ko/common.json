@@ -583,7 +583,7 @@
     "activityWorking": "작업 중…",
     "activityDone": "{seconds}초 동안 생각함",
     "activityDoneUnknown": "생각을 정리했습니다",
-    "activitySteps": "{count, plural, other {#단계}}",
+    "activitySteps": "{count}단계",
     "contextGroups": {
       "trip": "여행",
       "city": "도시",
@@ -597,7 +597,7 @@
       "older": "이전",
       "archived": "보관됨"
     },
-    "historyHidden": "{count, plural, other {이전 대화 #개 숨김}}",
+    "historyHidden": "이전 대화 {count}개 숨김",
     "historyEmpty": "아직 대화가 없습니다.",
     "previewTitle": "변경 미리보기",
     "previewHint": "결과를 확인한 뒤 적용하세요.",
@@ -605,13 +605,34 @@
     "previewChanges": "{count}개 변경 미리보기",
     "backToSelection": "뒤로",
     "retryApply": "다시 시도",
-    "previewNoOp": "{count, plural, other {선택한 변경 #개는 이 여행을 바꾸지 않습니다.}}",
-    "dayCount": "{count, plural, other {#일}}",
+    "previewNoOp": "선택한 변경 {count}개는 이 여행을 바꾸지 않습니다.",
+    "dayCount": "{count}일",
     "operationGroups": {
       "itinerary": "일정",
       "stays": "숙소",
       "trip": "여행 정보"
-    }
+    },
+    "activityRunningStep": "{step}…",
+    "activityElapsed": "{seconds}초",
+    "activityStillWorking": "아직 작업 중입니다. 긴 요청은 1분까지 걸릴 수 있습니다.",
+    "capabilitiesTitle": "Trip Agent가 할 수 있는 일",
+    "capabilities": {
+      "read": "이 여행 읽기: 방문지, 일자, 활동, 숙소.",
+      "stays": "검증된 장소 소스로 도시의 숙소 조사.",
+      "routes": "방문지 사이의 경로 옵션 비교.",
+      "propose": "검토용 변경 제안. 여행을 직접 수정하지 않습니다."
+    },
+    "changeKindsTitle": "제안할 수 있는 변경",
+    "changeKinds": {
+      "addItem": "방문지·활동 추가",
+      "moveItem": "다른 날로 이동",
+      "removeItem": "삭제",
+      "updateItem": "세부 정보 수정",
+      "stays": "숙소 추가·수정·삭제",
+      "segment": "여러 날 교체",
+      "trip": "제목, 시작일, 왕복 여부"
+    },
+    "changeKindsFooter": "모든 변경은 승인 후에 적용됩니다."
   },
   "storageNotice": {
     "tripsPrunedTitle": "기기 저장 공간이 가득 찼습니다",

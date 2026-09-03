@@ -1,5 +1,5 @@
 import { AlertTriangle, Brain, Check, ChevronDown, Loader2 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
@@ -37,6 +37,28 @@ const StepIcon: React.FC<{ state: TripAgentActivityState }> = ({ state }) => {
  * long run reads as a single "Thought for 8s · 3 steps" line instead of one
  * card per event.
  */
+/** Ticks once a second while a run is in flight so the header shows progress. */
+const useElapsedSeconds = (isRunning: boolean): number => {
+    const startedAtRef = useRef<number | null>(null);
+    const [elapsed, setElapsed] = useState(0);
+
+    useEffect(() => {
+        if (!isRunning) {
+            startedAtRef.current = null;
+            return;
+        }
+        startedAtRef.current = Date.now();
+        setElapsed(0);
+        const timer = window.setInterval(() => {
+            if (startedAtRef.current === null) return;
+            setElapsed(Math.round((Date.now() - startedAtRef.current) / 1_000));
+        }, 1_000);
+        return () => window.clearInterval(timer);
+    }, [isRunning]);
+
+    return elapsed;
+};
+
 export const TripAgentActivityGroup: React.FC<{
     reasoningText: string;
     steps: TripAgentActivityStep[];
@@ -47,15 +69,20 @@ export const TripAgentActivityGroup: React.FC<{
     const [isOpen, setIsOpen] = useState(false);
     const [openStepKey, setOpenStepKey] = useState<string | null>(null);
     const hasFailure = steps.some((step) => isFailedState(step.state));
+    const elapsedSeconds = useElapsedSeconds(isStreaming);
+    const runningStep = [...steps].reverse().find((step) => !isFailedState(step.state) && step.state !== 'output-available');
 
-    const label = [
-        isStreaming
-            ? t('tripAgent.activityWorking')
-            : durationSeconds !== undefined
+    const label = isStreaming
+        ? [
+            runningStep ? t('tripAgent.activityRunningStep', { step: runningStep.name }) : t('tripAgent.activityWorking'),
+            elapsedSeconds > 0 ? t('tripAgent.activityElapsed', { seconds: elapsedSeconds }) : null,
+        ].filter(Boolean).join(' · ')
+        : [
+            durationSeconds !== undefined
                 ? t('tripAgent.activityDone', { seconds: durationSeconds })
                 : t('tripAgent.activityDoneUnknown'),
-        steps.length > 0 ? t('tripAgent.activitySteps', { count: steps.length }) : null,
-    ].filter(Boolean).join(' · ');
+            steps.length > 0 ? t('tripAgent.activitySteps', { count: steps.length }) : null,
+        ].filter(Boolean).join(' · ');
 
     return (
         <Collapsible
@@ -74,6 +101,9 @@ export const TripAgentActivityGroup: React.FC<{
                 </span>
                 <ChevronDown className={`size-3.5 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </CollapsibleTrigger>
+            {isStreaming && elapsedSeconds >= 20 && (
+                <p className="px-2.5 pb-2 text-[11px] text-slate-500" role="status">{t('tripAgent.activityStillWorking')}</p>
+            )}
             <CollapsibleContent>
                 <div className="space-y-2 border-t border-slate-200/70 px-2.5 py-2">
                     {reasoningText.trim() && (
