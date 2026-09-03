@@ -154,10 +154,12 @@ export const listTripAgentThreads = async (tripId: string): Promise<TripAgentThr
   return rows.map(mapThread);
 };
 
+export const DEFAULT_TRIP_AGENT_THREAD_TITLE = 'New trip chat';
+
 export const createTripAgentThread = async (
   tripId: string,
   actorId: string,
-  title = 'New trip chat',
+  title = DEFAULT_TRIP_AGENT_THREAD_TITLE,
 ): Promise<TripAgentThreadRecord> => {
   const rows = await rest<ThreadRow[]>('trip_agent_threads?select=*', {
     method: 'POST',
@@ -165,6 +167,23 @@ export const createTripAgentThread = async (
     body: JSON.stringify({ trip_id: tripId, created_by: actorId, title: title.slice(0, 160) }),
   });
   return mapThread(rows[0]);
+};
+
+/**
+ * Names a chat after its first prompt so the history list is readable. The
+ * default-title filter keeps a renamed thread untouched.
+ */
+export const titleTripAgentThreadFromPrompt = async (threadId: string, prompt: string): Promise<void> => {
+  const title = prompt.replace(/\s+/g, ' ').trim().slice(0, 60);
+  if (!title) return;
+  await rest(
+    `trip_agent_threads?id=eq.${encodeURIComponent(threadId)}&title=eq.${encodeURIComponent(DEFAULT_TRIP_AGENT_THREAD_TITLE)}`,
+    {
+      method: 'PATCH',
+      headers: serviceHeaders('return=minimal'),
+      body: JSON.stringify({ title, updated_at: new Date().toISOString() }),
+    },
+  );
 };
 
 export const archiveTripAgentThread = async (threadId: string, tripId: string): Promise<void> => {

@@ -25,6 +25,14 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 - [x] Log bounded request/run identifiers and failure summaries without prompts, credentials, or raw provider payloads.
 - [x] Raise the Netlify build to Node 22 with `--max-old-space-size=4096`; `vite build` was aborting at the default ~2 GB heap (exit 134, reported by Netlify as exit code 2), which broke every deploy preview on this branch.
 - [x] Describe attached `@` context inside the run instructions instead of relying on the trip-context tool call.
+- [x] Group consecutive thinking and tool events into one collapsed activity block with tool chips.
+- [x] Accept loosely shaped proposal payloads and answer schema failures with fixable issues instead of an opaque tool error.
+- [x] Review proposals in a pick-then-preview flow that never writes before the preview is confirmed.
+- [x] Group the `@` menu by trip, cities, stays, activities and transfers.
+- [x] Name chats after their first prompt and group the history menu by recency with per-section caps.
+- [x] Show relative message timestamps and drop the redundant author label on your own messages.
+- [x] Forward refs from the shared button so preact/compat popovers keep a real anchor element.
+- [x] Drop the math, mermaid and syntax-highlighting markdown plugins from the chat renderer.
 - [ ] Verify the deploy preview end to end with an administrator account (transcript reload, retry, apply, quota refund).
 - [ ] Normalize specialist result cards for stays and routes (#485).
 

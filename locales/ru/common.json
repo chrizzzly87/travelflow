@@ -519,7 +519,6 @@
     "title": "Планировать с ИИ",
     "subtitle": "Спросите о маршруте, жилье или плане поездки.",
     "placeholder": "Что вы хотите улучшить?",
-    "safety": "Ничего не изменится без вашего подтверждения.",
     "createAccount": "Создайте аккаунт, чтобы планировать с ИИ.",
     "createAccountCta": "Создать бесплатный аккаунт",
     "quota": "Сегодня осталось запросов: {remaining}",
@@ -534,7 +533,6 @@
     "keep": "Оставить как есть",
     "selectedContext": "Выбранный контекст",
     "removeContext": "Убрать {label} из сообщения",
-    "planning": "Анализируем поездку и готовим варианты…",
     "suggestRelaxed": "Сделать маршрут более спокойным",
     "suggestEastCoast": "Сосредоточить поездку на восточном побережье",
     "suggestStays": "Найти жилье в трех бюджетах",
@@ -579,6 +577,40 @@
       "TRIP_AGENT_THREAD_NOT_FOUND": "Этот чат больше недоступен",
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Это сообщение слишком длинное",
       "TRIP_AGENT_QUOTA_EXCEEDED": "Дневной лимит достигнут"
+    },
+    "agentName": "Trip Agent",
+    "messageFailed": "Не отправлено",
+    "activityWorking": "Работает…",
+    "activityDone": "Думал {seconds} с",
+    "activityDoneUnknown": "Подумал над этим",
+    "activitySteps": "{count, plural, one {# шаг} few {# шага} many {# шагов} other {# шага}}",
+    "contextGroups": {
+      "trip": "Поездка",
+      "city": "Города",
+      "stay": "Жильё",
+      "activity": "Активности",
+      "travel": "Переезды"
+    },
+    "historySections": {
+      "today": "Сегодня",
+      "week": "Последние 7 дней",
+      "older": "Раньше",
+      "archived": "В архиве"
+    },
+    "historyHidden": "{count, plural, one {скрыт # старый чат} few {скрыто # старых чата} many {скрыто # старых чатов} other {скрыто # старого чата}}",
+    "historyEmpty": "Чатов пока нет.",
+    "previewTitle": "Предпросмотр изменений",
+    "previewHint": "Проверьте результат и примените.",
+    "selectHint": "Выберите изменения для предпросмотра.",
+    "previewChanges": "Показать {count} изменений",
+    "backToSelection": "Назад",
+    "retryApply": "Повторить",
+    "previewNoOp": "{count, plural, one {# выбранное изменение не изменит поездку.} few {# выбранных изменения не изменят поездку.} many {# выбранных изменений не изменят поездку.} other {# выбранного изменения не изменят поездку.}}",
+    "dayCount": "{count, plural, one {# день} few {# дня} many {# дней} other {# дня}}",
+    "operationGroups": {
+      "itinerary": "Маршрут",
+      "stays": "Жильё",
+      "trip": "Данные поездки"
     }
   },
   "storageNotice": {

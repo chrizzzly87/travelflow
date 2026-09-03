@@ -21,6 +21,7 @@ import {
   rejectTripAgentChangeSet,
   refundTripAgentQuota,
   reserveTripAgentQuota,
+  titleTripAgentThreadFromPrompt,
 } from '../edge-lib/trip-agent-store.ts';
 import { streamTripAgentResponse } from '../edge-lib/trip-agent-runtime.ts';
 import { getBearerToken, verifySupabaseUser } from '../edge-lib/ai-generate-guard.ts';
@@ -216,6 +217,8 @@ export default async (request: Request) => {
       });
       throw new Error(`TRIP_AGENT_PERSISTENCE_FAILED: ${boundedErrorMessage(error)}`);
     }
+    const promptText = body.message.parts.find((part) => part.type === 'text')?.text || '';
+    await titleTripAgentThreadFromPrompt(body.threadId, promptText).catch(() => undefined);
     console.info('[trip-agent] chat accepted', {
       ...logContext,
       contextCount: body.contextRefs.length,

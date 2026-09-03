@@ -517,7 +517,6 @@
     "title": "Planuj z AI",
     "subtitle": "Zapytaj o trasę, noclegi lub plan podróży.",
     "placeholder": "Co chcesz ulepszyć?",
-    "safety": "Nic się nie zmieni bez Twojej zgody.",
     "createAccount": "Utwórz konto, aby planować z AI.",
     "createAccountCta": "Utwórz darmowe konto",
     "quota": "Pozostało dziś: {remaining}",
@@ -532,7 +531,6 @@
     "keep": "Pozostaw bez zmian",
     "selectedContext": "Wybrany kontekst",
     "removeContext": "Usuń {label} z tej wiadomości",
-    "planning": "Analizuję podróż i przygotowuję opcje…",
     "suggestRelaxed": "Zaplanuj spokojniejszą trasę",
     "suggestEastCoast": "Skup podróż na wschodnim wybrzeżu",
     "suggestStays": "Znajdź noclegi w trzech budżetach",
@@ -577,6 +575,40 @@
       "TRIP_AGENT_THREAD_NOT_FOUND": "Ten czat nie jest już dostępny",
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Ta wiadomość jest za długa",
       "TRIP_AGENT_QUOTA_EXCEEDED": "Osiągnięto dzienny limit"
+    },
+    "agentName": "Trip Agent",
+    "messageFailed": "Nie wysłano",
+    "activityWorking": "Pracuje…",
+    "activityDone": "Myślał {seconds}s",
+    "activityDoneUnknown": "Przemyślał to",
+    "activitySteps": "{count, plural, one {# krok} few {# kroki} many {# kroków} other {# kroku}}",
+    "contextGroups": {
+      "trip": "Podróż",
+      "city": "Miasta",
+      "stay": "Noclegi",
+      "activity": "Atrakcje",
+      "travel": "Przejazdy"
+    },
+    "historySections": {
+      "today": "Dziś",
+      "week": "Ostatnie 7 dni",
+      "older": "Starsze",
+      "archived": "Zarchiwizowane"
+    },
+    "historyHidden": "{count, plural, one {# starszy czat ukryty} few {# starsze czaty ukryte} many {# starszych czatów ukrytych} other {# starszego czatu ukryte}}",
+    "historyEmpty": "Jeszcze brak czatów.",
+    "previewTitle": "Podgląd zmian",
+    "previewHint": "Sprawdź wynik, a potem zastosuj.",
+    "selectHint": "Wybierz zmiany do podglądu.",
+    "previewChanges": "Podgląd {count} zmian",
+    "backToSelection": "Wróć",
+    "retryApply": "Ponów",
+    "previewNoOp": "{count, plural, one {# wybrana zmiana nie zmieniłaby tej podróży.} few {# wybrane zmiany nie zmieniłyby tej podróży.} many {# wybranych zmian nie zmieniłoby tej podróży.} other {# wybranej zmiany nie zmieniłoby tej podróży.}}",
+    "dayCount": "{count, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}",
+    "operationGroups": {
+      "itinerary": "Plan podróży",
+      "stays": "Noclegi",
+      "trip": "Dane podróży"
     }
   },
   "storageNotice": {

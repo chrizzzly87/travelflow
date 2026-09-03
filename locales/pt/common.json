@@ -519,7 +519,6 @@
     "title": "Planeie com IA",
     "subtitle": "Pergunte sobre a rota, estadias ou itinerário.",
     "placeholder": "O que gostaria de melhorar?",
-    "safety": "Nada muda até aprovar.",
     "createAccount": "Crie uma conta para planear com IA.",
     "createAccountCta": "Criar conta grátis",
     "quota": "Restam {remaining} pedidos hoje",
@@ -534,7 +533,6 @@
     "keep": "Manter como está",
     "selectedContext": "Contexto selecionado",
     "removeContext": "Remover {label} desta mensagem",
-    "planning": "A rever a viagem e a preparar opções…",
     "suggestRelaxed": "Tornar esta rota mais tranquila",
     "suggestEastCoast": "Focar esta viagem na costa leste",
     "suggestStays": "Encontrar estadias para três orçamentos",
@@ -579,6 +577,40 @@
       "TRIP_AGENT_THREAD_NOT_FOUND": "Este chat não está mais disponível",
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Esta mensagem é longa demais",
       "TRIP_AGENT_QUOTA_EXCEEDED": "Limite diário atingido"
+    },
+    "agentName": "Trip Agent",
+    "messageFailed": "Não enviado",
+    "activityWorking": "Trabalhando…",
+    "activityDone": "Pensou por {seconds}s",
+    "activityDoneUnknown": "Pensou nisso",
+    "activitySteps": "{count, plural, one {# etapa} other {# etapas}}",
+    "contextGroups": {
+      "trip": "Viagem",
+      "city": "Cidades",
+      "stay": "Hospedagens",
+      "activity": "Atividades",
+      "travel": "Traslados"
+    },
+    "historySections": {
+      "today": "Hoje",
+      "week": "Últimos 7 dias",
+      "older": "Mais antigos",
+      "archived": "Arquivados"
+    },
+    "historyHidden": "{count, plural, one {# conversa mais antiga não exibida} other {# conversas mais antigas não exibidas}}",
+    "historyEmpty": "Ainda sem conversas.",
+    "previewTitle": "Prévia das mudanças",
+    "previewHint": "Confira o resultado e depois aplique.",
+    "selectHint": "Escolha as mudanças que quer conferir.",
+    "previewChanges": "Ver {count} mudanças",
+    "backToSelection": "Voltar",
+    "retryApply": "Tentar de novo",
+    "previewNoOp": "{count, plural, one {# mudança escolhida não alteraria esta viagem.} other {# mudanças escolhidas não alterariam esta viagem.}}",
+    "dayCount": "{count, plural, one {# dia} other {# dias}}",
+    "operationGroups": {
+      "itinerary": "Roteiro",
+      "stays": "Hospedagens",
+      "trip": "Dados da viagem"
     }
   },
   "storageNotice": {

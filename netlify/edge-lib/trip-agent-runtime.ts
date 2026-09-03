@@ -150,12 +150,36 @@ export const streamTripAgentResponse = async (input: {
     }),
     create_trip_proposal: tool({
       description: 'Create a pending, user-reviewable proposal. This never changes the trip directly.',
+      // The payload is accepted loosely and validated inside, so an operation
+      // the model shaped slightly wrong comes back as a fixable answer instead
+      // of an opaque tool failure.
       inputSchema: z.object({
         summary: z.string().trim().min(1).max(2_000),
-        operations: z.array(tripChangeOperationV1Schema).min(1).max(100),
-        sources: z.array(tripAgentSourceSchema).max(30).default([]),
+        operations: z.array(z.unknown()).min(1).max(100),
+        sources: z.array(z.unknown()).max(30).optional(),
       }).strict(),
       execute: async ({ summary, operations, sources }) => {
+        const parsedOperations = z.array(tripChangeOperationV1Schema).min(1).max(100).safeParse(operations);
+        if (!parsedOperations.success) {
+          const issues = parsedOperations.error.issues.slice(0, 8).map((issue) => ({
+            path: issue.path.join('.') || '(root)',
+            message: issue.message.slice(0, 200),
+          }));
+          console.error('[trip-agent] proposal rejected as invalid', {
+            tripId: input.trip.id,
+            threadId: input.threadId,
+            requestId: input.requestId,
+            runId,
+            operationCount: Array.isArray(operations) ? operations.length : 0,
+            issues,
+          });
+          return {
+            kind: 'trip-agent-proposal-invalid' as const,
+            message: 'These operations do not match the trip change schema. Fix the listed fields and call create_trip_proposal once more.',
+            issues,
+          };
+        }
+        const parsedSources = z.array(tripAgentSourceSchema).max(30).safeParse(sources || []);
         const changeSet = tripAgentChangeSetV1Schema.parse({
           schemaVersion: 1,
           id: crypto.randomUUID(),
@@ -164,8 +188,8 @@ export const streamTripAgentResponse = async (input: {
           runId,
           baseTripUpdatedAt: input.trip.updatedAt,
           summary,
-          operations,
-          sources,
+          operations: parsedOperations.data,
+          sources: parsedSources.success ? parsedSources.data : [],
           status: 'pending',
           selectedOperationIds: [],
           appliedVersionId: null,
@@ -174,6 +198,14 @@ export const streamTripAgentResponse = async (input: {
         });
         await persistTripAgentChangeSet(changeSet, input.actor.userId);
         proposalCreated = true;
+        console.info('[trip-agent] proposal created', {
+          tripId: input.trip.id,
+          threadId: input.threadId,
+          requestId: input.requestId,
+          runId,
+          changeSetId: changeSet.id,
+          operationCount: changeSet.operations.length,
+        });
         return { kind: 'trip-agent-proposal', changeSet };
       },
     }),
@@ -192,6 +224,8 @@ Rules:
 - Answer about the attached context above when the user refers to "this" city, stay, activity, or transfer.
 - Delegate place and route facts. If grounding is unavailable, say so and do not invent them.
 - If the user asks to change the trip, call create_trip_proposal with only the smallest relevant typed operations.
+- Every operation needs an id, a rationale and a targetLabel. New items need id, type, title, startDateOffset, duration and color. Never send fields that are not in the schema.
+- If create_trip_proposal answers with kind "trip-agent-proposal-invalid", fix exactly the listed fields and call it once more, then explain in plain text if it still fails.
 - Give a concise public plan and rationale in normal text. Do not expose private chain-of-thought.
 - Nothing changes until the user explicitly applies selected proposal operations.`,
     tools: agentTools,

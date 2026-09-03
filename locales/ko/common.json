@@ -519,7 +519,6 @@
     "title": "AI로 여행 계획하기",
     "subtitle": "경로, 숙소 또는 일정에 관해 물어보세요.",
     "placeholder": "무엇을 개선하고 싶으신가요?",
-    "safety": "승인하기 전에는 아무것도 변경되지 않습니다.",
     "createAccount": "AI로 계획하려면 계정을 만드세요.",
     "createAccountCta": "무료 계정 만들기",
     "quota": "오늘 남은 요청 {remaining}회",
@@ -534,7 +533,6 @@
     "keep": "그대로 유지",
     "selectedContext": "선택한 컨텍스트",
     "removeContext": "이 메시지에서 {label} 삭제",
-    "planning": "여행을 검토하고 옵션을 준비하는 중…",
     "suggestRelaxed": "이 경로를 더 여유롭게 만들기",
     "suggestEastCoast": "동해안 중심으로 여행 구성하기",
     "suggestStays": "세 가지 예산대의 숙소 찾기",
@@ -579,6 +577,40 @@
       "TRIP_AGENT_THREAD_NOT_FOUND": "이 대화는 더 이상 사용할 수 없습니다",
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "메시지가 너무 깁니다",
       "TRIP_AGENT_QUOTA_EXCEEDED": "일일 한도에 도달했습니다"
+    },
+    "agentName": "Trip Agent",
+    "messageFailed": "전송되지 않음",
+    "activityWorking": "작업 중…",
+    "activityDone": "{seconds}초 동안 생각함",
+    "activityDoneUnknown": "생각을 정리했습니다",
+    "activitySteps": "{count, plural, other {#단계}}",
+    "contextGroups": {
+      "trip": "여행",
+      "city": "도시",
+      "stay": "숙소",
+      "activity": "활동",
+      "travel": "이동"
+    },
+    "historySections": {
+      "today": "오늘",
+      "week": "최근 7일",
+      "older": "이전",
+      "archived": "보관됨"
+    },
+    "historyHidden": "{count, plural, other {이전 대화 #개 숨김}}",
+    "historyEmpty": "아직 대화가 없습니다.",
+    "previewTitle": "변경 미리보기",
+    "previewHint": "결과를 확인한 뒤 적용하세요.",
+    "selectHint": "미리 볼 변경을 선택하세요.",
+    "previewChanges": "{count}개 변경 미리보기",
+    "backToSelection": "뒤로",
+    "retryApply": "다시 시도",
+    "previewNoOp": "{count, plural, other {선택한 변경 #개는 이 여행을 바꾸지 않습니다.}}",
+    "dayCount": "{count, plural, other {#일}}",
+    "operationGroups": {
+      "itinerary": "일정",
+      "stays": "숙소",
+      "trip": "여행 정보"
     }
   },
   "storageNotice": {

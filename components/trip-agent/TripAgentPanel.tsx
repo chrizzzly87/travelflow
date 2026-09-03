@@ -1,5 +1,5 @@
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport, isToolUIPart } from 'ai';
+import { DefaultChatTransport } from 'ai';
 import {
     AlertCircle,
     Archive,
@@ -20,26 +20,20 @@ import {
 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { TFunction } from 'i18next';
-
 import type { ITrip } from '../../types';
 import {
     buildTripAgentSelectableContextRefs,
-    tripAgentChangeSetV1Schema,
-    type TripAgentChangeSetV1,
     type TripAgentContextRef,
     type TripAgentMessage,
     type TripAgentQuotaState,
 } from '../../shared/tripAgent';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
-    applyTripAgentProposal,
     archiveTripAgentThread,
     buildTripAgentChatRequest,
     createTripAgentThread,
     loadTripAgentBootstrap,
     readTripAgentError,
-    rejectTripAgentProposal,
     tripAgentFetch,
     type TripAgentBootstrap,
     type TripAgentThread,
@@ -50,7 +44,7 @@ import {
     ConversationEmptyState,
     ConversationScrollButton,
 } from '../ai-elements/conversation';
-import { Message, MessageAction, MessageActions, MessageContent, MessageResponse } from '../ai-elements/message';
+import { Message, MessageContent, MessageResponse } from '../ai-elements/message';
 import {
     PromptInput,
     PromptInputBody,
@@ -65,10 +59,12 @@ import {
     PromptInputTextarea,
 } from '../ai-elements/prompt-input';
 import { Suggestion, Suggestions } from '../ai-elements/suggestion';
-import { Plan, PlanDescription, PlanHeader, PlanTitle } from '../ai-elements/plan';
-import { Reasoning, ReasoningContent, ReasoningTrigger } from '../ai-elements/reasoning';
-import { Source, Sources, SourcesContent, SourcesTrigger } from '../ai-elements/sources';
-import { Tool, ToolContent, ToolHeader, type ToolPart } from '../ai-elements/tool';
+import { Source } from '../ai-elements/sources';
+import { TripAgentActivityGroup } from './TripAgentActivityGroup';
+import { buildTripAgentMessageBlocks } from './tripAgentMessageBlocks';
+import { TripAgentProposalCard } from './TripAgentProposalCard';
+import { formatTripAgentTimestamp, groupTripAgentThreads } from './tripAgentTime';
+import { useMinuteTick } from './useMinuteTick';
 import { Button } from '../ui/button';
 import {
     DropdownMenu,
@@ -87,189 +83,11 @@ interface TripAgentPanelProps {
     onAdoptCommittedTripVersion: (input: { trip: ITrip; versionId: string; label: string }) => void;
 }
 
-const formatOperationValue = (operation: TripAgentChangeSetV1['operations'][number]): string => {
-    if (operation.kind === 'update_trip' || operation.kind === 'update_item' || operation.kind === 'update_stay') {
-        return Object.entries(operation.changes)
-            .map(([key, value]) => `${key}: ${typeof value === 'string' ? value : JSON.stringify(value)}`)
-            .join(' · ');
-    }
-    if (operation.kind === 'add_item') return `Add ${operation.item.title}`;
-    if (operation.kind === 'remove_item') return `Remove ${operation.targetLabel}`;
-    if (operation.kind === 'move_item') return `Move to day ${operation.startDateOffset + 1}`;
-    if (operation.kind === 'add_stay') return `Add ${operation.stay.name}`;
-    if (operation.kind === 'remove_stay') return `Remove ${operation.targetLabel}`;
-    if (operation.kind === 'replace_itinerary') return `Replace itinerary with ${operation.items.length} items`;
-    return `Replace days ${operation.startOffset + 1}–${operation.endOffset}`;
-};
-
-const formatComparisonValue = (value: unknown): string => {
-    if (value === undefined || value === null || value === '') return '—';
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
-    return JSON.stringify(value);
-};
-
-const describeOperationComparison = (
-    trip: ITrip,
-    operation: TripAgentChangeSetV1['operations'][number],
-    t: TFunction,
-): { before: string; after: string } => {
-    if (operation.kind === 'update_trip') {
-        const before = Object.fromEntries(Object.keys(operation.changes).map((key) => [key, trip[key as keyof ITrip]]));
-        return { before: formatComparisonValue(before), after: formatComparisonValue(operation.changes) };
-    }
-    if (operation.kind === 'update_item') {
-        const item = trip.items.find((candidate) => candidate.id === operation.itemId);
-        const before = Object.fromEntries(Object.keys(operation.changes).map((key) => [key, item?.[key as keyof typeof item]]));
-        return { before: formatComparisonValue(before), after: formatComparisonValue(operation.changes) };
-    }
-    if (operation.kind === 'update_stay') {
-        const stay = trip.items.find((candidate) => candidate.id === operation.cityId)?.hotels?.find((candidate) => candidate.id === operation.stayId);
-        const before = Object.fromEntries(Object.keys(operation.changes).map((key) => [key, stay?.[key as keyof typeof stay]]));
-        return { before: formatComparisonValue(before), after: formatComparisonValue(operation.changes) };
-    }
-    if (operation.kind === 'move_item') {
-        const item = trip.items.find((candidate) => candidate.id === operation.itemId);
-        return {
-            before: t('tripAgent.dayValue', { day: (item?.startDateOffset ?? 0) + 1 }),
-            after: t('tripAgent.dayValue', { day: operation.startDateOffset + 1 }),
-        };
-    }
-    if (operation.kind === 'remove_item' || operation.kind === 'remove_stay') {
-        return { before: operation.targetLabel, after: t('tripAgent.removed') };
-    }
-    if (operation.kind === 'add_item') return { before: '—', after: operation.item.title };
-    if (operation.kind === 'add_stay') return { before: '—', after: operation.stay.name };
-    if (operation.kind === 'replace_itinerary') {
-        return {
-            before: t('tripAgent.itemCount', { count: trip.items.length }),
-            after: t('tripAgent.itemCount', { count: operation.items.length }),
-        };
-    }
-    const currentCount = trip.items.filter((item) => (
-        item.startDateOffset < operation.endOffset
-        && item.startDateOffset + item.duration > operation.startOffset
-    )).length;
-    return {
-        before: t('tripAgent.itemCount', { count: currentCount }),
-        after: t('tripAgent.itemCount', { count: operation.items.length }),
-    };
-};
-
-const ProposalCard: React.FC<{
-    trip: ITrip;
-    changeSet: TripAgentChangeSetV1;
-    onApplied: (trip: ITrip, versionId: string, label: string) => void;
-}> = ({ trip, changeSet, onApplied }) => {
-    const { t } = useTranslation('common');
-    const [selected, setSelected] = useState(() => new Set(changeSet.operations.map((operation) => operation.id)));
-    const [state, setState] = useState<'pending' | 'applying' | 'applied' | 'rejected' | 'error'>('pending');
-    const [error, setError] = useState<string | null>(null);
-
-    const toggleOperation = (operationId: string) => {
-        setSelected((current) => {
-            const next = new Set(current);
-            if (next.has(operationId)) next.delete(operationId);
-            else next.add(operationId);
-            return next;
-        });
-    };
-
-    const apply = async () => {
-        if (selected.size === 0 || state !== 'pending') return;
-        setState('applying');
-        setError(null);
-        try {
-            const result = await applyTripAgentProposal(changeSet.tripId, changeSet.id, Array.from(selected));
-            onApplied(result.trip, result.versionId, changeSet.summary);
-            setState('applied');
-            trackEvent('trip_agent__proposal--apply', {
-                trip_id: changeSet.tripId,
-                change_set_id: changeSet.id,
-                operation_count: result.appliedOperationIds.length,
-            });
-        } catch (nextError) {
-            setState('error');
-            setError(nextError instanceof Error ? nextError.message : 'Could not apply this proposal.');
-        }
-    };
-
-    const reject = async () => {
-        if (state !== 'pending') return;
-        await rejectTripAgentProposal(changeSet.tripId, changeSet.id);
-        setState('rejected');
-        trackEvent('trip_agent__proposal--reject', { trip_id: changeSet.tripId, change_set_id: changeSet.id });
-    };
-
-    return (
-        <section className="overflow-hidden rounded-2xl border border-accent-200 bg-white shadow-sm" aria-label={t('tripAgent.review')}>
-            <div className="border-b border-accent-100 bg-accent-50/70 p-4">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-accent-700">
-                    <Sparkles className="size-3.5" />
-                    {t('tripAgent.review')}
-                </div>
-                <h3 className="mt-2 text-sm font-semibold text-slate-950">{changeSet.summary}</h3>
-            </div>
-            <div className="divide-y divide-slate-100">
-                {changeSet.operations.map((operation) => {
-                    const comparison = describeOperationComparison(trip, operation, t);
-                    return <label key={operation.id} className="flex cursor-pointer gap-3 p-4 transition-colors hover:bg-slate-50">
-                        <input
-                            type="checkbox"
-                            checked={selected.has(operation.id)}
-                            disabled={state !== 'pending'}
-                            onChange={() => toggleOperation(operation.id)}
-                            className="mt-0.5 size-4 rounded border-slate-300 text-accent-600 focus:ring-accent-500"
-                        />
-                        <span className="min-w-0">
-                            <span className="block text-sm font-medium text-slate-900">{operation.targetLabel}</span>
-                            <span className="mt-1 block text-xs text-slate-600">{formatOperationValue(operation)}</span>
-                            <span className="mt-1 block text-xs text-slate-500">{operation.rationale}</span>
-                            <span className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
-                                <span className="rounded-lg bg-slate-100 p-2 text-slate-600"><strong className="block font-semibold text-slate-800">{t('tripAgent.before')}</strong>{comparison.before}</span>
-                                <span className="rounded-lg bg-emerald-50 p-2 text-emerald-800"><strong className="block font-semibold text-emerald-900">{t('tripAgent.after')}</strong>{comparison.after}</span>
-                            </span>
-                        </span>
-                    </label>;
-                })}
-            </div>
-            {changeSet.sources.length > 0 && (
-                <Sources className="mx-4 mt-3">
-                    <SourcesTrigger count={changeSet.sources.length} />
-                    <SourcesContent>
-                        {changeSet.sources.map((source) => (
-                            <Source key={source.id} href={source.url} title={source.title} />
-                        ))}
-                    </SourcesContent>
-                </Sources>
-            )}
-            <div className="flex items-center justify-end gap-2 border-t border-slate-100 p-3">
-                {state === 'applied' ? (
-                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700"><Check className="size-4" />{t('tripAgent.applied')}</span>
-                ) : state === 'rejected' ? (
-                    <span className="text-sm text-slate-500">{t('tripAgent.keep')}</span>
-                ) : (
-                    <>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => void reject()} disabled={state === 'applying'}>
-                            {t('tripAgent.keep')}
-                        </Button>
-                        <Button type="button" size="sm" onClick={() => void apply()} disabled={selected.size === 0 || state === 'applying'}>
-                            {t('tripAgent.apply', { count: selected.size })}
-                        </Button>
-                    </>
-                )}
-            </div>
-            {error && <p className="px-4 pb-3 text-xs text-rose-600" role="alert">{error}</p>}
-        </section>
-    );
-};
-
-const resolveToolName = (part: ToolPart): string => (
-    part.type === 'dynamic-tool' ? part.toolName : part.type.slice('tool-'.length)
-);
-
 const contextRefKey = (contextRef: TripAgentContextRef): string => (
     `${contextRef.kind}:${contextRef.id}:${contextRef.cityId || ''}`
 );
+
+const CONTEXT_KIND_ORDER: TripAgentContextRef['kind'][] = ['trip', 'city', 'stay', 'activity', 'travel'];
 
 const ContextKindIcon: React.FC<{ kind: TripAgentContextRef['kind'] }> = ({ kind }) => {
     if (kind === 'trip') return <Sparkles className="size-4" />;
@@ -279,69 +97,63 @@ const ContextKindIcon: React.FC<{ kind: TripAgentContextRef['kind'] }> = ({ kind
     return <CircleDot className="size-4" />;
 };
 
-const asProposal = (part: ToolPart): TripAgentChangeSetV1 | null => {
-    if (resolveToolName(part) !== 'create_trip_proposal' || part.state !== 'output-available') return null;
-    const output = part.output as { kind?: unknown; changeSet?: unknown } | undefined;
-    if (output?.kind !== 'trip-agent-proposal') return null;
-    const result = tripAgentChangeSetV1Schema.safeParse(output.changeSet);
-    return result.success ? result.data : null;
-};
-
 const ChatMessage: React.FC<{
     trip: ITrip;
     message: TripAgentMessage;
     isStreaming: boolean;
+    isOwnMessage: boolean;
+    hasFailed: boolean;
+    locale: string;
+    now: number;
+    onRetry?: () => void;
     onApplied: (trip: ITrip, versionId: string, label: string) => void;
-}> = ({ trip, message, isStreaming, onApplied }) => {
+}> = ({ trip, message, isStreaming, isOwnMessage, hasFailed, locale, now, onRetry, onApplied }) => {
     const { t } = useTranslation('common');
+    const blocks = useMemo(() => buildTripAgentMessageBlocks(message, isStreaming), [message, isStreaming]);
+    const timestamp = formatTripAgentTimestamp(message.metadata?.createdAt as string | undefined, locale, now);
+    const authorLabel = message.role === 'assistant'
+        ? t('tripAgent.agentName')
+        : isOwnMessage ? null : (message.metadata?.authorLabel as string | undefined) || null;
+
     return (
-    <Message from={message.role}>
-        <div className="text-[11px] font-medium text-slate-500">
-            {message.metadata?.authorLabel || (message.role === 'assistant' ? 'Trip Agent' : 'Trip editor')}
-        </div>
-        <MessageContent>
-            {message.parts.map((part, index) => {
-                if (part.type === 'text') {
-                    return <MessageResponse key={`${message.id}-text-${index}`} isAnimating={isStreaming}>{part.text}</MessageResponse>;
-                }
-                if (isToolUIPart(part)) {
-                    const proposal = asProposal(part);
-                    if (proposal) return <ProposalCard key={`${message.id}-proposal-${index}`} trip={trip} changeSet={proposal} onApplied={onApplied} />;
-                    return (
-                        <Tool key={`${message.id}-tool-${index}`} defaultOpen={false}>
-                            {part.type === 'dynamic-tool' ? (
-                                <ToolHeader type={part.type} toolName={part.toolName} state={part.state} title={resolveToolName(part).replaceAll('_', ' ')} />
-                            ) : (
-                                <ToolHeader type={part.type} state={part.state} title={resolveToolName(part).replaceAll('_', ' ')} />
-                            )}
-                            <ToolContent>
-                                <p className="text-xs text-slate-600">
-                                    {part.state === 'output-error' ? part.errorText : part.state === 'output-available' ? t('tripAgent.completed') : t('tripAgent.working')}
-                                </p>
-                            </ToolContent>
-                        </Tool>
-                    );
-                }
-                if (part.type === 'reasoning') {
-                    if (!part.text?.trim()) return null;
-                    return (
-                        <Reasoning
-                            key={`${message.id}-reasoning-${index}`}
-                            className="w-full"
-                            isStreaming={isStreaming && part.state === 'streaming'}
-                        >
-                            <ReasoningTrigger />
-                            <ReasoningContent>{part.text}</ReasoningContent>
-                        </Reasoning>
-                    );
-                }
-                if (part.type === 'source-url') {
-                    return <Source key={`${message.id}-source-${index}`} href={part.url} title={part.title || part.url} />;
-                }
-                return null;
-            })}
-        </MessageContent>
-    </Message>
+        <Message from={message.role}>
+            {(authorLabel || timestamp) && (
+                <div className={`flex items-center gap-1.5 text-[11px] text-slate-400 ${isOwnMessage ? 'justify-end' : ''}`}>
+                    {authorLabel && <span className="font-medium text-slate-500">{authorLabel}</span>}
+                    {authorLabel && timestamp && <span aria-hidden="true">·</span>}
+                    {timestamp && <time dateTime={String(message.metadata?.createdAt || '')}>{timestamp}</time>}
+                </div>
+            )}
+            <MessageContent className={hasFailed ? 'group-[.is-user]:border group-[.is-user]:border-rose-200 group-[.is-user]:bg-rose-50' : undefined}>
+                {blocks.map((block) => {
+                    if (block.kind === 'text') {
+                        return <MessageResponse key={block.key} isAnimating={isStreaming}>{block.text}</MessageResponse>;
+                    }
+                    if (block.kind === 'activity') {
+                        return (
+                            <TripAgentActivityGroup
+                                key={block.key}
+                                reasoningText={block.reasoningText}
+                                steps={block.steps}
+                                isStreaming={block.isStreaming}
+                            />
+                        );
+                    }
+                    if (block.kind === 'proposal') {
+                        return <TripAgentProposalCard key={block.key} trip={trip} changeSet={block.changeSet} onApplied={onApplied} />;
+                    }
+                    return <Source key={block.key} href={block.url} title={block.title} />;
+                })}
+                {hasFailed && onRetry && (
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                        <span className="me-auto text-[11px] font-medium text-rose-700">{t('tripAgent.messageFailed')}</span>
+                        <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+                            <RotateCcw className="size-3.5" />{t('tripAgent.retryMessage')}
+                        </Button>
+                    </div>
+                )}
+            </MessageContent>
+        </Message>
     );
 };
 
@@ -351,10 +163,12 @@ const TripAgentChatSession: React.FC<{
     initialMessages: TripAgentMessage[];
     contextRefs: TripAgentContextRef[];
     quota: TripAgentQuotaState;
+    actorId: string;
     onQuotaMayHaveChanged: () => void;
     onAdoptCommittedTripVersion: TripAgentPanelProps['onAdoptCommittedTripVersion'];
-}> = ({ trip, thread, initialMessages, contextRefs, quota, onQuotaMayHaveChanged, onAdoptCommittedTripVersion }) => {
+}> = ({ trip, thread, initialMessages, contextRefs, quota, actorId, onQuotaMayHaveChanged, onAdoptCommittedTripVersion }) => {
     const { t, i18n } = useTranslation('common');
+    const now = useMinuteTick();
     const [draftText, setDraftText] = useState('');
     const [commandMenu, setCommandMenu] = useState<'context' | 'commands' | null>(null);
     const [manualContextRefs, setManualContextRefs] = useState<TripAgentContextRef[]>([]);
@@ -473,7 +287,7 @@ const TripAgentChatSession: React.FC<{
                         <ConversationEmptyState
                             icon={<Bot className="size-6" />}
                             title={t('tripAgent.noMessages')}
-                            description={t('tripAgent.safety')}
+                            description={t('tripAgent.subtitle')}
                         />
                     ) : messages.map((message, index) => (
                         <ChatMessage
@@ -481,18 +295,16 @@ const TripAgentChatSession: React.FC<{
                             trip={trip}
                             message={message}
                             isStreaming={isGenerating && index === messages.length - 1 && message.role === 'assistant'}
+                            isOwnMessage={message.role === 'user' && (message.metadata?.authorId || actorId) === actorId}
+                            hasFailed={Boolean(errorInfo) && message.id === latestUserMessage?.id}
+                            locale={i18n.language}
+                            now={now}
+                            onRetry={message.id === latestUserMessage?.id ? () => void retryLastMessage() : undefined}
                             onApplied={(nextTrip, versionId, label) => onAdoptCommittedTripVersion({ trip: nextTrip, versionId, label: `Trip Agent: ${label}` })}
                         />
                     ))}
                     {status === 'submitted' && (
-                        <Plan isStreaming className="border-accent-100 bg-accent-50/50">
-                            <PlanHeader>
-                                <div>
-                                    <PlanTitle className="text-sm leading-5">{t('tripAgent.planning')}</PlanTitle>
-                                    <PlanDescription className="text-xs leading-5">{t('tripAgent.safety')}</PlanDescription>
-                                </div>
-                            </PlanHeader>
-                        </Plan>
+                        <TripAgentActivityGroup reasoningText="" steps={[]} isStreaming />
                     )}
                     {errorInfo && (
                         <section className="rounded-2xl border border-rose-200 bg-rose-50/80 p-3 text-rose-950" role="alert">
@@ -502,28 +314,12 @@ const TripAgentChatSession: React.FC<{
                                     <h3 className="text-sm font-semibold leading-5">
                                         {t([`tripAgent.errors.${errorInfo.code}`, 'tripAgent.errors.TRIP_AGENT_REQUEST_FAILED'])}
                                     </h3>
-                                    <p className="mt-1 text-xs leading-5 text-rose-900">{t('tripAgent.requestFailedBody')}</p>
                                     <p className="mt-1 break-words text-xs leading-5 text-rose-800">{errorInfo.detail || errorInfo.message}</p>
                                     <p className="mt-1.5 font-mono text-[10px] uppercase tracking-wide text-rose-600">
                                         {[errorInfo.code, errorInfo.status ? `HTTP ${errorInfo.status}` : null, errorInfo.requestId ? `#${errorInfo.requestId.slice(0, 8)}` : null].filter(Boolean).join(' · ')}
                                     </p>
                                 </div>
                             </div>
-                            {latestUserMessage && latestUserText && (
-                                <MessageActions className="mt-2 justify-end">
-                                    <MessageAction
-                                        label={t('tripAgent.retryMessage')}
-                                        tooltip={t('tripAgent.retryMessage')}
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => void retryLastMessage()}
-                                        disabled={isGenerating || isQuotaReached}
-                                    >
-                                        <RotateCcw className="size-3.5" />
-                                        {t('tripAgent.retryMessage')}
-                                    </MessageAction>
-                                </MessageActions>
-                            )}
                         </section>
                     )}
                 </ConversationContent>
@@ -577,26 +373,31 @@ const TripAgentChatSession: React.FC<{
                                 <PromptInputCommandList className="max-h-64">
                                     <PromptInputCommandEmpty>{t('tripAgent.noContext')}</PromptInputCommandEmpty>
                                     {commandMenu === 'context' ? (
-                                        <PromptInputCommandGroup heading={t('tripAgent.contextMenu')}>
-                                            {selectableContextRefs.map((contextRef) => {
-                                                const isActive = activeContextRefs.some((candidate) => contextRefKey(candidate) === contextRefKey(contextRef));
-                                                return (
-                                                    <PromptInputCommandItem
-                                                        key={contextRefKey(contextRef)}
-                                                        value={`${contextRef.label} ${contextMeta(contextRef)}`}
-                                                        onSelect={() => selectContext(contextRef)}
-                                                        disabled={!isActive && activeContextRefs.length >= 12}
-                                                    >
-                                                        <ContextKindIcon kind={contextRef.kind} />
-                                                        <span className="min-w-0 flex-1">
-                                                            <span className="block truncate text-sm">{contextRef.label}</span>
-                                                            <span className="block truncate text-[11px] text-slate-500">{contextMeta(contextRef)}</span>
-                                                        </span>
-                                                        {isActive && <Check className="size-3.5 text-accent-600" />}
-                                                    </PromptInputCommandItem>
-                                                );
-                                            })}
-                                        </PromptInputCommandGroup>
+                                        CONTEXT_KIND_ORDER
+                                            .map((kind) => ({ kind, refs: selectableContextRefs.filter((contextRef) => contextRef.kind === kind) }))
+                                            .filter((entry) => entry.refs.length > 0)
+                                            .map(({ kind, refs }) => (
+                                                <PromptInputCommandGroup key={kind} heading={t(`tripAgent.contextGroups.${kind}`)}>
+                                                    {refs.map((contextRef) => {
+                                                        const isActive = activeContextRefs.some((candidate) => contextRefKey(candidate) === contextRefKey(contextRef));
+                                                        return (
+                                                            <PromptInputCommandItem
+                                                                key={contextRefKey(contextRef)}
+                                                                value={`${contextRef.label} ${contextMeta(contextRef)}`}
+                                                                onSelect={() => selectContext(contextRef)}
+                                                                disabled={!isActive && activeContextRefs.length >= 12}
+                                                            >
+                                                                <ContextKindIcon kind={contextRef.kind} />
+                                                                <span className="min-w-0 flex-1">
+                                                                    <span className="block truncate text-sm">{contextRef.label}</span>
+                                                                    <span className="block truncate text-[11px] text-slate-500">{contextMeta(contextRef)}</span>
+                                                                </span>
+                                                                {isActive && <Check className="size-3.5 text-accent-600" />}
+                                                            </PromptInputCommandItem>
+                                                        );
+                                                    })}
+                                                </PromptInputCommandGroup>
+                                            ))
                                     ) : (
                                         <PromptInputCommandGroup heading={t('tripAgent.commandMenu')}>
                                             {suggestions.map((suggestion) => (
@@ -644,9 +445,11 @@ const TripAgentChatSession: React.FC<{
                                 <Button type="button" variant="ghost" size="icon-sm" onClick={() => setCommandMenu((current) => current === 'commands' ? null : 'commands')} aria-label={t('tripAgent.commandMenu')}>
                                     <Slash className="size-4" />
                                 </Button>
-                                <span className="truncate px-1 text-[11px] text-slate-500">
-                                    {quota.remaining === null ? t('tripAgent.safety') : t('tripAgent.quota', { remaining: quota.remaining })}
-                                </span>
+                                {quota.remaining !== null && (
+                                    <span className="truncate px-1 text-[11px] text-slate-500">
+                                        {t('tripAgent.quota', { remaining: quota.remaining })}
+                                    </span>
+                                )}
                             </div>
                             <PromptInputSubmit status={status} onStop={stop} disabled={isQuotaReached || !draftText.trim()} />
                         </PromptInputFooter>
@@ -665,7 +468,8 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
     onClose,
     onAdoptCommittedTripVersion,
 }) => {
-    const { t } = useTranslation('common');
+    const { t, i18n } = useTranslation('common');
+    const now = useMinuteTick();
     const [bootstrap, setBootstrap] = useState<TripAgentBootstrap | null>(null);
     const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
@@ -713,6 +517,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
     };
 
     const currentThread = bootstrap?.threads.find((thread) => thread.id === currentThreadId) || null;
+    const threadSections = useMemo(() => groupTripAgentThreads(bootstrap?.threads || [], now), [bootstrap?.threads, now]);
 
     return (
         <aside
@@ -732,18 +537,49 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                             <History className="size-4" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-64">
-                        <DropdownMenuLabel>{t('tripAgent.history')}</DropdownMenuLabel>
-                        {bootstrap?.threads.map((thread) => (
-                            <DropdownMenuItem key={thread.id} onSelect={() => void selectThread(thread.id)}>
-                                <span className="truncate">{thread.title}</span>
-                                {thread.id === currentThreadId && <Check className="ms-auto size-3.5" />}
-                                {thread.status === 'archived' && <Archive className="ms-auto size-3.5 text-slate-400" />}
-                            </DropdownMenuItem>
+                    <DropdownMenuContent align="end" className="max-h-[70dvh] w-72 overflow-y-auto">
+                        <DropdownMenuItem onSelect={() => void createThread()}>
+                            <MessageCirclePlus className="size-4" />{t('tripAgent.newChat')}
+                        </DropdownMenuItem>
+                        {threadSections.length === 0 && (
+                            <p className="px-2 py-3 text-xs text-slate-500">{t('tripAgent.historyEmpty')}</p>
+                        )}
+                        {threadSections.map((section) => (
+                            <React.Fragment key={section.key}>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuLabel className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                    {t(`tripAgent.historySections.${section.key}`)}
+                                </DropdownMenuLabel>
+                                {section.threads.map((thread) => (
+                                    <DropdownMenuItem key={thread.id} onSelect={() => void selectThread(thread.id)} className="items-start gap-2">
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block truncate text-sm">{thread.title}</span>
+                                            <span className="block text-[11px] text-slate-500">
+                                                {formatTripAgentTimestamp(thread.updatedAt, i18n.language, now)}
+                                            </span>
+                                        </span>
+                                        {thread.id === currentThreadId
+                                            ? <Check className="mt-0.5 size-3.5 text-accent-600" />
+                                            : thread.status === 'archived'
+                                                ? <Archive className="mt-0.5 size-3.5 text-slate-400" />
+                                                : null}
+                                    </DropdownMenuItem>
+                                ))}
+                                {section.hiddenCount > 0 && (
+                                    <p className="px-2 pb-1 text-[11px] text-slate-400">
+                                        {t('tripAgent.historyHidden', { count: section.hiddenCount })}
+                                    </p>
+                                )}
+                            </React.Fragment>
                         ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => void createThread()}><MessageCirclePlus className="size-4" />{t('tripAgent.newChat')}</DropdownMenuItem>
-                        {currentThread?.status === 'active' && <DropdownMenuItem onSelect={() => void archiveCurrent()}><Archive className="size-4" />{t('tripAgent.archive')}</DropdownMenuItem>}
+                        {currentThread?.status === 'active' && (
+                            <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={() => void archiveCurrent()}>
+                                    <Archive className="size-4" />{t('tripAgent.archive')}
+                                </DropdownMenuItem>
+                            </>
+                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
                 <Button
@@ -771,6 +607,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                     initialMessages={bootstrap.messages}
                     contextRefs={contextRefs}
                     quota={bootstrap.quota}
+                    actorId={bootstrap.actor.userId}
                     onQuotaMayHaveChanged={() => void refresh(currentThread.id)}
                     onAdoptCommittedTripVersion={onAdoptCommittedTripVersion}
                 />

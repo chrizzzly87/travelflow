@@ -19,11 +19,17 @@ summary: "Trip Agent brings shared, context-aware planning into each trip while 
 - [x] [New feature] ⌨️ Type `@` to attach a city, activity, stay, or transfer to your prompt, and `/` to pick a ready-made planning request.
 - [x] [New feature] 🧠 Follow Trip Agent's thinking steps in the conversation while it works.
 - [x] [Improved] ♻️ Failed requests now appear as a card inside the chat with a named reason and a one-click retry of the same message.
+- [x] [Improved] 🧵 Thinking and tool steps now collapse into one line per stretch of work, with chips you can open for detail, instead of a card per event.
+- [x] [Improved] 👀 Suggested trip changes are now picked first and previewed as a before-and-after result before anything is saved.
+- [x] [Improved] 🕒 Chat bubbles show a short relative time instead of repeating your name.
+- [x] [Improved] 🗂️ Chats are named after your first question and the history menu groups them by today, the last 7 days and older.
+- [x] [Fixed] 🧩 Fixed the proposal step failing outright when a suggested change was shaped slightly wrong; it is now corrected and retried automatically.
 - [x] [Fixed] 💾 Fixed the failure that saved your message but never started a reply, and restores the used request when a reply cannot start.
 - [x] [Fixed] 🔤 The thinking indicator now uses the same text size as the rest of the conversation.
 - [ ] [Internal] 🔐 Added persistent shared threads, messages, runs, tool records, proposals, prompt versions, quotas, and atomic approval records behind an admin-preview feature flag.
 - [ ] [Internal] 🧭 Added allowlisted specialist boundaries for grounded stay and route research, with an explicit unavailable state when Maps grounding is not configured.
 - [ ] [Internal] 🧪 Added typed-operation and history-adoption regression coverage plus deterministic server-side validation paths.
 - [ ] [Internal] 🪵 Accepted empty successful PostgREST write bodies, added quota refunds on pre-stream failures, and added bounded request/run failure logging without prompts or credentials.
+- [ ] [Internal] 🎛️ Grouped chat activity, questionnaire-style proposal review, relative timestamps and recency-grouped thread history; dropped the math/mermaid/shiki markdown plugins and made the shared button forward refs for preact/compat popovers.
 - [ ] [Internal] 🧱 Raised the Netlify build to Node 22 with a 4 GB heap; the AI SDK, streamdown and shiki module graph exceeded the default V8 heap and aborted every deploy of this branch.
 - [ ] [Internal] 🔗 Attached chat context is now described in the run instructions as untrusted data, not only exposed through the trip-context tool.

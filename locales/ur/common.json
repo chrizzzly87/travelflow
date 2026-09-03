@@ -286,7 +286,6 @@
     "title": "AI کے ساتھ منصوبہ بنائیں",
     "subtitle": "اپنے راستے، قیام یا سفرنامے کے بارے میں پوچھیں۔",
     "placeholder": "آپ کیا بہتر کرنا چاہیں گے؟",
-    "safety": "آپ کی منظوری تک کچھ تبدیل نہیں ہوگا۔",
     "createAccount": "AI کے ساتھ منصوبہ بنانے کے لیے اکاؤنٹ بنائیں۔",
     "createAccountCta": "مفت اکاؤنٹ بنائیں",
     "quota": "آج {remaining} درخواستیں باقی ہیں",
@@ -301,7 +300,6 @@
     "keep": "ایسا ہی رہنے دیں",
     "selectedContext": "منتخب سیاق",
     "removeContext": "اس پیغام سے {label} ہٹائیں",
-    "planning": "آپ کے سفر کا جائزہ لے کر اختیارات تیار ہو رہے ہیں…",
     "suggestRelaxed": "اس راستے کو زیادہ آرام دہ بنائیں",
     "suggestEastCoast": "سفر کو مشرقی ساحل پر مرکوز کریں",
     "suggestStays": "تین بجٹ میں قیام تلاش کریں",
@@ -346,6 +344,40 @@
       "TRIP_AGENT_THREAD_NOT_FOUND": "یہ چیٹ اب دستیاب نہیں ہے",
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "یہ پیغام بہت طویل ہے",
       "TRIP_AGENT_QUOTA_EXCEEDED": "روزانہ کی حد پوری ہو گئی"
+    },
+    "agentName": "Trip Agent",
+    "messageFailed": "بھیجا نہیں گیا",
+    "activityWorking": "کام جاری ہے…",
+    "activityDone": "{seconds} سیکنڈ سوچا",
+    "activityDoneUnknown": "کچھ دیر سوچا",
+    "activitySteps": "{count, plural, one {# مرحلہ} other {# مراحل}}",
+    "contextGroups": {
+      "trip": "سفر",
+      "city": "شہر",
+      "stay": "قیام",
+      "activity": "سرگرمیاں",
+      "travel": "سفری مراحل"
+    },
+    "historySections": {
+      "today": "آج",
+      "week": "گزشتہ 7 دن",
+      "older": "پرانے",
+      "archived": "محفوظ شدہ"
+    },
+    "historyHidden": "{count, plural, one {# پرانی چیٹ نہیں دکھائی گئی} other {# پرانی چیٹس نہیں دکھائی گئیں}}",
+    "historyEmpty": "ابھی کوئی چیٹ نہیں۔",
+    "previewTitle": "تبدیلیوں کا پیش منظر",
+    "previewHint": "نتیجہ دیکھیں، پھر لاگو کریں۔",
+    "selectHint": "وہ تبدیلیاں چنیں جو دیکھنا چاہتے ہیں۔",
+    "previewChanges": "{count} تبدیلیاں دیکھیں",
+    "backToSelection": "واپس",
+    "retryApply": "دوبارہ کوشش",
+    "previewNoOp": "{count, plural, one {# منتخب تبدیلی اس سفر کو نہیں بدلے گی۔} other {# منتخب تبدیلیاں اس سفر کو نہیں بدلیں گی۔}}",
+    "dayCount": "{count, plural, one {# دن} other {# دن}}",
+    "operationGroups": {
+      "itinerary": "سفرنامہ",
+      "stays": "قیام",
+      "trip": "سفر کی تفصیل"
     }
   },
   "storageNotice": {
