@@ -118,6 +118,8 @@ create table if not exists public.app_runtime_settings (
   ai_approved_openrouter_models text[] not null default '{}',
   ai_model_max_age_months integer not null default 6,
   ai_show_older_models boolean not null default false,
+  trip_agent_enabled boolean not null default false,
+  trip_agent_admin_preview boolean not null default true,
   updated_at timestamptz not null default now(),
   updated_by uuid references auth.users on delete set null
 );
@@ -1778,9 +1780,9 @@ language sql
 stable
 as $$
   select case p_tier_key
-    when 'tier_mid' then '{"maxActiveTrips":30,"maxTotalTrips":500,"tripExpirationDays":90,"canShare":true,"canCreateEditableShares":true,"canViewProTrips":true,"canCreateProTrips":true}'::jsonb
-    when 'tier_premium' then '{"maxActiveTrips":null,"maxTotalTrips":null,"tripExpirationDays":null,"canShare":true,"canCreateEditableShares":true,"canViewProTrips":true,"canCreateProTrips":true}'::jsonb
-    else '{"maxActiveTrips":5,"maxTotalTrips":50,"tripExpirationDays":14,"canShare":true,"canCreateEditableShares":false,"canViewProTrips":true,"canCreateProTrips":false}'::jsonb
+    when 'tier_mid' then '{"maxActiveTrips":30,"maxTotalTrips":500,"tripExpirationDays":90,"canShare":true,"canCreateEditableShares":true,"canViewProTrips":true,"canCreateProTrips":true,"canUseTripAgent":true,"tripAgentRequestsPerDay":null}'::jsonb
+    when 'tier_premium' then '{"maxActiveTrips":null,"maxTotalTrips":null,"tripExpirationDays":null,"canShare":true,"canCreateEditableShares":true,"canViewProTrips":true,"canCreateProTrips":true,"canUseTripAgent":true,"tripAgentRequestsPerDay":null}'::jsonb
+    else '{"maxActiveTrips":5,"maxTotalTrips":50,"tripExpirationDays":14,"canShare":true,"canCreateEditableShares":false,"canViewProTrips":true,"canCreateProTrips":false,"canUseTripAgent":true,"tripAgentRequestsPerDay":3}'::jsonb
   end;
 $$;
 
@@ -9274,3 +9276,493 @@ grant select on public.destination_content_overrides to anon, authenticated;
 grant all on public.destination_content_overrides to service_role;
 grant usage, select on sequence public.destination_source_record_versions_id_seq to service_role;
 grant usage, select on sequence public.destination_referral_links_id_seq to service_role;
+-- Trip Agent persistence, quotas, configuration, and atomic proposal application.
+
+alter table public.app_runtime_settings
+  add column if not exists trip_agent_enabled boolean not null default false,
+  add column if not exists trip_agent_admin_preview boolean not null default true;
+
+create table if not exists public.trip_agent_prompt_versions (
+  id uuid primary key default gen_random_uuid(),
+  agent_key text not null check (agent_key in ('trip_orchestrator', 'hotel_scout', 'route_planner')),
+  version integer not null check (version > 0),
+  instructions text not null check (char_length(instructions) between 1 and 30000),
+  status text not null default 'draft' check (status in ('draft', 'published', 'archived')),
+  created_by uuid references auth.users on delete set null,
+  published_by uuid references auth.users on delete set null,
+  created_at timestamptz not null default now(),
+  published_at timestamptz,
+  unique (agent_key, version)
+);
+
+create table if not exists public.trip_agent_definitions (
+  agent_key text primary key check (agent_key in ('trip_orchestrator', 'hotel_scout', 'route_planner')),
+  enabled boolean not null default false,
+  model text not null,
+  fallback_model text not null,
+  reasoning_effort text not null check (reasoning_effort in ('none', 'minimal', 'low', 'medium', 'high')),
+  published_prompt_version_id uuid references public.trip_agent_prompt_versions on delete restrict,
+  tool_allowlist text[] not null default '{}',
+  mcp_capability_allowlist text[] not null default '{}',
+  updated_by uuid references auth.users on delete set null,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.trip_agent_threads (
+  id uuid primary key default gen_random_uuid(),
+  trip_id text not null references public.trips(id) on delete cascade,
+  created_by uuid not null references auth.users on delete cascade,
+  title text not null default 'New trip chat' check (char_length(title) between 1 and 160),
+  status text not null default 'active' check (status in ('active', 'archived')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  archived_at timestamptz
+);
+
+create table if not exists public.trip_agent_messages (
+  id text primary key check (char_length(id) between 1 and 160),
+  thread_id uuid not null references public.trip_agent_threads(id) on delete cascade,
+  trip_id text not null references public.trips(id) on delete cascade,
+  author_id uuid references auth.users on delete set null,
+  role text not null check (role in ('user', 'assistant', 'system')),
+  parts jsonb not null default '[]'::jsonb,
+  context_refs jsonb not null default '[]'::jsonb,
+  status text not null default 'complete' check (status in ('streaming', 'complete', 'cancelled', 'failed')),
+  sequence bigint generated by default as identity,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (thread_id, sequence)
+);
+
+create table if not exists public.trip_agent_runs (
+  id uuid primary key default gen_random_uuid(),
+  thread_id uuid not null references public.trip_agent_threads(id) on delete cascade,
+  trip_id text not null references public.trips(id) on delete cascade,
+  user_id uuid not null references auth.users on delete cascade,
+  request_id uuid not null,
+  agent_key text not null references public.trip_agent_definitions(agent_key) on delete restrict,
+  prompt_version_id uuid references public.trip_agent_prompt_versions on delete restrict,
+  model text not null,
+  fallback_model text,
+  status text not null default 'reserved' check (status in ('reserved', 'running', 'completed', 'failed', 'cancelled', 'refunded')),
+  input_tokens integer,
+  output_tokens integer,
+  estimated_cost_usd numeric(14, 8),
+  latency_ms integer,
+  error_code text,
+  error_message text,
+  created_at timestamptz not null default now(),
+  started_at timestamptz,
+  finished_at timestamptz,
+  unique (user_id, request_id)
+);
+
+create table if not exists public.trip_agent_tool_calls (
+  id uuid primary key default gen_random_uuid(),
+  run_id uuid not null references public.trip_agent_runs(id) on delete cascade,
+  agent_key text not null,
+  tool_name text not null,
+  input jsonb not null default '{}'::jsonb,
+  output jsonb,
+  source_records jsonb not null default '[]'::jsonb,
+  status text not null check (status in ('running', 'completed', 'failed', 'unavailable')),
+  duration_ms integer,
+  error_code text,
+  created_at timestamptz not null default now(),
+  finished_at timestamptz
+);
+
+create table if not exists public.trip_agent_change_sets (
+  id uuid primary key default gen_random_uuid(),
+  run_id uuid not null references public.trip_agent_runs(id) on delete cascade,
+  thread_id uuid not null references public.trip_agent_threads(id) on delete cascade,
+  trip_id text not null references public.trips(id) on delete cascade,
+  created_by uuid not null references auth.users on delete cascade,
+  schema_version integer not null default 1 check (schema_version = 1),
+  base_trip_updated_at bigint not null,
+  summary text not null check (char_length(summary) between 1 and 2000),
+  operations jsonb not null check (jsonb_typeof(operations) = 'array'),
+  sources jsonb not null default '[]'::jsonb check (jsonb_typeof(sources) = 'array'),
+  status text not null default 'pending' check (status in ('pending', 'applied', 'applied_partial', 'rejected', 'stale')),
+  selected_operation_ids text[] not null default '{}',
+  applied_version_id uuid references public.trip_versions on delete set null,
+  created_at timestamptz not null default now(),
+  applied_at timestamptz,
+  rejected_at timestamptz
+);
+
+create table if not exists public.trip_agent_usage_daily (
+  user_id uuid not null references auth.users on delete cascade,
+  usage_date date not null,
+  used_count integer not null default 0 check (used_count >= 0),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, usage_date)
+);
+
+create table if not exists public.trip_agent_usage_ledger (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users on delete cascade,
+  request_id uuid not null,
+  usage_date date not null,
+  status text not null check (status in ('charged', 'refunded', 'blocked')),
+  limit_at_request integer,
+  created_at timestamptz not null default now(),
+  refunded_at timestamptz,
+  unique (user_id, request_id)
+);
+
+create index if not exists trip_agent_threads_trip_updated_idx on public.trip_agent_threads(trip_id, updated_at desc);
+create index if not exists trip_agent_messages_thread_sequence_idx on public.trip_agent_messages(thread_id, sequence);
+create index if not exists trip_agent_runs_trip_created_idx on public.trip_agent_runs(trip_id, created_at desc);
+create index if not exists trip_agent_tool_calls_run_created_idx on public.trip_agent_tool_calls(run_id, created_at);
+create index if not exists trip_agent_change_sets_thread_created_idx on public.trip_agent_change_sets(thread_id, created_at desc);
+create index if not exists trip_agent_usage_ledger_user_date_idx on public.trip_agent_usage_ledger(user_id, usage_date);
+
+create or replace function public.trip_agent_can_edit(p_trip_id text, p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+set row_security = off
+as $$
+  select p_user_id is not null and exists (
+    select 1
+      from public.trips t
+     where t.id = p_trip_id
+       and t.status = 'active'
+       and (
+         t.owner_id = p_user_id
+         or exists (
+           select 1 from public.trip_collaborators tc
+            where tc.trip_id = t.id
+              and tc.user_id = p_user_id
+              and tc.role = 'editor'
+         )
+       )
+  );
+$$;
+
+create or replace function public.trip_agent_can_read(p_trip_id text, p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+set row_security = off
+as $$
+  select public.trip_agent_can_edit(p_trip_id, p_user_id)
+    and coalesce(auth.jwt() ->> 'is_anonymous', 'false') <> 'true';
+$$;
+
+alter table public.trip_agent_prompt_versions enable row level security;
+alter table public.trip_agent_definitions enable row level security;
+alter table public.trip_agent_threads enable row level security;
+alter table public.trip_agent_messages enable row level security;
+alter table public.trip_agent_runs enable row level security;
+alter table public.trip_agent_tool_calls enable row level security;
+alter table public.trip_agent_change_sets enable row level security;
+alter table public.trip_agent_usage_daily enable row level security;
+alter table public.trip_agent_usage_ledger enable row level security;
+
+drop policy if exists "Trip agent definitions authenticated read" on public.trip_agent_definitions;
+create policy "Trip agent definitions authenticated read" on public.trip_agent_definitions
+for select to authenticated using (true);
+
+drop policy if exists "Trip agent published prompts authenticated read" on public.trip_agent_prompt_versions;
+create policy "Trip agent published prompts authenticated read" on public.trip_agent_prompt_versions
+for select to authenticated using (status = 'published');
+
+drop policy if exists "Trip agent threads editor read" on public.trip_agent_threads;
+create policy "Trip agent threads editor read" on public.trip_agent_threads
+for select to authenticated using (public.trip_agent_can_read(trip_id, auth.uid()));
+
+drop policy if exists "Trip agent messages editor read" on public.trip_agent_messages;
+create policy "Trip agent messages editor read" on public.trip_agent_messages
+for select to authenticated using (public.trip_agent_can_read(trip_id, auth.uid()));
+
+drop policy if exists "Trip agent change sets editor read" on public.trip_agent_change_sets;
+create policy "Trip agent change sets editor read" on public.trip_agent_change_sets
+for select to authenticated using (public.trip_agent_can_read(trip_id, auth.uid()));
+
+drop policy if exists "Trip agent own usage read" on public.trip_agent_usage_daily;
+create policy "Trip agent own usage read" on public.trip_agent_usage_daily
+for select to authenticated using (user_id = auth.uid());
+
+create or replace function public.reserve_trip_agent_request(
+  p_user_id uuid,
+  p_request_id uuid,
+  p_trip_id text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_today date := timezone('utc', now())::date;
+  v_reset timestamptz := ((timezone('utc', now())::date + 1)::timestamp at time zone 'utc');
+  v_entitlements jsonb;
+  v_enabled boolean;
+  v_limit integer;
+  v_used integer;
+  v_existing public.trip_agent_usage_ledger%rowtype;
+begin
+  if not public.trip_agent_can_edit(p_trip_id, p_user_id) then
+    raise exception 'TRIP_AGENT_EDIT_ACCESS_REQUIRED';
+  end if;
+
+  if exists (select 1 from auth.users u where u.id = p_user_id and coalesce(u.is_anonymous, false)) then
+    raise exception 'TRIP_AGENT_REGISTERED_ACCOUNT_REQUIRED';
+  end if;
+
+  select * into v_existing
+    from public.trip_agent_usage_ledger
+   where user_id = p_user_id and request_id = p_request_id;
+  if found then
+    select used_count into v_used from public.trip_agent_usage_daily
+     where user_id = p_user_id and usage_date = v_existing.usage_date;
+    return jsonb_build_object(
+      'allowed', v_existing.status = 'charged',
+      'used', coalesce(v_used, 0),
+      'limit', v_existing.limit_at_request,
+      'remaining', case when v_existing.limit_at_request is null then null else greatest(v_existing.limit_at_request - coalesce(v_used, 0), 0) end,
+      'resetsAt', v_reset,
+      'idempotent', true
+    );
+  end if;
+
+  v_entitlements := public.get_effective_entitlements(p_user_id);
+  v_enabled := coalesce((v_entitlements ->> 'canUseTripAgent')::boolean, true);
+  v_limit := nullif(v_entitlements ->> 'tripAgentRequestsPerDay', '')::integer;
+
+  insert into public.trip_agent_usage_daily(user_id, usage_date, used_count)
+  values (p_user_id, v_today, 0)
+  on conflict (user_id, usage_date) do nothing;
+
+  select used_count into v_used
+    from public.trip_agent_usage_daily
+   where user_id = p_user_id and usage_date = v_today
+   for update;
+
+  if not v_enabled or (v_limit is not null and v_used >= v_limit) then
+    insert into public.trip_agent_usage_ledger(user_id, request_id, usage_date, status, limit_at_request)
+    values (p_user_id, p_request_id, v_today, 'blocked', v_limit);
+    return jsonb_build_object(
+      'allowed', false,
+      'used', v_used,
+      'limit', v_limit,
+      'remaining', case when v_limit is null then null else greatest(v_limit - v_used, 0) end,
+      'resetsAt', v_reset,
+      'idempotent', false
+    );
+  end if;
+
+  update public.trip_agent_usage_daily
+     set used_count = used_count + 1, updated_at = now()
+   where user_id = p_user_id and usage_date = v_today
+   returning used_count into v_used;
+
+  insert into public.trip_agent_usage_ledger(user_id, request_id, usage_date, status, limit_at_request)
+  values (p_user_id, p_request_id, v_today, 'charged', v_limit);
+
+  return jsonb_build_object(
+    'allowed', true,
+    'used', v_used,
+    'limit', v_limit,
+    'remaining', case when v_limit is null then null else greatest(v_limit - v_used, 0) end,
+    'resetsAt', v_reset,
+    'idempotent', false
+  );
+end;
+$$;
+
+create or replace function public.refund_trip_agent_request(p_user_id uuid, p_request_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_date date;
+begin
+  update public.trip_agent_usage_ledger
+     set status = 'refunded', refunded_at = now()
+   where user_id = p_user_id and request_id = p_request_id and status = 'charged'
+   returning usage_date into v_date;
+  if not found then return false; end if;
+
+  update public.trip_agent_usage_daily
+     set used_count = greatest(used_count - 1, 0), updated_at = now()
+   where user_id = p_user_id and usage_date = v_date;
+  return true;
+end;
+$$;
+
+create or replace function public.apply_trip_agent_change_set(
+  p_actor_id uuid,
+  p_change_set_id uuid,
+  p_selected_operation_ids text[],
+  p_trip_data jsonb,
+  p_view_settings jsonb default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_change public.trip_agent_change_sets%rowtype;
+  v_trip public.trips%rowtype;
+  v_version_id uuid;
+  v_operation_ids text[];
+  v_status text;
+begin
+  select * into v_change from public.trip_agent_change_sets
+   where id = p_change_set_id for update;
+  if not found or v_change.status <> 'pending' then
+    raise exception 'TRIP_AGENT_CHANGE_SET_NOT_PENDING';
+  end if;
+
+  select * into v_trip from public.trips where id = v_change.trip_id for update;
+  if not found or not public.trip_agent_can_edit(v_change.trip_id, p_actor_id) then
+    raise exception 'TRIP_AGENT_EDIT_ACCESS_REQUIRED';
+  end if;
+  if coalesce((v_trip.data ->> 'updatedAt')::bigint, 0) <> v_change.base_trip_updated_at then
+    update public.trip_agent_change_sets set status = 'stale' where id = p_change_set_id;
+    raise exception 'TRIP_AGENT_STALE_PROPOSAL';
+  end if;
+
+  select coalesce(array_agg(value ->> 'id'), '{}') into v_operation_ids
+    from jsonb_array_elements(v_change.operations);
+  if p_selected_operation_ids is null
+     or cardinality(p_selected_operation_ids) = 0
+     or not p_selected_operation_ids <@ v_operation_ids then
+    raise exception 'TRIP_AGENT_INVALID_OPERATION_SELECTION';
+  end if;
+
+  update public.trips
+     set data = p_trip_data,
+         title = coalesce(nullif(p_trip_data ->> 'title', ''), title),
+         start_date = coalesce(nullif(p_trip_data ->> 'startDate', '')::date, start_date),
+         view_settings = coalesce(p_view_settings, view_settings),
+         updated_at = now()
+   where id = v_change.trip_id;
+
+  insert into public.trip_versions(trip_id, data, view_settings, label, created_by)
+  values (v_change.trip_id, p_trip_data, coalesce(p_view_settings, v_trip.view_settings), 'Trip Agent: ' || v_change.summary, p_actor_id)
+  returning id into v_version_id;
+
+  v_status := case when cardinality(p_selected_operation_ids) = cardinality(v_operation_ids)
+    then 'applied' else 'applied_partial' end;
+  update public.trip_agent_change_sets
+     set status = v_status,
+         selected_operation_ids = p_selected_operation_ids,
+         applied_version_id = v_version_id,
+         applied_at = now()
+   where id = p_change_set_id;
+
+  insert into public.trip_user_events(trip_id, owner_id, action, source, metadata)
+  values (
+    v_change.trip_id,
+    v_trip.owner_id,
+    'agent_change_set_applied',
+    'trip_agent',
+    jsonb_build_object('actor_id', p_actor_id, 'change_set_id', p_change_set_id, 'version_id', v_version_id, 'operation_count', cardinality(p_selected_operation_ids))
+  );
+
+  return jsonb_build_object('trip', p_trip_data, 'versionId', v_version_id, 'status', v_status);
+end;
+$$;
+
+revoke all on public.trip_agent_prompt_versions, public.trip_agent_definitions,
+  public.trip_agent_threads, public.trip_agent_messages, public.trip_agent_runs,
+  public.trip_agent_tool_calls, public.trip_agent_change_sets,
+  public.trip_agent_usage_daily, public.trip_agent_usage_ledger from anon;
+revoke insert, update, delete on public.trip_agent_prompt_versions, public.trip_agent_definitions,
+  public.trip_agent_threads, public.trip_agent_messages, public.trip_agent_runs,
+  public.trip_agent_tool_calls, public.trip_agent_change_sets,
+  public.trip_agent_usage_daily, public.trip_agent_usage_ledger from authenticated;
+grant select on public.trip_agent_prompt_versions, public.trip_agent_definitions,
+  public.trip_agent_threads, public.trip_agent_messages, public.trip_agent_change_sets,
+  public.trip_agent_usage_daily to authenticated;
+grant all on public.trip_agent_prompt_versions, public.trip_agent_definitions,
+  public.trip_agent_threads, public.trip_agent_messages, public.trip_agent_runs,
+  public.trip_agent_tool_calls, public.trip_agent_change_sets,
+  public.trip_agent_usage_daily, public.trip_agent_usage_ledger to service_role;
+grant usage, select on sequence public.trip_agent_messages_sequence_seq to service_role;
+
+drop policy if exists "Trip agent runs service access" on public.trip_agent_runs;
+create policy "Trip agent runs service access" on public.trip_agent_runs
+for all to service_role using (true) with check (true);
+
+drop policy if exists "Trip agent tool calls service access" on public.trip_agent_tool_calls;
+create policy "Trip agent tool calls service access" on public.trip_agent_tool_calls
+for all to service_role using (true) with check (true);
+
+drop policy if exists "Trip agent usage ledger service access" on public.trip_agent_usage_ledger;
+create policy "Trip agent usage ledger service access" on public.trip_agent_usage_ledger
+for all to service_role using (true) with check (true);
+
+revoke all on function public.trip_agent_can_edit(text, uuid) from public, anon, authenticated;
+revoke all on function public.trip_agent_can_read(text, uuid) from public, anon;
+grant execute on function public.trip_agent_can_read(text, uuid) to authenticated, service_role;
+grant execute on function public.trip_agent_can_edit(text, uuid) to service_role;
+revoke all on function public.reserve_trip_agent_request(uuid, uuid, text) from public, anon, authenticated;
+revoke all on function public.refund_trip_agent_request(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.apply_trip_agent_change_set(uuid, uuid, text[], jsonb, jsonb) from public, anon, authenticated;
+grant execute on function public.reserve_trip_agent_request(uuid, uuid, text) to service_role;
+grant execute on function public.refund_trip_agent_request(uuid, uuid) to service_role;
+grant execute on function public.apply_trip_agent_change_set(uuid, uuid, text[], jsonb, jsonb) to service_role;
+
+insert into public.trip_agent_prompt_versions(agent_key, version, instructions, status, published_at)
+values
+  ('trip_orchestrator', 1, 'Help collaborators improve the supplied trip. State a short public plan, use only allowed tools, and propose typed changes. Never claim that a proposal has already changed the trip. Never reveal hidden reasoning.', 'published', now()),
+  ('hotel_scout', 1, 'Research suitable stays using grounded place sources. Return at most three options for each low, medium, and high budget-fit group. Do not claim live price or availability. State when price signals are missing.', 'published', now()),
+  ('route_planner', 1, 'Research feasible route alternatives with grounded route sources. Return at most three alternatives with affected stops, distance, duration, and concise trade-offs. Do not invent route facts when the route provider is unavailable.', 'published', now())
+on conflict (agent_key, version) do nothing;
+
+insert into public.trip_agent_definitions(
+  agent_key, enabled, model, fallback_model, reasoning_effort,
+  published_prompt_version_id, tool_allowlist, mcp_capability_allowlist
+)
+select seed.agent_key, true, seed.model, 'openai/gpt-5.4-mini', seed.reasoning_effort,
+       prompt.id, seed.tool_allowlist, seed.mcp_allowlist
+from (values
+  ('trip_orchestrator', 'openai/gpt-5.6-terra', 'medium', array['read_trip_context', 'delegate_hotel_search', 'delegate_route_planning', 'create_trip_proposal']::text[], array[]::text[]),
+  ('hotel_scout', 'openai/gpt-5.6-luna', 'low', array['search_places', 'get_place_details']::text[], array['maps.search_places', 'maps.place_details']::text[]),
+  ('route_planner', 'openai/gpt-5.6-luna', 'low', array['compute_routes']::text[], array['maps.compute_routes']::text[])
+) as seed(agent_key, model, reasoning_effort, tool_allowlist, mcp_allowlist)
+join public.trip_agent_prompt_versions prompt
+  on prompt.agent_key = seed.agent_key and prompt.version = 1
+on conflict (agent_key) do update set
+  model = excluded.model,
+  fallback_model = excluded.fallback_model,
+  reasoning_effort = excluded.reasoning_effort,
+  published_prompt_version_id = excluded.published_prompt_version_id,
+  tool_allowlist = excluded.tool_allowlist,
+  mcp_capability_allowlist = excluded.mcp_capability_allowlist,
+  updated_at = now();
+
+update public.plans
+set entitlements = entitlements || case key
+  when 'tier_free' then '{"canUseTripAgent":true,"tripAgentRequestsPerDay":3}'::jsonb
+  else '{"canUseTripAgent":true,"tripAgentRequestsPerDay":null}'::jsonb
+end
+where key in ('tier_free', 'tier_mid', 'tier_premium');
+
+create or replace function public.resolve_default_entitlements(p_tier_key text)
+returns jsonb
+language sql
+stable
+as $$
+  select case p_tier_key
+    when 'tier_mid' then '{"maxActiveTrips":30,"maxTotalTrips":500,"tripExpirationDays":90,"canShare":true,"canCreateEditableShares":true,"canViewProTrips":true,"canCreateProTrips":true,"canUseTripAgent":true,"tripAgentRequestsPerDay":null}'::jsonb
+    when 'tier_premium' then '{"maxActiveTrips":null,"maxTotalTrips":null,"tripExpirationDays":null,"canShare":true,"canCreateEditableShares":true,"canViewProTrips":true,"canCreateProTrips":true,"canUseTripAgent":true,"tripAgentRequestsPerDay":null}'::jsonb
+    else '{"maxActiveTrips":5,"maxTotalTrips":50,"tripExpirationDays":14,"canShare":true,"canCreateEditableShares":false,"canViewProTrips":true,"canCreateProTrips":false,"canUseTripAgent":true,"tripAgentRequestsPerDay":3}'::jsonb
+  end;
+$$;

@@ -24,6 +24,8 @@ export const PLAN_CATALOG: Record<PlanTierKey, PlanCatalogEntry> = {
             canCreateEditableShares: false,
             canViewProTrips: true,
             canCreateProTrips: false,
+            canUseTripAgent: true,
+            tripAgentRequestsPerDay: 3,
         },
     },
     tier_mid: {
@@ -40,6 +42,8 @@ export const PLAN_CATALOG: Record<PlanTierKey, PlanCatalogEntry> = {
             canCreateEditableShares: true,
             canViewProTrips: true,
             canCreateProTrips: true,
+            canUseTripAgent: true,
+            tripAgentRequestsPerDay: null,
         },
     },
     tier_premium: {
@@ -56,6 +60,8 @@ export const PLAN_CATALOG: Record<PlanTierKey, PlanCatalogEntry> = {
             canCreateEditableShares: true,
             canViewProTrips: true,
             canCreateProTrips: true,
+            canUseTripAgent: true,
+            tripAgentRequestsPerDay: null,
         },
     },
 };

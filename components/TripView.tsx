@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, Suspense, lazy } from 'react';
+import { Lock, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState } from '../types';
@@ -119,6 +120,7 @@ import { registerTripGenerationCompletionWatch } from '../services/tripGeneratio
 import { listTripGenerationJobsByTrip, triggerTripGenerationWorker } from '../services/tripGenerationJobService';
 import { finishTripGenerationAttemptLog } from '../services/tripGenerationAttemptLogService';
 import { toggleMarkdownTaskByLine } from './markdownPresentation';
+import { buildTripAgentContextRefs } from '../shared/tripAgent';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -159,6 +161,10 @@ const TripShareModal = lazyWithRecovery('TripShareModal', () =>
 
 const TripHistoryModal = lazyWithRecovery('TripHistoryModal', () =>
     import('./TripHistoryModal').then((module) => ({ default: module.TripHistoryModal }))
+);
+
+const TripAgentPanel = lazyWithRecovery('TripAgentPanel', () =>
+    import('./trip-agent/TripAgentPanel').then((module) => ({ default: module.TripAgentPanel }))
 );
 
 let tripInfoModalModulePromise: Promise<{ default: React.ComponentType<any> }> | null = null;
@@ -407,6 +413,7 @@ interface TripViewProps {
     trip: ITrip;
     onUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => void;
     onCommitState?: (updatedTrip: ITrip, view: IViewSettings, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void;
+    onAdoptAgentTripVersion?: (input: { trip: ITrip; versionId: string; label: string }) => void;
     onOpenManager: () => void;
     onOpenSettings: () => void;
     initialViewSettings?: IViewSettings;
@@ -959,6 +966,7 @@ const useTripViewRender = ({
     trip,
     onUpdateTrip,
     onCommitState,
+    onAdoptAgentTripVersion,
     onOpenManager,
     onOpenSettings,
     initialViewSettings,
@@ -1649,6 +1657,7 @@ const useTripViewRender = ({
     const [isRetryingGeneration, setIsRetryingGeneration] = useState(false);
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
+    const [isTripAgentOpen, setIsTripAgentOpen] = useState(false);
     const cityColorPaletteId = trip.cityColorPaletteId || DEFAULT_CITY_COLOR_PALETTE_ID;
     const mapColorMode = normalizeMapColorMode(trip.mapColorMode);
     const allowMapColorModeControls = useMemo(
@@ -3008,6 +3017,36 @@ const useTripViewRender = ({
         () => (selectedItemId ? routeStatusById[selectedItemId] : undefined),
         [routeStatusById, selectedItemId]
     );
+    const tripAgentContextRefs = useMemo(
+        () => buildTripAgentContextRefs(trip, selectedItemId, selectedCityIds),
+        [selectedCityIds, selectedItemId, trip]
+    );
+    const isTripAgentLocked = !DB_ENABLED
+        || !isAuthenticated
+        || isAnonymous
+        || !canEdit
+        || access?.entitlements.canUseTripAgent === false
+        || !onAdoptAgentTripVersion;
+    const openTripAgent = useCallback(() => {
+        trackEvent('trip_agent__launcher--open', {
+            trip_id: trip.id,
+            locked: isTripAgentLocked,
+            context_count: tripAgentContextRefs.length,
+        });
+        if (isTripAgentLocked) {
+            openLoginModal({
+                source: 'trip_agent_launcher',
+                nextPath: buildPathFromLocationParts({
+                    pathname: location.pathname,
+                    search: location.search,
+                    hash: location.hash,
+                }),
+                reloadOnSuccess: true,
+            });
+            return;
+        }
+        setIsTripAgentOpen(true);
+    }, [isTripAgentLocked, location.hash, location.pathname, location.search, openLoginModal, trip.id, tripAgentContextRefs.length]);
     const handleTripCalendarExport = useCallback((
         scope: TripCalendarExportScope,
         source: 'details_panel' | 'trip_info_modal' | 'print_view',
@@ -3319,7 +3358,31 @@ const useTripViewRender = ({
                         onSidebarResizeKeyDown={handleSidebarResizeKeyDown}
                         onDetailsResizeKeyDown={handleDetailsResizeKeyDown}
                         onTimelineResizeKeyDown={handleTimelineResizeKeyDown}
+                        floatingOverlayRightInset={isTripAgentOpen && appLanguage !== 'fa' && appLanguage !== 'ur' ? 444 : 0}
                     />
+                    {!isTripAgentOpen && (
+                        <button
+                            type="button"
+                            onClick={openTripAgent}
+                            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] end-4 z-[1490] inline-flex min-h-12 items-center gap-2 rounded-full bg-slate-950 px-4 text-sm font-semibold text-white shadow-xl transition hover:-translate-y-0.5 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                            aria-label={t('tripAgent.title')}
+                            {...getAnalyticsDebugAttributes('trip_agent__launcher--open', { trip_id: trip.id })}
+                        >
+                            {isTripAgentLocked ? <Lock className="size-4" /> : <Sparkles className="size-4" />}
+                            <span>{t('tripAgent.title')}</span>
+                        </button>
+                    )}
+                    {isTripAgentOpen && onAdoptAgentTripVersion && (
+                        <Suspense fallback={null}>
+                            <TripAgentPanel
+                                trip={trip}
+                                contextRefs={tripAgentContextRefs}
+                                isOpen={isTripAgentOpen}
+                                onClose={() => setIsTripAgentOpen(false)}
+                                onAdoptCommittedTripVersion={onAdoptAgentTripVersion}
+                            />
+                        </Suspense>
+                    )}
                     <TripViewModalLayer
                         isMobile={isMobile}
                         detailsPanelVisible={detailsPanelVisible}

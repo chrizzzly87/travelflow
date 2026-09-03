@@ -242,6 +242,7 @@ export const createTripHistorySnapshotEntry = ({
     label,
     ts,
     baseUrlOverride,
+    versionId: suppliedVersionId,
 }: {
     tripId: string;
     trip: ITrip;
@@ -249,8 +250,9 @@ export const createTripHistorySnapshotEntry = ({
     label: string;
     ts?: number;
     baseUrlOverride?: string;
+    versionId?: string;
 }): { url: string; persisted: boolean } => {
-    const versionId = generateVersionId();
+    const versionId = suppliedVersionId || generateVersionId();
     const url = baseUrlOverride
         ? (() => {
             const origin = typeof window !== 'undefined' ? window.location.origin : HISTORY_WRITE_FALLBACK_ORIGIN;

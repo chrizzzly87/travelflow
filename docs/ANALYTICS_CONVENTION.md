@@ -172,6 +172,17 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `trip_view__calendar_export--cities` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
 | `trip_view__calendar_export--all` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
 
+### Trip Agent
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `trip_agent__launcher--open` | — | `{ trip_id, locked, context_count }` | `TripView.tsx` |
+| `trip_agent__panel--close` | — | `{ trip_id }` | `TripAgentPanel.tsx` |
+| `trip_agent__prompt--submit` | — | `{ trip_id, thread_id, context_count }` | `TripAgentPanel.tsx` |
+| `trip_agent__thread--create` | — | `{ trip_id }` | `TripAgentPanel.tsx` |
+| `trip_agent__thread--archive` | — | `{ trip_id, thread_id }` | `TripAgentPanel.tsx` |
+| `trip_agent__proposal--apply` | — | `{ trip_id, change_set_id, operation_count }` | `TripAgentPanel.tsx` |
+| `trip_agent__proposal--reject` | — | `{ trip_id, change_set_id }` | `TripAgentPanel.tsx` |
+
 ### Profile
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|

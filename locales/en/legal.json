@@ -36,7 +36,10 @@
       "What personal data is collected and why.",
       "How long data is stored and where.",
       "Lawful basis for processing and user rights.",
-      "Contact details for privacy requests and deletion."
+      "Contact details for privacy requests and deletion.",
+      "When you use Trip Agent, your prompt, trip content, selected itinerary context, and tool results are processed through our AI Gateway and approved model providers. Grounded place and route requests may also be processed by Google Maps.",
+      "Authorized administrators may access shared chat transcripts, sources, tool activity, proposals, and usage records for support, safety, and service improvement.",
+      "Trip Agent chats and their change audit trail are retained with the trip until the trip or account is deleted. Archiving a chat does not delete this record."
     ]
   },
   "terms": {
