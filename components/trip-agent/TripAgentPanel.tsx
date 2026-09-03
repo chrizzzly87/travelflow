@@ -11,7 +11,7 @@ import {
     Sparkles,
     X,
 } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
@@ -314,12 +314,11 @@ const TripAgentChatSession: React.FC<{
     onAdoptCommittedTripVersion: TripAgentPanelProps['onAdoptCommittedTripVersion'];
 }> = ({ trip, thread, initialMessages, contextRefs, quota, onQuotaMayHaveChanged, onAdoptCommittedTripVersion }) => {
     const { t, i18n } = useTranslation('common');
-    const contextRefState = useRef(contextRefs);
-    contextRefState.current = contextRefs;
     const [removedContextIds, setRemovedContextIds] = useState<Set<string>>(() => new Set());
-    const removedContextIdsRef = useRef(removedContextIds);
-    removedContextIdsRef.current = removedContextIds;
-    const activeContextRefs = contextRefs.filter((contextRef) => !removedContextIds.has(contextRef.id));
+    const activeContextRefs = useMemo(
+        () => contextRefs.filter((contextRef) => !removedContextIds.has(contextRef.id)),
+        [contextRefs, removedContextIds],
+    );
     const transport = useMemo(() => new DefaultChatTransport<TripAgentMessage>({
         api: '/api/trip-agent',
         fetch: tripAgentFetch,
@@ -327,9 +326,9 @@ const TripAgentChatSession: React.FC<{
             tripId: trip.id,
             threadId: thread.id,
             messages,
-            contextRefs: contextRefState.current.filter((contextRef) => !removedContextIdsRef.current.has(contextRef.id)),
+            contextRefs: activeContextRefs,
         }),
-    }), [thread.id, trip.id]);
+    }), [activeContextRefs, thread.id, trip.id]);
     const { messages, sendMessage, status, stop, error } = useChat<TripAgentMessage>({
         id: thread.id,
         messages: initialMessages,
