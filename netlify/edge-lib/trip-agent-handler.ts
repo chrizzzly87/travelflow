@@ -19,6 +19,7 @@ import {
   loadTripAgentMessages,
   persistTripAgentMessage,
   rejectTripAgentChangeSet,
+  refundTripAgentQuota,
   reserveTripAgentQuota,
 } from '../edge-lib/trip-agent-store.ts';
 import { streamTripAgentResponse } from '../edge-lib/trip-agent-runtime.ts';
@@ -35,15 +36,50 @@ const json = (status: number, payload: unknown): Response =>
 const uuidSchema = z.string().uuid();
 const tripIdSchema = z.string().trim().min(1).max(160);
 
-const errorResponse = (error: unknown): Response => {
+interface TripAgentLogContext {
+  action: string;
+  tripId?: string;
+  threadId?: string;
+  requestId?: string;
+}
+
+const boundedErrorMessage = (error: unknown): string => (
+  error instanceof Error ? error.message.slice(0, 300) : 'Unknown Trip Agent error.'
+);
+
+export interface TripAgentFailure {
+  status: number;
+  code: string;
+  error: string;
+}
+
+export const classifyTripAgentFailure = (error: unknown): TripAgentFailure => {
+  if (error instanceof z.ZodError) {
+    return { status: 400, code: 'TRIP_AGENT_INVALID_REQUEST', error: 'This request could not be read. Reload the planner and try again.' };
+  }
   const message = error instanceof Error ? error.message : 'Unknown Trip Agent error.';
-  if (message.includes('AUTH') || message.includes('REGISTERED_ACCOUNT')) return json(401, { code: message, error: 'Create an account to plan with AI.' });
-  if (message.includes('EDIT_ACCESS')) return json(403, { code: message, error: 'Edit access is required.' });
-  if (message.includes('DISABLED')) return json(403, { code: message, error: 'Trip Agent is not enabled for this account yet.' });
-  if (message.includes('STALE')) return json(409, { code: message, error: 'This proposal is based on an older trip version.' });
-  if (message.includes('NOT_PENDING')) return json(409, { code: message, error: 'This proposal is no longer pending.' });
-  if (message.includes('MODEL_NOT_CONFIGURED')) return json(503, { code: message, error: 'Trip Agent model access is not configured.' });
-  return json(400, { code: 'TRIP_AGENT_REQUEST_FAILED', error: message.slice(0, 500) });
+  const has = (needle: string): boolean => message.includes(needle);
+  if (has('AUTH') || has('REGISTERED_ACCOUNT')) return { status: 401, code: 'TRIP_AGENT_AUTH_REQUIRED', error: 'Create an account to plan with AI.' };
+  if (has('EDIT_ACCESS')) return { status: 403, code: 'TRIP_AGENT_EDIT_ACCESS_REQUIRED', error: 'Edit access is required.' };
+  if (has('DISABLED')) return { status: 403, code: 'TRIP_AGENT_DISABLED', error: 'Trip Agent is not enabled for this account yet.' };
+  if (has('STALE')) return { status: 409, code: 'TRIP_AGENT_PROPOSAL_STALE', error: 'This proposal is based on an older trip version.' };
+  if (has('NOT_PENDING')) return { status: 409, code: 'TRIP_AGENT_PROPOSAL_NOT_PENDING', error: 'This proposal is no longer pending.' };
+  if (has('MODEL_NOT_CONFIGURED')) return { status: 503, code: 'TRIP_AGENT_MODEL_NOT_CONFIGURED', error: 'Trip Agent model access is not configured.' };
+  if (has('PERSISTENCE_FAILED')) return { status: 502, code: 'TRIP_AGENT_PERSISTENCE_FAILED', error: 'Your message could not be saved, so nothing was sent.' };
+  if (has('is not configured')) return { status: 503, code: 'TRIP_AGENT_NOT_CONFIGURED', error: 'Trip Agent is not configured on this environment.' };
+  if (has('thread not found')) return { status: 404, code: 'TRIP_AGENT_THREAD_NOT_FOUND', error: 'This chat is no longer available.' };
+  if (has('too large')) return { status: 413, code: 'TRIP_AGENT_PAYLOAD_TOO_LARGE', error: 'This message is too large to process.' };
+  return { status: 502, code: 'TRIP_AGENT_REQUEST_FAILED', error: 'Trip Agent could not complete this request.' };
+};
+
+const errorResponse = (error: unknown, context: TripAgentLogContext): Response => {
+  const failure = classifyTripAgentFailure(error);
+  return json(failure.status, {
+    code: failure.code,
+    error: failure.error,
+    detail: boundedErrorMessage(error),
+    ...(context.requestId ? { requestId: context.requestId } : {}),
+  });
 };
 
 const authenticate = async (request: Request) => {
@@ -85,6 +121,10 @@ const bodySchema = z.discriminatedUnion('action', [
 ]);
 
 export default async (request: Request) => {
+  const startedAt = Date.now();
+  let logContext: TripAgentLogContext = {
+    action: request.method === 'GET' ? 'bootstrap' : 'unknown',
+  };
   try {
     const actor = await authenticate(request);
 
@@ -92,6 +132,7 @@ export default async (request: Request) => {
       const url = new URL(request.url);
       const tripId = tripIdSchema.parse(url.searchParams.get('tripId'));
       const requestedThreadId = url.searchParams.get('threadId');
+      logContext = { action: 'bootstrap', tripId, threadId: requestedThreadId || undefined };
       await loadEditableTrip(tripId, actor.userId);
       const threads = await listTripAgentThreads(tripId);
       const currentThread = requestedThreadId
@@ -106,6 +147,12 @@ export default async (request: Request) => {
 
     if (request.method !== 'POST') return json(405, { error: 'Method not allowed.' });
     const body = bodySchema.parse(await request.json());
+    logContext = {
+      action: body.action,
+      tripId: body.tripId,
+      ...('threadId' in body ? { threadId: body.threadId } : {}),
+      ...('requestId' in body ? { requestId: body.requestId } : {}),
+    };
     const canonical = await loadEditableTrip(body.tripId, actor.userId);
 
     if (body.action === 'createThread') {
@@ -151,12 +198,29 @@ export default async (request: Request) => {
         createdAt: new Date().toISOString(),
       },
     };
-    await persistTripAgentMessage({
-      message: userMessage,
-      threadId: body.threadId,
-      tripId: body.tripId,
-      authorId: actor.userId,
-      contextRefs: body.contextRefs,
+    try {
+      await persistTripAgentMessage({
+        message: userMessage,
+        threadId: body.threadId,
+        tripId: body.tripId,
+        authorId: actor.userId,
+        contextRefs: body.contextRefs,
+      });
+    } catch (error) {
+      await refundTripAgentQuota(actor.userId, body.requestId).catch(() => undefined);
+      console.error('[trip-agent] user message persistence failed', {
+        ...logContext,
+        quotaRefunded: true,
+        errorName: error instanceof Error ? error.name : 'UnknownError',
+        errorMessage: boundedErrorMessage(error),
+      });
+      throw new Error(`TRIP_AGENT_PERSISTENCE_FAILED: ${boundedErrorMessage(error)}`);
+    }
+    console.info('[trip-agent] chat accepted', {
+      ...logContext,
+      contextCount: body.contextRefs.length,
+      quotaRemaining: quota.remaining,
+      durationMs: Date.now() - startedAt,
     });
     return await streamTripAgentResponse({
       actor,
@@ -168,6 +232,15 @@ export default async (request: Request) => {
       abortSignal: request.signal,
     });
   } catch (error) {
-    return errorResponse(error);
+    const failure = classifyTripAgentFailure(error);
+    console.error('[trip-agent] request failed', {
+      ...logContext,
+      code: failure.code,
+      status: failure.status,
+      durationMs: Date.now() - startedAt,
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+      errorMessage: boundedErrorMessage(error),
+    });
+    return errorResponse(error, logContext);
   }
 };

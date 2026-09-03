@@ -545,10 +545,41 @@
     "completed": "Terminé",
     "working": "En cours…",
     "retry": "Réessayer",
+    "requestFailed": "Trip Agent n’a pas pu terminer",
+    "requestFailedBody": "Rien n’a été modifié. Vous pouvez renvoyer le même message.",
+    "retryMessage": "Renvoyer le message",
+    "contextMenu": "Ajouter le contexte du voyage",
+    "commandMenu": "Modèles de prompt",
+    "searchContext": "Rechercher dans ce voyage…",
+    "searchCommand": "Rechercher des modèles de prompt…",
+    "noContext": "Aucun élément du voyage ne correspond.",
+    "closeMenu": "Fermer le menu",
+    "contextKinds": {
+      "trip": "Voyage",
+      "city": "Ville",
+      "activity": "Activité",
+      "stay": "Hébergement",
+      "travel": "Trajet"
+    },
     "loading": "Chargement de Trip Agent…",
     "removed": "Supprimé",
     "dayValue": "Jour {day}",
-    "itemCount": "{count} éléments d’itinéraire"
+    "itemCount": "{count} éléments d’itinéraire",
+    "errors": {
+      "TRIP_AGENT_REQUEST_FAILED": "Trip Agent n’a pas pu terminer",
+      "TRIP_AGENT_INVALID_REQUEST": "Cette requête n’a pas pu être lue",
+      "TRIP_AGENT_AUTH_REQUIRED": "Connectez-vous pour continuer à planifier",
+      "TRIP_AGENT_EDIT_ACCESS_REQUIRED": "Vous devez avoir un accès en modification à ce voyage",
+      "TRIP_AGENT_DISABLED": "Trip Agent n’est pas encore activé",
+      "TRIP_AGENT_PROPOSAL_STALE": "Cette proposition n’est plus à jour",
+      "TRIP_AGENT_PROPOSAL_NOT_PENDING": "Cette proposition a déjà été traitée",
+      "TRIP_AGENT_MODEL_NOT_CONFIGURED": "L’accès au modèle n’est pas configuré",
+      "TRIP_AGENT_NOT_CONFIGURED": "Trip Agent n’est pas configuré ici",
+      "TRIP_AGENT_PERSISTENCE_FAILED": "Votre message n’a pas pu être enregistré",
+      "TRIP_AGENT_THREAD_NOT_FOUND": "Cette conversation n’est plus disponible",
+      "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Ce message est trop long",
+      "TRIP_AGENT_QUOTA_EXCEEDED": "Limite quotidienne atteinte"
+    }
   },
   "storageNotice": {
     "tripsPrunedTitle": "Le stockage de l'appareil est plein",

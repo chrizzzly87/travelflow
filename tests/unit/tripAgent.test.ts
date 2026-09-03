@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyTripAgentOperations, buildTripAgentContextRefs, tripChangeOperationV1Schema } from '../../shared/tripAgent';
+import {
+    applyTripAgentOperations,
+    buildTripAgentContextRefs,
+    buildTripAgentSelectableContextRefs,
+    tripChangeOperationV1Schema,
+} from '../../shared/tripAgent';
 import type { ITrip } from '../../types';
 
 const createTrip = (): ITrip => ({
@@ -119,6 +124,26 @@ describe('trip agent operations', () => {
         expect(refs).toEqual([
             { kind: 'city', id: 'lisbon', label: 'Lisbon', tripUpdatedAt: 10 },
             { kind: 'city', id: 'porto', label: 'Porto', tripUpdatedAt: 10 },
+        ]);
+    });
+
+    it('builds selectable trip, item, and stay context with stable ownership metadata', () => {
+        const trip = createTrip();
+        trip.items.splice(1, 0, {
+            id: 'activity-1',
+            type: 'activity',
+            title: 'Alfama walk',
+            startDateOffset: 1,
+            duration: 0.25,
+            color: '#123456',
+        });
+
+        expect(buildTripAgentSelectableContextRefs(trip)).toEqual([
+            { kind: 'trip', id: 'trip-1', label: 'Portugal', tripUpdatedAt: 10 },
+            { kind: 'city', id: 'lisbon', label: 'Lisbon', tripUpdatedAt: 10 },
+            { kind: 'activity', id: 'activity-1', label: 'Alfama walk', cityId: 'lisbon', tripUpdatedAt: 10 },
+            { kind: 'city', id: 'porto', label: 'Porto', tripUpdatedAt: 10 },
+            { kind: 'stay', id: 'old-stay', label: 'Old stay', cityId: 'lisbon', tripUpdatedAt: 10 },
         ]);
     });
 });

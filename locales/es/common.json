@@ -545,10 +545,41 @@
     "completed": "Completado",
     "working": "Trabajando…",
     "retry": "Intentar de nuevo",
+    "requestFailed": "Trip Agent no pudo terminar",
+    "requestFailedBody": "No se cambió nada. Puedes volver a enviar el mismo mensaje.",
+    "retryMessage": "Reintentar mensaje",
+    "contextMenu": "Añadir contexto del viaje",
+    "commandMenu": "Plantillas de prompt",
+    "searchContext": "Buscar en este viaje…",
+    "searchCommand": "Buscar plantillas de prompt…",
+    "noContext": "No hay elementos del viaje que coincidan.",
+    "closeMenu": "Cerrar menú",
+    "contextKinds": {
+      "trip": "Viaje",
+      "city": "Ciudad",
+      "activity": "Actividad",
+      "stay": "Alojamiento",
+      "travel": "Traslado"
+    },
     "loading": "Cargando Trip Agent…",
     "removed": "Eliminado",
     "dayValue": "Día {day}",
-    "itemCount": "{count} elementos del itinerario"
+    "itemCount": "{count} elementos del itinerario",
+    "errors": {
+      "TRIP_AGENT_REQUEST_FAILED": "Trip Agent no pudo terminar",
+      "TRIP_AGENT_INVALID_REQUEST": "No se pudo leer esta solicitud",
+      "TRIP_AGENT_AUTH_REQUIRED": "Inicia sesión para seguir planificando",
+      "TRIP_AGENT_EDIT_ACCESS_REQUIRED": "Necesitas permiso de edición para este viaje",
+      "TRIP_AGENT_DISABLED": "Trip Agent aún no está habilitado",
+      "TRIP_AGENT_PROPOSAL_STALE": "Esta propuesta está desactualizada",
+      "TRIP_AGENT_PROPOSAL_NOT_PENDING": "Esta propuesta ya se resolvió",
+      "TRIP_AGENT_MODEL_NOT_CONFIGURED": "El acceso al modelo no está configurado",
+      "TRIP_AGENT_NOT_CONFIGURED": "Trip Agent no está configurado aquí",
+      "TRIP_AGENT_PERSISTENCE_FAILED": "No se pudo guardar tu mensaje",
+      "TRIP_AGENT_THREAD_NOT_FOUND": "Este chat ya no está disponible",
+      "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Este mensaje es demasiado largo",
+      "TRIP_AGENT_QUOTA_EXCEEDED": "Límite diario alcanzado"
+    }
   },
   "storageNotice": {
     "tripsPrunedTitle": "El almacenamiento del dispositivo esta lleno",

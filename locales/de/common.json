@@ -545,10 +545,41 @@
     "completed": "Abgeschlossen",
     "working": "In Bearbeitung…",
     "retry": "Erneut versuchen",
+    "requestFailed": "Trip Agent konnte nicht abschließen",
+    "requestFailedBody": "Es wurde nichts geändert. Du kannst dieselbe Nachricht erneut senden.",
+    "retryMessage": "Nachricht erneut senden",
+    "contextMenu": "Reisekontext hinzufügen",
+    "commandMenu": "Prompt-Vorlagen",
+    "searchContext": "Diese Reise durchsuchen…",
+    "searchCommand": "Prompt-Vorlagen suchen…",
+    "noContext": "Kein passendes Reiseelement.",
+    "closeMenu": "Menü schließen",
+    "contextKinds": {
+      "trip": "Reise",
+      "city": "Stadt",
+      "activity": "Aktivität",
+      "stay": "Unterkunft",
+      "travel": "Transfer"
+    },
     "loading": "Trip Agent wird geladen…",
     "removed": "Entfernt",
     "dayValue": "Tag {day}",
-    "itemCount": "{count} Reiseplan-Elemente"
+    "itemCount": "{count} Reiseplan-Elemente",
+    "errors": {
+      "TRIP_AGENT_REQUEST_FAILED": "Trip Agent konnte nicht fertigstellen",
+      "TRIP_AGENT_INVALID_REQUEST": "Diese Anfrage war nicht lesbar",
+      "TRIP_AGENT_AUTH_REQUIRED": "Melde dich an, um weiterzuplanen",
+      "TRIP_AGENT_EDIT_ACCESS_REQUIRED": "Du brauchst Bearbeitungsrechte für diese Reise",
+      "TRIP_AGENT_DISABLED": "Trip Agent ist noch nicht freigeschaltet",
+      "TRIP_AGENT_PROPOSAL_STALE": "Dieser Vorschlag ist veraltet",
+      "TRIP_AGENT_PROPOSAL_NOT_PENDING": "Dieser Vorschlag wurde bereits bearbeitet",
+      "TRIP_AGENT_MODEL_NOT_CONFIGURED": "Modellzugang ist nicht konfiguriert",
+      "TRIP_AGENT_NOT_CONFIGURED": "Trip Agent ist hier nicht konfiguriert",
+      "TRIP_AGENT_PERSISTENCE_FAILED": "Deine Nachricht konnte nicht gespeichert werden",
+      "TRIP_AGENT_THREAD_NOT_FOUND": "Dieser Chat ist nicht mehr verfügbar",
+      "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Diese Nachricht ist zu lang",
+      "TRIP_AGENT_QUOTA_EXCEEDED": "Tageslimit erreicht"
+    }
   },
   "storageNotice": {
     "tripsPrunedTitle": "Der Geratespeicher ist voll",

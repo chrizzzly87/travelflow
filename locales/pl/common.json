@@ -543,10 +543,41 @@
     "completed": "Ukończono",
     "working": "Pracuję…",
     "retry": "Spróbuj ponownie",
+    "requestFailed": "Trip Agent nie mógł zakończyć",
+    "requestFailedBody": "Nic się nie zmieniło. Możesz ponownie wysłać tę samą wiadomość.",
+    "retryMessage": "Wyślij ponownie",
+    "contextMenu": "Dodaj kontekst podróży",
+    "commandMenu": "Szablony poleceń",
+    "searchContext": "Przeszukaj tę podróż…",
+    "searchCommand": "Szukaj gotowych promptów…",
+    "noContext": "Brak pasującego elementu podróży.",
+    "closeMenu": "Zamknij menu",
+    "contextKinds": {
+      "trip": "Podróż",
+      "city": "Miasto",
+      "activity": "Aktywność",
+      "stay": "Nocleg",
+      "travel": "Przejazd"
+    },
     "loading": "Wczytywanie Trip Agent…",
     "removed": "Usunięto",
     "dayValue": "Dzień {day}",
-    "itemCount": "Elementy planu: {count}"
+    "itemCount": "Elementy planu: {count}",
+    "errors": {
+      "TRIP_AGENT_REQUEST_FAILED": "Trip Agent nie mógł ukończyć zadania",
+      "TRIP_AGENT_INVALID_REQUEST": "Nie udało się odczytać tego żądania",
+      "TRIP_AGENT_AUTH_REQUIRED": "Zaloguj się, aby planować dalej",
+      "TRIP_AGENT_EDIT_ACCESS_REQUIRED": "Potrzebujesz uprawnień do edycji tej podróży",
+      "TRIP_AGENT_DISABLED": "Trip Agent nie jest jeszcze włączony",
+      "TRIP_AGENT_PROPOSAL_STALE": "Ta propozycja jest nieaktualna",
+      "TRIP_AGENT_PROPOSAL_NOT_PENDING": "Ta propozycja została już rozpatrzona",
+      "TRIP_AGENT_MODEL_NOT_CONFIGURED": "Dostęp do modelu nie jest skonfigurowany",
+      "TRIP_AGENT_NOT_CONFIGURED": "Trip Agent nie jest tu skonfigurowany",
+      "TRIP_AGENT_PERSISTENCE_FAILED": "Nie udało się zapisać Twojej wiadomości",
+      "TRIP_AGENT_THREAD_NOT_FOUND": "Ten czat nie jest już dostępny",
+      "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Ta wiadomość jest za długa",
+      "TRIP_AGENT_QUOTA_EXCEEDED": "Osiągnięto dzienny limit"
+    }
   },
   "storageNotice": {
     "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",

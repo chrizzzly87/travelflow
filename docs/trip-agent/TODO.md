@@ -15,6 +15,18 @@ This is the repository mirror of the GitHub epic checklist. The GitHub epic is a
 
 Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-agent-collaborative-ai--travelflowapp.netlify.app)
 
+## PoC stabilization
+
+- [x] Accept empty successful Supabase write responses and refund quota when pre-stream persistence fails.
+- [x] Render request failures inside the conversation with a named error code and a one-click retry of the same message.
+- [x] Stream assistant reasoning into the conversation as a collapsible step list.
+- [x] Match the planning animation typography to normal assistant text.
+- [x] Add a shadcn command menu for `/` presets and `@` trip, city, activity, stay, and travel context.
+- [x] Log bounded request/run identifiers and failure summaries without prompts, credentials, or raw provider payloads.
+- [x] Raise the Netlify build to Node 22 so the AI SDK 7 dependency tree installs and deploy previews build again.
+- [ ] Verify the deploy preview end to end with an administrator account (transcript reload, retry, apply, quota refund).
+- [ ] Normalize specialist result cards for stays and routes (#485).
+
 ## Delivery tracks
 
 - [x] #486 Persistence, entitlements, quota, and agent configuration — PoC foundation implemented.

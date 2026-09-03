@@ -545,10 +545,41 @@
     "completed": "Completed",
     "working": "Working…",
     "retry": "Try again",
+    "requestFailed": "Trip Agent couldn’t finish",
+    "requestFailedBody": "Nothing changed. You can retry the same message.",
+    "retryMessage": "Retry message",
+    "contextMenu": "Add trip context",
+    "commandMenu": "Prompt presets",
+    "searchContext": "Search this trip…",
+    "searchCommand": "Search prompt presets…",
+    "noContext": "No matching trip item.",
+    "closeMenu": "Close menu",
+    "contextKinds": {
+      "trip": "Trip",
+      "city": "City",
+      "activity": "Activity",
+      "stay": "Stay",
+      "travel": "Transfer"
+    },
     "loading": "Loading Trip Agent…",
     "removed": "Removed",
     "dayValue": "Day {day}",
-    "itemCount": "{count} itinerary items"
+    "itemCount": "{count} itinerary items",
+    "errors": {
+      "TRIP_AGENT_REQUEST_FAILED": "Trip Agent couldn’t finish",
+      "TRIP_AGENT_INVALID_REQUEST": "This request couldn’t be read",
+      "TRIP_AGENT_AUTH_REQUIRED": "Sign in to keep planning",
+      "TRIP_AGENT_EDIT_ACCESS_REQUIRED": "You need edit access for this trip",
+      "TRIP_AGENT_DISABLED": "Trip Agent isn’t enabled yet",
+      "TRIP_AGENT_PROPOSAL_STALE": "This proposal is out of date",
+      "TRIP_AGENT_PROPOSAL_NOT_PENDING": "This proposal was already handled",
+      "TRIP_AGENT_MODEL_NOT_CONFIGURED": "Model access isn’t configured",
+      "TRIP_AGENT_NOT_CONFIGURED": "Trip Agent isn’t configured here",
+      "TRIP_AGENT_PERSISTENCE_FAILED": "Your message couldn’t be saved",
+      "TRIP_AGENT_THREAD_NOT_FOUND": "This chat is no longer available",
+      "TRIP_AGENT_PAYLOAD_TOO_LARGE": "This message is too long",
+      "TRIP_AGENT_QUOTA_EXCEEDED": "Daily limit reached"
+    }
   },
   "storageNotice": {
     "tripsPrunedTitle": "Device storage is full",

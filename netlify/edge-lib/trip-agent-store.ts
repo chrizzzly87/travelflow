@@ -50,7 +50,9 @@ const rest = async <T>(path: string, init?: RequestInit): Promise<T> => {
   });
   if (!response.ok) return parseError(response);
   if (response.status === 204) return undefined as T;
-  return await response.json() as T;
+  const raw = await response.text();
+  if (!raw.trim()) return undefined as T;
+  return JSON.parse(raw) as T;
 };
 
 const rpc = async <T>(name: string, body: Record<string, unknown>): Promise<T> =>

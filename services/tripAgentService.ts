@@ -32,13 +32,54 @@ const authenticatedFetch = async (input: RequestInfo | URL, init?: RequestInit):
         },
     });
     if (!response.ok) {
-        const payload = await response.json().catch(() => ({})) as { error?: string; code?: string };
-        const error = new Error(payload.error || `Trip Agent request failed (${response.status}).`) as Error & { code?: string; status?: number };
-        error.code = payload.code;
+        const payload = await response.json().catch(() => ({})) as {
+            error?: string;
+            code?: string;
+            detail?: string;
+            requestId?: string;
+        };
+        const error = new Error(payload.error || `Trip Agent request failed (${response.status}).`) as TripAgentRequestError;
+        error.code = payload.code || 'TRIP_AGENT_REQUEST_FAILED';
         error.status = response.status;
+        error.detail = payload.detail;
+        error.requestId = payload.requestId;
+        console.error('[trip-agent] request failed', {
+            status: response.status,
+            code: error.code,
+            requestId: error.requestId,
+            detail: error.detail?.slice(0, 300),
+        });
         throw error;
     }
     return response;
+};
+
+export interface TripAgentRequestError extends Error {
+    code?: string;
+    status?: number;
+    detail?: string;
+    requestId?: string;
+}
+
+export interface TripAgentErrorInfo {
+    code: string;
+    message: string;
+    detail?: string;
+    requestId?: string;
+    status?: number;
+}
+
+export const readTripAgentError = (error: unknown): TripAgentErrorInfo => {
+    const candidate = error as TripAgentRequestError | undefined;
+    const message = candidate?.message || 'Trip Agent could not complete this request.';
+    const inlineCode = /TRIP_AGENT_[A-Z_]+/.exec(message)?.[0];
+    return {
+        code: candidate?.code || inlineCode || 'TRIP_AGENT_REQUEST_FAILED',
+        message: message.slice(0, 300),
+        detail: candidate?.detail?.slice(0, 300),
+        requestId: candidate?.requestId,
+        status: candidate?.status,
+    };
 };
 
 export const tripAgentFetch = authenticatedFetch;

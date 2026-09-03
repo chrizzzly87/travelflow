@@ -312,10 +312,41 @@
     "completed": "تکمیل شد",
     "working": "در حال انجام…",
     "retry": "تلاش دوباره",
+    "requestFailed": "Trip Agent نتوانست درخواست را کامل کند",
+    "requestFailedBody": "چیزی تغییر نکرد. می‌توانید همان پیام را دوباره بفرستید.",
+    "retryMessage": "ارسال دوباره پیام",
+    "contextMenu": "افزودن زمینه سفر",
+    "commandMenu": "الگوهای درخواست",
+    "searchContext": "جست‌وجو در این سفر…",
+    "searchCommand": "جست‌وجوی الگوهای پرسش…",
+    "noContext": "موردی در سفر پیدا نشد.",
+    "closeMenu": "بستن منو",
+    "contextKinds": {
+      "trip": "سفر",
+      "city": "شهر",
+      "activity": "فعالیت",
+      "stay": "اقامت",
+      "travel": "جابجایی"
+    },
     "loading": "در حال بارگذاری Trip Agent…",
     "removed": "حذف شد",
     "dayValue": "روز {day}",
-    "itemCount": "{count} مورد برنامه سفر"
+    "itemCount": "{count} مورد برنامه سفر",
+    "errors": {
+      "TRIP_AGENT_REQUEST_FAILED": "Trip Agent نتوانست کار را کامل کند",
+      "TRIP_AGENT_INVALID_REQUEST": "این درخواست خوانده نشد",
+      "TRIP_AGENT_AUTH_REQUIRED": "برای ادامه برنامه‌ریزی وارد شوید",
+      "TRIP_AGENT_EDIT_ACCESS_REQUIRED": "برای این سفر به دسترسی ویرایش نیاز دارید",
+      "TRIP_AGENT_DISABLED": "Trip Agent هنوز فعال نشده است",
+      "TRIP_AGENT_PROPOSAL_STALE": "این پیشنهاد قدیمی شده است",
+      "TRIP_AGENT_PROPOSAL_NOT_PENDING": "این پیشنهاد قبلاً بررسی شده است",
+      "TRIP_AGENT_MODEL_NOT_CONFIGURED": "دسترسی به مدل تنظیم نشده است",
+      "TRIP_AGENT_NOT_CONFIGURED": "Trip Agent در این محیط تنظیم نشده است",
+      "TRIP_AGENT_PERSISTENCE_FAILED": "پیام شما ذخیره نشد",
+      "TRIP_AGENT_THREAD_NOT_FOUND": "این گفت‌وگو دیگر در دسترس نیست",
+      "TRIP_AGENT_PAYLOAD_TOO_LARGE": "این پیام بسیار بلند است",
+      "TRIP_AGENT_QUOTA_EXCEEDED": "محدودیت روزانه به پایان رسید"
+    }
   },
   "storageNotice": {
     "tripsPrunedTitle": "حافظه دستگاه پر است",

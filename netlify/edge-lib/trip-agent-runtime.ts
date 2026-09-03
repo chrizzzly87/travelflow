@@ -203,7 +203,7 @@ Rules:
       uiMessages: canonicalMessages,
       abortSignal: input.abortSignal,
       timeout: { totalMs: 90_000 },
-      sendReasoning: false,
+      sendReasoning: true,
       sendSources: true,
       generateMessageId: () => crypto.randomUUID(),
       messageMetadata: () => ({
@@ -246,10 +246,41 @@ Rules:
           latencyMs: Date.now() - startedAt,
           errorCode: status === 'failed' ? 'MODEL_STREAM_FAILED' : undefined,
         });
+        console.info('[trip-agent] run finished', {
+          tripId: input.trip.id,
+          threadId: input.threadId,
+          requestId: input.requestId,
+          runId,
+          model: resolvedModel.modelId,
+          status: shouldRefund ? 'refunded' : status,
+          proposalCreated,
+          latencyMs: Date.now() - startedAt,
+        });
       },
-      onError: () => 'The Trip Agent could not finish this response. Please try again.',
+      onError: (error) => {
+        console.error('[trip-agent] stream failed', {
+          tripId: input.trip.id,
+          threadId: input.threadId,
+          requestId: input.requestId,
+          runId,
+          model: resolvedModel.modelId,
+          errorName: error instanceof Error ? error.name : 'UnknownError',
+          errorMessage: error instanceof Error ? error.message.slice(0, 300) : 'Unknown stream error',
+        });
+        return 'The Trip Agent could not finish this response. Please try again.';
+      },
     });
   } catch (error) {
+    console.error('[trip-agent] model start failed', {
+      tripId: input.trip.id,
+      threadId: input.threadId,
+      requestId: input.requestId,
+      runId,
+      agentKey: definition.agentKey,
+      model: resolvedModel.modelId,
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+      errorMessage: error instanceof Error ? error.message.slice(0, 500) : 'Unknown model error',
+    });
     if (!streamFinished) {
       await refundTripAgentQuota(input.actor.userId, input.requestId).catch(() => undefined);
       await finishTripAgentRun(runId, {

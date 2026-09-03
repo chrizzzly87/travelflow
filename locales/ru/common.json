@@ -545,10 +545,41 @@
     "completed": "Завершено",
     "working": "Выполняется…",
     "retry": "Повторить",
+    "requestFailed": "Trip Agent не смог завершить запрос",
+    "requestFailedBody": "Ничего не изменилось. Можно повторно отправить то же сообщение.",
+    "retryMessage": "Повторить сообщение",
+    "contextMenu": "Добавить контекст поездки",
+    "commandMenu": "Шаблоны запросов",
+    "searchContext": "Поиск по поездке…",
+    "searchCommand": "Поиск шаблонов запросов…",
+    "noContext": "Подходящих элементов поездки нет.",
+    "closeMenu": "Закрыть меню",
+    "contextKinds": {
+      "trip": "Поездка",
+      "city": "Город",
+      "activity": "Активность",
+      "stay": "Проживание",
+      "travel": "Переезд"
+    },
     "loading": "Загрузка Trip Agent…",
     "removed": "Удалено",
     "dayValue": "День {day}",
-    "itemCount": "Элементов маршрута: {count}"
+    "itemCount": "Элементов маршрута: {count}",
+    "errors": {
+      "TRIP_AGENT_REQUEST_FAILED": "Trip Agent не смог завершить запрос",
+      "TRIP_AGENT_INVALID_REQUEST": "Не удалось прочитать этот запрос",
+      "TRIP_AGENT_AUTH_REQUIRED": "Войдите, чтобы продолжить планирование",
+      "TRIP_AGENT_EDIT_ACCESS_REQUIRED": "Нужен доступ на редактирование этой поездки",
+      "TRIP_AGENT_DISABLED": "Trip Agent пока не включён",
+      "TRIP_AGENT_PROPOSAL_STALE": "Это предложение устарело",
+      "TRIP_AGENT_PROPOSAL_NOT_PENDING": "Это предложение уже обработано",
+      "TRIP_AGENT_MODEL_NOT_CONFIGURED": "Доступ к модели не настроен",
+      "TRIP_AGENT_NOT_CONFIGURED": "Trip Agent здесь не настроен",
+      "TRIP_AGENT_PERSISTENCE_FAILED": "Не удалось сохранить ваше сообщение",
+      "TRIP_AGENT_THREAD_NOT_FOUND": "Этот чат больше недоступен",
+      "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Это сообщение слишком длинное",
+      "TRIP_AGENT_QUOTA_EXCEEDED": "Дневной лимит достигнут"
+    }
   },
   "storageNotice": {
     "tripsPrunedTitle": "Память устройства заполнена",

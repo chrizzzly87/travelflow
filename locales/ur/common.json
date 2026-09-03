@@ -312,10 +312,41 @@
     "completed": "مکمل",
     "working": "کام جاری ہے…",
     "retry": "دوبارہ کوشش کریں",
+    "requestFailed": "Trip Agent درخواست مکمل نہیں کر سکا",
+    "requestFailedBody": "کچھ تبدیل نہیں ہوا۔ آپ وہی پیغام دوبارہ بھیج سکتے ہیں۔",
+    "retryMessage": "پیغام دوبارہ بھیجیں",
+    "contextMenu": "سفر کا سیاق شامل کریں",
+    "commandMenu": "پرومپٹ پری سیٹس",
+    "searchContext": "اس سفر میں تلاش کریں…",
+    "searchCommand": "پرامپٹ پریسیٹ تلاش کریں…",
+    "noContext": "کوئی مماثل سفری آئٹم نہیں۔",
+    "closeMenu": "مینو بند کریں",
+    "contextKinds": {
+      "trip": "سفر",
+      "city": "شہر",
+      "activity": "سرگرمی",
+      "stay": "قیام",
+      "travel": "منتقلی"
+    },
     "loading": "Trip Agent لوڈ ہو رہا ہے…",
     "removed": "ہٹا دیا گیا",
     "dayValue": "دن {day}",
-    "itemCount": "سفرنامے کے {count} عناصر"
+    "itemCount": "سفرنامے کے {count} عناصر",
+    "errors": {
+      "TRIP_AGENT_REQUEST_FAILED": "Trip Agent مکمل نہیں کر سکا",
+      "TRIP_AGENT_INVALID_REQUEST": "یہ درخواست پڑھی نہیں جا سکی",
+      "TRIP_AGENT_AUTH_REQUIRED": "منصوبہ بندی جاری رکھنے کے لیے سائن اِن کریں",
+      "TRIP_AGENT_EDIT_ACCESS_REQUIRED": "اس سفر کے لیے ترمیم کی اجازت درکار ہے",
+      "TRIP_AGENT_DISABLED": "Trip Agent ابھی فعال نہیں ہے",
+      "TRIP_AGENT_PROPOSAL_STALE": "یہ تجویز پرانی ہو چکی ہے",
+      "TRIP_AGENT_PROPOSAL_NOT_PENDING": "اس تجویز پر پہلے ہی کارروائی ہو چکی ہے",
+      "TRIP_AGENT_MODEL_NOT_CONFIGURED": "ماڈل تک رسائی ترتیب نہیں دی گئی",
+      "TRIP_AGENT_NOT_CONFIGURED": "Trip Agent یہاں ترتیب نہیں دیا گیا",
+      "TRIP_AGENT_PERSISTENCE_FAILED": "آپ کا پیغام محفوظ نہیں ہو سکا",
+      "TRIP_AGENT_THREAD_NOT_FOUND": "یہ چیٹ اب دستیاب نہیں ہے",
+      "TRIP_AGENT_PAYLOAD_TOO_LARGE": "یہ پیغام بہت طویل ہے",
+      "TRIP_AGENT_QUOTA_EXCEEDED": "روزانہ کی حد پوری ہو گئی"
+    }
   },
   "storageNotice": {
     "tripsPrunedTitle": "ڈیوائس کی اسٹوریج بھر گئی ہے",

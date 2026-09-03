@@ -545,10 +545,41 @@
     "completed": "Concluído",
     "working": "A trabalhar…",
     "retry": "Tentar novamente",
+    "requestFailed": "O Trip Agent não conseguiu concluir",
+    "requestFailedBody": "Nada foi alterado. Pode reenviar a mesma mensagem.",
+    "retryMessage": "Reenviar mensagem",
+    "contextMenu": "Adicionar contexto da viagem",
+    "commandMenu": "Modelos de prompt",
+    "searchContext": "Pesquisar nesta viagem…",
+    "searchCommand": "Buscar modelos de prompt…",
+    "noContext": "Nenhum item da viagem corresponde.",
+    "closeMenu": "Fechar menu",
+    "contextKinds": {
+      "trip": "Viagem",
+      "city": "Cidade",
+      "activity": "Atividade",
+      "stay": "Estadia",
+      "travel": "Deslocação"
+    },
     "loading": "A carregar o Trip Agent…",
     "removed": "Removido",
     "dayValue": "Dia {day}",
-    "itemCount": "{count} itens do itinerário"
+    "itemCount": "{count} itens do itinerário",
+    "errors": {
+      "TRIP_AGENT_REQUEST_FAILED": "O Trip Agent não conseguiu concluir",
+      "TRIP_AGENT_INVALID_REQUEST": "Não foi possível ler esta solicitação",
+      "TRIP_AGENT_AUTH_REQUIRED": "Entre na conta para continuar planejando",
+      "TRIP_AGENT_EDIT_ACCESS_REQUIRED": "Você precisa de acesso de edição nesta viagem",
+      "TRIP_AGENT_DISABLED": "O Trip Agent ainda não está ativado",
+      "TRIP_AGENT_PROPOSAL_STALE": "Esta proposta está desatualizada",
+      "TRIP_AGENT_PROPOSAL_NOT_PENDING": "Esta proposta já foi resolvida",
+      "TRIP_AGENT_MODEL_NOT_CONFIGURED": "O acesso ao modelo não está configurado",
+      "TRIP_AGENT_NOT_CONFIGURED": "O Trip Agent não está configurado aqui",
+      "TRIP_AGENT_PERSISTENCE_FAILED": "Não foi possível salvar sua mensagem",
+      "TRIP_AGENT_THREAD_NOT_FOUND": "Este chat não está mais disponível",
+      "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Esta mensagem é longa demais",
+      "TRIP_AGENT_QUOTA_EXCEEDED": "Limite diário atingido"
+    }
   },
   "storageNotice": {
     "tripsPrunedTitle": "O armazenamento do dispositivo esta cheio",

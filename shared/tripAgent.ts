@@ -419,3 +419,38 @@ export const buildTripAgentContextRefs = (
             tripUpdatedAt: trip.updatedAt,
         }));
 };
+
+export const buildTripAgentSelectableContextRefs = (trip: ITrip): TripAgentContextRef[] => {
+    const cities = trip.items.filter((item) => item.type === 'city');
+    const owningCity = (item: ITimelineItem): ITimelineItem | undefined => cities.find((city) => (
+        item.id === city.id
+        || (item.startDateOffset >= city.startDateOffset
+            && item.startDateOffset < city.startDateOffset + city.duration)
+    ));
+    const itemRefs = trip.items
+        .filter((item) => item.type !== 'travel-empty')
+        .map((item) => {
+            const city = owningCity(item);
+            return {
+                kind: item.type === 'city' ? 'city' as const : item.type === 'activity' ? 'activity' as const : 'travel' as const,
+                id: item.id,
+                label: item.title,
+                ...(item.type !== 'city' && city ? { cityId: city.id } : {}),
+                tripUpdatedAt: trip.updatedAt,
+            };
+        });
+    const stayRefs = cities.flatMap((city) => (city.hotels || []).map((stay) => ({
+        kind: 'stay' as const,
+        id: stay.id,
+        label: stay.name,
+        cityId: city.id,
+        tripUpdatedAt: trip.updatedAt,
+    })));
+
+    return [{
+        kind: 'trip',
+        id: trip.id,
+        label: trip.title,
+        tripUpdatedAt: trip.updatedAt,
+    }, ...itemRefs, ...stayRefs];
+};
