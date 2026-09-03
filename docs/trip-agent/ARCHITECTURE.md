@@ -69,14 +69,23 @@ it is dropped before the run starts.
 ### Specialists (read-only, via MCP)
 
 `trip-agent-maps-mcp.ts` opens an HTTP MCP client against
-`https://mapstools.googleapis.com/mcp` with `GOOGLE_MAPS_GROUNDING_API_KEY` and
-exposes only the capability-matched tools:
+`https://mapstools.googleapis.com/mcp`, authenticated with
+`GOOGLE_MAPS_GROUNDING_API_KEY` or, when that is unset, the existing
+`VITE_GOOGLE_MAPS_API_KEY`.
 
-- `hotel_scout` — place search and place details tools
-- `route_planner` — route, direction and distance tools
+That server exposes `search_places`, `compute_routes`, `resolve_names`,
+`resolve_maps_urls` and `lookup_weather`. Each specialist sees only its own
+capability:
 
-Without the key both return `status: "unavailable"` and say so in the chat; they
-never invent place or route facts. Neither specialist can touch the trip.
+- `hotel_scout` — `search_places`, `resolve_names`, `resolve_maps_urls`
+- `route_planner` — `compute_routes`, `resolve_names`
+
+With no usable key both return `status: "unavailable"` and say so in the chat;
+they never invent place or route facts. Neither specialist can touch the trip.
+
+A dedicated server-side key is still preferable: the browser key is meant to be
+referrer-restricted, and a restriction that blocks server calls turns grounding
+off silently (the chip will say `Unavailable`).
 
 ## Trip changes
 

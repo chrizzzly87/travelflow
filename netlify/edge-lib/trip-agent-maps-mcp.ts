@@ -6,12 +6,17 @@ import type { AgentRuntimeDefinition } from './trip-agent-store.ts';
 
 const GOOGLE_MAPS_MCP_URL = 'https://mapstools.googleapis.com/mcp';
 
-const selectAllowedTools = (tools: ToolSet, capability: 'hotel' | 'route'): ToolSet => {
-  const matcher = capability === 'hotel'
-    ? /(place|search|detail)/i
-    : /(route|direction|distance)/i;
-  return Object.fromEntries(Object.entries(tools).filter(([name]) => matcher.test(name)));
+// The Maps MCP server currently exposes search_places, compute_routes,
+// resolve_names, resolve_maps_urls and lookup_weather. Each specialist gets its
+// own capability plus name resolution, and nothing else.
+const ALLOWED_TOOL_PATTERNS: Record<'hotel' | 'route', RegExp> = {
+  hotel: /^(search_places|resolve_names|resolve_maps_urls|.*place.*detail.*)$/i,
+  route: /^(compute_routes|resolve_names|.*(route|direction|distance).*)$/i,
 };
+
+const selectAllowedTools = (tools: ToolSet, capability: 'hotel' | 'route'): ToolSet => (
+  Object.fromEntries(Object.entries(tools).filter(([name]) => ALLOWED_TOOL_PATTERNS[capability].test(name)))
+);
 
 export const runGroundedMapsSpecialist = async (input: {
   capability: 'hotel' | 'route';
