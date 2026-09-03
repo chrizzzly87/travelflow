@@ -243,11 +243,14 @@ export const reserveTripAgentQuota = async (
     limit: number | null;
     remaining: number | null;
     resetsAt: string;
-  }>('reserve_trip_agent_request', {
+  } | undefined>('reserve_trip_agent_request', {
     p_user_id: userId,
     p_request_id: requestId,
     p_trip_id: tripId,
   });
+  if (!result || typeof result.allowed !== 'boolean') {
+    throw new Error('Trip Agent quota reservation is not configured.');
+  }
   return { ...result, enabled: true };
 };
 

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { persistTripAgentMessage } from '../../netlify/edge-lib/trip-agent-store.ts';
+import { persistTripAgentMessage, reserveTripAgentQuota } from '../../netlify/edge-lib/trip-agent-store.ts';
 
 describe('tripAgentStore', () => {
   beforeEach(() => {
@@ -33,5 +33,12 @@ describe('tripAgentStore', () => {
     })).resolves.toBeUndefined();
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('reports a configuration failure instead of a false quota block when the reservation RPC answers empty', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 200 })));
+
+    await expect(reserveTripAgentQuota('user-1', 'request-1', 'trip-1'))
+      .rejects.toThrow(/not configured/);
   });
 });
