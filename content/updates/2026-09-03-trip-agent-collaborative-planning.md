@@ -25,4 +25,5 @@ summary: "Trip Agent brings shared, context-aware planning into each trip while 
 - [ ] [Internal] 🧭 Added allowlisted specialist boundaries for grounded stay and route research, with an explicit unavailable state when Maps grounding is not configured.
 - [ ] [Internal] 🧪 Added typed-operation and history-adoption regression coverage plus deterministic server-side validation paths.
 - [ ] [Internal] 🪵 Accepted empty successful PostgREST write bodies, added quota refunds on pre-stream failures, and added bounded request/run failure logging without prompts or credentials.
-- [ ] [Internal] 🧱 Raised the Netlify build to Node 22 so the AI SDK 7 dependency tree installs.
+- [ ] [Internal] 🧱 Raised the Netlify build to Node 22 with a 4 GB heap; the AI SDK, streamdown and shiki module graph exceeded the default V8 heap and aborted every deploy of this branch.
+- [ ] [Internal] 🔗 Attached chat context is now described in the run instructions as untrusted data, not only exposed through the trip-context tool.

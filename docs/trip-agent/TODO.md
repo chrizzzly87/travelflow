@@ -23,7 +23,8 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 - [x] Match the planning animation typography to normal assistant text.
 - [x] Add a shadcn command menu for `/` presets and `@` trip, city, activity, stay, and travel context.
 - [x] Log bounded request/run identifiers and failure summaries without prompts, credentials, or raw provider payloads.
-- [x] Raise the Netlify build to Node 22 so the AI SDK 7 dependency tree installs and deploy previews build again.
+- [x] Raise the Netlify build to Node 22 with `--max-old-space-size=4096`; `vite build` was aborting at the default ~2 GB heap (exit 134, reported by Netlify as exit code 2), which broke every deploy preview on this branch.
+- [x] Describe attached `@` context inside the run instructions instead of relying on the trip-context tool call.
 - [ ] Verify the deploy preview end to end with an administrator account (transcript reload, retry, apply, quota refund).
 - [ ] Normalize specialist result cards for stays and routes (#485).
 
