@@ -70,6 +70,13 @@ const describeGroup = (trip: ITrip, group: TripAgentChangeGroup, t: TFunction): 
     });
 };
 
+/** Platform-native chord label for the preview toggle. */
+const previewShortcutLabel = (): string => (
+    typeof navigator !== 'undefined' && /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent)
+        ? '⌘⇧P'
+        : 'Ctrl+Shift+P'
+);
+
 /** First sentence, clipped: proposal summaries arrive as a paragraph. */
 const shortSummary = (summary: string): string => {
     const firstSentence = summary.split(/(?<=[.!?])\s/)[0].trim() || summary.trim();
@@ -131,14 +138,26 @@ export const TripAgentProposalCard: React.FC<{
     onRevertLastChange?: () => void;
     /** Only the newest pending proposal answers the preview shortcut. */
     shortcutEnabled?: boolean;
+    /** A newer proposal exists, so this one can no longer be applied. */
+    isSuperseded?: boolean;
     onAskAgain?: () => void;
-}> = ({ trip, changeSet, onApplied, onPreviewTrip, onRevertLastChange, shortcutEnabled, onAskAgain }) => {
+}> = ({
+    trip,
+    changeSet,
+    onApplied,
+    onPreviewTrip,
+    onRevertLastChange,
+    shortcutEnabled,
+    isSuperseded,
+    onAskAgain,
+}) => {
     const { t } = useTranslation('common');
     const groups = useMemo(() => groupTripAgentChanges(trip, changeSet.operations), [changeSet.operations, trip]);
     const [selectedGroupIds, setSelectedGroupIds] = useState(() => groups.map((group) => group.id));
     const [stage, setStage] = useState<'select' | 'preview'>('select');
     const [state, setState] = useState<'pending' | 'applying' | 'applied' | 'reverted' | 'rejected' | 'error'>('pending');
     const [error, setError] = useState<{ code: string; message: string } | null>(null);
+    const [applied, setApplied] = useState<{ count: number; requested: number } | null>(null);
 
     const selectedOperationIds = useMemo(
         () => selectedOperationIdsForGroups(groups, selectedGroupIds),
@@ -171,14 +190,13 @@ export const TripAgentProposalCard: React.FC<{
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [canonicalUpdatedAt, changeSet.id, onPreviewTrip, previewKey]);
 
-    // P toggles the preview, unless the reviewer is typing somewhere.
+    // A chord, so it also works while the message box has focus, where a bare
+    // letter would simply be typed.
     useEffect(() => {
         if (!shortcutEnabled || state !== 'pending') return;
         const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key !== 'p' && event.key !== 'P') return;
-            if (event.metaKey || event.ctrlKey || event.altKey) return;
-            const target = event.target as HTMLElement | null;
-            if (target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName || '')) return;
+            if (event.key.toLowerCase() !== 'p' || !event.shiftKey) return;
+            if (!event.metaKey && !event.ctrlKey) return;
             event.preventDefault();
             setStage((current) => (current === 'preview' ? 'select' : 'preview'));
         };
@@ -194,6 +212,18 @@ export const TripAgentProposalCard: React.FC<{
             const result = await applyTripAgentProposal(changeSet.tripId, changeSet.id, selectedOperationIds);
             onPreviewTrip?.(null);
             onApplied(result.trip, result.versionId, changeSet.summary);
+            setApplied({ count: result.appliedOperationIds.length, requested: selectedOperationIds.length });
+            if (result.appliedOperationIds.length < selectedOperationIds.length) {
+                // The reviewer saw these changes in the preview, so a change the
+                // server could not replay has to be said out loud.
+                console.warn('[trip-agent] applied fewer changes than requested', {
+                    changeSetId: changeSet.id,
+                    requested: selectedOperationIds.length,
+                    applied: result.appliedOperationIds.length,
+                    noOp: result.noOpOperationIds,
+                    skipped: result.skippedOperations,
+                });
+            }
             setState('applied');
             trackEvent('trip_agent__proposal--apply', {
                 trip_id: changeSet.tripId,
@@ -223,6 +253,14 @@ export const TripAgentProposalCard: React.FC<{
         trackEvent('trip_agent__proposal--revert', { trip_id: changeSet.tripId, change_set_id: changeSet.id });
     };
 
+    if (isSuperseded && state === 'pending') {
+        return (
+            <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                {t('tripAgent.superseded')}
+            </p>
+        );
+    }
+
     if (state === 'applied' || state === 'reverted' || state === 'rejected') {
         return (
             <section
@@ -230,9 +268,11 @@ export const TripAgentProposalCard: React.FC<{
                 aria-label={t('tripAgent.review')}
             >
                 {state === 'applied' ? <Check className="size-4 shrink-0 text-emerald-600" /> : null}
-                <span className="min-w-0 flex-1 truncate text-xs text-slate-700">
+                <span className="min-w-0 flex-1 text-xs text-slate-700">
                     {state === 'applied'
-                        ? t('tripAgent.appliedCount', { count: selectedOperationIds.length })
+                        ? (applied && applied.count < applied.requested
+                            ? t('tripAgent.appliedPartial', { count: applied.count, requested: applied.requested })
+                            : t('tripAgent.appliedCount', { count: applied?.count ?? selectedOperationIds.length }))
                         : state === 'reverted' ? t('tripAgent.reverted') : t('tripAgent.discarded')}
                 </span>
                 {state === 'applied' && onRevertLastChange && (
@@ -357,11 +397,6 @@ export const TripAgentProposalCard: React.FC<{
             )}
 
             <div className="flex items-center justify-end gap-2 border-t border-slate-100 p-3">
-                {shortcutEnabled && state === 'pending' && (
-                    <span className="me-auto hidden text-[11px] text-slate-400 sm:inline">
-                        {t('tripAgent.previewShortcut')}
-                    </span>
-                )}
                 {stage === 'select' ? (
                     <>
                         <Button type="button" variant="ghost" size="sm" onClick={reject} disabled={state === 'applying'}>
@@ -372,8 +407,14 @@ export const TripAgentProposalCard: React.FC<{
                             size="sm"
                             onClick={() => setStage('preview')}
                             disabled={selectedOperationIds.length === 0}
+                            title={shortcutEnabled ? previewShortcutLabel() : undefined}
                         >
                             <Eye className="size-3.5" />{t('tripAgent.preview')}
+                            {shortcutEnabled && (
+                                <kbd className="ms-1 rounded border border-white/30 px-1 text-[10px] font-medium opacity-80">
+                                    {previewShortcutLabel()}
+                                </kbd>
+                            )}
                         </Button>
                     </>
                 ) : (

@@ -165,3 +165,14 @@ describe('TripAgentProposalCard', () => {
         expect(screen.getByRole('button', { name: 'tripAgent.retryApply' })).toBeTruthy();
     });
 });
+
+describe('TripAgentProposalCard superseding', () => {
+    it('closes an older proposal once a newer one exists', () => {
+        render(
+            <TripAgentProposalCard trip={trip} changeSet={changeSet} onApplied={vi.fn()} isSuperseded />,
+        );
+
+        expect(screen.getByText('tripAgent.superseded')).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'tripAgent.preview' })).toBeNull();
+    });
+});

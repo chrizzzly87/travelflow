@@ -1015,7 +1015,10 @@ const useTripViewRender = ({
     const asyncStallRecoveryAttemptIdRef = useRef<string | null>(null);
     const asyncStallRecoveryNudgeAttemptIdRef = useRef<string | null>(null);
     const asyncStallRecoveryNudgeAtRef = useRef<number>(0);
-    tripRef.current = trip;
+    // Recovery and save paths read this ref. A preview is a rendering state, so
+    // it must never be what those paths write back: that turned an applied
+    // change into a disappearing one.
+    tripRef.current = agentPreviewTrip ? (agentCanonicalTrip ?? trip) : trip;
     onUpdateTripRef.current = onUpdateTrip;
     const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
     const [retryModelId, setRetryModelId] = useState<string>(getDefaultCreateTripModel().id);
