@@ -161,6 +161,9 @@ Rules:
     } as never);
     console.log(`finishReason=${String((result as { finishReason?: unknown }).finishReason)} usage=${JSON.stringify((result as { usage?: unknown }).usage)}`);
     console.log(`--- answer (${Math.round((Date.now() - started) / 1000)}s) ---\n${result.text}\n`);
+    const steps = (result as { steps?: Array<{ content?: Array<Record<string, unknown>> }> }).steps || [];
+    const toolErrors = steps.flatMap((step) => (step.content || []).filter((part) => String(part.type).includes('error')));
+    if (toolErrors.length > 0) console.log('--- tool errors ---\n' + JSON.stringify(toolErrors, null, 1).slice(0, 2000));
     console.log('--- tool calls ---');
     calls.forEach((call) => console.log(`${call.ok ? 'ok  ' : 'FAIL'} ${call.tool}: ${call.detail}`));
 

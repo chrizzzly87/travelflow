@@ -32,17 +32,31 @@ const DEFAULT_ITEM_COLORS: Record<string, string> = {
     travel: '#0f766e',
 };
 
+// Models are inconsistent about numbers and extra keys. Unknown keys are
+// dropped rather than rejected, and numeric strings are coerced, because the
+// SDK refuses a call that fails this schema before the tool can explain itself.
+const wireNumber = (min: number, max: number) => z.coerce.number().finite().min(min).max(max);
+
 const wireCoordinatesSchema = z.object({
-    lat: z.number().finite().min(-90).max(90),
-    lng: z.number().finite().min(-180).max(180),
-}).strict();
+    lat: wireNumber(-90, 90),
+    lng: wireNumber(-180, 180),
+});
+
+/** Anything outside the supported modes becomes "not specified". */
+const wireTransportMode = z.string().trim().max(40).optional().transform((value) => {
+    if (!value) return undefined;
+    const normalized = value.toLowerCase();
+    return (TRANSPORT_MODE_VALUES as readonly string[]).includes(normalized)
+        ? normalized as typeof TRANSPORT_MODE_VALUES[number]
+        : 'na' as const;
+});
 
 const wireItemSchema = z.object({
     id: z.string().trim().min(1).max(160).optional(),
     type: z.enum(['city', 'activity', 'travel']),
     title: z.string().trim().min(1).max(240),
-    startDateOffset: z.number().finite().min(0).max(36_500),
-    duration: z.number().finite().positive().max(36_500),
+    startDateOffset: wireNumber(0, 36_500),
+    duration: wireNumber(0.01, 36_500),
     color: z.string().trim().min(1).max(80).optional(),
     description: z.string().trim().max(8_000).optional(),
     location: z.string().trim().max(500).optional(),
@@ -50,9 +64,9 @@ const wireItemSchema = z.object({
     countryCode: z.string().trim().max(8).optional(),
     countryName: z.string().trim().max(120).optional(),
     coordinates: wireCoordinatesSchema.optional(),
-    transportMode: z.enum(TRANSPORT_MODE_VALUES).optional(),
+    transportMode: wireTransportMode,
     departureTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
-}).strict();
+});
 
 const wireStaySchema = z.object({
     id: z.string().trim().min(1).max(160).optional(),
@@ -60,32 +74,32 @@ const wireStaySchema = z.object({
     address: z.string().trim().max(500).optional(),
     notes: z.string().trim().max(2_000).optional(),
     coordinates: wireCoordinatesSchema.optional(),
-}).strict();
+});
 
 const wireItemChangesSchema = z.object({
     title: z.string().trim().min(1).max(240).optional(),
     description: z.string().trim().max(8_000).optional(),
     location: z.string().trim().max(500).optional(),
     cost: z.string().trim().max(240).optional(),
-    duration: z.number().finite().positive().max(36_500).optional(),
-    startDateOffset: z.number().finite().min(0).max(36_500).optional(),
-    transportMode: z.enum(TRANSPORT_MODE_VALUES).optional(),
+    duration: wireNumber(0.01, 36_500).optional(),
+    startDateOffset: wireNumber(0, 36_500).optional(),
+    transportMode: wireTransportMode,
     departureTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
     coordinates: wireCoordinatesSchema.optional(),
-}).strict();
+});
 
 const wireTripChangesSchema = z.object({
     title: z.string().trim().min(1).max(240).optional(),
     startDate: z.string().date().optional(),
     roundTrip: z.boolean().optional(),
-}).strict();
+});
 
 const wireStayChangesSchema = z.object({
     name: z.string().trim().min(1).max(240).optional(),
     address: z.string().trim().max(500).optional(),
     notes: z.string().trim().max(2_000).optional(),
     coordinates: wireCoordinatesSchema.optional(),
-}).strict();
+});
 
 export const tripAgentWireOperationSchema = z.object({
     id: z.string().trim().min(1).max(120),
@@ -95,17 +109,17 @@ export const tripAgentWireOperationSchema = z.object({
     itemId: z.string().trim().min(1).max(160).optional(),
     cityId: z.string().trim().min(1).max(160).optional(),
     stayId: z.string().trim().min(1).max(160).optional(),
-    startDateOffset: z.number().finite().min(0).max(36_500).optional(),
-    duration: z.number().finite().positive().max(36_500).optional(),
-    startOffset: z.number().finite().min(0).max(36_500).optional(),
-    endOffset: z.number().finite().positive().max(36_500).optional(),
+    startDateOffset: wireNumber(0, 36_500).optional(),
+    duration: wireNumber(0.01, 36_500).optional(),
+    startOffset: wireNumber(0, 36_500).optional(),
+    endOffset: wireNumber(0.01, 36_500).optional(),
     item: wireItemSchema.optional(),
     items: z.array(wireItemSchema).max(500).optional(),
     stay: wireStaySchema.optional(),
     itemChanges: wireItemChangesSchema.optional(),
     tripChanges: wireTripChangesSchema.optional(),
     stayChanges: wireStayChangesSchema.optional(),
-}).strict();
+});
 
 export type TripAgentWireOperation = z.infer<typeof tripAgentWireOperationSchema>;
 

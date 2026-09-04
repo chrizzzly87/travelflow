@@ -94,15 +94,40 @@ describe('every wire kind converts with its minimal fields', () => {
         expect(result.operation.kind).toBe(kind);
     });
 
-    it('rejects a payload carrying a field the schema does not define', () => {
+    it('drops a field the schema does not define instead of failing the call', () => {
+        // The SDK rejects a call that fails this schema before the tool can
+        // answer, which surfaced as an unexplained red step in the chat.
         const parsed = tripAgentWireOperationSchema.safeParse({
             id: 'op', kind: 'remove_item', itemId: 'i', ...base, notAField: true,
         });
 
-        expect(parsed.success).toBe(false);
+        expect(parsed.success).toBe(true);
+        if (!parsed.success) return;
+        expect('notAField' in parsed.data).toBe(false);
     });
 
-    it('rejects an out-of-range day offset and a zero duration', () => {
+    it('accepts numbers sent as strings', () => {
+        const parsed = tripAgentWireOperationSchema.safeParse({
+            id: 'op', kind: 'move_item', itemId: 'i', startDateOffset: '3', ...base,
+        });
+
+        expect(parsed.success).toBe(true);
+        if (!parsed.success) return;
+        expect(parsed.data.startDateOffset).toBe(3);
+    });
+
+    it('maps an unsupported transport mode to "not specified"', () => {
+        const parsed = tripAgentWireOperationSchema.safeParse({
+            id: 'op', kind: 'add_item', ...base,
+            item: { ...item, type: 'travel', transportMode: 'tourist shuttle' },
+        });
+
+        expect(parsed.success).toBe(true);
+        if (!parsed.success) return;
+        expect(parsed.data.item?.transportMode).toBe('na');
+    });
+
+    it('still rejects an out-of-range day offset and a zero duration', () => {
         expect(tripAgentWireOperationSchema.safeParse({
             id: 'op', kind: 'move_item', itemId: 'i', startDateOffset: -1, ...base,
         }).success).toBe(false);
