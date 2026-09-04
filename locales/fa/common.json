@@ -453,7 +453,8 @@
     "routeDistance": "{km} کیلومتر",
     "routeDuration": "{hours} ساعت",
     "routeAsk": "این گزینه را بخواه",
-    "routeAskPrompt": "تغییرها را برای این پیشنهاد بده: {title}"
+    "routeAskPrompt": "تغییرها را برای این پیشنهاد بده: {title}",
+    "revertLabel": "بازگردانده شد: {summary}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "حافظه دستگاه پر است",

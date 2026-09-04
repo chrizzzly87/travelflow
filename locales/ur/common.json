@@ -453,7 +453,8 @@
     "routeDistance": "{km} کلومیٹر",
     "routeDuration": "{hours} گھنٹے",
     "routeAsk": "یہ اختیار مانگیں",
-    "routeAskPrompt": "اس کے لیے تبدیلیاں تجویز کریں: {title}"
+    "routeAskPrompt": "اس کے لیے تبدیلیاں تجویز کریں: {title}",
+    "revertLabel": "واپس لیا: {summary}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "ڈیوائس کی اسٹوریج بھر گئی ہے",

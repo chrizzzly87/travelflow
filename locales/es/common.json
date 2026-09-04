@@ -686,7 +686,8 @@
     "routeDistance": "{km} km",
     "routeDuration": "{hours} h",
     "routeAsk": "Pedir esta opción",
-    "routeAskPrompt": "Propón los cambios para: {title}"
+    "routeAskPrompt": "Propón los cambios para: {title}",
+    "revertLabel": "Deshecho: {summary}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "El almacenamiento del dispositivo esta lleno",

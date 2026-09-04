@@ -184,7 +184,8 @@ export const TripAgentProposalCard: React.FC<{
     changeSet: TripAgentChangeSetV1;
     onApplied: (trip: ITrip, versionId: string, label: string) => void;
     onPreviewTrip?: (trip: ITrip | null) => void;
-    onRevertLastChange?: () => void;
+    /** Restores the trip as it was before this proposal was applied. */
+    onRevertAgentChange?: (input: { trip: ITrip; label: string }) => void;
     /** Only the newest pending proposal answers the preview shortcut. */
     shortcutEnabled?: boolean;
     /** A newer proposal exists, so this one can no longer be applied. */
@@ -198,7 +199,7 @@ export const TripAgentProposalCard: React.FC<{
     changeSet,
     onApplied,
     onPreviewTrip,
-    onRevertLastChange,
+    onRevertAgentChange,
     shortcutEnabled,
     isSuperseded,
     serverStatus,
@@ -218,6 +219,9 @@ export const TripAgentProposalCard: React.FC<{
         return 'pending';
     });
     const [error, setError] = useState<{ code: string; message: string } | null>(null);
+    // The trip exactly as it stood when this card applied, so Revert restores
+    // that state instead of stepping back through unrelated history entries.
+    const [tripBeforeApply, setTripBeforeApply] = useState<ITrip | null>(null);
     const [applied, setApplied] = useState<{ count: number; requested: number } | null>(() => (
         appliedOperationIds?.length
             ? { count: appliedOperationIds.length, requested: appliedOperationIds.length }
@@ -301,6 +305,7 @@ export const TripAgentProposalCard: React.FC<{
         if (selectedOperationIds.length === 0 || (state !== 'pending' && state !== 'error')) return;
         setState('applying');
         setError(null);
+        setTripBeforeApply(trip);
         try {
             const result = await applyTripAgentProposal(changeSet.tripId, changeSet.id, selectedOperationIds);
             onPreviewTrip?.(null);
@@ -341,7 +346,11 @@ export const TripAgentProposalCard: React.FC<{
     };
 
     const revert = () => {
-        onRevertLastChange?.();
+        if (!tripBeforeApply || !onRevertAgentChange) return;
+        onRevertAgentChange({
+            trip: tripBeforeApply,
+            label: t('tripAgent.revertLabel', { summary: shortSummary(changeSet.summary) }),
+        });
         setState('reverted');
         trackEvent('trip_agent__proposal--revert', { trip_id: changeSet.tripId, change_set_id: changeSet.id });
     };
@@ -368,7 +377,7 @@ export const TripAgentProposalCard: React.FC<{
                             : t('tripAgent.appliedCount', { count: applied?.count ?? selectedOperationIds.length }))
                         : state === 'reverted' ? t('tripAgent.reverted') : t('tripAgent.discarded')}
                 </span>
-                {state === 'applied' && onRevertLastChange && (
+                {state === 'applied' && onRevertAgentChange && tripBeforeApply && (
                     <Button type="button" variant="ghost" size="sm" onClick={revert}>
                         <RotateCcw className="size-3.5" />{t('tripAgent.revert')}
                     </Button>

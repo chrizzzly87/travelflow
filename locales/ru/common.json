@@ -686,7 +686,8 @@
     "routeDistance": "{km} км",
     "routeDuration": "{hours} ч",
     "routeAsk": "Запросить этот вариант",
-    "routeAskPrompt": "Предложи изменения для: {title}"
+    "routeAskPrompt": "Предложи изменения для: {title}",
+    "revertLabel": "Отменено: {summary}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Память устройства заполнена",

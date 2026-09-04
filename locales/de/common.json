@@ -686,7 +686,8 @@
     "routeDistance": "{km} km",
     "routeDuration": "{hours} Std.",
     "routeAsk": "Diese Option vorschlagen",
-    "routeAskPrompt": "Schlage die Änderungen vor für: {title}"
+    "routeAskPrompt": "Schlage die Änderungen vor für: {title}",
+    "revertLabel": "Rückgängig gemacht: {summary}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Der Geratespeicher ist voll",

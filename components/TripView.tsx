@@ -423,6 +423,9 @@ interface TripViewProps {
     /** The saved trip, unchanged by an active preview. */
     agentCanonicalTrip?: ITrip;
     onAgentPreviewTrip?: (trip: ITrip | null) => void;
+    /** Bumped when the agent replaces the trip, to refresh the planner surface. */
+    agentSurfaceNonce?: number;
+    onAgentTripChanged?: () => void;
     onOpenManager: () => void;
     onOpenSettings: () => void;
     initialViewSettings?: IViewSettings;
@@ -979,6 +982,8 @@ const useTripViewRender = ({
     agentPreviewTrip,
     agentCanonicalTrip,
     onAgentPreviewTrip,
+    agentSurfaceNonce = 0,
+    onAgentTripChanged,
     onOpenManager,
     onOpenSettings,
     initialViewSettings,
@@ -2982,6 +2987,10 @@ const useTripViewRender = ({
 
     const timelineCanvas = (
         <TripTimelineCanvas
+            // A trip replaced from outside the planner (agent apply, revert, or a
+            // preview toggle) rebuilds the canvas: its day geometry is measured,
+            // and a swapped-in trip alone left the calendar showing the old one.
+            key={`timeline-${agentSurfaceNonce}-${agentPreviewTrip ? 'preview' : 'live'}`}
             timelineMode={timelineMode}
             timelineView={timelineView}
             trip={displayTrip}
@@ -3414,9 +3423,23 @@ const useTripViewRender = ({
                                     setIsTripAgentOpen(false);
                                     writeTripAgentOpenState(false);
                                 }}
-                                onAdoptCommittedTripVersion={onAdoptAgentTripVersion}
+                                onAdoptCommittedTripVersion={(input) => {
+                                    onAdoptAgentTripVersion?.(input);
+                                    onAgentTripChanged?.();
+                                }}
                                 onPreviewTrip={onAgentPreviewTrip}
-                                onRevertLastChange={() => { navigateHistory('undo'); }}
+                                onRevertAgentChange={({ trip: previousTrip, label }) => {
+                                    // Not an undo: history also holds view changes, so
+                                    // stepping back would revert whatever happened last
+                                    // rather than this change set. The snapshot from
+                                    // before the apply is restored as a new version.
+                                    onAdoptAgentTripVersion?.({
+                                        trip: { ...previousTrip, updatedAt: Date.now() },
+                                        versionId: '',
+                                        label,
+                                    });
+                                    onAgentTripChanged?.();
+                                }}
                             />
                         </Suspense>
                     )}
@@ -3536,6 +3559,7 @@ const useTripViewRender = ({
 
 export const TripView: React.FC<TripViewProps> = (props) => {
     const [agentPreviewTrip, setAgentPreviewTrip] = useState<ITrip | null>(null);
+    const [agentSurfaceNonce, setAgentSurfaceNonce] = useState(0);
 
     // The preview swaps the rendered trip, so editing is paused until it ends.
     return useTripViewRender({
@@ -3545,5 +3569,7 @@ export const TripView: React.FC<TripViewProps> = (props) => {
         agentPreviewTrip,
         agentCanonicalTrip: props.trip,
         onAgentPreviewTrip: setAgentPreviewTrip,
+        agentSurfaceNonce,
+        onAgentTripChanged: () => setAgentSurfaceNonce((current) => current + 1),
     });
 };

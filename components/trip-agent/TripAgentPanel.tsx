@@ -85,8 +85,8 @@ interface TripAgentPanelProps {
     onAdoptCommittedTripVersion: (input: { trip: ITrip; versionId: string; label: string }) => void;
     /** Shows a proposed trip in the planner while the reviewer previews it. */
     onPreviewTrip?: (trip: ITrip | null) => void;
-    /** Steps the trip back one entry after an applied change set. */
-    onRevertLastChange?: () => void;
+    /** Restores a trip snapshot from before an applied change set. */
+    onRevertAgentChange?: (input: { trip: ITrip; label: string }) => void;
 }
 
 const contextRefKey = (contextRef: TripAgentContextRef): string => (
@@ -142,7 +142,7 @@ const ChatMessage: React.FC<{
     onRetry?: () => void;
     onApplied: (trip: ITrip, versionId: string, label: string) => void;
     onPreviewTrip?: (trip: ITrip | null) => void;
-    onRevertLastChange?: () => void;
+    onRevertAgentChange?: () => void;
     shortcutChangeSetId?: string | null;
     changeSetStatuses?: Record<string, { status: TripAgentChangeSetStatus['status']; appliedOperationIds: string[] }>;
     onAskAgain?: () => void;
@@ -158,7 +158,7 @@ const ChatMessage: React.FC<{
     onRetry,
     onApplied,
     onPreviewTrip,
-    onRevertLastChange,
+    onRevertAgentChange,
     shortcutChangeSetId,
     changeSetStatuses,
     onAskAgain,
@@ -209,7 +209,7 @@ const ChatMessage: React.FC<{
                                 changeSet={block.changeSet}
                                 onApplied={onApplied}
                                 onPreviewTrip={onPreviewTrip}
-                                onRevertLastChange={onRevertLastChange}
+                                onRevertAgentChange={onRevertAgentChange}
                                 shortcutEnabled={block.changeSet.id === shortcutChangeSetId}
                                 isSuperseded={Boolean(shortcutChangeSetId) && block.changeSet.id !== shortcutChangeSetId}
                                 serverStatus={changeSetStatuses?.[block.changeSet.id]?.status}
@@ -300,7 +300,7 @@ const TripAgentChatSession: React.FC<{
     onQuotaMayHaveChanged: () => void;
     onAdoptCommittedTripVersion: TripAgentPanelProps['onAdoptCommittedTripVersion'];
     onPreviewTrip?: TripAgentPanelProps['onPreviewTrip'];
-    onRevertLastChange?: TripAgentPanelProps['onRevertLastChange'];
+    onRevertAgentChange?: TripAgentPanelProps['onRevertAgentChange'];
 }> = ({
     trip,
     thread,
@@ -312,7 +312,7 @@ const TripAgentChatSession: React.FC<{
     onQuotaMayHaveChanged,
     onAdoptCommittedTripVersion,
     onPreviewTrip,
-    onRevertLastChange,
+    onRevertAgentChange,
 }) => {
     const { t, i18n } = useTranslation('common');
     const now = useMinuteTick();
@@ -581,7 +581,7 @@ const TripAgentChatSession: React.FC<{
                                 : undefined}
                             onApplied={(nextTrip, versionId, label) => onAdoptCommittedTripVersion({ trip: nextTrip, versionId, label: `Trip Agent: ${label}` })}
                             onPreviewTrip={onPreviewTrip}
-                            onRevertLastChange={onRevertLastChange}
+                            onRevertAgentChange={onRevertAgentChange}
                             shortcutChangeSetId={shortcutChangeSetId}
                             changeSetStatuses={changeSetStatuses}
                             onAskAgain={focusPrompt}
@@ -746,7 +746,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
     onClose,
     onAdoptCommittedTripVersion,
     onPreviewTrip,
-    onRevertLastChange,
+    onRevertAgentChange,
 }) => {
     const { t, i18n } = useTranslation('common');
     const now = useMinuteTick();
@@ -979,7 +979,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                     onQuotaMayHaveChanged={() => void refresh(currentThread.id)}
                     onAdoptCommittedTripVersion={onAdoptCommittedTripVersion}
                     onPreviewTrip={onPreviewTrip}
-                    onRevertLastChange={onRevertLastChange}
+                    onRevertAgentChange={onRevertAgentChange}
                 />
             ) : (
                 <div className="flex flex-1 items-center justify-center text-sm text-slate-500">{t('tripAgent.loading')}</div>

@@ -219,3 +219,53 @@ describe('TripAgentProposalCard per-operation review', () => {
         ));
     });
 });
+
+describe('TripAgentProposalCard revert', () => {
+    it('restores the trip as it stood before the apply, not the last history entry', async () => {
+        const user = userEvent.setup();
+        const onRevertAgentChange = vi.fn();
+        const appliedTrip = { ...trip, title: 'Portugal, revised' } as ITrip;
+        applyTripAgentProposalMock.mockResolvedValue({
+            trip: appliedTrip,
+            versionId: 'version-1',
+            status: 'applied',
+            appliedOperationIds: ['op-1'],
+            noOpOperationIds: [],
+        });
+
+        render(
+            <TripAgentProposalCard
+                trip={trip}
+                changeSet={changeSet}
+                onApplied={vi.fn()}
+                onRevertAgentChange={onRevertAgentChange}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
+        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
+        await waitFor(() => expect(screen.getByText('tripAgent.appliedCount')).toBeTruthy());
+
+        await user.click(screen.getByRole('button', { name: 'tripAgent.revert' }));
+
+        expect(onRevertAgentChange).toHaveBeenCalledTimes(1);
+        const [{ trip: restored }] = onRevertAgentChange.mock.calls[0];
+        expect(restored.title).toBe('Portugal');
+        expect(restored.items.some((item: { id: string }) => item.id === 'activity-1')).toBe(true);
+    });
+
+    it('offers no revert until something was applied', () => {
+        render(
+            <TripAgentProposalCard
+                trip={trip}
+                changeSet={changeSet}
+                onApplied={vi.fn()}
+                onRevertAgentChange={vi.fn()}
+                serverStatus="applied"
+            />,
+        );
+
+        // Reloaded as applied: this session has no pre-apply snapshot to restore.
+        expect(screen.queryByRole('button', { name: 'tripAgent.revert' })).toBeNull();
+    });
+});

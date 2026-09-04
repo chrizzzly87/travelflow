@@ -686,7 +686,8 @@
     "routeDistance": "{km} km",
     "routeDuration": "{hours}시간",
     "routeAsk": "이 옵션 요청",
-    "routeAskPrompt": "다음에 대한 변경을 제안해 주세요: {title}"
+    "routeAskPrompt": "다음에 대한 변경을 제안해 주세요: {title}",
+    "revertLabel": "되돌림: {summary}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "기기 저장 공간이 가득 찼습니다",

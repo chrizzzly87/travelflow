@@ -684,7 +684,8 @@
     "routeDistance": "{km} km",
     "routeDuration": "{hours} godz.",
     "routeAsk": "Poproś o ten wariant",
-    "routeAskPrompt": "Zaproponuj zmiany dla: {title}"
+    "routeAskPrompt": "Zaproponuj zmiany dla: {title}",
+    "revertLabel": "Cofnięto: {summary}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",

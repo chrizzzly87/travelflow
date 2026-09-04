@@ -745,7 +745,7 @@ const AppContent: React.FC = () => {
             undefined,
             Date.now(),
             undefined,
-            input.versionId
+            input.versionId || undefined
         );
     }, [navigate]);
 
