@@ -668,7 +668,8 @@
     "questionSend": "Отправить",
     "previewShortcut": "P переключает предпросмотр",
     "appliedPartial": "Применено изменений: {count} из {requested} — остальные больше не подходили",
-    "superseded": "Заменено более новым предложением."
+    "superseded": "Заменено более новым предложением.",
+    "proposalFailed": "Не удалось подготовить изменения"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Память устройства заполнена",

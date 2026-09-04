@@ -668,7 +668,8 @@
     "questionSend": "Send",
     "previewShortcut": "Press P to toggle the preview",
     "appliedPartial": "Applied {count} of {requested} changes — the rest no longer fit",
-    "superseded": "Replaced by a newer proposal."
+    "superseded": "Replaced by a newer proposal.",
+    "proposalFailed": "The changes could not be prepared"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Device storage is full",

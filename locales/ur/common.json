@@ -435,7 +435,8 @@
     "questionSend": "بھیجیں",
     "previewShortcut": "پیش منظر بدلنے کے لیے P دبائیں",
     "appliedPartial": "{requested} میں سے {count} تبدیلیاں لاگو ہوئیں — باقی اب فٹ نہیں تھیں",
-    "superseded": "نئی تجویز نے اس کی جگہ لے لی۔"
+    "superseded": "نئی تجویز نے اس کی جگہ لے لی۔",
+    "proposalFailed": "تبدیلیاں تیار نہیں ہو سکیں"
   },
   "storageNotice": {
     "tripsPrunedTitle": "ڈیوائس کی اسٹوریج بھر گئی ہے",

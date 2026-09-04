@@ -71,6 +71,8 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 - [x] Allow one open proposal per trip: creating a new one closes the previous, and older cards read as replaced.
 - [x] Move the preview toggle to Cmd/Ctrl+Shift+P, shown on the button, so it works from the message box too.
 - [x] Never show a raised database code as the error detail; the localized title carries the meaning.
+- [x] Accept the shapes models actually emit (unknown keys, numeric strings, unsupported transport modes) so the SDK stops rejecting calls before the tool runs.
+- [x] Show a failed proposal attempt as its own notice with a retry, and hide an attempt a later call replaced.
 - [ ] Verify the deploy preview end to end with an administrator account (transcript reload, retry, apply, quota refund).
 - [ ] Decide whether transfers should group under their destination stop rather than the stop whose days they occupy.
 - [x] Resolve the specialist model the same way as the orchestrator; a bare model id only worked with the AI Gateway.

@@ -435,7 +435,8 @@
     "questionSend": "ارسال",
     "previewShortcut": "کلید P پیش‌نمایش را جابه‌جا می‌کند",
     "appliedPartial": "{count} از {requested} تغییر اعمال شد — بقیه دیگر جور نبود",
-    "superseded": "با پیشنهاد تازه‌تری جایگزین شد."
+    "superseded": "با پیشنهاد تازه‌تری جایگزین شد.",
+    "proposalFailed": "آماده‌سازی تغییرها ممکن نشد"
   },
   "storageNotice": {
     "tripsPrunedTitle": "حافظه دستگاه پر است",

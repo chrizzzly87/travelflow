@@ -668,7 +668,8 @@
     "questionSend": "Enviar",
     "previewShortcut": "Pulsa P para alternar la vista previa",
     "appliedPartial": "Se aplicaron {count} de {requested} cambios; el resto ya no encajaba",
-    "superseded": "Sustituida por una propuesta más reciente."
+    "superseded": "Sustituida por una propuesta más reciente.",
+    "proposalFailed": "No se pudieron preparar los cambios"
   },
   "storageNotice": {
     "tripsPrunedTitle": "El almacenamiento del dispositivo esta lleno",

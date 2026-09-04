@@ -668,7 +668,8 @@
     "questionSend": "Invia",
     "previewShortcut": "Premi P per alternare l’anteprima",
     "appliedPartial": "Applicate {count} modifiche su {requested} — il resto non era più valido",
-    "superseded": "Sostituita da una proposta più recente."
+    "superseded": "Sostituita da una proposta più recente.",
+    "proposalFailed": "Non è stato possibile preparare le modifiche"
   },
   "storageNotice": {
     "tripsPrunedTitle": "La memoria del dispositivo e piena",

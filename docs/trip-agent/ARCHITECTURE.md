@@ -62,9 +62,15 @@ tool call. Output budget is 12k tokens, the loop stops after 8 steps.
 | `delegate_hotel_search` | hands a stay question to the hotel specialist | no |
 | `delegate_route_planning` | hands a route question to the route specialist | no |
 | `create_trip_proposal` | records a pending, reviewable change set | proposal only |
+| `ask_traveler` | asks one multiple-choice question, e.g. what to do with days a change frees up | no |
 
 The allowlist lives in `trip_agent_definitions.tool_allowlist`; anything outside
-it is dropped before the run starts.
+it is dropped before the run starts. `ask_traveler` is always active, since the
+stored allowlists predate it.
+
+Only one proposal is open per trip: creating a change set closes any pending one
+(`rejected`), and the panel marks the older card as replaced. A follow-up answer
+must arrive as a single new proposal, not a second competing one.
 
 ### Specialists (read-only, via MCP)
 
@@ -95,6 +101,12 @@ models cannot reliably produce the ten-variant discriminated union used
 internally, so the server converts and validates instead, answering with the
 exact missing field when something is wrong.
 
+The wire schema is deliberately forgiving — unknown keys are dropped, numeric
+strings are coerced, an unsupported transport mode becomes `na` — because the AI
+SDK rejects a call that fails the schema *before* the tool runs, which surfaced
+in the chat as an unexplained failed step. Genuine mistakes still come back as a
+fixable answer from inside the tool.
+
 | kind | required fields | effect |
 | --- | --- | --- |
 | `add_item` | `item` | adds a city, activity or transfer |
@@ -112,12 +124,20 @@ exact missing field when something is wrong.
 
 ### Approval path
 
-Nothing is written by the run itself. The panel shows the proposal, the reviewer
-picks operations, previews the resulting trip (computed client-side with
-`applyTripAgentOperations`), and only then `apply` runs
-`apply_trip_agent_change_set` — one atomic Supabase version that the client
-adopts as a single undo/redo entry. Stale proposals (the trip moved on) fail
-with `TRIP_AGENT_PROPOSAL_STALE`.
+Nothing is written by the run itself. The panel groups the operations per stop,
+the reviewer picks what to apply, previews the result **in the planner itself**
+(calendar, timeline and map render the proposed trip; editing is paused and the
+saved timestamp is preserved so nothing downstream treats it as a new version),
+and only then `apply` runs `apply_trip_agent_change_set` — one atomic Supabase
+version that the client adopts as a single undo/redo entry. Stale proposals (the
+trip moved on) fail with `TRIP_AGENT_PROPOSAL_STALE`.
+
+`applyTripAgentOperations` never fails a whole set over one unusable operation:
+a missing target is skipped and reported (`skippedOperations`), so a deselected
+dependency or an id the trip no longer has cannot sink the review. Only
+structural faults — duplicate operation ids, an unknown selection, a result that
+fails validation — throw. The card reports a partial apply rather than letting a
+previewed change disappear.
 
 ## Persistence and limits
 

@@ -82,11 +82,11 @@ describe('buildTripAgentMessageBlocks', () => {
             id: 'assistant-3',
             role: 'assistant',
             parts: [{
-                type: 'tool-create_trip_proposal',
+                type: 'tool-delegate_route_planning',
                 toolCallId: 'call-4',
                 state: 'output-error',
                 input: {},
-                errorText: 'Operations do not match the schema.',
+                errorText: 'The route provider is unavailable.',
             }],
         } as unknown as TripAgentMessage;
 
@@ -94,7 +94,7 @@ describe('buildTripAgentMessageBlocks', () => {
         const activity = blocks[0];
         if (activity?.kind !== 'activity') throw new Error('expected an activity block');
         expect(activity.steps[0].state).toBe('output-error');
-        expect(activity.steps[0].detail).toBe('Operations do not match the schema.');
+        expect(activity.steps[0].detail).toBe('The route provider is unavailable.');
     });
 });
 
@@ -222,5 +222,59 @@ describe('readTripAgentError', () => {
         }));
 
         expect(info.detail).toBe('The selected changes no longer alter this trip.');
+    });
+});
+
+describe('failed proposal attempts', () => {
+    const message = (parts: unknown[]) => ({ id: 'assistant-f', role: 'assistant', parts }) as unknown as TripAgentMessage;
+    const failedCall = {
+        type: 'tool-create_trip_proposal',
+        toolCallId: 'call-fail',
+        state: 'output-error',
+        input: {},
+        errorText: 'Invalid tool input.',
+    };
+
+    it('shows a failure notice when no proposal came out of the run', () => {
+        const blocks = buildTripAgentMessageBlocks(message([
+            failedCall,
+            { type: 'text', text: 'I have created a proposal.' },
+        ]), false);
+
+        expect(blocks.map((block) => block.kind)).toEqual(['text', 'proposal-failed']);
+    });
+
+    it('hides an attempt that a later successful call replaced', () => {
+        const blocks = buildTripAgentMessageBlocks(message([
+            failedCall,
+            {
+                type: 'tool-create_trip_proposal',
+                toolCallId: 'call-ok',
+                state: 'output-available',
+                input: {},
+                output: {
+                    kind: 'trip-agent-proposal',
+                    changeSet: {
+                        schemaVersion: 1,
+                        id: 'af1c9d5e-0000-4000-8000-000000000000',
+                        tripId: 'trip-1',
+                        threadId: 'bf1c9d5e-0000-4000-8000-000000000000',
+                        runId: 'cf1c9d5e-0000-4000-8000-000000000000',
+                        baseTripUpdatedAt: 10,
+                        summary: 'Add Alishan',
+                        operations: [{ id: 'op-1', kind: 'remove_item', itemId: 'city-1', rationale: 'x', targetLabel: 'Old stop' }],
+                        sources: [],
+                        status: 'pending',
+                        selectedOperationIds: [],
+                        appliedVersionId: null,
+                        createdAt: '2026-09-04T10:00:00.000Z',
+                        appliedAt: null,
+                    },
+                },
+            },
+            { type: 'text', text: 'I have created a proposal.' },
+        ]), false);
+
+        expect(blocks.map((block) => block.kind)).toEqual(['text', 'proposal']);
     });
 });

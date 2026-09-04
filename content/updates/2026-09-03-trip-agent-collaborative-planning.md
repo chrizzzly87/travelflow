@@ -26,6 +26,8 @@ summary: "Trip Agent brings shared, context-aware planning into each trip while 
 - [x] [Improved] 🌍 A moving orb and a live skeleton now show that changes are being prepared, from the moment you hit send.
 - [x] [Improved] 💬 When a change frees up days, Trip Agent asks what to do with them and you pick an option — or type your own — right in the chat.
 - [x] [Fixed] 🧷 Fixed an applied change disappearing again right after you approved it.
+- [x] [Fixed] 🧩 Fixed occasional failed steps while changes were being prepared: unusual values from the model are now accepted and tidied instead of rejected.
+- [x] [Fixed] 🚨 If changes really cannot be prepared, you now see it plainly with a retry, instead of only a message claiming success.
 - [x] [Improved] 🪧 Only one set of proposed changes is open at a time; an older one is marked as replaced instead of competing with the new one.
 - [x] [Improved] ⌨️ The preview toggle moved to Cmd/Ctrl+Shift+P and is shown on the button, so it also works while you type.
 - [x] [Improved] 🏷️ Errors now show a plain-language reason instead of an internal code.
@@ -55,6 +57,7 @@ summary: "Trip Agent brings shared, context-aware planning into each trip while 
 - [ ] [Internal] 🧭 Added allowlisted specialist boundaries for grounded stay and route research, with an explicit unavailable state when Maps grounding is not configured.
 - [ ] [Internal] 🧪 Added typed-operation and history-adoption regression coverage plus deterministic server-side validation paths.
 - [ ] [Internal] 🪵 Accepted empty successful PostgREST write bodies, added quota refunds on pre-stream failures, and added bounded request/run failure logging without prompts or credentials.
+- [ ] [Internal] 🧰 Wire schema now strips unknown keys, coerces numeric strings and normalises transport modes, because the AI SDK rejects a tool call that fails the schema before the tool can answer.
 - [ ] [Internal] 🗺️ Resolved the stay and route specialists through the shared model resolution so they can run without the AI Gateway, and documented the runtime in docs/trip-agent/ARCHITECTURE.md.
 - [ ] [Internal] 🔌 Added a flat wire schema for trip-change operations plus a typed converter, because function-calling models could not emit the discriminated union; added a read-only dry-run script that replays one turn against a real trip.
 - [ ] [Internal] 🎚️ Routed the planner through the app-wide default model with an OpenRouter reasoning-effort control and a larger output budget; replaced ICU plural strings, which this app never registered.

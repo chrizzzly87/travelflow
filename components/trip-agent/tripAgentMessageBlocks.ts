@@ -14,6 +14,7 @@ export type TripAgentMessageBlock =
     | { kind: 'activity'; key: string; reasoningText: string; steps: TripAgentActivityStep[]; isStreaming: boolean }
     | { kind: 'proposal'; key: string; changeSet: TripAgentChangeSetV1 }
     | { kind: 'proposal-pending'; key: string }
+    | { kind: 'proposal-failed'; key: string; detail?: string }
     | { kind: 'question'; key: string; question: string; options: TripAgentQuestionOption[]; allowCustom: boolean }
     | { kind: 'source'; key: string; url: string; title: string };
 
@@ -153,11 +154,21 @@ export const buildTripAgentMessageBlocks = (
                 blocks.push({ kind: 'question', key, ...question });
                 return;
             }
-            if (resolveToolName(part) === 'create_trip_proposal'
-                && (part.state === 'input-streaming' || part.state === 'input-available')) {
-                closeActivity();
-                blocks.push({ kind: 'proposal-pending', key });
-                return;
+            if (resolveToolName(part) === 'create_trip_proposal') {
+                if (part.state === 'input-streaming' || part.state === 'input-available') {
+                    closeActivity();
+                    blocks.push({ kind: 'proposal-pending', key });
+                    return;
+                }
+                if (part.state === 'output-error' || part.state === 'output-denied') {
+                    closeActivity();
+                    blocks.push({
+                        kind: 'proposal-failed',
+                        key,
+                        detail: (part as { errorText?: string }).errorText,
+                    });
+                    return;
+                }
             }
             const group = openActivity(key);
             group.steps.push({
@@ -184,11 +195,17 @@ export const buildTripAgentMessageBlocks = (
     closeActivity();
 
     const rank = (block: TripAgentMessageBlock): number => {
-        if (block.kind === 'proposal' || block.kind === 'proposal-pending') return 1;
+        if (block.kind === 'proposal' || block.kind === 'proposal-pending' || block.kind === 'proposal-failed') return 1;
         if (block.kind === 'question') return 2;
         return 0;
     };
     const ordered = [...blocks].sort((left, right) => rank(left) - rank(right));
+
+    // A failed attempt that a later call replaced is history, not news: the
+    // model describes the successful proposal, and two cards would contradict.
+    if (ordered.some((block) => block.kind === 'proposal')) {
+        return ordered.filter((block) => block.kind !== 'proposal-failed' && block.kind !== 'proposal-pending');
+    }
     blocks.length = 0;
     blocks.push(...ordered);
 

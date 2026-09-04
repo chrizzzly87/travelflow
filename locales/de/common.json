@@ -668,7 +668,8 @@
     "questionSend": "Senden",
     "previewShortcut": "P schaltet die Vorschau um",
     "appliedPartial": "{count} von {requested} Änderungen übernommen – der Rest passte nicht mehr",
-    "superseded": "Durch einen neueren Vorschlag ersetzt."
+    "superseded": "Durch einen neueren Vorschlag ersetzt.",
+    "proposalFailed": "Die Änderungen konnten nicht vorbereitet werden"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Der Geratespeicher ist voll",

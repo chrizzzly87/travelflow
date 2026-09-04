@@ -666,7 +666,8 @@
     "questionSend": "Wyślij",
     "previewShortcut": "Naciśnij P, aby przełączyć podgląd",
     "appliedPartial": "Zastosowano {count} z {requested} zmian — reszta już nie pasowała",
-    "superseded": "Zastąpiona nowszą propozycją."
+    "superseded": "Zastąpiona nowszą propozycją.",
+    "proposalFailed": "Nie udało się przygotować zmian"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",

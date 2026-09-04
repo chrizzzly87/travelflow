@@ -668,7 +668,8 @@
     "questionSend": "Envoyer",
     "previewShortcut": "P bascule l’aperçu",
     "appliedPartial": "{count} changements sur {requested} appliqués — le reste ne s’appliquait plus",
-    "superseded": "Remplacée par une proposition plus récente."
+    "superseded": "Remplacée par une proposition plus récente.",
+    "proposalFailed": "Les changements n’ont pas pu être préparés"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Le stockage de l'appareil est plein",

@@ -214,6 +214,25 @@ const ChatMessage: React.FC<{
                     if (block.kind === 'proposal-pending') {
                         return <TripAgentProposalSkeleton key={block.key} />;
                     }
+                    if (block.kind === 'proposal-failed') {
+                        return (
+                            <div
+                                key={block.key}
+                                role="alert"
+                                className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5"
+                            >
+                                <p className="text-xs font-semibold text-rose-900">{t('tripAgent.proposalFailed')}</p>
+                                {block.detail && (
+                                    <p className="mt-1 break-words text-[11px] leading-4 text-rose-800">{block.detail}</p>
+                                )}
+                                {onRetry && (
+                                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={onRetry}>
+                                        <RotateCcw className="size-3.5" />{t('tripAgent.retryMessage')}
+                                    </Button>
+                                )}
+                            </div>
+                        );
+                    }
                     if (block.kind === 'question') {
                         return (
                             <TripAgentQuestionCard

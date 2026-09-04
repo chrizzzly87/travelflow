@@ -668,7 +668,8 @@
     "questionSend": "보내기",
     "previewShortcut": "P 키로 미리보기 전환",
     "appliedPartial": "변경 {requested}개 중 {count}개 적용 — 나머지는 더 이상 맞지 않았습니다",
-    "superseded": "더 새로운 제안으로 대체되었습니다."
+    "superseded": "더 새로운 제안으로 대체되었습니다.",
+    "proposalFailed": "변경을 준비하지 못했습니다"
   },
   "storageNotice": {
     "tripsPrunedTitle": "기기 저장 공간이 가득 찼습니다",
