@@ -40,7 +40,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { useSyncStatus } from '../hooks/useSyncStatus';
-import { getLatestConflictBackupForTrip } from '../services/offlineChangeQueue';
+import { getLatestConflictBackupForTrip, resolveConflictBackupsForTrip } from '../services/offlineChangeQueue';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
@@ -1678,6 +1678,9 @@ const useTripViewRender = ({
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
     const [isTripAgentOpen, setIsTripAgentOpen] = useState(() => readTripAgentOpenState());
+    // Hides the recovery banner in this session as soon as the choice is made,
+    // without waiting for the next sync snapshot to report the cleared backup.
+    const [resolvedConflictTripId, setResolvedConflictTripId] = useState<string | null>(null);
     const cityColorPaletteId = trip.cityColorPaletteId || DEFAULT_CITY_COLOR_PALETTE_ID;
     const mapColorMode = normalizeMapColorMode(trip.mapColorMode);
     const allowMapColorModeControls = useMemo(
@@ -1878,6 +1881,9 @@ const useTripViewRender = ({
                 { label: 'Data: Restored server backup' }
             );
         }
+        // The decision is made, so the backup — and the banner offering it — goes.
+        resolveConflictBackupsForTrip(trip.id);
+        setResolvedConflictTripId(trip.id);
         showToast(t('connectivity.toast.serverBackupRestored'), {
             tone: 'neutral',
             title: t('connectivity.toast.title'),
@@ -2914,8 +2920,9 @@ const useTripViewRender = ({
     const showOwnedTripConnectivityStatus = !shareStatus && !isExamplePreview && !isAdminFallbackView;
     const latestConflictBackupEntry = useMemo(() => {
         if (!showOwnedTripConnectivityStatus) return null;
+        if (resolvedConflictTripId === trip.id) return null;
         return getLatestConflictBackupForTrip(trip.id);
-    }, [showOwnedTripConnectivityStatus, syncSnapshot.hasConflictBackups, syncSnapshot.lastRunAt, trip.id]);
+    }, [resolvedConflictTripId, showOwnedTripConnectivityStatus, syncSnapshot.hasConflictBackups, syncSnapshot.lastRunAt, trip.id]);
     const isAdminSession = access?.role === 'admin';
     const ownerSummary = useMemo(() => {
         const ownerUsername = tripAccess?.ownerUsername?.trim() || null;
@@ -3054,6 +3061,20 @@ const useTripViewRender = ({
     // The panel sits at the logical end, which is the left edge in Persian and
     // Urdu; the floating map reserves that side instead of being switched off.
     const isRtlAppLanguage = appLanguage === 'fa' || appLanguage === 'ur';
+    /**
+     * Adopts a trip the agent panel produced locally (a revert, a redo, or a
+     * re-apply of a reviewed set) as one new version, and refreshes the planner
+     * surface so the calendar rebuilds its measured geometry.
+     */
+    const adoptAgentTrip = useCallback((nextTrip: ITrip, label: string) => {
+        onAdoptAgentTripVersion?.({
+            trip: { ...nextTrip, updatedAt: Date.now() },
+            versionId: '',
+            label,
+        });
+        onAgentTripChanged?.();
+    }, [onAdoptAgentTripVersion, onAgentTripChanged]);
+
     const openTripAgent = useCallback(() => {
         trackEvent('trip_agent__launcher--open', {
             trip_id: trip.id,
@@ -3428,17 +3449,25 @@ const useTripViewRender = ({
                                     onAgentTripChanged?.();
                                 }}
                                 onPreviewTrip={onAgentPreviewTrip}
-                                onRevertAgentChange={({ trip: previousTrip, label }) => {
+                                onRevertAgentChange={({ trip: previousTrip, redoTrip, label, redoLabel }) => {
                                     // Not an undo: history also holds view changes, so
                                     // stepping back would revert whatever happened last
                                     // rather than this change set. The snapshot from
                                     // before the apply is restored as a new version.
-                                    onAdoptAgentTripVersion?.({
-                                        trip: { ...previousTrip, updatedAt: Date.now() },
-                                        versionId: '',
-                                        label,
+                                    adoptAgentTrip(previousTrip, label);
+                                    showToast(t('tripAgent.revertToast'), {
+                                        tone: 'neutral',
+                                        title: t('tripAgent.revertToastTitle'),
+                                        iconVariant: 'undo',
+                                        disableDefaultUndo: true,
+                                        action: {
+                                            label: t('tripAgent.redo'),
+                                            onClick: () => adoptAgentTrip(redoTrip, redoLabel),
+                                        },
                                     });
-                                    onAgentTripChanged?.();
+                                }}
+                                onReapplyAgentChange={({ trip: nextTrip, label }) => {
+                                    adoptAgentTrip(nextTrip, label);
                                 }}
                             />
                         </Suspense>
