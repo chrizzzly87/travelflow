@@ -460,7 +460,9 @@
     "reapplyLabel": "دوبارہ لاگو: {summary}",
     "revertToast": "آپ کا سفر اس تبدیلی سے پہلے والی حالت میں واپس آ گیا۔",
     "revertToastTitle": "تبدیلی واپس لی گئی",
-    "redo": "دوبارہ کریں"
+    "redo": "دوبارہ کریں",
+    "revertedHint": "واپس لیا — دوبارہ جائزہ یا دوبارہ لاگو کر سکتے ہیں",
+    "reapplyUnavailable": "یہ سیٹ یہاں دوبارہ لاگو نہیں ہو سکتا۔"
   },
   "storageNotice": {
     "tripsPrunedTitle": "ڈیوائس کی اسٹوریج بھر گئی ہے",

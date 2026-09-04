@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowLeft, Check, Eye, PencilLine, RotateCcw } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Check, Eye, PencilLine, RotateCcw, RotateCw } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -307,6 +307,20 @@ export const TripAgentProposalCard: React.FC<{
 
     const hasBeenApplied = Boolean(tripAfterApply);
 
+    /** Puts a reverted set back exactly as it was applied, without re-reviewing. */
+    const redo = () => {
+        if (!tripAfterApply || !onReapplyAgentChange) return;
+        onReapplyAgentChange({
+            trip: tripAfterApply,
+            label: t('tripAgent.reapplyLabel', { summary: shortSummary(changeSet.summary) }),
+        });
+        setState('applied');
+        trackEvent('trip_agent__proposal--redo', {
+            trip_id: changeSet.tripId,
+            change_set_id: changeSet.id,
+        });
+    };
+
     /** Reopens a closed card so the same set can be adjusted and applied again. */
     const reviewAgain = () => {
         setStage('select');
@@ -324,7 +338,12 @@ export const TripAgentProposalCard: React.FC<{
         setError(null);
         setTripBeforeApply(trip);
 
-        if (hasBeenApplied && onReapplyAgentChange) {
+        if (hasBeenApplied) {
+            if (!onReapplyAgentChange) {
+                setState('error');
+                setError({ code: 'TRIP_AGENT_PROPOSAL_NOT_PENDING', message: t('tripAgent.reapplyUnavailable') });
+                return;
+            }
             const recomputed = computePreview(trip, changeSet.operations, selectedOperationIds);
             if (!recomputed?.trip) {
                 setState('error');
@@ -378,13 +397,18 @@ export const TripAgentProposalCard: React.FC<{
     };
 
     const reject = () => {
-        if (state !== 'pending') return;
+        // Any open state can be closed: a card left in an error state used to
+        // trap the reviewer with no way out.
+        if (state === 'applied' || state === 'rejected' || state === 'reverted') return;
         onPreviewTrip?.(null);
         setStage('select');
         setState('rejected');
         trackEvent('trip_agent__proposal--reject', { trip_id: changeSet.tripId, change_set_id: changeSet.id });
-        // The card closes right away; recording the rejection is bookkeeping.
-        void rejectTripAgentProposal(changeSet.tripId, changeSet.id).catch(() => undefined);
+        // The card closes right away; recording the rejection is bookkeeping, and
+        // a throw or a non-promise return must not reach the click handler.
+        void Promise.resolve()
+            .then(() => rejectTripAgentProposal(changeSet.tripId, changeSet.id))
+            .catch(() => undefined);
     };
 
     const revert = () => {
@@ -419,11 +443,16 @@ export const TripAgentProposalCard: React.FC<{
                         ? (applied && applied.count < applied.requested
                             ? t('tripAgent.appliedPartial', { count: applied.count, requested: applied.requested })
                             : t('tripAgent.appliedCount', { count: applied?.count ?? selectedOperationIds.length }))
-                        : state === 'reverted' ? t('tripAgent.reverted') : t('tripAgent.discarded')}
+                        : state === 'reverted' ? t('tripAgent.revertedHint') : t('tripAgent.discarded')}
                 </span>
-                {(state === 'applied' || state === 'reverted') && (onReapplyAgentChange || state === 'applied') && (
+                {(state === 'applied' || state === 'reverted') && (
                     <Button type="button" variant="ghost" size="sm" onClick={reviewAgain}>
                         <PencilLine className="size-3.5" />{t('tripAgent.reviewAgain')}
+                    </Button>
+                )}
+                {state === 'reverted' && onReapplyAgentChange && tripAfterApply && (
+                    <Button type="button" variant="outline" size="sm" onClick={redo}>
+                        <RotateCw className="size-3.5" />{t('tripAgent.redo')}
                     </Button>
                 )}
                 {state === 'applied' && onRevertAgentChange && tripBeforeApply && tripAfterApply && (
@@ -621,6 +650,11 @@ export const TripAgentProposalCard: React.FC<{
                     </>
                 ) : (
                     <>
+                        {/* Discard is available here too: an errored preview used to
+                            offer only Back and a failing Apply. */}
+                        <Button type="button" variant="ghost" size="sm" onClick={reject} disabled={state === 'applying'}>
+                            {t('tripAgent.discard')}
+                        </Button>
                         <Button type="button" variant="ghost" size="sm" onClick={() => setStage('select')} disabled={state === 'applying'}>
                             <ArrowLeft className="size-3.5" />{t('tripAgent.backToSelection')}
                         </Button>

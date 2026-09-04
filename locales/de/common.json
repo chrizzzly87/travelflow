@@ -693,7 +693,9 @@
     "reapplyLabel": "Erneut übernommen: {summary}",
     "revertToast": "Deine Reise ist wieder wie vor dieser Änderung.",
     "revertToastTitle": "Änderung rückgängig",
-    "redo": "Wiederherstellen"
+    "redo": "Wiederherstellen",
+    "revertedHint": "Rückgängig – du kannst erneut prüfen oder wiederherstellen",
+    "reapplyUnavailable": "Dieser Satz kann hier nicht erneut übernommen werden."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Der Geratespeicher ist voll",

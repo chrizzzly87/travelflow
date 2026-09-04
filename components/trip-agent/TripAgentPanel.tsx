@@ -589,6 +589,7 @@ const TripAgentChatSession: React.FC<{
                             onApplied={(nextTrip, versionId, label) => onAdoptCommittedTripVersion({ trip: nextTrip, versionId, label: `Trip Agent: ${label}` })}
                             onPreviewTrip={onPreviewTrip}
                             onRevertAgentChange={onRevertAgentChange}
+                            onReapplyAgentChange={onReapplyAgentChange}
                             shortcutChangeSetId={shortcutChangeSetId}
                             changeSetStatuses={changeSetStatuses}
                             onAskAgain={focusPrompt}

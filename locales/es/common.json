@@ -693,7 +693,9 @@
     "reapplyLabel": "Reaplicado: {summary}",
     "revertToast": "Tu viaje volvió a como estaba antes de este cambio.",
     "revertToastTitle": "Cambio deshecho",
-    "redo": "Rehacer"
+    "redo": "Rehacer",
+    "revertedHint": "Deshecho: puedes revisarlo o rehacerlo",
+    "reapplyUnavailable": "Este conjunto no puede aplicarse otra vez aquí."
   },
   "storageNotice": {
     "tripsPrunedTitle": "El almacenamiento del dispositivo esta lleno",

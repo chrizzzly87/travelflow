@@ -693,7 +693,9 @@
     "reapplyLabel": "Riapplicato: {summary}",
     "revertToast": "Il viaggio è tornato com’era prima di questa modifica.",
     "revertToastTitle": "Modifica annullata",
-    "redo": "Ripristina"
+    "redo": "Ripristina",
+    "revertedHint": "Annullato — puoi rivederlo o ripristinarlo",
+    "reapplyUnavailable": "Questo gruppo non può essere applicato di nuovo qui."
   },
   "storageNotice": {
     "tripsPrunedTitle": "La memoria del dispositivo e piena",

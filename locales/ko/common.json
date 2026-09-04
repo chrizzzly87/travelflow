@@ -693,7 +693,9 @@
     "reapplyLabel": "다시 적용됨: {summary}",
     "revertToast": "여행이 이 변경 전 상태로 돌아갔습니다.",
     "revertToastTitle": "변경 되돌림",
-    "redo": "다시 실행"
+    "redo": "다시 실행",
+    "revertedHint": "되돌림 — 다시 검토하거나 되돌릴 수 있습니다",
+    "reapplyUnavailable": "이 묶음은 여기서 다시 적용할 수 없습니다."
   },
   "storageNotice": {
     "tripsPrunedTitle": "기기 저장 공간이 가득 찼습니다",

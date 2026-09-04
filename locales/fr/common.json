@@ -693,7 +693,9 @@
     "reapplyLabel": "Réappliqué : {summary}",
     "revertToast": "Votre voyage est revenu à son état précédent.",
     "revertToastTitle": "Changement annulé",
-    "redo": "Rétablir"
+    "redo": "Rétablir",
+    "revertedHint": "Annulé — à revoir ou rétablir",
+    "reapplyUnavailable": "Cet ensemble ne peut pas être réappliqué ici."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Le stockage de l'appareil est plein",

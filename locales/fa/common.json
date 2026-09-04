@@ -460,7 +460,9 @@
     "reapplyLabel": "دوباره اعمال شد: {summary}",
     "revertToast": "سفر شما به وضعیت پیش از این تغییر بازگشت.",
     "revertToastTitle": "تغییر بازگردانده شد",
-    "redo": "انجام دوباره"
+    "redo": "انجام دوباره",
+    "revertedHint": "بازگردانده شد — می‌توانید دوباره بررسی یا اجرا کنید",
+    "reapplyUnavailable": "این مجموعه اینجا دوباره اعمال نمی‌شود."
   },
   "storageNotice": {
     "tripsPrunedTitle": "حافظه دستگاه پر است",

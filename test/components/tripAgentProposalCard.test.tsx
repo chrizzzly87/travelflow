@@ -2,7 +2,7 @@
 import React from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -339,5 +339,79 @@ describe('TripAgentProposalCard reopen and reapply', () => {
         const [payload] = onRevertAgentChange.mock.calls[0];
         expect(payload.trip.title).toBe('Portugal');
         expect(payload.redoTrip.title).toBe('Portugal, revised');
+    });
+});
+
+describe('TripAgentProposalCard never traps the reviewer', () => {
+    const applyOnce = async (user: ReturnType<typeof userEvent.setup>) => {
+        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
+        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
+        await waitFor(() => expect(screen.getByText('tripAgent.appliedCount')).toBeTruthy());
+    };
+
+    beforeEach(() => {
+        applyTripAgentProposalMock.mockResolvedValue({
+            trip,
+            versionId: 'version-1',
+            status: 'applied',
+            appliedOperationIds: ['op-1'],
+            noOpOperationIds: [],
+        });
+    });
+
+    it('lets a reopened card be discarded again', async () => {
+        const user = userEvent.setup();
+        render(
+            <TripAgentProposalCard
+                trip={trip}
+                changeSet={changeSet}
+                onApplied={vi.fn()}
+                onReapplyAgentChange={vi.fn()}
+            />,
+        );
+
+        await applyOnce(user);
+        await user.click(screen.getByRole('button', { name: 'tripAgent.reviewAgain' }));
+        await user.click(screen.getByRole('button', { name: 'tripAgent.discard' }));
+
+        expect(screen.getByText('tripAgent.discarded')).toBeTruthy();
+    });
+
+    it('offers redo and review on a reverted card', async () => {
+        const user = userEvent.setup();
+        const onReapplyAgentChange = vi.fn();
+        render(
+            <TripAgentProposalCard
+                trip={trip}
+                changeSet={changeSet}
+                onApplied={vi.fn()}
+                onRevertAgentChange={vi.fn()}
+                onReapplyAgentChange={onReapplyAgentChange}
+            />,
+        );
+
+        await applyOnce(user);
+        await user.click(screen.getByRole('button', { name: 'tripAgent.revert' }));
+        expect(screen.getByText('tripAgent.revertedHint')).toBeTruthy();
+
+        await user.click(screen.getByRole('button', { name: 'tripAgent.redo' }));
+
+        expect(onReapplyAgentChange).toHaveBeenCalledTimes(1);
+        expect(screen.getByText('tripAgent.appliedCount')).toBeTruthy();
+    });
+
+    it('explains rather than silently failing when a reapply has nowhere to go', async () => {
+        const user = userEvent.setup();
+        render(<TripAgentProposalCard trip={trip} changeSet={changeSet} onApplied={vi.fn()} />);
+
+        await applyOnce(user);
+        await user.click(screen.getByRole('button', { name: 'tripAgent.reviewAgain' }));
+        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
+        await user.click(screen.getByRole('button', { name: 'tripAgent.applyAgainCount' }));
+
+        expect(screen.getByRole('alert').textContent).toContain('tripAgent.reapplyUnavailable');
+        // and the card can still be closed
+        await user.click(screen.getByRole('button', { name: 'tripAgent.discard' }));
+        expect(screen.getByText('tripAgent.discarded')).toBeTruthy();
     });
 });

@@ -693,7 +693,9 @@
     "reapplyLabel": "Reapplied: {summary}",
     "revertToast": "Your plan is back as it was before this change.",
     "revertToastTitle": "Change reverted",
-    "redo": "Redo"
+    "redo": "Redo",
+    "revertedHint": "Reverted — you can review or redo it",
+    "reapplyUnavailable": "This set cannot be applied again here."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Device storage is full",

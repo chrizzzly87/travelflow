@@ -691,7 +691,9 @@
     "reapplyLabel": "Zastosowano ponownie: {summary}",
     "revertToast": "Twoja podróż wróciła do stanu sprzed tej zmiany.",
     "revertToastTitle": "Zmiana cofnięta",
-    "redo": "Ponów"
+    "redo": "Ponów",
+    "revertedHint": "Cofnięte — możesz przejrzeć lub ponowić",
+    "reapplyUnavailable": "Tego zestawu nie można tu zastosować ponownie."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",
