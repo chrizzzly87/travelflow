@@ -33,6 +33,12 @@ const dayLabel = (t: TFunction, offset: number): string => t('tripAgent.dayValue
 
 const describeGroup = (trip: ITrip, group: TripAgentChangeGroup, t: TFunction): string => {
     const operation = group.primary;
+    const subject = group.subjectId
+        ? trip.items.find((item) => item.id === group.subjectId)
+        : undefined;
+    if (operation.kind === 'remove_item' && subject && operation.itemId === subject.id && group.followUps.length > 0) {
+        return t('tripAgent.groupRemoveCity', { label: subject.title, count: group.followUps.length });
+    }
     if (operation.kind === 'remove_item') return t('tripAgent.groupRemove', { label: operation.targetLabel });
     if (operation.kind === 'add_item') {
         return t('tripAgent.groupAdd', { label: operation.item.title, day: Math.floor(operation.item.startDateOffset) + 1 });
@@ -73,6 +79,37 @@ const countTouchedItems = (operations: Operation[]): number => new Set(operation
     'itemId' in operation ? operation.itemId : operation.id
 ))).size;
 
+interface PreviewResult {
+    trip: ITrip | null;
+    noOpCount: number;
+    skippedCount: number;
+    error: string | null;
+}
+
+const computePreview = (
+    trip: ITrip,
+    operations: Operation[],
+    selectedOperationIds: string[],
+): PreviewResult | null => {
+    if (selectedOperationIds.length === 0) return null;
+    try {
+        const result = applyTripAgentOperations(trip, operations, selectedOperationIds);
+        return {
+            trip: result.trip,
+            noOpCount: result.noOpOperationIds.length,
+            skippedCount: result.skippedOperations.length,
+            error: null,
+        };
+    } catch (previewError) {
+        return {
+            trip: null,
+            noOpCount: 0,
+            skippedCount: 0,
+            error: previewError instanceof Error ? previewError.message : 'Preview failed.',
+        };
+    }
+};
+
 /**
  * Review flow for one proposal: pick the changes, see them applied in the
  * planner itself, then commit. Nothing is written before the preview is
@@ -86,7 +123,7 @@ export const TripAgentProposalCard: React.FC<{
     onRevertLastChange?: () => void;
 }> = ({ trip, changeSet, onApplied, onPreviewTrip, onRevertLastChange }) => {
     const { t } = useTranslation('common');
-    const groups = useMemo(() => groupTripAgentChanges(changeSet.operations), [changeSet.operations]);
+    const groups = useMemo(() => groupTripAgentChanges(trip, changeSet.operations), [changeSet.operations, trip]);
     const [selectedGroupIds, setSelectedGroupIds] = useState(() => groups.map((group) => group.id));
     const [stage, setStage] = useState<'select' | 'preview'>('select');
     const [state, setState] = useState<'pending' | 'applying' | 'applied' | 'reverted' | 'rejected' | 'error'>('pending');
@@ -97,28 +134,31 @@ export const TripAgentProposalCard: React.FC<{
         [groups, selectedGroupIds],
     );
 
-    const preview = useMemo(() => {
-        if (selectedOperationIds.length === 0) return null;
-        try {
-            const result = applyTripAgentOperations(trip, changeSet.operations, selectedOperationIds);
-            return { trip: result.trip, noOpCount: result.noOpOperationIds.length, error: null as string | null };
-        } catch (previewError) {
-            return {
-                trip: null,
-                noOpCount: 0,
-                error: previewError instanceof Error ? previewError.message : 'Preview failed.',
-            };
-        }
-    }, [changeSet.operations, selectedOperationIds, trip]);
+    const preview = useMemo(
+        () => computePreview(trip, changeSet.operations, selectedOperationIds),
+        [changeSet.operations, selectedOperationIds, trip],
+    );
 
     const isPreviewing = stage === 'preview' && state === 'pending';
 
-    // The planner itself shows the proposed trip while the preview is open.
+    // The planner shows the proposed trip while the preview is open. The trip
+    // is recomputed here rather than taken from the memo above: publishing a
+    // freshly built object on every render fed the preview back into the view
+    // that produced it.
+    const previewKey = isPreviewing ? selectedOperationIds.join('|') : '';
+    const canonicalUpdatedAt = trip.updatedAt;
     useEffect(() => {
         if (!onPreviewTrip) return;
-        onPreviewTrip(isPreviewing ? preview?.trip || null : null);
+        if (!previewKey) {
+            onPreviewTrip(null);
+            return;
+        }
+        onPreviewTrip(computePreview(trip, changeSet.operations, previewKey.split('|'))?.trip || null);
         return () => onPreviewTrip(null);
-    }, [isPreviewing, onPreviewTrip, preview?.trip]);
+        // Keyed by the saved trip's timestamp and the immutable change set, so a
+        // re-render with an equal-but-new object does not republish the preview.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [canonicalUpdatedAt, changeSet.id, onPreviewTrip, previewKey]);
 
     const apply = async () => {
         if (selectedOperationIds.length === 0 || (state !== 'pending' && state !== 'error')) return;
@@ -208,11 +248,11 @@ export const TripAgentProposalCard: React.FC<{
                                 disabled={state !== 'pending'}
                             >
                                 {groups.map((group) => (
-                                    <QuestionnaireChoice key={group.id} value={group.id}>
-                                        <span className="text-sm font-medium text-slate-900">
+                                    <QuestionnaireChoice key={group.id} value={group.id} className="min-h-0 gap-2 p-2">
+                                        <span className="text-[13px] font-medium leading-5 text-slate-900">
                                             {describeGroup(trip, group, t)}
                                         </span>
-                                        <QuestionnaireChoiceDescription>
+                                        <QuestionnaireChoiceDescription className="mt-0 line-clamp-2 text-[11px] leading-4">
                                             {group.followUps.length > 0
                                                 ? `${group.primary.rationale} · ${t('tripAgent.groupShifts', { count: countTouchedItems(group.followUps) })}`
                                                 : group.primary.rationale}
@@ -254,6 +294,11 @@ export const TripAgentProposalCard: React.FC<{
                     {preview?.error && (
                         <p className="rounded-xl bg-rose-50 p-2.5 text-xs text-rose-800" role="alert">{preview.error}</p>
                     )}
+                    {!preview?.error && preview?.skippedCount ? (
+                        <p className="rounded-xl bg-amber-50 p-2.5 text-xs text-amber-800" role="status">
+                            {t('tripAgent.previewSkipped', { count: preview.skippedCount })}
+                        </p>
+                    ) : null}
                     {!preview?.error && preview?.noOpCount ? (
                         <p className="rounded-xl bg-amber-50 p-2.5 text-xs text-amber-800" role="status">
                             {t('tripAgent.previewNoOp', { count: preview.noOpCount })}

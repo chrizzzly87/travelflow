@@ -416,6 +416,8 @@ interface TripViewProps {
     onAdoptAgentTripVersion?: (input: { trip: ITrip; versionId: string; label: string }) => void;
     /** Set while the Trip Agent previews a proposal in the planner. */
     agentPreviewTrip?: ITrip | null;
+    /** The saved trip, unchanged by an active preview. */
+    agentCanonicalTrip?: ITrip;
     onAgentPreviewTrip?: (trip: ITrip | null) => void;
     onOpenManager: () => void;
     onOpenSettings: () => void;
@@ -971,6 +973,7 @@ const useTripViewRender = ({
     onCommitState,
     onAdoptAgentTripVersion,
     agentPreviewTrip,
+    agentCanonicalTrip,
     onAgentPreviewTrip,
     onOpenManager,
     onOpenSettings,
@@ -3390,7 +3393,7 @@ const useTripViewRender = ({
                     {isTripAgentOpen && onAdoptAgentTripVersion && (
                         <Suspense fallback={null}>
                             <TripAgentPanel
-                                trip={agentPreviewTrip || trip}
+                                trip={agentCanonicalTrip || trip}
                                 contextRefs={tripAgentContextRefs}
                                 isOpen={isTripAgentOpen}
                                 onClose={() => setIsTripAgentOpen(false)}
@@ -3523,6 +3526,7 @@ export const TripView: React.FC<TripViewProps> = (props) => {
         trip: agentPreviewTrip || props.trip,
         readOnly: props.readOnly || Boolean(agentPreviewTrip),
         agentPreviewTrip,
+        agentCanonicalTrip: props.trip,
         onAgentPreviewTrip: setAgentPreviewTrip,
     });
 };

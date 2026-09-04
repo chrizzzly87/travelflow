@@ -114,6 +114,40 @@ describe('TripAgentProposalCard', () => {
         expect(screen.getByText('tripAgent.appliedCount')).toBeTruthy();
     });
 
+    it('publishes the preview once per selection, not once per render', async () => {
+        const user = userEvent.setup();
+        const onPreviewTrip = vi.fn();
+
+        const view = render(
+            <TripAgentProposalCard trip={trip} changeSet={changeSet} onApplied={vi.fn()} onPreviewTrip={onPreviewTrip} />,
+        );
+
+        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
+        await waitFor(() => expect(onPreviewTrip).toHaveBeenCalledWith(expect.objectContaining({ id: 'trip-1' })));
+        const callsAfterPreview = onPreviewTrip.mock.calls.length;
+
+        // A re-render with an equal-but-new trip object is what the planner does
+        // while it shows the preview; it must not feed a new preview back in.
+        view.rerender(
+            <TripAgentProposalCard
+                trip={JSON.parse(JSON.stringify(trip))}
+                changeSet={changeSet}
+                onApplied={vi.fn()}
+                onPreviewTrip={onPreviewTrip}
+            />,
+        );
+        view.rerender(
+            <TripAgentProposalCard
+                trip={JSON.parse(JSON.stringify(trip))}
+                changeSet={changeSet}
+                onApplied={vi.fn()}
+                onPreviewTrip={onPreviewTrip}
+            />,
+        );
+
+        expect(onPreviewTrip.mock.calls.length).toBe(callsAfterPreview);
+    });
+
     it('keeps a failed apply retryable and names the failure', async () => {
         const user = userEvent.setup();
         applyTripAgentProposalMock.mockRejectedValue(Object.assign(new Error('Version conflict'), {
