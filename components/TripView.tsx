@@ -163,6 +163,8 @@ const TripHistoryModal = lazyWithRecovery('TripHistoryModal', () =>
     import('./TripHistoryModal').then((module) => ({ default: module.TripHistoryModal }))
 );
 
+import { readTripAgentOpenState, writeTripAgentOpenState } from './trip-agent/tripAgentPanelState';
+
 const TripAgentPanel = lazyWithRecovery('TripAgentPanel', () =>
     import('./trip-agent/TripAgentPanel').then((module) => ({ default: module.TripAgentPanel }))
 );
@@ -1665,7 +1667,7 @@ const useTripViewRender = ({
     const [isRetryingGeneration, setIsRetryingGeneration] = useState(false);
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
-    const [isTripAgentOpen, setIsTripAgentOpen] = useState(false);
+    const [isTripAgentOpen, setIsTripAgentOpen] = useState(() => readTripAgentOpenState());
     const cityColorPaletteId = trip.cityColorPaletteId || DEFAULT_CITY_COLOR_PALETTE_ID;
     const mapColorMode = normalizeMapColorMode(trip.mapColorMode);
     const allowMapColorModeControls = useMemo(
@@ -3054,6 +3056,7 @@ const useTripViewRender = ({
             return;
         }
         setIsTripAgentOpen(true);
+        writeTripAgentOpenState(true);
     }, [isTripAgentLocked, location.hash, location.pathname, location.search, openLoginModal, trip.id, tripAgentContextRefs.length]);
     const handleTripCalendarExport = useCallback((
         scope: TripCalendarExportScope,
@@ -3372,11 +3375,13 @@ const useTripViewRender = ({
                         <button
                             type="button"
                             onClick={openTripAgent}
-                            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] end-4 z-[1490] inline-flex min-h-12 items-center gap-2 rounded-full bg-slate-950 px-4 text-sm font-semibold text-white shadow-xl transition hover:-translate-y-0.5 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] end-4 z-[1490] inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-900 shadow-lg transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
                             aria-label={t('tripAgent.title')}
                             {...getAnalyticsDebugAttributes('trip_agent__launcher--open', { trip_id: trip.id })}
                         >
-                            {isTripAgentLocked ? <Lock className="size-4" /> : <Sparkles className="size-4" />}
+                            {isTripAgentLocked
+                                ? <Lock className="size-4 text-slate-500" />
+                                : <Sparkles className="size-4 text-accent-600" />}
                             <span>{t('tripAgent.title')}</span>
                         </button>
                     )}
@@ -3396,7 +3401,10 @@ const useTripViewRender = ({
                                 trip={agentCanonicalTrip || trip}
                                 contextRefs={tripAgentContextRefs}
                                 isOpen={isTripAgentOpen}
-                                onClose={() => setIsTripAgentOpen(false)}
+                                onClose={() => {
+                                    setIsTripAgentOpen(false);
+                                    writeTripAgentOpenState(false);
+                                }}
                                 onAdoptCommittedTripVersion={onAdoptAgentTripVersion}
                                 onPreviewTrip={onAgentPreviewTrip}
                                 onRevertLastChange={() => { navigateHistory('undo'); }}
