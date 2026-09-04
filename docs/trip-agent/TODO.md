@@ -103,12 +103,22 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 - [x] Remove the unused math, mermaid and syntax-highlighting packages and components.
 - [x] Correct the analytics table and localize the last hardcoded failure strings.
 - [x] Trim the release note and drop the superseded bare-`P` shortcut claim.
-- [ ] Apply migration `20260904120000_trip_agent_access_and_stale_fix.sql`: editable-share and expiry checks, and a stale proposal that records its status instead of rolling it back.
+- [ ] **Apply** migration `20260904120000_trip_agent_access_and_stale_fix.sql` (verified locally against a throwaway Postgres; see `supabase/tests/` and `docs/SUPABASE_RUNBOOK.md`): editable-share and expiry checks, and a stale proposal that records its status instead of rolling it back.
 - [ ] Replay operations inside the locked transaction rather than writing a precomputed snapshot (#481).
 - [ ] Enable the panel for editable-share sessions once quota ownership for shared editors is decided (#484).
 - [ ] Registry-first Gateway routing with ZDR, once `AI_GATEWAY_API_KEY` exists (#481).
 - [ ] Normalized hotel and route cards (#485), admin workspace and telemetry (#482), JourneySpec (#483).
 - [ ] Deterministic fake Gateway/MCP browser E2E, plus TripView coverage for launcher locking, preview lifecycle, version adoption, mobile, focus and RTL.
+
+## Why the review findings happened
+
+Written up in [`docs/AI_AGENT_FEATURE_GUARDRAILS.md`](../AI_AGENT_FEATURE_GUARDRAILS.md).
+In short: a UI request was implemented without re-reading the constraint that
+forbade it; a debugging aid crossed a trust boundary without a redactor; a model
+switch dropped the guarantees the previous path carried; timeouts were raised
+without checking the platform ceiling; card state was rebuilt from the
+transcript instead of the record; and checklists were ticked from memory of the
+session rather than against the issue text.
 
 ## Production gates
 

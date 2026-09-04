@@ -6,7 +6,7 @@
 3. For locale/translation/routing updates, follow `docs/I18N_PAGE_WORKFLOW.md`.
 4. For user-facing copy updates (marketing, CTA, planner), follow `docs/UX_COPY_GUIDELINES.md`.
 5. For analytics updates, follow `docs/ANALYTICS_CONVENTION.md`.
-6. For localized copy placeholders, use ICU syntax (`{name}`), never `{{name}}` (project uses `i18next-icu`).
+6. For localized copy placeholders, use ICU syntax (`{name}`), never `{{name}}`. Note: `i18next-icu` ships but is not registered in `i18n.ts`, so ICU plural/select blocks render as raw text — use plain interpolation.
 7. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
 
 ## Skill usage policy
@@ -32,6 +32,30 @@ When a user-facing feature, fix, or behavior change is completed, you must updat
 - Keep the most important user-facing items first, and fixes after primary highlights.
 - Bump the release `version` whenever publishing a new release entry.
 - Set `published_at` to when the change actually reached `main` (prefer production deploy timestamp; otherwise main merge timestamp), but **always before 23:00 UTC**. Timestamps at or after 23:00 UTC display as the next day in CET. Ensure the timestamp is strictly after the previous version's `published_at`.
+
+## AI and agent features
+- Read `docs/AI_AGENT_FEATURE_GUARDRAILS.md` before changing anything that calls a model, streams to the browser, or stores what a model produced.
+- Never stream, store or render hidden reasoning. Strip reasoning parts before persistence and on read.
+- Never put a raw exception in a response body. Redact every diagnostic that leaves the process (keys, tokens, URLs, prompt fragments) and give the client a code plus an authored sentence.
+- Never use a `VITE_`-prefixed credential server-side.
+- When swapping a provider, model or transport, port the guarantees the old path carried (approved models, retention, no-training, no fallback) or state which ones are now off.
+- Budget interactive runs below the platform limit (Netlify terminates a synchronous function at 60s) and give every long-lived record a sweeper.
+- Rebuild interactive state from its own record, never from a chat transcript.
+- Keep model-facing schemas forgiving (drop unknown keys, coerce numeric strings) and internal schemas strict; render a failed tool call visibly instead of letting prose claim success.
+
+## Runtime traps in this repo
+- The app renders through `preact/compat`. A plain function component never receives `ref`; anything used with Radix `asChild`, or focused/measured by a library, must be a real `forwardRef`. Symptoms: `getBoundingClientRect is not a function`, `focus is not a function`, popovers anchored at the origin. Libraries that require React 19 do not work here.
+- `i18next-icu` is installed but never registered in `i18n.ts`. ICU **placeholders** (`{name}`) work; ICU **plural/select syntax** renders as raw text. See `tests/unit/festivalLocaleKeys.test.ts`.
+- `supabase/migrations/*.sql` are never applied by a deploy. Write and verify them locally (`supabase/tests/`), then follow `docs/SUPABASE_RUNBOOK.md`; say plainly that a migration is pending.
+- Postgres has no autonomous transactions: `UPDATE` then `RAISE` in one function rolls the update back. Return the status and let the caller raise.
+
+
+## Claims and bookkeeping
+- Tick a checklist box against the issue's own wording, not your memory of the session; audit inherited `Closes #123` lines before pushing to a branch.
+- State exactly what was verified. "No longer bundled" is not "removed from package.json".
+- Keep one curated release note per feature: a dozen user-facing lines for the release, not one line per iteration.
+- Run `pnpm dlx react-doctor@latest <changed dirs> --verbose` after each UI batch, not once at the end.
+- New overlays are dialogs: `role="dialog"`, `aria-modal`, focus capture and trap, Escape, mobile backdrop, focus restored to the trigger.
 
 ## Completion gate
 Before finalizing, ensure all applicable code changes are represented in release markdown and versioning is updated.

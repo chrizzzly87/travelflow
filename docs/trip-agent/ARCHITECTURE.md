@@ -151,6 +151,10 @@ refunded when a run fails before producing anything.
 
 ## Privacy and secrets
 
+The invariants below, and the review findings that produced them, are written up
+in [`docs/AI_AGENT_FEATURE_GUARDRAILS.md`](../AI_AGENT_FEATURE_GUARDRAILS.md).
+
+
 Hidden reasoning is never streamed (`sendReasoning: false`), never stored
 (stripped before persistence and again on read) and never rendered; the public
 plan the model writes as text is the only account of its thinking.
