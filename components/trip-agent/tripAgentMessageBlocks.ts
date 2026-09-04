@@ -235,9 +235,11 @@ export const buildTripAgentMessageBlocks = (
     });
     closeActivity();
 
+    // A question is a decision the reviewer takes before judging changes, so it
+    // sits above any proposal that slipped into the same answer.
     const rank = (block: TripAgentMessageBlock): number => {
-        if (block.kind === 'proposal' || block.kind === 'proposal-pending' || block.kind === 'proposal-failed') return 1;
-        if (block.kind === 'question') return 2;
+        if (block.kind === 'question') return 1;
+        if (block.kind === 'proposal' || block.kind === 'proposal-pending' || block.kind === 'proposal-failed') return 2;
         return 0;
     };
     const ordered = [...blocks].sort((left, right) => rank(left) - rank(right));

@@ -87,6 +87,7 @@ export const streamTripAgentResponse = async (input: {
   const resolvedModel = await resolveTripAgentModel(definition.model, definition.fallbackModel);
   const runId = crypto.randomUUID();
   let proposalCreated = false;
+  let questionAsked = false;
   let streamFinished = false;
 
   await createTripAgentRun({
@@ -163,6 +164,13 @@ export const streamTripAgentResponse = async (input: {
         allowCustom: z.boolean().optional(),
       }).strict(),
       execute: async ({ question, options, allowCustom }) => {
+        if (proposalCreated) {
+          return {
+            kind: 'trip-agent-question-skipped' as const,
+            message: 'A proposal is already on screen. Ask this in your next answer instead.',
+          };
+        }
+        questionAsked = true;
         console.info('[trip-agent] question asked', {
           tripId: input.trip.id,
           threadId: input.threadId,
@@ -186,6 +194,20 @@ export const streamTripAgentResponse = async (input: {
         sources: z.array(tripAgentSourceSchema).max(30).optional(),
       }).strict(),
       execute: async ({ summary, operations, sources }) => {
+        if (questionAsked) {
+          // Asking and proposing in one answer forces the reviewer to judge
+          // changes that the pending question may still invalidate.
+          console.info('[trip-agent] proposal deferred until the question is answered', {
+            tripId: input.trip.id,
+            threadId: input.threadId,
+            requestId: input.requestId,
+            runId,
+          });
+          return {
+            kind: 'trip-agent-proposal-deferred' as const,
+            message: 'You asked the traveller a question in this answer. Wait for their reply, then propose. Do not describe changes as proposed.',
+          };
+        }
         const parsedOperations = toTypedTripChangeOperations(operations);
         if (parsedOperations.status === 'invalid') {
           console.error('[trip-agent] proposal rejected as invalid', {
@@ -268,8 +290,9 @@ Rules:
 - If create_trip_proposal answers with kind "trip-agent-proposal-invalid", fix exactly the listed fields and call it once more, then explain in plain text if it still fails.
 - Give a concise public plan and rationale in normal text: at most four short sentences. Do not expose private chain-of-thought.
 - Before a long tool run, say in one sentence what you are about to do.
-- When a proposal frees days or leaves a gap — a removed stop, a shortened stay — call ask_traveler once, after create_trip_proposal, with two to four concrete options for those days (for example extending nearby stays, shortening the whole trip, or adding another stop). Keep each option label under six words and set allowCustom.
-- Call ask_traveler at most once per answer, and never for a question the trip data already answers.
+- If the request leaves a real choice open — what should happen to days a removal frees, which of two stops is meant, how far to shorten a stay — call ask_traveler first and stop there. Do not propose in the same answer, and do not describe changes as proposed: nothing has been prepared yet.
+- Offer two to four concrete options with labels under six words, set allowCustom, and call ask_traveler at most once per answer. Never ask what the trip data already answers.
+- Once the traveller has answered, put the whole plan into one create_trip_proposal call.
 - Only one proposal may be open at a time. When the traveller answers a follow-up question, put the whole updated plan into a single new create_trip_proposal call rather than adding a second one.
 - Nothing changes until the user explicitly applies selected proposal operations.`,
     tools: agentTools,

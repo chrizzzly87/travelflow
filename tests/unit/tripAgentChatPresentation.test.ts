@@ -177,7 +177,7 @@ describe('question blocks', () => {
         ],
     }) as unknown as TripAgentMessage;
 
-    it('renders the question after the answer and the review card', () => {
+    it('renders the question above any proposal, because it decides what to propose', () => {
         const blocks = buildTripAgentMessageBlocks(questionPart({
             kind: 'trip-agent-question',
             question: 'What should happen to the free days?',
@@ -188,7 +188,7 @@ describe('question blocks', () => {
             allowCustom: true,
         }), false);
 
-        expect(blocks.map((block) => block.kind)).toEqual(['text', 'proposal', 'question']);
+        expect(blocks.map((block) => block.kind)).toEqual(['text', 'question', 'proposal']);
     });
 
     it('ignores a malformed question instead of rendering an empty card', () => {
@@ -279,5 +279,60 @@ describe('failed proposal attempts', () => {
         ]), false);
 
         expect(blocks.map((block) => block.kind)).toEqual(['text', 'proposal']);
+    });
+});
+
+describe('question and proposal ordering', () => {
+    it('puts a question above a proposal that slipped into the same answer', () => {
+        const message = {
+            id: 'assistant-o',
+            role: 'assistant',
+            parts: [
+                {
+                    type: 'tool-create_trip_proposal',
+                    toolCallId: 'call-p',
+                    state: 'output-available',
+                    input: {},
+                    output: {
+                        kind: 'trip-agent-proposal',
+                        changeSet: {
+                            schemaVersion: 1,
+                            id: 'df1c9d5e-0000-4000-8000-000000000000',
+                            tripId: 'trip-1',
+                            threadId: 'ef1c9d5e-0000-4000-8000-000000000000',
+                            runId: 'ff1c9d5e-0000-4000-8000-000000000000',
+                            baseTripUpdatedAt: 10,
+                            summary: 'Remove a stop',
+                            operations: [{ id: 'op-1', kind: 'remove_item', itemId: 'city-1', rationale: 'x', targetLabel: 'Stop' }],
+                            sources: [],
+                            status: 'pending',
+                            selectedOperationIds: [],
+                            appliedVersionId: null,
+                            createdAt: '2026-09-04T10:00:00.000Z',
+                            appliedAt: null,
+                        },
+                    },
+                },
+                {
+                    type: 'tool-ask_traveler',
+                    toolCallId: 'call-q',
+                    state: 'output-available',
+                    input: {},
+                    output: {
+                        kind: 'trip-agent-question',
+                        question: 'What should happen to the free days?',
+                        options: [
+                            { id: 'a', label: 'Extend stays', prompt: 'Extend the stays.' },
+                            { id: 'b', label: 'Shorten the trip', prompt: 'Shorten the trip.' },
+                        ],
+                        allowCustom: true,
+                    },
+                },
+                { type: 'text', text: 'Here is what I suggest.' },
+            ],
+        } as unknown as TripAgentMessage;
+
+        expect(buildTripAgentMessageBlocks(message, false).map((block) => block.kind))
+            .toEqual(['text', 'question', 'proposal']);
     });
 });

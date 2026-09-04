@@ -55,6 +55,7 @@ const main = async () => {
 
     const calls: Array<{ tool: string; ok: boolean; detail: string }> = [];
     let proposal: unknown = null;
+    let questionAsked = false;
 
     const agent = new ToolLoopAgent({
         id: 'trip_orchestrator_dry_run',
@@ -70,7 +71,8 @@ Rules:
 - Reuse the exact item ids from read_trip_context. Never invent an id for an existing item.
 - If create_trip_proposal answers with kind "trip-agent-proposal-invalid", fix exactly the listed fields and call it once more.
 - Give a concise public plan and rationale in normal text: at most four short sentences.
-- When a proposal frees days or leaves a gap — a removed stop, a shortened stay — call ask_traveler once, after create_trip_proposal, with two to four concrete options for those days (for example extending nearby stays, shortening the whole trip, or adding another stop). Keep each option label under six words and set allowCustom.`,
+- If the request leaves a real choice open — what should happen to days a removal frees, which of two stops is meant, how far to shorten a stay — call ask_traveler first and stop there. Do not propose in the same answer, and do not describe changes as proposed: nothing has been prepared yet.
+- Offer two to four concrete options with labels under six words, set allowCustom, and call ask_traveler at most once per answer.`,
         tools: {
             read_trip_context: tool({
                 description: 'Read the canonical current trip.',
@@ -93,6 +95,7 @@ Rules:
                     allowCustom: z.boolean().optional(),
                 }).strict(),
                 execute: async ({ question, options, allowCustom }) => {
+                    questionAsked = true;
                     calls.push({ tool: 'ask_traveler', ok: true, detail: `${question} → ${options.map((option) => option.label).join(' | ')}` });
                     return { kind: 'trip-agent-question' as const, question, options, allowCustom: allowCustom !== false };
                 },
@@ -105,6 +108,13 @@ Rules:
                     sources: z.array(z.unknown()).max(30).optional(),
                 }).strict(),
                 execute: async ({ summary, operations }) => {
+                    if (questionAsked) {
+                        calls.push({ tool: 'create_trip_proposal', ok: false, detail: 'deferred until the question is answered' });
+                        return {
+                            kind: 'trip-agent-proposal-deferred' as const,
+                            message: 'You asked the traveller a question in this answer. Wait for their reply, then propose.',
+                        };
+                    }
                     const parsed = toTypedTripChangeOperations(operations);
                     if (parsed.status === 'invalid') {
                         calls.push({ tool: 'create_trip_proposal', ok: false, detail: JSON.stringify(parsed.issues) });
