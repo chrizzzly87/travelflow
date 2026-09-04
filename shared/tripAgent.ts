@@ -240,10 +240,23 @@ export type TripAgentMessage = UIMessage<{
     runId?: string;
 }, TripAgentDataParts>;
 
+export interface TripAgentSkippedOperation {
+    id: string;
+    reason: 'item-not-found' | 'city-not-found' | 'stay-not-found' | 'item-exists' | 'stay-exists' | 'id-collision';
+    target: string;
+}
+
 export interface TripAgentApplyResult {
     trip: ITrip;
     appliedOperationIds: string[];
     noOpOperationIds: string[];
+    /**
+     * Operations whose target was not in the trip at the moment they ran, for
+     * example because a reviewer deselected the change that would have created
+     * it, or because the trip moved on. They are reported, never fatal: one
+     * stale reference must not sink an otherwise valid review.
+     */
+    skippedOperations: TripAgentSkippedOperation[];
 }
 
 const stableItemSort = (items: ITimelineItem[]): ITimelineItem[] => (
@@ -264,11 +277,9 @@ const assertUniqueItemIds = (items: ITimelineItem[]): void => {
     }
 };
 
-const findCityIndex = (items: ITimelineItem[], cityId: string): number => {
-    const cityIndex = items.findIndex((item) => item.id === cityId && item.type === 'city');
-    if (cityIndex < 0) throw new Error(`City not found: ${cityId}`);
-    return cityIndex;
-};
+const findCityIndex = (items: ITimelineItem[], cityId: string): number => (
+    items.findIndex((item) => item.id === cityId && item.type === 'city')
+);
 
 export const applyTripAgentOperations = (
     inputTrip: ITrip,
@@ -291,10 +302,12 @@ export const applyTripAgentOperations = (
     let nextTrip: ITrip = structuredClone(inputTrip);
     const appliedOperationIds: string[] = [];
     const noOpOperationIds: string[] = [];
+    const skippedOperations: TripAgentSkippedOperation[] = [];
 
     for (const operation of operations) {
         if (!selectedIds.has(operation.id)) continue;
         const before = JSON.stringify(nextTrip);
+        let skipped: TripAgentSkippedOperation | null = null;
 
         switch (operation.kind) {
             case 'update_trip':
@@ -302,13 +315,17 @@ export const applyTripAgentOperations = (
                 break;
             case 'add_item':
                 if (nextTrip.items.some((item) => item.id === operation.item.id)) {
-                    throw new Error(`Itinerary item already exists: ${operation.item.id}`);
+                    skipped = { id: operation.id, reason: 'item-exists', target: operation.item.id };
+                    break;
                 }
                 nextTrip = { ...nextTrip, items: stableItemSort([...nextTrip.items, operation.item]) };
                 break;
             case 'update_item': {
                 const itemIndex = nextTrip.items.findIndex((item) => item.id === operation.itemId);
-                if (itemIndex < 0) throw new Error(`Itinerary item not found: ${operation.itemId}`);
+                if (itemIndex < 0) {
+                    skipped = { id: operation.id, reason: 'item-not-found', target: operation.itemId };
+                    break;
+                }
                 const items = [...nextTrip.items];
                 items[itemIndex] = { ...items[itemIndex], ...operation.changes };
                 nextTrip = { ...nextTrip, items: stableItemSort(items) };
@@ -316,7 +333,10 @@ export const applyTripAgentOperations = (
             }
             case 'move_item': {
                 const itemIndex = nextTrip.items.findIndex((item) => item.id === operation.itemId);
-                if (itemIndex < 0) throw new Error(`Itinerary item not found: ${operation.itemId}`);
+                if (itemIndex < 0) {
+                    skipped = { id: operation.id, reason: 'item-not-found', target: operation.itemId };
+                    break;
+                }
                 const items = [...nextTrip.items];
                 items[itemIndex] = {
                     ...items[itemIndex],
@@ -328,16 +348,22 @@ export const applyTripAgentOperations = (
             }
             case 'remove_item': {
                 if (!nextTrip.items.some((item) => item.id === operation.itemId)) {
-                    throw new Error(`Itinerary item not found: ${operation.itemId}`);
+                    skipped = { id: operation.id, reason: 'item-not-found', target: operation.itemId };
+                    break;
                 }
                 nextTrip = { ...nextTrip, items: nextTrip.items.filter((item) => item.id !== operation.itemId) };
                 break;
             }
             case 'add_stay': {
                 const cityIndex = findCityIndex(nextTrip.items, operation.cityId);
+                if (cityIndex < 0) {
+                    skipped = { id: operation.id, reason: 'city-not-found', target: operation.cityId };
+                    break;
+                }
                 const hotels = nextTrip.items[cityIndex].hotels ?? [];
                 if (hotels.some((hotel) => hotel.id === operation.stay.id)) {
-                    throw new Error(`Stay already exists: ${operation.stay.id}`);
+                    skipped = { id: operation.id, reason: 'stay-exists', target: operation.stay.id };
+                    break;
                 }
                 const items = [...nextTrip.items];
                 items[cityIndex] = { ...items[cityIndex], hotels: [...hotels, operation.stay] };
@@ -346,9 +372,16 @@ export const applyTripAgentOperations = (
             }
             case 'update_stay': {
                 const cityIndex = findCityIndex(nextTrip.items, operation.cityId);
+                if (cityIndex < 0) {
+                    skipped = { id: operation.id, reason: 'city-not-found', target: operation.cityId };
+                    break;
+                }
                 const hotels = nextTrip.items[cityIndex].hotels ?? [];
                 const stayIndex = hotels.findIndex((hotel) => hotel.id === operation.stayId);
-                if (stayIndex < 0) throw new Error(`Stay not found: ${operation.stayId}`);
+                if (stayIndex < 0) {
+                    skipped = { id: operation.id, reason: 'stay-not-found', target: operation.stayId };
+                    break;
+                }
                 const nextHotels = [...hotels];
                 nextHotels[stayIndex] = { ...nextHotels[stayIndex], ...operation.changes };
                 const items = [...nextTrip.items];
@@ -358,9 +391,14 @@ export const applyTripAgentOperations = (
             }
             case 'remove_stay': {
                 const cityIndex = findCityIndex(nextTrip.items, operation.cityId);
+                if (cityIndex < 0) {
+                    skipped = { id: operation.id, reason: 'city-not-found', target: operation.cityId };
+                    break;
+                }
                 const hotels = nextTrip.items[cityIndex].hotels ?? [];
                 if (!hotels.some((hotel) => hotel.id === operation.stayId)) {
-                    throw new Error(`Stay not found: ${operation.stayId}`);
+                    skipped = { id: operation.id, reason: 'stay-not-found', target: operation.stayId };
+                    break;
                 }
                 const items = [...nextTrip.items];
                 items[cityIndex] = {
@@ -381,15 +419,18 @@ export const applyTripAgentOperations = (
                     || item.startDateOffset >= operation.endOffset
                 ));
                 const retainedIds = new Set(retained.map((item) => item.id));
-                for (const item of operation.items) {
-                    if (retainedIds.has(item.id)) throw new Error(`Replacement item id collides with retained item: ${item.id}`);
+                const collision = operation.items.find((item) => retainedIds.has(item.id));
+                if (collision) {
+                    skipped = { id: operation.id, reason: 'id-collision', target: collision.id };
+                    break;
                 }
                 nextTrip = { ...nextTrip, items: stableItemSort([...retained, ...operation.items]) };
                 break;
             }
         }
 
-        if (before === JSON.stringify(nextTrip)) noOpOperationIds.push(operation.id);
+        if (skipped) skippedOperations.push(skipped);
+        else if (before === JSON.stringify(nextTrip)) noOpOperationIds.push(operation.id);
         else appliedOperationIds.push(operation.id);
     }
 
@@ -399,7 +440,7 @@ export const applyTripAgentOperations = (
         nextTrip = { ...nextTrip, items: parsedItems, updatedAt: now };
     }
 
-    return { trip: nextTrip, appliedOperationIds, noOpOperationIds };
+    return { trip: nextTrip, appliedOperationIds, noOpOperationIds, skippedOperations };
 };
 
 export const buildTripAgentContextRefs = (

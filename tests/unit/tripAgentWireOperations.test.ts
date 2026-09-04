@@ -64,3 +64,60 @@ describe('toTypedTripChangeOperation', () => {
         expect(result.issues.map((issue) => `${issue.operationId}:${issue.path}`)).toEqual(['op-1:itemId', 'op-2:stay']);
     });
 });
+
+describe('every wire kind converts with its minimal fields', () => {
+    const base = { rationale: 'because', targetLabel: 'target' };
+    const item = { type: 'activity' as const, title: 'Tea', startDateOffset: 2, duration: 0.25 };
+    const stay = { name: 'Lodge' };
+
+    const cases: Array<[string, Record<string, unknown>]> = [
+        ['update_trip', { tripChanges: { title: 'New' } }],
+        ['add_item', { item }],
+        ['update_item', { itemId: 'i', itemChanges: { duration: 2 } }],
+        ['move_item', { itemId: 'i', startDateOffset: 3 }],
+        ['remove_item', { itemId: 'i' }],
+        ['add_stay', { cityId: 'c', stay }],
+        ['update_stay', { cityId: 'c', stayId: 's', stayChanges: { name: 'New' } }],
+        ['remove_stay', { cityId: 'c', stayId: 's' }],
+        ['replace_itinerary', { items: [item] }],
+        ['replace_itinerary_segment', { startOffset: 1, endOffset: 3, items: [item] }],
+    ];
+
+    it.each(cases)('converts %s', (kind, extra) => {
+        const parsed = tripAgentWireOperationSchema.safeParse({ id: `op-${kind}`, kind, ...base, ...extra });
+        expect(parsed.success).toBe(true);
+        if (!parsed.success) return;
+
+        const result = toTypedTripChangeOperation(parsed.data);
+        expect(result.status).toBe('ok');
+        if (result.status !== 'ok') return;
+        expect(result.operation.kind).toBe(kind);
+    });
+
+    it('rejects a payload carrying a field the schema does not define', () => {
+        const parsed = tripAgentWireOperationSchema.safeParse({
+            id: 'op', kind: 'remove_item', itemId: 'i', ...base, notAField: true,
+        });
+
+        expect(parsed.success).toBe(false);
+    });
+
+    it('rejects an out-of-range day offset and a zero duration', () => {
+        expect(tripAgentWireOperationSchema.safeParse({
+            id: 'op', kind: 'move_item', itemId: 'i', startDateOffset: -1, ...base,
+        }).success).toBe(false);
+        expect(tripAgentWireOperationSchema.safeParse({
+            id: 'op', kind: 'add_item', ...base, item: { ...item, duration: 0 },
+        }).success).toBe(false);
+    });
+
+    it('rejects a segment that ends before it starts', () => {
+        const parsed = tripAgentWireOperationSchema.safeParse({
+            id: 'op', kind: 'replace_itinerary_segment', startOffset: 5, endOffset: 2, items: [item], ...base,
+        });
+        expect(parsed.success).toBe(true);
+        if (!parsed.success) return;
+
+        expect(toTypedTripChangeOperation(parsed.data).status).toBe('invalid');
+    });
+});

@@ -121,6 +121,7 @@ export const applyTripAgentProposal = (
     status: 'applied' | 'applied_partial';
     appliedOperationIds: string[];
     noOpOperationIds: string[];
+    skippedOperations?: Array<{ id: string; reason: string; target: string }>;
 }> => mutate({ action: 'apply', tripId, changeSetId, selectedOperationIds });
 
 export const buildTripAgentChatRequest = (input: {

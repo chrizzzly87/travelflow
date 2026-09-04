@@ -271,3 +271,76 @@ export const toTypedTripChangeOperations = (
         ? { status: 'invalid' as const, issues: issues.slice(0, 10) }
         : { status: 'ok' as const, operations: converted };
 };
+
+/**
+ * Checks every id an operation set points at against the trip it will run on,
+ * counting items the set creates itself. Catching an invented id here lets the
+ * model correct itself, instead of the reviewer meeting a dead proposal.
+ */
+export const findUnknownOperationTargets = (
+    trip: { items: Array<{ id: string; type: string; hotels?: Array<{ id: string }> }> },
+    operations: TripChangeOperationV1[],
+): TripAgentWireIssue[] => {
+    const itemIds = new Set(trip.items.map((item) => item.id));
+    const cityIds = new Set(trip.items.filter((item) => item.type === 'city').map((item) => item.id));
+    const stayIds = new Set(trip.items.flatMap((item) => (item.hotels || []).map((stay) => `${item.id}:${stay.id}`)));
+    const issues: TripAgentWireIssue[] = [];
+
+    const unknown = (operation: TripChangeOperationV1, path: string, target: string, hint: string): void => {
+        issues.push({
+            operationId: operation.id,
+            path,
+            message: `"${target}" is not in this trip. ${hint}`,
+        });
+    };
+
+    for (const operation of operations) {
+        switch (operation.kind) {
+            case 'add_item':
+                itemIds.add(operation.item.id);
+                if (operation.item.type === 'city') cityIds.add(operation.item.id);
+                break;
+            case 'update_item':
+            case 'move_item':
+            case 'remove_item':
+                if (!itemIds.has(operation.itemId)) {
+                    unknown(operation, 'itemId', operation.itemId, 'Use an id from read_trip_context.');
+                }
+                if (operation.kind === 'remove_item') itemIds.delete(operation.itemId);
+                break;
+            case 'add_stay':
+                if (!cityIds.has(operation.cityId)) {
+                    unknown(operation, 'cityId', operation.cityId, 'Stays attach to a city item.');
+                } else {
+                    stayIds.add(`${operation.cityId}:${operation.stay.id}`);
+                }
+                break;
+            case 'update_stay':
+            case 'remove_stay':
+                if (!cityIds.has(operation.cityId)) {
+                    unknown(operation, 'cityId', operation.cityId, 'Stays attach to a city item.');
+                } else if (!stayIds.has(`${operation.cityId}:${operation.stayId}`)) {
+                    unknown(operation, 'stayId', operation.stayId, 'Use a stay id from this city.');
+                }
+                break;
+            case 'replace_itinerary':
+                itemIds.clear();
+                cityIds.clear();
+                operation.items.forEach((item) => {
+                    itemIds.add(item.id);
+                    if (item.type === 'city') cityIds.add(item.id);
+                });
+                break;
+            case 'replace_itinerary_segment':
+                operation.items.forEach((item) => {
+                    itemIds.add(item.id);
+                    if (item.type === 'city') cityIds.add(item.id);
+                });
+                break;
+            default:
+                break;
+        }
+    }
+
+    return issues.slice(0, 10);
+};

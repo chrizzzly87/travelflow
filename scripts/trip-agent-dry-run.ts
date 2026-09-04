@@ -17,6 +17,7 @@ import {
     tripAgentChangeSetV1Schema,
 } from '../shared/tripAgent.ts';
 import {
+    findUnknownOperationTargets,
     tripAgentWireOperationSchema,
     toTypedTripChangeOperations,
 } from '../shared/tripAgentWireOperations.ts';
@@ -93,6 +94,15 @@ Rules:
                             kind: 'trip-agent-proposal-invalid' as const,
                             message: 'Some operations are missing required fields. Fix exactly these and call create_trip_proposal once more.',
                             issues: parsed.issues,
+                        };
+                    }
+                    const unknownTargets = findUnknownOperationTargets(trip, parsed.operations);
+                    if (unknownTargets.length > 0) {
+                        calls.push({ tool: 'create_trip_proposal', ok: false, detail: `unknown ids ${JSON.stringify(unknownTargets)}` });
+                        return {
+                            kind: 'trip-agent-proposal-invalid' as const,
+                            message: 'Some operations point at ids that are not in this trip. Use the ids from read_trip_context and call create_trip_proposal once more.',
+                            issues: unknownTargets,
                         };
                     }
                     const changeSet = tripAgentChangeSetV1Schema.parse({

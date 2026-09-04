@@ -100,7 +100,7 @@ describe('trip agent operations', () => {
         }], ['missing'])).toThrow('Unknown selected operation id');
     });
 
-    it('rejects duplicate item IDs and missing city stays', () => {
+    it('rejects an itinerary that would carry duplicate item IDs', () => {
         expect(() => applyTripAgentOperations(createTrip(), [{
             id: 'replace',
             kind: 'replace_itinerary',
@@ -108,15 +108,20 @@ describe('trip agent operations', () => {
             targetLabel: 'Itinerary',
             items: [createTrip().items[0], createTrip().items[0]],
         }])).toThrow('Duplicate itinerary item id');
+    });
 
-        expect(() => applyTripAgentOperations(createTrip(), [{
+    it('skips a stay for a city that is not in the trip, leaving the rest of the set usable', () => {
+        const result = applyTripAgentOperations(createTrip(), [{
             id: 'stay',
             kind: 'add_stay',
             rationale: 'Add stay.',
             targetLabel: 'Stay',
             cityId: 'missing',
             stay: { id: 'stay-1', name: 'Stay', address: 'Address' },
-        }])).toThrow('City not found');
+        }]);
+
+        expect(result.appliedOperationIds).toEqual([]);
+        expect(result.skippedOperations).toEqual([{ id: 'stay', reason: 'city-not-found', target: 'missing' }]);
     });
 
     it('builds immutable context references from current selection', () => {

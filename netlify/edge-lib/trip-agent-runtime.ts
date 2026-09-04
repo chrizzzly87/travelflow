@@ -15,6 +15,7 @@ import {
   type TripAgentMessage,
 } from '../../shared/tripAgent.ts';
 import {
+  findUnknownOperationTargets,
   tripAgentWireOperationSchema,
   toTypedTripChangeOperations,
 } from '../../shared/tripAgentWireOperations.ts';
@@ -154,6 +155,21 @@ export const streamTripAgentResponse = async (input: {
             kind: 'trip-agent-proposal-invalid' as const,
             message: 'Some operations are missing required fields. Fix exactly these and call create_trip_proposal once more.',
             issues: parsedOperations.issues,
+          };
+        }
+        const unknownTargets = findUnknownOperationTargets(input.trip, parsedOperations.operations);
+        if (unknownTargets.length > 0) {
+          console.error('[trip-agent] proposal targets unknown ids', {
+            tripId: input.trip.id,
+            threadId: input.threadId,
+            requestId: input.requestId,
+            runId,
+            issues: unknownTargets,
+          });
+          return {
+            kind: 'trip-agent-proposal-invalid' as const,
+            message: 'Some operations point at ids that are not in this trip. Use the ids from read_trip_context and call create_trip_proposal once more.',
+            issues: unknownTargets,
           };
         }
         const parsedSources = z.array(tripAgentSourceSchema).max(30).safeParse(sources || []);

@@ -189,7 +189,19 @@ export default async (request: Request) => {
         trip: replay.trip,
         view: canonical.view,
       });
-      return json(200, { ...committed, appliedOperationIds: replay.appliedOperationIds, noOpOperationIds: replay.noOpOperationIds });
+      if (replay.skippedOperations.length > 0) {
+        console.info('[trip-agent] apply skipped stale operations', {
+          ...logContext,
+          changeSetId: body.changeSetId,
+          skipped: replay.skippedOperations,
+        });
+      }
+      return json(200, {
+        ...committed,
+        appliedOperationIds: replay.appliedOperationIds,
+        noOpOperationIds: replay.noOpOperationIds,
+        skippedOperations: replay.skippedOperations,
+      });
     }
 
     await assertThreadInTrip(body.threadId, body.tripId);
