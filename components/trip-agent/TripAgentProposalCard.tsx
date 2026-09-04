@@ -8,8 +8,10 @@ import { applyTripAgentOperations, type TripAgentChangeSetV1 } from '../../share
 import { trackEvent } from '../../services/analyticsService';
 import {
     applyTripAgentProposal,
+    loadAppliedTripVersion,
     readTripAgentError,
     rejectTripAgentProposal,
+    revertTripAgentProposal,
 } from '../../services/tripAgentService';
 import { Source, Sources, SourcesContent, SourcesTrigger } from '../ai-elements/sources';
 import { Button } from '../ui/button';
@@ -193,8 +195,10 @@ export const TripAgentProposalCard: React.FC<{
     /** A newer proposal exists, so this one can no longer be applied. */
     isSuperseded?: boolean;
     /** Live status from the server, which outranks the stored transcript. */
-    serverStatus?: 'pending' | 'applied' | 'applied_partial' | 'rejected' | 'stale';
+    serverStatus?: 'pending' | 'applied' | 'applied_partial' | 'rejected' | 'stale' | 'reverted';
     appliedOperationIds?: string[];
+    /** Version an earlier apply wrote, so a redo survives a reload. */
+    appliedVersionId?: string | null;
     onAskAgain?: () => void;
 }> = ({
     trip,
@@ -207,6 +211,7 @@ export const TripAgentProposalCard: React.FC<{
     isSuperseded,
     serverStatus,
     appliedOperationIds,
+    appliedVersionId,
     onAskAgain,
 }) => {
     const { t } = useTranslation('common');
@@ -218,6 +223,7 @@ export const TripAgentProposalCard: React.FC<{
     const [stage, setStage] = useState<'select' | 'preview'>('select');
     const [state, setState] = useState<'pending' | 'applying' | 'applied' | 'reverted' | 'rejected' | 'error'>(() => {
         if (serverStatus === 'applied' || serverStatus === 'applied_partial') return 'applied';
+        if (serverStatus === 'reverted') return 'reverted';
         if (serverStatus === 'rejected' || serverStatus === 'stale') return 'rejected';
         return 'pending';
     });
@@ -308,10 +314,19 @@ export const TripAgentProposalCard: React.FC<{
     const hasBeenApplied = Boolean(tripAfterApply);
 
     /** Puts a reverted set back exactly as it was applied, without re-reviewing. */
-    const redo = () => {
-        if (!tripAfterApply || !onReapplyAgentChange) return;
+    const redo = async () => {
+        if (!onReapplyAgentChange) return;
+        // After a reload this session holds no snapshot, so the version the
+        // apply wrote is fetched instead.
+        const restored = tripAfterApply
+            || (appliedVersionId ? await loadAppliedTripVersion(changeSet.tripId, appliedVersionId) : null);
+        if (!restored) {
+            setState('error');
+            setError({ code: 'TRIP_AGENT_PROPOSAL_NOT_PENDING', message: t('tripAgent.reapplyUnavailable') });
+            return;
+        }
         onReapplyAgentChange({
-            trip: tripAfterApply,
+            trip: restored,
             label: t('tripAgent.reapplyLabel', { summary: shortSummary(changeSet.summary) }),
         });
         setState('applied');
@@ -413,6 +428,9 @@ export const TripAgentProposalCard: React.FC<{
 
     const revert = () => {
         if (!tripBeforeApply || !tripAfterApply || !onRevertAgentChange) return;
+        void Promise.resolve()
+            .then(() => revertTripAgentProposal(changeSet.tripId, changeSet.id))
+            .catch(() => undefined);
         onRevertAgentChange({
             trip: tripBeforeApply,
             redoTrip: tripAfterApply,
@@ -450,8 +468,8 @@ export const TripAgentProposalCard: React.FC<{
                         <PencilLine className="size-3.5" />{t('tripAgent.reviewAgain')}
                     </Button>
                 )}
-                {state === 'reverted' && onReapplyAgentChange && tripAfterApply && (
-                    <Button type="button" variant="outline" size="sm" onClick={redo}>
+                {state === 'reverted' && onReapplyAgentChange && (tripAfterApply || appliedVersionId) && (
+                    <Button type="button" variant="outline" size="sm" onClick={() => void redo()}>
                         <RotateCw className="size-3.5" />{t('tripAgent.redo')}
                     </Button>
                 )}

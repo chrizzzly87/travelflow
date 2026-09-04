@@ -1,6 +1,6 @@
 import type { ITrip } from '../types';
 import type { TripAgentContextRef, TripAgentMessage, TripAgentQuotaState } from '../shared/tripAgent';
-import { dbGetAccessToken } from './dbService';
+import { dbGetAccessToken, dbGetTripVersion } from './dbService';
 
 export interface TripAgentThread {
     id: string;
@@ -14,8 +14,10 @@ export interface TripAgentThread {
 
 export interface TripAgentChangeSetStatus {
     id: string;
-    status: 'pending' | 'applied' | 'applied_partial' | 'rejected' | 'stale';
+    status: 'pending' | 'applied' | 'applied_partial' | 'rejected' | 'stale' | 'reverted';
     appliedOperationIds: string[];
+    /** Version the apply wrote, used to redo it after a reload. */
+    appliedVersionId?: string | null;
 }
 
 export interface TripAgentBootstrap {
@@ -124,6 +126,19 @@ export const archiveTripAgentThread = (tripId: string, threadId: string): Promis
 
 export const rejectTripAgentProposal = (tripId: string, changeSetId: string): Promise<{ ok: true }> =>
     mutate({ action: 'reject', tripId, changeSetId });
+
+/** Records that an applied proposal was taken back, so a reload knows it. */
+export const revertTripAgentProposal = (tripId: string, changeSetId: string): Promise<{ ok: true }> =>
+    mutate({ action: 'revert', tripId, changeSetId });
+
+/**
+ * Loads the trip version an apply wrote, so a redo works after a reload when
+ * the session no longer holds the applied snapshot.
+ */
+export const loadAppliedTripVersion = async (tripId: string, versionId: string): Promise<ITrip | null> => {
+    const version = await dbGetTripVersion(tripId, versionId);
+    return version?.trip ?? null;
+};
 
 export const applyTripAgentProposal = (
     tripId: string,

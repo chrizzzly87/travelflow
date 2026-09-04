@@ -147,7 +147,11 @@ const ChatMessage: React.FC<{
     onRevertAgentChange?: TripAgentPanelProps['onRevertAgentChange'];
     onReapplyAgentChange?: TripAgentPanelProps['onReapplyAgentChange'];
     shortcutChangeSetId?: string | null;
-    changeSetStatuses?: Record<string, { status: TripAgentChangeSetStatus['status']; appliedOperationIds: string[] }>;
+    changeSetStatuses?: Record<string, {
+        status: TripAgentChangeSetStatus['status'];
+        appliedOperationIds: string[];
+        appliedVersionId?: string | null;
+    }>;
     onAskAgain?: () => void;
     onAnswerQuestion?: (prompt: string) => void;
 }> = ({
@@ -219,6 +223,7 @@ const ChatMessage: React.FC<{
                                 isSuperseded={Boolean(shortcutChangeSetId) && block.changeSet.id !== shortcutChangeSetId}
                                 serverStatus={changeSetStatuses?.[block.changeSet.id]?.status}
                                 appliedOperationIds={changeSetStatuses?.[block.changeSet.id]?.appliedOperationIds}
+                                appliedVersionId={changeSetStatuses?.[block.changeSet.id]?.appliedVersionId}
                                 onAskAgain={onAskAgain}
                             />
                         );
@@ -301,10 +306,15 @@ const TripAgentChatSession: React.FC<{
     contextRefs: TripAgentContextRef[];
     quota: TripAgentQuotaState;
     actorId: string;
-    changeSetStatuses?: Record<string, { status: TripAgentChangeSetStatus['status']; appliedOperationIds: string[] }>;
+    changeSetStatuses?: Record<string, {
+        status: TripAgentChangeSetStatus['status'];
+        appliedOperationIds: string[];
+        appliedVersionId?: string | null;
+    }>;
     onQuotaMayHaveChanged: () => void;
     onAdoptCommittedTripVersion: TripAgentPanelProps['onAdoptCommittedTripVersion'];
     onPreviewTrip?: TripAgentPanelProps['onPreviewTrip'];
+    onPreviewActiveChange?: (isActive: boolean) => void;
     onRevertAgentChange?: TripAgentPanelProps['onRevertAgentChange'];
     onReapplyAgentChange?: TripAgentPanelProps['onReapplyAgentChange'];
 }> = ({
@@ -318,11 +328,18 @@ const TripAgentChatSession: React.FC<{
     onQuotaMayHaveChanged,
     onAdoptCommittedTripVersion,
     onPreviewTrip,
+    onPreviewActiveChange,
     onRevertAgentChange,
     onReapplyAgentChange,
 }) => {
     const { t, i18n } = useTranslation('common');
     const now = useMinuteTick();
+    // A preview replaces the planner behind the panel, so the panel has to get
+    // out of the way on a phone, where the sheet covers what it is previewing.
+    const publishPreview = useCallback((previewTrip: ITrip | null) => {
+        onPreviewActiveChange?.(Boolean(previewTrip));
+        onPreviewTrip?.(previewTrip);
+    }, [onPreviewActiveChange, onPreviewTrip]);
     const [draftText, setDraftText] = useState(() => {
         const seed = contextRefs.find((contextRef) => contextRef.kind !== 'trip');
         return seed ? `@${seed.label} ` : '';
@@ -587,7 +604,7 @@ const TripAgentChatSession: React.FC<{
                                 ? () => void retryLastMessage()
                                 : undefined}
                             onApplied={(nextTrip, versionId, label) => onAdoptCommittedTripVersion({ trip: nextTrip, versionId, label: `Trip Agent: ${label}` })}
-                            onPreviewTrip={onPreviewTrip}
+                            onPreviewTrip={publishPreview}
                             onRevertAgentChange={onRevertAgentChange}
                             onReapplyAgentChange={onReapplyAgentChange}
                             shortcutChangeSetId={shortcutChangeSetId}
@@ -763,6 +780,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
     const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
     const [loadError, setLoadError] = useState<{ code: string } | null>(null);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [isPreviewActive, setIsPreviewActive] = useState(false);
     const panelRef = useRef<HTMLElement | null>(null);
     const launcherRef = useRef<Element | null>(null);
 
@@ -847,7 +865,11 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
     const changeSetStatuses = useMemo(() => Object.fromEntries(
         (bootstrap?.changeSets || []).map((entry) => [
             entry.id,
-            { status: entry.status, appliedOperationIds: entry.appliedOperationIds },
+            {
+                status: entry.status,
+                appliedOperationIds: entry.appliedOperationIds,
+                appliedVersionId: entry.appliedVersionId,
+            },
         ]),
     ), [bootstrap?.changeSets]);
     const threadSections = useMemo(
@@ -858,18 +880,24 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
     return (
         <>
             {/* Mobile renders as a sheet over the planner, so it is a dialog:
-                it takes focus, keeps it, closes on Escape, and hands focus back. */}
-            <div
-                className="fixed inset-0 z-[1490] bg-slate-950/20 sm:hidden"
-                onClick={onClose}
-                aria-hidden="true"
-            />
+                it takes focus, keeps it, closes on Escape, and hands focus back.
+                While a preview is showing, the planner behind it must stay
+                visible and usable to look at. */}
+            {!isPreviewActive && (
+                <div
+                    className="fixed inset-0 z-[1490] bg-slate-950/20 sm:hidden"
+                    onClick={onClose}
+                    aria-hidden="true"
+                />
+            )}
             <aside
                 ref={panelRef}
                 role="dialog"
                 aria-modal="true"
                 aria-label={t('tripAgent.title')}
-                className="trip-agent-panel-enter fixed inset-x-0 bottom-0 z-[1500] flex h-[min(82dvh,720px)] flex-col overflow-hidden rounded-t-[1.5rem] border border-slate-200 bg-white shadow-[0_-24px_80px_rgba(15,23,42,0.18)] sm:inset-x-auto sm:bottom-4 sm:end-4 sm:h-[min(720px,calc(100dvh-2rem))] sm:w-[420px] sm:rounded-[1.5rem] sm:shadow-2xl"
+                className={`trip-agent-panel-enter fixed inset-x-0 bottom-0 z-[1500] flex flex-col overflow-hidden rounded-t-[1.5rem] border border-slate-200 bg-white shadow-[0_-24px_80px_rgba(15,23,42,0.18)] transition-[height] duration-200 sm:inset-x-auto sm:bottom-4 sm:end-4 sm:h-[min(720px,calc(100dvh-2rem))] sm:w-[420px] sm:rounded-[1.5rem] sm:shadow-2xl ${
+                    isPreviewActive ? 'h-[min(42dvh,340px)]' : 'h-[min(82dvh,720px)]'
+                }`}
                 style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
                 onKeyDown={handlePanelKeyDown}
             >
@@ -988,6 +1016,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                     onQuotaMayHaveChanged={() => void refresh(currentThread.id)}
                     onAdoptCommittedTripVersion={onAdoptCommittedTripVersion}
                     onPreviewTrip={onPreviewTrip}
+                    onPreviewActiveChange={setIsPreviewActive}
                     onRevertAgentChange={onRevertAgentChange}
                     onReapplyAgentChange={onReapplyAgentChange}
                 />
