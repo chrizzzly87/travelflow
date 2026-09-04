@@ -4,6 +4,7 @@ import {
   ensureModelAllowed,
   ensureModelAllowedForGeneration,
   generateProviderItinerary,
+  readEnv,
 } from '../../netlify/edge-lib/ai-provider-runtime.ts';
 import { TRIP_ITINERARY_JSON_SCHEMA } from '../../shared/aiTripItinerarySchema.ts';
 
@@ -51,6 +52,18 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
+  });
+
+  it('prefers the Netlify runtime environment over compatibility fallbacks', () => {
+    vi.stubGlobal('Netlify', {
+      env: {
+        get: (key: string) => (key === 'TRIP_AGENT_TEST_KEY' ? 'netlify-value' : undefined),
+      },
+    });
+    stubDenoEnv({ TRIP_AGENT_TEST_KEY: 'deno-value' });
+    vi.stubEnv('TRIP_AGENT_TEST_KEY', 'process-value');
+
+    expect(readEnv('TRIP_AGENT_TEST_KEY')).toBe('netlify-value');
   });
 
   it('validates provider/model allowlists including openrouter', () => {

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LazyMotion, animate, domMax, m, useDragControls, useMotionValue, useSpring, type PanInfo } from 'framer-motion';
 import { ArrowsInSimple, ArrowsOutSimple, DeviceRotate } from '@phosphor-icons/react';
 
@@ -17,6 +17,8 @@ interface TripFloatingMapPreviewProps {
     dockedMapAnchorRef: React.RefObject<HTMLDivElement | null>;
     dockedGeometryKey: string;
     reservedRightInset?: number;
+    /** Space to keep clear on the physical left, used by RTL layouts. */
+    reservedLeftInset?: number;
     tripId: string;
     children: React.ReactNode;
 }
@@ -87,8 +89,24 @@ const resolveFloatingMapWidth = (): number => {
     );
 };
 
-const resolveFloatingMapBounds = (panelWidth: number, panelHeight: number, reservedRightInset = 0) => {
-    const minX = FLOATING_MAP_MARGIN;
+// The panel is dragged in viewport pixels, so an overlay docked on the logical
+// end reserves space on the right in LTR and on the left in RTL. The inset is
+// therefore a value that can name either side.
+export type FloatingMapInset = number | { right?: number; left?: number };
+
+const normalizeInset = (inset: FloatingMapInset = 0): { right: number; left: number } => (
+    typeof inset === 'number'
+        ? { right: inset, left: 0 }
+        : { right: inset.right || 0, left: inset.left || 0 }
+);
+
+const resolveFloatingMapBounds = (
+    panelWidth: number,
+    panelHeight: number,
+    reservedInset: FloatingMapInset = 0,
+) => {
+    const { right: reservedRightInset, left: reservedLeftInset } = normalizeInset(reservedInset);
+    const minX = FLOATING_MAP_MARGIN + reservedLeftInset;
     const minY = Math.max(FLOATING_MAP_MARGIN, resolveFloatingMapTopBoundary());
     if (typeof window === 'undefined') {
         return {
@@ -110,7 +128,7 @@ const clampFloatingMapPosition = (
     nextPosition: { x: number; y: number },
     panelWidth: number,
     panelHeight: number,
-    reservedRightInset = 0,
+    reservedRightInset: FloatingMapInset = 0,
 ): { x: number; y: number } => {
     const { minX, minY, maxX, maxY } = resolveFloatingMapBounds(panelWidth, panelHeight, reservedRightInset);
     return {
@@ -128,7 +146,7 @@ const resolveFloatingMapSideAnchor = (
     position: { x: number; y: number },
     panelWidth: number,
     panelHeight: number,
-    reservedRightInset = 0,
+    reservedRightInset: FloatingMapInset = 0,
 ): FloatingMapSideAnchor => {
     const { minX, minY, maxX, maxY } = resolveFloatingMapBounds(panelWidth, panelHeight, reservedRightInset);
     const centerX = minX + ((maxX - minX) / 2);
@@ -153,7 +171,7 @@ const resolveFloatingMapPositionForAnchor = (
     anchor: FloatingMapSideAnchor,
     panelWidth: number,
     panelHeight: number,
-    reservedRightInset = 0,
+    reservedRightInset: FloatingMapInset = 0,
 ): { x: number; y: number } => {
     const bounds = resolveFloatingMapBounds(panelWidth, panelHeight, reservedRightInset);
     const centerX = bounds.minX + ((bounds.maxX - bounds.minX) / 2);
@@ -176,7 +194,7 @@ type FloatingMapSnapTarget = {
 const resolveFloatingMapSnapTargets = (
     panelWidth: number,
     panelHeight: number,
-    reservedRightInset = 0,
+    reservedRightInset: FloatingMapInset = 0,
 ): FloatingMapSnapTarget[] => {
     const { minX, minY, maxX, maxY } = resolveFloatingMapBounds(panelWidth, panelHeight, reservedRightInset);
     const centerX = minX + ((maxX - minX) / 2);
@@ -193,7 +211,7 @@ const resolveNearestFloatingMapSnapTarget = (
     position: { x: number; y: number },
     panelWidth: number,
     panelHeight: number,
-    reservedRightInset = 0,
+    reservedRightInset: FloatingMapInset = 0,
 ): FloatingMapSnapTarget => {
     const points = resolveFloatingMapSnapTargets(panelWidth, panelHeight, reservedRightInset);
     if (points.length === 0) {
@@ -213,14 +231,18 @@ const resolveNearestFloatingMapSnapTarget = (
 const resolveDefaultFloatingMapPosition = (
     panelWidth: number,
     panelHeight: number,
-    reservedRightInset = 0,
+    reservedRightInset: FloatingMapInset = 0,
 ): { x: number; y: number } => {
     if (typeof window === 'undefined') {
         return { x: FLOATING_MAP_MARGIN, y: FLOATING_MAP_MARGIN };
     }
+    const { right, left } = normalizeInset(reservedRightInset);
     return clampFloatingMapPosition(
         {
-            x: window.innerWidth - reservedRightInset - panelWidth - FLOATING_MAP_MARGIN,
+            // Park on the free side: the reserved edge is where the panel sits.
+            x: left > 0 && right === 0
+                ? FLOATING_MAP_MARGIN + left
+                : window.innerWidth - right - panelWidth - FLOATING_MAP_MARGIN,
             y: window.innerHeight - panelHeight - FLOATING_MAP_MARGIN,
         },
         panelWidth,
@@ -246,10 +268,17 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
     mapViewportRef,
     dockedMapAnchorRef,
     dockedGeometryKey,
-    reservedRightInset = 0,
+    reservedRightInset: reservedRightInsetProp = 0,
+    reservedLeftInset: reservedLeftInsetProp = 0,
     tripId,
     children,
 }) => {
+    // One value carrying both sides, so every position helper below keeps its
+    // signature while RTL reserves space on the left instead of the right.
+    const reservedRightInset = useMemo<FloatingMapInset>(
+        () => ({ right: reservedRightInsetProp, left: reservedLeftInsetProp }),
+        [reservedLeftInsetProp, reservedRightInsetProp],
+    );
     const initialPersistedStateRef = useRef(readFloatingMapPreviewState());
     const [floatingMapBaseWidth, setFloatingMapBaseWidth] = useState(() => resolveFloatingMapWidth());
     const [floatingMapSizePreset, setFloatingMapSizePreset] = useState<FloatingMapSizePreset>(() => (

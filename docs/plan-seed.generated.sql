@@ -16,7 +16,7 @@ values
   'Backpacker',
   0,
   5,
-  '{"maxActiveTrips":5,"maxTotalTrips":50,"tripExpirationDays":14,"canShare":true,"canCreateEditableShares":false,"canViewProTrips":true,"canCreateProTrips":false}'::jsonb,
+  '{"maxActiveTrips":5,"maxTotalTrips":50,"tripExpirationDays":14,"canShare":true,"canCreateEditableShares":false,"canViewProTrips":true,"canCreateProTrips":false,"canUseTripAgent":true,"tripAgentRequestsPerDay":3}'::jsonb,
   10,
   true
 ),
@@ -25,7 +25,7 @@ values
   'Explorer',
   900,
   30,
-  '{"maxActiveTrips":30,"maxTotalTrips":500,"tripExpirationDays":90,"canShare":true,"canCreateEditableShares":true,"canViewProTrips":true,"canCreateProTrips":true}'::jsonb,
+  '{"maxActiveTrips":30,"maxTotalTrips":500,"tripExpirationDays":90,"canShare":true,"canCreateEditableShares":true,"canViewProTrips":true,"canCreateProTrips":true,"canUseTripAgent":true,"tripAgentRequestsPerDay":null}'::jsonb,
   20,
   true
 ),
@@ -34,7 +34,7 @@ values
   'Globetrotter',
   1900,
   2147483647,
-  '{"maxActiveTrips":null,"maxTotalTrips":null,"tripExpirationDays":null,"canShare":true,"canCreateEditableShares":true,"canViewProTrips":true,"canCreateProTrips":true}'::jsonb,
+  '{"maxActiveTrips":null,"maxTotalTrips":null,"tripExpirationDays":null,"canShare":true,"canCreateEditableShares":true,"canViewProTrips":true,"canCreateProTrips":true,"canUseTripAgent":true,"tripAgentRequestsPerDay":null}'::jsonb,
   30,
   true
 )

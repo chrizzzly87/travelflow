@@ -14,7 +14,11 @@ This repository uses markdown release files as the source of truth for product u
 - When creating or editing GitHub PR descriptions with `gh`, always use a Markdown body file (`--body-file`) or stdin heredoc with real newlines; never pass escaped `\n` or escaped backticks in inline `--body` strings.
 - For user-facing copy changes in marketing/planner surfaces, request user style sign-off in English and German before finalizing unless the user explicitly opts out.
 - Admin workspace copy (`/admin/*`, admin tables, drawers, and admin-only controls) is English-only by default and is exempt from EN/DE style sign-off and translation requirements unless the user explicitly asks for localization.
-- For locale interpolation, use ICU placeholders (`{name}`), never `{{name}}`.
+- For locale interpolation, use ICU placeholders (`{name}`), never `{{name}}`. ICU plural/select syntax does not work: `i18next-icu` is installed but never registered in `i18n.ts`.
+- Before changing anything that calls a model, streams to the browser, or stores model output, read `docs/AI_AGENT_FEATURE_GUARDRAILS.md`: no hidden reasoning streamed or stored, no raw exception in a response, no `VITE_` credential server-side, run budgets under the platform limit, interactive state rebuilt from its record.
+- This app renders through `preact/compat`: a plain function component never receives `ref`. Components used with Radix `asChild`, or focused/measured by a library, must be real `forwardRef`s.
+- `supabase/migrations/*.sql` are not applied by any deploy. Verify a migration locally against a throwaway Postgres (`supabase/tests/`), then hand over the steps in `docs/SUPABASE_RUNBOOK.md` and say the migration is pending.
+- Tick issue checkboxes against the issue's wording, and audit inherited `Closes #123` claims before pushing to a branch.
 - When adding locale keys for localized user-facing surfaces, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and validate namespace placement (`common/pages/legal` vs route-specific namespace). Admin-only UI copy is excluded unless localization is explicitly requested.
 - Run `pnpm i18n:validate` for locale-related changes before finalizing.
 - For behavioral code changes (business logic, state flow, permissions, data transforms), add or update Vitest coverage in the same PR.

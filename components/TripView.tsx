@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, Suspense, lazy } from 'react';
+import { Lock, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState } from '../types';
@@ -39,7 +40,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { useSyncStatus } from '../hooks/useSyncStatus';
-import { getLatestConflictBackupForTrip } from '../services/offlineChangeQueue';
+import { getLatestConflictBackupForTrip, resolveConflictBackupsForTrip } from '../services/offlineChangeQueue';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
@@ -119,6 +120,7 @@ import { registerTripGenerationCompletionWatch } from '../services/tripGeneratio
 import { listTripGenerationJobsByTrip, triggerTripGenerationWorker } from '../services/tripGenerationJobService';
 import { finishTripGenerationAttemptLog } from '../services/tripGenerationAttemptLogService';
 import { toggleMarkdownTaskByLine } from './markdownPresentation';
+import { buildTripAgentContextRefs } from '../shared/tripAgent';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -159,6 +161,14 @@ const TripShareModal = lazyWithRecovery('TripShareModal', () =>
 
 const TripHistoryModal = lazyWithRecovery('TripHistoryModal', () =>
     import('./TripHistoryModal').then((module) => ({ default: module.TripHistoryModal }))
+);
+
+import { readTripAgentOpenState, writeTripAgentOpenState } from './trip-agent/tripAgentPanelState';
+
+const TRIP_AGENT_PANEL_INSET_PX = 444;
+
+const TripAgentPanel = lazyWithRecovery('TripAgentPanel', () =>
+    import('./trip-agent/TripAgentPanel').then((module) => ({ default: module.TripAgentPanel }))
 );
 
 let tripInfoModalModulePromise: Promise<{ default: React.ComponentType<any> }> | null = null;
@@ -407,6 +417,15 @@ interface TripViewProps {
     trip: ITrip;
     onUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => void;
     onCommitState?: (updatedTrip: ITrip, view: IViewSettings, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void;
+    onAdoptAgentTripVersion?: (input: { trip: ITrip; versionId: string; label: string; changeSetId?: string }) => void;
+    /** Set while the Trip Agent previews a proposal in the planner. */
+    agentPreviewTrip?: ITrip | null;
+    /** The saved trip, unchanged by an active preview. */
+    agentCanonicalTrip?: ITrip;
+    onAgentPreviewTrip?: (trip: ITrip | null) => void;
+    /** Bumped when the agent replaces the trip, to refresh the planner surface. */
+    agentSurfaceNonce?: number;
+    onAgentTripChanged?: () => void;
     onOpenManager: () => void;
     onOpenSettings: () => void;
     initialViewSettings?: IViewSettings;
@@ -959,6 +978,12 @@ const useTripViewRender = ({
     trip,
     onUpdateTrip,
     onCommitState,
+    onAdoptAgentTripVersion,
+    agentPreviewTrip,
+    agentCanonicalTrip,
+    onAgentPreviewTrip,
+    agentSurfaceNonce = 0,
+    onAgentTripChanged,
     onOpenManager,
     onOpenSettings,
     initialViewSettings,
@@ -997,7 +1022,10 @@ const useTripViewRender = ({
     const asyncStallRecoveryAttemptIdRef = useRef<string | null>(null);
     const asyncStallRecoveryNudgeAttemptIdRef = useRef<string | null>(null);
     const asyncStallRecoveryNudgeAtRef = useRef<number>(0);
-    tripRef.current = trip;
+    // Recovery and save paths read this ref. A preview is a rendering state, so
+    // it must never be what those paths write back: that turned an applied
+    // change into a disappearing one.
+    tripRef.current = agentPreviewTrip ? (agentCanonicalTrip ?? trip) : trip;
     onUpdateTripRef.current = onUpdateTrip;
     const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
     const [retryModelId, setRetryModelId] = useState<string>(getDefaultCreateTripModel().id);
@@ -1649,6 +1677,10 @@ const useTripViewRender = ({
     const [isRetryingGeneration, setIsRetryingGeneration] = useState(false);
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
+    const [isTripAgentOpen, setIsTripAgentOpen] = useState(() => readTripAgentOpenState());
+    // Hides the recovery banner in this session as soon as the choice is made,
+    // without waiting for the next sync snapshot to report the cleared backup.
+    const [resolvedConflictTripId, setResolvedConflictTripId] = useState<string | null>(null);
     const cityColorPaletteId = trip.cityColorPaletteId || DEFAULT_CITY_COLOR_PALETTE_ID;
     const mapColorMode = normalizeMapColorMode(trip.mapColorMode);
     const allowMapColorModeControls = useMemo(
@@ -1849,6 +1881,9 @@ const useTripViewRender = ({
                 { label: 'Data: Restored server backup' }
             );
         }
+        // The decision is made, so the backup — and the banner offering it — goes.
+        resolveConflictBackupsForTrip(trip.id);
+        setResolvedConflictTripId(trip.id);
         showToast(t('connectivity.toast.serverBackupRestored'), {
             tone: 'neutral',
             title: t('connectivity.toast.title'),
@@ -2885,8 +2920,9 @@ const useTripViewRender = ({
     const showOwnedTripConnectivityStatus = !shareStatus && !isExamplePreview && !isAdminFallbackView;
     const latestConflictBackupEntry = useMemo(() => {
         if (!showOwnedTripConnectivityStatus) return null;
+        if (resolvedConflictTripId === trip.id) return null;
         return getLatestConflictBackupForTrip(trip.id);
-    }, [showOwnedTripConnectivityStatus, syncSnapshot.hasConflictBackups, syncSnapshot.lastRunAt, trip.id]);
+    }, [resolvedConflictTripId, showOwnedTripConnectivityStatus, syncSnapshot.hasConflictBackups, syncSnapshot.lastRunAt, trip.id]);
     const isAdminSession = access?.role === 'admin';
     const ownerSummary = useMemo(() => {
         const ownerUsername = tripAccess?.ownerUsername?.trim() || null;
@@ -2958,6 +2994,10 @@ const useTripViewRender = ({
 
     const timelineCanvas = (
         <TripTimelineCanvas
+            // A trip replaced from outside the planner (agent apply, revert, or a
+            // preview toggle) rebuilds the canvas: its day geometry is measured,
+            // and a swapped-in trip alone left the calendar showing the old one.
+            key={`timeline-${agentSurfaceNonce}-${agentPreviewTrip ? 'preview' : 'live'}`}
             timelineMode={timelineMode}
             timelineView={timelineView}
             trip={displayTrip}
@@ -3008,6 +3048,55 @@ const useTripViewRender = ({
         () => (selectedItemId ? routeStatusById[selectedItemId] : undefined),
         [routeStatusById, selectedItemId]
     );
+    const tripAgentContextRefs = useMemo(
+        () => buildTripAgentContextRefs(trip, selectedItemId, selectedCityIds),
+        [selectedCityIds, selectedItemId, trip]
+    );
+    const isTripAgentLocked = !DB_ENABLED
+        || !isAuthenticated
+        || isAnonymous
+        || !canEdit
+        || access?.entitlements.canUseTripAgent === false
+        || !onAdoptAgentTripVersion;
+    // The panel sits at the logical end, which is the left edge in Persian and
+    // Urdu; the floating map reserves that side instead of being switched off.
+    const isRtlAppLanguage = appLanguage === 'fa' || appLanguage === 'ur';
+    /**
+     * Adopts a trip the agent panel produced locally (a revert, a redo, or a
+     * re-apply of a reviewed set) as one new version, and refreshes the planner
+     * surface so the calendar rebuilds its measured geometry.
+     */
+    const adoptAgentTrip = useCallback((nextTrip: ITrip, label: string, changeSetId?: string) => {
+        onAdoptAgentTripVersion?.({
+            trip: { ...nextTrip, updatedAt: Date.now() },
+            versionId: '',
+            label,
+            changeSetId,
+        });
+        onAgentTripChanged?.();
+    }, [onAdoptAgentTripVersion, onAgentTripChanged]);
+
+    const openTripAgent = useCallback(() => {
+        trackEvent('trip_agent__launcher--open', {
+            trip_id: trip.id,
+            locked: isTripAgentLocked,
+            context_count: tripAgentContextRefs.length,
+        });
+        if (isTripAgentLocked) {
+            openLoginModal({
+                source: 'trip_agent_launcher',
+                nextPath: buildPathFromLocationParts({
+                    pathname: location.pathname,
+                    search: location.search,
+                    hash: location.hash,
+                }),
+                reloadOnSuccess: true,
+            });
+            return;
+        }
+        setIsTripAgentOpen(true);
+        writeTripAgentOpenState(true);
+    }, [isTripAgentLocked, location.hash, location.pathname, location.search, openLoginModal, trip.id, tripAgentContextRefs.length]);
     const handleTripCalendarExport = useCallback((
         scope: TripCalendarExportScope,
         source: 'details_panel' | 'trip_info_modal' | 'print_view',
@@ -3319,7 +3408,71 @@ const useTripViewRender = ({
                         onSidebarResizeKeyDown={handleSidebarResizeKeyDown}
                         onDetailsResizeKeyDown={handleDetailsResizeKeyDown}
                         onTimelineResizeKeyDown={handleTimelineResizeKeyDown}
+                        floatingOverlayRightInset={isTripAgentOpen && !isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
+                        floatingOverlayLeftInset={isTripAgentOpen && isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
                     />
+                    {!isTripAgentOpen && (
+                        <button
+                            type="button"
+                            onClick={openTripAgent}
+                            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] end-4 z-[1490] inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-900 shadow-lg transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                            aria-label={t('tripAgent.title')}
+                            {...getAnalyticsDebugAttributes('trip_agent__launcher--open', { trip_id: trip.id })}
+                        >
+                            {isTripAgentLocked
+                                ? <Lock className="size-4 text-slate-500" />
+                                : <Sparkles className="size-4 text-accent-600" />}
+                            <span>{t('tripAgent.title')}</span>
+                        </button>
+                    )}
+                    {agentPreviewTrip && (
+                        <div
+                            role="status"
+                            className="pointer-events-none fixed inset-x-0 top-2 z-[1600] flex justify-center px-3"
+                        >
+                            <p className="pointer-events-auto rounded-full border border-accent-200 bg-accent-50/95 px-3 py-1.5 text-xs font-medium text-accent-900 shadow-sm backdrop-blur">
+                                {t('tripAgent.previewBanner')}
+                            </p>
+                        </div>
+                    )}
+                    {isTripAgentOpen && onAdoptAgentTripVersion && (
+                        <Suspense fallback={null}>
+                            <TripAgentPanel
+                                trip={agentCanonicalTrip || trip}
+                                contextRefs={tripAgentContextRefs}
+                                isOpen={isTripAgentOpen}
+                                onClose={() => {
+                                    setIsTripAgentOpen(false);
+                                    writeTripAgentOpenState(false);
+                                }}
+                                onAdoptCommittedTripVersion={(input) => {
+                                    onAdoptAgentTripVersion?.(input);
+                                    onAgentTripChanged?.();
+                                }}
+                                onPreviewTrip={onAgentPreviewTrip}
+                                onRevertAgentChange={({ trip: previousTrip, redoTrip, label, redoLabel, changeSetId }) => {
+                                    // Not an undo: history also holds view changes, so
+                                    // stepping back would revert whatever happened last
+                                    // rather than this change set. The snapshot from
+                                    // before the apply is restored as a new version.
+                                    adoptAgentTrip(previousTrip, label, changeSetId);
+                                    showToast(t('tripAgent.revertToast'), {
+                                        tone: 'neutral',
+                                        title: t('tripAgent.revertToastTitle'),
+                                        iconVariant: 'undo',
+                                        disableDefaultUndo: true,
+                                        action: {
+                                            label: t('tripAgent.redo'),
+                                            onClick: () => adoptAgentTrip(redoTrip, redoLabel, changeSetId),
+                                        },
+                                    });
+                                }}
+                                onReapplyAgentChange={({ trip: nextTrip, label, changeSetId }) => {
+                                    adoptAgentTrip(nextTrip, label, changeSetId);
+                                }}
+                            />
+                        </Suspense>
+                    )}
                     <TripViewModalLayer
                         isMobile={isMobile}
                         detailsPanelVisible={detailsPanelVisible}
@@ -3434,4 +3587,19 @@ const useTripViewRender = ({
     );
 };
 
-export const TripView: React.FC<TripViewProps> = (props) => useTripViewRender(props);
+export const TripView: React.FC<TripViewProps> = (props) => {
+    const [agentPreviewTrip, setAgentPreviewTrip] = useState<ITrip | null>(null);
+    const [agentSurfaceNonce, setAgentSurfaceNonce] = useState(0);
+
+    // The preview swaps the rendered trip, so editing is paused until it ends.
+    return useTripViewRender({
+        ...props,
+        trip: agentPreviewTrip || props.trip,
+        readOnly: props.readOnly || Boolean(agentPreviewTrip),
+        agentPreviewTrip,
+        agentCanonicalTrip: props.trip,
+        onAgentPreviewTrip: setAgentPreviewTrip,
+        agentSurfaceNonce,
+        onAgentTripChanged: () => setAgentSurfaceNonce((current) => current + 1),
+    });
+};

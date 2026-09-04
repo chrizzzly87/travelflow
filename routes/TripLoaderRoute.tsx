@@ -126,6 +126,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     onTripLoaded,
     onUpdateTrip,
     onCommitState,
+    onAdoptAgentTripVersion,
     onOpenManager,
     onOpenSettings,
     appLanguage,
@@ -423,6 +424,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 initialViewSettings={viewSettings ?? trip.defaultView}
                 onUpdateTrip={onUpdateTrip}
                 onCommitState={onCommitState}
+                onAdoptAgentTripVersion={onAdoptAgentTripVersion}
                 onViewSettingsChange={handleRouteViewSettingsChange}
                 onOpenManager={onOpenManager}
                 onOpenSettings={onOpenSettings}

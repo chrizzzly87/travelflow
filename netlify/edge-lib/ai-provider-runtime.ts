@@ -171,6 +171,14 @@ const OPENROUTER_MODELS_WITHOUT_TEMPERATURE = new Set([
 
 export const readEnv = (name: string): string => {
   try {
+    const netlifyValue = (globalThis as { Netlify?: { env?: { get: (key: string) => string | undefined } } }).Netlify?.env?.get(name);
+    if (typeof netlifyValue === "string" && netlifyValue.length > 0) {
+      return netlifyValue;
+    }
+  } catch {
+    // Continue to compatibility fallbacks used by tests and local tooling.
+  }
+  try {
     const denoValue = (globalThis as { Deno?: { env?: { get: (key: string) => string | undefined } } }).Deno?.env?.get(name);
     if (typeof denoValue === "string" && denoValue.length > 0) {
       return denoValue;

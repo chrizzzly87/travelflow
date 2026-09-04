@@ -59,6 +59,8 @@ interface TripViewPlannerWorkspaceProps {
     onSidebarResizeKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
     onDetailsResizeKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
     onTimelineResizeKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
+    floatingOverlayRightInset?: number;
+    floatingOverlayLeftInset?: number;
 }
 
 const TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED = true;
@@ -122,15 +124,18 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onSidebarResizeKeyDown,
     onDetailsResizeKeyDown,
     onTimelineResizeKeyDown,
+    floatingOverlayRightInset = 0,
+    floatingOverlayLeftInset = 0,
 }) => {
     const dockedMapAnchorRef = useRef<HTMLDivElement | null>(null);
     const isFloatingMapPreviewEnabled = !isMobile && TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED;
     const effectiveMapDockMode: 'docked' | 'floating' = isFloatingMapPreviewEnabled ? mapDockMode : 'docked';
     const plannerControlsLayerClassName = effectiveMapDockMode === 'floating' ? 'z-[30]' : 'z-[60]';
     const dockedGeometryKey = `${effectiveLayoutMode}:${layoutMode}:${sidebarWidth}:${detailsWidth}:${timelineHeight}:${detailsPanelVisible ? '1' : '0'}`;
-    const floatingMapReservedRightInset = effectiveMapDockMode === 'floating' && detailsPanelVisible
-        ? detailsWidth + 4
+    const floatingMapReservedRightInset = effectiveMapDockMode === 'floating'
+        ? Math.max(detailsPanelVisible ? detailsWidth + 4 : 0, floatingOverlayRightInset)
         : 0;
+    const floatingMapReservedLeftInset = effectiveMapDockMode === 'floating' ? floatingOverlayLeftInset : 0;
 
     const toggleMapDockMode = useCallback(() => {
         if (!isFloatingMapPreviewEnabled) return;
@@ -505,6 +510,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             dockedMapAnchorRef={dockedMapAnchorRef}
                             dockedGeometryKey={dockedGeometryKey}
                             reservedRightInset={floatingMapReservedRightInset}
+                            reservedLeftInset={floatingMapReservedLeftInset}
                             tripId={tripId}
                         >
                             {buildMap(layoutMode, effectiveMapDockMode !== 'floating')}
