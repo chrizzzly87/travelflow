@@ -70,6 +70,12 @@ const describeGroup = (trip: ITrip, group: TripAgentChangeGroup, t: TFunction): 
     });
 };
 
+/** First sentence, clipped: proposal summaries arrive as a paragraph. */
+const shortSummary = (summary: string): string => {
+    const firstSentence = summary.split(/(?<=[.!?])\s/)[0].trim() || summary.trim();
+    return firstSentence.length > 90 ? `${firstSentence.slice(0, 87).trimEnd()}…` : firstSentence;
+};
+
 const tripDayCount = (trip: ITrip): number => trip.items.reduce(
     (total, item) => Math.max(total, Math.ceil(item.startDateOffset + item.duration)),
     0,
@@ -93,7 +99,9 @@ const computePreview = (
 ): PreviewResult | null => {
     if (selectedOperationIds.length === 0) return null;
     try {
-        const result = applyTripAgentOperations(trip, operations, selectedOperationIds);
+        // The preview keeps the saved timestamp: everything keyed on updatedAt
+        // (history, autosave, layout caches) must not treat it as a new version.
+        const result = applyTripAgentOperations(trip, operations, selectedOperationIds, trip.updatedAt);
         return {
             trip: result.trip,
             noOpCount: result.noOpOperationIds.length,
@@ -121,7 +129,10 @@ export const TripAgentProposalCard: React.FC<{
     onApplied: (trip: ITrip, versionId: string, label: string) => void;
     onPreviewTrip?: (trip: ITrip | null) => void;
     onRevertLastChange?: () => void;
-}> = ({ trip, changeSet, onApplied, onPreviewTrip, onRevertLastChange }) => {
+    /** Only the newest pending proposal answers the preview shortcut. */
+    shortcutEnabled?: boolean;
+    onAskAgain?: () => void;
+}> = ({ trip, changeSet, onApplied, onPreviewTrip, onRevertLastChange, shortcutEnabled, onAskAgain }) => {
     const { t } = useTranslation('common');
     const groups = useMemo(() => groupTripAgentChanges(trip, changeSet.operations), [changeSet.operations, trip]);
     const [selectedGroupIds, setSelectedGroupIds] = useState(() => groups.map((group) => group.id));
@@ -160,6 +171,21 @@ export const TripAgentProposalCard: React.FC<{
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [canonicalUpdatedAt, changeSet.id, onPreviewTrip, previewKey]);
 
+    // P toggles the preview, unless the reviewer is typing somewhere.
+    useEffect(() => {
+        if (!shortcutEnabled || state !== 'pending') return;
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key !== 'p' && event.key !== 'P') return;
+            if (event.metaKey || event.ctrlKey || event.altKey) return;
+            const target = event.target as HTMLElement | null;
+            if (target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName || '')) return;
+            event.preventDefault();
+            setStage((current) => (current === 'preview' ? 'select' : 'preview'));
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [shortcutEnabled, state]);
+
     const apply = async () => {
         if (selectedOperationIds.length === 0 || (state !== 'pending' && state !== 'error')) return;
         setState('applying');
@@ -181,18 +207,14 @@ export const TripAgentProposalCard: React.FC<{
         }
     };
 
-    const reject = async () => {
+    const reject = () => {
         if (state !== 'pending') return;
         onPreviewTrip?.(null);
-        try {
-            await rejectTripAgentProposal(changeSet.tripId, changeSet.id);
-            setState('rejected');
-            trackEvent('trip_agent__proposal--reject', { trip_id: changeSet.tripId, change_set_id: changeSet.id });
-        } catch (nextError) {
-            const info = readTripAgentError(nextError);
-            setState('error');
-            setError({ code: info.code, message: info.detail || info.message });
-        }
+        setStage('select');
+        setState('rejected');
+        trackEvent('trip_agent__proposal--reject', { trip_id: changeSet.tripId, change_set_id: changeSet.id });
+        // The card closes right away; recording the rejection is bookkeeping.
+        void rejectTripAgentProposal(changeSet.tripId, changeSet.id).catch(() => undefined);
     };
 
     const revert = () => {
@@ -218,6 +240,11 @@ export const TripAgentProposalCard: React.FC<{
                         <RotateCcw className="size-3.5" />{t('tripAgent.revert')}
                     </Button>
                 )}
+                {state === 'rejected' && onAskAgain && (
+                    <Button type="button" variant="ghost" size="sm" onClick={onAskAgain}>
+                        {t('tripAgent.askAgain')}
+                    </Button>
+                )}
             </section>
         );
     }
@@ -228,11 +255,12 @@ export const TripAgentProposalCard: React.FC<{
             aria-label={t('tripAgent.review')}
         >
             <header className="border-b border-slate-100 px-4 py-3">
-                <h3 className="text-sm font-semibold text-slate-950">{changeSet.summary}</h3>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
+                    {stage === 'preview' ? t('tripAgent.eyebrowPreview') : t('tripAgent.eyebrowReview')}
+                </p>
+                <h3 className="mt-1 text-sm font-semibold leading-5 text-slate-950">{shortSummary(changeSet.summary)}</h3>
                 <p className="mt-0.5 text-xs text-slate-500">
-                    {stage === 'preview'
-                        ? t('tripAgent.previewHint')
-                        : t('tripAgent.selectHint')}
+                    {stage === 'preview' ? t('tripAgent.previewHint') : t('tripAgent.selectHint')}
                 </p>
             </header>
 
@@ -329,9 +357,14 @@ export const TripAgentProposalCard: React.FC<{
             )}
 
             <div className="flex items-center justify-end gap-2 border-t border-slate-100 p-3">
+                {shortcutEnabled && state === 'pending' && (
+                    <span className="me-auto hidden text-[11px] text-slate-400 sm:inline">
+                        {t('tripAgent.previewShortcut')}
+                    </span>
+                )}
                 {stage === 'select' ? (
                     <>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => void reject()} disabled={state === 'applying'}>
+                        <Button type="button" variant="ghost" size="sm" onClick={reject} disabled={state === 'applying'}>
                             {t('tripAgent.discard')}
                         </Button>
                         <Button

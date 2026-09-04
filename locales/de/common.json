@@ -658,7 +658,13 @@
     "groupReplaceSegment": "{from} bis {to} neu aufbauen",
     "groupShifts": "verschiebt {count} weitere",
     "groupRemoveCity": "{label} und {count} zugehörige Einträge entfernen",
-    "previewSkipped": "{count} Änderungen passen nicht mehr und werden übersprungen."
+    "previewSkipped": "{count} Änderungen passen nicht mehr und werden übersprungen.",
+    "eyebrowReview": "Vorgeschlagene Änderungen",
+    "eyebrowPreview": "Vorschau",
+    "askAgain": "Etwas anderes fragen",
+    "questionCustom": "Etwas anderes…",
+    "questionSend": "Senden",
+    "previewShortcut": "P schaltet die Vorschau um"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Der Geratespeicher ist voll",

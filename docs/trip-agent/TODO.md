@@ -58,6 +58,14 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 - [x] Break the preview feedback loop: the panel reasons about the saved trip, the preview only changes what is rendered.
 - [x] Group changes per stop, so a removed city and everything in it is one entry.
 - [x] Cover every operation kind and its failure modes with unit tests.
+- [x] Animate the panel opening, restyle the launcher as a white card button, and remember the open state across a refresh.
+- [x] Bring back chat history as an in-panel list grouped by recency.
+- [x] Show a thinking orb and the agent label from the moment a request leaves, and the proposal skeleton while a change set is being built.
+- [x] Stop the mention backdrop from doubling the text or catching a page selection.
+- [x] Keep the saved timestamp on a preview so leaving it restores the plan exactly.
+- [x] Toggle the preview with P.
+- [x] Give the review card an eyebrow and a one-line title, and make Discard close it with a next step.
+- [x] Add `ask_traveler`, so the agent can ask what to do with days a change frees up and the answer continues the chat.
 - [ ] Verify the deploy preview end to end with an administrator account (transcript reload, retry, apply, quota refund).
 - [x] Resolve the specialist model the same way as the orchestrator; a bare model id only worked with the AI Gateway.
 - [ ] Normalize specialist result cards for stays and routes (#485).

@@ -658,7 +658,13 @@
     "groupReplaceSegment": "Перестроить с {from} по {to}",
     "groupShifts": "сдвигает ещё {count}",
     "groupRemoveCity": "Удалить {label} и связанные элементы: {count}",
-    "previewSkipped": "Изменений больше не применимо: {count}. Они пропущены."
+    "previewSkipped": "Изменений больше не применимо: {count}. Они пропущены.",
+    "eyebrowReview": "Предложенные изменения",
+    "eyebrowPreview": "Предпросмотр",
+    "askAgain": "Спросить о другом",
+    "questionCustom": "Другое…",
+    "questionSend": "Отправить",
+    "previewShortcut": "P переключает предпросмотр"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Память устройства заполнена",

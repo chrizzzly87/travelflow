@@ -658,7 +658,13 @@
     "groupReplaceSegment": "Reconstruire de {from} à {to}",
     "groupShifts": "décale {count} de plus",
     "groupRemoveCity": "Supprimer {label} et {count} éléments liés",
-    "previewSkipped": "{count} changements ne s’appliquent plus et sont ignorés."
+    "previewSkipped": "{count} changements ne s’appliquent plus et sont ignorés.",
+    "eyebrowReview": "Changements proposés",
+    "eyebrowPreview": "Aperçu",
+    "askAgain": "Demander autre chose",
+    "questionCustom": "Autre chose…",
+    "questionSend": "Envoyer",
+    "previewShortcut": "P bascule l’aperçu"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Le stockage de l'appareil est plein",

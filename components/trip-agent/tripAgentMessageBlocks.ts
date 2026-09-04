@@ -6,6 +6,7 @@ import {
     type TripAgentMessage,
 } from '../../shared/tripAgent';
 import type { TripAgentActivityStep } from './TripAgentActivityGroup';
+import type { TripAgentQuestionOption } from './TripAgentQuestionCard';
 import type { ToolPart } from '../ai-elements/tool';
 
 export type TripAgentMessageBlock =
@@ -13,11 +14,40 @@ export type TripAgentMessageBlock =
     | { kind: 'activity'; key: string; reasoningText: string; steps: TripAgentActivityStep[]; isStreaming: boolean }
     | { kind: 'proposal'; key: string; changeSet: TripAgentChangeSetV1 }
     | { kind: 'proposal-pending'; key: string }
+    | { kind: 'question'; key: string; question: string; options: TripAgentQuestionOption[]; allowCustom: boolean }
     | { kind: 'source'; key: string; url: string; title: string };
 
 export const resolveToolName = (part: ToolPart): string => (
     part.type === 'dynamic-tool' ? part.toolName : part.type.slice('tool-'.length)
 );
+
+export const asQuestion = (part: ToolPart): {
+    question: string;
+    options: TripAgentQuestionOption[];
+    allowCustom: boolean;
+} | null => {
+    if (resolveToolName(part) !== 'ask_traveler' || part.state !== 'output-available') return null;
+    const output = part.output as {
+        kind?: unknown;
+        question?: unknown;
+        options?: unknown;
+        allowCustom?: unknown;
+    } | undefined;
+    if (output?.kind !== 'trip-agent-question') return null;
+    if (typeof output.question !== 'string' || !Array.isArray(output.options)) return null;
+    const options = output.options.flatMap((entry) => {
+        const option = entry as Partial<TripAgentQuestionOption>;
+        if (!option?.id || !option.label || !option.prompt) return [];
+        return [{
+            id: String(option.id),
+            label: String(option.label),
+            prompt: String(option.prompt),
+            ...(option.detail ? { detail: String(option.detail) } : {}),
+        }];
+    });
+    if (options.length < 2) return null;
+    return { question: output.question, options, allowCustom: output.allowCustom !== false };
+};
 
 export const asProposal = (part: ToolPart): TripAgentChangeSetV1 | null => {
     if (resolveToolName(part) !== 'create_trip_proposal' || part.state !== 'output-available') return null;
@@ -117,6 +147,12 @@ export const buildTripAgentMessageBlocks = (
                 blocks.push({ kind: 'proposal', key, changeSet: proposal });
                 return;
             }
+            const question = asQuestion(part);
+            if (question) {
+                closeActivity();
+                blocks.push({ kind: 'question', key, ...question });
+                return;
+            }
             if (resolveToolName(part) === 'create_trip_proposal'
                 && (part.state === 'input-streaming' || part.state === 'input-available')) {
                 closeActivity();
@@ -147,10 +183,12 @@ export const buildTripAgentMessageBlocks = (
     });
     closeActivity();
 
-    const isProposal = (block: TripAgentMessageBlock): boolean => (
-        block.kind === 'proposal' || block.kind === 'proposal-pending'
-    );
-    const ordered = [...blocks.filter((block) => !isProposal(block)), ...blocks.filter(isProposal)];
+    const rank = (block: TripAgentMessageBlock): number => {
+        if (block.kind === 'proposal' || block.kind === 'proposal-pending') return 1;
+        if (block.kind === 'question') return 2;
+        return 0;
+    };
+    const ordered = [...blocks].sort((left, right) => rank(left) - rank(right));
     blocks.length = 0;
     blocks.push(...ordered);
 

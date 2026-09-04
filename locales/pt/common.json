@@ -658,7 +658,13 @@
     "groupReplaceSegment": "Refazer de {from} a {to}",
     "groupShifts": "desloca mais {count}",
     "groupRemoveCity": "Remover {label} e {count} itens vinculados",
-    "previewSkipped": "{count} mudanças não se aplicam mais e serão ignoradas."
+    "previewSkipped": "{count} mudanças não se aplicam mais e serão ignoradas.",
+    "eyebrowReview": "Mudanças propostas",
+    "eyebrowPreview": "Prévia",
+    "askAgain": "Pedir outra coisa",
+    "questionCustom": "Outra coisa…",
+    "questionSend": "Enviar",
+    "previewShortcut": "Pressione P para alternar a prévia"
   },
   "storageNotice": {
     "tripsPrunedTitle": "O armazenamento do dispositivo esta cheio",

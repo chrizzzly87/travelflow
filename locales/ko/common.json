@@ -658,7 +658,13 @@
     "groupReplaceSegment": "{from}부터 {to}까지 다시 구성",
     "groupShifts": "{count}개 더 이동",
     "groupRemoveCity": "{label} 및 연결된 항목 {count}개 삭제",
-    "previewSkipped": "변경 {count}개는 더 이상 적용되지 않아 건너뜁니다."
+    "previewSkipped": "변경 {count}개는 더 이상 적용되지 않아 건너뜁니다.",
+    "eyebrowReview": "제안된 변경",
+    "eyebrowPreview": "미리보기",
+    "askAgain": "다른 것 물어보기",
+    "questionCustom": "다른 내용…",
+    "questionSend": "보내기",
+    "previewShortcut": "P 키로 미리보기 전환"
   },
   "storageNotice": {
     "tripsPrunedTitle": "기기 저장 공간이 가득 찼습니다",

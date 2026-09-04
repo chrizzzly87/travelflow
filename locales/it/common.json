@@ -658,7 +658,13 @@
     "groupReplaceSegment": "Ricostruisci da {from} a {to}",
     "groupShifts": "sposta altri {count}",
     "groupRemoveCity": "Rimuovi {label} e {count} elementi collegati",
-    "previewSkipped": "{count} modifiche non sono più valide e vengono saltate."
+    "previewSkipped": "{count} modifiche non sono più valide e vengono saltate.",
+    "eyebrowReview": "Modifiche proposte",
+    "eyebrowPreview": "Anteprima",
+    "askAgain": "Chiedi altro",
+    "questionCustom": "Altro…",
+    "questionSend": "Invia",
+    "previewShortcut": "Premi P per alternare l’anteprima"
   },
   "storageNotice": {
     "tripsPrunedTitle": "La memoria del dispositivo e piena",

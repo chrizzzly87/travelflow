@@ -658,7 +658,13 @@
     "groupReplaceSegment": "Rebuild {from} to {to}",
     "groupShifts": "shifts {count} more",
     "groupRemoveCity": "Remove {label} and {count} linked items",
-    "previewSkipped": "{count} changes no longer apply and are skipped."
+    "previewSkipped": "{count} changes no longer apply and are skipped.",
+    "eyebrowReview": "Proposed changes",
+    "eyebrowPreview": "Preview",
+    "askAgain": "Ask for something else",
+    "questionCustom": "Something else…",
+    "questionSend": "Send",
+    "previewShortcut": "Press P to toggle the preview"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Device storage is full",

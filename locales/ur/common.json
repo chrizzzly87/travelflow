@@ -425,7 +425,13 @@
     "groupReplaceSegment": "{from} سے {to} تک دوبارہ بنائیں",
     "groupShifts": "{count} مزید کھسکتے ہیں",
     "groupRemoveCity": "{label} اور {count} منسلک آئٹمز ہٹائیں",
-    "previewSkipped": "{count} تبدیلیاں اب لاگو نہیں ہوتیں، انہیں چھوڑ دیا جائے گا۔"
+    "previewSkipped": "{count} تبدیلیاں اب لاگو نہیں ہوتیں، انہیں چھوڑ دیا جائے گا۔",
+    "eyebrowReview": "تجویز کردہ تبدیلیاں",
+    "eyebrowPreview": "پیش منظر",
+    "askAgain": "کچھ اور پوچھیں",
+    "questionCustom": "کچھ اور…",
+    "questionSend": "بھیجیں",
+    "previewShortcut": "پیش منظر بدلنے کے لیے P دبائیں"
   },
   "storageNotice": {
     "tripsPrunedTitle": "ڈیوائس کی اسٹوریج بھر گئی ہے",

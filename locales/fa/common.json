@@ -425,7 +425,13 @@
     "groupReplaceSegment": "بازسازی از {from} تا {to}",
     "groupShifts": "{count} مورد دیگر جابه‌جا می‌شود",
     "groupRemoveCity": "حذف {label} و {count} مورد مرتبط",
-    "previewSkipped": "{count} تغییر دیگر معتبر نیست و رد می‌شود."
+    "previewSkipped": "{count} تغییر دیگر معتبر نیست و رد می‌شود.",
+    "eyebrowReview": "تغییرهای پیشنهادی",
+    "eyebrowPreview": "پیش‌نمایش",
+    "askAgain": "چیز دیگری بپرس",
+    "questionCustom": "چیز دیگری…",
+    "questionSend": "ارسال",
+    "previewShortcut": "کلید P پیش‌نمایش را جابه‌جا می‌کند"
   },
   "storageNotice": {
     "tripsPrunedTitle": "حافظه دستگاه پر است",

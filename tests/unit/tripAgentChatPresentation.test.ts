@@ -138,3 +138,63 @@ describe('groupTripAgentThreads', () => {
         expect(today.threads[0].id).toBe('today-0');
     });
 });
+
+describe('question blocks', () => {
+    const questionPart = (output: unknown) => ({
+        id: 'assistant-q',
+        role: 'assistant',
+        parts: [
+            { type: 'text', text: 'I removed the Cambodia stops.' },
+            {
+                type: 'tool-create_trip_proposal',
+                toolCallId: 'call-p',
+                state: 'output-available',
+                input: {},
+                output: {
+                    kind: 'trip-agent-proposal',
+                    changeSet: {
+                        schemaVersion: 1,
+                        id: '7f1c9d5e-0000-4000-8000-000000000000',
+                        tripId: 'trip-1',
+                        threadId: '8f1c9d5e-0000-4000-8000-000000000000',
+                        runId: '9f1c9d5e-0000-4000-8000-000000000000',
+                        baseTripUpdatedAt: 10,
+                        summary: 'Remove Cambodia',
+                        operations: [{ id: 'op-1', kind: 'remove_item', itemId: 'city-1', rationale: 'x', targetLabel: 'Siem Reap' }],
+                        sources: [],
+                        status: 'pending',
+                        selectedOperationIds: [],
+                        appliedVersionId: null,
+                        createdAt: '2026-09-04T10:00:00.000Z',
+                        appliedAt: null,
+                    },
+                },
+            },
+            { type: 'tool-ask_traveler', toolCallId: 'call-q', state: 'output-available', input: {}, output },
+        ],
+    }) as unknown as TripAgentMessage;
+
+    it('renders the question after the answer and the review card', () => {
+        const blocks = buildTripAgentMessageBlocks(questionPart({
+            kind: 'trip-agent-question',
+            question: 'What should happen to the free days?',
+            options: [
+                { id: 'extend', label: 'Extend nearby stays', prompt: 'Extend the stays.' },
+                { id: 'shorten', label: 'Shorten the trip', prompt: 'Shorten the trip.' },
+            ],
+            allowCustom: true,
+        }), false);
+
+        expect(blocks.map((block) => block.kind)).toEqual(['text', 'proposal', 'question']);
+    });
+
+    it('ignores a malformed question instead of rendering an empty card', () => {
+        const blocks = buildTripAgentMessageBlocks(questionPart({
+            kind: 'trip-agent-question',
+            question: 'Too few options',
+            options: [{ id: 'only', label: 'Only one', prompt: 'Do it.' }],
+        }), false);
+
+        expect(blocks.some((block) => block.kind === 'question')).toBe(false);
+    });
+});

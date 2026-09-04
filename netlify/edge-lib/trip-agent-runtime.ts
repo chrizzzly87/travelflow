@@ -133,6 +133,34 @@ export const streamTripAgentResponse = async (input: {
         });
       },
     }),
+    ask_traveler: tool({
+      description: 'Ask the traveller one multiple-choice question, for example how to use days a change frees up. Returns the question for the chat to render; it changes nothing.',
+      inputSchema: z.object({
+        question: z.string().trim().min(1).max(300),
+        options: z.array(z.object({
+          id: z.string().trim().min(1).max(60),
+          label: z.string().trim().min(1).max(120),
+          detail: z.string().trim().max(200).optional(),
+          prompt: z.string().trim().min(1).max(400),
+        }).strict()).min(2).max(5),
+        allowCustom: z.boolean().optional(),
+      }).strict(),
+      execute: async ({ question, options, allowCustom }) => {
+        console.info('[trip-agent] question asked', {
+          tripId: input.trip.id,
+          threadId: input.threadId,
+          requestId: input.requestId,
+          runId,
+          optionCount: options.length,
+        });
+        return {
+          kind: 'trip-agent-question' as const,
+          question,
+          options,
+          allowCustom: allowCustom !== false,
+        };
+      },
+    }),
     create_trip_proposal: tool({
       description: 'Create a pending, user-reviewable proposal. This never changes the trip directly.',
       inputSchema: z.object({
@@ -223,9 +251,16 @@ Rules:
 - If create_trip_proposal answers with kind "trip-agent-proposal-invalid", fix exactly the listed fields and call it once more, then explain in plain text if it still fails.
 - Give a concise public plan and rationale in normal text: at most four short sentences. Do not expose private chain-of-thought.
 - Before a long tool run, say in one sentence what you are about to do.
+- When a proposal frees days or leaves a gap — a removed stop, a shortened stay — call ask_traveler once, after create_trip_proposal, with two to four concrete options for those days (for example extending nearby stays, shortening the whole trip, or adding another stop). Keep each option label under six words and set allowCustom.
+- Call ask_traveler at most once per answer, and never for a question the trip data already answers.
 - Nothing changes until the user explicitly applies selected proposal operations.`,
     tools: agentTools,
-    activeTools: definition.toolAllowlist.filter((name) => name in agentTools) as Array<keyof typeof agentTools>,
+    // ask_traveler is always available: it only asks a question, and the stored
+    // allowlists predate it.
+    activeTools: [...new Set([
+      ...definition.toolAllowlist.filter((name) => name in agentTools),
+      'ask_traveler',
+    ])] as Array<keyof typeof agentTools>,
     // The panel shows a compact activity line, so the planner runs with light
     // reasoning unless an operator raises it on the definition row.
     reasoning: definition.reasoningEffort === 'high' ? 'medium' : definition.reasoningEffort,

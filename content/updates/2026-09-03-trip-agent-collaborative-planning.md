@@ -23,6 +23,11 @@ summary: "Trip Agent brings shared, context-aware planning into each trip while 
 - [x] [Improved] 👀 Suggested trip changes are now picked first and previewed as a before-and-after result before anything is saved.
 - [x] [Improved] 🗓️ Proposed changes now preview directly in your calendar, timeline and map before you apply them.
 - [x] [Fixed] 🔁 Fixed the preview flickering endlessly when it opened; it now shows the proposed trip and holds still.
+- [x] [Improved] 🌍 A moving orb and a live skeleton now show that changes are being prepared, from the moment you hit send.
+- [x] [Improved] 💬 When a change frees up days, Trip Agent asks what to do with them and you pick an option — or type your own — right in the chat.
+- [x] [Improved] 🗂️ Chat history is back as a list in the panel, and the chat stays open when you reload the page.
+- [x] [Improved] ⌨️ Press P to flip the preview on and off; leaving it restores your plan exactly.
+- [x] [Fixed] ✏️ Fixed mention tags rendering twice in the message box and a stray highlight above the toolbar.
 - [x] [Fixed] 🧯 A change that no longer fits your trip is skipped and counted instead of breaking the whole review.
 - [x] [Improved] 🧾 Changes are grouped per stop, so removing a city and everything in it is one entry to approve.
 - [x] [Improved] 🧷 Related shifts are grouped into the change that caused them, so shortening a stop is one decision instead of ten.

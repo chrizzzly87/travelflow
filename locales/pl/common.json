@@ -656,7 +656,13 @@
     "groupReplaceSegment": "Przebuduj od {from} do {to}",
     "groupShifts": "przesuwa {count} więcej",
     "groupRemoveCity": "Usuń {label} i {count} powiązanych elementów",
-    "previewSkipped": "{count} zmian już nie pasuje i zostanie pominiętych."
+    "previewSkipped": "{count} zmian już nie pasuje i zostanie pominiętych.",
+    "eyebrowReview": "Proponowane zmiany",
+    "eyebrowPreview": "Podgląd",
+    "askAgain": "Zapytaj o coś innego",
+    "questionCustom": "Coś innego…",
+    "questionSend": "Wyślij",
+    "previewShortcut": "Naciśnij P, aby przełączyć podgląd"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",
