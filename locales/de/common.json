@@ -687,7 +687,13 @@
     "routeDuration": "{hours} Std.",
     "routeAsk": "Diese Option vorschlagen",
     "routeAskPrompt": "Schlage die Änderungen vor für: {title}",
-    "revertLabel": "Rückgängig gemacht: {summary}"
+    "revertLabel": "Rückgängig gemacht: {summary}",
+    "reviewAgain": "Erneut prüfen",
+    "applyAgainCount": "{count} Änderungen erneut übernehmen",
+    "reapplyLabel": "Erneut übernommen: {summary}",
+    "revertToast": "Deine Reise ist wieder wie vor dieser Änderung.",
+    "revertToastTitle": "Änderung rückgängig",
+    "redo": "Wiederherstellen"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Der Geratespeicher ist voll",

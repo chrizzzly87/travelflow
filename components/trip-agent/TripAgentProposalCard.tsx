@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowLeft, Check, Eye, RotateCcw } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Check, Eye, PencilLine, RotateCcw } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -185,7 +185,9 @@ export const TripAgentProposalCard: React.FC<{
     onApplied: (trip: ITrip, versionId: string, label: string) => void;
     onPreviewTrip?: (trip: ITrip | null) => void;
     /** Restores the trip as it was before this proposal was applied. */
-    onRevertAgentChange?: (input: { trip: ITrip; label: string }) => void;
+    onRevertAgentChange?: (input: { trip: ITrip; redoTrip: ITrip; label: string; redoLabel: string }) => void;
+    /** Applies a reviewed set again, after it was applied once and reverted. */
+    onReapplyAgentChange?: (input: { trip: ITrip; label: string }) => void;
     /** Only the newest pending proposal answers the preview shortcut. */
     shortcutEnabled?: boolean;
     /** A newer proposal exists, so this one can no longer be applied. */
@@ -200,6 +202,7 @@ export const TripAgentProposalCard: React.FC<{
     onApplied,
     onPreviewTrip,
     onRevertAgentChange,
+    onReapplyAgentChange,
     shortcutEnabled,
     isSuperseded,
     serverStatus,
@@ -222,6 +225,7 @@ export const TripAgentProposalCard: React.FC<{
     // The trip exactly as it stood when this card applied, so Revert restores
     // that state instead of stepping back through unrelated history entries.
     const [tripBeforeApply, setTripBeforeApply] = useState<ITrip | null>(null);
+    const [tripAfterApply, setTripAfterApply] = useState<ITrip | null>(null);
     const [applied, setApplied] = useState<{ count: number; requested: number } | null>(() => (
         appliedOperationIds?.length
             ? { count: appliedOperationIds.length, requested: appliedOperationIds.length }
@@ -301,14 +305,52 @@ export const TripAgentProposalCard: React.FC<{
         return () => window.removeEventListener('keydown', onKeyDown);
     }, [shortcutEnabled, state]);
 
+    const hasBeenApplied = Boolean(tripAfterApply);
+
+    /** Reopens a closed card so the same set can be adjusted and applied again. */
+    const reviewAgain = () => {
+        setStage('select');
+        setState('pending');
+        setError(null);
+        trackEvent('trip_agent__proposal--review-again', {
+            trip_id: changeSet.tripId,
+            change_set_id: changeSet.id,
+        });
+    };
+
     const apply = async () => {
         if (selectedOperationIds.length === 0 || (state !== 'pending' && state !== 'error')) return;
         setState('applying');
         setError(null);
         setTripBeforeApply(trip);
+
+        if (hasBeenApplied && onReapplyAgentChange) {
+            const recomputed = computePreview(trip, changeSet.operations, selectedOperationIds);
+            if (!recomputed?.trip) {
+                setState('error');
+                setError({ code: 'TRIP_AGENT_NO_OP', message: t('tripAgent.previewFailed') });
+                return;
+            }
+            onPreviewTrip?.(null);
+            setTripAfterApply(recomputed.trip);
+            onReapplyAgentChange({
+                trip: recomputed.trip,
+                label: t('tripAgent.reapplyLabel', { summary: shortSummary(changeSet.summary) }),
+            });
+            setApplied({ count: selectedOperationIds.length, requested: selectedOperationIds.length });
+            setState('applied');
+            trackEvent('trip_agent__proposal--reapply', {
+                trip_id: changeSet.tripId,
+                change_set_id: changeSet.id,
+                operation_count: selectedOperationIds.length,
+            });
+            return;
+        }
+
         try {
             const result = await applyTripAgentProposal(changeSet.tripId, changeSet.id, selectedOperationIds);
             onPreviewTrip?.(null);
+            setTripAfterApply(result.trip);
             onApplied(result.trip, result.versionId, changeSet.summary);
             setApplied({ count: result.appliedOperationIds.length, requested: selectedOperationIds.length });
             if (result.appliedOperationIds.length < selectedOperationIds.length) {
@@ -346,10 +388,12 @@ export const TripAgentProposalCard: React.FC<{
     };
 
     const revert = () => {
-        if (!tripBeforeApply || !onRevertAgentChange) return;
+        if (!tripBeforeApply || !tripAfterApply || !onRevertAgentChange) return;
         onRevertAgentChange({
             trip: tripBeforeApply,
+            redoTrip: tripAfterApply,
             label: t('tripAgent.revertLabel', { summary: shortSummary(changeSet.summary) }),
+            redoLabel: t('tripAgent.reapplyLabel', { summary: shortSummary(changeSet.summary) }),
         });
         setState('reverted');
         trackEvent('trip_agent__proposal--revert', { trip_id: changeSet.tripId, change_set_id: changeSet.id });
@@ -377,7 +421,12 @@ export const TripAgentProposalCard: React.FC<{
                             : t('tripAgent.appliedCount', { count: applied?.count ?? selectedOperationIds.length }))
                         : state === 'reverted' ? t('tripAgent.reverted') : t('tripAgent.discarded')}
                 </span>
-                {state === 'applied' && onRevertAgentChange && tripBeforeApply && (
+                {(state === 'applied' || state === 'reverted') && (onReapplyAgentChange || state === 'applied') && (
+                    <Button type="button" variant="ghost" size="sm" onClick={reviewAgain}>
+                        <PencilLine className="size-3.5" />{t('tripAgent.reviewAgain')}
+                    </Button>
+                )}
+                {state === 'applied' && onRevertAgentChange && tripBeforeApply && tripAfterApply && (
                     <Button type="button" variant="ghost" size="sm" onClick={revert}>
                         <RotateCcw className="size-3.5" />{t('tripAgent.revert')}
                     </Button>
@@ -582,7 +631,11 @@ export const TripAgentProposalCard: React.FC<{
                             disabled={selectedOperationIds.length === 0 || state === 'applying' || Boolean(preview?.error)}
                         >
                             {state === 'error' ? <RotateCcw className="size-3.5" /> : null}
-                            {state === 'error' ? t('tripAgent.retryApply') : t('tripAgent.applyCount', { count: selectedOperationIds.length })}
+                            {state === 'error'
+                                ? t('tripAgent.retryApply')
+                                : hasBeenApplied
+                                    ? t('tripAgent.applyAgainCount', { count: selectedOperationIds.length })
+                                    : t('tripAgent.applyCount', { count: selectedOperationIds.length })}
                         </Button>
                     </>
                 )}

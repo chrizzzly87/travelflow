@@ -687,7 +687,13 @@
     "routeDuration": "{hours} h",
     "routeAsk": "Chiedi questa opzione",
     "routeAskPrompt": "Proponi le modifiche per: {title}",
-    "revertLabel": "Annullato: {summary}"
+    "revertLabel": "Annullato: {summary}",
+    "reviewAgain": "Rivedi",
+    "applyAgainCount": "Applica di nuovo {count} modifiche",
+    "reapplyLabel": "Riapplicato: {summary}",
+    "revertToast": "Il viaggio è tornato com’era prima di questa modifica.",
+    "revertToastTitle": "Modifica annullata",
+    "redo": "Ripristina"
   },
   "storageNotice": {
     "tripsPrunedTitle": "La memoria del dispositivo e piena",

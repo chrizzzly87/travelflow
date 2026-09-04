@@ -86,7 +86,9 @@ interface TripAgentPanelProps {
     /** Shows a proposed trip in the planner while the reviewer previews it. */
     onPreviewTrip?: (trip: ITrip | null) => void;
     /** Restores a trip snapshot from before an applied change set. */
-    onRevertAgentChange?: (input: { trip: ITrip; label: string }) => void;
+    onRevertAgentChange?: (input: { trip: ITrip; redoTrip: ITrip; label: string; redoLabel: string }) => void;
+    /** Applies a reviewed set again after it was applied once. */
+    onReapplyAgentChange?: (input: { trip: ITrip; label: string }) => void;
 }
 
 const contextRefKey = (contextRef: TripAgentContextRef): string => (
@@ -142,7 +144,8 @@ const ChatMessage: React.FC<{
     onRetry?: () => void;
     onApplied: (trip: ITrip, versionId: string, label: string) => void;
     onPreviewTrip?: (trip: ITrip | null) => void;
-    onRevertAgentChange?: () => void;
+    onRevertAgentChange?: TripAgentPanelProps['onRevertAgentChange'];
+    onReapplyAgentChange?: TripAgentPanelProps['onReapplyAgentChange'];
     shortcutChangeSetId?: string | null;
     changeSetStatuses?: Record<string, { status: TripAgentChangeSetStatus['status']; appliedOperationIds: string[] }>;
     onAskAgain?: () => void;
@@ -159,6 +162,7 @@ const ChatMessage: React.FC<{
     onApplied,
     onPreviewTrip,
     onRevertAgentChange,
+    onReapplyAgentChange,
     shortcutChangeSetId,
     changeSetStatuses,
     onAskAgain,
@@ -210,6 +214,7 @@ const ChatMessage: React.FC<{
                                 onApplied={onApplied}
                                 onPreviewTrip={onPreviewTrip}
                                 onRevertAgentChange={onRevertAgentChange}
+                                onReapplyAgentChange={onReapplyAgentChange}
                                 shortcutEnabled={block.changeSet.id === shortcutChangeSetId}
                                 isSuperseded={Boolean(shortcutChangeSetId) && block.changeSet.id !== shortcutChangeSetId}
                                 serverStatus={changeSetStatuses?.[block.changeSet.id]?.status}
@@ -301,6 +306,7 @@ const TripAgentChatSession: React.FC<{
     onAdoptCommittedTripVersion: TripAgentPanelProps['onAdoptCommittedTripVersion'];
     onPreviewTrip?: TripAgentPanelProps['onPreviewTrip'];
     onRevertAgentChange?: TripAgentPanelProps['onRevertAgentChange'];
+    onReapplyAgentChange?: TripAgentPanelProps['onReapplyAgentChange'];
 }> = ({
     trip,
     thread,
@@ -313,6 +319,7 @@ const TripAgentChatSession: React.FC<{
     onAdoptCommittedTripVersion,
     onPreviewTrip,
     onRevertAgentChange,
+    onReapplyAgentChange,
 }) => {
     const { t, i18n } = useTranslation('common');
     const now = useMinuteTick();
@@ -747,6 +754,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
     onAdoptCommittedTripVersion,
     onPreviewTrip,
     onRevertAgentChange,
+    onReapplyAgentChange,
 }) => {
     const { t, i18n } = useTranslation('common');
     const now = useMinuteTick();
@@ -980,6 +988,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                     onAdoptCommittedTripVersion={onAdoptCommittedTripVersion}
                     onPreviewTrip={onPreviewTrip}
                     onRevertAgentChange={onRevertAgentChange}
+                    onReapplyAgentChange={onReapplyAgentChange}
                 />
             ) : (
                 <div className="flex flex-1 items-center justify-center text-sm text-slate-500">{t('tripAgent.loading')}</div>

@@ -269,3 +269,75 @@ describe('TripAgentProposalCard revert', () => {
         expect(screen.queryByRole('button', { name: 'tripAgent.revert' })).toBeNull();
     });
 });
+
+describe('TripAgentProposalCard reopen and reapply', () => {
+    it('reopens an applied set and applies it again locally, without a second server call', async () => {
+        const user = userEvent.setup();
+        const onReapplyAgentChange = vi.fn();
+        applyTripAgentProposalMock.mockResolvedValue({
+            trip,
+            versionId: 'version-1',
+            status: 'applied',
+            appliedOperationIds: ['op-1'],
+            noOpOperationIds: [],
+        });
+
+        render(
+            <TripAgentProposalCard
+                trip={trip}
+                changeSet={changeSet}
+                onApplied={vi.fn()}
+                onRevertAgentChange={vi.fn()}
+                onReapplyAgentChange={onReapplyAgentChange}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
+        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
+        await waitFor(() => expect(screen.getByText('tripAgent.appliedCount')).toBeTruthy());
+        expect(applyTripAgentProposalMock).toHaveBeenCalledTimes(1);
+
+        await user.click(screen.getByRole('button', { name: 'tripAgent.reviewAgain' }));
+        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
+        await user.click(screen.getByRole('button', { name: 'tripAgent.applyAgainCount' }));
+
+        // The change set is no longer pending on the server, so a reapply is a
+        // local adoption of the recomputed trip.
+        expect(applyTripAgentProposalMock).toHaveBeenCalledTimes(1);
+        expect(onReapplyAgentChange).toHaveBeenCalledTimes(1);
+        expect(onReapplyAgentChange.mock.calls[0][0].trip.items.some(
+            (item: { id: string }) => item.id === 'activity-1',
+        )).toBe(false);
+    });
+
+    it('hands the redo snapshot to the reverting caller', async () => {
+        const user = userEvent.setup();
+        const onRevertAgentChange = vi.fn();
+        const appliedTrip = { ...trip, title: 'Portugal, revised' } as ITrip;
+        applyTripAgentProposalMock.mockResolvedValue({
+            trip: appliedTrip,
+            versionId: 'version-1',
+            status: 'applied',
+            appliedOperationIds: ['op-1'],
+            noOpOperationIds: [],
+        });
+
+        render(
+            <TripAgentProposalCard
+                trip={trip}
+                changeSet={changeSet}
+                onApplied={vi.fn()}
+                onRevertAgentChange={onRevertAgentChange}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
+        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
+        await waitFor(() => expect(screen.getByText('tripAgent.appliedCount')).toBeTruthy());
+        await user.click(screen.getByRole('button', { name: 'tripAgent.revert' }));
+
+        const [payload] = onRevertAgentChange.mock.calls[0];
+        expect(payload.trip.title).toBe('Portugal');
+        expect(payload.redoTrip.title).toBe('Portugal, revised');
+    });
+});

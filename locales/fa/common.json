@@ -454,7 +454,13 @@
     "routeDuration": "{hours} ساعت",
     "routeAsk": "این گزینه را بخواه",
     "routeAskPrompt": "تغییرها را برای این پیشنهاد بده: {title}",
-    "revertLabel": "بازگردانده شد: {summary}"
+    "revertLabel": "بازگردانده شد: {summary}",
+    "reviewAgain": "بررسی دوباره",
+    "applyAgainCount": "اعمال دوباره {count} تغییر",
+    "reapplyLabel": "دوباره اعمال شد: {summary}",
+    "revertToast": "سفر شما به وضعیت پیش از این تغییر بازگشت.",
+    "revertToastTitle": "تغییر بازگردانده شد",
+    "redo": "انجام دوباره"
   },
   "storageNotice": {
     "tripsPrunedTitle": "حافظه دستگاه پر است",

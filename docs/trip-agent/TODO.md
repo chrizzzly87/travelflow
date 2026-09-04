@@ -125,6 +125,8 @@ session rather than against the issue text.
 - [x] A run asks or proposes, never both: `create_trip_proposal` defers while a question is open, `ask_traveler` defers once a proposal exists, and a question ranks above a proposal in the panel.
 - [x] Revert restores the trip snapshot from before the apply as a new version, instead of calling the planner's undo, which walks history entries that include view switches.
 - [x] The timeline canvas is keyed by an agent-change nonce and the preview flag, so a trip swapped in from outside the planner cannot leave the calendar showing the previous plan.
+- [x] Toast a revert with a Redo action, and let a closed card be reopened, adjusted and applied again (a re-apply adopts the recomputed trip locally, since the change set is no longer pending).
+- [x] Clear the sync conflict backup when its recovery banner is acted on, so the banner disappears with the decision.
 - [ ] Mark a change set as reverted server-side when its apply is undone (today the revert is recorded as a new trip version only).
 
 ## Production gates

@@ -687,7 +687,13 @@
     "routeDuration": "{hours} ч",
     "routeAsk": "Запросить этот вариант",
     "routeAskPrompt": "Предложи изменения для: {title}",
-    "revertLabel": "Отменено: {summary}"
+    "revertLabel": "Отменено: {summary}",
+    "reviewAgain": "Посмотреть снова",
+    "applyAgainCount": "Применить изменения снова: {count}",
+    "reapplyLabel": "Применено снова: {summary}",
+    "revertToast": "Поездка вернулась к состоянию до этого изменения.",
+    "revertToastTitle": "Изменение отменено",
+    "redo": "Вернуть"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Память устройства заполнена",

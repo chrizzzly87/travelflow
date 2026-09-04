@@ -454,7 +454,13 @@
     "routeDuration": "{hours} گھنٹے",
     "routeAsk": "یہ اختیار مانگیں",
     "routeAskPrompt": "اس کے لیے تبدیلیاں تجویز کریں: {title}",
-    "revertLabel": "واپس لیا: {summary}"
+    "revertLabel": "واپس لیا: {summary}",
+    "reviewAgain": "دوبارہ جائزہ",
+    "applyAgainCount": "{count} تبدیلیاں دوبارہ لاگو کریں",
+    "reapplyLabel": "دوبارہ لاگو: {summary}",
+    "revertToast": "آپ کا سفر اس تبدیلی سے پہلے والی حالت میں واپس آ گیا۔",
+    "revertToastTitle": "تبدیلی واپس لی گئی",
+    "redo": "دوبارہ کریں"
   },
   "storageNotice": {
     "tripsPrunedTitle": "ڈیوائس کی اسٹوریج بھر گئی ہے",

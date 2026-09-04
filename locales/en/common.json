@@ -687,7 +687,13 @@
     "routeDuration": "{hours} h",
     "routeAsk": "Ask for this option",
     "routeAskPrompt": "Propose the changes for: {title}",
-    "revertLabel": "Reverted: {summary}"
+    "revertLabel": "Reverted: {summary}",
+    "reviewAgain": "Review again",
+    "applyAgainCount": "Apply {count} changes again",
+    "reapplyLabel": "Reapplied: {summary}",
+    "revertToast": "Your plan is back as it was before this change.",
+    "revertToastTitle": "Change reverted",
+    "redo": "Redo"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Device storage is full",

@@ -685,7 +685,13 @@
     "routeDuration": "{hours} godz.",
     "routeAsk": "Poproś o ten wariant",
     "routeAskPrompt": "Zaproponuj zmiany dla: {title}",
-    "revertLabel": "Cofnięto: {summary}"
+    "revertLabel": "Cofnięto: {summary}",
+    "reviewAgain": "Przejrzyj ponownie",
+    "applyAgainCount": "Zastosuj {count} zmian ponownie",
+    "reapplyLabel": "Zastosowano ponownie: {summary}",
+    "revertToast": "Twoja podróż wróciła do stanu sprzed tej zmiany.",
+    "revertToastTitle": "Zmiana cofnięta",
+    "redo": "Ponów"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",

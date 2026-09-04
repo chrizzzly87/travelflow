@@ -687,7 +687,13 @@
     "routeDuration": "{hours} h",
     "routeAsk": "Pedir esta opción",
     "routeAskPrompt": "Propón los cambios para: {title}",
-    "revertLabel": "Deshecho: {summary}"
+    "revertLabel": "Deshecho: {summary}",
+    "reviewAgain": "Revisar otra vez",
+    "applyAgainCount": "Aplicar {count} cambios otra vez",
+    "reapplyLabel": "Reaplicado: {summary}",
+    "revertToast": "Tu viaje volvió a como estaba antes de este cambio.",
+    "revertToastTitle": "Cambio deshecho",
+    "redo": "Rehacer"
   },
   "storageNotice": {
     "tripsPrunedTitle": "El almacenamiento del dispositivo esta lleno",
