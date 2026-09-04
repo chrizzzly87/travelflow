@@ -69,7 +69,8 @@ Rules:
 - startDateOffset counts days from the trip start and begins at 0, so day 1 is 0.
 - Reuse the exact item ids from read_trip_context. Never invent an id for an existing item.
 - If create_trip_proposal answers with kind "trip-agent-proposal-invalid", fix exactly the listed fields and call it once more.
-- Give a concise public plan and rationale in normal text: at most four short sentences.`,
+- Give a concise public plan and rationale in normal text: at most four short sentences.
+- When a proposal frees days or leaves a gap — a removed stop, a shortened stay — call ask_traveler once, after create_trip_proposal, with two to four concrete options for those days (for example extending nearby stays, shortening the whole trip, or adding another stop). Keep each option label under six words and set allowCustom.`,
         tools: {
             read_trip_context: tool({
                 description: 'Read the canonical current trip.',
@@ -77,6 +78,23 @@ Rules:
                 execute: async () => {
                     calls.push({ tool: 'read_trip_context', ok: true, detail: `${trip.items.length} items` });
                     return { trip, selectedContext: [], baseTripUpdatedAt: trip.updatedAt };
+                },
+            }),
+            ask_traveler: tool({
+                description: 'Ask the traveller one multiple-choice question, for example how to use days a change frees up. Returns the question for the chat to render; it changes nothing.',
+                inputSchema: z.object({
+                    question: z.string().trim().min(1).max(300),
+                    options: z.array(z.object({
+                        id: z.string().trim().min(1).max(60),
+                        label: z.string().trim().min(1).max(120),
+                        detail: z.string().trim().max(200).optional(),
+                        prompt: z.string().trim().min(1).max(400),
+                    }).strict()).min(2).max(5),
+                    allowCustom: z.boolean().optional(),
+                }).strict(),
+                execute: async ({ question, options, allowCustom }) => {
+                    calls.push({ tool: 'ask_traveler', ok: true, detail: `${question} → ${options.map((option) => option.label).join(' | ')}` });
+                    return { kind: 'trip-agent-question' as const, question, options, allowCustom: allowCustom !== false };
                 },
             }),
             create_trip_proposal: tool({
