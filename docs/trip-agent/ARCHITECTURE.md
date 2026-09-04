@@ -147,7 +147,19 @@ Tables: `trip_agent_threads`, `trip_agent_messages`, `trip_agent_runs`,
 collaborators; all mutations go through the service role.
 
 Free accounts get three requests per UTC day, reserved before model access and
-refunded when a run fails before producing anything.
+refunded when a run fails before producing anything. Answering a question the
+agent itself asked (`ask_traveler`) is a free continuation: the server checks
+whether the newest assistant message carries an open question and skips the
+reservation, so an ask-first flow does not cost two runs. The refund RPC only
+credits a ledger row it actually charged, so a free continuation cannot refund
+anything.
+
+Creating a proposal supersedes any pending proposal **in the same thread**, not
+across the trip: a collaborator's open review in another chat is left alone.
+
+A revert restores the pre-apply trip as a new version *and* marks the change set
+`reverted`. The change set keeps `applied_version_id`, so a redo works after a
+reload even when the browser no longer holds the applied snapshot.
 
 ## Privacy and secrets
 

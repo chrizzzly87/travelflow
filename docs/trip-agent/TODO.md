@@ -103,7 +103,7 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 - [x] Remove the unused math, mermaid and syntax-highlighting packages and components.
 - [x] Correct the analytics table and localize the last hardcoded failure strings.
 - [x] Trim the release note and drop the superseded bare-`P` shortcut claim.
-- [ ] **Apply** migration `20260904120000_trip_agent_access_and_stale_fix.sql` (verified locally against a throwaway Postgres; see `supabase/tests/` and `docs/SUPABASE_RUNBOOK.md`): editable-share and expiry checks, and a stale proposal that records its status instead of rolling it back.
+- [ ] **Apply** migrations `20260904130000_trip_agent_drop_legacy_apply_overload.sql` and `20260904140000_trip_agent_reverted_status.sql` (both verified locally). Earlier: `20260904120000_trip_agent_access_and_stale_fix.sql` (verified locally against a throwaway Postgres; see `supabase/tests/` and `docs/SUPABASE_RUNBOOK.md`): editable-share and expiry checks, and a stale proposal that records its status instead of rolling it back.
 - [ ] Replay operations inside the locked transaction rather than writing a precomputed snapshot (#481).
 - [ ] Enable the panel for editable-share sessions once quota ownership for shared editors is decided (#484).
 - [ ] Registry-first Gateway routing with ZDR, once `AI_GATEWAY_API_KEY` exists (#481).
@@ -127,7 +127,12 @@ session rather than against the issue text.
 - [x] The timeline canvas is keyed by an agent-change nonce and the preview flag, so a trip swapped in from outside the planner cannot leave the calendar showing the previous plan.
 - [x] Toast a revert with a Redo action, and let a closed card be reopened, adjusted and applied again (a re-apply adopts the recomputed trip locally, since the change set is no longer pending).
 - [x] Clear the sync conflict backup when its recovery banner is acted on, so the banner disappears with the decision.
-- [ ] Mark a change set as reverted server-side when its apply is undone (today the revert is recorded as a new trip version only).
+- [x] Mark a change set as reverted server-side, so a reload shows the card as reverted and can redo the applied version.
+- [x] Scope proposal superseding to the chat that produced it: a trip-wide sweep cancelled a collaborator's open review in another chat.
+- [x] Stop charging a daily run for answering the agent's own question; an ask-first flow otherwise costs two of three free runs.
+- [x] Shrink the panel to a bar and drop the backdrop on a phone while a preview is showing, so the previewed planner is visible.
+- [ ] Link locally adopted versions (revert, redo, reapply) to their change set; today only the server-side apply and revert carry that reference.
+- [ ] Ask for EN/DE sign-off on the Trip Agent copy; ten locales were written without review.
 
 ## Production gates
 
