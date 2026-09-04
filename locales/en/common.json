@@ -673,7 +673,20 @@
     "alsoUsingSelection": "Also using your selection: {labels}",
     "previewFailed": "These changes cannot be previewed together.",
     "showOperations": "Show all {count} changes",
-    "hideOperations": "Hide individual changes"
+    "hideOperations": "Hide individual changes",
+    "staysTitle": "Stays found",
+    "staysDisclaimer": "Prices and availability are not checked live.",
+    "budget": {
+      "low": "Lower budget",
+      "medium": "Mid-range",
+      "high": "Higher budget"
+    },
+    "openInMaps": "Open {name} in Maps",
+    "routesTitle": "Route options",
+    "routeDistance": "{km} km",
+    "routeDuration": "{hours} h",
+    "routeAsk": "Ask for this option",
+    "routeAskPrompt": "Propose the changes for: {title}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Device storage is full",

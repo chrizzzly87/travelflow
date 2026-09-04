@@ -440,7 +440,20 @@
     "alsoUsingSelection": "آپ کا انتخاب بھی استعمال ہو رہا ہے: {labels}",
     "previewFailed": "یہ تبدیلیاں ایک ساتھ نہیں دکھائی جا سکتیں۔",
     "showOperations": "تمام {count} تبدیلیاں دکھائیں",
-    "hideOperations": "انفرادی تبدیلیاں چھپائیں"
+    "hideOperations": "انفرادی تبدیلیاں چھپائیں",
+    "staysTitle": "ملنے والے قیام",
+    "staysDisclaimer": "قیمت اور دستیابی براہِ راست نہیں دیکھی جاتی۔",
+    "budget": {
+      "low": "کم بجٹ",
+      "medium": "درمیانہ",
+      "high": "اعلیٰ"
+    },
+    "openInMaps": "{name} کو Maps میں کھولیں",
+    "routesTitle": "راستے کے اختیارات",
+    "routeDistance": "{km} کلومیٹر",
+    "routeDuration": "{hours} گھنٹے",
+    "routeAsk": "یہ اختیار مانگیں",
+    "routeAskPrompt": "اس کے لیے تبدیلیاں تجویز کریں: {title}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "ڈیوائس کی اسٹوریج بھر گئی ہے",

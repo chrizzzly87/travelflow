@@ -673,7 +673,20 @@
     "alsoUsingSelection": "선택한 항목도 사용: {labels}",
     "previewFailed": "이 변경들은 함께 미리 볼 수 없습니다.",
     "showOperations": "변경 {count}개 모두 보기",
-    "hideOperations": "개별 변경 숨기기"
+    "hideOperations": "개별 변경 숨기기",
+    "staysTitle": "찾은 숙소",
+    "staysDisclaimer": "가격과 예약 가능 여부는 실시간으로 확인하지 않습니다.",
+    "budget": {
+      "low": "저렴한 편",
+      "medium": "중간 가격대",
+      "high": "고급"
+    },
+    "openInMaps": "지도에서 {name} 열기",
+    "routesTitle": "경로 옵션",
+    "routeDistance": "{km} km",
+    "routeDuration": "{hours}시간",
+    "routeAsk": "이 옵션 요청",
+    "routeAskPrompt": "다음에 대한 변경을 제안해 주세요: {title}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "기기 저장 공간이 가득 찼습니다",

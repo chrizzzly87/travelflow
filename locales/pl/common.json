@@ -671,7 +671,20 @@
     "alsoUsingSelection": "Używa też Twojego zaznaczenia: {labels}",
     "previewFailed": "Tych zmian nie można pokazać razem.",
     "showOperations": "Pokaż wszystkie zmiany ({count})",
-    "hideOperations": "Ukryj pojedyncze zmiany"
+    "hideOperations": "Ukryj pojedyncze zmiany",
+    "staysTitle": "Znalezione noclegi",
+    "staysDisclaimer": "Ceny i dostępność nie są sprawdzane na żywo.",
+    "budget": {
+      "low": "Tańsze",
+      "medium": "Średnia półka",
+      "high": "Wyższa półka"
+    },
+    "openInMaps": "Otwórz {name} w Maps",
+    "routesTitle": "Warianty trasy",
+    "routeDistance": "{km} km",
+    "routeDuration": "{hours} godz.",
+    "routeAsk": "Poproś o ten wariant",
+    "routeAskPrompt": "Zaproponuj zmiany dla: {title}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",

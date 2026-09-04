@@ -1,7 +1,15 @@
 import { createMCPClient } from '@ai-sdk/mcp';
-import { ToolLoopAgent, isStepCount, type ToolSet } from 'ai';
+import { ToolLoopAgent, isStepCount, tool, type ToolSet } from 'ai';
+import { z } from 'zod';
 import { readEnv } from './ai-provider-runtime.ts';
 import { resolveTripAgentModel } from './trip-agent-model.ts';
+import {
+  groupHotelOptionsByBudget,
+  toRouteAlternatives,
+  tripAgentHotelResultSchema,
+  tripAgentRouteResultSchema,
+} from '../../shared/tripAgentSpecialistResults.ts';
+import type { TripAgentHotelOption, TripAgentRouteAlternative } from '../../shared/tripAgent.ts';
 import type { AgentRuntimeDefinition } from './trip-agent-store.ts';
 
 const GOOGLE_MAPS_MCP_URL = 'https://mapstools.googleapis.com/mcp';
@@ -18,12 +26,21 @@ const selectAllowedTools = (tools: ToolSet, capability: 'hotel' | 'route'): Tool
   Object.fromEntries(Object.entries(tools).filter(([name]) => ALLOWED_TOOL_PATTERNS[capability].test(name)))
 );
 
+export interface GroundedSpecialistResult {
+  status: 'complete' | 'unavailable';
+  summary: string;
+  /** Structured stays, grouped by budget, when the hotel specialist returned any. */
+  hotelOptions?: { cityId: string; groups: Record<'low' | 'medium' | 'high', TripAgentHotelOption[]> };
+  /** Structured route alternatives, when the route specialist returned any. */
+  routeAlternatives?: TripAgentRouteAlternative[];
+}
+
 export const runGroundedMapsSpecialist = async (input: {
   capability: 'hotel' | 'route';
   task: string;
   definition: AgentRuntimeDefinition;
   abortSignal?: AbortSignal;
-}): Promise<{ status: 'complete' | 'unavailable'; summary: string }> => {
+}): Promise<GroundedSpecialistResult> => {
   // Only a dedicated server-side key: VITE_GOOGLE_MAPS_API_KEY is shipped to
   // browsers and is expected to be referrer-restricted, so it must not
   // authenticate a server call.
@@ -52,11 +69,40 @@ export const runGroundedMapsSpecialist = async (input: {
     // Same resolution as the orchestrator: a bare model id only works when the
     // AI Gateway is configured, which left the specialists unusable elsewhere.
     const resolved = await resolveTripAgentModel(input.definition.model, input.definition.fallbackModel);
+    // The specialist reports through a typed tool instead of prose, so the panel
+    // can render three budget groups or selectable alternatives rather than a
+    // paragraph.
+    let hotelResult: GroundedSpecialistResult['hotelOptions'];
+    let routeResult: GroundedSpecialistResult['routeAlternatives'];
+    const reportingTools: ToolSet = input.capability === 'hotel'
+      ? {
+        report_hotel_options: tool({
+          description: 'Report the researched stays, grouped low, medium and high by budget fit. Call this once, last.',
+          inputSchema: tripAgentHotelResultSchema,
+          execute: async (result) => {
+            hotelResult = { cityId: result.cityId, groups: groupHotelOptionsByBudget(result.options) };
+            return { kind: 'trip-agent-hotel-options' as const, accepted: result.options.length };
+          },
+        }),
+      }
+      : {
+        report_route_alternatives: tool({
+          description: 'Report at most three researched route alternatives. Call this once, last.',
+          inputSchema: tripAgentRouteResultSchema,
+          execute: async (result) => {
+            routeResult = toRouteAlternatives(result);
+            return { kind: 'trip-agent-route-alternatives' as const, accepted: result.alternatives.length };
+          },
+        }),
+      };
+
     const specialist = new ToolLoopAgent({
       id: input.definition.agentKey,
       model: resolved.model,
-      instructions: input.definition.instructions,
-      tools: allowedTools,
+      instructions: `${input.definition.instructions}
+
+Finish by calling ${input.capability === 'hotel' ? 'report_hotel_options' : 'report_route_alternatives'} exactly once with what you found. Only include options a source supports.`,
+      tools: { ...allowedTools, ...reportingTools },
       reasoning: input.definition.reasoningEffort,
       maxOutputTokens: 4_000,
       stopWhen: isStepCount(6),
@@ -74,7 +120,12 @@ export const runGroundedMapsSpecialist = async (input: {
       prompt: input.task.slice(0, 8_000),
       abortSignal: input.abortSignal,
     });
-    return { status: 'complete', summary: result.text.slice(0, 12_000) };
+    return {
+      status: 'complete',
+      summary: result.text.slice(0, 12_000),
+      ...(hotelResult ? { hotelOptions: hotelResult } : {}),
+      ...(routeResult ? { routeAlternatives: routeResult } : {}),
+    };
   } catch {
     return {
       status: 'unavailable',

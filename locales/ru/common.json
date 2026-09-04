@@ -673,7 +673,20 @@
     "alsoUsingSelection": "Также учитывается ваш выбор: {labels}",
     "previewFailed": "Эти изменения нельзя показать вместе.",
     "showOperations": "Показать все изменения ({count})",
-    "hideOperations": "Скрыть отдельные изменения"
+    "hideOperations": "Скрыть отдельные изменения",
+    "staysTitle": "Найденное жильё",
+    "staysDisclaimer": "Цены и наличие не проверяются в реальном времени.",
+    "budget": {
+      "low": "Бюджетно",
+      "medium": "Средний уровень",
+      "high": "Высокий уровень"
+    },
+    "openInMaps": "Открыть {name} в Картах",
+    "routesTitle": "Варианты маршрута",
+    "routeDistance": "{km} км",
+    "routeDuration": "{hours} ч",
+    "routeAsk": "Запросить этот вариант",
+    "routeAskPrompt": "Предложи изменения для: {title}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Память устройства заполнена",

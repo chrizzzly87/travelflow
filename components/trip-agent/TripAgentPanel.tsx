@@ -60,6 +60,7 @@ import { buildTripAgentMessageBlocks } from './tripAgentMessageBlocks';
 import { TripAgentProposalCard } from './TripAgentProposalCard';
 import { TripAgentProposalSkeleton } from './TripAgentProposalSkeleton';
 import { TripAgentQuestionCard } from './TripAgentQuestionCard';
+import { TripAgentHotelCards, TripAgentRouteCards } from './TripAgentSpecialistCards';
 import { TripAgentWorkingIndicator } from './TripAgentWorkingIndicator';
 import { TripAgentPromptField } from './TripAgentPromptField';
 import { ambiguousMentionLabels, insertMention, mentionedContextRefs } from './tripAgentMentions';
@@ -237,6 +238,18 @@ const ChatMessage: React.FC<{
                                     </Button>
                                 )}
                             </div>
+                        );
+                    }
+                    if (block.kind === 'hotels') {
+                        return <TripAgentHotelCards key={block.key} groups={block.groups} />;
+                    }
+                    if (block.kind === 'routes') {
+                        return (
+                            <TripAgentRouteCards
+                                key={block.key}
+                                alternatives={block.alternatives}
+                                onAsk={onAnswerQuestion}
+                            />
                         );
                     }
                     if (block.kind === 'question') {

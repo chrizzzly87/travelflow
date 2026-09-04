@@ -673,7 +673,20 @@
     "alsoUsingSelection": "Nutzt außerdem deine Auswahl: {labels}",
     "previewFailed": "Diese Änderungen lassen sich nicht zusammen anzeigen.",
     "showOperations": "Alle {count} Änderungen zeigen",
-    "hideOperations": "Einzelne Änderungen ausblenden"
+    "hideOperations": "Einzelne Änderungen ausblenden",
+    "staysTitle": "Gefundene Unterkünfte",
+    "staysDisclaimer": "Preise und Verfügbarkeit werden nicht live geprüft.",
+    "budget": {
+      "low": "Günstiger",
+      "medium": "Mittelklasse",
+      "high": "Gehobener"
+    },
+    "openInMaps": "{name} in Maps öffnen",
+    "routesTitle": "Routenoptionen",
+    "routeDistance": "{km} km",
+    "routeDuration": "{hours} Std.",
+    "routeAsk": "Diese Option vorschlagen",
+    "routeAskPrompt": "Schlage die Änderungen vor für: {title}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Der Geratespeicher ist voll",

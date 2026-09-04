@@ -3,7 +3,9 @@ import { isToolUIPart } from 'ai';
 import {
     tripAgentChangeSetV1Schema,
     type TripAgentChangeSetV1,
+    type TripAgentHotelOption,
     type TripAgentMessage,
+    type TripAgentRouteAlternative,
 } from '../../shared/tripAgent';
 import type { TripAgentActivityStep } from './TripAgentActivityGroup';
 import type { TripAgentQuestionOption } from './TripAgentQuestionCard';
@@ -16,6 +18,8 @@ export type TripAgentMessageBlock =
     | { kind: 'proposal-pending'; key: string }
     | { kind: 'proposal-failed'; key: string; detail?: string }
     | { kind: 'question'; key: string; question: string; options: TripAgentQuestionOption[]; allowCustom: boolean }
+    | { kind: 'hotels'; key: string; groups: Record<'low' | 'medium' | 'high', TripAgentHotelOption[]> }
+    | { kind: 'routes'; key: string; alternatives: TripAgentRouteAlternative[] }
     | { kind: 'source'; key: string; url: string; title: string };
 
 /** A tool call in a message, static or dynamic. */
@@ -51,6 +55,26 @@ export const asQuestion = (part: ToolPart): {
     });
     if (options.length < 2) return null;
     return { question: output.question, options, allowCustom: output.allowCustom !== false };
+};
+
+/** Structured stays or routes a delegated specialist returned. */
+export const asSpecialistResult = (part: ToolPart): {
+    groups?: Record<'low' | 'medium' | 'high', TripAgentHotelOption[]>;
+    alternatives?: TripAgentRouteAlternative[];
+} | null => {
+    const name = resolveToolName(part);
+    if (part.state !== 'output-available') return null;
+    if (name !== 'delegate_hotel_search' && name !== 'delegate_route_planning') return null;
+    const output = part.output as {
+        hotelOptions?: { groups?: unknown };
+        routeAlternatives?: unknown;
+    } | undefined;
+    const groups = output?.hotelOptions?.groups as Record<'low' | 'medium' | 'high', TripAgentHotelOption[]> | undefined;
+    const alternatives = Array.isArray(output?.routeAlternatives)
+        ? output.routeAlternatives as TripAgentRouteAlternative[]
+        : undefined;
+    if (!groups && !alternatives?.length) return null;
+    return { ...(groups ? { groups } : {}), ...(alternatives?.length ? { alternatives } : {}) };
 };
 
 export const asProposal = (part: ToolPart): TripAgentChangeSetV1 | null => {
@@ -146,6 +170,23 @@ export const buildTripAgentMessageBlocks = (
             if (proposal) {
                 closeActivity();
                 blocks.push({ kind: 'proposal', key, changeSet: proposal });
+                return;
+            }
+            const specialist = asSpecialistResult(part);
+            if (specialist) {
+                // The step still shows in the activity row; the result gets a card.
+                const group = openActivity(key);
+                group.steps.push({
+                    key,
+                    name: humanizeToolName(resolveToolName(part)),
+                    state: part.state,
+                    detail: describeToolStep(part) || undefined,
+                });
+                closeActivity();
+                if (specialist.groups) blocks.push({ kind: 'hotels', key: `${key}-hotels`, groups: specialist.groups });
+                if (specialist.alternatives) {
+                    blocks.push({ kind: 'routes', key: `${key}-routes`, alternatives: specialist.alternatives });
+                }
                 return;
             }
             const question = asQuestion(part);

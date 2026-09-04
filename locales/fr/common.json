@@ -673,7 +673,20 @@
     "alsoUsingSelection": "Utilise aussi votre sélection : {labels}",
     "previewFailed": "Ces changements ne peuvent pas être prévisualisés ensemble.",
     "showOperations": "Voir les {count} changements",
-    "hideOperations": "Masquer le détail"
+    "hideOperations": "Masquer le détail",
+    "staysTitle": "Hébergements trouvés",
+    "staysDisclaimer": "Les prix et disponibilités ne sont pas vérifiés en direct.",
+    "budget": {
+      "low": "Petit budget",
+      "medium": "Milieu de gamme",
+      "high": "Haut de gamme"
+    },
+    "openInMaps": "Ouvrir {name} dans Maps",
+    "routesTitle": "Options d’itinéraire",
+    "routeDistance": "{km} km",
+    "routeDuration": "{hours} h",
+    "routeAsk": "Demander cette option",
+    "routeAskPrompt": "Propose les changements pour : {title}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Le stockage de l'appareil est plein",

@@ -440,7 +440,20 @@
     "alsoUsingSelection": "انتخاب شما هم استفاده می‌شود: {labels}",
     "previewFailed": "این تغییرها با هم قابل پیش‌نمایش نیستند.",
     "showOperations": "نمایش هر {count} تغییر",
-    "hideOperations": "پنهان کردن تغییرهای جداگانه"
+    "hideOperations": "پنهان کردن تغییرهای جداگانه",
+    "staysTitle": "اقامتگاه‌های یافت‌شده",
+    "staysDisclaimer": "قیمت و موجودی به‌صورت زنده بررسی نمی‌شود.",
+    "budget": {
+      "low": "اقتصادی",
+      "medium": "متوسط",
+      "high": "لوکس"
+    },
+    "openInMaps": "باز کردن {name} در نقشه",
+    "routesTitle": "گزینه‌های مسیر",
+    "routeDistance": "{km} کیلومتر",
+    "routeDuration": "{hours} ساعت",
+    "routeAsk": "این گزینه را بخواه",
+    "routeAskPrompt": "تغییرها را برای این پیشنهاد بده: {title}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "حافظه دستگاه پر است",

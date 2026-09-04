@@ -673,7 +673,20 @@
     "alsoUsingSelection": "Usa anche la tua selezione: {labels}",
     "previewFailed": "Queste modifiche non possono essere viste insieme.",
     "showOperations": "Mostra tutte le {count} modifiche",
-    "hideOperations": "Nascondi le singole modifiche"
+    "hideOperations": "Nascondi le singole modifiche",
+    "staysTitle": "Alloggi trovati",
+    "staysDisclaimer": "Prezzi e disponibilità non sono verificati in tempo reale.",
+    "budget": {
+      "low": "Economico",
+      "medium": "Fascia media",
+      "high": "Fascia alta"
+    },
+    "openInMaps": "Apri {name} in Maps",
+    "routesTitle": "Opzioni di percorso",
+    "routeDistance": "{km} km",
+    "routeDuration": "{hours} h",
+    "routeAsk": "Chiedi questa opzione",
+    "routeAskPrompt": "Proponi le modifiche per: {title}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "La memoria del dispositivo e piena",
