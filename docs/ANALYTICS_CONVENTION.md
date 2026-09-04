@@ -180,8 +180,12 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `trip_agent__prompt--submit` | — | `{ trip_id, thread_id, context_count }` | `TripAgentPanel.tsx` |
 | `trip_agent__thread--create` | — | `{ trip_id }` | `TripAgentPanel.tsx` |
 | `trip_agent__thread--archive` | — | `{ trip_id, thread_id }` | `TripAgentPanel.tsx` |
-| `trip_agent__proposal--apply` | — | `{ trip_id, change_set_id, operation_count }` | `TripAgentPanel.tsx` |
-| `trip_agent__proposal--reject` | — | `{ trip_id, change_set_id }` | `TripAgentPanel.tsx` |
+| `trip_agent__proposal--apply` | — | `{ trip_id, change_set_id, operation_count }` | `TripAgentProposalCard.tsx` |
+| `trip_agent__proposal--reject` | — | `{ trip_id, change_set_id }` | `TripAgentProposalCard.tsx` |
+| `trip_agent__proposal--revert` | — | `{ trip_id, change_set_id }` | `TripAgentProposalCard.tsx` |
+| `trip_agent__context--add` | — | `{ trip_id, context_kind }` | `TripAgentPanel.tsx` |
+| `trip_agent__preset--select` | — | `{ trip_id }` | `TripAgentPanel.tsx` |
+| `trip_agent__message--retry` | — | `{ trip_id, thread_id, context_count }` | `TripAgentPanel.tsx` |
 
 ### Profile
 | Event | Detail | Payload | File |

@@ -87,6 +87,29 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 - [ ] #482 Admin transcripts, prompt management, telemetry, and rollout — schema/records exist; admin workspace and rollout dashboards remain.
 - [ ] #483 JourneySpec interoperability — blocked on PR #444.
 
+## Review findings (2026-09-04)
+
+- [x] Stop streaming and storing hidden reasoning, and remove the reasoning parts already stored.
+- [x] Keep raw provider and database messages out of client payloads; redact logs and run records centrally.
+- [x] Drop the browser Maps key fallback: grounding needs a dedicated server-side key.
+- [x] Enforce the approved-model list and deny provider data collection on the active OpenRouter path.
+- [x] Cap an interactive run below Netlify's 60 second synchronous limit and close runs left running.
+- [x] Rebuild proposal cards from the stored change-set status, not from the transcript.
+- [x] Restore per-operation review under the grouped rows.
+- [x] Attach the current planner selection to every message and replay a failed message's own context on retry.
+- [x] Give the panel dialog semantics: focus capture, focus trap, Escape, backdrop and focus restore.
+- [x] Reserve the floating-map inset on the logical side instead of disabling it for Persian and Urdu.
+- [x] Add the archive control to the chat history list.
+- [x] Remove the unused math, mermaid and syntax-highlighting packages and components.
+- [x] Correct the analytics table and localize the last hardcoded failure strings.
+- [x] Trim the release note and drop the superseded bare-`P` shortcut claim.
+- [ ] Apply migration `20260904120000_trip_agent_access_and_stale_fix.sql`: editable-share and expiry checks, and a stale proposal that records its status instead of rolling it back.
+- [ ] Replay operations inside the locked transaction rather than writing a precomputed snapshot (#481).
+- [ ] Enable the panel for editable-share sessions once quota ownership for shared editors is decided (#484).
+- [ ] Registry-first Gateway routing with ZDR, once `AI_GATEWAY_API_KEY` exists (#481).
+- [ ] Normalized hotel and route cards (#485), admin workspace and telemetry (#482), JourneySpec (#483).
+- [ ] Deterministic fake Gateway/MCP browser E2E, plus TripView coverage for launcher locking, preview lifecycle, version adoption, mobile, focus and RTL.
+
 ## Production gates
 
 - [ ] Configure `AI_GATEWAY_API_KEY` on Netlify and validate approved model discovery/routing.

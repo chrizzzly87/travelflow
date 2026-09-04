@@ -669,7 +669,11 @@
     "previewShortcut": "P schaltet die Vorschau um",
     "appliedPartial": "{count} von {requested} Änderungen übernommen – der Rest passte nicht mehr",
     "superseded": "Durch einen neueren Vorschlag ersetzt.",
-    "proposalFailed": "Die Änderungen konnten nicht vorbereitet werden"
+    "proposalFailed": "Die Änderungen konnten nicht vorbereitet werden",
+    "alsoUsingSelection": "Nutzt außerdem deine Auswahl: {labels}",
+    "previewFailed": "Diese Änderungen lassen sich nicht zusammen anzeigen.",
+    "showOperations": "Alle {count} Änderungen zeigen",
+    "hideOperations": "Einzelne Änderungen ausblenden"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Der Geratespeicher ist voll",

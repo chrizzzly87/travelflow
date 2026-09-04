@@ -669,7 +669,11 @@
     "previewShortcut": "Pulsa P para alternar la vista previa",
     "appliedPartial": "Se aplicaron {count} de {requested} cambios; el resto ya no encajaba",
     "superseded": "Sustituida por una propuesta más reciente.",
-    "proposalFailed": "No se pudieron preparar los cambios"
+    "proposalFailed": "No se pudieron preparar los cambios",
+    "alsoUsingSelection": "También usa tu selección: {labels}",
+    "previewFailed": "Estos cambios no se pueden previsualizar juntos.",
+    "showOperations": "Ver los {count} cambios",
+    "hideOperations": "Ocultar cambios individuales"
   },
   "storageNotice": {
     "tripsPrunedTitle": "El almacenamiento del dispositivo esta lleno",

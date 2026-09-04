@@ -238,6 +238,10 @@ export type TripAgentMessage = UIMessage<{
     createdAt?: string;
     model?: string;
     runId?: string;
+    /** Delivery state of a persisted message, used to spot an interrupted run. */
+    status?: 'streaming' | 'complete' | 'cancelled' | 'failed';
+    /** Context the message was actually sent with, so a retry can repeat it. */
+    contextRefs?: TripAgentContextRef[];
 }, TripAgentDataParts>;
 
 export interface TripAgentSkippedOperation {

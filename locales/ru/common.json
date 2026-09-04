@@ -669,7 +669,11 @@
     "previewShortcut": "P переключает предпросмотр",
     "appliedPartial": "Применено изменений: {count} из {requested} — остальные больше не подходили",
     "superseded": "Заменено более новым предложением.",
-    "proposalFailed": "Не удалось подготовить изменения"
+    "proposalFailed": "Не удалось подготовить изменения",
+    "alsoUsingSelection": "Также учитывается ваш выбор: {labels}",
+    "previewFailed": "Эти изменения нельзя показать вместе.",
+    "showOperations": "Показать все изменения ({count})",
+    "hideOperations": "Скрыть отдельные изменения"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Память устройства заполнена",

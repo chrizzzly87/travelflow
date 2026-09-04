@@ -149,6 +149,30 @@ collaborators; all mutations go through the service role.
 Free accounts get three requests per UTC day, reserved before model access and
 refunded when a run fails before producing anything.
 
+## Privacy and secrets
+
+Hidden reasoning is never streamed (`sendReasoning: false`), never stored
+(stripped before persistence and again on read) and never rendered; the public
+plan the model writes as text is the only account of its thinking.
+
+Every diagnostic string — log line, run record, client payload — passes through
+`trip-agent-redaction.ts`, which strips keys, bearer tokens, JWTs, URLs and long
+opaque blobs and bounds the length. The browser receives a code and an authored
+sentence only; the redacted diagnostic stays in the server log beside the
+request id.
+
+On the OpenRouter path the request denies provider data collection and provider
+fallbacks, and the configured default model must appear in the administrator's
+approved list or it is not used. The Gateway path carries the same guarantee
+through `zeroDataRetention`.
+
+## Runtime limits
+
+Netlify terminates a synchronous function at 60 seconds, outside this code's
+error handling, so an interactive run is budgeted at 45 seconds
+(`INTERACTIVE_RUN_BUDGET_MS`) and always closes its own run record. Bootstrap
+additionally closes messages and runs left behind by a terminated function.
+
 ## Observability
 
 Bounded structured logs, no prompts or credentials:

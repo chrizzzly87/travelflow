@@ -669,7 +669,11 @@
     "previewShortcut": "Press P to toggle the preview",
     "appliedPartial": "Applied {count} of {requested} changes — the rest no longer fit",
     "superseded": "Replaced by a newer proposal.",
-    "proposalFailed": "The changes could not be prepared"
+    "proposalFailed": "The changes could not be prepared",
+    "alsoUsingSelection": "Also using your selection: {labels}",
+    "previewFailed": "These changes cannot be previewed together.",
+    "showOperations": "Show all {count} changes",
+    "hideOperations": "Hide individual changes"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Device storage is full",

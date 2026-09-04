@@ -436,7 +436,11 @@
     "previewShortcut": "کلید P پیش‌نمایش را جابه‌جا می‌کند",
     "appliedPartial": "{count} از {requested} تغییر اعمال شد — بقیه دیگر جور نبود",
     "superseded": "با پیشنهاد تازه‌تری جایگزین شد.",
-    "proposalFailed": "آماده‌سازی تغییرها ممکن نشد"
+    "proposalFailed": "آماده‌سازی تغییرها ممکن نشد",
+    "alsoUsingSelection": "انتخاب شما هم استفاده می‌شود: {labels}",
+    "previewFailed": "این تغییرها با هم قابل پیش‌نمایش نیستند.",
+    "showOperations": "نمایش هر {count} تغییر",
+    "hideOperations": "پنهان کردن تغییرهای جداگانه"
   },
   "storageNotice": {
     "tripsPrunedTitle": "حافظه دستگاه پر است",

@@ -669,7 +669,11 @@
     "previewShortcut": "P bascule l’aperçu",
     "appliedPartial": "{count} changements sur {requested} appliqués — le reste ne s’appliquait plus",
     "superseded": "Remplacée par une proposition plus récente.",
-    "proposalFailed": "Les changements n’ont pas pu être préparés"
+    "proposalFailed": "Les changements n’ont pas pu être préparés",
+    "alsoUsingSelection": "Utilise aussi votre sélection : {labels}",
+    "previewFailed": "Ces changements ne peuvent pas être prévisualisés ensemble.",
+    "showOperations": "Voir les {count} changements",
+    "hideOperations": "Masquer le détail"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Le stockage de l'appareil est plein",

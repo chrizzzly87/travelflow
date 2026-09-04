@@ -11,56 +11,24 @@ summary: "Trip Agent brings shared, context-aware planning into each trip while 
 ---
 
 ## Changes
-- [x] [New feature] 💬 Open a shared AI planning chat directly beside your trip and continue the conversation after reloading.
-- [x] [New feature] 📍 Select a city or itinerary item before chatting so Trip Agent understands exactly what you want to discuss.
-- [x] [New feature] ✅ Review proposed edits one by one, compare before and after, and apply only the changes you choose.
-- [x] [Improved] 🕰️ Approved edits become one undoable trip version, keeping the existing history clear and predictable.
-- [x] [Improved] 🛡️ Free accounts start with three server-enforced requests per UTC day, with a clear reset notice when the limit is reached.
-- [x] [New feature] ⌨️ Type `@` to attach a city, activity, stay, or transfer to your prompt, and `/` to pick a ready-made planning request.
-- [x] [New feature] 🧠 Follow Trip Agent's thinking steps in the conversation while it works.
-- [x] [Improved] ♻️ Failed requests now appear as a card inside the chat with a named reason and a one-click retry of the same message.
-- [x] [Improved] 🧵 Thinking and tool steps now collapse into one line per stretch of work, with chips you can open for detail, instead of a card per event.
-- [x] [Improved] 👀 Suggested trip changes are now picked first and previewed as a before-and-after result before anything is saved.
-- [x] [Improved] 🗓️ Proposed changes now preview directly in your calendar, timeline and map before you apply them.
-- [x] [Fixed] 🔁 Fixed the preview flickering endlessly when it opened; it now shows the proposed trip and holds still.
-- [x] [Improved] 🌍 A moving orb and a live skeleton now show that changes are being prepared, from the moment you hit send.
-- [x] [Improved] 💬 When a change frees up days, Trip Agent asks what to do with them and you pick an option — or type your own — right in the chat.
-- [x] [Fixed] 🧷 Fixed an applied change disappearing again right after you approved it.
-- [x] [Fixed] 🧩 Fixed occasional failed steps while changes were being prepared: unusual values from the model are now accepted and tidied instead of rejected.
-- [x] [Fixed] 🚨 If changes really cannot be prepared, you now see it plainly with a retry, instead of only a message claiming success.
-- [x] [Improved] 🪧 Only one set of proposed changes is open at a time; an older one is marked as replaced instead of competing with the new one.
-- [x] [Improved] ⌨️ The preview toggle moved to Cmd/Ctrl+Shift+P and is shown on the button, so it also works while you type.
-- [x] [Improved] 🏷️ Errors now show a plain-language reason instead of an internal code.
-- [x] [Improved] 🗂️ Chat history is back as a list in the panel, and the chat stays open when you reload the page.
-- [x] [Improved] ⌨️ Press P to flip the preview on and off; leaving it restores your plan exactly.
-- [x] [Fixed] ✏️ Fixed mention tags rendering twice in the message box and a stray highlight above the toolbar.
-- [x] [Fixed] 🧯 A change that no longer fits your trip is skipped and counted instead of breaking the whole review.
-- [x] [Improved] 🧾 Changes are grouped per stop, so removing a city and everything in it is one entry to approve.
-- [x] [Improved] 🧷 Related shifts are grouped into the change that caused them, so shortening a stop is one decision instead of ten.
-- [x] [Improved] ↩️ An applied set collapses to a single line with a Revert button.
-- [x] [Improved] ✍️ Mentions stay inside your message, highlighted as you type and in the sent bubble; a repeated city name asks which one you mean.
-- [x] [Improved] 🕒 Chat bubbles show a short relative time instead of repeating your name.
-- [x] [Improved] 🗂️ Chats are named after your first question and the history menu groups them by today, the last 7 days and older.
-- [x] [Fixed] 🧩 Fixed the proposal step failing outright when a suggested change was shaped slightly wrong; it is now corrected and retried automatically.
-- [x] [Improved] 🧠 Trip Agent now runs on the same default model as the rest of the app, with light thinking, so answers arrive faster and without a wall of reasoning.
-- [x] [Fixed] 🧱 Fixed requests that ended with nothing at all: complex itinerary edits ran out of room mid-answer before a single change was proposed.
-- [x] [Fixed] 🛰️ Fixed every request failing outright: two conflicting thinking settings were sent to the model provider at once.
-- [x] [Improved] ⌨️ The `@` and `/` menus now filter as you type and respond to arrow keys and Enter.
-- [x] [Improved] 🏷️ Attached context sits inside the message box as removable chips.
-- [x] [Fixed] 🔄 Answers left running when you closed the tab no longer spin forever after a reload; you can simply ask again.
-- [x] [Improved] ⏱️ While it works you now see the running step and a live timer, plus a note when a request takes longer.
-- [x] [Improved] 🔍 Every step chip opens to show what it actually did, and a new panel lists what Trip Agent can read, research and propose.
-- [x] [Improved] 🏷️ Attached trip context now sits as removable chips with icons inside the message box.
-- [x] [Fixed] 💾 Fixed the failure that saved your message but never started a reply, and restores the used request when a reply cannot start.
-- [x] [Fixed] 🔤 The thinking indicator now uses the same text size as the rest of the conversation.
-- [ ] [Internal] 🔐 Added persistent shared threads, messages, runs, tool records, proposals, prompt versions, quotas, and atomic approval records behind an admin-preview feature flag.
-- [ ] [Internal] 🧭 Added allowlisted specialist boundaries for grounded stay and route research, with an explicit unavailable state when Maps grounding is not configured.
-- [ ] [Internal] 🧪 Added typed-operation and history-adoption regression coverage plus deterministic server-side validation paths.
-- [ ] [Internal] 🪵 Accepted empty successful PostgREST write bodies, added quota refunds on pre-stream failures, and added bounded request/run failure logging without prompts or credentials.
-- [ ] [Internal] 🧰 Wire schema now strips unknown keys, coerces numeric strings and normalises transport modes, because the AI SDK rejects a tool call that fails the schema before the tool can answer.
-- [ ] [Internal] 🗺️ Resolved the stay and route specialists through the shared model resolution so they can run without the AI Gateway, and documented the runtime in docs/trip-agent/ARCHITECTURE.md.
-- [ ] [Internal] 🔌 Added a flat wire schema for trip-change operations plus a typed converter, because function-calling models could not emit the discriminated union; added a read-only dry-run script that replays one turn against a real trip.
-- [ ] [Internal] 🎚️ Routed the planner through the app-wide default model with an OpenRouter reasoning-effort control and a larger output budget; replaced ICU plural strings, which this app never registered.
-- [ ] [Internal] 🎛️ Grouped chat activity, questionnaire-style proposal review, relative timestamps and recency-grouped thread history; dropped the math/mermaid/shiki markdown plugins and made the shared button forward refs for preact/compat popovers.
-- [ ] [Internal] 🧱 Raised the Netlify build to Node 22 with a 4 GB heap; the AI SDK, streamdown and shiki module graph exceeded the default V8 heap and aborted every deploy of this branch.
-- [ ] [Internal] 🔗 Attached chat context is now described in the run instructions as untrusted data, not only exposed through the trip-context tool.
+- [x] [New feature] 💬 Open a shared AI planning chat beside your trip, pick up where you left off after a reload, and switch between past chats.
+- [x] [New feature] 📌 Type `@` to attach a city, activity, stay or transfer to your message, and `/` to pick a ready-made request; both filter as you type.
+- [x] [New feature] ✅ Review suggested edits grouped per stop, preview them in your own calendar, timeline and map, then apply only what you picked.
+- [x] [New feature] 🧭 When a change frees up days, Trip Agent asks what to do with them and you choose an option — or type your own — in the chat.
+- [x] [Improved] 🕰️ Approved edits land as one undoable trip version, and an applied set collapses to a single line with a Revert button.
+- [x] [Improved] ⌨️ Cmd/Ctrl+Shift+P flips the preview on and off, also while you are typing; leaving the preview restores your plan exactly.
+- [x] [Improved] 🌍 A moving orb, the running step and a live timer show that work is happening from the moment you hit send.
+- [x] [Improved] 🔍 Each step opens to show what it actually did, and a panel lists what Trip Agent can read, research and propose.
+- [x] [Improved] 🛡️ Free accounts get three requests per day, counted on the server, with a clear note when the limit resets.
+- [x] [Improved] 🔒 Trip Agent's private thinking is no longer shown or stored — only the plan it writes for you.
+- [x] [Improved] 🏷️ Failures name a plain-language reason with a retry, instead of an internal code or a silent stop.
+- [x] [Fixed] 🧷 Fixed approved changes disappearing again, previews flickering, and a change that no longer fits breaking the whole review.
+
+- [ ] [Internal] 🔐 Persistent shared threads, messages, runs, tool records, proposals, prompt versions and quotas behind an admin-preview flag, with atomic approval through one Supabase version.
+- [ ] [Internal] 🔌 Flat wire schema for trip-change operations plus a typed converter and unknown-target validation, because function-calling models cannot emit the internal discriminated union.
+- [ ] [Internal] 🎚️ Model resolution follows the approved app-wide default, with OpenRouter reasoning effort, data-collection denial and a run budget under Netlify's 60 second synchronous limit.
+- [ ] [Internal] 🪵 Central redaction for logs, run records and client payloads; reasoning parts are stripped before persistence and on read.
+- [ ] [Internal] 🧭 Allowlisted specialist boundaries for grounded stay and route research, with an explicit unavailable state when a server-side Maps grounding key is missing.
+- [ ] [Internal] 🧪 Regression coverage for typed operations, wire conversion, redaction, mention parsing, change grouping and the preview-to-apply flow, plus a read-only dry-run script that replays a turn against a real trip.
+- [ ] [Internal] 🧱 Netlify build on Node 22 with a 4 GB heap; dropped the math, mermaid and syntax-highlighting markdown packages that the chat never used.
+- [ ] [Internal] 📄 Runtime documented in docs/trip-agent/ARCHITECTURE.md; migration 20260904120000 corrects share/expiry permission checks and the stale-proposal write.

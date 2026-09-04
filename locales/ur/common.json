@@ -436,7 +436,11 @@
     "previewShortcut": "پیش منظر بدلنے کے لیے P دبائیں",
     "appliedPartial": "{requested} میں سے {count} تبدیلیاں لاگو ہوئیں — باقی اب فٹ نہیں تھیں",
     "superseded": "نئی تجویز نے اس کی جگہ لے لی۔",
-    "proposalFailed": "تبدیلیاں تیار نہیں ہو سکیں"
+    "proposalFailed": "تبدیلیاں تیار نہیں ہو سکیں",
+    "alsoUsingSelection": "آپ کا انتخاب بھی استعمال ہو رہا ہے: {labels}",
+    "previewFailed": "یہ تبدیلیاں ایک ساتھ نہیں دکھائی جا سکتیں۔",
+    "showOperations": "تمام {count} تبدیلیاں دکھائیں",
+    "hideOperations": "انفرادی تبدیلیاں چھپائیں"
   },
   "storageNotice": {
     "tripsPrunedTitle": "ڈیوائس کی اسٹوریج بھر گئی ہے",

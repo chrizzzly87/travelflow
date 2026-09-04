@@ -667,7 +667,11 @@
     "previewShortcut": "Naciśnij P, aby przełączyć podgląd",
     "appliedPartial": "Zastosowano {count} z {requested} zmian — reszta już nie pasowała",
     "superseded": "Zastąpiona nowszą propozycją.",
-    "proposalFailed": "Nie udało się przygotować zmian"
+    "proposalFailed": "Nie udało się przygotować zmian",
+    "alsoUsingSelection": "Używa też Twojego zaznaczenia: {labels}",
+    "previewFailed": "Tych zmian nie można pokazać razem.",
+    "showOperations": "Pokaż wszystkie zmiany ({count})",
+    "hideOperations": "Ukryj pojedyncze zmiany"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",

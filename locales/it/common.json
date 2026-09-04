@@ -669,7 +669,11 @@
     "previewShortcut": "Premi P per alternare l’anteprima",
     "appliedPartial": "Applicate {count} modifiche su {requested} — il resto non era più valido",
     "superseded": "Sostituita da una proposta più recente.",
-    "proposalFailed": "Non è stato possibile preparare le modifiche"
+    "proposalFailed": "Non è stato possibile preparare le modifiche",
+    "alsoUsingSelection": "Usa anche la tua selezione: {labels}",
+    "previewFailed": "Queste modifiche non possono essere viste insieme.",
+    "showOperations": "Mostra tutte le {count} modifiche",
+    "hideOperations": "Nascondi le singole modifiche"
   },
   "storageNotice": {
     "tripsPrunedTitle": "La memoria del dispositivo e piena",
