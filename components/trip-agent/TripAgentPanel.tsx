@@ -28,12 +28,14 @@ import {
 } from '../../shared/tripAgent';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
+    archiveTripAgentThread,
     buildTripAgentChatRequest,
     createTripAgentThread,
     loadTripAgentBootstrap,
     readTripAgentError,
     tripAgentFetch,
     type TripAgentBootstrap,
+    type TripAgentChangeSetStatus,
     type TripAgentThread,
 } from '../../services/tripAgentService';
 import {
@@ -141,6 +143,7 @@ const ChatMessage: React.FC<{
     onPreviewTrip?: (trip: ITrip | null) => void;
     onRevertLastChange?: () => void;
     shortcutChangeSetId?: string | null;
+    changeSetStatuses?: Record<string, { status: TripAgentChangeSetStatus['status']; appliedOperationIds: string[] }>;
     onAskAgain?: () => void;
     onAnswerQuestion?: (prompt: string) => void;
 }> = ({
@@ -156,6 +159,7 @@ const ChatMessage: React.FC<{
     onPreviewTrip,
     onRevertLastChange,
     shortcutChangeSetId,
+    changeSetStatuses,
     onAskAgain,
     onAnswerQuestion,
 }) => {
@@ -207,6 +211,8 @@ const ChatMessage: React.FC<{
                                 onRevertLastChange={onRevertLastChange}
                                 shortcutEnabled={block.changeSet.id === shortcutChangeSetId}
                                 isSuperseded={Boolean(shortcutChangeSetId) && block.changeSet.id !== shortcutChangeSetId}
+                                serverStatus={changeSetStatuses?.[block.changeSet.id]?.status}
+                                appliedOperationIds={changeSetStatuses?.[block.changeSet.id]?.appliedOperationIds}
                                 onAskAgain={onAskAgain}
                             />
                         );
@@ -277,6 +283,7 @@ const TripAgentChatSession: React.FC<{
     contextRefs: TripAgentContextRef[];
     quota: TripAgentQuotaState;
     actorId: string;
+    changeSetStatuses?: Record<string, { status: TripAgentChangeSetStatus['status']; appliedOperationIds: string[] }>;
     onQuotaMayHaveChanged: () => void;
     onAdoptCommittedTripVersion: TripAgentPanelProps['onAdoptCommittedTripVersion'];
     onPreviewTrip?: TripAgentPanelProps['onPreviewTrip'];
@@ -288,6 +295,7 @@ const TripAgentChatSession: React.FC<{
     contextRefs,
     quota,
     actorId,
+    changeSetStatuses,
     onQuotaMayHaveChanged,
     onAdoptCommittedTripVersion,
     onPreviewTrip,
@@ -295,10 +303,12 @@ const TripAgentChatSession: React.FC<{
 }) => {
     const { t, i18n } = useTranslation('common');
     const now = useMinuteTick();
-    const [draftText, setDraftText] = useState('');
+    const [draftText, setDraftText] = useState(() => {
+        const seed = contextRefs.find((contextRef) => contextRef.kind !== 'trip');
+        return seed ? `@${seed.label} ` : '';
+    });
     const [commandMenu, setCommandMenu] = useState<'context' | 'commands' | null>(null);
     const [menuQuery, setMenuQuery] = useState('');
-    const [hasSeededSelection, setHasSeededSelection] = useState(false);
     const [pendingChoice, setPendingChoice] = useState<{ label: string; options: TripAgentContextRef[] } | null>(null);
     const [chosenByLabel, setChosenByLabel] = useState<Record<string, TripAgentContextRef>>({});
     const [menuIndex, setMenuIndex] = useState(0);
@@ -314,21 +324,44 @@ const TripAgentChatSession: React.FC<{
         () => buildTripAgentSelectableContextRefs(trip).filter((contextRef) => contextRef.kind !== 'trip'),
         [trip],
     );
-    // What the message carries is exactly what the draft mentions.
-    const activeContextRefs = useMemo(
-        () => mentionedContextRefs(draftText, selectableContextRefs, chosenByLabel).slice(0, 12),
+    // A message carries what it mentions plus whatever is selected in the
+    // planner at that moment, so a selection made after the chat opened is not
+    // silently dropped.
+    const mentionedRefs = useMemo(
+        () => mentionedContextRefs(draftText, selectableContextRefs, chosenByLabel),
         [chosenByLabel, draftText, selectableContextRefs],
     );
+    const activeContextRefs = useMemo(() => {
+        const unique = new Map<string, TripAgentContextRef>();
+        [...mentionedRefs, ...contextRefs].forEach((contextRef) => {
+            unique.set(contextRefKey(contextRef), contextRef);
+        });
+        return Array.from(unique.values()).slice(0, 12);
+    }, [contextRefs, mentionedRefs]);
+    const selectionOnlyRefs = useMemo(
+        () => contextRefs.filter((contextRef) => (
+            contextRef.kind !== 'trip'
+            && !mentionedRefs.some((candidate) => contextRefKey(candidate) === contextRefKey(contextRef))
+        )),
+        [contextRefs, mentionedRefs],
+    );
     const ambiguousLabels = useMemo(() => ambiguousMentionLabels(selectableContextRefs), [selectableContextRefs]);
+    const retryContextRef = useRef<TripAgentContextRef[] | null>(null);
     const transport = useMemo(() => new DefaultChatTransport<TripAgentMessage>({
         api: '/api/trip-agent',
         fetch: tripAgentFetch,
-        prepareSendMessagesRequest: ({ messages }) => buildTripAgentChatRequest({
-            tripId: trip.id,
-            threadId: thread.id,
-            messages,
-            contextRefs: activeContextRefs,
-        }),
+        prepareSendMessagesRequest: ({ messages }) => {
+            // A retry repeats the message with the context it was sent with,
+            // not with whatever the draft happens to mention now.
+            const contextRefs = retryContextRef.current || activeContextRefs;
+            retryContextRef.current = null;
+            return buildTripAgentChatRequest({
+                tripId: trip.id,
+                threadId: thread.id,
+                messages,
+                contextRefs,
+            });
+        },
     }), [activeContextRefs, thread.id, trip.id]);
     const { messages, sendMessage, status, stop, error, clearError } = useChat<TripAgentMessage>({
         id: thread.id,
@@ -369,12 +402,6 @@ const TripAgentChatSession: React.FC<{
     const latestUserText = latestUserMessage?.parts.find((part) => part.type === 'text')?.text || '';
     const errorInfo = useMemo(() => (error ? readTripAgentError(error) : null), [error]);
 
-    if (!hasSeededSelection && draftText === '' && contextRefs.length > 0) {
-        const seed = contextRefs.find((contextRef) => contextRef.kind !== 'trip');
-        if (seed) setDraftText(`@${seed.label} `);
-        setHasSeededSelection(true);
-    }
-
     const submitText = useCallback(async (text: string) => {
         const trimmed = text.trim();
         if (!trimmed || isGenerating || isQuotaReached) return;
@@ -396,6 +423,8 @@ const TripAgentChatSession: React.FC<{
             thread_id: thread.id,
             context_count: activeContextRefs.length,
         });
+        const persisted = latestUserMessage.metadata?.contextRefs as TripAgentContextRef[] | undefined;
+        retryContextRef.current = Array.isArray(persisted) ? persisted : null;
         await sendMessage({ text: latestUserText, messageId: latestUserMessage.id });
     }, [activeContextRefs.length, clearError, isGenerating, isQuotaReached, latestUserMessage, latestUserText, sendMessage, thread.id, trip.id]);
 
@@ -541,6 +570,7 @@ const TripAgentChatSession: React.FC<{
                             onPreviewTrip={onPreviewTrip}
                             onRevertLastChange={onRevertLastChange}
                             shortcutChangeSetId={shortcutChangeSetId}
+                            changeSetStatuses={changeSetStatuses}
                             onAskAgain={focusPrompt}
                             onAnswerQuestion={(prompt) => void submitText(prompt)}
                         />
@@ -591,6 +621,13 @@ const TripAgentChatSession: React.FC<{
                             <Suggestion key={suggestion} suggestion={suggestion} onClick={(value) => void submitText(value)} />
                         ))}
                     </Suggestions>
+                )}
+                {selectionOnlyRefs.length > 0 && (
+                    <p className="mb-1.5 truncate px-1 text-[11px] text-slate-500">
+                        {t('tripAgent.alsoUsingSelection', {
+                            labels: selectionOnlyRefs.map((contextRef) => contextRef.label).join(', '),
+                        })}
+                    </p>
                 )}
                 {pendingChoice && (
                     <div className="mb-2 rounded-xl border border-slate-200 bg-white p-3">
@@ -702,8 +739,45 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
     const now = useMinuteTick();
     const [bootstrap, setBootstrap] = useState<TripAgentBootstrap | null>(null);
     const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
-    const [loadError, setLoadError] = useState<string | null>(null);
+    const [loadError, setLoadError] = useState<{ code: string } | null>(null);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const panelRef = useRef<HTMLElement | null>(null);
+    const launcherRef = useRef<Element | null>(null);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        launcherRef.current = document.activeElement;
+        const firstField = panelRef.current?.querySelector<HTMLElement>('textarea, button');
+        firstField?.focus();
+        return () => {
+            // Send focus back where it came from, so closing does not drop the
+            // reader at the top of the document.
+            const launcher = launcherRef.current as HTMLElement | null;
+            if (launcher?.isConnected) launcher.focus();
+        };
+    }, [isOpen]);
+
+    const handlePanelKeyDown = useCallback((event: React.KeyboardEvent<HTMLElement>) => {
+        if (event.key === 'Escape') {
+            event.stopPropagation();
+            onClose();
+            return;
+        }
+        if (event.key !== 'Tab' || !panelRef.current) return;
+        const focusable = (Array.from(panelRef.current.querySelectorAll(
+            'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        )) as HTMLElement[]).filter((element) => element.offsetParent !== null);
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        } else if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        }
+    }, [onClose]);
 
     const refresh = useCallback(async (preferredThreadId?: string | null) => {
         try {
@@ -719,7 +793,8 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
             }
             setLoadError(null);
         } catch (error) {
-            setLoadError(error instanceof Error ? error.message : 'Could not load Trip Agent.');
+            // The code is localized here; server text is never shown verbatim.
+            setLoadError({ code: readTripAgentError(error).code });
         }
     }, [currentThreadId, trip.id]);
 
@@ -733,6 +808,12 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
         await refresh(threadId);
     };
 
+    const archiveThread = async (threadId: string) => {
+        await archiveTripAgentThread(trip.id, threadId).catch(() => undefined);
+        trackEvent('trip_agent__thread--archive', { trip_id: trip.id, thread_id: threadId });
+        await refresh(threadId === currentThreadId ? null : currentThreadId);
+    };
+
     const createThread = async () => {
         setIsHistoryOpen(false);
         const thread = await createTripAgentThread(trip.id);
@@ -741,17 +822,35 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
     };
 
     const currentThread = bootstrap?.threads.find((thread) => thread.id === currentThreadId) || null;
+    const changeSetStatuses = useMemo(() => Object.fromEntries(
+        (bootstrap?.changeSets || []).map((entry) => [
+            entry.id,
+            { status: entry.status, appliedOperationIds: entry.appliedOperationIds },
+        ]),
+    ), [bootstrap?.changeSets]);
     const threadSections = useMemo(
         () => groupTripAgentThreads(bootstrap?.threads || [], now),
         [bootstrap?.threads, now],
     );
 
     return (
-        <aside
-            className="trip-agent-panel-enter fixed inset-x-0 bottom-0 z-[1500] flex h-[min(82dvh,720px)] flex-col overflow-hidden rounded-t-[1.5rem] border border-slate-200 bg-white shadow-[0_-24px_80px_rgba(15,23,42,0.18)] sm:inset-x-auto sm:bottom-4 sm:end-4 sm:h-[min(720px,calc(100dvh-2rem))] sm:w-[420px] sm:rounded-[1.5rem] sm:shadow-2xl"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-            aria-label={t('tripAgent.title')}
-        >
+        <>
+            {/* Mobile renders as a sheet over the planner, so it is a dialog:
+                it takes focus, keeps it, closes on Escape, and hands focus back. */}
+            <div
+                className="fixed inset-0 z-[1490] bg-slate-950/20 sm:hidden"
+                onClick={onClose}
+                aria-hidden="true"
+            />
+            <aside
+                ref={panelRef}
+                role="dialog"
+                aria-modal="true"
+                aria-label={t('tripAgent.title')}
+                className="trip-agent-panel-enter fixed inset-x-0 bottom-0 z-[1500] flex h-[min(82dvh,720px)] flex-col overflow-hidden rounded-t-[1.5rem] border border-slate-200 bg-white shadow-[0_-24px_80px_rgba(15,23,42,0.18)] sm:inset-x-auto sm:bottom-4 sm:end-4 sm:h-[min(720px,calc(100dvh-2rem))] sm:w-[420px] sm:rounded-[1.5rem] sm:shadow-2xl"
+                style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+                onKeyDown={handlePanelKeyDown}
+            >
             <header className="flex shrink-0 items-center gap-3 border-b border-slate-200 px-4 py-3">
                 <div className="flex size-9 items-center justify-center rounded-xl bg-slate-950 text-white"><Sparkles className="size-4" /></div>
                 <div className="min-w-0 flex-1">
@@ -826,6 +925,15 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                                             {thread.id === currentThreadId && <Check className="mt-0.5 size-3.5 text-accent-600" />}
                                             {thread.status === 'archived' && <Archive className="mt-0.5 size-3.5 text-slate-400" />}
                                         </button>
+                                        {thread.status === 'active' && (
+                                            <button
+                                                type="button"
+                                                onClick={() => void archiveThread(thread.id)}
+                                                className="mt-0.5 w-full rounded-lg px-2.5 py-1 text-start text-[11px] text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                                            >
+                                                {t('tripAgent.archive')}
+                                            </button>
+                                        )}
                                     </li>
                                 ))}
                             </ul>
@@ -840,7 +948,9 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
             ) : loadError ? (
                 <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
                     <Lock className="size-6 text-amber-600" />
-                    <p className="text-sm text-slate-700">{loadError}</p>
+                    <p className="text-sm text-slate-700">
+                        {t([`tripAgent.errors.${loadError.code}`, 'tripAgent.errors.TRIP_AGENT_REQUEST_FAILED'])}
+                    </p>
                     <Button size="sm" variant="outline" onClick={() => void refresh()}>{t('tripAgent.retry')}</Button>
                 </div>
             ) : currentThread && bootstrap ? (
@@ -852,6 +962,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                     contextRefs={contextRefs}
                     quota={bootstrap.quota}
                     actorId={bootstrap.actor.userId}
+                    changeSetStatuses={changeSetStatuses}
                     onQuotaMayHaveChanged={() => void refresh(currentThread.id)}
                     onAdoptCommittedTripVersion={onAdoptCommittedTripVersion}
                     onPreviewTrip={onPreviewTrip}
@@ -860,6 +971,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
             ) : (
                 <div className="flex flex-1 items-center justify-center text-sm text-slate-500">{t('tripAgent.loading')}</div>
             )}
-        </aside>
+            </aside>
+        </>
     );
 };

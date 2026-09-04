@@ -176,3 +176,46 @@ describe('TripAgentProposalCard superseding', () => {
         expect(screen.queryByRole('button', { name: 'tripAgent.preview' })).toBeNull();
     });
 });
+
+describe('TripAgentProposalCard per-operation review', () => {
+    const twoOperationSet = {
+        ...changeSet,
+        operations: [
+            changeSet.operations[0],
+            {
+                id: 'op-2',
+                kind: 'move_item',
+                itemId: 'activity-1',
+                startDateOffset: 2,
+                rationale: 'Shifted by the removal',
+                targetLabel: 'Alfama walk',
+            },
+        ],
+    } as unknown as TripAgentChangeSetV1;
+
+    it('lets a single change inside a group be deselected', async () => {
+        const user = userEvent.setup();
+        applyTripAgentProposalMock.mockResolvedValue({
+            trip,
+            versionId: 'version-1',
+            status: 'applied_partial',
+            appliedOperationIds: ['op-1'],
+            noOpOperationIds: [],
+        });
+
+        render(<TripAgentProposalCard trip={trip} changeSet={twoOperationSet} onApplied={vi.fn()} />);
+
+        await user.click(screen.getByRole('button', { name: 'tripAgent.showOperations' }));
+        const checkboxes = screen.getAllByRole('checkbox');
+        await user.click(checkboxes[checkboxes.length - 1]);
+
+        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
+        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
+
+        await waitFor(() => expect(applyTripAgentProposalMock).toHaveBeenCalledWith(
+            'trip-1',
+            '4f1c9d5e-0000-4000-8000-000000000000',
+            ['op-1'],
+        ));
+    });
+});

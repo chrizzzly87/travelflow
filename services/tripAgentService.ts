@@ -12,12 +12,20 @@ export interface TripAgentThread {
     updatedAt: string;
 }
 
+export interface TripAgentChangeSetStatus {
+    id: string;
+    status: 'pending' | 'applied' | 'applied_partial' | 'rejected' | 'stale';
+    appliedOperationIds: string[];
+}
+
 export interface TripAgentBootstrap {
     actor: { userId: string; label: string; isAdmin: boolean };
     threads: TripAgentThread[];
     currentThreadId: string | null;
     messages: TripAgentMessage[];
     quota: TripAgentQuotaState;
+    /** Live status per proposal, since a transcript keeps the original card. */
+    changeSets?: TripAgentChangeSetStatus[];
 }
 
 const authenticatedFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {

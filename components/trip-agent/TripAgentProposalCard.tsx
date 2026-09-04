@@ -21,11 +21,7 @@ import {
     QuestionnaireItem,
     QuestionnaireTitle,
 } from '../ui/questionnaire';
-import {
-    groupTripAgentChanges,
-    selectedOperationIdsForGroups,
-    type TripAgentChangeGroup,
-} from './tripAgentChangeGroups';
+import { groupTripAgentChanges, type TripAgentChangeGroup } from './tripAgentChangeGroups';
 
 type Operation = TripAgentChangeSetV1['operations'][number];
 
@@ -77,6 +73,58 @@ const previewShortcutLabel = (): string => (
         : 'Ctrl+Shift+P'
 );
 
+const formatComparisonValue = (value: unknown): string => {
+    if (value === undefined || value === null || value === '') return '—';
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
+    return JSON.stringify(value);
+};
+const describeOperationComparison = (
+    trip: ITrip,
+    operation: Operation,
+    t: TFunction,
+): { before: string; after: string } => {
+    if (operation.kind === 'update_trip') {
+        const before = Object.fromEntries(Object.keys(operation.changes).map((key) => [key, trip[key as keyof ITrip]]));
+        return { before: formatComparisonValue(before), after: formatComparisonValue(operation.changes) };
+    }
+    if (operation.kind === 'update_item') {
+        const item = trip.items.find((candidate) => candidate.id === operation.itemId);
+        const before = Object.fromEntries(Object.keys(operation.changes).map((key) => [key, item?.[key as keyof typeof item]]));
+        return { before: formatComparisonValue(before), after: formatComparisonValue(operation.changes) };
+    }
+    if (operation.kind === 'update_stay') {
+        const stay = trip.items.find((candidate) => candidate.id === operation.cityId)?.hotels?.find((candidate) => candidate.id === operation.stayId);
+        const before = Object.fromEntries(Object.keys(operation.changes).map((key) => [key, stay?.[key as keyof typeof stay]]));
+        return { before: formatComparisonValue(before), after: formatComparisonValue(operation.changes) };
+    }
+    if (operation.kind === 'move_item') {
+        const item = trip.items.find((candidate) => candidate.id === operation.itemId);
+        return {
+            before: t('tripAgent.dayValue', { day: (item?.startDateOffset ?? 0) + 1 }),
+            after: t('tripAgent.dayValue', { day: operation.startDateOffset + 1 }),
+        };
+    }
+    if (operation.kind === 'remove_item' || operation.kind === 'remove_stay') {
+        return { before: operation.targetLabel, after: t('tripAgent.removed') };
+    }
+    if (operation.kind === 'add_item') return { before: '—', after: operation.item.title };
+    if (operation.kind === 'add_stay') return { before: '—', after: operation.stay.name };
+    if (operation.kind === 'replace_itinerary') {
+        return {
+            before: t('tripAgent.itemCount', { count: trip.items.length }),
+            after: t('tripAgent.itemCount', { count: operation.items.length }),
+        };
+    }
+    const currentCount = trip.items.filter((item) => (
+        item.startDateOffset < operation.endOffset
+        && item.startDateOffset + item.duration > operation.startOffset
+    )).length;
+    return {
+        before: t('tripAgent.itemCount', { count: currentCount }),
+        after: t('tripAgent.itemCount', { count: operation.items.length }),
+    };
+};
+
 /** First sentence, clipped: proposal summaries arrive as a paragraph. */
 const shortSummary = (summary: string): string => {
     const firstSentence = summary.split(/(?<=[.!?])\s/)[0].trim() || summary.trim();
@@ -120,7 +168,8 @@ const computePreview = (
             trip: null,
             noOpCount: 0,
             skippedCount: 0,
-            error: previewError instanceof Error ? previewError.message : 'Preview failed.',
+            // Localized by the card; the raw message can quote internal ids.
+            error: 'preview-failed',
         };
     }
 };
@@ -140,6 +189,9 @@ export const TripAgentProposalCard: React.FC<{
     shortcutEnabled?: boolean;
     /** A newer proposal exists, so this one can no longer be applied. */
     isSuperseded?: boolean;
+    /** Live status from the server, which outranks the stored transcript. */
+    serverStatus?: 'pending' | 'applied' | 'applied_partial' | 'rejected' | 'stale';
+    appliedOperationIds?: string[];
     onAskAgain?: () => void;
 }> = ({
     trip,
@@ -149,20 +201,61 @@ export const TripAgentProposalCard: React.FC<{
     onRevertLastChange,
     shortcutEnabled,
     isSuperseded,
+    serverStatus,
+    appliedOperationIds,
     onAskAgain,
 }) => {
     const { t } = useTranslation('common');
     const groups = useMemo(() => groupTripAgentChanges(trip, changeSet.operations), [changeSet.operations, trip]);
-    const [selectedGroupIds, setSelectedGroupIds] = useState(() => groups.map((group) => group.id));
-    const [stage, setStage] = useState<'select' | 'preview'>('select');
-    const [state, setState] = useState<'pending' | 'applying' | 'applied' | 'reverted' | 'rejected' | 'error'>('pending');
-    const [error, setError] = useState<{ code: string; message: string } | null>(null);
-    const [applied, setApplied] = useState<{ count: number; requested: number } | null>(null);
-
-    const selectedOperationIds = useMemo(
-        () => selectedOperationIdsForGroups(groups, selectedGroupIds),
-        [groups, selectedGroupIds],
+    const [selectedIds, setSelectedIds] = useState<string[]>(
+        () => changeSet.operations.map((operation) => operation.id),
     );
+    const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
+    const [stage, setStage] = useState<'select' | 'preview'>('select');
+    const [state, setState] = useState<'pending' | 'applying' | 'applied' | 'reverted' | 'rejected' | 'error'>(() => {
+        if (serverStatus === 'applied' || serverStatus === 'applied_partial') return 'applied';
+        if (serverStatus === 'rejected' || serverStatus === 'stale') return 'rejected';
+        return 'pending';
+    });
+    const [error, setError] = useState<{ code: string; message: string } | null>(null);
+    const [applied, setApplied] = useState<{ count: number; requested: number } | null>(() => (
+        appliedOperationIds?.length
+            ? { count: appliedOperationIds.length, requested: appliedOperationIds.length }
+            : null
+    ));
+
+    // Group rows are the readable default; every operation underneath stays
+    // individually selectable, which is what the review contract requires.
+    const selectedOperationIds = useMemo(
+        () => changeSet.operations
+            .filter((operation) => selectedIds.includes(operation.id))
+            .map((operation) => operation.id),
+        [changeSet.operations, selectedIds],
+    );
+    const selectedGroupIds = useMemo(
+        () => groups
+            .filter((group) => group.operationIds.some((id) => selectedIds.includes(id)))
+            .map((group) => group.id),
+        [groups, selectedIds],
+    );
+
+    const setGroupSelection = (groupIds: string[]) => {
+        const nextGroups = new Set(groupIds);
+        setSelectedIds(groups.flatMap((group) => (
+            nextGroups.has(group.id)
+                // Re-selecting a group restores the whole group, deselecting drops it.
+                ? (selectedGroupIds.includes(group.id)
+                    ? group.operationIds.filter((id) => selectedIds.includes(id))
+                    : group.operationIds)
+                : []
+        )));
+    };
+
+    const toggleOperation = (operationId: string) => {
+        setSelectedIds((current) => (current.includes(operationId)
+            ? current.filter((id) => id !== operationId)
+            : [...current, operationId]));
+    };
 
     const preview = useMemo(
         () => computePreview(trip, changeSet.operations, selectedOperationIds),
@@ -312,20 +405,69 @@ export const TripAgentProposalCard: React.FC<{
                             <QuestionnaireChoices
                                 type="multiple"
                                 value={selectedGroupIds}
-                                onValueChange={setSelectedGroupIds}
+                                onValueChange={setGroupSelection}
                                 disabled={state !== 'pending'}
                             >
                                 {groups.map((group) => (
-                                    <QuestionnaireChoice key={group.id} value={group.id} className="min-h-0 gap-2 p-2">
-                                        <span className="text-[13px] font-medium leading-5 text-slate-900">
-                                            {describeGroup(trip, group, t)}
-                                        </span>
-                                        <QuestionnaireChoiceDescription className="mt-0 line-clamp-2 text-[11px] leading-4">
-                                            {group.followUps.length > 0
-                                                ? `${group.primary.rationale} · ${t('tripAgent.groupShifts', { count: countTouchedItems(group.followUps) })}`
-                                                : group.primary.rationale}
-                                        </QuestionnaireChoiceDescription>
-                                    </QuestionnaireChoice>
+                                    <React.Fragment key={group.id}>
+                                        <QuestionnaireChoice value={group.id} className="min-h-0 gap-2 p-2">
+                                            <span className="text-[13px] font-medium leading-5 text-slate-900">
+                                                {describeGroup(trip, group, t)}
+                                            </span>
+                                            <QuestionnaireChoiceDescription className="mt-0 line-clamp-2 text-[11px] leading-4">
+                                                {group.followUps.length > 0
+                                                    ? `${group.primary.rationale} · ${t('tripAgent.groupShifts', { count: countTouchedItems(group.followUps) })}`
+                                                    : group.primary.rationale}
+                                            </QuestionnaireChoiceDescription>
+                                        </QuestionnaireChoice>
+                                        {group.operationIds.length > 1 && (
+                                            <div className="ps-6">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setExpandedGroupId(
+                                                        expandedGroupId === group.id ? null : group.id,
+                                                    )}
+                                                    aria-expanded={expandedGroupId === group.id}
+                                                    className="text-[11px] text-slate-500 underline-offset-2 hover:underline"
+                                                >
+                                                    {expandedGroupId === group.id
+                                                        ? t('tripAgent.hideOperations')
+                                                        : t('tripAgent.showOperations', { count: group.operationIds.length })}
+                                                </button>
+                                                {expandedGroupId === group.id && (
+                                                    <ul className="mt-1 space-y-1">
+                                                        {group.operationIds.map((operationId) => {
+                                                            const operation = changeSet.operations
+                                                                .find((candidate) => candidate.id === operationId);
+                                                            if (!operation) return null;
+                                                            const comparison = describeOperationComparison(trip, operation, t);
+                                                            return (
+                                                                <li key={operationId} className="flex items-start gap-2">
+                                                                    <input
+                                                                        id={`trip-agent-operation-${operationId}`}
+                                                                        type="checkbox"
+                                                                        checked={selectedIds.includes(operationId)}
+                                                                        disabled={state !== 'pending'}
+                                                                        onChange={() => toggleOperation(operationId)}
+                                                                        className="mt-0.5 size-3.5 rounded border-slate-300 text-accent-600 focus:ring-accent-500"
+                                                                    />
+                                                                    <label
+                                                                        htmlFor={`trip-agent-operation-${operationId}`}
+                                                                        className="min-w-0 cursor-pointer text-[11px] leading-4 text-slate-600"
+                                                                    >
+                                                                        <span className="block text-slate-800">{operation.targetLabel}</span>
+                                                                        <span className="block truncate">
+                                                                            {comparison.before} → {comparison.after}
+                                                                        </span>
+                                                                    </label>
+                                                                </li>
+                                                            );
+                                                        })}
+                                                    </ul>
+                                                )}
+                                            </div>
+                                        )}
+                                    </React.Fragment>
                                 ))}
                             </QuestionnaireChoices>
                         </QuestionnaireItem>
@@ -360,7 +502,9 @@ export const TripAgentProposalCard: React.FC<{
                         ))}
                     </ul>
                     {preview?.error && (
-                        <p className="rounded-xl bg-rose-50 p-2.5 text-xs text-rose-800" role="alert">{preview.error}</p>
+                        <p className="rounded-xl bg-rose-50 p-2.5 text-xs text-rose-800" role="alert">
+                            {t('tripAgent.previewFailed')}
+                        </p>
                     )}
                     {!preview?.error && preview?.skippedCount ? (
                         <p className="rounded-xl bg-amber-50 p-2.5 text-xs text-amber-800" role="status">

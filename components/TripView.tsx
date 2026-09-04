@@ -165,6 +165,8 @@ const TripHistoryModal = lazyWithRecovery('TripHistoryModal', () =>
 
 import { readTripAgentOpenState, writeTripAgentOpenState } from './trip-agent/tripAgentPanelState';
 
+const TRIP_AGENT_PANEL_INSET_PX = 444;
+
 const TripAgentPanel = lazyWithRecovery('TripAgentPanel', () =>
     import('./trip-agent/TripAgentPanel').then((module) => ({ default: module.TripAgentPanel }))
 );
@@ -3040,6 +3042,9 @@ const useTripViewRender = ({
         || !canEdit
         || access?.entitlements.canUseTripAgent === false
         || !onAdoptAgentTripVersion;
+    // The panel sits at the logical end, which is the left edge in Persian and
+    // Urdu; the floating map reserves that side instead of being switched off.
+    const isRtlAppLanguage = appLanguage === 'fa' || appLanguage === 'ur';
     const openTripAgent = useCallback(() => {
         trackEvent('trip_agent__launcher--open', {
             trip_id: trip.id,
@@ -3372,7 +3377,8 @@ const useTripViewRender = ({
                         onSidebarResizeKeyDown={handleSidebarResizeKeyDown}
                         onDetailsResizeKeyDown={handleDetailsResizeKeyDown}
                         onTimelineResizeKeyDown={handleTimelineResizeKeyDown}
-                        floatingOverlayRightInset={isTripAgentOpen && appLanguage !== 'fa' && appLanguage !== 'ur' ? 444 : 0}
+                        floatingOverlayRightInset={isTripAgentOpen && !isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
+                        floatingOverlayLeftInset={isTripAgentOpen && isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
                     />
                     {!isTripAgentOpen && (
                         <button
