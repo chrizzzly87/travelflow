@@ -21,6 +21,7 @@ import {
   loadTripAgentMessages,
   persistTripAgentMessage,
   rejectTripAgentChangeSet,
+  revertTripAgentChangeSet,
   refundTripAgentQuota,
   reserveTripAgentQuota,
   titleTripAgentThreadFromPrompt,
@@ -86,6 +87,25 @@ const errorResponse = (error: unknown, context: TripAgentLogContext): Response =
   });
 };
 
+/**
+ * True when the newest assistant message ends with an unanswered question, so
+ * the message being sent is the reply to it rather than a new request.
+ */
+const isAnswerToOpenQuestion = async (threadId: string): Promise<boolean> => {
+  try {
+    const messages = await loadTripAgentMessages(threadId);
+    const lastAssistant = [...messages].reverse().find((message) => message.role === 'assistant');
+    if (!lastAssistant) return false;
+    return lastAssistant.parts.some((part) => {
+      if (!part.type.startsWith('tool-') || !part.type.includes('ask_traveler')) return false;
+      const output = (part as { output?: { kind?: unknown } }).output;
+      return output?.kind === 'trip-agent-question';
+    });
+  } catch {
+    return false;
+  }
+};
+
 const authenticate = async (request: Request) => {
   const token = getBearerToken(request);
   if (!token) throw new Error('AUTH_REQUIRED');
@@ -122,6 +142,7 @@ const bodySchema = z.discriminatedUnion('action', [
     selectedOperationIds: z.array(z.string().trim().min(1).max(120)).min(1).max(100),
   }).strict(),
   z.object({ action: z.literal('reject'), tripId: tripIdSchema, changeSetId: uuidSchema }).strict(),
+  z.object({ action: z.literal('revert'), tripId: tripIdSchema, changeSetId: uuidSchema }).strict(),
 ]);
 
 /** Editable-share token presented by the planner, if any. */
@@ -191,6 +212,12 @@ export default async (request: Request) => {
       await archiveTripAgentThread(body.threadId, body.tripId);
       return json(200, { ok: true });
     }
+    if (body.action === 'revert') {
+      await loadTripAgentChangeSet(body.changeSetId, body.tripId);
+      await revertTripAgentChangeSet(body.changeSetId, body.tripId);
+      console.info('[trip-agent] change set reverted', { ...logContext, changeSetId: body.changeSetId });
+      return json(200, { ok: true });
+    }
     if (body.action === 'reject') {
       await loadTripAgentChangeSet(body.changeSetId, body.tripId);
       await rejectTripAgentChangeSet(body.changeSetId, body.tripId);
@@ -226,7 +253,12 @@ export default async (request: Request) => {
     }
 
     await assertThreadInTrip(body.threadId, body.tripId);
-    const quota = await reserveTripAgentQuota(actor.userId, body.requestId, body.tripId);
+    // Answering a question the agent itself asked is part of the same request:
+    // charging for it would make an ask-first flow cost two of three free runs.
+    const isFreeContinuation = await isAnswerToOpenQuestion(body.threadId);
+    const quota = isFreeContinuation
+      ? { allowed: true, remaining: null, used: 0, limit: null, resetsAt: new Date().toISOString(), enabled: true }
+      : await reserveTripAgentQuota(actor.userId, body.requestId, body.tripId);
     if (!quota.allowed) {
       return json(429, { code: 'TRIP_AGENT_QUOTA_EXCEEDED', error: 'Daily Trip Agent limit reached.', quota });
     }
@@ -248,7 +280,9 @@ export default async (request: Request) => {
         contextRefs: body.contextRefs,
       });
     } catch (error) {
-      await refundTripAgentQuota(actor.userId, body.requestId).catch(() => undefined);
+      if (!isFreeContinuation) {
+        await refundTripAgentQuota(actor.userId, body.requestId).catch(() => undefined);
+      }
       console.error('[trip-agent] user message persistence failed', {
         ...logContext,
         quotaRefunded: true,

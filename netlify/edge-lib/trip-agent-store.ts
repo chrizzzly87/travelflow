@@ -480,10 +480,11 @@ export const persistTripAgentToolCall = async (input: {
 };
 
 export const persistTripAgentChangeSet = async (changeSet: TripAgentChangeSetV1, actorId: string): Promise<void> => {
-  // One open proposal per trip: a second pending set would go stale the moment
-  // the first is applied, and the reviewer would meet two competing cards.
+  // One open proposal per chat: a second pending set in the same conversation
+  // would go stale the moment the first is applied. Scoped to the thread, so a
+  // collaborator's open review in another chat is left alone.
   await rest(
-    `trip_agent_change_sets?trip_id=eq.${encodeURIComponent(changeSet.tripId)}&status=eq.pending`,
+    `trip_agent_change_sets?thread_id=eq.${encodeURIComponent(changeSet.threadId)}&status=eq.pending`,
     {
       method: 'PATCH',
       headers: serviceHeaders('return=minimal'),
@@ -511,8 +512,10 @@ export const persistTripAgentChangeSet = async (changeSet: TripAgentChangeSetV1,
 
 export interface TripAgentChangeSetStatusRecord {
   id: string;
-  status: 'pending' | 'applied' | 'applied_partial' | 'rejected' | 'stale';
+  status: 'pending' | 'applied' | 'applied_partial' | 'rejected' | 'stale' | 'reverted';
   appliedOperationIds: string[];
+  /** Version written by the apply, so a redo can restore it after a reload. */
+  appliedVersionId: string | null;
 }
 
 /**
@@ -523,13 +526,19 @@ export interface TripAgentChangeSetStatusRecord {
 export const loadTripAgentChangeSetStatuses = async (
   threadId: string,
 ): Promise<TripAgentChangeSetStatusRecord[]> => {
-  const rows = await rest<Array<{ id: string; status: TripAgentChangeSetStatusRecord['status']; selected_operation_ids: string[] | null }>>(
-    `trip_agent_change_sets?thread_id=eq.${encodeURIComponent(threadId)}&select=id,status,selected_operation_ids&limit=200`,
+  const rows = await rest<Array<{
+    id: string;
+    status: TripAgentChangeSetStatusRecord['status'];
+    selected_operation_ids: string[] | null;
+    applied_version_id: string | null;
+  }>>(
+    `trip_agent_change_sets?thread_id=eq.${encodeURIComponent(threadId)}&select=id,status,selected_operation_ids,applied_version_id&limit=200`,
   ).catch(() => []);
   return (rows || []).map((row) => ({
     id: row.id,
     status: row.status,
     appliedOperationIds: row.selected_operation_ids || [],
+    appliedVersionId: row.applied_version_id,
   }));
 };
 
@@ -583,6 +592,22 @@ export const applyPersistedTripAgentChangeSet = async (input: {
   // that records it survives; the caller turns it into the client failure.
   if (result?.status === 'stale') throw new Error('TRIP_AGENT_STALE_PROPOSAL');
   return result as { trip: ITrip; versionId: string; status: 'applied' | 'applied_partial' };
+};
+
+/**
+ * Records that an applied proposal was taken back. The trip itself is restored
+ * by the client as a new version; this is what a reload reads to show the card
+ * as reverted, with the applied version still available to redo.
+ */
+export const revertTripAgentChangeSet = async (changeSetId: string, tripId: string): Promise<void> => {
+  await rest(
+    `trip_agent_change_sets?id=eq.${encodeURIComponent(changeSetId)}&trip_id=eq.${encodeURIComponent(tripId)}`,
+    {
+      method: 'PATCH',
+      headers: serviceHeaders('return=minimal'),
+      body: JSON.stringify({ status: 'reverted', reverted_at: new Date().toISOString() }),
+    },
+  );
 };
 
 export const rejectTripAgentChangeSet = async (changeSetId: string, tripId: string): Promise<void> => {

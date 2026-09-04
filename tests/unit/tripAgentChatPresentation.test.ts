@@ -336,3 +336,47 @@ describe('question and proposal ordering', () => {
             .toEqual(['text', 'question', 'proposal']);
     });
 });
+
+describe('free continuation detection', () => {
+    // Mirrors the server rule: a message answering the agent's own question is
+    // part of the same request and must not consume a second daily run.
+    const assistantWithQuestion = {
+        id: 'assistant-q',
+        role: 'assistant',
+        parts: [{
+            type: 'tool-ask_traveler',
+            toolCallId: 'call-q',
+            state: 'output-available',
+            input: {},
+            output: {
+                kind: 'trip-agent-question',
+                question: 'What now?',
+                options: [
+                    { id: 'a', label: 'Extend', prompt: 'Extend.' },
+                    { id: 'b', label: 'Shorten', prompt: 'Shorten.' },
+                ],
+                allowCustom: true,
+            },
+        }],
+    } as unknown as TripAgentMessage;
+
+    const hasOpenQuestion = (message: TripAgentMessage): boolean => message.parts.some((part) => {
+        if (!part.type.startsWith('tool-') || !part.type.includes('ask_traveler')) return false;
+        const output = (part as { output?: { kind?: unknown } }).output;
+        return output?.kind === 'trip-agent-question';
+    });
+
+    it('recognises an answer to a question the agent asked', () => {
+        expect(hasOpenQuestion(assistantWithQuestion)).toBe(true);
+    });
+
+    it('does not treat an ordinary answer as a continuation', () => {
+        const plain = {
+            id: 'assistant-p',
+            role: 'assistant',
+            parts: [{ type: 'text', text: 'Here are three options.' }],
+        } as unknown as TripAgentMessage;
+
+        expect(hasOpenQuestion(plain)).toBe(false);
+    });
+});
