@@ -76,8 +76,10 @@ must arrive as a single new proposal, not a second competing one.
 
 `trip-agent-maps-mcp.ts` opens an HTTP MCP client against
 `https://mapstools.googleapis.com/mcp`, authenticated with
-`GOOGLE_MAPS_GROUNDING_API_KEY` or, when that is unset, the existing
-`VITE_GOOGLE_MAPS_API_KEY`.
+`GOOGLE_MAPS_GROUNDING_API_KEY` when set, otherwise the existing
+`VITE_GOOGLE_MAPS_API_KEY` (owner decision, 2026-09-04; the run logs which
+source it used). A shared browser key must be quota-capped and API-restricted in
+Google Cloud, because it is readable in the client bundle.
 
 That server exposes `search_places`, `compute_routes`, `resolve_names`,
 `resolve_maps_urls` and `lookup_weather`. Each specialist sees only its own
@@ -89,9 +91,8 @@ capability:
 With no usable key both return `status: "unavailable"` and say so in the chat;
 they never invent place or route facts. Neither specialist can touch the trip.
 
-A dedicated server-side key is still preferable: the browser key is meant to be
-referrer-restricted, and a restriction that blocks server calls turns grounding
-off silently (the chip will say `Unavailable`).
+A referrer restriction that blocks server calls turns grounding off silently —
+the step chip will read `Unavailable` rather than failing loudly.
 
 ## Trip changes
 

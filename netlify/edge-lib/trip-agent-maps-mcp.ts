@@ -41,16 +41,24 @@ export const runGroundedMapsSpecialist = async (input: {
   definition: AgentRuntimeDefinition;
   abortSignal?: AbortSignal;
 }): Promise<GroundedSpecialistResult> => {
-  // Only a dedicated server-side key: VITE_GOOGLE_MAPS_API_KEY is shipped to
-  // browsers and is expected to be referrer-restricted, so it must not
-  // authenticate a server call.
-  const apiKey = readEnv('GOOGLE_MAPS_GROUNDING_API_KEY');
+  // A dedicated server key is preferred. The existing Maps key is accepted as a
+  // fallback by product decision (2026-09-04): it already works against this
+  // endpoint, and a second key was not worth the operational cost. The trade-off
+  // is recorded in docs/AI_AGENT_FEATURE_GUARDRAILS.md — that key ships to
+  // browsers, so it must stay quota-capped and API-restricted in Google Cloud.
+  const dedicatedKey = readEnv('GOOGLE_MAPS_GROUNDING_API_KEY');
+  const apiKey = dedicatedKey || readEnv('VITE_GOOGLE_MAPS_API_KEY');
   if (!apiKey) {
     return {
       status: 'unavailable',
       summary: 'Google Maps grounding is not configured, so I cannot provide grounded place or route facts yet.',
     };
   }
+
+  console.info('[trip-agent] grounding key source', {
+    capability: input.capability,
+    source: dedicatedKey ? 'grounding_key' : 'shared_maps_key',
+  });
 
   let client: Awaited<ReturnType<typeof createMCPClient>> | null = null;
   try {

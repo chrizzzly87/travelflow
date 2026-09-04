@@ -51,12 +51,23 @@ is now off.
 > now enforces the approved list and denies provider data collection, but that
 > was retrofitted after review, not carried across.
 
-## 4. Never reuse a client credential on the server
+## 4. A client credential on the server is a decision, not a default
 
-A `VITE_`-prefixed key ships to browsers and is expected to be
-referrer-restricted. It is not a fallback for a server-side call, however
-convenient. Answer "why do we need another key?" with the reason, not with a
-shortcut.
+A `VITE_`-prefixed key ships to browsers and is normally referrer-restricted.
+Reaching for it server-side because a second key is inconvenient is a shortcut;
+answer "why do we need another key?" with the reason first.
+
+The reason: for a server call to work, the key must be unrestricted by referrer
+— and that same key sits in the client bundle, where anyone can lift it and
+spend the project's quota.
+
+**Recorded decision (2026-09-04):** the owner accepted that trade-off for Maps
+grounding. `GOOGLE_MAPS_GROUNDING_API_KEY` is used when set;
+`VITE_GOOGLE_MAPS_API_KEY` is the fallback, and the run logs which source it
+used. The mitigation lives in Google Cloud, not in this code: cap the key's
+daily quota and restrict it to the APIs it needs. Take the same route for any
+future case — state the exposure, get the decision, record it, and log which
+credential is in play.
 
 ## 5. Budget every run against the platform's hard limit
 
