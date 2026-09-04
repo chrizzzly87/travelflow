@@ -283,7 +283,8 @@ const createLocalHistoryEntry = (
     options?: { replace?: boolean },
     ts?: number,
     baseUrlOverride?: string,
-    versionId?: string
+    versionId?: string,
+    changeSetId?: string
 ) => {
     const { url } = createTripHistorySnapshotEntry({
         tripId: updatedTrip.id,
@@ -293,6 +294,7 @@ const createLocalHistoryEntry = (
         ts,
         baseUrlOverride,
         versionId,
+        changeSetId,
     });
     navigate(url, { replace: options?.replace ?? false });
     return url;
@@ -734,6 +736,7 @@ const AppContent: React.FC = () => {
         trip: ITrip;
         versionId: string;
         label: string;
+        changeSetId?: string;
     }) => {
         setTrip(input.trip);
         saveTrip(input.trip, { preserveUpdatedAt: true });
@@ -745,7 +748,8 @@ const AppContent: React.FC = () => {
             undefined,
             Date.now(),
             undefined,
-            input.versionId || undefined
+            input.versionId || undefined,
+            input.changeSetId
         );
     }, [navigate]);
 

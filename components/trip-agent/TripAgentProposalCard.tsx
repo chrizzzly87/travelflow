@@ -187,9 +187,15 @@ export const TripAgentProposalCard: React.FC<{
     onApplied: (trip: ITrip, versionId: string, label: string) => void;
     onPreviewTrip?: (trip: ITrip | null) => void;
     /** Restores the trip as it was before this proposal was applied. */
-    onRevertAgentChange?: (input: { trip: ITrip; redoTrip: ITrip; label: string; redoLabel: string }) => void;
+    onRevertAgentChange?: (input: {
+        trip: ITrip;
+        redoTrip: ITrip;
+        label: string;
+        redoLabel: string;
+        changeSetId: string;
+    }) => void;
     /** Applies a reviewed set again, after it was applied once and reverted. */
-    onReapplyAgentChange?: (input: { trip: ITrip; label: string }) => void;
+    onReapplyAgentChange?: (input: { trip: ITrip; label: string; changeSetId: string }) => void;
     /** Only the newest pending proposal answers the preview shortcut. */
     shortcutEnabled?: boolean;
     /** A newer proposal exists, so this one can no longer be applied. */
@@ -328,6 +334,7 @@ export const TripAgentProposalCard: React.FC<{
         onReapplyAgentChange({
             trip: restored,
             label: t('tripAgent.reapplyLabel', { summary: shortSummary(changeSet.summary) }),
+            changeSetId: changeSet.id,
         });
         setState('applied');
         trackEvent('trip_agent__proposal--redo', {
@@ -370,6 +377,7 @@ export const TripAgentProposalCard: React.FC<{
             onReapplyAgentChange({
                 trip: recomputed.trip,
                 label: t('tripAgent.reapplyLabel', { summary: shortSummary(changeSet.summary) }),
+                changeSetId: changeSet.id,
             });
             setApplied({ count: selectedOperationIds.length, requested: selectedOperationIds.length });
             setState('applied');
@@ -436,6 +444,7 @@ export const TripAgentProposalCard: React.FC<{
             redoTrip: tripAfterApply,
             label: t('tripAgent.revertLabel', { summary: shortSummary(changeSet.summary) }),
             redoLabel: t('tripAgent.reapplyLabel', { summary: shortSummary(changeSet.summary) }),
+            changeSetId: changeSet.id,
         });
         setState('reverted');
         trackEvent('trip_agent__proposal--revert', { trip_id: changeSet.tripId, change_set_id: changeSet.id });

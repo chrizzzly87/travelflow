@@ -417,7 +417,7 @@ interface TripViewProps {
     trip: ITrip;
     onUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => void;
     onCommitState?: (updatedTrip: ITrip, view: IViewSettings, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void;
-    onAdoptAgentTripVersion?: (input: { trip: ITrip; versionId: string; label: string }) => void;
+    onAdoptAgentTripVersion?: (input: { trip: ITrip; versionId: string; label: string; changeSetId?: string }) => void;
     /** Set while the Trip Agent previews a proposal in the planner. */
     agentPreviewTrip?: ITrip | null;
     /** The saved trip, unchanged by an active preview. */
@@ -3066,11 +3066,12 @@ const useTripViewRender = ({
      * re-apply of a reviewed set) as one new version, and refreshes the planner
      * surface so the calendar rebuilds its measured geometry.
      */
-    const adoptAgentTrip = useCallback((nextTrip: ITrip, label: string) => {
+    const adoptAgentTrip = useCallback((nextTrip: ITrip, label: string, changeSetId?: string) => {
         onAdoptAgentTripVersion?.({
             trip: { ...nextTrip, updatedAt: Date.now() },
             versionId: '',
             label,
+            changeSetId,
         });
         onAgentTripChanged?.();
     }, [onAdoptAgentTripVersion, onAgentTripChanged]);
@@ -3449,12 +3450,12 @@ const useTripViewRender = ({
                                     onAgentTripChanged?.();
                                 }}
                                 onPreviewTrip={onAgentPreviewTrip}
-                                onRevertAgentChange={({ trip: previousTrip, redoTrip, label, redoLabel }) => {
+                                onRevertAgentChange={({ trip: previousTrip, redoTrip, label, redoLabel, changeSetId }) => {
                                     // Not an undo: history also holds view changes, so
                                     // stepping back would revert whatever happened last
                                     // rather than this change set. The snapshot from
                                     // before the apply is restored as a new version.
-                                    adoptAgentTrip(previousTrip, label);
+                                    adoptAgentTrip(previousTrip, label, changeSetId);
                                     showToast(t('tripAgent.revertToast'), {
                                         tone: 'neutral',
                                         title: t('tripAgent.revertToastTitle'),
@@ -3462,12 +3463,12 @@ const useTripViewRender = ({
                                         disableDefaultUndo: true,
                                         action: {
                                             label: t('tripAgent.redo'),
-                                            onClick: () => adoptAgentTrip(redoTrip, redoLabel),
+                                            onClick: () => adoptAgentTrip(redoTrip, redoLabel, changeSetId),
                                         },
                                     });
                                 }}
-                                onReapplyAgentChange={({ trip: nextTrip, label }) => {
-                                    adoptAgentTrip(nextTrip, label);
+                                onReapplyAgentChange={({ trip: nextTrip, label, changeSetId }) => {
+                                    adoptAgentTrip(nextTrip, label, changeSetId);
                                 }}
                             />
                         </Suspense>

@@ -103,7 +103,7 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 - [x] Remove the unused math, mermaid and syntax-highlighting packages and components.
 - [x] Correct the analytics table and localize the last hardcoded failure strings.
 - [x] Trim the release note and drop the superseded bare-`P` shortcut claim.
-- [ ] **Apply** migrations `20260904130000_trip_agent_drop_legacy_apply_overload.sql` and `20260904140000_trip_agent_reverted_status.sql` (both verified locally). Earlier: `20260904120000_trip_agent_access_and_stale_fix.sql` (verified locally against a throwaway Postgres; see `supabase/tests/` and `docs/SUPABASE_RUNBOOK.md`): editable-share and expiry checks, and a stale proposal that records its status instead of rolling it back.
+- [x] Applied migrations `20260904120000`, `20260904130000` and `20260904140000` (owner ran them; `reverted_at` verified live). (verified locally against a throwaway Postgres; see `supabase/tests/` and `docs/SUPABASE_RUNBOOK.md`): editable-share and expiry checks, and a stale proposal that records its status instead of rolling it back.
 - [ ] Replay operations inside the locked transaction rather than writing a precomputed snapshot (#481).
 - [ ] Enable the panel for editable-share sessions once quota ownership for shared editors is decided (#484).
 - [ ] Registry-first Gateway routing with ZDR, once `AI_GATEWAY_API_KEY` exists (#481).
@@ -131,8 +131,10 @@ session rather than against the issue text.
 - [x] Scope proposal superseding to the chat that produced it: a trip-wide sweep cancelled a collaborator's open review in another chat.
 - [x] Stop charging a daily run for answering the agent's own question; an ask-first flow otherwise costs two of three free runs.
 - [x] Shrink the panel to a bar and drop the backdrop on a phone while a preview is showing, so the previewed planner is visible.
-- [ ] Link locally adopted versions (revert, redo, reapply) to their change set; today only the server-side apply and revert carry that reference.
-- [ ] Ask for EN/DE sign-off on the Trip Agent copy; ten locales were written without review.
+- [x] Link locally adopted versions (revert, redo, reapply) to their change set, so history entries name the proposal they came from.
+- [x] Give accounts with an unlimited plan allowance a daily ceiling (`TRIP_AGENT_DAILY_CEILING`, default 120); the reservation is refunded when the ceiling refuses a run.
+- [x] Accept the existing Maps key for grounding by owner decision, log which key source a run used, and record the trade-off.
+- [x] EN/DE copy: owner accepted the translations as they stand (2026-09-04).
 
 ## Production gates
 

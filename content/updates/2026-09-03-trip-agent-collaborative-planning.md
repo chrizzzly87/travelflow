@@ -26,6 +26,7 @@ summary: "Trip Agent brings shared, context-aware planning into each trip while 
 - [x] [Fixed] ↩️ Revert now puts back exactly the plan you had before applying, instead of undoing whatever you did last.
 - [x] [Improved] 🔁 Reverting now confirms with a message and a Redo button, and an applied set can be reopened, adjusted and applied again.
 - [x] [Improved] 🎟️ Answering a question Trip Agent asked no longer costs one of your daily requests.
+- [x] [Improved] 🏨 Stay and route research is switched on: grounded results arrive as budget-grouped cards and route options.
 - [x] [Fixed] 🤝 A new set of proposed changes no longer cancels someone else's open review in another chat.
 - [x] [Improved] 📱 On a phone the chat shrinks to a bar while previewing, so you can actually see the plan it is changing.
 - [x] [Fixed] 🔗 A reverted set stays reverted after a reload, and can still be redone.
@@ -33,6 +34,7 @@ summary: "Trip Agent brings shared, context-aware planning into each trip while 
 - [x] [Improved] ❓ When a change leaves a real choice open, Trip Agent asks first and proposes only once you have answered.
 - [x] [Fixed] 📅 Fixed the calendar showing the previous plan until you switched views and back.
 
+- [ ] [Internal] 🚦 Added a daily run ceiling for plans with an unlimited allowance, a free continuation for answering the agent's own question, and change-set references on locally adopted trip versions.
 - [ ] [Internal] 🔐 Persistent shared threads, messages, runs, tool records, proposals, prompt versions and quotas behind an admin-preview flag, with atomic approval through one Supabase version.
 - [ ] [Internal] 🔌 Flat wire schema for trip-change operations plus a typed converter and unknown-target validation, because function-calling models cannot emit the internal discriminated union.
 - [ ] [Internal] 🎚️ Model resolution follows the approved app-wide default, with OpenRouter reasoning effort, data-collection denial and a run budget under Netlify's 60 second synchronous limit.
