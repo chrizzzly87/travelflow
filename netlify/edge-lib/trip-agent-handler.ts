@@ -17,6 +17,7 @@ import {
   listTripAgentThreads,
   loadEditableTrip,
   loadTripAgentChangeSet,
+  loadTripAgentChangeSetStatuses,
   loadTripAgentMessages,
   persistTripAgentMessage,
   rejectTripAgentChangeSet,
@@ -26,6 +27,7 @@ import {
 } from '../edge-lib/trip-agent-store.ts';
 import { streamTripAgentResponse } from '../edge-lib/trip-agent-runtime.ts';
 import { getBearerToken, verifySupabaseUser } from '../edge-lib/ai-generate-guard.ts';
+import { errorName, redactDiagnostic } from '../edge-lib/trip-agent-redaction.ts';
 
 const JSON_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
@@ -45,9 +47,7 @@ interface TripAgentLogContext {
   requestId?: string;
 }
 
-const boundedErrorMessage = (error: unknown): string => (
-  error instanceof Error ? error.message.slice(0, 300) : 'Unknown Trip Agent error.'
-);
+const boundedErrorMessage = (error: unknown): string => redactDiagnostic(error) || 'Unknown Trip Agent error.';
 
 export interface TripAgentFailure {
   status: number;
@@ -76,10 +76,12 @@ export const classifyTripAgentFailure = (error: unknown): TripAgentFailure => {
 
 const errorResponse = (error: unknown, context: TripAgentLogContext): Response => {
   const failure = classifyTripAgentFailure(error);
+  // The browser gets a code and an authored sentence. Provider and database
+  // messages quote credentials, URLs and prompt fragments, so the diagnostic
+  // stays in the (redacted) server log next to the request id.
   return json(failure.status, {
     code: failure.code,
     error: failure.error,
-    detail: boundedErrorMessage(error),
     ...(context.requestId ? { requestId: context.requestId } : {}),
   });
 };
@@ -122,8 +124,18 @@ const bodySchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('reject'), tripId: tripIdSchema, changeSetId: uuidSchema }).strict(),
 ]);
 
+/** Editable-share token presented by the planner, if any. */
+const readShareToken = (request: Request): string | null => {
+  const header = request.headers.get('x-trip-share-token');
+  if (header && header.trim().length <= 200) return header.trim();
+  const url = new URL(request.url);
+  const param = url.searchParams.get('shareToken');
+  return param && param.length <= 200 ? param : null;
+};
+
 export default async (request: Request) => {
   const startedAt = Date.now();
+  const shareToken = readShareToken(request);
   let logContext: TripAgentLogContext = {
     action: request.method === 'GET' ? 'bootstrap' : 'unknown',
   };
@@ -135,7 +147,7 @@ export default async (request: Request) => {
       const tripId = tripIdSchema.parse(url.searchParams.get('tripId'));
       const requestedThreadId = url.searchParams.get('threadId');
       logContext = { action: 'bootstrap', tripId, threadId: requestedThreadId || undefined };
-      await loadEditableTrip(tripId, actor.userId);
+      await loadEditableTrip(tripId, actor.userId, shareToken);
       const threads = await listTripAgentThreads(tripId);
       const currentThread = requestedThreadId
         ? threads.find((thread) => thread.id === requestedThreadId)
@@ -146,11 +158,19 @@ export default async (request: Request) => {
           console.info('[trip-agent] closed stale streams', { ...logContext, threadId: currentThread.id, aborted });
         }
       }
-      const [messages, quota] = await Promise.all([
+      const [messages, quota, changeSets] = await Promise.all([
         currentThread ? loadTripAgentMessages(currentThread.id) : Promise.resolve([]),
         getTripAgentQuota(actor.userId),
+        currentThread ? loadTripAgentChangeSetStatuses(currentThread.id) : Promise.resolve([]),
       ]);
-      return json(200, { actor, threads, currentThreadId: currentThread?.id || null, messages, quota });
+      return json(200, {
+        actor,
+        threads,
+        currentThreadId: currentThread?.id || null,
+        messages,
+        quota,
+        changeSets,
+      });
     }
 
     if (request.method !== 'POST') return json(405, { error: 'Method not allowed.' });
@@ -161,7 +181,7 @@ export default async (request: Request) => {
       ...('threadId' in body ? { threadId: body.threadId } : {}),
       ...('requestId' in body ? { requestId: body.requestId } : {}),
     };
-    const canonical = await loadEditableTrip(body.tripId, actor.userId);
+    const canonical = await loadEditableTrip(body.tripId, actor.userId, shareToken);
 
     if (body.action === 'createThread') {
       return json(201, { thread: await createTripAgentThread(body.tripId, actor.userId) });
@@ -188,6 +208,7 @@ export default async (request: Request) => {
         selectedOperationIds: replay.appliedOperationIds,
         trip: replay.trip,
         view: canonical.view,
+        shareToken,
       });
       if (replay.skippedOperations.length > 0) {
         console.info('[trip-agent] apply skipped stale operations', {
@@ -231,7 +252,7 @@ export default async (request: Request) => {
       console.error('[trip-agent] user message persistence failed', {
         ...logContext,
         quotaRefunded: true,
-        errorName: error instanceof Error ? error.name : 'UnknownError',
+        errorName: errorName(error),
         errorMessage: boundedErrorMessage(error),
       });
       throw new Error(`TRIP_AGENT_PERSISTENCE_FAILED: ${boundedErrorMessage(error)}`);
@@ -260,7 +281,7 @@ export default async (request: Request) => {
       code: failure.code,
       status: failure.status,
       durationMs: Date.now() - startedAt,
-      errorName: error instanceof Error ? error.name : 'UnknownError',
+      errorName: errorName(error),
       errorMessage: boundedErrorMessage(error),
     });
     return errorResponse(error, logContext);

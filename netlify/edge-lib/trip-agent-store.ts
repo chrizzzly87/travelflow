@@ -6,6 +6,7 @@ import type {
   TripAgentQuotaState,
 } from '../../shared/tripAgent.ts';
 import { readEnv } from './ai-provider-runtime.ts';
+import { redactDiagnostic } from './trip-agent-redaction.ts';
 
 const MAX_PERSISTED_JSON_CHARS = 180_000;
 
@@ -131,13 +132,22 @@ export const assertTripAgentAvailable = async (actor: TripAgentActor): Promise<v
   if (!available) throw new Error('TRIP_AGENT_DISABLED');
 };
 
-export const loadEditableTrip = async (tripId: string, actorId: string): Promise<{
+/**
+ * Loads a trip the actor may edit. A share token is accepted as proof of
+ * editable-share access, which is how the rest of the app treats it.
+ */
+export const loadEditableTrip = async (
+  tripId: string,
+  actorId: string,
+  shareToken?: string | null,
+): Promise<{
   trip: ITrip;
   view: IViewSettings | null;
 }> => {
-  const allowed = await rpc<boolean>('trip_agent_can_edit', {
+  const allowed = await rpc<boolean>('trip_agent_can_edit_with_share', {
     p_trip_id: tripId,
     p_user_id: actorId,
+    p_share_token: shareToken || null,
   });
   if (!allowed) throw new Error('TRIP_AGENT_EDIT_ACCESS_REQUIRED');
   const rows = await rest<Array<{ data: ITrip; view_settings: IViewSettings | null }>>(
@@ -229,6 +239,7 @@ type MessageRow = {
   parts: TripAgentMessage['parts'];
   metadata: TripAgentMessage['metadata'];
   status: 'streaming' | 'complete' | 'cancelled' | 'failed';
+  context_refs: TripAgentContextRef[] | null;
 };
 
 const STALE_STREAM_MS = 3 * 60 * 1_000;
@@ -239,32 +250,48 @@ const STALE_STREAM_MS = 3 * 60 * 1_000;
  */
 export const abortStaleTripAgentStreams = async (threadId: string): Promise<number> => {
   const cutoff = new Date(Date.now() - STALE_STREAM_MS).toISOString();
-  const stale = await rest<Array<{ id: string }>>(
-    `trip_agent_messages?thread_id=eq.${encodeURIComponent(threadId)}&status=eq.streaming&updated_at=lt.${encodeURIComponent(cutoff)}&select=id`,
-  );
-  if (!stale?.length) return 0;
-  await rest(`trip_agent_messages?thread_id=eq.${encodeURIComponent(threadId)}&status=eq.streaming&updated_at=lt.${encodeURIComponent(cutoff)}`, {
-    method: 'PATCH',
-    headers: serviceHeaders('return=minimal'),
-    body: JSON.stringify({ status: 'cancelled', updated_at: new Date().toISOString() }),
-  });
-  await rest(`trip_agent_runs?thread_id=eq.${encodeURIComponent(threadId)}&status=eq.running&started_at=lt.${encodeURIComponent(cutoff)}`, {
-    method: 'PATCH',
-    headers: serviceHeaders('return=minimal'),
-    body: JSON.stringify({ status: 'cancelled', error_code: 'CLIENT_DISCONNECTED', finished_at: new Date().toISOString() }),
-  }).catch(() => undefined);
-  return stale.length;
+  const [staleMessages, staleRuns] = await Promise.all([
+    rest<Array<{ id: string }>>(
+      `trip_agent_messages?thread_id=eq.${encodeURIComponent(threadId)}&status=eq.streaming&updated_at=lt.${encodeURIComponent(cutoff)}&select=id`,
+    ).catch(() => [] as Array<{ id: string }>),
+    // A run can outlive its message: the platform can terminate the function
+    // between the last token and the closing write.
+    rest<Array<{ id: string }>>(
+      `trip_agent_runs?thread_id=eq.${encodeURIComponent(threadId)}&status=eq.running&started_at=lt.${encodeURIComponent(cutoff)}&select=id`,
+    ).catch(() => [] as Array<{ id: string }>),
+  ]);
+
+  if (staleMessages?.length) {
+    await rest(`trip_agent_messages?thread_id=eq.${encodeURIComponent(threadId)}&status=eq.streaming&updated_at=lt.${encodeURIComponent(cutoff)}`, {
+      method: 'PATCH',
+      headers: serviceHeaders('return=minimal'),
+      body: JSON.stringify({ status: 'cancelled', updated_at: new Date().toISOString() }),
+    }).catch(() => undefined);
+  }
+  if (staleRuns?.length) {
+    await rest(`trip_agent_runs?thread_id=eq.${encodeURIComponent(threadId)}&status=eq.running&started_at=lt.${encodeURIComponent(cutoff)}`, {
+      method: 'PATCH',
+      headers: serviceHeaders('return=minimal'),
+      body: JSON.stringify({ status: 'cancelled', error_code: 'RUN_ABANDONED', finished_at: new Date().toISOString() }),
+    }).catch(() => undefined);
+  }
+  return (staleMessages?.length || 0) + (staleRuns?.length || 0);
 };
 
 export const loadTripAgentMessages = async (threadId: string): Promise<TripAgentMessage[]> => {
   const rows = await rest<MessageRow[]>(
-    `trip_agent_messages?thread_id=eq.${encodeURIComponent(threadId)}&select=id,role,parts,metadata,status&order=sequence.asc&limit=500`,
+    `trip_agent_messages?thread_id=eq.${encodeURIComponent(threadId)}&select=id,role,parts,metadata,status,context_refs&order=sequence.asc&limit=500`,
   );
   return rows.map((row) => ({
     id: row.id,
     role: row.role === 'system' ? 'assistant' : row.role,
-    parts: row.parts,
-    metadata: { ...(row.metadata || {}), status: row.status },
+    // A reasoning part predates the no-reasoning rule; it is dropped on read too.
+    parts: (row.parts || []).filter((part) => part.type !== 'reasoning'),
+    metadata: {
+      ...(row.metadata || {}),
+      status: row.status,
+      ...(row.context_refs?.length ? { contextRefs: row.context_refs } : {}),
+    },
   }));
 };
 
@@ -425,7 +452,7 @@ export const finishTripAgentRun = async (runId: string, input: {
       output_tokens: input.outputTokens ?? null,
       estimated_cost_usd: input.estimatedCostUsd ?? null,
       error_code: input.errorCode || null,
-      error_message: input.errorMessage?.slice(0, 1_000) || null,
+      error_message: redactDiagnostic(input.errorMessage) || null,
       finished_at: new Date().toISOString(),
     }),
   });
@@ -482,6 +509,30 @@ export const persistTripAgentChangeSet = async (changeSet: TripAgentChangeSetV1,
   });
 };
 
+export interface TripAgentChangeSetStatusRecord {
+  id: string;
+  status: 'pending' | 'applied' | 'applied_partial' | 'rejected' | 'stale';
+  appliedOperationIds: string[];
+}
+
+/**
+ * Current status of every proposal in a thread. A transcript keeps the proposal
+ * as it was streamed, so the card has to be rebuilt from the record, or a
+ * reload would offer an applied or rejected proposal again.
+ */
+export const loadTripAgentChangeSetStatuses = async (
+  threadId: string,
+): Promise<TripAgentChangeSetStatusRecord[]> => {
+  const rows = await rest<Array<{ id: string; status: TripAgentChangeSetStatusRecord['status']; selected_operation_ids: string[] | null }>>(
+    `trip_agent_change_sets?thread_id=eq.${encodeURIComponent(threadId)}&select=id,status,selected_operation_ids&limit=200`,
+  ).catch(() => []);
+  return (rows || []).map((row) => ({
+    id: row.id,
+    status: row.status,
+    appliedOperationIds: row.selected_operation_ids || [],
+  }));
+};
+
 export const loadTripAgentChangeSet = async (changeSetId: string, tripId: string): Promise<TripAgentChangeSetV1> => {
   const rows = await rest<Array<{
     id: string; run_id: string; thread_id: string; trip_id: string; schema_version: 1;
@@ -510,15 +561,29 @@ export const loadTripAgentChangeSet = async (changeSetId: string, tripId: string
 };
 
 export const applyPersistedTripAgentChangeSet = async (input: {
-  actorId: string; changeSetId: string; selectedOperationIds: string[]; trip: ITrip; view: IViewSettings | null;
-}): Promise<{ trip: ITrip; versionId: string; status: 'applied' | 'applied_partial' }> =>
-  rpc('apply_trip_agent_change_set', {
-    p_actor_id: input.actorId,
-    p_change_set_id: input.changeSetId,
-    p_selected_operation_ids: input.selectedOperationIds,
-    p_trip_data: safeJson(input.trip),
-    p_view_settings: safeJson(input.view),
-  });
+  actorId: string;
+  changeSetId: string;
+  selectedOperationIds: string[];
+  trip: ITrip;
+  view: IViewSettings | null;
+  shareToken?: string | null;
+}): Promise<{ trip: ITrip; versionId: string; status: 'applied' | 'applied_partial' | 'stale' }> => {
+  const result = await rpc<{ trip: ITrip | null; versionId: string | null; status: 'applied' | 'applied_partial' | 'stale' }>(
+    'apply_trip_agent_change_set',
+    {
+      p_actor_id: input.actorId,
+      p_change_set_id: input.changeSetId,
+      p_selected_operation_ids: input.selectedOperationIds,
+      p_trip_data: safeJson(input.trip),
+      p_view_settings: safeJson(input.view),
+      p_share_token: input.shareToken || null,
+    },
+  );
+  // The stale case is a result rather than a raised error, so the status update
+  // that records it survives; the caller turns it into the client failure.
+  if (result?.status === 'stale') throw new Error('TRIP_AGENT_STALE_PROPOSAL');
+  return result as { trip: ITrip; versionId: string; status: 'applied' | 'applied_partial' };
+};
 
 export const rejectTripAgentChangeSet = async (changeSetId: string, tripId: string): Promise<void> => {
   await rest(`trip_agent_change_sets?id=eq.${encodeURIComponent(changeSetId)}&trip_id=eq.${encodeURIComponent(tripId)}&status=eq.pending`, {

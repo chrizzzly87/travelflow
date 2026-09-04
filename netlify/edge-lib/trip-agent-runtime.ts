@@ -21,6 +21,7 @@ import {
 } from '../../shared/tripAgentWireOperations.ts';
 import type { ITrip } from '../../types.ts';
 import { readEnv } from './ai-provider-runtime.ts';
+import { errorName, redactDiagnostic } from './trip-agent-redaction.ts';
 import { resolveTripAgentModel } from './trip-agent-model.ts';
 import { runGroundedMapsSpecialist } from './trip-agent-maps-mcp.ts';
 import {
@@ -36,6 +37,22 @@ import {
 } from './trip-agent-store.ts';
 
 const MAX_HISTORY_MESSAGES = 80;
+
+/**
+ * Interactive runs must end before Netlify's non-configurable 60 second
+ * synchronous limit, with room for the closing writes.
+ * @see https://docs.netlify.com/build/functions/configuration/
+ */
+export const INTERACTIVE_RUN_BUDGET_MS = 45_000;
+
+/**
+ * Drops reasoning parts before a message is stored. A provider can still emit
+ * them, and a transcript is read back by collaborators and administrators.
+ */
+export const withoutReasoningParts = (message: TripAgentMessage): TripAgentMessage => {
+  const parts = message.parts.filter((part) => part.type !== 'reasoning');
+  return parts.length === message.parts.length ? message : { ...message, parts };
+};
 
 const messageHasVisibleContent = (message: UIMessage): boolean => message.parts.some((part) => {
   if (part.type === 'text') return part.text.trim().length > 0;
@@ -287,8 +304,14 @@ Rules:
       agent,
       uiMessages: canonicalMessages,
       abortSignal: input.abortSignal,
-      timeout: { totalMs: 90_000 },
-      sendReasoning: true,
+      // Netlify terminates a synchronous function at 60s, outside this code's
+      // error handling, which left runs stuck as "running". The interactive
+      // budget stays below that so the run always finishes here.
+      timeout: { totalMs: INTERACTIVE_RUN_BUDGET_MS },
+      // Hidden reasoning never leaves the provider: it is not streamed to the
+      // panel and never stored. The public plan the model writes as text is the
+      // only account of its thinking.
+      sendReasoning: false,
       sendSources: true,
       generateMessageId: () => crypto.randomUUID(),
       messageMetadata: () => ({
@@ -319,7 +342,7 @@ Rules:
         streamFinished = true;
         const status = isAborted ? 'cancelled' : outcome.status === 'completed' ? 'completed' : 'failed';
         await persistTripAgentMessage({
-          message: responseMessage as TripAgentMessage,
+          message: withoutReasoningParts(responseMessage as TripAgentMessage),
           threadId: input.threadId,
           tripId: input.trip.id,
           status: isAborted ? 'cancelled' : status === 'failed' ? 'failed' : 'complete',
@@ -349,8 +372,8 @@ Rules:
           requestId: input.requestId,
           runId,
           model: resolvedModel.modelId,
-          errorName: error instanceof Error ? error.name : 'UnknownError',
-          errorMessage: error instanceof Error ? error.message.slice(0, 300) : 'Unknown stream error',
+          errorName: errorName(error),
+          errorMessage: redactDiagnostic(error),
         });
         return 'The Trip Agent could not finish this response. Please try again.';
       },
@@ -363,8 +386,8 @@ Rules:
       runId,
       agentKey: definition.agentKey,
       model: resolvedModel.modelId,
-      errorName: error instanceof Error ? error.name : 'UnknownError',
-      errorMessage: error instanceof Error ? error.message.slice(0, 500) : 'Unknown model error',
+      errorName: errorName(error),
+      errorMessage: redactDiagnostic(error),
     });
     if (!streamFinished) {
       await refundTripAgentQuota(input.actor.userId, input.requestId).catch(() => undefined);
@@ -372,7 +395,7 @@ Rules:
         status: 'refunded',
         latencyMs: Date.now() - startedAt,
         errorCode: 'MODEL_START_FAILED',
-        errorMessage: error instanceof Error ? error.message : 'Unknown model error',
+        errorMessage: redactDiagnostic(error),
       }).catch(() => undefined);
     }
     throw error;

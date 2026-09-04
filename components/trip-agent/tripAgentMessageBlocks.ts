@@ -7,7 +7,7 @@ import {
 } from '../../shared/tripAgent';
 import type { TripAgentActivityStep } from './TripAgentActivityGroup';
 import type { TripAgentQuestionOption } from './TripAgentQuestionCard';
-import type { ToolPart } from '../ai-elements/tool';
+import type { DynamicToolUIPart, ToolUIPart } from 'ai';
 
 export type TripAgentMessageBlock =
     | { kind: 'text'; key: string; text: string }
@@ -17,6 +17,9 @@ export type TripAgentMessageBlock =
     | { kind: 'proposal-failed'; key: string; detail?: string }
     | { kind: 'question'; key: string; question: string; options: TripAgentQuestionOption[]; allowCustom: boolean }
     | { kind: 'source'; key: string; url: string; title: string };
+
+/** A tool call in a message, static or dynamic. */
+export type ToolPart = ToolUIPart | DynamicToolUIPart;
 
 export const resolveToolName = (part: ToolPart): string => (
     part.type === 'dynamic-tool' ? part.toolName : part.type.slice('tool-'.length)
@@ -135,12 +138,9 @@ export const buildTripAgentMessageBlocks = (
 
     message.parts.forEach((part, index) => {
         const key = `${message.id}-${index}`;
-        if (part.type === 'reasoning') {
-            const group = openActivity(key);
-            group.reasoningText = [group.reasoningText, part.text || ''].filter(Boolean).join('\n\n');
-            if (isStreaming && part.state === 'streaming') group.isStreaming = true;
-            return;
-        }
+        // Hidden reasoning is neither streamed nor stored any more; a part left
+        // in an old transcript is skipped rather than rendered.
+        if (part.type === 'reasoning') return;
         if (isToolUIPart(part)) {
             const proposal = asProposal(part);
             if (proposal) {

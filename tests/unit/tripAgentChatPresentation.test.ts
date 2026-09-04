@@ -18,7 +18,7 @@ const thread = (id: string, updatedAt: string, status: TripAgentThread['status']
 const NOW = Date.parse('2026-09-03T12:00:00Z');
 
 describe('buildTripAgentMessageBlocks', () => {
-    it('collapses a run of reasoning and tool parts into one activity block', () => {
+    it('collapses a run of tool parts into one activity block and ignores reasoning', () => {
         const message = {
             id: 'assistant-1',
             role: 'assistant',
@@ -37,10 +37,13 @@ describe('buildTripAgentMessageBlocks', () => {
         const activity = blocks[0];
         if (activity.kind !== 'activity') throw new Error('expected an activity block');
         expect(activity.steps.map((step) => step.name)).toEqual(['read trip context', 'delegate hotel search']);
-        expect(activity.reasoningText).toBe('Checking the route\n\nComparing stays');
+        // Hidden reasoning is neither streamed nor stored, and an old
+        // transcript that still carries it must not render it either.
+        expect(activity.reasoningText).toBe('');
     });
 
     it('keeps a proposal out of the activity block so it stays reviewable', () => {
+        // Only the tool call forms activity now; the reasoning part is dropped.
         const changeSet = {
             schemaVersion: 1,
             id: '4f1c9d5e-0000-4000-8000-000000000000',
@@ -74,7 +77,7 @@ describe('buildTripAgentMessageBlocks', () => {
 
         const blocks = buildTripAgentMessageBlocks(message, false);
 
-        expect(blocks.map((block) => block.kind)).toEqual(['activity', 'proposal']);
+        expect(blocks.map((block) => block.kind)).toEqual(['proposal']);
     });
 
     it('marks a failed tool call so the group can show it as a failure', () => {
