@@ -24,9 +24,10 @@ export const runGroundedMapsSpecialist = async (input: {
   definition: AgentRuntimeDefinition;
   abortSignal?: AbortSignal;
 }): Promise<{ status: 'complete' | 'unavailable'; summary: string }> => {
-  // A dedicated server key is preferred, but the existing Maps key is tried too
-  // so grounding works wherever that key is not referrer-restricted.
-  const apiKey = readEnv('GOOGLE_MAPS_GROUNDING_API_KEY') || readEnv('VITE_GOOGLE_MAPS_API_KEY');
+  // Only a dedicated server-side key: VITE_GOOGLE_MAPS_API_KEY is shipped to
+  // browsers and is expected to be referrer-restricted, so it must not
+  // authenticate a server call.
+  const apiKey = readEnv('GOOGLE_MAPS_GROUNDING_API_KEY');
   if (!apiKey) {
     return {
       status: 'unavailable',

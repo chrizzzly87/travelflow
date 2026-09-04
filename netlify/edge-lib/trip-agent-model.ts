@@ -69,6 +69,44 @@ export const chooseTripAgentModel = (inputs: TripAgentModelInputs): TripAgentMod
   throw new Error('TRIP_AGENT_MODEL_NOT_CONFIGURED');
 };
 
+export interface TripAgentRuntimeModelSettings {
+  defaultModelId: string;
+  approvedOpenRouterModels: string[];
+}
+
+/**
+ * Reads the app-wide default model and the approved OpenRouter list in one
+ * call. Approval is enforced on the active path, not only on the Gateway one.
+ */
+export const readRuntimeModelSettings = async (): Promise<TripAgentRuntimeModelSettings> => {
+  const supabaseUrl = readEnv('VITE_SUPABASE_URL').replace(/\/+$/, '');
+  const anonKey = readEnv('VITE_SUPABASE_ANON_KEY');
+  if (!supabaseUrl || !anonKey) return { defaultModelId: '', approvedOpenRouterModels: [] };
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/get_public_runtime_settings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: anonKey,
+        Authorization: `Bearer ${anonKey}`,
+      },
+      body: '{}',
+    });
+    if (!response.ok) return { defaultModelId: '', approvedOpenRouterModels: [] };
+    const payload = await response.json();
+    const row = Array.isArray(payload) ? payload[0] : payload;
+    const list = Array.isArray(row?.ai_approved_openrouter_models) ? row.ai_approved_openrouter_models : [];
+    return {
+      defaultModelId: typeof row?.ai_default_model_id === 'string' ? row.ai_default_model_id : '',
+      approvedOpenRouterModels: list.flatMap((entry: unknown) => (
+        typeof entry === 'string' && entry.trim() ? [entry.trim()] : []
+      )),
+    };
+  } catch {
+    return { defaultModelId: '', approvedOpenRouterModels: [] };
+  }
+};
+
 /** Reads the app-wide default model id from the public runtime settings. */
 export const readRuntimeDefaultModelId = async (): Promise<string> => {
   const supabaseUrl = readEnv('VITE_SUPABASE_URL').replace(/\/+$/, '');
@@ -113,14 +151,40 @@ export const applyOpenRouterReasoning = (
   return next;
 };
 
-export const withOpenRouterReasoning = (effort: string): typeof fetch => async (input, init) => {
-  if (!init?.body || typeof init.body !== 'string' || effort === 'none') return fetch(input, init);
+/**
+ * Provider preferences that keep planning data out of training and logging
+ * pipelines. The Gateway path carries the same guarantee through
+ * `zeroDataRetention`; without them the OpenRouter path would have none.
+ */
+export const applyOpenRouterPrivacy = (body: Record<string, unknown>): Record<string, unknown> => ({
+  ...body,
+  provider: {
+    ...(body.provider as Record<string, unknown> | undefined),
+    data_collection: 'deny',
+    allow_fallbacks: false,
+  },
+});
+
+export const withOpenRouterRequestPolicy = (effort: string): typeof fetch => async (input, init) => {
+  if (!init?.body || typeof init.body !== 'string') return fetch(input, init);
   try {
-    const body = JSON.parse(init.body) as Record<string, unknown>;
-    return await fetch(input, { ...init, body: JSON.stringify(applyOpenRouterReasoning(body, effort)) });
+    const parsed = JSON.parse(init.body) as Record<string, unknown>;
+    const body = applyOpenRouterPrivacy(applyOpenRouterReasoning(parsed, effort));
+    return await fetch(input, { ...init, body: JSON.stringify(body) });
   } catch {
     return await fetch(input, init);
   }
+};
+
+/** True when the configured default may be used as-is. */
+export const isApprovedRuntimeDefault = (settings: TripAgentRuntimeModelSettings): boolean => {
+  const parsed = settings.defaultModelId.trim();
+  if (!parsed) return false;
+  if (!parsed.startsWith('openrouter:')) return true;
+  const model = parsed.slice('openrouter:'.length);
+  return settings.approvedOpenRouterModels.length === 0
+    ? false
+    : settings.approvedOpenRouterModels.includes(model);
 };
 
 /** Turns a choice into the language model the AI SDK should call. */
@@ -135,7 +199,7 @@ export const instantiateTripAgentModel = (choice: TripAgentModelChoice): Languag
       // client does not model. Left at its default, Gemini spent its whole
       // output budget thinking and every run ended on `length` before a tool
       // call was emitted.
-      fetch: withOpenRouterReasoning(readEnv('TRIP_AGENT_REASONING_EFFORT') || 'low'),
+      fetch: withOpenRouterRequestPolicy(readEnv('TRIP_AGENT_REASONING_EFFORT') || 'low'),
     }).chat(choice.modelId);
   }
   return createOpenAI({ apiKey: readEnv('OPENAI_API_KEY') }).responses(choice.modelId);
@@ -146,7 +210,12 @@ export const resolveTripAgentModel = async (
   fallbackModel: string,
 ): Promise<{ model: LanguageModel; modelId: string; usingGateway: boolean }> => {
   const override = readEnv('TRIP_AGENT_MODEL');
-  const runtimeDefault = override ? '' : await readRuntimeDefaultModelId();
+  const settings = override
+    ? { defaultModelId: '', approvedOpenRouterModels: [] }
+    : await readRuntimeModelSettings();
+  // An unapproved default is ignored rather than silently used: model approval
+  // is an administrator decision, and it has to hold on this path too.
+  const runtimeDefault = isApprovedRuntimeDefault(settings) ? settings.defaultModelId : '';
   const choice = chooseTripAgentModel({
     override,
     runtimeDefault,
