@@ -576,7 +576,9 @@
       "TRIP_AGENT_PERSISTENCE_FAILED": "Non è stato possibile salvare il tuo messaggio",
       "TRIP_AGENT_THREAD_NOT_FOUND": "Questa chat non è più disponibile",
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Questo messaggio è troppo lungo",
-      "TRIP_AGENT_QUOTA_EXCEEDED": "Limite giornaliero raggiunto"
+      "TRIP_AGENT_QUOTA_EXCEEDED": "Limite giornaliero raggiunto",
+      "TRIP_AGENT_NO_OP": "Non resta nulla da cambiare",
+      "TRIP_AGENT_STALE_PROPOSAL": "Questa proposta non è più aggiornata"
     },
     "agentName": "Trip Agent",
     "messageFailed": "Non inviato",
@@ -664,7 +666,9 @@
     "askAgain": "Chiedi altro",
     "questionCustom": "Altro…",
     "questionSend": "Invia",
-    "previewShortcut": "Premi P per alternare l’anteprima"
+    "previewShortcut": "Premi P per alternare l’anteprima",
+    "appliedPartial": "Applicate {count} modifiche su {requested} — il resto non era più valido",
+    "superseded": "Sostituita da una proposta più recente."
   },
   "storageNotice": {
     "tripsPrunedTitle": "La memoria del dispositivo e piena",

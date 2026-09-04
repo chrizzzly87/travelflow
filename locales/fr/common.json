@@ -576,7 +576,9 @@
       "TRIP_AGENT_PERSISTENCE_FAILED": "Votre message n’a pas pu être enregistré",
       "TRIP_AGENT_THREAD_NOT_FOUND": "Cette conversation n’est plus disponible",
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Ce message est trop long",
-      "TRIP_AGENT_QUOTA_EXCEEDED": "Limite quotidienne atteinte"
+      "TRIP_AGENT_QUOTA_EXCEEDED": "Limite quotidienne atteinte",
+      "TRIP_AGENT_NO_OP": "Plus rien à changer",
+      "TRIP_AGENT_STALE_PROPOSAL": "Cette proposition n’est plus à jour"
     },
     "agentName": "Trip Agent",
     "messageFailed": "Non envoyé",
@@ -664,7 +666,9 @@
     "askAgain": "Demander autre chose",
     "questionCustom": "Autre chose…",
     "questionSend": "Envoyer",
-    "previewShortcut": "P bascule l’aperçu"
+    "previewShortcut": "P bascule l’aperçu",
+    "appliedPartial": "{count} changements sur {requested} appliqués — le reste ne s’appliquait plus",
+    "superseded": "Remplacée par une proposition plus récente."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Le stockage de l'appareil est plein",

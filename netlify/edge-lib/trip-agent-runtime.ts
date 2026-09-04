@@ -253,6 +253,7 @@ Rules:
 - Before a long tool run, say in one sentence what you are about to do.
 - When a proposal frees days or leaves a gap — a removed stop, a shortened stay — call ask_traveler once, after create_trip_proposal, with two to four concrete options for those days (for example extending nearby stays, shortening the whole trip, or adding another stop). Keep each option label under six words and set allowCustom.
 - Call ask_traveler at most once per answer, and never for a question the trip data already answers.
+- Only one proposal may be open at a time. When the traveller answers a follow-up question, put the whole updated plan into a single new create_trip_proposal call rather than adding a second one.
 - Nothing changes until the user explicitly applies selected proposal operations.`,
     tools: agentTools,
     // ask_traveler is always available: it only asks a question, and the stored

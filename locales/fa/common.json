@@ -343,7 +343,9 @@
       "TRIP_AGENT_PERSISTENCE_FAILED": "پیام شما ذخیره نشد",
       "TRIP_AGENT_THREAD_NOT_FOUND": "این گفت‌وگو دیگر در دسترس نیست",
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "این پیام بسیار بلند است",
-      "TRIP_AGENT_QUOTA_EXCEEDED": "محدودیت روزانه به پایان رسید"
+      "TRIP_AGENT_QUOTA_EXCEEDED": "محدودیت روزانه به پایان رسید",
+      "TRIP_AGENT_NO_OP": "چیزی برای تغییر نمانده",
+      "TRIP_AGENT_STALE_PROPOSAL": "این پیشنهاد قدیمی شده است"
     },
     "agentName": "Trip Agent",
     "messageFailed": "ارسال نشد",
@@ -431,7 +433,9 @@
     "askAgain": "چیز دیگری بپرس",
     "questionCustom": "چیز دیگری…",
     "questionSend": "ارسال",
-    "previewShortcut": "کلید P پیش‌نمایش را جابه‌جا می‌کند"
+    "previewShortcut": "کلید P پیش‌نمایش را جابه‌جا می‌کند",
+    "appliedPartial": "{count} از {requested} تغییر اعمال شد — بقیه دیگر جور نبود",
+    "superseded": "با پیشنهاد تازه‌تری جایگزین شد."
   },
   "storageNotice": {
     "tripsPrunedTitle": "حافظه دستگاه پر است",

@@ -25,6 +25,10 @@ summary: "Trip Agent brings shared, context-aware planning into each trip while 
 - [x] [Fixed] 🔁 Fixed the preview flickering endlessly when it opened; it now shows the proposed trip and holds still.
 - [x] [Improved] 🌍 A moving orb and a live skeleton now show that changes are being prepared, from the moment you hit send.
 - [x] [Improved] 💬 When a change frees up days, Trip Agent asks what to do with them and you pick an option — or type your own — right in the chat.
+- [x] [Fixed] 🧷 Fixed an applied change disappearing again right after you approved it.
+- [x] [Improved] 🪧 Only one set of proposed changes is open at a time; an older one is marked as replaced instead of competing with the new one.
+- [x] [Improved] ⌨️ The preview toggle moved to Cmd/Ctrl+Shift+P and is shown on the button, so it also works while you type.
+- [x] [Improved] 🏷️ Errors now show a plain-language reason instead of an internal code.
 - [x] [Improved] 🗂️ Chat history is back as a list in the panel, and the chat stays open when you reload the page.
 - [x] [Improved] ⌨️ Press P to flip the preview on and off; leaving it restores your plan exactly.
 - [x] [Fixed] ✏️ Fixed mention tags rendering twice in the message box and a stray highlight above the toolbar.

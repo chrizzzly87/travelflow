@@ -66,7 +66,13 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 - [x] Toggle the preview with P.
 - [x] Give the review card an eyebrow and a one-line title, and make Discard close it with a next step.
 - [x] Add `ask_traveler`, so the agent can ask what to do with days a change frees up and the answer continues the chat.
+- [x] Keep a preview out of every path that can persist, so an applied change cannot be written over by the pre-preview state.
+- [x] Report a partial apply instead of letting a previewed change disappear silently.
+- [x] Allow one open proposal per trip: creating a new one closes the previous, and older cards read as replaced.
+- [x] Move the preview toggle to Cmd/Ctrl+Shift+P, shown on the button, so it works from the message box too.
+- [x] Never show a raised database code as the error detail; the localized title carries the meaning.
 - [ ] Verify the deploy preview end to end with an administrator account (transcript reload, retry, apply, quota refund).
+- [ ] Decide whether transfers should group under their destination stop rather than the stop whose days they occupy.
 - [x] Resolve the specialist model the same way as the orchestrator; a bare model id only worked with the AI Gateway.
 - [ ] Normalize specialist result cards for stays and routes (#485).
 

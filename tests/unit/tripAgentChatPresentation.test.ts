@@ -198,3 +198,29 @@ describe('question blocks', () => {
         expect(blocks.some((block) => block.kind === 'question')).toBe(false);
     });
 });
+
+describe('readTripAgentError', () => {
+    it('drops an upstream code token so the reader sees the localized failure only', async () => {
+        const { readTripAgentError } = await import('../../services/tripAgentService');
+        const error = Object.assign(new Error('This proposal is based on an older trip version.'), {
+            code: 'TRIP_AGENT_PROPOSAL_STALE',
+            detail: 'TRIP_AGENT_STALE_PROPOSAL',
+        });
+
+        const info = readTripAgentError(error);
+
+        expect(info.code).toBe('TRIP_AGENT_PROPOSAL_STALE');
+        expect(info.detail).toBeUndefined();
+        expect(info.message).toBe('This proposal is based on an older trip version.');
+    });
+
+    it('keeps a detail that actually explains something', async () => {
+        const { readTripAgentError } = await import('../../services/tripAgentService');
+        const info = readTripAgentError(Object.assign(new Error('Could not apply.'), {
+            code: 'TRIP_AGENT_REQUEST_FAILED',
+            detail: 'The selected changes no longer alter this trip.',
+        }));
+
+        expect(info.detail).toBe('The selected changes no longer alter this trip.');
+    });
+});

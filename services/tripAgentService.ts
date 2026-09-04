@@ -69,14 +69,20 @@ export interface TripAgentErrorInfo {
     status?: number;
 }
 
+/** True for upstream strings that are just an identifier, e.g. a raised code. */
+const isCodeLikeDetail = (value: string): boolean => /^[A-Z][A-Z0-9_]{3,}$/.test(value.trim());
+
 export const readTripAgentError = (error: unknown): TripAgentErrorInfo => {
     const candidate = error as TripAgentRequestError | undefined;
     const message = candidate?.message || 'Trip Agent could not complete this request.';
     const inlineCode = /TRIP_AGENT_[A-Z_]+/.exec(message)?.[0];
+    const rawDetail = candidate?.detail?.trim();
     return {
         code: candidate?.code || inlineCode || 'TRIP_AGENT_REQUEST_FAILED',
-        message: message.slice(0, 300),
-        detail: candidate?.detail?.slice(0, 300),
+        message: isCodeLikeDetail(message) ? 'Trip Agent could not complete this request.' : message.slice(0, 300),
+        // Raised database codes carry no information a reader can act on; the
+        // localized title already names the failure.
+        detail: rawDetail && !isCodeLikeDetail(rawDetail) ? rawDetail.slice(0, 300) : undefined,
         requestId: candidate?.requestId,
         status: candidate?.status,
     };

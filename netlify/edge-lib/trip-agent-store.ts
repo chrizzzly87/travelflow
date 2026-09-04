@@ -453,6 +453,16 @@ export const persistTripAgentToolCall = async (input: {
 };
 
 export const persistTripAgentChangeSet = async (changeSet: TripAgentChangeSetV1, actorId: string): Promise<void> => {
+  // One open proposal per trip: a second pending set would go stale the moment
+  // the first is applied, and the reviewer would meet two competing cards.
+  await rest(
+    `trip_agent_change_sets?trip_id=eq.${encodeURIComponent(changeSet.tripId)}&status=eq.pending`,
+    {
+      method: 'PATCH',
+      headers: serviceHeaders('return=minimal'),
+      body: JSON.stringify({ status: 'rejected', rejected_at: new Date().toISOString() }),
+    },
+  ).catch(() => undefined);
   await rest('trip_agent_change_sets', {
     method: 'POST',
     headers: serviceHeaders('return=minimal'),

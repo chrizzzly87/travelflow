@@ -343,7 +343,9 @@
       "TRIP_AGENT_PERSISTENCE_FAILED": "آپ کا پیغام محفوظ نہیں ہو سکا",
       "TRIP_AGENT_THREAD_NOT_FOUND": "یہ چیٹ اب دستیاب نہیں ہے",
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "یہ پیغام بہت طویل ہے",
-      "TRIP_AGENT_QUOTA_EXCEEDED": "روزانہ کی حد پوری ہو گئی"
+      "TRIP_AGENT_QUOTA_EXCEEDED": "روزانہ کی حد پوری ہو گئی",
+      "TRIP_AGENT_NO_OP": "بدلنے کو کچھ باقی نہیں",
+      "TRIP_AGENT_STALE_PROPOSAL": "یہ تجویز پرانی ہو چکی ہے"
     },
     "agentName": "Trip Agent",
     "messageFailed": "بھیجا نہیں گیا",
@@ -431,7 +433,9 @@
     "askAgain": "کچھ اور پوچھیں",
     "questionCustom": "کچھ اور…",
     "questionSend": "بھیجیں",
-    "previewShortcut": "پیش منظر بدلنے کے لیے P دبائیں"
+    "previewShortcut": "پیش منظر بدلنے کے لیے P دبائیں",
+    "appliedPartial": "{requested} میں سے {count} تبدیلیاں لاگو ہوئیں — باقی اب فٹ نہیں تھیں",
+    "superseded": "نئی تجویز نے اس کی جگہ لے لی۔"
   },
   "storageNotice": {
     "tripsPrunedTitle": "ڈیوائس کی اسٹوریج بھر گئی ہے",

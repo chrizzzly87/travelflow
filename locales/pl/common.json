@@ -574,7 +574,9 @@
       "TRIP_AGENT_PERSISTENCE_FAILED": "Nie udało się zapisać Twojej wiadomości",
       "TRIP_AGENT_THREAD_NOT_FOUND": "Ten czat nie jest już dostępny",
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Ta wiadomość jest za długa",
-      "TRIP_AGENT_QUOTA_EXCEEDED": "Osiągnięto dzienny limit"
+      "TRIP_AGENT_QUOTA_EXCEEDED": "Osiągnięto dzienny limit",
+      "TRIP_AGENT_NO_OP": "Nie ma już nic do zmiany",
+      "TRIP_AGENT_STALE_PROPOSAL": "Ta propozycja jest nieaktualna"
     },
     "agentName": "Trip Agent",
     "messageFailed": "Nie wysłano",
@@ -662,7 +664,9 @@
     "askAgain": "Zapytaj o coś innego",
     "questionCustom": "Coś innego…",
     "questionSend": "Wyślij",
-    "previewShortcut": "Naciśnij P, aby przełączyć podgląd"
+    "previewShortcut": "Naciśnij P, aby przełączyć podgląd",
+    "appliedPartial": "Zastosowano {count} z {requested} zmian — reszta już nie pasowała",
+    "superseded": "Zastąpiona nowszą propozycją."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",

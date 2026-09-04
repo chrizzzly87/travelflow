@@ -576,7 +576,9 @@
       "TRIP_AGENT_PERSISTENCE_FAILED": "Не удалось сохранить ваше сообщение",
       "TRIP_AGENT_THREAD_NOT_FOUND": "Этот чат больше недоступен",
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Это сообщение слишком длинное",
-      "TRIP_AGENT_QUOTA_EXCEEDED": "Дневной лимит достигнут"
+      "TRIP_AGENT_QUOTA_EXCEEDED": "Дневной лимит достигнут",
+      "TRIP_AGENT_NO_OP": "Менять больше нечего",
+      "TRIP_AGENT_STALE_PROPOSAL": "Это предложение устарело"
     },
     "agentName": "Trip Agent",
     "messageFailed": "Не отправлено",
@@ -664,7 +666,9 @@
     "askAgain": "Спросить о другом",
     "questionCustom": "Другое…",
     "questionSend": "Отправить",
-    "previewShortcut": "P переключает предпросмотр"
+    "previewShortcut": "P переключает предпросмотр",
+    "appliedPartial": "Применено изменений: {count} из {requested} — остальные больше не подходили",
+    "superseded": "Заменено более новым предложением."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Память устройства заполнена",

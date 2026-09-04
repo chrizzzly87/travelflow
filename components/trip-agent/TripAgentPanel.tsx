@@ -206,6 +206,7 @@ const ChatMessage: React.FC<{
                                 onPreviewTrip={onPreviewTrip}
                                 onRevertLastChange={onRevertLastChange}
                                 shortcutEnabled={block.changeSet.id === shortcutChangeSetId}
+                                isSuperseded={Boolean(shortcutChangeSetId) && block.changeSet.id !== shortcutChangeSetId}
                                 onAskAgain={onAskAgain}
                             />
                         );

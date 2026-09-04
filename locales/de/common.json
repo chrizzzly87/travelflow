@@ -576,7 +576,9 @@
       "TRIP_AGENT_PERSISTENCE_FAILED": "Deine Nachricht konnte nicht gespeichert werden",
       "TRIP_AGENT_THREAD_NOT_FOUND": "Dieser Chat ist nicht mehr verfügbar",
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Diese Nachricht ist zu lang",
-      "TRIP_AGENT_QUOTA_EXCEEDED": "Tageslimit erreicht"
+      "TRIP_AGENT_QUOTA_EXCEEDED": "Tageslimit erreicht",
+      "TRIP_AGENT_NO_OP": "Es bleibt nichts zu ändern",
+      "TRIP_AGENT_STALE_PROPOSAL": "Dieser Vorschlag ist veraltet"
     },
     "agentName": "Trip Agent",
     "messageFailed": "Nicht gesendet",
@@ -664,7 +666,9 @@
     "askAgain": "Etwas anderes fragen",
     "questionCustom": "Etwas anderes…",
     "questionSend": "Senden",
-    "previewShortcut": "P schaltet die Vorschau um"
+    "previewShortcut": "P schaltet die Vorschau um",
+    "appliedPartial": "{count} von {requested} Änderungen übernommen – der Rest passte nicht mehr",
+    "superseded": "Durch einen neueren Vorschlag ersetzt."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Der Geratespeicher ist voll",
