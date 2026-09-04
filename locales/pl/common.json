@@ -654,7 +654,9 @@
     "groupTrip": "Zmień dane podróży",
     "groupReplace": "Przebuduj plan ({count} przystanków)",
     "groupReplaceSegment": "Przebuduj od {from} do {to}",
-    "groupShifts": "przesuwa {count} więcej"
+    "groupShifts": "przesuwa {count} więcej",
+    "groupRemoveCity": "Usuń {label} i {count} powiązanych elementów",
+    "previewSkipped": "{count} zmian już nie pasuje i zostanie pominiętych."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",

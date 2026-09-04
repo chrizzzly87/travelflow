@@ -656,7 +656,9 @@
     "groupTrip": "Обновить данные поездки",
     "groupReplace": "Перестроить маршрут ({count} остановок)",
     "groupReplaceSegment": "Перестроить с {from} по {to}",
-    "groupShifts": "сдвигает ещё {count}"
+    "groupShifts": "сдвигает ещё {count}",
+    "groupRemoveCity": "Удалить {label} и связанные элементы: {count}",
+    "previewSkipped": "Изменений больше не применимо: {count}. Они пропущены."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Память устройства заполнена",

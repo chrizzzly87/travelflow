@@ -31,7 +31,7 @@ const useQuestionnaireChoices = (): QuestionnaireChoicesContextValue => {
 };
 
 export const Questionnaire = ({ className, ...props }: React.ComponentProps<'div'>) => (
-    <div data-slot="questionnaire" className={cn('flex flex-col gap-4', className)} {...props} />
+    <div data-slot="questionnaire" className={cn('flex flex-col gap-3', className)} {...props} />
 );
 
 export const QuestionnaireItem = ({ className, ...props }: React.ComponentProps<'fieldset'>) => (
@@ -87,7 +87,7 @@ export const QuestionnaireChoices = ({
                 data-slot="questionnaire-choices"
                 data-type={type}
                 role={type === 'single' ? 'radiogroup' : 'group'}
-                className={cn('grid min-w-0 gap-1.5', className)}
+                className={cn('grid min-w-0 gap-1', className)}
                 {...props}
             />
         </QuestionnaireChoicesContext.Provider>
@@ -117,7 +117,7 @@ export const QuestionnaireChoice = ({
             data-checked={isChecked ? '' : undefined}
             data-disabled={isDisabled ? '' : undefined}
             className={cn(
-                'relative flex min-h-11 cursor-pointer items-start gap-2.5 rounded-xl border p-3 text-start transition-colors outline-none select-none',
+                'relative flex cursor-pointer items-start gap-2.5 rounded-lg border p-2.5 text-start text-sm transition-colors outline-none select-none',
                 isChecked ? 'border-accent-300 bg-accent-50/60' : 'border-slate-200 hover:bg-slate-50',
                 isDisabled && 'pointer-events-none cursor-not-allowed opacity-50',
                 'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent-500',
@@ -139,7 +139,7 @@ export const QuestionnaireChoice = ({
                 aria-hidden="true"
                 data-slot="questionnaire-choice-indicator"
                 className={cn(
-                    'pointer-events-none mt-0.5 flex size-4 shrink-0 items-center justify-center border',
+                    'pointer-events-none mt-px flex size-4 shrink-0 items-center justify-center border',
                     choices.type === 'single' ? 'rounded-full' : 'rounded-[4px]',
                     isChecked ? 'border-accent-600 bg-accent-600 text-white' : 'border-slate-400 bg-white',
                 )}

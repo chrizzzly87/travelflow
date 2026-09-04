@@ -656,7 +656,9 @@
     "groupTrip": "Reisedaten ändern",
     "groupReplace": "Reiseverlauf neu aufbauen ({count} Stopps)",
     "groupReplaceSegment": "{from} bis {to} neu aufbauen",
-    "groupShifts": "verschiebt {count} weitere"
+    "groupShifts": "verschiebt {count} weitere",
+    "groupRemoveCity": "{label} und {count} zugehörige Einträge entfernen",
+    "previewSkipped": "{count} Änderungen passen nicht mehr und werden übersprungen."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Der Geratespeicher ist voll",

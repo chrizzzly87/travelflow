@@ -423,7 +423,9 @@
     "groupTrip": "به‌روزرسانی مشخصات سفر",
     "groupReplace": "بازسازی برنامه ({count} توقف)",
     "groupReplaceSegment": "بازسازی از {from} تا {to}",
-    "groupShifts": "{count} مورد دیگر جابه‌جا می‌شود"
+    "groupShifts": "{count} مورد دیگر جابه‌جا می‌شود",
+    "groupRemoveCity": "حذف {label} و {count} مورد مرتبط",
+    "previewSkipped": "{count} تغییر دیگر معتبر نیست و رد می‌شود."
   },
   "storageNotice": {
     "tripsPrunedTitle": "حافظه دستگاه پر است",

@@ -656,7 +656,9 @@
     "groupTrip": "Atualizar dados da viagem",
     "groupReplace": "Refazer o roteiro ({count} paradas)",
     "groupReplaceSegment": "Refazer de {from} a {to}",
-    "groupShifts": "desloca mais {count}"
+    "groupShifts": "desloca mais {count}",
+    "groupRemoveCity": "Remover {label} e {count} itens vinculados",
+    "previewSkipped": "{count} mudanças não se aplicam mais e serão ignoradas."
   },
   "storageNotice": {
     "tripsPrunedTitle": "O armazenamento do dispositivo esta cheio",

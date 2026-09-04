@@ -656,7 +656,9 @@
     "groupTrip": "Modifier les détails du voyage",
     "groupReplace": "Reconstruire l’itinéraire ({count} étapes)",
     "groupReplaceSegment": "Reconstruire de {from} à {to}",
-    "groupShifts": "décale {count} de plus"
+    "groupShifts": "décale {count} de plus",
+    "groupRemoveCity": "Supprimer {label} et {count} éléments liés",
+    "previewSkipped": "{count} changements ne s’appliquent plus et sont ignorés."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Le stockage de l'appareil est plein",

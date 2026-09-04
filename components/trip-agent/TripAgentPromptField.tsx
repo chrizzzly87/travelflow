@@ -55,11 +55,11 @@ export const TripAgentPromptField: React.FC<{
 
     const pieces: React.ReactNode[] = [];
     let cursor = 0;
-    spans.forEach((span, index) => {
+    spans.forEach((span) => {
         if (span.start > cursor) pieces.push(value.slice(cursor, span.start));
         pieces.push(
             <mark
-                key={`${span.start}-${index}`}
+                key={`mention-${span.start}-${span.end}`}
                 className={`rounded-[5px] px-0.5 py-px ${
                     span.contextRef ? 'bg-accent-100 text-accent-900' : 'bg-slate-100 text-slate-700'
                 }`}

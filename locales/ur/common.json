@@ -423,7 +423,9 @@
     "groupTrip": "سفر کی تفصیل اپ ڈیٹ کریں",
     "groupReplace": "سفرنامہ دوبارہ بنائیں ({count} پڑاؤ)",
     "groupReplaceSegment": "{from} سے {to} تک دوبارہ بنائیں",
-    "groupShifts": "{count} مزید کھسکتے ہیں"
+    "groupShifts": "{count} مزید کھسکتے ہیں",
+    "groupRemoveCity": "{label} اور {count} منسلک آئٹمز ہٹائیں",
+    "previewSkipped": "{count} تبدیلیاں اب لاگو نہیں ہوتیں، انہیں چھوڑ دیا جائے گا۔"
   },
   "storageNotice": {
     "tripsPrunedTitle": "ڈیوائس کی اسٹوریج بھر گئی ہے",

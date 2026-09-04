@@ -656,7 +656,9 @@
     "groupTrip": "Aggiorna i dati del viaggio",
     "groupReplace": "Ricostruisci l’itinerario ({count} tappe)",
     "groupReplaceSegment": "Ricostruisci da {from} a {to}",
-    "groupShifts": "sposta altri {count}"
+    "groupShifts": "sposta altri {count}",
+    "groupRemoveCity": "Rimuovi {label} e {count} elementi collegati",
+    "previewSkipped": "{count} modifiche non sono più valide e vengono saltate."
   },
   "storageNotice": {
     "tripsPrunedTitle": "La memoria del dispositivo e piena",

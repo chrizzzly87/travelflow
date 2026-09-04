@@ -656,7 +656,9 @@
     "groupTrip": "Update trip details",
     "groupReplace": "Rebuild the itinerary ({count} stops)",
     "groupReplaceSegment": "Rebuild {from} to {to}",
-    "groupShifts": "shifts {count} more"
+    "groupShifts": "shifts {count} more",
+    "groupRemoveCity": "Remove {label} and {count} linked items",
+    "previewSkipped": "{count} changes no longer apply and are skipped."
   },
   "storageNotice": {
     "tripsPrunedTitle": "Device storage is full",

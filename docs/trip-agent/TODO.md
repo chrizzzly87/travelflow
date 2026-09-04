@@ -53,6 +53,11 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 - [x] Keep `@` mentions inline in the prompt text, highlighted while typing and in the sent bubble.
 - [x] Ask which stop is meant when a city name occurs more than once.
 - [x] Render the review card below the answer, add a proposal skeleton with a thinking orb, and drop the chat-history menu.
+- [x] Skip an operation whose target is missing instead of failing the whole review, and report the count.
+- [x] Reject a proposal that points at ids the trip does not have, so the model corrects itself in the same run.
+- [x] Break the preview feedback loop: the panel reasons about the saved trip, the preview only changes what is rendered.
+- [x] Group changes per stop, so a removed city and everything in it is one entry.
+- [x] Cover every operation kind and its failure modes with unit tests.
 - [ ] Verify the deploy preview end to end with an administrator account (transcript reload, retry, apply, quota refund).
 - [x] Resolve the specialist model the same way as the orchestrator; a bare model id only worked with the AI Gateway.
 - [ ] Normalize specialist result cards for stays and routes (#485).

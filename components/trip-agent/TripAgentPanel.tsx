@@ -283,12 +283,12 @@ const TripAgentChatSession: React.FC<{
         onFinish: onQuotaMayHaveChanged,
     });
     const selectedCity = contextRefs.find((contextRef) => contextRef.kind === 'city');
-    const suggestions = [
+    const suggestions = useMemo(() => [
         t('tripAgent.suggestRelaxed'),
         t('tripAgent.suggestEastCoast'),
         t('tripAgent.suggestStays'),
         ...(selectedCity ? [t('tripAgent.suggestCity', { city: selectedCity.label })] : []),
-    ];
+    ], [selectedCity, t]);
     const isGenerating = status === 'submitted' || status === 'streaming';
     const isQuotaReached = quota.remaining === 0;
     const resetTime = new Intl.DateTimeFormat(i18n.language, { hour: '2-digit', minute: '2-digit' }).format(new Date(quota.resetsAt));
