@@ -120,6 +120,13 @@ without checking the platform ceiling; card state was rebuilt from the
 transcript instead of the record; and checklists were ticked from memory of the
 session rather than against the issue text.
 
+## Follow-up round (2026-09-04, second pass)
+
+- [x] A run asks or proposes, never both: `create_trip_proposal` defers while a question is open, `ask_traveler` defers once a proposal exists, and a question ranks above a proposal in the panel.
+- [x] Revert restores the trip snapshot from before the apply as a new version, instead of calling the planner's undo, which walks history entries that include view switches.
+- [x] The timeline canvas is keyed by an agent-change nonce and the preview flag, so a trip swapped in from outside the planner cannot leave the calendar showing the previous plan.
+- [ ] Mark a change set as reverted server-side when its apply is undone (today the revert is recorded as a new trip version only).
+
 ## Production gates
 
 - [ ] Configure `AI_GATEWAY_API_KEY` on Netlify and validate approved model discovery/routing.

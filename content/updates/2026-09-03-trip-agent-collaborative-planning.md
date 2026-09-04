@@ -23,6 +23,9 @@ summary: "Trip Agent brings shared, context-aware planning into each trip while 
 - [x] [Improved] 🔒 Trip Agent's private thinking is no longer shown or stored — only the plan it writes for you.
 - [x] [Improved] 🏷️ Failures name a plain-language reason with a retry, instead of an internal code or a silent stop.
 - [x] [Fixed] 🧷 Fixed approved changes disappearing again, previews flickering, and a change that no longer fits breaking the whole review.
+- [x] [Fixed] ↩️ Revert now puts back exactly the plan you had before applying, instead of undoing whatever you did last.
+- [x] [Improved] ❓ When a change leaves a real choice open, Trip Agent asks first and proposes only once you have answered.
+- [x] [Fixed] 📅 Fixed the calendar showing the previous plan until you switched views and back.
 
 - [ ] [Internal] 🔐 Persistent shared threads, messages, runs, tool records, proposals, prompt versions and quotas behind an admin-preview flag, with atomic approval through one Supabase version.
 - [ ] [Internal] 🔌 Flat wire schema for trip-change operations plus a typed converter and unknown-target validation, because function-calling models cannot emit the internal discriminated union.
