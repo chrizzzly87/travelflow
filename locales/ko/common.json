@@ -578,7 +578,8 @@
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "메시지가 너무 깁니다",
       "TRIP_AGENT_QUOTA_EXCEEDED": "일일 한도에 도달했습니다",
       "TRIP_AGENT_NO_OP": "더 바꿀 것이 없습니다",
-      "TRIP_AGENT_STALE_PROPOSAL": "이 제안은 오래되었습니다"
+      "TRIP_AGENT_STALE_PROPOSAL": "이 제안은 오래되었습니다",
+      "TRIP_AGENT_DAILY_CEILING": "이 계정의 하루 한도에 도달했습니다"
     },
     "agentName": "Trip Agent",
     "messageFailed": "전송되지 않음",

@@ -29,6 +29,7 @@ import {
 import { streamTripAgentResponse } from '../edge-lib/trip-agent-runtime.ts';
 import { getBearerToken, verifySupabaseUser } from '../edge-lib/ai-generate-guard.ts';
 import { errorName, redactDiagnostic } from '../edge-lib/trip-agent-redaction.ts';
+import { readEnv } from '../edge-lib/ai-provider-runtime.ts';
 
 const JSON_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
@@ -39,6 +40,13 @@ const json = (status: number, payload: unknown): Response =>
   new Response(JSON.stringify(payload), { status, headers: JSON_HEADERS });
 
 const uuidSchema = z.string().uuid();
+
+/**
+ * Hard ceiling for accounts whose plan grants an unlimited daily allowance.
+ * Cost and abuse protection, not packaging: `TRIP_AGENT_DAILY_CEILING` raises or
+ * lowers it per environment.
+ */
+const DAILY_RUN_CEILING = Number.parseInt(readEnv('TRIP_AGENT_DAILY_CEILING') || '', 10) || 120;
 const tripIdSchema = z.string().trim().min(1).max(160);
 
 interface TripAgentLogContext {
@@ -72,6 +80,7 @@ export const classifyTripAgentFailure = (error: unknown): TripAgentFailure => {
   if (has('is not configured')) return { status: 503, code: 'TRIP_AGENT_NOT_CONFIGURED', error: 'Trip Agent is not configured on this environment.' };
   if (has('thread not found')) return { status: 404, code: 'TRIP_AGENT_THREAD_NOT_FOUND', error: 'This chat is no longer available.' };
   if (has('too large')) return { status: 413, code: 'TRIP_AGENT_PAYLOAD_TOO_LARGE', error: 'This message is too large to process.' };
+  if (has('DAILY_CEILING')) return { status: 429, code: 'TRIP_AGENT_DAILY_CEILING', error: 'This account has reached today\'s Trip Agent ceiling.' };
   return { status: 502, code: 'TRIP_AGENT_REQUEST_FAILED', error: 'Trip Agent could not complete this request.' };
 };
 
@@ -261,6 +270,22 @@ export default async (request: Request) => {
       : await reserveTripAgentQuota(actor.userId, body.requestId, body.tripId);
     if (!quota.allowed) {
       return json(429, { code: 'TRIP_AGENT_QUOTA_EXCEEDED', error: 'Daily Trip Agent limit reached.', quota });
+    }
+    // Entitlements can grant an unlimited daily allowance, which left paid
+    // accounts with no ceiling at all. This one is about cost and abuse, not
+    // packaging, so it applies whenever the plan sets no limit of its own.
+    if (quota.limit === null && quota.used > DAILY_RUN_CEILING) {
+      await refundTripAgentQuota(actor.userId, body.requestId).catch(() => undefined);
+      console.warn('[trip-agent] daily ceiling reached', {
+        ...logContext,
+        used: quota.used,
+        ceiling: DAILY_RUN_CEILING,
+      });
+      return json(429, {
+        code: 'TRIP_AGENT_DAILY_CEILING',
+        error: 'This account has reached today\'s Trip Agent ceiling.',
+        quota,
+      });
     }
     const userMessage = {
       ...(body.message as TripAgentMessage),

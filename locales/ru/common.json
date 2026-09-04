@@ -578,7 +578,8 @@
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Это сообщение слишком длинное",
       "TRIP_AGENT_QUOTA_EXCEEDED": "Дневной лимит достигнут",
       "TRIP_AGENT_NO_OP": "Менять больше нечего",
-      "TRIP_AGENT_STALE_PROPOSAL": "Это предложение устарело"
+      "TRIP_AGENT_STALE_PROPOSAL": "Это предложение устарело",
+      "TRIP_AGENT_DAILY_CEILING": "Достигнут дневной лимит этого аккаунта"
     },
     "agentName": "Trip Agent",
     "messageFailed": "Не отправлено",

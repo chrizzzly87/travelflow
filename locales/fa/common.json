@@ -345,7 +345,8 @@
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "این پیام بسیار بلند است",
       "TRIP_AGENT_QUOTA_EXCEEDED": "محدودیت روزانه به پایان رسید",
       "TRIP_AGENT_NO_OP": "چیزی برای تغییر نمانده",
-      "TRIP_AGENT_STALE_PROPOSAL": "این پیشنهاد قدیمی شده است"
+      "TRIP_AGENT_STALE_PROPOSAL": "این پیشنهاد قدیمی شده است",
+      "TRIP_AGENT_DAILY_CEILING": "سقف روزانه این حساب پر شده است"
     },
     "agentName": "Trip Agent",
     "messageFailed": "ارسال نشد",

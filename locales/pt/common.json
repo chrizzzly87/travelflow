@@ -578,7 +578,8 @@
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Esta mensagem é longa demais",
       "TRIP_AGENT_QUOTA_EXCEEDED": "Limite diário atingido",
       "TRIP_AGENT_NO_OP": "Não resta nada a mudar",
-      "TRIP_AGENT_STALE_PROPOSAL": "Esta proposta está desatualizada"
+      "TRIP_AGENT_STALE_PROPOSAL": "Esta proposta está desatualizada",
+      "TRIP_AGENT_DAILY_CEILING": "Limite diário atingido para esta conta"
     },
     "agentName": "Trip Agent",
     "messageFailed": "Não enviado",

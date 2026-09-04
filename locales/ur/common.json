@@ -345,7 +345,8 @@
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "یہ پیغام بہت طویل ہے",
       "TRIP_AGENT_QUOTA_EXCEEDED": "روزانہ کی حد پوری ہو گئی",
       "TRIP_AGENT_NO_OP": "بدلنے کو کچھ باقی نہیں",
-      "TRIP_AGENT_STALE_PROPOSAL": "یہ تجویز پرانی ہو چکی ہے"
+      "TRIP_AGENT_STALE_PROPOSAL": "یہ تجویز پرانی ہو چکی ہے",
+      "TRIP_AGENT_DAILY_CEILING": "اس اکاؤنٹ کی یومیہ حد پوری ہو گئی"
     },
     "agentName": "Trip Agent",
     "messageFailed": "بھیجا نہیں گیا",

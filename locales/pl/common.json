@@ -576,7 +576,8 @@
       "TRIP_AGENT_PAYLOAD_TOO_LARGE": "Ta wiadomość jest za długa",
       "TRIP_AGENT_QUOTA_EXCEEDED": "Osiągnięto dzienny limit",
       "TRIP_AGENT_NO_OP": "Nie ma już nic do zmiany",
-      "TRIP_AGENT_STALE_PROPOSAL": "Ta propozycja jest nieaktualna"
+      "TRIP_AGENT_STALE_PROPOSAL": "Ta propozycja jest nieaktualna",
+      "TRIP_AGENT_DAILY_CEILING": "Osiągnięto dzienny limit tego konta"
     },
     "agentName": "Trip Agent",
     "messageFailed": "Nie wysłano",
