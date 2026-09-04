@@ -60,8 +60,8 @@ export const TripAgentPromptField: React.FC<{
         pieces.push(
             <mark
                 key={`mention-${span.start}-${span.end}`}
-                className={`rounded-[5px] px-0.5 py-px ${
-                    span.contextRef ? 'bg-accent-100 text-accent-900' : 'bg-slate-100 text-slate-700'
+                className={`rounded-[5px] px-0.5 py-px text-transparent ${
+                    span.contextRef ? 'bg-accent-100' : 'bg-slate-100'
                 }`}
             >
                 {value.slice(span.start, span.end)}
@@ -76,7 +76,7 @@ export const TripAgentPromptField: React.FC<{
             <div
                 ref={backdropRef}
                 aria-hidden="true"
-                className={`pointer-events-none absolute inset-0 overflow-hidden text-transparent ${SHARED_TEXT_CLASSES}`}
+                className={`pointer-events-none absolute inset-0 select-none overflow-hidden text-transparent ${SHARED_TEXT_CLASSES}`}
             >
                 {pieces}
                 {'​'}

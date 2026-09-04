@@ -2,11 +2,13 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import {
     AlertCircle,
+    Archive,
     AtSign,
     BedDouble,
     Bot,
     Check,
     CircleDot,
+    History,
     Lock,
     MapPin,
     MessageCirclePlus,
@@ -55,6 +57,8 @@ import { TripAgentMentionMenu, type TripAgentMentionItem } from './TripAgentMent
 import { buildTripAgentMessageBlocks } from './tripAgentMessageBlocks';
 import { TripAgentProposalCard } from './TripAgentProposalCard';
 import { TripAgentProposalSkeleton } from './TripAgentProposalSkeleton';
+import { TripAgentQuestionCard } from './TripAgentQuestionCard';
+import { TripAgentWorkingIndicator } from './TripAgentWorkingIndicator';
 import { TripAgentPromptField } from './TripAgentPromptField';
 import { ambiguousMentionLabels, insertMention, mentionedContextRefs } from './tripAgentMentions';
 import {
@@ -65,7 +69,7 @@ import {
     QuestionnaireItem,
     QuestionnaireTitle,
 } from '../ui/questionnaire';
-import { formatTripAgentTimestamp } from './tripAgentTime';
+import { formatTripAgentTimestamp, groupTripAgentThreads } from './tripAgentTime';
 import { useMinuteTick } from './useMinuteTick';
 import { Button } from '../ui/button';
 
@@ -136,7 +140,25 @@ const ChatMessage: React.FC<{
     onApplied: (trip: ITrip, versionId: string, label: string) => void;
     onPreviewTrip?: (trip: ITrip | null) => void;
     onRevertLastChange?: () => void;
-}> = ({ trip, message, isStreaming, isOwnMessage, hasFailed, locale, now, onRetry, onApplied, onPreviewTrip, onRevertLastChange }) => {
+    shortcutChangeSetId?: string | null;
+    onAskAgain?: () => void;
+    onAnswerQuestion?: (prompt: string) => void;
+}> = ({
+    trip,
+    message,
+    isStreaming,
+    isOwnMessage,
+    hasFailed,
+    locale,
+    now,
+    onRetry,
+    onApplied,
+    onPreviewTrip,
+    onRevertLastChange,
+    shortcutChangeSetId,
+    onAskAgain,
+    onAnswerQuestion,
+}) => {
     const { t } = useTranslation('common');
     const blocks = useMemo(() => buildTripAgentMessageBlocks(message, isStreaming), [message, isStreaming]);
     const timestamp = formatTripAgentTimestamp(message.metadata?.createdAt as string | undefined, locale, now);
@@ -183,11 +205,25 @@ const ChatMessage: React.FC<{
                                 onApplied={onApplied}
                                 onPreviewTrip={onPreviewTrip}
                                 onRevertLastChange={onRevertLastChange}
+                                shortcutEnabled={block.changeSet.id === shortcutChangeSetId}
+                                onAskAgain={onAskAgain}
                             />
                         );
                     }
                     if (block.kind === 'proposal-pending') {
                         return <TripAgentProposalSkeleton key={block.key} />;
+                    }
+                    if (block.kind === 'question') {
+                        return (
+                            <TripAgentQuestionCard
+                                key={block.key}
+                                question={block.question}
+                                options={block.options}
+                                allowCustom={block.allowCustom}
+                                disabled={!onAnswerQuestion}
+                                onAnswer={(prompt) => onAnswerQuestion?.(prompt)}
+                            />
+                        );
                     }
                     return <Source key={block.key} href={block.url} title={block.title} />;
                 })}
@@ -290,8 +326,25 @@ const TripAgentChatSession: React.FC<{
         ...(selectedCity ? [t('tripAgent.suggestCity', { city: selectedCity.label })] : []),
     ], [selectedCity, t]);
     const isGenerating = status === 'submitted' || status === 'streaming';
+    const lastMessage = messages.at(-1);
+    const hasStreamingAssistantText = lastMessage?.role === 'assistant'
+        && lastMessage.parts.some((part) => part.type === 'text' && part.text.trim().length > 0);
+    // Tool calls can arrive fully formed, so a proposal is treated as pending
+    // from the moment the run mentions it until its card exists.
+    const isProposalPending = Boolean(lastMessage && lastMessage.role === 'assistant'
+        && lastMessage.parts.some((part) => part.type.startsWith('tool-') && part.type.includes('create_trip_proposal'))
+        && !buildTripAgentMessageBlocks(lastMessage, false).some((block) => block.kind === 'proposal'));
     const isQuotaReached = quota.remaining === 0;
     const resetTime = new Intl.DateTimeFormat(i18n.language, { hour: '2-digit', minute: '2-digit' }).format(new Date(quota.resetsAt));
+    const shortcutChangeSetId = useMemo(() => {
+        for (const message of [...messages].reverse()) {
+            const proposal = buildTripAgentMessageBlocks(message, false)
+                .reverse()
+                .find((block) => block.kind === 'proposal');
+            if (proposal?.kind === 'proposal') return proposal.changeSet.id;
+        }
+        return null;
+    }, [messages]);
     const latestUserMessage = [...messages].reverse().find((message) => message.role === 'user');
     const latestUserText = latestUserMessage?.parts.find((part) => part.type === 'text')?.text || '';
     const errorInfo = useMemo(() => (error ? readTripAgentError(error) : null), [error]);
@@ -467,10 +520,29 @@ const TripAgentChatSession: React.FC<{
                             onApplied={(nextTrip, versionId, label) => onAdoptCommittedTripVersion({ trip: nextTrip, versionId, label: `Trip Agent: ${label}` })}
                             onPreviewTrip={onPreviewTrip}
                             onRevertLastChange={onRevertLastChange}
+                            shortcutChangeSetId={shortcutChangeSetId}
+                            onAskAgain={focusPrompt}
+                            onAnswerQuestion={(prompt) => void submitText(prompt)}
                         />
                     ))}
-                    {status === 'submitted' && (
-                        <TripAgentActivityGroup reasoningText="" steps={[]} isStreaming />
+                    {isGenerating && (
+                        <div className="space-y-2">
+                            {!hasStreamingAssistantText && (
+                                <div className="text-[11px] text-slate-400">
+                                    <span className="font-medium text-slate-500">{t('tripAgent.agentName')}</span>
+                                    <span aria-hidden="true"> · </span>
+                                    <span>{formatTripAgentTimestamp(Date.now(), i18n.language, now)}</span>
+                                </div>
+                            )}
+                            {isProposalPending
+                                ? <TripAgentProposalSkeleton />
+                                : (
+                                    <TripAgentWorkingIndicator
+                                        label={t('tripAgent.activityWorking')}
+                                        hint={t('tripAgent.activityStillWorking')}
+                                    />
+                                )}
+                        </div>
                     )}
                     {errorInfo && (
                         <section className="rounded-2xl border border-rose-200 bg-rose-50/80 p-3 text-rose-950" role="alert">
@@ -611,6 +683,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
     const [bootstrap, setBootstrap] = useState<TripAgentBootstrap | null>(null);
     const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
     const refresh = useCallback(async (preferredThreadId?: string | null) => {
         try {
@@ -641,16 +714,21 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
     };
 
     const createThread = async () => {
+        setIsHistoryOpen(false);
         const thread = await createTripAgentThread(trip.id);
         trackEvent('trip_agent__thread--create', { trip_id: trip.id });
         await selectThread(thread.id);
     };
 
     const currentThread = bootstrap?.threads.find((thread) => thread.id === currentThreadId) || null;
+    const threadSections = useMemo(
+        () => groupTripAgentThreads(bootstrap?.threads || [], now),
+        [bootstrap?.threads, now],
+    );
 
     return (
         <aside
-            className="fixed inset-x-0 bottom-0 z-[1500] flex h-[min(82dvh,720px)] flex-col overflow-hidden rounded-t-[1.5rem] border border-slate-200 bg-white shadow-[0_-24px_80px_rgba(15,23,42,0.18)] sm:inset-x-auto sm:bottom-4 sm:end-4 sm:h-[min(720px,calc(100dvh-2rem))] sm:w-[420px] sm:rounded-[1.5rem] sm:shadow-2xl"
+            className="trip-agent-panel-enter fixed inset-x-0 bottom-0 z-[1500] flex h-[min(82dvh,720px)] flex-col overflow-hidden rounded-t-[1.5rem] border border-slate-200 bg-white shadow-[0_-24px_80px_rgba(15,23,42,0.18)] sm:inset-x-auto sm:bottom-4 sm:end-4 sm:h-[min(720px,calc(100dvh-2rem))] sm:w-[420px] sm:rounded-[1.5rem] sm:shadow-2xl"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
             aria-label={t('tripAgent.title')}
         >
@@ -662,6 +740,17 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                         {currentThread ? currentThread.title : t('tripAgent.subtitle')}
                     </p>
                 </div>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setIsHistoryOpen((current) => !current)}
+                    aria-label={t('tripAgent.history')}
+                    title={t('tripAgent.history')}
+                    aria-expanded={isHistoryOpen}
+                >
+                    <History className="size-4" />
+                </Button>
                 <Button
                     type="button"
                     variant="ghost"
@@ -683,7 +772,52 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                     <X className="size-4" />
                 </Button>
             </header>
-            {loadError ? (
+            {isHistoryOpen ? (
+                <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                    {threadSections.length === 0 && (
+                        <p className="px-1 py-4 text-center text-xs text-slate-500">{t('tripAgent.historyEmpty')}</p>
+                    )}
+                    {threadSections.map((section) => (
+                        <section key={section.key} className="mb-3">
+                            <h3 className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                {t(`tripAgent.historySections.${section.key}`)}
+                            </h3>
+                            <ul className="space-y-1">
+                                {section.threads.map((thread) => (
+                                    <li key={thread.id}>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setIsHistoryOpen(false);
+                                                void selectThread(thread.id);
+                                            }}
+                                            className={`flex w-full items-start gap-2 rounded-xl border px-2.5 py-2 text-start transition-colors ${
+                                                thread.id === currentThreadId
+                                                    ? 'border-accent-200 bg-accent-50'
+                                                    : 'border-slate-200 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block truncate text-sm text-slate-900">{thread.title}</span>
+                                                <span className="block text-[11px] text-slate-500">
+                                                    {formatTripAgentTimestamp(thread.updatedAt, i18n.language, now)}
+                                                </span>
+                                            </span>
+                                            {thread.id === currentThreadId && <Check className="mt-0.5 size-3.5 text-accent-600" />}
+                                            {thread.status === 'archived' && <Archive className="mt-0.5 size-3.5 text-slate-400" />}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                            {section.hiddenCount > 0 && (
+                                <p className="px-1 pt-1 text-[11px] text-slate-400">
+                                    {t('tripAgent.historyHidden', { count: section.hiddenCount })}
+                                </p>
+                            )}
+                        </section>
+                    ))}
+                </div>
+            ) : loadError ? (
                 <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
                     <Lock className="size-6 text-amber-600" />
                     <p className="text-sm text-slate-700">{loadError}</p>
