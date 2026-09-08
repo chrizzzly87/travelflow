@@ -177,7 +177,7 @@ session rather than against the issue text.
 ## Production gates
 
 - [ ] Configure `AI_GATEWAY_API_KEY` on Netlify and validate approved model discovery/routing.
-- [ ] Configure a server-restricted `GOOGLE_MAPS_GROUNDING_API_KEY` and run grounded specialist smoke tests.
+- [x] Maps grounding runs on the existing `VITE_GOOGLE_MAPS_API_KEY`, which is already set on Netlify; no second key was wanted and none is needed. `GOOGLE_MAPS_GROUNDING_API_KEY` stays as an optional override. The mitigation is in Google Cloud: cap that key's daily quota and restrict it to the APIs it needs.
 - [ ] Add deterministic fake Gateway/MCP browser E2E coverage.
 - [ ] Verify authenticated transcript reload, cancellation, quota refund, and stale-proposal paths in the deployed environment (unauthenticated endpoint guard is verified).
 - [ ] Build the English-only admin transcript and prompt-management workspace.

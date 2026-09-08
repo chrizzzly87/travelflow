@@ -3,8 +3,8 @@ id: rel-2026-09-03-trip-agent-collaborative-planning
 version: v0.162.0
 title: "Plan together with Trip Agent"
 date: 2026-09-03
-published_at: 2026-09-03T12:00:00Z
-status: draft
+published_at: 2026-09-08T08:12:00Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Trip Agent brings shared, context-aware planning into each trip while keeping every edit under your control."
