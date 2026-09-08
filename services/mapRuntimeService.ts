@@ -11,13 +11,25 @@ import {
 } from '../shared/mapRuntime';
 import { readCookieItem, removeCookieItem, writeCookieItem } from './cookieStorageService';
 
+export const isMapRuntimePreset = (value: unknown): value is MapRuntimePreset => (
+  value === 'mapbox_visual_google_services' || value === 'mapbox_all' || value === 'google_all'
+);
+
+/**
+ * Which map stack the app runs. The administrator setting wins over the build
+ * time environment default; an administrator's own cookie override still wins
+ * over both, because that is a debugging tool for one browser.
+ */
+let runtimeMapPreset: MapRuntimePreset | null = null;
+
+export const setRuntimeMapPreset = (preset: MapRuntimePreset | null): void => {
+  runtimeMapPreset = isMapRuntimePreset(preset) ? preset : null;
+};
+
 export const getDefaultMapRuntimePreset = (): MapRuntimePreset => {
+  if (runtimeMapPreset) return runtimeMapPreset;
   const rawPreset = import.meta.env.VITE_MAP_RUNTIME_PRESET;
-  return rawPreset === 'mapbox_visual_google_services'
-    || rawPreset === 'mapbox_all'
-    || rawPreset === 'google_all'
-    ? rawPreset
-    : 'google_all';
+  return isMapRuntimePreset(rawPreset) ? rawPreset : 'google_all';
 };
 
 export const getMapboxAccessToken = (): string => (

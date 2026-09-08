@@ -5,9 +5,11 @@ import {
     setRuntimeDefaultCreateTripModelId,
     type AiModelCatalogItem,
 } from '../config/aiModelCatalog';
+import { isMapRuntimePreset, setRuntimeMapPreset } from './mapRuntimeService';
 import { setRuntimeDefaultMapStyle } from './tripViewSettingsService';
 import { supabase } from './supabaseClient';
 import type { MapStyle } from '../types';
+import type { MapRuntimePreset } from '../shared/mapRuntime';
 
 const MAP_STYLES: MapStyle[] = ['minimal', 'standard', 'dark', 'satellite', 'clean', 'cleanDark'];
 
@@ -28,6 +30,8 @@ export interface AiRuntimeSettings {
     tripAgentAdminPreview: boolean;
     /** Map style new visitors start on, before they pick one themselves. */
     mapDefaultStyle: MapStyle;
+    /** Which map stack renders the planner, routes, search and static images. */
+    mapRuntimePreset: MapRuntimePreset;
     /** Planner beta gate, kept here so one admin page owns every switch. */
     plannerBetaOpen: boolean;
     updatedAt: string | null;
@@ -44,6 +48,7 @@ const DEFAULT_AI_RUNTIME_SETTINGS: AiRuntimeSettings = {
     tripAgentEnabled: false,
     tripAgentAdminPreview: true,
     mapDefaultStyle: 'standard',
+    mapRuntimePreset: 'google_all',
     plannerBetaOpen: false,
     updatedAt: null,
 };
@@ -81,6 +86,7 @@ export const normalizeAiRuntimeSettings = (value: unknown): AiRuntimeSettings =>
         tripAgentEnabled: row.trip_agent_enabled === true,
         tripAgentAdminPreview: row.trip_agent_admin_preview !== false,
         mapDefaultStyle: isMapStyle(row.map_default_style) ? row.map_default_style : 'standard',
+        mapRuntimePreset: isMapRuntimePreset(row.map_runtime_preset) ? row.map_runtime_preset : 'google_all',
         plannerBetaOpen: row.planner_beta_open === true,
         updatedAt: typeof row.updated_at === 'string' ? row.updated_at : null,
     };
@@ -123,6 +129,7 @@ export const applyAiRuntimeSettings = (
     }
     setRuntimeDefaultCreateTripModelId(settings.defaultModelId);
     setRuntimeDefaultMapStyle(settings.mapDefaultStyle);
+    setRuntimeMapPreset(settings.mapRuntimePreset);
     return settings;
 };
 
@@ -152,6 +159,7 @@ export const resetAiRuntimeSettingsCacheForTests = (): void => {
     runtimeSettingsPromise = null;
     setRuntimeDefaultCreateTripModelId(DEFAULT_CREATE_TRIP_MODEL_ID);
     setRuntimeDefaultMapStyle('standard');
+    setRuntimeMapPreset(null);
 };
 
 /**
@@ -167,6 +175,7 @@ export const updateAppRuntimeSettings = async (input: {
     modelMaxAgeMonths?: number;
     showOlderModels?: boolean;
     mapDefaultStyle?: MapStyle;
+    mapRuntimePreset?: MapRuntimePreset;
 }): Promise<AiRuntimeSettings> => {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { data, error } = await supabase.rpc('admin_update_app_runtime_settings', {
@@ -178,6 +187,7 @@ export const updateAppRuntimeSettings = async (input: {
         p_ai_model_max_age_months: input.modelMaxAgeMonths ?? null,
         p_ai_show_older_models: input.showOlderModels ?? null,
         p_map_default_style: input.mapDefaultStyle ?? null,
+        p_map_runtime_preset: input.mapRuntimePreset ?? null,
     });
     if (error) throw new Error(error.message);
     const settings = normalizeAiRuntimeSettings(data);

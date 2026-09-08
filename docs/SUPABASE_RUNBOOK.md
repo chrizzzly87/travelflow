@@ -520,7 +520,13 @@ where id = '<request-id>';
 
 Use **/admin/settings** (Global Settings). It writes the same row through an
 admin-only function, and covers the Trip Agent rollout, the default AI model and
-its approved list, the default map style and the planner beta gate.
+its approved list, the map provider and default map style, and the planner beta
+gate.
+
+The map provider setting replaces the build-time `VITE_MAP_RUNTIME_PRESET`,
+which stays as the fallback when the row has never been written. Production has
+been running `google_all`, which is why the live map and every generated preview
+image carry a Google attribution.
 
 The SQL below stays documented for the case where the admin page itself is
 broken. `app_runtime_settings` holds the two Trip Agent flags; both the API

@@ -9,6 +9,7 @@ import {
     type AiRuntimeSettings,
 } from '../services/aiRuntimeSettingsService';
 import type { MapStyle } from '../types';
+import type { MapRuntimePreset } from '../shared/mapRuntime';
 
 const fieldClassName = 'w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-accent-400 focus:ring-2 focus:ring-accent-100';
 
@@ -20,6 +21,24 @@ const MAP_STYLE_LABELS: Record<MapStyle, string> = {
     clean: 'Clean',
     cleanDark: 'Clean dark',
 };
+
+const MAP_RUNTIME_PRESETS: Array<{ value: MapRuntimePreset; label: string; hint: string }> = [
+    {
+        value: 'google_all',
+        label: 'Google for everything',
+        hint: 'Google renders the map and answers routing, place search and the generated preview images.',
+    },
+    {
+        value: 'mapbox_visual_google_services',
+        label: 'Mapbox visuals, Google services',
+        hint: 'Mapbox draws the map and the preview images; Google still answers routing and place search, which Mapbox is not wired up for here.',
+    },
+    {
+        value: 'mapbox_all',
+        label: 'Mapbox for everything',
+        hint: 'Routing and place search fall back to Google anyway — this app has no Mapbox implementation for them.',
+    },
+];
 
 const Section: React.FC<{ title: string; description: string; children: React.ReactNode }> = ({
     title,
@@ -105,6 +124,7 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                 modelMaxAgeMonths: draft.modelMaxAgeMonths,
                 showOlderModels: draft.showOlderModels,
                 mapDefaultStyle: draft.mapDefaultStyle,
+                mapRuntimePreset: draft.mapRuntimePreset,
             });
             setSettings(saved);
             setDraft(saved);
@@ -228,8 +248,23 @@ export const AdminGlobalSettingsPage: React.FC = () => {
 
                     <Section
                         title="Map"
-                        description="Which Mapbox style a visitor starts on. Anyone who picks a style themselves keeps their choice."
+                        description="Which map stack the app runs on, and which style a visitor starts on. Anyone who picks a style themselves keeps their choice."
                     >
+                        <label className="block">
+                            <span className="mb-1 block text-xs font-medium text-slate-600">Map provider</span>
+                            <select
+                                value={draft.mapRuntimePreset}
+                                onChange={(event) => update({ mapRuntimePreset: event.currentTarget.value as MapRuntimePreset })}
+                                className={fieldClassName}
+                            >
+                                {MAP_RUNTIME_PRESETS.map((preset) => (
+                                    <option key={preset.value} value={preset.value}>{preset.label}</option>
+                                ))}
+                            </select>
+                            <span className="mt-1 block text-xs text-slate-500">
+                                {MAP_RUNTIME_PRESETS.find((preset) => preset.value === draft.mapRuntimePreset)?.hint}
+                            </span>
+                        </label>
                         <label className="block">
                             <span className="mb-1 block text-xs font-medium text-slate-600">Default map style</span>
                             <select

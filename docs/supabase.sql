@@ -120,6 +120,7 @@ create table if not exists public.app_runtime_settings (
   ai_show_older_models boolean not null default false,
   trip_agent_enabled boolean not null default false,
   map_default_style text not null default 'standard',
+  map_runtime_preset text not null default 'google_all',
   trip_agent_admin_preview boolean not null default true,
   updated_at timestamptz not null default now(),
   updated_by uuid references auth.users on delete set null
@@ -7150,6 +7151,7 @@ returns table(
   trip_agent_enabled boolean,
   trip_agent_admin_preview boolean,
   map_default_style text,
+  map_runtime_preset text,
   updated_at timestamptz
 )
 language sql
@@ -7166,6 +7168,7 @@ as $$
     ars.trip_agent_enabled,
     ars.trip_agent_admin_preview,
     ars.map_default_style,
+    ars.map_runtime_preset,
     ars.updated_at
   from public.app_runtime_settings ars
   where ars.singleton = true
@@ -7307,14 +7310,25 @@ alter table public.app_runtime_settings
   add column if not exists map_default_style text not null default 'standard';
 
 alter table public.app_runtime_settings
+  add column if not exists map_runtime_preset text not null default 'google_all';
+
+alter table public.app_runtime_settings
+  drop constraint if exists app_runtime_settings_map_runtime_preset_check;
+alter table public.app_runtime_settings
+  add constraint app_runtime_settings_map_runtime_preset_check
+  check (map_runtime_preset in ('google_all', 'mapbox_visual_google_services', 'mapbox_all'));
+
+alter table public.app_runtime_settings
   drop constraint if exists app_runtime_settings_map_default_style_check;
 alter table public.app_runtime_settings
   add constraint app_runtime_settings_map_default_style_check
   check (map_default_style in ('minimal', 'standard', 'dark', 'satellite', 'clean', 'cleanDark'));
 
+
+
 -- Every argument is optional: null means "leave this setting alone", so the
 -- admin page can save one section without shipping the whole row back.
-drop function if exists public.admin_update_app_runtime_settings(boolean, boolean, boolean, text, text[], integer, boolean, text);
+drop function if exists public.admin_update_app_runtime_settings(boolean, boolean, boolean, text, text[], integer, boolean, text, text);
 create or replace function public.admin_update_app_runtime_settings(
   p_planner_beta_open boolean default null,
   p_trip_agent_enabled boolean default null,
@@ -7323,7 +7337,8 @@ create or replace function public.admin_update_app_runtime_settings(
   p_ai_approved_openrouter_models text[] default null,
   p_ai_model_max_age_months integer default null,
   p_ai_show_older_models boolean default null,
-  p_map_default_style text default null
+  p_map_default_style text default null,
+  p_map_runtime_preset text default null
 )
 returns public.app_runtime_settings
 language plpgsql
@@ -7349,6 +7364,11 @@ begin
     raise exception 'Invalid map style';
   end if;
 
+  if p_map_runtime_preset is not null
+     and p_map_runtime_preset not in ('google_all', 'mapbox_visual_google_services', 'mapbox_all') then
+    raise exception 'Invalid map runtime preset';
+  end if;
+
   if p_ai_approved_openrouter_models is not null then
     select coalesce(array_agg(distinct model_id order by model_id), '{}')
     into v_approved_models
@@ -7366,6 +7386,7 @@ begin
     ai_model_max_age_months = coalesce(p_ai_model_max_age_months, ars.ai_model_max_age_months),
     ai_show_older_models = coalesce(p_ai_show_older_models, ars.ai_show_older_models),
     map_default_style = coalesce(p_map_default_style, ars.map_default_style),
+    map_runtime_preset = coalesce(p_map_runtime_preset, ars.map_runtime_preset),
     updated_at = now()
   where ars.singleton = true
   returning * into v_result;
@@ -7374,8 +7395,9 @@ begin
 end;
 $$;
 
-revoke all on function public.admin_update_app_runtime_settings(boolean, boolean, boolean, text, text[], integer, boolean, text) from public, anon;
-grant execute on function public.admin_update_app_runtime_settings(boolean, boolean, boolean, text, text[], integer, boolean, text) to authenticated;
+revoke all on function public.admin_update_app_runtime_settings(boolean, boolean, boolean, text, text[], integer, boolean, text, text) from public, anon;
+grant execute on function public.admin_update_app_runtime_settings(boolean, boolean, boolean, text, text[], integer, boolean, text, text) to authenticated;
+
 
 grant execute on function public.admin_update_runtime_settings(boolean) to authenticated;
 grant execute on function public.admin_update_ai_runtime_settings(text, text[], integer, boolean) to authenticated;
