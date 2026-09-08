@@ -282,7 +282,9 @@ const createLocalHistoryEntry = (
     label: string,
     options?: { replace?: boolean },
     ts?: number,
-    baseUrlOverride?: string
+    baseUrlOverride?: string,
+    versionId?: string,
+    changeSetId?: string
 ) => {
     const { url } = createTripHistorySnapshotEntry({
         tripId: updatedTrip.id,
@@ -291,6 +293,8 @@ const createLocalHistoryEntry = (
         label,
         ts,
         baseUrlOverride,
+        versionId,
+        changeSetId,
     });
     navigate(url, { replace: options?.replace ?? false });
     return url;
@@ -728,6 +732,27 @@ const AppContent: React.FC = () => {
         saveTrip(updatedTrip, { preserveUpdatedAt: options?.preserveUpdatedAt === true });
     }, []);
 
+    const handleAdoptAgentTripVersion = useCallback((input: {
+        trip: ITrip;
+        versionId: string;
+        label: string;
+        changeSetId?: string;
+    }) => {
+        setTrip(input.trip);
+        saveTrip(input.trip, { preserveUpdatedAt: true });
+        createLocalHistoryEntry(
+            navigate,
+            input.trip,
+            input.trip.defaultView,
+            input.label,
+            undefined,
+            Date.now(),
+            undefined,
+            input.versionId || undefined,
+            input.changeSetId
+        );
+    }, [navigate]);
+
     const handleTripManagerUpdate = useCallback((updatedTrip: ITrip) => {
         setTrip((currentTrip) => {
             if (!currentTrip || currentTrip.id !== updatedTrip.id) return currentTrip;
@@ -1017,6 +1042,7 @@ const AppContent: React.FC = () => {
                     onTripLoaded={handleRouteTripLoaded}
                     onUpdateTrip={handleUpdateTrip}
                     onCommitState={handleCommitState}
+                    onAdoptAgentTripVersion={handleAdoptAgentTripVersion}
                     onViewSettingsChange={handleViewSettingsChange}
                     onOpenManager={openTripManager}
                     onOpenSettings={() => setIsSettingsOpen(true)}

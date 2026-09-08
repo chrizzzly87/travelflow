@@ -196,6 +196,13 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'localStorage',
     },
     {
+      name: 'tf_trip_agent_open_v1',
+      purpose: 'Remembers whether the planner AI chat panel was open.',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+    },
+    {
       name: 'tf_trip_copy_notice',
       purpose: 'Temporary cross-page “trip copied” toast payload.',
       duration: 'Session',

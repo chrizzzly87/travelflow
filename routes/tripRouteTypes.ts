@@ -24,6 +24,7 @@ export type RouteCommonProps = {
 export type TripLoaderRouteProps = RouteCommonProps & {
     onUpdateTrip: (trip: ITrip, options?: TripUpdateOptions) => void;
     onCommitState: (trip: ITrip, view: IViewSettings | undefined, options?: CommitOptions) => void;
+    onAdoptAgentTripVersion: (input: { trip: ITrip; versionId: string; label: string }) => void;
 };
 
 export type SharedTripLoaderRouteProps = RouteCommonProps;

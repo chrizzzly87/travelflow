@@ -114,6 +114,24 @@ describe('services/historyService', () => {
     consoleSpy.mockRestore();
   });
 
+  it('adopts a server-committed version id without creating a second local version id', () => {
+    const trip = makeTrip({ id: 'trip-agent-apply' });
+    const serverVersionId = '0bb9b534-86de-4a90-bf19-9ad9247bea20';
+
+    const result = createTripHistorySnapshotEntry({
+      tripId: trip.id,
+      trip,
+      label: 'Trip Agent: Relax the route',
+      ts: 1,
+      versionId: serverVersionId,
+    });
+
+    expect(result.persisted).toBe(true);
+    expect(result.url).toContain(`v=${serverVersionId}`);
+    expect(getHistoryEntries(trip.id)).toHaveLength(1);
+    expect(getHistoryEntries(trip.id)[0].snapshot?.trip).toEqual(trip);
+  });
+
   it('prunes older history entries before failing a new write', () => {
     const tripId = 'trip-prune';
     const originalSetItem = Storage.prototype.setItem;

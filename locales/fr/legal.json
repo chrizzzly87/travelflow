@@ -36,7 +36,10 @@
       "What personal data is collected and why.",
       "How long data is stored and where.",
       "Lawful basis for processing and user rights.",
-      "Contact details for privacy requests and deletion."
+      "Contact details for privacy requests and deletion.",
+      "Lorsque vous utilisez Trip Agent, votre demande, le contenu du voyage, le contexte sélectionné et les résultats des outils sont traités via notre passerelle IA et des fournisseurs de modèles approuvés. Google Maps peut aussi traiter les recherches de lieux et d’itinéraires sourcées.",
+      "Les administrateurs autorisés peuvent accéder aux discussions partagées, sources, activités des outils, propositions et données d’usage à des fins d’assistance, de sécurité et d’amélioration du service.",
+      "Les discussions Trip Agent et leur historique de modifications sont conservés avec le voyage jusqu’à la suppression du voyage ou du compte. Archiver une discussion ne supprime pas cet historique."
     ]
   },
   "terms": {

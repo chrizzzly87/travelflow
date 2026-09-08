@@ -138,6 +138,54 @@ Why this matters:
 - Forgot-password / set-password emails redirect users to `/auth/reset-password`.
 - If this path is missing in Redirect URLs, recovery links fail or land on an auth error page.
 
+## Applying a Trip Agent migration
+
+`supabase/migrations/*.sql` are not applied automatically. Deploys ship code
+only, and PostgREST cannot run DDL, so an agent working in this repo can write
+and verify a migration but cannot install it.
+
+To apply one (for example `20260904120000_trip_agent_access_and_stale_fix.sql`):
+
+1. Open the Supabase SQL Editor for the TravelFlow project.
+2. Paste the migration file whole and run it. Every statement is
+   `create or replace`, so re-running is safe.
+3. Confirm the functions exist and behave:
+
+   ```sql
+   select proname, pronargs from pg_proc
+    where proname in ('trip_agent_can_edit', 'trip_agent_can_edit_with_share',
+                      'apply_trip_agent_change_set');
+   ```
+
+Alternatively, from a machine that has the real connection string:
+
+```bash
+psql "$DIRECT_DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -f supabase/migrations/20260904120000_trip_agent_access_and_stale_fix.sql
+```
+
+`.env.local` in a fresh worktree carries placeholder database URLs; only
+`VITE_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are real, and those reach
+PostgREST only.
+
+### Verifying a migration before it touches the project
+
+`supabase/tests/` holds a stub schema and a behaviour script, so a migration can
+be exercised on a throwaway Postgres first:
+
+```bash
+initdb -D /tmp/pgdata -U postgres --auth=trust
+LC_ALL=C pg_ctl -D /tmp/pgdata -o "-p 55432 -h 127.0.0.1" -l /tmp/pg.log start
+psql -h 127.0.0.1 -p 55432 -U postgres -c "create role anon; create role authenticated; create role service_role;"
+psql -h 127.0.0.1 -p 55432 -U postgres -f supabase/tests/_trip_agent_stub_schema.sql
+psql -h 127.0.0.1 -p 55432 -U postgres -f supabase/migrations/<migration>.sql
+psql -h 127.0.0.1 -p 55432 -U postgres -f supabase/tests/<migration>.verify.sql
+pg_ctl -D /tmp/pgdata stop -m fast
+```
+
+`LC_ALL=C` is required on macOS, where the server otherwise refuses to start
+("Postmaster became multithreaded during startup").
+
 ## Data Model (Current)
 
 Core tables:
@@ -467,6 +515,28 @@ select id, status, owner_user_id, requested_by_anon_id, result_trip_id, error_me
 from public.trip_generation_requests
 where id = '<request-id>';
 ```
+
+## Trip Agent rollout
+
+`app_runtime_settings` holds two flags. Both the API
+(`assertTripAgentAvailable`) and the planner launcher read them, so they are the
+only switch the feature has.
+
+```sql
+-- who can use the Trip Agent right now
+select trip_agent_enabled, trip_agent_admin_preview from public.app_runtime_settings where singleton = true;
+
+-- open it to every entitled account
+update public.app_runtime_settings set trip_agent_enabled = true where singleton = true;
+
+-- close it again; nothing needs redeploying
+update public.app_runtime_settings set trip_agent_enabled = false where singleton = true;
+```
+
+The client reads them through `get_public_runtime_settings`, which
+`20260908090000_trip_agent_rollout_in_public_settings.sql` widens. Before that
+migration runs, the client cannot see the flags and falls back to
+administrators only — the same answer the server gives today.
 
 ## Minimal Smoke Test
 

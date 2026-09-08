@@ -36,6 +36,8 @@ export interface Entitlements {
     canCreateEditableShares: boolean;
     canViewProTrips: boolean;
     canCreateProTrips: boolean;
+    canUseTripAgent?: boolean;
+    tripAgentRequestsPerDay?: number | null;
 }
 
 export type UserBillingLifecycleState =

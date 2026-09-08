@@ -38,20 +38,23 @@ const buttonVariants = cva(
   }
 )
 
-function Button({
-  className,
-  variant = "default",
-  size = "default",
-  asChild = false,
-  ...props
-}: React.ComponentProps<"button"> &
+export type ButtonProps = React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
-  }) {
+  }
+
+// forwardRef, not a ref-in-props function component: the app renders through
+// preact/compat, which does not pass `ref` to a plain function component, so
+// Radix `asChild` triggers would hand their popper an empty anchor.
+const Button = React.forwardRef(function Button(
+  { className, variant = "default", size = "default", asChild = false, ...props }: ButtonProps,
+  ref: React.Ref<HTMLButtonElement>
+) {
   const Comp = asChild ? Slot.Root : "button"
 
   return (
     <Comp
+      ref={ref}
       data-slot="button"
       data-variant={variant}
       data-size={size}
@@ -59,6 +62,6 @@ function Button({
       {...props}
     />
   )
-}
+})
 
 export { Button, buttonVariants }

@@ -10,6 +10,9 @@
 7. For localized copy placeholders, always use ICU syntax (`{name}`), never `{{name}}` (project uses `i18next-icu`).
 8. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
 
+9. For work on model-backed features (Trip Agent, AI generation), read `docs/AI_AGENT_FEATURE_GUARDRAILS.md` first.
+10. Remember the runtime traps: `preact/compat` drops `ref` on plain function components, ICU plural syntax is inert, and `supabase/migrations/*.sql` need a manual apply.
+
 ## Skill usage policy
 - For React performance or refactor work, consult `vercel-react-best-practices` and apply only the rules that materially affect the task.
 - After substantial React changes, run `pnpm dlx react-doctor@latest . --verbose --diff`; fix errors before merge and prioritize warnings by risk.

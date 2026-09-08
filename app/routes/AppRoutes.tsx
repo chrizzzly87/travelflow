@@ -106,6 +106,7 @@ export interface AppRoutesProps {
         view: IViewSettings | undefined,
         options?: { replace?: boolean; label?: string; adminOverride?: boolean }
     ) => void;
+    onAdoptAgentTripVersion: (input: { trip: ITrip; versionId: string; label: string }) => void;
     onViewSettingsChange: (settings: IViewSettings) => void;
     onOpenManager: () => void;
     onOpenSettings: () => void;
@@ -119,6 +120,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
     onTripLoaded,
     onUpdateTrip,
     onCommitState,
+    onAdoptAgentTripVersion,
     onViewSettingsChange,
     onOpenManager,
     onOpenSettings,
@@ -182,6 +184,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                                 onTripLoaded={onTripLoaded}
                                 onUpdateTrip={onUpdateTrip}
                                 onCommitState={onCommitState}
+                                onAdoptAgentTripVersion={onAdoptAgentTripVersion}
                                 onOpenManager={onOpenManager}
                                 onOpenSettings={onOpenSettings}
                                 appLanguage={appLanguage}
