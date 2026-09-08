@@ -43,6 +43,7 @@ import { useSyncStatus } from '../hooks/useSyncStatus';
 import { getLatestConflictBackupForTrip, resolveConflictBackupsForTrip } from '../services/offlineChangeQueue';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useTripAgentAvailability } from '../hooks/useTripAgentAvailability';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
 import { useTripCopyNoticeToast } from './tripview/useTripCopyNoticeToast';
 import { useGenerationProgressMessage } from './tripview/useGenerationProgressMessage';
@@ -3052,6 +3053,8 @@ const useTripViewRender = ({
         () => buildTripAgentContextRefs(trip, selectedItemId, selectedCityIds),
         [selectedCityIds, selectedItemId, trip]
     );
+    // Rollout state, so the launcher never offers a panel the server refuses.
+    const isTripAgentRolledOut = useTripAgentAvailability(access?.role === 'admin');
     const isTripAgentLocked = !DB_ENABLED
         || !isAuthenticated
         || isAnonymous
@@ -3411,7 +3414,7 @@ const useTripViewRender = ({
                         floatingOverlayRightInset={isTripAgentOpen && !isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
                         floatingOverlayLeftInset={isTripAgentOpen && isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
                     />
-                    {!isTripAgentOpen && (
+                    {isTripAgentRolledOut && !isTripAgentOpen && (
                         <button
                             type="button"
                             onClick={openTripAgent}
@@ -3435,7 +3438,7 @@ const useTripViewRender = ({
                             </p>
                         </div>
                     )}
-                    {isTripAgentOpen && onAdoptAgentTripVersion && (
+                    {isTripAgentRolledOut && isTripAgentOpen && onAdoptAgentTripVersion && (
                         <Suspense fallback={null}>
                             <TripAgentPanel
                                 trip={agentCanonicalTrip || trip}

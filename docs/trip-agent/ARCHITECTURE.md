@@ -140,6 +140,22 @@ structural faults — duplicate operation ids, an unknown selection, a result th
 fails validation — throw. The card reports a partial apply rather than letting a
 previewed change disappear.
 
+## Rollout
+
+`app_runtime_settings.trip_agent_enabled` is the switch; `trip_agent_admin_preview`
+(default `true`) lets administrators use the agent while it is off. The server
+enforces this in `assertTripAgentAvailable`, and the client reads the same two
+flags from `get_public_runtime_settings` so the launcher is hidden rather than
+offering a panel the server would refuse. Both halves must move together: a
+client that cannot see the flags falls back to administrator-only, which is what
+the columns default to.
+
+Turning it on for everyone is one statement, until #482 adds the admin control:
+
+```sql
+update public.app_runtime_settings set trip_agent_enabled = true where singleton = true;
+```
+
 ## Persistence and limits
 
 Tables: `trip_agent_threads`, `trip_agent_messages`, `trip_agent_runs`,

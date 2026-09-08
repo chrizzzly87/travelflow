@@ -22,8 +22,17 @@ describe('aiRuntimeSettingsService', () => {
       approvedOpenRouterModels: ['google/gemini-3.7-flash'],
       modelMaxAgeMonths: 36,
       showOlderModels: true,
+      tripAgentEnabled: false,
+      tripAgentAdminPreview: true,
       updatedAt: '2026-08-17T12:00:00Z',
     });
+  });
+
+  it('reads the Trip Agent rollout flags, and falls back to admin-only when the row predates them', () => {
+    expect(normalizeAiRuntimeSettings([{ trip_agent_enabled: true, trip_agent_admin_preview: false }]))
+      .toMatchObject({ tripAgentEnabled: true, tripAgentAdminPreview: false });
+    expect(normalizeAiRuntimeSettings([{}]))
+      .toMatchObject({ tripAgentEnabled: false, tripAgentAdminPreview: true });
   });
 
   it('registers an approved live OpenRouter default for frontend trip creation', () => {

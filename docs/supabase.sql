@@ -7146,6 +7146,8 @@ returns table(
   ai_approved_openrouter_models text[],
   ai_model_max_age_months integer,
   ai_show_older_models boolean,
+  trip_agent_enabled boolean,
+  trip_agent_admin_preview boolean,
   updated_at timestamptz
 )
 language sql
@@ -7159,6 +7161,8 @@ as $$
     ars.ai_approved_openrouter_models,
     ars.ai_model_max_age_months,
     ars.ai_show_older_models,
+    ars.trip_agent_enabled,
+    ars.trip_agent_admin_preview,
     ars.updated_at
   from public.app_runtime_settings ars
   where ars.singleton = true
@@ -9467,12 +9471,14 @@ alter table public.trip_agent_usage_daily enable row level security;
 alter table public.trip_agent_usage_ledger enable row level security;
 
 drop policy if exists "Trip agent definitions authenticated read" on public.trip_agent_definitions;
-create policy "Trip agent definitions authenticated read" on public.trip_agent_definitions
-for select to authenticated using (true);
+drop policy if exists "Trip agent definitions admin read" on public.trip_agent_definitions;
+create policy "Trip agent definitions admin read" on public.trip_agent_definitions
+for select to authenticated using (public.is_admin(auth.uid()));
 
 drop policy if exists "Trip agent published prompts authenticated read" on public.trip_agent_prompt_versions;
-create policy "Trip agent published prompts authenticated read" on public.trip_agent_prompt_versions
-for select to authenticated using (status = 'published');
+drop policy if exists "Trip agent published prompts admin read" on public.trip_agent_prompt_versions;
+create policy "Trip agent published prompts admin read" on public.trip_agent_prompt_versions
+for select to authenticated using (public.is_admin(auth.uid()));
 
 drop policy if exists "Trip agent threads editor read" on public.trip_agent_threads;
 create policy "Trip agent threads editor read" on public.trip_agent_threads

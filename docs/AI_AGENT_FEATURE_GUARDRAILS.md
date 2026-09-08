@@ -179,6 +179,22 @@ plain strings, or register the plugin first. See
   the release, not one line per iteration. Contradictory entries (a shortcut
   documented twice, differently) mean nobody re-read it.
 
+## 14. A rollout flag has two halves
+
+A server-side gate answers *may this request run*. It does not answer *should
+this button exist*. When only the server knows, every signed-in user gets an
+entry point that opens straight into an error, and the feature looks broken to
+exactly the people it was being hidden from.
+
+> *What happened:* `assertTripAgentAvailable` refused everyone but
+> administrators while `trip_agent_enabled` was false, and the planner rendered
+> the launcher for every signed-in editor regardless. On the branch preview
+> nobody noticed: the tester was an administrator.
+
+Ship the client half with the server half, expose the flag through whatever
+public settings the client already reads, and make the client's fallback — for a
+database that has not been migrated yet — the *narrower* of the two answers.
+
 ## Checklist before handing an AI feature over
 
 - [ ] No hidden reasoning streamed, stored or rendered.
@@ -191,3 +207,4 @@ plain strings, or register the plugin first. See
 - [ ] Partial application reported; grouping does not remove per-item choice.
 - [ ] `pnpm dlx react-doctor@latest` clean of errors; new overlays behave as dialogs.
 - [ ] Checklists and PR claims match what the code actually does.
+- [ ] The entry point is gated by the same rollout state as the endpoint, and tested from a non-administrator account.

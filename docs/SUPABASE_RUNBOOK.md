@@ -516,6 +516,28 @@ from public.trip_generation_requests
 where id = '<request-id>';
 ```
 
+## Trip Agent rollout
+
+`app_runtime_settings` holds two flags. Both the API
+(`assertTripAgentAvailable`) and the planner launcher read them, so they are the
+only switch the feature has.
+
+```sql
+-- who can use the Trip Agent right now
+select trip_agent_enabled, trip_agent_admin_preview from public.app_runtime_settings where singleton = true;
+
+-- open it to every entitled account
+update public.app_runtime_settings set trip_agent_enabled = true where singleton = true;
+
+-- close it again; nothing needs redeploying
+update public.app_runtime_settings set trip_agent_enabled = false where singleton = true;
+```
+
+The client reads them through `get_public_runtime_settings`, which
+`20260908090000_trip_agent_rollout_in_public_settings.sql` widens. Before that
+migration runs, the client cannot see the flags and falls back to
+administrators only — the same answer the server gives today.
+
 ## Minimal Smoke Test
 
 1. Create a new trip and edit one item.

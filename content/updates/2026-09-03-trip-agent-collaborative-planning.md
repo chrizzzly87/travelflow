@@ -34,6 +34,7 @@ summary: "Trip Agent brings shared, context-aware planning into each trip while 
 - [x] [Improved] ❓ When a change leaves a real choice open, Trip Agent asks first and proposes only once you have answered.
 - [x] [Fixed] 📅 Fixed the calendar showing the previous plan until you switched views and back.
 
+- [ ] [Internal] 🚦 The planner launcher follows the server rollout flags, so the chat is invisible until it is switched on; agent definitions and prompt versions are readable by administrators only.
 - [ ] [Internal] 🚦 Added a daily run ceiling for plans with an unlimited allowance, a free continuation for answering the agent's own question, and change-set references on locally adopted trip versions.
 - [ ] [Internal] 🔐 Persistent shared threads, messages, runs, tool records, proposals, prompt versions and quotas behind an admin-preview flag, with atomic approval through one Supabase version.
 - [ ] [Internal] 🔌 Flat wire schema for trip-change operations plus a typed converter and unknown-target validation, because function-calling models cannot emit the internal discriminated union.

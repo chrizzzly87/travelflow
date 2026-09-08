@@ -15,7 +15,7 @@ How the chat runs, which functions the agents may call, and which trip changes t
 - [x] Keep the global rollout disabled while allowing administrator preview.
 - [x] Deploy and smoke-test the named Netlify feature preview.
 
-Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-agent-collaborative-ai--travelflowapp.netlify.app)
+Preview: [deploy-preview-487--travelflowapp.netlify.app](https://deploy-preview-487--travelflowapp.netlify.app)
 
 ## PoC stabilization
 
@@ -76,14 +76,52 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 - [ ] Verify the deploy preview end to end with an administrator account (transcript reload, retry, apply, quota refund).
 - [ ] Decide whether transfers should group under their destination stop rather than the stop whose days they occupy.
 - [x] Resolve the specialist model the same way as the orchestrator; a bare model id only worked with the AI Gateway.
-- [ ] Normalize specialist result cards for stays and routes (#485).
+- [x] Normalize specialist result cards for stays and routes: budget-grouped stays and route alternatives with sources (`TripAgentSpecialistCards.tsx`).
+
+## Production-readiness correction plan
+
+Reconciled against the code on 2026-09-08, before merging #487.
+
+### P0 — privacy, runtime, and persistence correctness
+
+- [x] Stop streaming, returning, storing, and displaying hidden provider reasoning.
+- [x] Redact provider and credential details from client errors and structured logs.
+- [x] Keep synchronous Netlify execution below the platform's 60-second limit.
+- [ ] Enforce registry-first Gateway routing, approved providers/models, and zero-data-retention routing constraints. *Partly: the active OpenRouter path enforces the approved list, denies provider data collection and forbids fallbacks. Registry-first Gateway routing with ZDR needs `AI_GATEWAY_API_KEY` (#481).*
+- [x] Hydrate authoritative proposal state on reload and preserve stale/replaced/rejected/apply status.
+- [ ] Make pending-proposal replacement and selected-operation application transactionally consistent. *Partly: an apply is one atomic RPC and superseding is scoped to the thread; the operations are still replayed client-side and written as a snapshot rather than replayed inside the lock (#481).*
+- [x] Tighten trip expiration, editable-share, prompt-definition RLS, quota, and abuse-limit checks. *Migration `20260904120000` for expiry and editable shares, `20260908091000` for the prompt tables, plus the daily ceiling for unlimited plans.*
+
+### P1 — testable planner experience
+
+- [x] Add accessible mobile dialog behavior: focus containment/restoration, Escape, backdrop, and safe-area handling.
+- [x] Add archive controls and keep launcher availability consistent with server rollout state.
+- [x] Keep selection context current, removable, immutable once sent, and preserved by retry.
+- [x] Review individual operations with useful before/after values and reload-safe statuses.
+- [ ] Verify logical insets and panel/map/detail coordination in LTR and RTL. *Written with logical properties and reviewed in code; not yet verified in a browser (#488).*
+
+### P2 — grounded specialists and administration
+
+- [x] Add normalized, sourced hotel cards in low/medium/high budget-fit groups without live-price claims.
+- [x] Add up to three normalized route alternatives with stops, distance, duration, and trade-offs.
+- [ ] Convert a chosen specialist option to a proposal without another model request (#485).
+- [ ] Build Admin transcript inspection, prompt publish/rollback, configuration audit, telemetry, and rollout controls (#482).
+- [ ] Capture tokens and cost without storing raw provider payloads or trip/prompt content in analytics (#482).
+
+### P3 — verification and rollout
+
+- [ ] Add deterministic fake Gateway and Maps fixtures for runtime and browser E2E tests (#488).
+- [ ] Add Supabase concurrency, idempotency, RLS, stale-editor, quota/refund, and atomic-apply integration coverage (#488).
+- [x] Pass core, targeted browser/integration, i18n, storage, edge, build, release, diff, and React Doctor gates.
+- [ ] Apply reviewed migrations, deploy the named branch preview, and complete authenticated smoke tests. *Migrations through `20260904140000` applied and the preview deployed; `20260908090000` and `20260908091000` are pending, and both degrade safely if they are never run. The authenticated end-to-end pass is the owner's.*
+- [x] Merge only when the PR description/checklists accurately describe completed behavior and required checks are green.
 
 ## Delivery tracks
 
 - [x] #486 Persistence, entitlements, quota, and agent configuration — PoC foundation implemented.
 - [x] #481 Streaming orchestrator and atomic change-set application — PoC foundation implemented.
 - [x] #484 Planner chat UI and timeline context — PoC foundation implemented.
-- [ ] #485 Hotel and route specialists — grounded adapter exists; normalized visual result cards and production credentials remain.
+- [ ] #485 Hotel and route specialists — grounded adapter and result cards ship; turning a chosen option into a proposal without a second model call remains.
 - [ ] #482 Admin transcripts, prompt management, telemetry, and rollout — schema/records exist; admin workspace and rollout dashboards remain.
 - [ ] #483 JourneySpec interoperability — blocked on PR #444.
 
@@ -91,7 +129,7 @@ Preview: [trip-agent-collaborative-ai--travelflowapp.netlify.app](https://trip-a
 
 - [x] Stop streaming and storing hidden reasoning, and remove the reasoning parts already stored.
 - [x] Keep raw provider and database messages out of client payloads; redact logs and run records centrally.
-- [x] Drop the browser Maps key fallback: grounding needs a dedicated server-side key.
+- [x] Answer "why a second Maps key?" before reaching for the browser one. Reversed by owner decision on 2026-09-04: the shared key is used with a Google Cloud quota cap, and the run logs which source it came from.
 - [x] Enforce the approved-model list and deny provider data collection on the active OpenRouter path.
 - [x] Cap an interactive run below Netlify's 60 second synchronous limit and close runs left running.
 - [x] Rebuild proposal cards from the stored change-set status, not from the transcript.
@@ -144,3 +182,11 @@ session rather than against the issue text.
 - [ ] Verify authenticated transcript reload, cancellation, quota refund, and stale-proposal paths in the deployed environment (unauthenticated endpoint guard is verified).
 - [ ] Build the English-only admin transcript and prompt-management workspace.
 - [ ] Enable for all eligible accounts only after persistence, quota, atomic apply, telemetry, and rollback gates pass.
+
+## Merge round (2026-09-08)
+
+- [x] Hide the launcher unless the server rollout allows this actor: the button rendered for every signed-in editor while `assertTripAgentAvailable` refused everyone but administrators, so on `main` it would have opened a panel that could only report an error. `get_public_runtime_settings` now carries `trip_agent_enabled` and `trip_agent_admin_preview` (`20260908090000`), and the client falls back to administrator-only when the database has not been migrated yet.
+- [x] Restrict `trip_agent_definitions` and `trip_agent_prompt_versions` to administrators (`20260908091000`). Nothing in the browser reads them; the run loads both with the service role.
+- [x] Reconcile this checklist and issue #480 against the code rather than against the session.
+- [ ] Flip `app_runtime_settings.trip_agent_enabled` once the owner's authenticated pass is done; until then the feature is on `main` but invisible to everyone but administrators (#489).
+- [ ] Publish the release note (`content/updates/2026-09-03-trip-agent-collaborative-planning.md`) with that flip, not with the merge: announcing a feature nobody can open yet is worse than announcing it late.

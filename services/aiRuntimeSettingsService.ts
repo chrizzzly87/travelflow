@@ -12,6 +12,10 @@ export interface AiRuntimeSettings {
     approvedOpenRouterModels: string[];
     modelMaxAgeMonths: number;
     showOlderModels: boolean;
+    /** Trip Agent rollout: on for everyone entitled to it. */
+    tripAgentEnabled: boolean;
+    /** Trip Agent rollout: administrators may use it while it is off. */
+    tripAgentAdminPreview: boolean;
     updatedAt: string | null;
 }
 
@@ -20,6 +24,11 @@ const DEFAULT_AI_RUNTIME_SETTINGS: AiRuntimeSettings = {
     approvedOpenRouterModels: [],
     modelMaxAgeMonths: 6,
     showOlderModels: false,
+    // Mirrors the column defaults, so a database that has not yet widened
+    // get_public_runtime_settings keeps the server's own answer: administrators
+    // preview the agent, nobody else sees it.
+    tripAgentEnabled: false,
+    tripAgentAdminPreview: true,
     updatedAt: null,
 };
 
@@ -53,6 +62,8 @@ export const normalizeAiRuntimeSettings = (value: unknown): AiRuntimeSettings =>
         approvedOpenRouterModels: normalizeModelIdList(row.ai_approved_openrouter_models),
         modelMaxAgeMonths: Number.isFinite(rawAge) ? Math.max(1, Math.min(36, Math.round(rawAge))) : 6,
         showOlderModels: row.ai_show_older_models === true,
+        tripAgentEnabled: row.trip_agent_enabled === true,
+        tripAgentAdminPreview: row.trip_agent_admin_preview !== false,
         updatedAt: typeof row.updated_at === 'string' ? row.updated_at : null,
     };
 };
