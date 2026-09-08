@@ -24,8 +24,15 @@ describe('aiRuntimeSettingsService', () => {
       showOlderModels: true,
       tripAgentEnabled: false,
       tripAgentAdminPreview: true,
+      mapDefaultStyle: 'standard',
+      plannerBetaOpen: false,
       updatedAt: '2026-08-17T12:00:00Z',
     });
+  });
+
+  it('reads the admin map default and rejects an unknown style', () => {
+    expect(normalizeAiRuntimeSettings([{ map_default_style: 'cleanDark' }])).toMatchObject({ mapDefaultStyle: 'cleanDark' });
+    expect(normalizeAiRuntimeSettings([{ map_default_style: 'google' }])).toMatchObject({ mapDefaultStyle: 'standard' });
   });
 
   it('reads the Trip Agent rollout flags, and falls back to admin-only when the row predates them', () => {

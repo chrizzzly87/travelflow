@@ -21,6 +21,7 @@ const AdminAuditPage = lazyWithRecovery('AdminAuditPage', () => import('./AdminA
 const AdminOgToolsPage = lazyWithRecovery('AdminOgToolsPage', () => import('./AdminOgToolsPage').then((module) => ({ default: module.AdminOgToolsPage })));
 const AdminDesignSystemPlaygroundPage = lazyWithRecovery('AdminDesignSystemPlaygroundPage', () => import('./AdminDesignSystemPlaygroundPage').then((module) => ({ default: module.AdminDesignSystemPlaygroundPage })));
 const AdminComponentPlaygroundPage = lazyWithRecovery('AdminComponentPlaygroundPage', () => import('./AdminComponentPlaygroundPage').then((module) => ({ default: module.AdminComponentPlaygroundPage })));
+const AdminGlobalSettingsPage = lazyWithRecovery('AdminGlobalSettingsPage', () => import('./AdminGlobalSettingsPage').then((module) => ({ default: module.AdminGlobalSettingsPage })));
 const AdminLegalTermsPage = lazyWithRecovery('AdminLegalTermsPage', () => import('./AdminLegalTermsPage').then((module) => ({ default: module.AdminLegalTermsPage })));
 
 const RouteLoadingFallback: React.FC = () => (
@@ -40,6 +41,7 @@ export const AdminWorkspaceRouter: React.FC = () => (
             <Route path="billing" element={<AdminBillingPage />} />
             <Route path="audit" element={<AdminAuditPage />} />
             <Route path="legal" element={<AdminLegalTermsPage />} />
+            <Route path="settings" element={<AdminGlobalSettingsPage />} />
             <Route path="ai-benchmark" element={<AdminAiBenchmarkPage />} />
             <Route path="ai-benchmark/telemetry" element={<AdminAiTelemetryPage />} />
             <Route path="ai-benchmark/worker-health" element={<AdminAiWorkerHealthPage />} />

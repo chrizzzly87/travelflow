@@ -16,6 +16,7 @@ import {
     Scroll,
     StackSimple,
     SuitcaseRolling,
+    SlidersHorizontal,
     UsersThree,
     X,
 } from '@phosphor-icons/react';
@@ -62,6 +63,7 @@ const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
     if (icon === 'billing') return <CreditCard size={16} weight="duotone" />;
     if (icon === 'audit') return <Scroll size={16} weight="duotone" />;
     if (icon === 'legal') return <Scales size={16} weight="duotone" />;
+    if (icon === 'settings') return <SlidersHorizontal size={16} weight="duotone" />;
     if (icon === 'og_tools') return <ImageSquare size={16} weight="duotone" />;
     if (icon === 'design_system') return <Palette size={16} weight="duotone" />;
     return <Flask size={16} weight="duotone" />;
