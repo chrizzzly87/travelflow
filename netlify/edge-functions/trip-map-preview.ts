@@ -19,7 +19,7 @@
  */
 
 import { getMapboxAccessTokenFromEnv, getMapsApiKeyFromEnv } from "../edge-lib/trip-og-data.ts";
-import { resolveEdgeMapRuntime } from "../edge-lib/map-runtime.ts";
+import { resolveEdgeMapRuntimeAsync } from "../edge-lib/map-runtime.ts";
 import {
   buildPreviewNetlifyVaryValue,
   createTokenBucketLimiter,
@@ -441,7 +441,7 @@ const badRequest = (message: string): Response =>
 
 export default async (request: Request, context?: { ip?: string }) => {
   const url = new URL(request.url);
-  const mapRuntime = resolveEdgeMapRuntime(request);
+  const mapRuntime = await resolveEdgeMapRuntimeAsync(request);
   const coordsParam = url.searchParams.get("coords");
 
   if (!coordsParam) {

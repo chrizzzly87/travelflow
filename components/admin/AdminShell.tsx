@@ -16,6 +16,7 @@ import {
     Scroll,
     StackSimple,
     SuitcaseRolling,
+    SlidersHorizontal,
     UsersThree,
     X,
 } from '@phosphor-icons/react';
@@ -51,20 +52,28 @@ interface AdminShellProps {
     showDateRange?: boolean;
 }
 
-const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
-    if (icon === 'overview') return <ChartPieSlice size={16} weight="duotone" />;
-    if (icon === 'telemetry') return <ChartLineUp size={16} weight="duotone" />;
-    if (icon === 'users') return <UsersThree size={16} weight="duotone" />;
-    if (icon === 'trips') return <SuitcaseRolling size={16} weight="duotone" />;
-    if (icon === 'airports') return <AirplaneTakeoff size={16} weight="duotone" />;
-    if (icon === 'destinations') return <GlobeHemisphereWest size={16} weight="duotone" />;
-    if (icon === 'tiers') return <StackSimple size={16} weight="duotone" />;
-    if (icon === 'billing') return <CreditCard size={16} weight="duotone" />;
-    if (icon === 'audit') return <Scroll size={16} weight="duotone" />;
-    if (icon === 'legal') return <Scales size={16} weight="duotone" />;
-    if (icon === 'og_tools') return <ImageSquare size={16} weight="duotone" />;
-    if (icon === 'design_system') return <Palette size={16} weight="duotone" />;
-    return <Flask size={16} weight="duotone" />;
+type AdminNavIconKey = (typeof ADMIN_NAV_ITEMS)[number]['icon'];
+
+const NAV_ICONS: Record<AdminNavIconKey, React.ComponentType<{ size?: number; weight?: 'duotone' }>> = {
+    overview: ChartPieSlice,
+    telemetry: ChartLineUp,
+    users: UsersThree,
+    trips: SuitcaseRolling,
+    airports: AirplaneTakeoff,
+    destinations: GlobeHemisphereWest,
+    tiers: StackSimple,
+    billing: CreditCard,
+    audit: Scroll,
+    legal: Scales,
+    settings: SlidersHorizontal,
+    og_tools: ImageSquare,
+    design_system: Palette,
+    benchmark: Flask,
+};
+
+const itemIcon = (icon: AdminNavIconKey) => {
+    const Icon = NAV_ICONS[icon] || Flask;
+    return <Icon size={16} weight="duotone" />;
 };
 
 const buildDesktopNavClass = ({ isActive }: { isActive: boolean }, isCollapsed: boolean) => {

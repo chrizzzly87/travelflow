@@ -5,7 +5,19 @@ import {
     setRuntimeDefaultCreateTripModelId,
     type AiModelCatalogItem,
 } from '../config/aiModelCatalog';
+import { isMapRuntimePreset, setRuntimeMapPreset } from './mapRuntimeService';
+import { setRuntimeDefaultMapStyle } from './tripViewSettingsService';
 import { supabase } from './supabaseClient';
+import type { MapStyle } from '../types';
+import type { MapRuntimePreset } from '../shared/mapRuntime';
+
+const MAP_STYLES: MapStyle[] = ['minimal', 'standard', 'dark', 'satellite', 'clean', 'cleanDark'];
+
+export const isMapStyle = (value: unknown): value is MapStyle => (
+    typeof value === 'string' && (MAP_STYLES as string[]).includes(value)
+);
+
+export const MAP_STYLE_OPTIONS = MAP_STYLES;
 
 export interface AiRuntimeSettings {
     defaultModelId: string;
@@ -16,6 +28,12 @@ export interface AiRuntimeSettings {
     tripAgentEnabled: boolean;
     /** Trip Agent rollout: administrators may use it while it is off. */
     tripAgentAdminPreview: boolean;
+    /** Map style new visitors start on, before they pick one themselves. */
+    mapDefaultStyle: MapStyle;
+    /** Which map stack renders the planner, routes, search and static images. */
+    mapRuntimePreset: MapRuntimePreset;
+    /** Planner beta gate, kept here so one admin page owns every switch. */
+    plannerBetaOpen: boolean;
     updatedAt: string | null;
 }
 
@@ -29,6 +47,9 @@ const DEFAULT_AI_RUNTIME_SETTINGS: AiRuntimeSettings = {
     // preview the agent, nobody else sees it.
     tripAgentEnabled: false,
     tripAgentAdminPreview: true,
+    mapDefaultStyle: 'standard',
+    mapRuntimePreset: 'google_all',
+    plannerBetaOpen: false,
     updatedAt: null,
 };
 
@@ -64,6 +85,9 @@ export const normalizeAiRuntimeSettings = (value: unknown): AiRuntimeSettings =>
         showOlderModels: row.ai_show_older_models === true,
         tripAgentEnabled: row.trip_agent_enabled === true,
         tripAgentAdminPreview: row.trip_agent_admin_preview !== false,
+        mapDefaultStyle: isMapStyle(row.map_default_style) ? row.map_default_style : 'standard',
+        mapRuntimePreset: isMapRuntimePreset(row.map_runtime_preset) ? row.map_runtime_preset : 'google_all',
+        plannerBetaOpen: row.planner_beta_open === true,
         updatedAt: typeof row.updated_at === 'string' ? row.updated_at : null,
     };
 };
@@ -104,6 +128,8 @@ export const applyAiRuntimeSettings = (
         if (placeholder) registerRuntimeAiModels([placeholder]);
     }
     setRuntimeDefaultCreateTripModelId(settings.defaultModelId);
+    setRuntimeDefaultMapStyle(settings.mapDefaultStyle);
+    setRuntimeMapPreset(settings.mapRuntimePreset);
     return settings;
 };
 
@@ -123,7 +149,51 @@ export const loadPublicAiRuntimeSettings = async (): Promise<AiRuntimeSettings> 
     return runtimeSettingsPromise;
 };
 
+/** Reloads the settings from the database, bypassing the boot-time cache. */
+export const refreshPublicAiRuntimeSettings = async (): Promise<AiRuntimeSettings> => {
+    runtimeSettingsPromise = null;
+    return loadPublicAiRuntimeSettings();
+};
+
 export const resetAiRuntimeSettingsCacheForTests = (): void => {
     runtimeSettingsPromise = null;
     setRuntimeDefaultCreateTripModelId(DEFAULT_CREATE_TRIP_MODEL_ID);
+    setRuntimeDefaultMapStyle('standard');
+    setRuntimeMapPreset(null);
+};
+
+/**
+ * Writes the app-wide switches. Every field is optional; what is not sent keeps
+ * its stored value, so one section of the admin page can save on its own.
+ */
+export const updateAppRuntimeSettings = async (input: {
+    plannerBetaOpen?: boolean;
+    tripAgentEnabled?: boolean;
+    tripAgentAdminPreview?: boolean;
+    defaultModelId?: string;
+    approvedOpenRouterModels?: string[];
+    modelMaxAgeMonths?: number;
+    showOlderModels?: boolean;
+    mapDefaultStyle?: MapStyle;
+    mapRuntimePreset?: MapRuntimePreset;
+}): Promise<AiRuntimeSettings> => {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase.rpc('admin_update_app_runtime_settings', {
+        p_planner_beta_open: input.plannerBetaOpen ?? null,
+        p_trip_agent_enabled: input.tripAgentEnabled ?? null,
+        p_trip_agent_admin_preview: input.tripAgentAdminPreview ?? null,
+        p_ai_default_model_id: input.defaultModelId ?? null,
+        p_ai_approved_openrouter_models: input.approvedOpenRouterModels ?? null,
+        p_ai_model_max_age_months: input.modelMaxAgeMonths ?? null,
+        p_ai_show_older_models: input.showOlderModels ?? null,
+        p_map_default_style: input.mapDefaultStyle ?? null,
+        p_map_runtime_preset: input.mapRuntimePreset ?? null,
+    });
+    if (error) throw new Error(error.message);
+    const settings = normalizeAiRuntimeSettings(data);
+    // The cached promise is what the rest of the app reads; replace it so a save
+    // is visible without a reload.
+    runtimeSettingsPromise = Promise.resolve(settings);
+    applyAiRuntimeSettings(settings);
+    return settings;
 };

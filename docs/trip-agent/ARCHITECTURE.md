@@ -150,7 +150,9 @@ offering a panel the server would refuse. Both halves must move together: a
 client that cannot see the flags falls back to administrator-only, which is what
 the columns default to.
 
-Turning it on for everyone is one statement, until #482 adds the admin control:
+Turn it on or off in **/admin/settings**, which writes the row through
+`admin_update_app_runtime_settings`. The equivalent statement, for when the
+admin page is unavailable:
 
 ```sql
 update public.app_runtime_settings set trip_agent_enabled = true where singleton = true;
