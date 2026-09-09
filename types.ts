@@ -1,13 +1,12 @@
 
 import type { TransportMode as CanonicalTransportMode } from './shared/transportModes';
+import type { ActivityType as CanonicalActivityType } from './shared/activityTypes';
 import type { CreateTripPrefillDraft } from './shared/createTripPreferences';
 
 export type ItemType = 'city' | 'activity' | 'travel' | 'travel-empty';
 export type TransportMode = CanonicalTransportMode;
 export type CityPlanStatus = 'confirmed' | 'uncertain';
-export type ActivityType = 
-    'general' | 'food' | 'culture' | 'sightseeing' | 'relaxation' | 'nightlife' | 
-    'sports' | 'hiking' | 'wildlife' | 'shopping' | 'adventure' | 'beach' | 'nature';
+export type ActivityType = CanonicalActivityType;
 
 export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean' | 'cleanDark';
 export type RouteMode = 'simple' | 'realistic';

@@ -51,6 +51,12 @@ const isValidDateTime = (value) => Number.isFinite(Date.parse(value));
 const isValidVersion = (value) => /^v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(value);
 const PUBLISHED_AT_MAX_UTC_HOUR_EXCLUSIVE = 23;
 const STRICT_CANONICAL_VERSION_SEQUENCE = process.env.UPDATES_VALIDATE_STRICT_CANONICAL === '1';
+const FIX_MODE = process.argv.includes('--fix');
+// Parallel worktrees each stamp their own release note, so a published_at a few
+// minutes ahead of the build machine's clock is ordinary drift, not a mistake.
+// It downgrades to a warning inside this window and `--fix` clamps it; a date
+// genuinely typed wrong (next month, next year) still fails the build.
+const FUTURE_PUBLISHED_AT_GRACE_MS = 24 * 60 * 60 * 1_000;
 const parseVersionCore = (version) => {
   const normalized = version.trim().replace(/^v/i, '');
   const core = normalized.split(/[-+]/)[0];
@@ -74,14 +80,46 @@ const compareVersionCore = (a, b) => {
 
 const canonicalPublishedVersionForIndex = (index) => `v0.${index}.0`;
 
+const formatVersion = ({ major, minor, patch }) => `v${major}.${minor}.${patch}`;
+
+/** Matches scripts/next-release-version.mjs: a .0 release opens the next minor. */
+const bumpVersionCore = ({ major, minor, patch }) => (
+  patch === 0 ? { major, minor: minor + 1, patch: 0 } : { major, minor, patch: patch + 1 }
+);
+
+/**
+ * The newest timestamp a published release may carry on this machine: now,
+ * truncated to the minute, pulled back to 22:59 when now falls in the hour the
+ * site renders as the next day in CET.
+ */
+const latestUsablePublishedAt = (nowMs = Date.now()) => {
+  const stamp = new Date(Math.floor(nowMs / 60_000) * 60_000);
+  if (stamp.getUTCHours() >= PUBLISHED_AT_MAX_UTC_HOUR_EXCLUSIVE) {
+    stamp.setUTCHours(PUBLISHED_AT_MAX_UTC_HOUR_EXCLUSIVE - 1, 59, 0, 0);
+  }
+  return stamp.toISOString().replace(/\.\d{3}Z$/, 'Z');
+};
+
+/** Rewrites one frontmatter key in place, leaving the rest of the file untouched. */
+const replaceFrontmatterValue = (raw, key, value) => {
+  const normalized = raw.replace(/\r\n/g, '\n');
+  const match = normalized.match(FRONTMATTER_REGEX);
+  if (!match) return normalized;
+  const pattern = new RegExp(`^(\\s*${key}\\s*:).*$`, 'm');
+  const block = match[1];
+  if (!pattern.test(block)) return normalized;
+  return normalized.replace(block, block.replace(pattern, `$1 ${value}`));
+};
+
 const validateFile = async (filePath) => {
   const raw = await fs.readFile(filePath, 'utf8');
   const parsed = parseFrontmatter(raw);
   const errors = [];
+  const warnings = [];
 
   if (!parsed) {
     errors.push('missing or invalid frontmatter block');
-    return errors;
+    return { errors, warnings };
   }
 
   const { meta, body } = parsed;
@@ -113,7 +151,12 @@ const validateFile = async (filePath) => {
     }
 
     if (status === 'published' && publishedAtMs > Date.now() + 60_000) {
-      errors.push(`published_at cannot be in the future for published releases: ${meta.published_at}`);
+      const aheadBy = publishedAtMs - Date.now();
+      if (aheadBy > FUTURE_PUBLISHED_AT_GRACE_MS) {
+        errors.push(`published_at is more than a day in the future for a published release: ${meta.published_at}`);
+      } else {
+        warnings.push(`published_at is ahead of this machine's clock by ${Math.ceil(aheadBy / 60_000)} min: ${meta.published_at} (run \`pnpm updates:fix\`)`);
+      }
     }
   }
 
@@ -146,7 +189,71 @@ const validateFile = async (filePath) => {
     }
   }
 
-  return errors;
+  return { errors, warnings };
+};
+
+/**
+ * Resolves the two collisions that parallel worktrees produce on their own: a
+ * published_at stamped slightly ahead of the clock, and a version another
+ * branch published first. Both have exactly one correct answer, so `--fix`
+ * writes it instead of bouncing the build back at whoever merged second.
+ */
+const applyAutoFixes = async (files) => {
+  const changes = [];
+  const ceiling = latestUsablePublishedAt();
+  const ceilingMs = Date.parse(ceiling);
+  const edited = new Map();
+  const entries = [];
+
+  for (const file of files) {
+    const raw = await fs.readFile(file, 'utf8');
+    const parsed = parseFrontmatter(raw);
+    if (!parsed?.meta) continue;
+    entries.push({ file, meta: parsed.meta, raw });
+  }
+
+  const isPublished = (entry) => String(entry.meta.status || '').trim().toLowerCase() === 'published';
+  const label = (entry) => path.relative(process.cwd(), entry.file);
+
+  for (const entry of entries) {
+    if (!isPublished(entry)) continue;
+    const value = String(entry.meta.published_at || '').trim();
+    if (!value || !isValidDateTime(value) || Date.parse(value) <= ceilingMs) continue;
+    entry.raw = replaceFrontmatterValue(entry.raw, 'published_at', ceiling);
+    entry.meta.published_at = ceiling;
+    edited.set(entry.file, entry);
+    changes.push(`${label(entry)}: published_at ${value} -> ${ceiling}`);
+  }
+
+  const published = entries
+    .filter((entry) => (
+      isPublished(entry)
+      && parseVersionCore(String(entry.meta.version || ''))
+      && isValidDateTime(String(entry.meta.published_at || ''))
+    ))
+    .sort((a, b) => Date.parse(a.meta.published_at) - Date.parse(b.meta.published_at));
+
+  let highest = null;
+  for (const entry of published) {
+    const current = parseVersionCore(String(entry.meta.version));
+    if (highest && compareVersionCore(current, highest) <= 0) {
+      const next = bumpVersionCore(highest);
+      const nextLabel = formatVersion(next);
+      changes.push(`${label(entry)}: version ${String(entry.meta.version).trim()} -> ${nextLabel}`);
+      entry.raw = replaceFrontmatterValue(entry.raw, 'version', nextLabel);
+      entry.meta.version = nextLabel;
+      edited.set(entry.file, entry);
+      highest = next;
+      continue;
+    }
+    highest = current;
+  }
+
+  for (const entry of edited.values()) {
+    await fs.writeFile(entry.file, entry.raw, 'utf8');
+  }
+
+  return changes;
 };
 
 const main = async () => {
@@ -165,8 +272,20 @@ const main = async () => {
   let hasWarnings = false;
   const parsedByFile = [];
 
+  if (FIX_MODE) {
+    const changes = await applyAutoFixes(files);
+    if (changes.length === 0) {
+      console.log('[updates:fix] nothing to change');
+    } else {
+      console.log('[updates:fix] applied:');
+      for (const change of changes) {
+        console.log(`  - ${change}`);
+      }
+    }
+  }
+
   for (const file of files) {
-    const errors = await validateFile(file);
+    const { errors, warnings } = await validateFile(file);
     const raw = await fs.readFile(file, 'utf8');
     const parsed = parseFrontmatter(raw);
     if (parsed?.meta) {
@@ -175,10 +294,20 @@ const main = async () => {
         meta: parsed.meta,
       });
     }
+
+    const relative = path.relative(process.cwd(), file);
+
+    if (warnings.length > 0) {
+      hasWarnings = true;
+      console.warn(`\n[updates:validate] ${relative}`);
+      for (const warning of warnings) {
+        console.warn(`  - ${warning}`);
+      }
+    }
+
     if (errors.length === 0) continue;
 
     hasErrors = true;
-    const relative = path.relative(process.cwd(), file);
     console.error(`\n[updates:validate] ${relative}`);
     for (const error of errors) {
       console.error(`  - ${error}`);
@@ -203,6 +332,7 @@ const main = async () => {
     for (const file of matchingFiles) {
       console.error(`  - ${path.relative(process.cwd(), file)}`);
     }
+    console.error('  - Run `pnpm updates:fix` to renumber the later release.');
   }
 
   const publishedReleases = parsedByFile
@@ -227,6 +357,7 @@ const main = async () => {
       console.error('\n[updates:validate] published versions must strictly increase over time');
       console.error(`  - Older: ${path.relative(process.cwd(), prev.file)} (${prev.version} @ ${prev.publishedAt})`);
       console.error(`  - Newer: ${path.relative(process.cwd(), curr.file)} (${curr.version} @ ${curr.publishedAt})`);
+      console.error('  - Run `pnpm updates:fix` to renumber the later release.');
     }
   }
 
