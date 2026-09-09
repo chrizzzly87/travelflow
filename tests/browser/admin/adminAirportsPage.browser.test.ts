@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
+import { resolveMapRuntime } from '../../../shared/mapRuntime';
 
 const mocks = vi.hoisted(() => ({
   adminBulkUpdateAirportCatalogRecords: vi.fn(),
@@ -56,6 +57,13 @@ vi.mock('../../../components/admin/AdminShell', () => ({
 vi.mock('../../../components/GoogleMapsLoader', () => ({
   GoogleMapsLoader: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
   useGoogleMaps: () => ({ isLoaded: true, loadError: null }),
+  useMapRuntime: () => ({
+    runtime: resolveMapRuntime({
+      defaultPreset: 'google_all',
+      availability: { googleMapsKeyAvailable: true, mapboxAccessTokenAvailable: false },
+    }),
+    mapboxAccessToken: '',
+  }),
 }));
 
 vi.mock('@vis.gl/react-google-maps', () => ({
