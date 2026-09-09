@@ -1,0 +1,21 @@
+---
+id: rel-2026-09-08-activity-location-and-duration-editing
+version: v0.164.0
+title: "Reschedule and relocate any activity"
+date: 2026-09-08
+published_at: 2026-09-08T12:30:00Z
+status: draft
+notify_in_app: false
+in_app_hours: 24
+summary: "Activities can now be moved to another day, given a length in hours, and pinned to the exact place you mean."
+---
+
+## Changes
+- [x] [New feature] ⏱️ Give an activity the length it really has — set it in hours, from a half-hour coffee stop to a full day out.
+- [x] [New feature] 📅 Move an activity to another day straight from its details, without dragging it across the timeline.
+- [x] [New feature] 📍 Change where an activity happens: search for the venue and pick it, or write the spot in your own words.
+- [x] [Improved] 🕐 Short activities now read as hours instead of a fraction of a day, so a three-hour visit looks like one.
+
+- [ ] [Internal] 🧩 Reused the city schedule-draft state for activities, so the live timeline preview, Escape handling and Cancel/Apply behave identically for both item types.
+- [ ] [Internal] 🔎 Split the Google Places lookup into a locality-biased city search and an unrestricted place search, and stored the picked coordinates on the activity.
+- [ ] [Internal] 🧪 Unit coverage for the hour/day duration conversion, clamping and labelling helpers.
