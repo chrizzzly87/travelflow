@@ -112,6 +112,12 @@ interface PlaygroundTableRow {
     uuid: string;
 }
 
+const SAMPLE_MAP_STYLE_OPTIONS: Array<{ value: string; label: string }> = [
+    { value: 'standard', label: 'Standard (Mapbox)' },
+    { value: 'minimal', label: 'Minimal' },
+    { value: 'satellite', label: 'Satellite' },
+];
+
 const COMPONENT_GROUPS: ComponentGroupDefinition[] = [
     {
         id: 'buttons',
@@ -1092,9 +1098,11 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="standard">Standard (Mapbox)</SelectItem>
-                                        <SelectItem value="minimal">Minimal</SelectItem>
-                                        <SelectItem value="satellite">Satellite</SelectItem>
+                                        {SAMPLE_MAP_STYLE_OPTIONS.map((option) => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </SettingsRow>
