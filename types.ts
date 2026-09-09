@@ -84,6 +84,12 @@ export interface ICoordinates {
     lng: number;
 }
 
+/**
+ * Provenance of a stored coordinate pair. `user` outranks everything: once a
+ * traveller picks a place by hand the resolver leaves it alone.
+ */
+export type CoordinatesSource = 'ai' | 'agent' | 'places' | 'user';
+
 export interface IAiInsights {
     cost: string;
     bestTime: string;
@@ -193,6 +199,16 @@ export interface ITimelineItem {
   link?: string;
   location?: string;
   coordinates?: ICoordinates; 
+  /** Where `coordinates` came from, so a user pick is never overwritten by a lookup. */
+  coordinatesSource?: CoordinatesSource;
+  /**
+   * Normalized location string the stored coordinates were resolved from. The
+   * resolver re-runs only when this no longer matches the current location, so
+   * an unchanged activity never calls the location service twice.
+   */
+  coordinatesQuery?: string;
+  /** Google Place ID, when resolution matched an exact place. */
+  placeId?: string;
   imageUrl?: string;
   cost?: string;
   countryCode?: string;

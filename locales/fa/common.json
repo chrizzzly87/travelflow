@@ -280,6 +280,15 @@
     "addActivity": {
       "aiError": "ایده‌های فعالیت بارگذاری نشد. لطفاً دوباره تلاش کنید.",
       "aiRetry": "تلاش دوباره"
+    },
+    "mapLinks": {
+      "google": "نقشه گوگل",
+      "apple": "نقشه اپل",
+      "heading": "باز کردن در نقشه",
+      "approximate": "موقعیت تقریبی",
+      "openDetails": "باز کردن جزئیات",
+      "close": "بستن",
+      "popupLabel": "جزئیات فعالیت"
     }
   },
   "tripAgent": {

@@ -16,6 +16,8 @@ import { useAppDialog } from './AppDialogProvider';
 import { normalizeTransportMode, TRANSPORT_MODE_UI_ORDER } from '../shared/transportModes';
 import { resolveCitySuggestion, searchCitySuggestions, type CityLookupSuggestion } from '../shared/cityLookup';
 import { FlagIcon } from './flags/FlagIcon';
+import { MapAppLinks } from './maps/MapAppLinks';
+import { needsCoordinateResolution, resolveItemCoordinates } from '../services/activityLocationResolver';
 import { NumberInput } from './ui/number-input';
 import { Switch } from './ui/switch';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
@@ -966,6 +968,39 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       if (url) window.open(url, '_blank');
   };
 
+  // Resolves the activity's own position the first time its details are opened.
+  // Synchronising with the location service is exactly what an effect is for,
+  // and the resolved query is written back onto the item, so this fires once
+  // per activity rather than once per open.
+  useEffect(() => {
+      if (!isOpen || !canEdit) return;
+      const target = displayItem;
+      if (!target || target.type !== 'activity') return;
+
+      const ownerCity = [...tripItems]
+          .filter((entry) => entry.type === 'city')
+          .sort((a, b) => a.startDateOffset - b.startDateOffset)
+          .reverse()
+          .find((entry) => entry.startDateOffset <= target.startDateOffset) || null;
+
+      const input = {
+          item: target,
+          contextLabel: ownerCity?.title || ownerCity?.location,
+          bias: ownerCity?.coordinates ?? null,
+          language: getStoredAppLanguage(),
+      };
+      if (!needsCoordinateResolution(input)) return;
+
+      let cancelled = false;
+      void resolveItemCoordinates(input).then((update) => {
+          if (cancelled || !update) return;
+          onUpdate(target.id, update);
+      });
+      return () => {
+          cancelled = true;
+      };
+  }, [canEdit, displayItem, isOpen, onUpdate, tripItems]);
+
   // Touch Handlers (Overlay Mobile)
   const handleTouchStart = (e: React.TouchEvent) => { if (variant === 'overlay' && window.innerWidth < 640) { dragStartY.current = e.touches[0].clientY; setIsDragging(true); }};
   const handleTouchMove = (e: React.TouchEvent) => { if (variant === 'overlay' && window.innerWidth < 640 && dragStartY.current !== null) { const delta = e.touches[0].clientY - dragStartY.current; if (delta > 0) setDragOffset(delta); }};
@@ -1400,6 +1435,15 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             {isCity && countryNameForDisplay && (
                                 <div className="text-xs text-gray-500 mt-0.5">{countryNameForDisplay}</div>
                             )}
+                            <MapAppLinks
+                                title={isCity ? (cityDisplayName || displayItem.title) : displayItem.title}
+                                location={isCity ? (cityDisplayName || displayItem.location) : displayItem.location}
+                                coordinates={displayItem.coordinates}
+                                placeId={displayItem.placeId}
+                                source="details_panel"
+                                size="sm"
+                                className="mt-2"
+                            />
                             {supportsApproval && (
                                 <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
                                     <Switch
@@ -1673,6 +1717,16 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                     <div className="rounded-lg overflow-hidden h-32 w-full bg-gray-200 border border-gray-300 relative">
                                         <iframe width="100%" height="100%" frameBorder="0" style={{ border: 0 }} src={`https://maps.google.com/maps?q=${encodeURIComponent(hotel.address)}&t=&z=13&ie=UTF8&iwloc=&output=embed&hl=${encodeURIComponent(mapLanguage)}`} sandbox="allow-scripts allow-same-origin allow-popups" title="Hotel"></iframe>
                                     </div>
+                                )}
+                                {hotel.address && (
+                                    <MapAppLinks
+                                        title={hotel.name}
+                                        location={hotel.address}
+                                        coordinates={hotel.coordinates}
+                                        source="stay"
+                                        size="sm"
+                                        className="mt-2"
+                                    />
                                 )}
                             </div>
                         ))}

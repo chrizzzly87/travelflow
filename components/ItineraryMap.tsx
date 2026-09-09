@@ -11,6 +11,8 @@ import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps, useMapRuntime } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { ActivityTypeIcon } from './ActivityTypeVisuals';
+import { ActivityMapPopup } from './maps/ActivityMapPopup';
+import { useMapMarkerAnchor } from './maps/useMapMarkerAnchor';
 import { getActivityTypePaletteParts } from './ActivityTypeVisualsUtils';
 import { getMapSurfaceBackgroundColor, GOOGLE_BASEMAP_HIDDEN_STYLES } from '../services/mapRendererVisualStyleService';
 import { MapboxBasemapSync } from './maps/MapboxBasemapSync';
@@ -61,6 +63,8 @@ interface ItineraryMapProps {
     selectedItemId?: string | null;
     onCityMarkerSelect?: (cityId: string) => void;
     onActivityMarkerSelect?: (activityId: string) => void;
+    /** Off on small screens, where the details sheet already covers the map. */
+    enableActivityPopup?: boolean;
     layoutMode?: 'horizontal' | 'vertical';
     onLayoutChange?: (mode: 'horizontal' | 'vertical') => void;
     showLayoutControls?: boolean;
@@ -1411,6 +1415,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     selectedItemId, 
     onCityMarkerSelect,
     onActivityMarkerSelect,
+    enableActivityPopup = false,
     layoutMode, 
     onLayoutChange, 
     showLayoutControls = true,
@@ -1467,6 +1472,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const [isMapboxSurfaceReady, setIsMapboxSurfaceReady] = useState(false);
     const [mapboxStyleReloadNonce, setMapboxStyleReloadNonce] = useState(0);
     const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(false);
+    const [popupActivityId, setPopupActivityId] = useState<string | null>(null);
     const [mapZoomLevel, setMapZoomLevel] = useState<number | null>(null);
     const [mapViewportSize, setMapViewportSize] = useState<{ width: number; height: number } | null>(null);
     const previousMapDockModeRef = useRef<'docked' | 'floating'>(mapDockMode);
@@ -2405,7 +2411,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     ),
                     zIndex: isSelected ? ACTIVITY_MARKER_SELECTED_Z_INDEX : ACTIVITY_MARKER_Z_INDEX,
                     clickable: true,
-                    onClick: () => onActivityMarkerSelectRef.current?.(activityMarker.id),
+                    onClick: () => {
+                        // Selection still fires, so the timeline stays in sync
+                        // exactly as it did before the callout existed.
+                        onActivityMarkerSelectRef.current?.(activityMarker.id);
+                        setPopupActivityId(activityMarker.id);
+                    },
                     tooltipText: activityMarker.title,
                     markerDomId: `activity:${activityMarker.id}`,
                 });
@@ -3192,6 +3203,39 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         };
     }, [cities.length, focusLocationQuery, mapDockMode, mapInitialized, mapViewportSize, tripMapProvider, tripMapTuning.selection.queryFocusZoom]);
 
+    const activityMarkerSourceById = useMemo(() => {
+        const sources = new Map<string, 'activity' | 'city'>();
+        resolveActivityMarkerPositions(items).forEach((marker) => {
+            sources.set(marker.id, marker.coordinateSource);
+        });
+        return sources;
+    }, [items]);
+
+    const popupActivity = useMemo(() => (
+        popupActivityId
+            ? items.find((item) => item.id === popupActivityId && item.type === 'activity') || null
+            : null
+    ), [items, popupActivityId]);
+
+    // The callout belongs to a pin, so it only exists while that pin is drawn.
+    const isActivityPopupOpen = Boolean(
+        enableActivityPopup && popupActivity && !isPaywalled && activityMarkersEnabled,
+    );
+
+    const { anchor: activityPopupAnchor, containerSize: activityPopupContainerSize } = useMapMarkerAnchor(
+        mapContainerRef,
+        isActivityPopupOpen && popupActivityId ? `activity:${popupActivityId}` : null,
+    );
+
+    const handleCloseActivityPopup = useCallback(() => {
+        setPopupActivityId(null);
+    }, []);
+
+    const handleOpenActivityDetails = useCallback((activityId: string) => {
+        setPopupActivityId(null);
+        onActivityMarkerSelectRef.current?.(activityId);
+    }, []);
+
     return (
         <div
             ref={mapContainerRef}
@@ -3233,6 +3277,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 >
                     <ItineraryMapInstanceBridge mapId={mapInstanceId} onMapInstanceChange={handleMapInstanceChange} />
                 </GoogleMap>
+            )}
+            {isActivityPopupOpen && popupActivity && activityPopupAnchor && (
+                <ActivityMapPopup
+                    item={popupActivity}
+                    anchor={activityPopupAnchor}
+                    containerSize={activityPopupContainerSize}
+                    markerCoordinatesSource={activityMarkerSourceById.get(popupActivity.id) || 'city'}
+                    onClose={handleCloseActivityPopup}
+                    onOpenDetails={handleOpenActivityDetails}
+                />
             )}
             {shouldShowMapLoadingOverlay && (
                 <div

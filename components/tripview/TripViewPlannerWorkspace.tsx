@@ -322,6 +322,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     selectedItemId={selectedItemId}
                     onCityMarkerSelect={onMapCitySelect}
                     onActivityMarkerSelect={onMapActivitySelect}
+                    enableActivityPopup={!isMobile}
                     layoutMode={mapLayoutMode}
                     onLayoutChange={showLayoutControls ? onLayoutModeChange : undefined}
                     showLayoutControls={showLayoutControls}
