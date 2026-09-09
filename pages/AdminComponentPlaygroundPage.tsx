@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, Clipboard, Eye, MapPin, Pin, RotateCcw, Star, Tag, Trophy } from 'lucide-react';
+import { Flag, MapTrifold } from '@phosphor-icons/react';
 import { AdminShell } from '../components/admin/AdminShell';
 import {
     Card,
@@ -10,6 +11,7 @@ import {
 } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { SettingsPanel, SettingsRow, SettingsSection } from '../components/ui/settings-panel';
 import { Slider } from '../components/ui/slider';
 import { Switch } from '../components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -26,6 +28,7 @@ type StampRarityId = 'common' | 'rare' | 'legendary';
 type FeatureCardVariantId = 'planner' | 'maps' | 'profile';
 type AdminSurfaceStateId = 'healthy' | 'attention' | 'blocked';
 type CalendarCardScopeId = 'single' | 'series' | 'festival';
+type SettingsPanelDensityId = 'inline' | 'stacked';
 
 interface GlobePlaygroundSettings {
     palette: GlobePaletteId;
@@ -88,6 +91,13 @@ interface CalendarCardSettings {
     eventCount: number;
 }
 
+interface SettingsPanelSettings {
+    layout: SettingsPanelDensityId;
+    showSectionIcon: boolean;
+    showRowDescriptions: boolean;
+    showNote: boolean;
+}
+
 interface SliderControlProps {
     label: string;
     value: number;
@@ -107,6 +117,13 @@ const GLOBE_DEFAULTS: GlobePlaygroundSettings = {
     markerElevation: 0.025,
     theta: 0.16,
     animated: true,
+};
+
+const SETTINGS_PANEL_DEFAULTS: SettingsPanelSettings = {
+    layout: 'inline',
+    showSectionIcon: true,
+    showRowDescriptions: true,
+    showNote: true,
 };
 
 const CTA_DEFAULTS: CtaPlaygroundSettings = {
@@ -598,6 +615,65 @@ const CobeGlobePreview: React.FC<{ settings: GlobePlaygroundSettings }> = ({ set
     );
 };
 
+/**
+ * The settings layout from `components/ui/settings-panel.tsx`, live.
+ *
+ * Flip `layout` to see why a wide control needs `stacked`: an inline row keeps
+ * the control on the caption's baseline, which a picker or a list overflows.
+ * Documented in `docs/DESIGN_SYSTEM_COMPONENTS.md`.
+ */
+const SettingsPanelPreview: React.FC<{ settings: SettingsPanelSettings }> = ({ settings }) => {
+    const [agentOn, setAgentOn] = useState(true);
+    const [betaOn, setBetaOn] = useState(false);
+    const [style, setStyle] = useState('standard');
+
+    return (
+        <SettingsPanel>
+            <SettingsSection
+                icon={settings.showSectionIcon ? <Flag weight="duotone" /> : undefined}
+                title="Rollout"
+                description="Who can reach a feature that is not open to everyone yet."
+            >
+                <SettingsRow
+                    label="Trip Agent"
+                    description={settings.showRowDescriptions ? 'The planning chat inside a trip.' : undefined}
+                >
+                    <Switch checked={agentOn} onCheckedChange={setAgentOn} aria-label="Trip Agent" />
+                </SettingsRow>
+                <SettingsRow
+                    label="Planner beta"
+                    description={settings.showRowDescriptions ? 'Anyone can enter the beta without an invite.' : undefined}
+                >
+                    <Switch checked={betaOn} onCheckedChange={setBetaOn} aria-label="Planner beta" />
+                </SettingsRow>
+            </SettingsSection>
+
+            <SettingsSection
+                icon={settings.showSectionIcon ? <MapTrifold weight="duotone" /> : undefined}
+                title="Map"
+                description="Which stack renders the map, and the style a visitor starts on."
+            >
+                <SettingsRow
+                    label="Default style"
+                    layout={settings.layout}
+                    note={settings.showNote ? 'Anyone who picks a style themselves keeps their choice.' : undefined}
+                >
+                    <Select value={style} onValueChange={setStyle}>
+                        <SelectTrigger className="w-full sm:w-72" aria-label="Default style">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="standard">Standard (Mapbox)</SelectItem>
+                            <SelectItem value="minimal">Minimal</SelectItem>
+                            <SelectItem value="satellite">Satellite</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </SettingsRow>
+            </SettingsSection>
+        </SettingsPanel>
+    );
+};
+
 const PlaygroundBlock: React.FC<{
     title: string;
     description: string;
@@ -847,6 +923,7 @@ const CalendarCardPreview: React.FC<{ settings: CalendarCardSettings }> = ({ set
 export const AdminComponentPlaygroundPage: React.FC = () => {
     useNoIndexMeta();
     const [activeTab, setActiveTab] = useState('components');
+    const [settingsPanelSettings, setSettingsPanelSettings] = useState<SettingsPanelSettings>(SETTINGS_PANEL_DEFAULTS);
     const [globeSettings, setGlobeSettings] = useState<GlobePlaygroundSettings>(GLOBE_DEFAULTS);
     const [ctaSettings, setCtaSettings] = useState<CtaPlaygroundSettings>(CTA_DEFAULTS);
     const [exampleTripSettings, setExampleTripSettings] = useState<ExampleTripCardSettings>(EXAMPLE_TRIP_CARD_DEFAULTS);
@@ -863,6 +940,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
         trackEvent('admin__component_playground--open');
     }, []);
 
+    const settingsPanelSnippetSettings = useMemo(() => ({ ...settingsPanelSettings }), [settingsPanelSettings]);
     const globeSnippetSettings = useMemo(() => ({ ...globeSettings }), [globeSettings]);
     const ctaSnippetSettings = useMemo(() => ({ ...ctaSettings, headline: sampleHeadline }), [ctaSettings, sampleHeadline]);
     const exampleTripSnippetSettings = useMemo(() => ({ ...exampleTripSettings }), [exampleTripSettings]);
@@ -950,6 +1028,46 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                     </TabsContent>
 
                     <TabsContent value="components" className="flex w-full min-w-0 flex-col gap-5">
+                        <PlaygroundBlock
+                            title="Settings panel, section and row"
+                            description="The shared layout for any page that is a list of settings. One surface, dividers between sections, every control on the same edge. See docs/DESIGN_SYSTEM_COMPONENTS.md."
+                            preview={<SettingsPanelPreview settings={settingsPanelSettings} />}
+                            controls={(
+                                <PlaygroundControls
+                                    onReset={() => setSettingsPanelSettings(SETTINGS_PANEL_DEFAULTS)}
+                                    copyButton={<CopySettingsButton label="Copy settings panel settings" variableName="settingsPanelSettings" settings={settingsPanelSnippetSettings} />}
+                                >
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-xs font-semibold uppercase text-slate-500">Row layout</span>
+                                        <Select
+                                            value={settingsPanelSettings.layout}
+                                            onValueChange={(layout) => setSettingsPanelSettings((current) => ({ ...current, layout: layout as SettingsPanelDensityId }))}
+                                        >
+                                            <SelectTrigger aria-label="Row layout">
+                                                <SelectValue placeholder="Choose layout" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="inline">Inline (switches, selects)</SelectItem>
+                                                <SelectItem value="stacked">Stacked (pickers, lists)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                        <span>Section icons</span>
+                                        <Switch aria-label="Section icons" checked={settingsPanelSettings.showSectionIcon} onCheckedChange={(showSectionIcon) => setSettingsPanelSettings((current) => ({ ...current, showSectionIcon }))} />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                        <span>Row descriptions</span>
+                                        <Switch aria-label="Row descriptions" checked={settingsPanelSettings.showRowDescriptions} onCheckedChange={(showRowDescriptions) => setSettingsPanelSettings((current) => ({ ...current, showRowDescriptions }))} />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                        <span>Row note</span>
+                                        <Switch aria-label="Row note" checked={settingsPanelSettings.showNote} onCheckedChange={(showNote) => setSettingsPanelSettings((current) => ({ ...current, showNote }))} />
+                                    </div>
+                                </PlaygroundControls>
+                            )}
+                        />
+
                         <PlaygroundBlock
                             title="COBE globe component"
                             description="Reusable interactive globe component with component-specific rendering controls."

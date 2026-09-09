@@ -47,7 +47,7 @@ const settings = {
 const renderPage = async () => {
   const { AdminGlobalSettingsPage } = await import('../../../pages/AdminGlobalSettingsPage');
   render(React.createElement(AdminGlobalSettingsPage));
-  await screen.findByText('Trip Agent');
+  await screen.findByText('Rollout');
 };
 
 describe('AdminGlobalSettingsPage', () => {
@@ -61,11 +61,17 @@ describe('AdminGlobalSettingsPage', () => {
     vi.clearAllMocks();
   });
 
-  it('shows every settings group once the row loads', async () => {
+  it('groups every setting under one of the three decisions', async () => {
     await renderPage();
+    expect(screen.getByText('Rollout')).toBeTruthy();
     expect(screen.getByText('AI model')).toBeTruthy();
     expect(screen.getByText('Map')).toBeTruthy();
-    expect(screen.getByText('Planner')).toBeTruthy();
+
+    // The rollout group owns every gate, including the planner beta that used
+    // to sit alone in a card of its own.
+    expect(screen.getByRole('switch', { name: 'Trip Agent' })).toBeTruthy();
+    expect(screen.getByRole('switch', { name: 'Trip Agent administrator preview' })).toBeTruthy();
+    expect(screen.getByRole('switch', { name: 'Planner beta' })).toBeTruthy();
   });
 
   it('keeps the save disabled until something actually changes', async () => {
@@ -73,13 +79,25 @@ describe('AdminGlobalSettingsPage', () => {
     const save = screen.getByRole('button', { name: 'Save changes' }) as HTMLButtonElement;
     expect(save.disabled).toBe(true);
 
-    await userEvent.click(screen.getByRole('switch', { name: 'Enabled for everyone' }));
+    await userEvent.click(screen.getByRole('switch', { name: 'Trip Agent' }));
     await waitFor(() => expect(save.disabled).toBe(false));
+  });
+
+  it('offers a discard that puts the loaded values back', async () => {
+    await renderPage();
+    const save = screen.getByRole('button', { name: 'Save changes' }) as HTMLButtonElement;
+    expect(screen.queryByRole('button', { name: 'Discard' })).toBeNull();
+
+    await userEvent.click(screen.getByRole('switch', { name: 'Planner beta' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Discard' }));
+
+    await waitFor(() => expect(save.disabled).toBe(true));
+    expect(mocks.updateAppRuntimeSettings).not.toHaveBeenCalled();
   });
 
   it('sends only the settings it was given, with the toggled value', async () => {
     await renderPage();
-    await userEvent.click(screen.getByRole('switch', { name: 'Planner beta open' }));
+    await userEvent.click(screen.getByRole('switch', { name: 'Planner beta' }));
     await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() => expect(mocks.updateAppRuntimeSettings).toHaveBeenCalledTimes(1));

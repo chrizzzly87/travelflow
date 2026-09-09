@@ -11,6 +11,14 @@ const alertVariants = cva(
         default: "bg-card text-card-foreground",
         destructive:
           "bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 [&>svg]:text-current",
+        // Tone variants for saved/blocked feedback on admin surfaces. They set
+        // their own border so they read as a state, not as a plain panel.
+        success:
+          "border-emerald-200 bg-emerald-50 text-emerald-900 *:data-[slot=alert-description]:text-emerald-800 [&>svg]:text-current",
+        warning:
+          "border-amber-200 bg-amber-50 text-amber-900 *:data-[slot=alert-description]:text-amber-800 [&>svg]:text-current",
+        danger:
+          "border-red-200 bg-red-50 text-red-900 *:data-[slot=alert-description]:text-red-800 [&>svg]:text-current",
       },
     },
     defaultVariants: {

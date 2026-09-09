@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, ChevronsUpDown, Plus, Search, X } from 'lucide-react';
+import { CaretUpDown, Check, MagnifyingGlass, Plus, X } from '@phosphor-icons/react';
 
 import { AiProviderLogo } from './AiProviderLogo';
 import { Badge } from '../ui/badge';
@@ -58,7 +58,7 @@ const ModelSearchList: React.FC<{
     return (
         <div className="flex min-h-0 flex-col">
             <div className="relative">
-                <Search className="pointer-events-none absolute inset-inline-start-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <MagnifyingGlass className="pointer-events-none absolute inset-inline-start-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                 <Input
                     autoFocus={autoFocus}
                     value={query}
@@ -117,7 +117,7 @@ const ModelSearchList: React.FC<{
                                             {model.availability !== 'active' && (
                                                 <Badge variant="secondary" className="shrink-0">Planned</Badge>
                                             )}
-                                            {selected && <Check className="size-4 shrink-0 text-accent-600" />}
+                                            {selected && <Check weight="bold" className="size-4 shrink-0 text-accent-600" />}
                                         </button>
                                     </li>
                                 );
@@ -146,7 +146,7 @@ export const AiModelPicker: React.FC<{
             <button
                 type="button"
                 onClick={() => { setQuery(''); setIsOpen(true); }}
-                className="flex h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 transition hover:border-slate-400 focus-visible:border-accent-400 focus-visible:outline-none"
+                className="flex min-h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 transition hover:border-slate-400 focus-visible:border-accent-400 focus-visible:outline-none"
             >
                 <span className="flex min-w-0 items-center gap-2">
                     <AiProviderLogo provider={selected?.provider || provider} model={selected?.model || model} size={18} />
@@ -155,7 +155,7 @@ export const AiModelPicker: React.FC<{
                         <span className="block truncate font-mono text-[11px] text-slate-500">{value}</span>
                     </span>
                 </span>
-                <ChevronsUpDown className="size-4 shrink-0 opacity-60" />
+                <CaretUpDown weight="bold" className="size-4 shrink-0 text-slate-500" />
             </button>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -215,8 +215,7 @@ export const ApprovedOpenRouterModelsField: React.FC<{
 
     return (
         <div>
-            <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-slate-600">Approved OpenRouter models</span>
+            <div className="mb-2 flex items-center justify-end">
                 <Badge variant="secondary">{value.length} approved</Badge>
             </div>
 
@@ -248,7 +247,7 @@ export const ApprovedOpenRouterModelsField: React.FC<{
                                 onClick={() => onChange(value.filter((entry) => entry !== model))}
                                 className="rounded-full p-0.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
                             >
-                                <X className="size-3" />
+                                <X weight="bold" className="size-3" />
                             </button>
                         </span>
                     ))}
@@ -283,7 +282,7 @@ export const ApprovedOpenRouterModelsField: React.FC<{
                         setCustomModel('');
                     }}
                 >
-                    <Plus className="size-4" /> Add
+                    <Plus weight="bold" className="size-4" /> Add
                 </Button>
             </div>
         </div>
