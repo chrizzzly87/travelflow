@@ -14,12 +14,17 @@ import { formatActivityTypeLabel, getActivityTypeButtonClass } from './ActivityT
 import { TransportModeIcon } from './TransportModeIcon';
 import { useAppDialog } from './AppDialogProvider';
 import { normalizeTransportMode, TRANSPORT_MODE_UI_ORDER } from '../shared/transportModes';
-import { resolveCitySuggestion, searchCitySuggestions, type CityLookupSuggestion } from '../shared/cityLookup';
+import { resolveCitySuggestion, searchCitySuggestions, searchPlaceSuggestions, type CityLookupSuggestion } from '../shared/cityLookup';
 import { FlagIcon } from './flags/FlagIcon';
 import { NumberInput } from './ui/number-input';
 import { Switch } from './ui/switch';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 import {
+  ACTIVITY_MAX_DURATION_HOURS,
+  ACTIVITY_MIN_DURATION_HOURS,
+  activityDurationDaysToHours,
+  clampActivityDurationHours,
+  formatActivityDuration,
   getRouteDistanceText,
   mapSearchByTextPlacesToHotelResults,
   type HotelSearchResult,
@@ -67,6 +72,13 @@ interface CityDraft {
     countryName?: string;
     countryCode?: string;
 }
+
+interface ActivityLocationDraft {
+    location: string;
+    coordinates?: ICoordinates;
+}
+
+const isSchedulableDraftType = (type?: string): boolean => type === 'city' || type === 'activity';
 
 const CITY_NOTES_AI_ACTIONS: MarkdownAiAction[] = [
     {
@@ -172,6 +184,14 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const [isSearchingCities, setIsSearchingCities] = useState(false);
   const cityInputRef = useRef<HTMLInputElement>(null);
   const cityLookupRequestIdRef = useRef(0);
+  const [isActivityLocationEditorOpen, setIsActivityLocationEditorOpen] = useState(false);
+  const [activityLocationDraft, setActivityLocationDraft] = useState<ActivityLocationDraft | null>(null);
+  const [activityLocationInputValue, setActivityLocationInputValue] = useState('');
+  const [activityLocationSuggestions, setActivityLocationSuggestions] = useState<CityLookupSuggestion[]>([]);
+  const [isSearchingActivityLocations, setIsSearchingActivityLocations] = useState(false);
+  const activityLocationInputRef = useRef<HTMLInputElement>(null);
+  const activityLocationLookupRequestIdRef = useRef(0);
+  const activityLocationBaselineRef = useRef<ActivityLocationDraft | null>(null);
   const lastItemIdRef = useRef<string | null>(item?.id || null);
   const durationBaselineRef = useRef<DurationDraft | null>(null);
   const cityBaselineRef = useRef<CityDraft | null>(null);
@@ -220,7 +240,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   };
 
   const closeDurationEditor = (options?: { revertPreview?: boolean }) => {
-      if (options?.revertPreview !== false && displayItem?.type === 'city' && durationBaselineRef.current) {
+      if (options?.revertPreview !== false && isSchedulableDraftType(displayItem?.type) && durationBaselineRef.current) {
           applyItemChanges(
               [{
                   id: displayItem.id,
@@ -249,9 +269,20 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       cityRoundTripContextRef.current = null;
   };
 
+  const closeActivityLocationEditor = () => {
+      activityLocationLookupRequestIdRef.current += 1;
+      setIsActivityLocationEditorOpen(false);
+      setActivityLocationDraft(null);
+      setActivityLocationInputValue('');
+      setActivityLocationSuggestions([]);
+      setIsSearchingActivityLocations(false);
+      activityLocationBaselineRef.current = null;
+  };
+
   const discardDraftEdits = () => {
       closeDurationEditor();
       closeCityEditor();
+      closeActivityLocationEditor();
       setIsColorPickerOpen(false);
   };
 
@@ -286,6 +317,13 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
         setCitySuggestions([]);
         setIsSearchingCities(false);
         cityLookupRequestIdRef.current += 1;
+        setIsActivityLocationEditorOpen(false);
+        setActivityLocationDraft(null);
+        setActivityLocationInputValue('');
+        setActivityLocationSuggestions([]);
+        setIsSearchingActivityLocations(false);
+        activityLocationLookupRequestIdRef.current += 1;
+        activityLocationBaselineRef.current = null;
         durationBaselineRef.current = null;
         cityBaselineRef.current = null;
         cityRoundTripContextRef.current = null;
@@ -323,6 +361,12 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                 closeCityEditor();
                 return;
             }
+            if (isActivityLocationEditorOpen) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                closeActivityLocationEditor();
+                return;
+            }
             e.preventDefault();
             e.stopImmediatePropagation();
             handleClosePanel();
@@ -330,7 +374,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isColorPickerOpen, isDurationEditorOpen, isCityEditorOpen, onClose, closeDurationEditor, closeCityEditor, handleClosePanel]);
+  }, [isOpen, isColorPickerOpen, isDurationEditorOpen, isCityEditorOpen, isActivityLocationEditorOpen, onClose, closeDurationEditor, closeCityEditor, closeActivityLocationEditor, handleClosePanel]);
 
   // Cache Item logic
   useEffect(() => {
@@ -353,6 +397,13 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
         setCityDraft(null);
         setCityInputValue('');
         setCitySearchError(null);
+        setIsActivityLocationEditorOpen(false);
+        setActivityLocationDraft(null);
+        setActivityLocationInputValue('');
+        setActivityLocationSuggestions([]);
+        setIsSearchingActivityLocations(false);
+        activityLocationLookupRequestIdRef.current += 1;
+        activityLocationBaselineRef.current = null;
         durationBaselineRef.current = null;
         cityBaselineRef.current = null;
         cityRoundTripContextRef.current = null;
@@ -395,6 +446,38 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
           window.clearTimeout(timeoutId);
       };
   }, [cityInputValue, isCityEditorOpen, isLoaded, mapLanguage]);
+
+  useEffect(() => {
+      if (!isActivityLocationEditorOpen) {
+          setActivityLocationSuggestions([]);
+          setIsSearchingActivityLocations(false);
+          return;
+      }
+
+      const query = activityLocationInputValue.trim();
+      if (!isLoaded || query.length < 2) {
+          setActivityLocationSuggestions([]);
+          setIsSearchingActivityLocations(false);
+          return;
+      }
+
+      const requestId = activityLocationLookupRequestIdRef.current + 1;
+      activityLocationLookupRequestIdRef.current = requestId;
+      setIsSearchingActivityLocations(true);
+
+      const timeoutId = window.setTimeout(() => {
+          void (async () => {
+              const suggestions = await searchPlaceSuggestions(query, { language: mapLanguage, maxResults: 5 });
+              if (activityLocationLookupRequestIdRef.current !== requestId) return;
+              setActivityLocationSuggestions(suggestions);
+              setIsSearchingActivityLocations(false);
+          })();
+      }, 220);
+
+      return () => {
+          window.clearTimeout(timeoutId);
+      };
+  }, [activityLocationInputValue, isActivityLocationEditorOpen, isLoaded, mapLanguage]);
 
   useEffect(() => {
       if (!aiStatus || isEnhancing) return;
@@ -574,7 +657,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   };
 
   const applyDurationPreview = (next: DurationDraft) => {
-      if (!displayItem || displayItem.type !== 'city') return;
+      if (!displayItem || !isSchedulableDraftType(displayItem.type)) return;
       applyItemChanges(
           [{ id: displayItem.id, updates: { startDateOffset: next.startDateOffset, duration: next.duration } }],
           { deferCommit: true, skipPendingLabel: true }
@@ -582,8 +665,9 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   };
 
   const openDurationEditor = () => {
-      if (!canEdit || !displayItem || displayItem.type !== 'city') return;
+      if (!canEdit || !displayItem || !isSchedulableDraftType(displayItem.type)) return;
       closeCityEditor();
+      closeActivityLocationEditor();
       durationBaselineRef.current = {
           startDateOffset: displayItem.startDateOffset,
           duration: displayItem.duration,
@@ -646,23 +730,106 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       applyDurationPreview(nextDraft);
   };
 
+  // Activities keep their length when they are moved to another day, unlike a
+  // city stay where dragging the arrival only trims the front of the stay.
+  const updateActivityDayDraft = (delta: number) => {
+      setDurationDraft(prev => {
+          if (!prev) return prev;
+          const next = {
+              ...prev,
+              startDateOffset: Math.max(0, prev.startDateOffset + delta),
+          };
+          applyDurationPreview(next);
+          return next;
+      });
+  };
+
+  // Clamped loosely while typing so that an in-progress "0.5" is not rewritten
+  // under the cursor; the hard minimum is enforced when the edit is applied.
+  const updateActivityDurationHours = (hours: number) => {
+      if (!Number.isFinite(hours) || hours <= 0) return;
+      setDurationDraft(prev => {
+          if (!prev) return prev;
+          const next = {
+              ...prev,
+              duration: Math.min(ACTIVITY_MAX_DURATION_HOURS, hours) / 24,
+          };
+          applyDurationPreview(next);
+          return next;
+      });
+  };
+
   const handleApplyDurationEdit = () => {
-      if (!canEdit || !displayItem || displayItem.type !== 'city' || !durationDraft) return;
+      if (!canEdit || !displayItem || !isSchedulableDraftType(displayItem.type) || !durationDraft) return;
       const baseline = durationBaselineRef.current;
       if (!baseline) {
           closeDurationEditor({ revertPreview: false });
           return;
       }
+      const isActivityDraft = displayItem.type === 'activity';
+      const nextDuration = isActivityDraft
+          ? clampActivityDurationHours(durationDraft.duration * 24) / 24
+          : durationDraft.duration;
       const hasChange =
           Math.abs(durationDraft.startDateOffset - baseline.startDateOffset) > 0.001 ||
-          Math.abs(durationDraft.duration - baseline.duration) > 0.001;
+          Math.abs(nextDuration - baseline.duration) > 0.001;
       if (hasChange) {
+          const scopeLabel = isActivityDraft ? 'activity schedule' : 'city duration';
           applyItemChanges(
-              [{ id: displayItem.id, updates: { startDateOffset: durationDraft.startDateOffset, duration: durationDraft.duration } }],
-              { label: `Data: Changed city duration in ${displayItem.title}` }
+              [{ id: displayItem.id, updates: { startDateOffset: durationDraft.startDateOffset, duration: nextDuration } }],
+              { label: `Data: Changed ${scopeLabel} in ${displayItem.title}` }
           );
       }
       closeDurationEditor({ revertPreview: false });
+  };
+
+  const openActivityLocationEditor = () => {
+      if (!canEdit || !displayItem || displayItem.type !== 'activity') return;
+      closeDurationEditor({ revertPreview: true });
+      const baseline: ActivityLocationDraft = {
+          location: displayItem.location || '',
+          coordinates: displayItem.coordinates,
+      };
+      activityLocationBaselineRef.current = baseline;
+      setIsActivityLocationEditorOpen(true);
+      setActivityLocationDraft(baseline);
+      setActivityLocationInputValue(baseline.location);
+      setActivityLocationSuggestions([]);
+      setIsSearchingActivityLocations(false);
+      window.setTimeout(() => activityLocationInputRef.current?.focus(), 30);
+  };
+
+  const handleActivityLocationInputChange = (rawValue: string) => {
+      setActivityLocationInputValue(rawValue);
+      // Typing invalidates the coordinates that came from a picked suggestion.
+      setActivityLocationDraft({ location: rawValue.trim() });
+  };
+
+  const handleSelectActivityLocationSuggestion = (suggestion: CityLookupSuggestion) => {
+      setActivityLocationInputValue(suggestion.label);
+      setActivityLocationDraft({
+          location: suggestion.label,
+          coordinates: suggestion.coordinates,
+      });
+      setActivityLocationSuggestions([]);
+  };
+
+  const handleApplyActivityLocationEdit = () => {
+      if (!canEdit || !displayItem || displayItem.type !== 'activity') return;
+      const nextLocation = (activityLocationDraft?.location || activityLocationInputValue).trim();
+      if (!nextLocation) return;
+      const nextCoordinates = activityLocationDraft?.coordinates;
+      applyItemChanges(
+          [{
+              id: displayItem.id,
+              updates: {
+                  location: nextLocation,
+                  coordinates: nextCoordinates,
+              },
+          }],
+          { label: `Data: Changed activity location in ${displayItem.title}` }
+      );
+      closeActivityLocationEditor();
   };
 
   const openCityEditor = () => {
@@ -1062,11 +1229,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   };
   const tripStart = new Date(tripStartDate);
   const isValidDate = !isNaN(tripStart.getTime());
-  const cityDurationPreview = isCity && isDurationEditorOpen && durationDraft
+  const schedulePreview = (isCity || isActivity) && isDurationEditorOpen && durationDraft
       ? durationDraft
       : null;
-  const previewStartOffset = cityDurationPreview?.startDateOffset ?? displayItem.startDateOffset;
-  const previewDuration = cityDurationPreview?.duration ?? displayItem.duration;
+  const previewStartOffset = schedulePreview?.startDateOffset ?? displayItem.startDateOffset;
+  const previewDuration = schedulePreview?.duration ?? displayItem.duration;
   const itemStartDate = isValidDate ? addDays(tripStart, previewStartOffset) : new Date();
   const itemEndDate = isValidDate ? addDays(tripStart, previewStartOffset + previewDuration) : new Date();
   const travelLegMetrics =
@@ -1098,10 +1265,10 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const effectiveDistanceKm = routeDistanceDisplayKm ?? travelLegMetrics?.distanceKm ?? null;
   const estimatedHours = effectiveDistanceKm ? estimateTravelHours(effectiveDistanceKm, normalizedTransportMode) : null;
   const estimatedLabel = formatDurationHours(estimatedHours);
-  const displayedDurationDays = isCity ? previewDuration : displayItem.duration;
+  const displayedDurationDays = (isCity || isActivity) ? previewDuration : displayItem.duration;
   const durationBaseline = durationBaselineRef.current;
   const hasDurationDraftChanges = !!(
-      isCity &&
+      (isCity || isActivity) &&
       durationBaseline &&
       durationDraft &&
       (Math.abs(durationDraft.startDateOffset - durationBaseline.startDateOffset) > 0.001 ||
@@ -1118,6 +1285,22 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       !areCityDraftEqual(cityDraft, cityBaseline)
   );
   const cityDisplayName = getCityNameFromText(displayedCityLocation || displayItem.title || '');
+  const displayedActivityLocation = isActivity && isActivityLocationEditorOpen
+      ? (activityLocationInputValue || activityLocationDraft?.location || displayItem.location || '')
+      : (displayItem.location || '');
+  const activityLocationBaseline = activityLocationBaselineRef.current;
+  const trimmedActivityLocationInput = (activityLocationDraft?.location || activityLocationInputValue).trim();
+  const hasActivityLocationDraftChanges = !!(
+      isActivity &&
+      activityLocationBaseline &&
+      trimmedActivityLocationInput &&
+      (trimmedActivityLocationInput !== activityLocationBaseline.location.trim() ||
+          !areCoordinatesEqual(activityLocationBaseline.coordinates, activityLocationDraft?.coordinates))
+  );
+  const activityDurationHours = activityDurationDaysToHours(
+      durationDraft?.duration ?? displayItem.duration,
+  );
+  const activityDayNumber = Math.floor((durationDraft?.startDateOffset ?? displayItem.startDateOffset)) + 1;
   const countryNameForDisplay = (
       (isCity && isCityEditorOpen ? cityDraft?.countryName : undefined) ||
       displayItem.countryName ||
@@ -1350,13 +1533,18 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                         </div>
                     ) : (
                         <div className="flex items-center gap-2">
-                            <span className="font-medium">{Number(displayedDurationDays.toFixed(1))} day{displayedDurationDays !== 1 ? 's' : ''}</span>
-                            {isCity && (
+                            <span className="font-medium">
+                                {isActivity
+                                    ? formatActivityDuration(displayedDurationDays)
+                                    : `${Number(displayedDurationDays.toFixed(1))} day${displayedDurationDays !== 1 ? 's' : ''}`}
+                            </span>
+                            {(isCity || isActivity) && (
                                 <button type="button"
                                     onClick={openDurationEditor}
                                     disabled={!canEdit}
                                     className={`p-1 rounded text-gray-400 transition-colors ${canEdit ? 'hover:bg-gray-100 hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                                     title="Edit duration"
+                                    aria-label="Edit duration"
                                 >
                                     <Pencil size={13} />
                                 </button>
@@ -1377,21 +1565,38 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                         </div>
                     </div>
                  )}
-                 {(isCity || displayItem.location) && (
+                 {(isCity || isActivity || displayItem.location) && (
                     <div className="flex items-start text-gray-600">
                         <MapPin size={18} className="mr-3 text-accent-500 mt-0.5" />
                         <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                                {countryCodeForDisplay && (
+                                {countryCodeForDisplay && !(isActivity && !displayedActivityLocation) && (
                                     <FlagIcon code={countryCodeForDisplay} size="sm" fallback={null} />
                                 )}
-                                <span className="font-medium">{isCity ? (cityDisplayName || 'No city selected') : displayItem.location}</span>
+                                <span className={`font-medium ${isActivity && !displayedActivityLocation ? 'text-gray-400' : ''}`}>
+                                    {isCity
+                                        ? (cityDisplayName || 'No city selected')
+                                        : isActivity
+                                            ? (displayedActivityLocation || 'No location set')
+                                            : displayItem.location}
+                                </span>
                                 {isCity && (
                                     <button type="button"
                                         onClick={openCityEditor}
                                         disabled={!canEdit}
                                         className={`p-1 rounded text-gray-400 transition-colors ${canEdit ? 'hover:bg-gray-100 hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                                         title="Edit city"
+                                    >
+                                        <Pencil size={13} />
+                                    </button>
+                                )}
+                                {isActivity && (
+                                    <button type="button"
+                                        onClick={openActivityLocationEditor}
+                                        disabled={!canEdit}
+                                        className={`p-1 rounded text-gray-400 transition-colors ${canEdit ? 'hover:bg-gray-100 hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                        title="Edit location"
+                                        aria-label="Edit location"
                                     >
                                         <Pencil size={13} />
                                     </button>
@@ -1420,6 +1625,150 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
 
           {/* Body */}
           <div className="p-4 sm:p-6 space-y-6 flex-1 overflow-y-auto min-w-0">
+             {isActivity && isDurationEditorOpen && (
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+                    <div className="flex justify-between items-center pb-2 border-b border-gray-50">
+                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Schedule</h3>
+                        <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded">
+                            {formatActivityDuration(previewDuration)}
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">Day {activityDayNumber}</span>
+                            <span className="text-sm font-bold text-gray-800">
+                                {isValidDate ? formatDate(itemStartDate) : '—'}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
+                            <button type="button"
+                                onClick={() => updateActivityDayDraft(-1)}
+                                disabled={!canEdit}
+                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                aria-label="Move activity one day earlier"
+                            >
+                                <Minus size={14} />
+                            </button>
+                            <span className="text-[10px] font-bold text-gray-400 px-1 select-none">DAY</span>
+                            <button type="button"
+                                onClick={() => updateActivityDayDraft(1)}
+                                disabled={!canEdit}
+                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                aria-label="Move activity one day later"
+                            >
+                                <Plus size={14} />
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">Duration</span>
+                            <span className="text-sm font-bold text-gray-800">{formatActivityDuration(previewDuration)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <NumberInput
+                                min={String(ACTIVITY_MIN_DURATION_HOURS)}
+                                step="0.5"
+                                value={activityDurationHours}
+                                onChange={canEdit ? ((e) => {
+                                    const hours = parseFloat(e.target.value);
+                                    if (!isNaN(hours)) updateActivityDurationHours(hours);
+                                }) : undefined}
+                                disabled={!canEdit}
+                                aria-label="Activity duration in hours"
+                                className={`h-auto w-16 rounded-none border-0 border-b border-gray-300 bg-transparent px-0 py-1 text-center font-bold text-gray-900 shadow-none ring-0 ${canEdit ? 'focus-visible:border-accent-500' : 'cursor-not-allowed opacity-70'}`}
+                                overlayClassName="justify-center px-0 font-bold text-gray-900"
+                                format={{ maximumFractionDigits: 1 }}
+                            />
+                            <span className="font-medium text-sm text-gray-600">hours</span>
+                        </div>
+                    </div>
+                    <div className="pt-2 border-t border-gray-50 flex items-center justify-end gap-2">
+                        <button type="button"
+                            onClick={() => closeDurationEditor()}
+                            className={`px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-md ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
+                            disabled={!canEdit}
+                        >
+                            Cancel
+                        </button>
+                        <button type="button"
+                            onClick={handleApplyDurationEdit}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                                canEdit && hasDurationDraftChanges
+                                    ? 'text-white bg-accent-600 hover:bg-accent-700'
+                                    : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                            }`}
+                            disabled={!canEdit || !hasDurationDraftChanges}
+                        >
+                            Apply
+                        </button>
+                    </div>
+                </div>
+             )}
+
+             {isActivity && isActivityLocationEditorOpen && (
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+                    <div className="flex justify-between items-center pb-2 border-b border-gray-50">
+                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Location</h3>
+                        <div className="text-xs text-gray-500">Search with Google Places</div>
+                    </div>
+                    <div className="relative">
+                        <input
+                            ref={activityLocationInputRef}
+                            type="text"
+                            aria-label="Search location"
+                            value={activityLocationInputValue}
+                            onChange={canEdit ? ((e) => handleActivityLocationInputChange(e.target.value)) : undefined}
+                            placeholder="e.g. Fushimi Inari Shrine, Kyoto"
+                            disabled={!canEdit}
+                            className={`w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none ${canEdit ? 'focus:ring-1 focus:ring-accent-500' : 'opacity-60 cursor-not-allowed'}`}
+                        />
+                        <Search size={14} className="absolute left-3 top-3.5 text-gray-400" />
+                    </div>
+                    {(isSearchingActivityLocations || activityLocationSuggestions.length > 0) && (
+                        <div className="mt-2 rounded-lg border border-gray-200 bg-white shadow-sm max-h-44 overflow-y-auto">
+                            {isSearchingActivityLocations && (
+                                <div className="px-3 py-2 text-xs text-gray-500">Searching places…</div>
+                            )}
+                            {!isSearchingActivityLocations && activityLocationSuggestions.map((suggestion) => (
+                                <button
+                                    key={suggestion.id}
+                                    type="button"
+                                    onClick={() => handleSelectActivityLocationSuggestion(suggestion)}
+                                    className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                                >
+                                    <div className="text-sm font-semibold text-gray-800">{suggestion.name}</div>
+                                    <div className="text-xs text-gray-500 truncate">{suggestion.label}</div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    <p className="text-xs text-gray-500">
+                        Pick a suggestion to store the exact spot, or keep your own wording and apply.
+                    </p>
+                    <div className="pt-2 border-t border-gray-50 flex items-center justify-end gap-2">
+                        <button type="button"
+                            onClick={closeActivityLocationEditor}
+                            className={`px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-md ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
+                            disabled={!canEdit}
+                        >
+                            Cancel
+                        </button>
+                        <button type="button"
+                            onClick={handleApplyActivityLocationEdit}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                                canEdit && hasActivityLocationDraftChanges
+                                    ? 'text-white bg-accent-600 hover:bg-accent-700'
+                                    : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                            }`}
+                            disabled={!canEdit || !hasActivityLocationDraftChanges}
+                        >
+                            Apply
+                        </button>
+                    </div>
+                </div>
+             )}
+
              {isCity && isValidDate && isDurationEditorOpen && (
                 <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
