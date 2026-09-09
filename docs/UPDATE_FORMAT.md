@@ -87,6 +87,7 @@ Write visible items from the user's perspective — focus on the benefit, not th
 - Published versions should be gapless and canonical by `published_at` order (`v0.1.0`, `v0.2.0`, `v0.3.0`, ...).
 - By default, non-canonical/gapless sequence issues are warnings in `updates:validate`; set `UPDATES_VALIDATE_STRICT_CANONICAL=1` to enforce as hard failures.
 - Reusing a previous version is not allowed and should fail validation.
+- When two worktrees claim the same version, `pnpm updates:fix` renumbers the one published later rather than making you pick a free number by hand.
 - Draft versions are provisional and do not reserve a published version number.
 
 ## Timezone rule
@@ -94,3 +95,16 @@ The site displays dates in CET (UTC+1). To ensure the correct date appears on th
 - `published_at` must always be **before 23:00 UTC** (i.e. before midnight CET).
 - If you finish work after 23:00 UTC (00:00+ CET), use `date` for the next calendar day and set `published_at` accordingly.
 - Timestamps must strictly increase with version number — the build validator (`scripts/validate-updates.mjs`) enforces this.
+- A `published_at` that sits a little ahead of the clock is a **warning**, not a build failure: the grace window is 24 hours, so pre-dating a merge by a few minutes no longer bounces the Netlify build. Past a day it is treated as a typo and fails.
+
+## Fixing a release note automatically
+`pnpm updates:fix` writes the answer for the two things parallel worktrees collide on, then validates as usual:
+
+```bash
+pnpm updates:fix
+```
+
+- A `published_at` in the future on a `published` release is clamped back to now (pulled to 22:59 UTC if now falls in the 23:00 hour).
+- A published version that duplicates or moves backwards from an earlier release is bumped to the next free version.
+
+It touches nothing else, and it is a no-op on a healthy set. `pnpm updates:validate` stays read-only, so the build never rewrites content.
