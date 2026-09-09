@@ -6,7 +6,7 @@
 3. For locale/translation/routing updates, follow `docs/I18N_PAGE_WORKFLOW.md`.
 4. For user-facing copy updates (marketing, CTA, planner), follow `docs/UX_COPY_GUIDELINES.md`.
 5. For analytics updates, follow `docs/ANALYTICS_CONVENTION.md`.
-6. For localized copy placeholders, use ICU syntax (`{name}`), never `{{name}}`. Note: `i18next-icu` ships but is not registered in `i18n.ts`, so ICU plural/select blocks render as raw text — use plain interpolation.
+6. For localized copy placeholders, use ICU syntax (`{name}`), never `{{name}}`. Note: `i18next-icu` ships but is not registered in `i18n.ts`, so ICU plural/select blocks render as raw text — use plain interpolation. For plurals use i18next suffix keys (`key_one`, `key_other`, plus `key_few`/`key_many` where the locale needs them) with a `count` option.
 7. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
 
 ## Skill usage policy
@@ -45,7 +45,7 @@ When a user-facing feature, fix, or behavior change is completed, you must updat
 
 ## Runtime traps in this repo
 - The app renders through `preact/compat`. A plain function component never receives `ref`; anything used with Radix `asChild`, or focused/measured by a library, must be a real `forwardRef`. Symptoms: `getBoundingClientRect is not a function`, `focus is not a function`, popovers anchored at the origin. Libraries that require React 19 do not work here.
-- `i18next-icu` is installed but never registered in `i18n.ts`. ICU **placeholders** (`{name}`) work; ICU **plural/select syntax** renders as raw text. See `tests/unit/festivalLocaleKeys.test.ts`.
+- `i18next-icu` is installed but never registered in `i18n.ts`. ICU **placeholders** (`{name}`) work; ICU **plural/select syntax** renders as raw text. For plurals use i18next suffix keys (`key_one`, `key_other`, plus `key_few`/`key_many` where the locale needs them) with a `count` option. See `tests/unit/festivalLocaleKeys.test.ts` and `tests/unit/storageNoticePlurals.test.ts`.
 - `supabase/migrations/*.sql` are never applied by a deploy. Write and verify them locally (`supabase/tests/`), then follow `docs/SUPABASE_RUNBOOK.md`; say plainly that a migration is pending.
 - Postgres has no autonomous transactions: `UPDATE` then `RAISE` in one function rolls the update back. Return the status and let the caller raise.
 

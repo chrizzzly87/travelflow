@@ -699,7 +699,9 @@
     "reapplyUnavailable": "Este conjunto no puede aplicarse otra vez aquí."
   },
   "storageNotice": {
-    "tripsPrunedTitle": "El almacenamiento del dispositivo esta lleno",
-    "tripsPrunedDescription": "{count, plural, one {Tu viaje guardado mas antiguo se elimino de este dispositivo para liberar espacio.} other {Tus # viajes guardados mas antiguos se eliminaron de este dispositivo para liberar espacio.}}"
+    "tripsPrunedTitle": "El almacenamiento del dispositivo está lleno",
+    "tripsPrunedDescription_one": "Tu viaje guardado más antiguo se eliminó de este dispositivo para liberar espacio.",
+    "tripsPrunedDescription_many": "Tus {count} viajes guardados más antiguos se eliminaron de este dispositivo para liberar espacio.",
+    "tripsPrunedDescription_other": "Tus {count} viajes guardados más antiguos se eliminaron de este dispositivo para liberar espacio."
   }
 }

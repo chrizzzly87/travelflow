@@ -697,7 +697,10 @@
     "reapplyUnavailable": "Tego zestawu nie można tu zastosować ponownie."
   },
   "storageNotice": {
-    "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",
-    "tripsPrunedDescription": "{count, plural, one {Twoja najstarsza zapisana podroz zostala usunieta z tego urzadzenia, aby zwolnic miejsce.} few {# najstarsze zapisane podroze zostaly usuniete z tego urzadzenia, aby zwolnic miejsce.} many {# najstarszych zapisanych podrozy zostalo usunietych z tego urzadzenia, aby zwolnic miejsce.} other {# najstarszej zapisanej podrozy zostalo usunietych z tego urzadzenia, aby zwolnic miejsce.}}"
+    "tripsPrunedTitle": "Pamięć urządzenia jest pełna",
+    "tripsPrunedDescription_one": "Twoja najstarsza zapisana podróż została usunięta z tego urządzenia, aby zwolnić miejsce.",
+    "tripsPrunedDescription_few": "{count} najstarsze zapisane podróże zostały usunięte z tego urządzenia, aby zwolnić miejsce.",
+    "tripsPrunedDescription_many": "{count} najstarszych zapisanych podróży zostało usuniętych z tego urządzenia, aby zwolnić miejsce.",
+    "tripsPrunedDescription_other": "{count} najstarszych zapisanych podróży zostało usuniętych z tego urządzenia, aby zwolnić miejsce."
   }
 }
