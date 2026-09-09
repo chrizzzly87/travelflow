@@ -4,7 +4,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { SettingsPanel, SettingsRow, SettingsSection } from '../../../components/ui/settings-panel';
+import {
+  SettingsCard,
+  SettingsGroup,
+  SettingsPanel,
+  SettingsRow,
+  SettingsSection,
+} from '../../../components/ui/settings-panel';
 import { Switch } from '../../../components/ui/switch';
 
 const h = React.createElement;
@@ -65,6 +71,44 @@ describe('SettingsPanel', () => {
     expect(document.querySelector('label')).toBeNull();
     await userEvent.click(screen.getByRole('switch', { name: 'Planner beta' }));
     expect(onCheckedChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('stacks each card in a group so none inherits a sibling height', () => {
+    const { container } = render(
+      h(SettingsGroup, null,
+        h(SettingsCard, { title: 'Trip Agent' },
+          h(SettingsRow, { label: 'Open to everyone' },
+            h(Switch, { checked: true, onCheckedChange: () => {}, 'aria-label': 'Open to everyone' }))),
+        h(SettingsCard, { title: 'Planner' },
+          h(SettingsRow, { label: 'Planner beta' },
+            h(Switch, { checked: false, onCheckedChange: () => {}, 'aria-label': 'Planner beta' })))),
+    );
+
+    const group = container.querySelector('[data-slot="settings-group"]');
+    const cards = container.querySelectorAll('[data-slot="settings-card"]');
+    expect(cards).toHaveLength(2);
+    // A column, never a grid: a grid track is what stretched every card to the
+    // tallest sibling and left the dead whitespace.
+    expect(group?.className).toContain('flex-col');
+    expect(group?.className).not.toContain('grid-cols');
+    expect(Array.from(cards).every((card) => card.tagName === 'SECTION')).toBe(true);
+  });
+
+  it('gives every inline row the same control track, whatever the control is', () => {
+    const { container } = render(
+      h(SettingsGroup, null,
+        h(SettingsCard, { title: 'Map' },
+          h(SettingsRow, { label: 'Provider' }, h('button', { 'aria-label': 'Provider' })),
+          h(SettingsRow, { label: 'Default style' }, h('button', { 'aria-label': 'Default style' })))),
+    );
+
+    // A fixed track, not `auto` - an auto track sizes to its own content, so
+    // two selects in one card came out at different widths.
+    const rows = Array.from(container.querySelectorAll('[data-slot="settings-row"][data-layout="inline"]'));
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(row.className).toContain('sm:grid-cols-[minmax(0,1fr)_18rem]');
+    }
   });
 
   it('shows the consequence of the current value as a row note', () => {

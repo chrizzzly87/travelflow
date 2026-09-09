@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle, Flag, MapTrifold, Sparkle, WarningCircle } from '@phosphor-icons/react';
+import { ChatCircleDots, CheckCircle, Compass, MapTrifold, Sparkle, WarningCircle } from '@phosphor-icons/react';
 
 import { AdminShell } from '../components/admin/AdminShell';
 import { AiModelPicker, ApprovedOpenRouterModelsField } from '../components/admin/AiModelPicker';
@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
 import { NumberInput } from '../components/ui/number-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { SettingsPanel, SettingsRow, SettingsSection } from '../components/ui/settings-panel';
+import { SettingsCard, SettingsGroup, SettingsRow } from '../components/ui/settings-panel';
 import { Switch } from '../components/ui/switch';
 import { AI_MODEL_CATALOG, sortAiModels, type AiModelCatalogItem } from '../config/aiModelCatalog';
 import {
@@ -190,32 +190,39 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                 {!draft ? (
                     <p className="text-sm text-slate-500">Loading the current settings…</p>
                 ) : (
-                    <SettingsPanel>
-                        <SettingsSection
-                            icon={<Flag weight="duotone" />}
-                            title="Rollout"
-                            description="Who can reach a feature that is not open to everyone yet."
+                    <SettingsGroup>
+                        <SettingsCard
+                            icon={<ChatCircleDots weight="duotone" />}
+                            title="Trip Agent"
+                            description="The planning chat inside a trip. Both the API and the launcher read these, so switching it off hides the entry point too."
                         >
                             <SettingsRow
-                                label="Trip Agent"
-                                description="The planning chat inside a trip, for every plan that allows it."
+                                label="Open to everyone"
+                                description="Every account whose plan allows the chat can open it."
                             >
                                 <Switch
                                     checked={draft.tripAgentEnabled}
                                     onCheckedChange={(tripAgentEnabled) => update({ tripAgentEnabled })}
-                                    aria-label="Trip Agent"
+                                    aria-label="Open to everyone"
                                 />
                             </SettingsRow>
                             <SettingsRow
-                                label="Trip Agent administrator preview"
+                                label="Administrator preview"
                                 description="Administrators keep access while it is switched off."
                             >
                                 <Switch
                                     checked={draft.tripAgentAdminPreview}
                                     onCheckedChange={(tripAgentAdminPreview) => update({ tripAgentAdminPreview })}
-                                    aria-label="Trip Agent administrator preview"
+                                    aria-label="Administrator preview"
                                 />
                             </SettingsRow>
+                        </SettingsCard>
+
+                        <SettingsCard
+                            icon={<Compass weight="duotone" />}
+                            title="Planner"
+                            description="Access to the planner beta while it is not open to everyone."
+                        >
                             <SettingsRow
                                 label="Planner beta"
                                 description="Anyone can enter the beta without an invite."
@@ -226,9 +233,9 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                                     aria-label="Planner beta"
                                 />
                             </SettingsRow>
-                        </SettingsSection>
+                        </SettingsCard>
 
-                        <SettingsSection
+                        <SettingsCard
                             icon={<Sparkle weight="duotone" />}
                             title="AI model"
                             description="The planner and the Trip Agent both follow this. A model off the approved list is never used."
@@ -256,6 +263,7 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                                     id={MODEL_AGE_INPUT_ID}
                                     min={1}
                                     max={36}
+                                    steppers
                                     value={draft.modelMaxAgeMonths}
                                     suffix=" months"
                                     className="w-36"
@@ -274,9 +282,9 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                                     aria-label="Show older models"
                                 />
                             </SettingsRow>
-                        </SettingsSection>
+                        </SettingsCard>
 
-                        <SettingsSection
+                        <SettingsCard
                             icon={<MapTrifold weight="duotone" />}
                             title="Map"
                             description="Which stack renders the map, and the style a visitor starts on."
@@ -286,7 +294,7 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                                     value={draft.mapRuntimePreset}
                                     onValueChange={(value) => update({ mapRuntimePreset: value as MapRuntimePreset })}
                                 >
-                                    <SelectTrigger className="w-full sm:w-72">
+                                    <SelectTrigger className="w-full">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -304,7 +312,7 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                                     value={draft.mapDefaultStyle}
                                     onValueChange={(value) => update({ mapDefaultStyle: value as MapStyle })}
                                 >
-                                    <SelectTrigger className="w-full sm:w-72">
+                                    <SelectTrigger className="w-full">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -314,8 +322,8 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                                     </SelectContent>
                                 </Select>
                             </SettingsRow>
-                        </SettingsSection>
-                    </SettingsPanel>
+                        </SettingsCard>
+                    </SettingsGroup>
                 )}
 
                 {settings?.updatedAt && (

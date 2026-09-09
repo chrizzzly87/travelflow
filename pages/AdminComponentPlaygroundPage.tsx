@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, Clipboard, Eye, MapPin, Pin, RotateCcw, Star, Tag, Trophy } from 'lucide-react';
-import { Flag, MapTrifold } from '@phosphor-icons/react';
+import { ChatCircleDots, MapTrifold } from '@phosphor-icons/react';
 import { AdminShell } from '../components/admin/AdminShell';
 import {
     Card,
@@ -11,7 +11,8 @@ import {
 } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { SettingsPanel, SettingsRow, SettingsSection } from '../components/ui/settings-panel';
+import { SettingsCard, SettingsGroup, SettingsRow } from '../components/ui/settings-panel';
+import { NumberInput } from '../components/ui/number-input';
 import { Slider } from '../components/ui/slider';
 import { Switch } from '../components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -626,29 +627,30 @@ const SettingsPanelPreview: React.FC<{ settings: SettingsPanelSettings }> = ({ s
     const [agentOn, setAgentOn] = useState(true);
     const [betaOn, setBetaOn] = useState(false);
     const [style, setStyle] = useState('standard');
+    const [ageLimit, setAgeLimit] = useState(3);
 
     return (
-        <SettingsPanel>
-            <SettingsSection
-                icon={settings.showSectionIcon ? <Flag weight="duotone" /> : undefined}
-                title="Rollout"
-                description="Who can reach a feature that is not open to everyone yet."
+        <SettingsGroup>
+            <SettingsCard
+                icon={settings.showSectionIcon ? <ChatCircleDots weight="duotone" /> : undefined}
+                title="Trip Agent"
+                description="The planning chat inside a trip."
             >
                 <SettingsRow
-                    label="Trip Agent"
-                    description={settings.showRowDescriptions ? 'The planning chat inside a trip.' : undefined}
+                    label="Open to everyone"
+                    description={settings.showRowDescriptions ? 'Every account whose plan allows the chat.' : undefined}
                 >
-                    <Switch checked={agentOn} onCheckedChange={setAgentOn} aria-label="Trip Agent" />
+                    <Switch checked={agentOn} onCheckedChange={setAgentOn} aria-label="Open to everyone" />
                 </SettingsRow>
                 <SettingsRow
-                    label="Planner beta"
-                    description={settings.showRowDescriptions ? 'Anyone can enter the beta without an invite.' : undefined}
+                    label="Administrator preview"
+                    description={settings.showRowDescriptions ? 'Administrators keep access while it is off.' : undefined}
                 >
-                    <Switch checked={betaOn} onCheckedChange={setBetaOn} aria-label="Planner beta" />
+                    <Switch checked={betaOn} onCheckedChange={setBetaOn} aria-label="Administrator preview" />
                 </SettingsRow>
-            </SettingsSection>
+            </SettingsCard>
 
-            <SettingsSection
+            <SettingsCard
                 icon={settings.showSectionIcon ? <MapTrifold weight="duotone" /> : undefined}
                 title="Map"
                 description="Which stack renders the map, and the style a visitor starts on."
@@ -659,7 +661,7 @@ const SettingsPanelPreview: React.FC<{ settings: SettingsPanelSettings }> = ({ s
                     note={settings.showNote ? 'Anyone who picks a style themselves keeps their choice.' : undefined}
                 >
                     <Select value={style} onValueChange={setStyle}>
-                        <SelectTrigger className="w-full sm:w-72" aria-label="Default style">
+                        <SelectTrigger className="w-full" aria-label="Default style">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -669,8 +671,11 @@ const SettingsPanelPreview: React.FC<{ settings: SettingsPanelSettings }> = ({ s
                         </SelectContent>
                     </Select>
                 </SettingsRow>
-            </SettingsSection>
-        </SettingsPanel>
+                <SettingsRow label="Age limit" description={settings.showRowDescriptions ? 'Steppers, since the native spinners are suppressed.' : undefined}>
+                    <NumberInput aria-label="Age limit" min={1} max={36} steppers value={ageLimit} className="w-36" onChange={(event) => setAgeLimit(Number(event.target.value) || 1)} />
+                </SettingsRow>
+            </SettingsCard>
+        </SettingsGroup>
     );
 };
 
@@ -1029,8 +1034,8 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
 
                     <TabsContent value="components" className="flex w-full min-w-0 flex-col gap-5">
                         <PlaygroundBlock
-                            title="Settings panel, section and row"
-                            description="The shared layout for any page that is a list of settings. One surface, dividers between sections, every control on the same edge. See docs/DESIGN_SYSTEM_COMPONENTS.md."
+                            title="Settings group, card and row"
+                            description="The shared layout for any page that is a list of settings. Cards stacked in one column, every caption on one track and every control on one edge. See docs/DESIGN_SYSTEM_COMPONENTS.md."
                             preview={<SettingsPanelPreview settings={settingsPanelSettings} />}
                             controls={(
                                 <PlaygroundControls

@@ -20,7 +20,9 @@ const SelectTrigger = React.forwardRef<
     ].join(' ')}
     {...props}
   >
-    {children}
+    {/* The value has to truncate on its own: a long option in a narrow
+        trigger otherwise pushes the caret past the trigger's edge. */}
+    <span className="min-w-0 flex-1 truncate text-start">{children}</span>
     <SelectPrimitive.Icon asChild>
       <CaretDown weight="bold" className="size-4 shrink-0 text-slate-500" />
     </SelectPrimitive.Icon>

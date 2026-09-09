@@ -4,25 +4,35 @@ import { cn } from '@/lib/utils';
 import { Label } from './label';
 
 /**
- * One surface for a page of settings.
+ * The layout for a page that is a list of settings.
  *
- * `docs/DESIGN.md` asks for a single panel with dividers and section headings
- * rather than a grid of cards: a card grid stretches every card to the tallest
- * sibling, so a section holding one switch inherits the whitespace of the
- * section holding a model picker. These three parts — panel, section, row —
- * keep every caption on the same column and every control on the same edge,
- * whatever the section contains.
+ * Two surfaces are available. `SettingsGroup` + `SettingsCard` gives each
+ * group its own card, stacked in one column; `SettingsPanel` +
+ * `SettingsSection` puts every group on one surface separated by dividers.
+ * Both stack vertically on purpose — a *grid* of cards stretches every card to
+ * the tallest sibling, so a group holding one switch inherits the whitespace
+ * of the group holding a model picker, which is what `docs/DESIGN.md` warns
+ * against.
  *
- * ```tsx
- * <SettingsPanel>
- *   <SettingsSection title="Rollout" description="Who can reach a feature." icon={<Flag />}>
- *     <SettingsRow label="Trip Agent" description="The planning chat inside a trip.">
- *       <Switch checked={on} onCheckedChange={setOn} aria-label="Trip Agent" />
- *     </SettingsRow>
- *   </SettingsSection>
- * </SettingsPanel>
- * ```
+ * `SettingsRow` is shared by both and does the real work: it pins every
+ * caption to one column and every control to one edge, whatever the group
+ * contains.
  */
+
+/** Vertical stack of `SettingsCard`s. */
+export const SettingsGroup = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
+    ({ className, ...props }, ref) => (
+        <div
+            ref={ref}
+            data-slot="settings-group"
+            className={cn('flex flex-col gap-4', className)}
+            {...props}
+        />
+    ),
+);
+SettingsGroup.displayName = 'SettingsGroup';
+
+/** One surface for every group, separated by dividers. */
 export const SettingsPanel = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
     ({ className, ...props }, ref) => (
         <div
@@ -38,8 +48,32 @@ export const SettingsPanel = React.forwardRef<HTMLDivElement, React.ComponentPro
 );
 SettingsPanel.displayName = 'SettingsPanel';
 
-export interface SettingsSectionProps extends Omit<React.ComponentProps<'section'>, 'title'> {
+interface SettingsHeadingProps {
     title: React.ReactNode;
+    description?: React.ReactNode;
+    icon?: React.ReactNode;
+    aside?: React.ReactNode;
+}
+
+const SettingsHeading: React.FC<SettingsHeadingProps> = ({ title, description, icon, aside }) => (
+    <div className="flex items-start gap-3">
+        {icon && (
+            <span
+                aria-hidden="true"
+                className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600 [&_svg]:size-4"
+            >
+                {icon}
+            </span>
+        )}
+        <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+            {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
+        </div>
+        {aside && <div className="shrink-0">{aside}</div>}
+    </div>
+);
+
+export interface SettingsSectionProps extends Omit<React.ComponentProps<'section'>, 'title'>, SettingsHeadingProps {
     /** One decision-relevant sentence. Leave it out when the title says it all. */
     description?: React.ReactNode;
     /** A 16px icon. Rendered in a muted tile beside the title. */
@@ -57,31 +91,44 @@ export const SettingsSection = React.forwardRef<HTMLElement, SettingsSectionProp
             className={cn('px-4 py-5 sm:px-6', className)}
             {...props}
         >
-            <div className="flex items-start gap-3">
-                {icon && (
-                    <span
-                        aria-hidden="true"
-                        className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600 [&_svg]:size-4"
-                    >
-                        {icon}
-                    </span>
-                )}
-                <div className="min-w-0 flex-1">
-                    <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-                    {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
-                </div>
-                {aside && <div className="shrink-0">{aside}</div>}
-            </div>
-
+            <SettingsHeading title={title} description={description} icon={icon} aside={aside} />
             <div className="mt-3 divide-y divide-slate-100">{children}</div>
         </section>
     ),
 );
 SettingsSection.displayName = 'SettingsSection';
 
+export type SettingsCardProps = SettingsSectionProps;
+
+/**
+ * A titled group of rows on its own card, for a `SettingsGroup` stack.
+ *
+ * Carries the shadcn card treatment on a real `<section>` rather than nesting
+ * `<Card>`: `Card` is a plain function component, and under `preact/compat` a
+ * plain function component never receives `ref` — the ref would be dropped
+ * silently. Same tokens, semantic element, working ref.
+ */
+export const SettingsCard = React.forwardRef<HTMLElement, SettingsCardProps>(
+    ({ className, title, description, icon, aside, children, ...props }, ref) => (
+        <section
+            ref={ref}
+            data-slot="settings-card"
+            className={cn(
+                'rounded-lg border border-slate-200 bg-card px-4 py-5 text-card-foreground shadow-sm sm:px-6',
+                className,
+            )}
+            {...props}
+        >
+            <SettingsHeading title={title} description={description} icon={icon} aside={aside} />
+            <div className="mt-3 divide-y divide-slate-100">{children}</div>
+        </section>
+    ),
+);
+SettingsCard.displayName = 'SettingsCard';
+
 export interface SettingsRowProps extends Omit<React.ComponentProps<'div'>, 'children'> {
     label: React.ReactNode;
-    /** Keep it to one line. Anything longer belongs in the section description. */
+    /** Keep it to one line. Anything longer belongs in the group description. */
     description?: React.ReactNode;
     /**
      * The id of a real form element. Given one, the caption renders as a
@@ -121,8 +168,12 @@ export const SettingsRow = React.forwardRef<HTMLDivElement, SettingsRowProps>(
                 data-layout={layout}
                 className={cn(
                     'py-3.5 first:pt-0 last:pb-0',
+                    // A fixed control track rather than `auto`: an auto track
+                    // sizes to its own content, so two selects in one group came
+                    // out at different widths and a width utility on the trigger
+                    // never took effect.
                     layout === 'inline' &&
-                        'flex flex-col gap-2 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-x-6',
+                        'flex flex-col gap-2 sm:grid sm:grid-cols-[minmax(0,1fr)_18rem] sm:items-center sm:gap-x-6',
                     className,
                 )}
                 {...props}
@@ -131,7 +182,7 @@ export const SettingsRow = React.forwardRef<HTMLDivElement, SettingsRowProps>(
                 <div
                     className={cn(
                         layout === 'inline'
-                            ? 'flex shrink-0 items-center justify-start sm:justify-end'
+                            ? 'flex w-full min-w-0 items-center justify-start sm:justify-end'
                             : 'mt-2',
                     )}
                 >

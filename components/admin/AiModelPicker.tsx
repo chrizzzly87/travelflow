@@ -58,7 +58,7 @@ const ModelSearchList: React.FC<{
     return (
         <div className="flex min-h-0 flex-col">
             <div className="relative">
-                <MagnifyingGlass className="pointer-events-none absolute inset-inline-start-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <MagnifyingGlass className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                 <Input
                     autoFocus={autoFocus}
                     value={query}

@@ -46,8 +46,9 @@ const settings = {
 
 const renderPage = async () => {
   const { AdminGlobalSettingsPage } = await import('../../../pages/AdminGlobalSettingsPage');
-  render(React.createElement(AdminGlobalSettingsPage));
-  await screen.findByText('Rollout');
+  const result = render(React.createElement(AdminGlobalSettingsPage));
+  await screen.findByRole('heading', { level: 2, name: 'Trip Agent' });
+  return result;
 };
 
 describe('AdminGlobalSettingsPage', () => {
@@ -61,16 +62,18 @@ describe('AdminGlobalSettingsPage', () => {
     vi.clearAllMocks();
   });
 
-  it('groups every setting under one of the three decisions', async () => {
-    await renderPage();
-    expect(screen.getByText('Rollout')).toBeTruthy();
-    expect(screen.getByText('AI model')).toBeTruthy();
-    expect(screen.getByText('Map')).toBeTruthy();
+  it('puts each product area on its own card', async () => {
+    const { container } = await renderPage();
 
-    // The rollout group owns every gate, including the planner beta that used
-    // to sit alone in a card of its own.
-    expect(screen.getByRole('switch', { name: 'Trip Agent' })).toBeTruthy();
-    expect(screen.getByRole('switch', { name: 'Trip Agent administrator preview' })).toBeTruthy();
+    const titles = Array.from(container.querySelectorAll('[data-slot="settings-card"] h2'))
+      .map((heading) => heading.textContent);
+    expect(titles).toEqual(['Trip Agent', 'Planner', 'AI model', 'Map']);
+  });
+
+  it('names the chat switches after the chat they gate', async () => {
+    await renderPage();
+    expect(screen.getByRole('switch', { name: 'Open to everyone' })).toBeTruthy();
+    expect(screen.getByRole('switch', { name: 'Administrator preview' })).toBeTruthy();
     expect(screen.getByRole('switch', { name: 'Planner beta' })).toBeTruthy();
   });
 
@@ -79,7 +82,7 @@ describe('AdminGlobalSettingsPage', () => {
     const save = screen.getByRole('button', { name: 'Save changes' }) as HTMLButtonElement;
     expect(save.disabled).toBe(true);
 
-    await userEvent.click(screen.getByRole('switch', { name: 'Trip Agent' }));
+    await userEvent.click(screen.getByRole('switch', { name: 'Open to everyone' }));
     await waitFor(() => expect(save.disabled).toBe(false));
   });
 

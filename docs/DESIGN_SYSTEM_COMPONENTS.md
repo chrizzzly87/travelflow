@@ -19,29 +19,52 @@ release.
    (`CaretDown`, `CaretUpDown`, `Check`, `MagnifyingGlass`). Do not introduce a second icon
    family into a component that already uses one — two chevron shapes on one panel is the
    most common review comment on this repo.
-3. **Never wrap a Radix trigger in a `<label>`.** A `Switch`, a `SelectTrigger` and a plain
+3. **Prefer logical padding on inputs.** `components/ui/input.tsx` uses `ps-3 pe-3`, not
+   `px-3`: tailwind-merge does not treat `px` as conflicting with `ps`, so a caller passing
+   `ps-9` to clear a leading icon lost to the base `px-3` and the icon sat on the text. For the
+   same reason, position a leading icon with `start-3` — `inset-inline-start-3` is **not** a
+   Tailwind utility and silently resolves to `0`.
+4. **Never wrap a Radix trigger in a `<label>`.** A `Switch`, a `SelectTrigger` and a plain
    button all handle their own click. A surrounding label forwards a second one, so the value
    toggles twice. Caption those with a `<span>`; `SettingsRow` does it for you.
-4. **Radii and heights come from `docs/DESIGN.md`**: `rounded-md` for controls, `rounded-lg`
+5. **Radii and heights come from `docs/DESIGN.md`**: `rounded-md` for controls, `rounded-lg`
    for panels, 36–40px control height. Avoid `rounded-2xl` on internal tooling.
-5. **Use logical properties** (`ps-*`, `pe-*`, `inset-inline-start-*`) wherever direction may
-   change.
+6. **Use logical properties** (`ps-*`, `pe-*`, `ms-*`, `me-*`, and `start-*`/`end-*` for
+   insets) wherever direction may change.
 
 ---
 
-## `settings-panel.tsx` — panel, section, row
+## `settings-panel.tsx` — group, card, panel, section, row
 
-The layout for any page that is a list of settings. Added because a grid of cards stretches
-every card to the tallest sibling, so a section holding one switch inherits the whitespace of
-the section holding a model picker. `docs/DESIGN.md` asks for the opposite: one surface with
-dividers and section headings.
+The layout for any page that is a list of settings. Two surfaces, one row primitive.
+
+Both surfaces stack **vertically**. Never put them in a grid: a grid track stretches every
+card to the tallest sibling, so a group holding one switch inherits the whitespace of the
+group holding a model picker. That is the failure `docs/DESIGN.md` warns about, and it is what
+this file exists to prevent.
+
+### Which surface
+
+| use | when |
+| --- | --- |
+| `SettingsGroup` + `SettingsCard` | Groups are independent product areas an admin dips into one at a time. **Default choice.** |
+| `SettingsPanel` + `SettingsSection` | The groups read as one continuous form and dividers suit them better than separate cards. |
+
+`SettingsCard` carries the shadcn card treatment on a real `<section>` rather than nesting
+`<Card>`: `Card` is a plain function component, and under `preact/compat` it would never
+receive `ref` (rule 1). Same tokens, semantic element, working ref.
+
+### `SettingsGroup`
+
+The vertical stack for `SettingsCard`s. Takes no props beyond a `div`'s.
 
 ### `SettingsPanel`
 
-The single surface. One per page. Renders the border, radius and the dividers between
-sections. Takes no props beyond a `div`'s.
+The single surface for `SettingsSection`s. Renders the border, radius and dividers.
 
-### `SettingsSection`
+### `SettingsCard` / `SettingsSection`
+
+Identical props; the only difference is the surface.
 
 | prop | type | notes |
 | --- | --- | --- |
@@ -56,39 +79,48 @@ sections. Takes no props beyond a `div`'s.
 | --- | --- | --- |
 | `label` | `ReactNode` | Required. |
 | `description` | `ReactNode` | One line. Anything longer belongs on the section. |
-| `htmlFor` | `string` | Given one, the caption renders as a real `<label>`. **Only** for real form elements — see rule 3. |
+| `htmlFor` | `string` | Given one, the caption renders as a real `<label>`. **Only** for real form elements — see rule 4. |
 | `layout` | `'inline' \| 'stacked'` | `inline` (default) puts the control at the inline end on the caption's baseline: switches, selects, short inputs. `stacked` gives it a full-width line below: pickers, lists, editors. |
 | `note` | `ReactNode` | Rendered under the control. Use it for the *consequence of the current value*, not for a restatement of the label. |
 
+An `inline` row uses a **fixed 18rem control track**, not `auto`. An auto track sizes to its
+own content, so two selects in one group came out at different widths and a width utility on
+the trigger never took effect. Give a select `className="w-full"` to fill the track; leave a
+short input its own narrow width and it right-aligns within it.
+
 ```tsx
-import { SettingsPanel, SettingsRow, SettingsSection } from '@/components/ui/settings-panel';
+import { SettingsCard, SettingsGroup, SettingsRow } from '@/components/ui/settings-panel';
 
-<SettingsPanel>
-  <SettingsSection
-    icon={<Flag weight="duotone" />}
-    title="Rollout"
-    description="Who can reach a feature that is not open to everyone yet."
+<SettingsGroup>
+  <SettingsCard
+    icon={<ChatCircleDots weight="duotone" />}
+    title="Trip Agent"
+    description="The planning chat inside a trip."
   >
-    <SettingsRow label="Trip Agent" description="The planning chat inside a trip.">
-      <Switch checked={on} onCheckedChange={setOn} aria-label="Trip Agent" />
+    <SettingsRow label="Open to everyone" description="Every account whose plan allows it.">
+      <Switch checked={on} onCheckedChange={setOn} aria-label="Open to everyone" />
     </SettingsRow>
-  </SettingsSection>
+  </SettingsCard>
 
-  <SettingsSection icon={<Sparkle weight="duotone" />} title="AI model">
+  <SettingsCard icon={<Sparkle weight="duotone" />} title="AI model">
     <SettingsRow label="Default model" layout="stacked">
       <AiModelPicker value={id} models={models} onChange={setId} />
     </SettingsRow>
     <SettingsRow label="Age limit" htmlFor="age-limit">
-      <NumberInput id="age-limit" min={1} max={36} suffix=" months" className="w-36" … />
+      <NumberInput id="age-limit" min={1} max={36} steppers suffix=" months" className="w-36" … />
     </SettingsRow>
-  </SettingsSection>
-</SettingsPanel>
+    <SettingsRow label="Provider" note={consequenceOfCurrentChoice}>
+      <Select …><SelectTrigger className="w-full"><SelectValue /></SelectTrigger>…</Select>
+    </SettingsRow>
+  </SettingsCard>
+</SettingsGroup>
 ```
 
-**Grouping.** Group rows by the decision an administrator is making, not by where the value is
-stored. Three feature gates spread across three cards read as three unrelated jobs; the same
-three under one "Rollout" heading read as one. A section holding a single row is a sign the
-grouping is wrong.
+**Grouping and naming.** Group rows by the product area an administrator is steering, and name
+the group after that area rather than after the mechanism. A card called "Rollout" holding two
+chat switches and one planner switch tells a reader less than a "Trip Agent" card and a
+"Planner" card do. Name a switch for what it opens (`Open to everyone`), not for the thing it
+sits under — the card title already said that.
 
 **Copy.** The row label and the section description carry the meaning. Resist a hint on every
 row — a caption that restates its label is noise, and it is what makes a settings page look
@@ -102,7 +134,7 @@ Tests: `tests/browser/ui/settingsPanel.browser.test.ts`.
 ## `label.tsx`
 
 The shadcn label primitive, on Radix. Use it for controls that own a real form element
-(`Input`, `Textarea`, `NumberInput`). Do **not** wrap a Radix trigger — see rule 3. Most pages
+(`Input`, `Textarea`, `NumberInput`). Do **not** wrap a Radix trigger — see rule 4. Most pages
 should reach for `SettingsRow`'s `htmlFor` instead of importing this directly.
 
 ---
@@ -125,14 +157,34 @@ the user's attention is elsewhere on the page.
 
 ---
 
+## `number-input.tsx`
+
+Numeric field. The native spinners are suppressed, so pass `steppers` when the value should be
+clickable as well as typeable:
+
+```tsx
+<NumberInput min={1} max={36} steppers suffix=" months" className="w-36" value={n} onChange={…} />
+```
+
+The steppers write through `HTMLInputElement.prototype`'s value setter before dispatching
+`input`. React patches the *instance* setter to track the last value it rendered; a direct
+`node.value = …` updates that tracker too, so the event that follows looks like a no-op and
+`onChange` never runs. Going via the prototype leaves the tracker stale, which is what makes
+the edit register. Do not "simplify" this back to a direct assignment — it works in the app
+(preact) and silently fails under React in tests.
+
+`steppers` is off by default so existing call sites are unchanged.
+
+---
+
 ## `select.tsx`
 
-Radix select. The trigger renders a Phosphor `CaretDown` that rotates while the list is open;
-the item indicator is a Phosphor `Check`. Never replace it with a native `<select>`
-(`docs/DESIGN.md`).
+Radix select. The trigger renders a Phosphor `CaretDown`; the item indicator is a Phosphor
+`Check`. Never replace it with a native `<select>` (`docs/DESIGN.md`).
 
-Give the trigger an explicit width on wide layouts (`className="w-full sm:w-72"`) — an
-unconstrained trigger inside a flex row collapses to its content.
+The trigger truncates its own value, so a long option cannot push the caret past the edge.
+Give it `className="w-full"` inside a `SettingsRow` to fill the fixed control track — an
+unconstrained trigger sizes to its content, and two selects then disagree on width.
 
 ---
 
