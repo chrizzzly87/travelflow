@@ -7,7 +7,12 @@ release.
 
 - Visual contract for admin surfaces: `docs/DESIGN.md`.
 - Brand and marketing styling: `docs/BRAND_CI_GUIDELINES.md`.
-- Live examples you can click: `/admin/component-playground` and `/admin/design-system`.
+- Live examples you can click: **`/admin/design-system-playground`** (linked from the admin nav
+  under Tools). Its "Settings Panels", "Inputs + Textareas" and "Dialogs + Drawers + Modals"
+  tabs cover everything below.
+- `/admin/component-playground` also exists but is **deliberately unlisted** — it sets
+  `noindex,nofollow,noarchive` and a test asserts it stays out of the admin nav. Reach it by
+  URL; do not add it to `adminNavConfig.ts`.
 
 ## Rules that apply to everything in `components/ui/`
 
@@ -170,6 +175,38 @@ free-form visual rather than a form — opts out with `max-h-none` plus `overflo
 
 For a modal with a title bar, its own close button and a footer slot already assembled, use
 `app-modal.tsx` instead of composing these by hand.
+
+---
+
+## `search-input.tsx`
+
+A search field with its magnifying glass and an optional clear button. Built on `InputGroup`,
+which lays the icon out with **flex**.
+
+```tsx
+<SearchInput
+  placeholder="Search a provider or model…"
+  value={query}
+  onChange={(event) => setQuery(event.currentTarget.value)}
+  onClear={() => setQuery('')}
+/>
+```
+
+**Never rebuild this with an absolutely positioned icon over a padded input.** That pattern has
+broken twice here, in both directions:
+
+1. The icon used `inset-inline-start-3`, which is not a Tailwind utility, so it resolved to `0`
+   and sat on the placeholder. The input's `ps-9` was separately lost to the base `px-3`.
+2. Once both were fixed, putting a gutter (`px-5`) on the same element that carried `relative`
+   moved the positioning context out from under the input, and the icon landed *outside* the
+   field entirely.
+
+Flex has no positioning context to get wrong: the icon is a sibling of the input, so a gutter
+on any ancestor moves both together.
+
+`InputGroupInput`, `InputGroupTextarea` and `Textarea` were plain function components and were
+converted to `forwardRef` so this composes cleanly — under `preact/compat` they would otherwise
+have dropped the ref silently (rule 1).
 
 ---
 

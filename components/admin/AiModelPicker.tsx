@@ -1,12 +1,21 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { CaretUpDown, Check, MagnifyingGlass, Plus, X } from '@phosphor-icons/react';
+import { CaretUpDown, Check, Plus, X } from '@phosphor-icons/react';
 
 import { AiProviderLogo } from './AiProviderLogo';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
-import { Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
+import {
+    Dialog,
+    DialogBody,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '../ui/dialog';
 import { Input } from '../ui/input';
+import { SearchInput } from '../ui/search-input';
 import { cn } from '../../lib/utils';
 import { groupAiModelsByProvider, type AiModelCatalogItem } from '../../config/aiModelCatalog';
 
@@ -64,13 +73,15 @@ const ModelSearchList: React.FC<{
 
     return (
         <div className="flex min-h-0 flex-col">
-            <div className={cn('relative shrink-0', inset)}>
-                <MagnifyingGlass className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                <Input
+            <div className={cn('shrink-0', inset)}>
+                <SearchInput
                     autoFocus={autoFocus}
                     value={query}
                     placeholder={placeholder}
-                    className="ps-9"
+                    onClear={() => {
+                        onQueryChange('');
+                        setActiveIndex(0);
+                    }}
                     onChange={(event) => {
                         onQueryChange(event.currentTarget.value);
                         setActiveIndex(0);
@@ -145,14 +156,29 @@ export const AiModelPicker: React.FC<{
 }> = ({ value, models, onChange }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState('');
+    // Picking a row stages the choice; the footer commits it. That keeps the
+    // model you are about to set visible while you scroll a long catalogue.
+    const [pendingId, setPendingId] = useState(value);
     const selected = models.find((model) => model.id === value) || null;
+    const pending = models.find((model) => model.id === pendingId) || null;
     const [provider, model] = value.includes(':') ? value.split(/:(.*)/s) : ['', value];
+
+    const openPicker = () => {
+        setQuery('');
+        setPendingId(value);
+        setIsOpen(true);
+    };
+
+    const commit = () => {
+        if (pendingId) onChange(pendingId);
+        setIsOpen(false);
+    };
 
     return (
         <>
             <button
                 type="button"
-                onClick={() => { setQuery(''); setIsOpen(true); }}
+                onClick={openPicker}
                 className="flex min-h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 transition hover:border-slate-400 focus-visible:border-accent-400 focus-visible:outline-none"
             >
                 <span className="flex min-w-0 items-center gap-2">
@@ -174,22 +200,45 @@ export const AiModelPicker: React.FC<{
                         </DialogDescription>
                     </DialogHeader>
                     {/* The result list runs its own scroller, so the body must not add a second one. */}
-                    <DialogBody padded={false} scroll={false} className="flex flex-col pb-5">
+                    <DialogBody padded={false} scroll={false} className="flex flex-col pb-4">
                         <ModelSearchList
                             autoFocus
                             inset="px-5"
                             models={models}
                             query={query}
                             onQueryChange={setQuery}
-                            isSelected={(item) => item.id === value}
+                            isSelected={(item) => item.id === pendingId}
                             placeholder="Search a provider or model…"
                             emptyLabel="No model matches that search."
-                            onPick={(item) => {
-                                onChange(item.id);
-                                setIsOpen(false);
-                            }}
+                            onPick={(item) => setPendingId(item.id)}
                         />
                     </DialogBody>
+
+                    <DialogFooter className="justify-between gap-3">
+                        <span className="flex min-w-0 flex-1 items-center gap-2">
+                            <AiProviderLogo
+                                provider={pending?.provider || pendingId.split(':')[0]}
+                                model={pending?.model || pendingId}
+                                size={18}
+                            />
+                            <span className="min-w-0 text-start">
+                                <span className="block truncate text-sm font-medium text-slate-900">
+                                    {pending?.label || pendingId || 'No model selected'}
+                                </span>
+                                <span className="block truncate font-mono text-[11px] text-slate-500">
+                                    {pendingId}
+                                </span>
+                            </span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2">
+                            <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button type="button" onClick={commit} disabled={!pendingId || pendingId === value}>
+                                Use this model
+                            </Button>
+                        </span>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </>
