@@ -1,5 +1,4 @@
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { useSearchParams } from 'react-router-dom';
 import {
     AirplaneTakeoff,
@@ -15,6 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { GoogleMapsLoader, useGoogleMaps } from '../components/GoogleMapsLoader';
+import { AdminAirportTesterMap } from '../components/admin/AdminAirportTesterMap';
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminShell } from '../components/admin/AdminShell';
@@ -128,7 +128,6 @@ interface AdminAirportTesterFilters {
 type AdminAirportTesterSearchParams = Pick<URLSearchParams, 'get'>;
 
 const AIRPORT_TABLE_PAGE_SIZE = 50;
-const ADMIN_AIRPORT_MAP_ID = 'admin-airports-map';
 const DEFAULT_ADMIN_AIRPORT_TESTER_LIMIT = '10';
 const DEFAULT_ADMIN_AIRPORT_TESTER_SERVICE_TIER: AirportCommercialServiceTier = 'major';
 const SERVICE_TIER_OPTIONS: Array<{ value: AirportCommercialServiceTier; label: string; helper: string }> = [
@@ -674,178 +673,6 @@ const AirportSummaryMetric: React.FC<{
     </div>
 );
 
-const AdminAirportMapBridge: React.FC<{
-    mapId: string;
-    onMapInstanceChange: (map: google.maps.Map | null) => void;
-}> = ({ mapId, onMapInstanceChange }) => {
-    const map = useMap(mapId);
-
-    useEffect(() => {
-        onMapInstanceChange(map ?? null);
-        return () => {
-            onMapInstanceChange(null);
-        };
-    }, [map, onMapInstanceChange]);
-
-    return null;
-};
-
-const AdminAirportTestMapCanvas: React.FC<{
-    origin: TesterOrigin | null;
-    result: NearbyAirportsResponse | null;
-}> = ({ origin, result }) => {
-    const { isLoaded, loadError } = useGoogleMaps();
-    const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
-    const overlayRefs = useRef<google.maps.OverlayView[]>([]);
-    const lineRefs = useRef<google.maps.Polyline[]>([]);
-
-    useEffect(() => {
-        overlayRefs.current.forEach((overlay) => overlay.setMap(null));
-        overlayRefs.current = [];
-        lineRefs.current.forEach((line) => line.setMap(null));
-        lineRefs.current = [];
-
-        if (!mapInstance || !window.google?.maps?.OverlayView) return;
-
-        const points: Array<{ lat: number; lng: number; label: string; isOrigin?: boolean; rank?: number }> = [];
-        if (origin) {
-            points.push({
-                lat: origin.lat,
-                lng: origin.lng,
-                label: origin.label,
-                isOrigin: true,
-            });
-        }
-
-        (result?.airports || []).forEach((entry) => {
-            points.push({
-                lat: entry.airport.latitude,
-                lng: entry.airport.longitude,
-                label: entry.airport.iataCode || entry.airport.icaoCode || entry.airport.ident,
-                rank: entry.rank,
-            });
-        });
-
-        if (points.length > 0) {
-            const bounds = new window.google.maps.LatLngBounds();
-            points.forEach((point) => bounds.extend({ lat: point.lat, lng: point.lng }));
-            mapInstance.fitBounds(bounds, 112);
-            window.google.maps.event.addListenerOnce(mapInstance, 'idle', () => {
-                const nextZoom = mapInstance.getZoom();
-                if (typeof nextZoom === 'number' && nextZoom > 7) {
-                    mapInstance.setZoom(7);
-                }
-            });
-        }
-
-        if (origin) {
-            (result?.airports || []).forEach((entry) => {
-                const line = new window.google.maps.Polyline({
-                    path: [
-                        { lat: origin.lat, lng: origin.lng },
-                        { lat: entry.airport.latitude, lng: entry.airport.longitude },
-                    ],
-                    geodesic: true,
-                    strokeColor: '#2563eb',
-                    strokeOpacity: 0.35,
-                    strokeWeight: 2,
-                    map: mapInstance,
-                });
-                lineRefs.current.push(line);
-            });
-        }
-
-        points.forEach((point) => {
-            const overlay = new window.google.maps.OverlayView();
-            let markerNode: HTMLDivElement | null = null;
-
-            overlay.onAdd = function onAdd() {
-                markerNode = document.createElement('div');
-                Object.assign(markerNode.style, {
-                    position: 'absolute',
-                    transform: 'translate(-50%, -100%)',
-                    minWidth: point.isOrigin ? '44px' : '34px',
-                    height: point.isOrigin ? '34px' : '30px',
-                    padding: point.isOrigin ? '0 12px' : '0 8px',
-                    borderRadius: '9999px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    whiteSpace: 'nowrap',
-                    fontSize: point.isOrigin ? '11px' : '12px',
-                    fontWeight: '700',
-                    boxShadow: '0 10px 24px rgba(15,23,42,0.18)',
-                    border: point.isOrigin ? '1px solid #0f172a' : '1px solid #cbd5e1',
-                    background: point.isOrigin ? '#0f172a' : '#ffffff',
-                    color: point.isOrigin ? '#ffffff' : '#0f172a',
-                    zIndex: point.isOrigin ? '30' : '20',
-                });
-                markerNode.textContent = point.isOrigin ? 'Origin' : point.label;
-
-                const panes = overlay.getPanes();
-                panes?.floatPane?.appendChild(markerNode);
-            };
-
-            overlay.draw = function draw() {
-                if (!markerNode) return;
-                const projection = overlay.getProjection();
-                const position = projection?.fromLatLngToDivPixel(new window.google.maps.LatLng(point.lat, point.lng));
-                if (!position) return;
-                Object.assign(markerNode.style, {
-                    left: `${position.x}px`,
-                    top: `${position.y}px`,
-                });
-            };
-
-            overlay.onRemove = function onRemove() {
-                markerNode?.remove();
-                markerNode = null;
-            };
-
-            overlay.setMap(mapInstance);
-            overlayRefs.current.push(overlay);
-        });
-
-        return () => {
-            overlayRefs.current.forEach((overlay) => overlay.setMap(null));
-            overlayRefs.current = [];
-            lineRefs.current.forEach((line) => line.setMap(null));
-            lineRefs.current = [];
-        };
-    }, [mapInstance, origin, result]);
-
-    return (
-        <div className="relative h-[340px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
-            {!loadError && (
-                <GoogleMap
-                    id={ADMIN_AIRPORT_MAP_ID}
-                    defaultCenter={origin ? { lat: origin.lat, lng: origin.lng } : { lat: 20, lng: 0 }}
-                    defaultZoom={origin ? 5 : 2}
-                    disableDefaultUI
-                    gestureHandling="cooperative"
-                    clickableIcons={false}
-                    reuseMaps
-                    className="size-full"
-                >
-                    <AdminAirportMapBridge mapId={ADMIN_AIRPORT_MAP_ID} onMapInstanceChange={setMapInstance} />
-                </GoogleMap>
-            )}
-            {(!isLoaded || !origin) && (
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-100/85 px-6 text-center text-sm text-slate-600">
-                    {!isLoaded
-                        ? 'Loading Google Maps for airport testing…'
-                        : 'Pick a city or use manual coordinates to preview the nearest-airport map.'}
-                </div>
-            )}
-            {loadError && (
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-100/90 px-6 text-center text-sm text-slate-700">
-                    Google Maps could not be loaded for this admin tester.
-                </div>
-            )}
-        </div>
-    );
-};
-
 const AdminAirportTester: React.FC<{
     filters: AdminAirportTesterFilters;
     onFiltersChange: (patch: Partial<AdminAirportTesterFilters>) => void;
@@ -1323,7 +1150,7 @@ const AdminAirportTester: React.FC<{
                     )}
                 </div>
 
-                <AdminAirportTestMapCanvas origin={origin} result={displayLookupResult} />
+                <AdminAirportTesterMap origin={origin} result={displayLookupResult} />
             </div>
         </AdminSurfaceCard>
     );
