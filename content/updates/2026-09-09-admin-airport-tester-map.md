@@ -1,10 +1,10 @@
 ---
 id: rel-2026-09-09-admin-airport-tester-map
-version: v0.164.0
+version: v0.166.0
 title: "The airport tester map works again"
 date: 2026-09-09
-published_at: 2026-09-09T12:00:00Z
-status: draft
+published_at: 2026-09-09T05:18:40Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "The nearest-airport preview now draws on whichever map the team runs, and every airport pill opens its full record."
