@@ -21,4 +21,6 @@ summary: "The admin global settings page is now a card per product area, built o
 - [ ] [Internal] 📚 Documented the shared component set in a new catalogue and linked it from the agent guide, the design contract and the startup checklist, with a live entry in the component playground.
 - [ ] [Internal] 🔢 Gave the shared number input optional increment and decrement buttons, since the component suppresses the browser's own spinners.
 - [ ] [Internal] 📐 Fixed the model search field: the magnifying glass sat on top of the placeholder because its offset used a class Tailwind does not generate, and the field's leading padding lost to the input's own shorthand.
-- [ ] [Internal] 🧪 Regression coverage for the card layout, the shared control track, the stepper buttons, the double-toggle trap and the discard flow.
+- [ ] [Internal] 🪟 Rebuilt the shared dialog: one shared gutter for header, body and footer (the model picker's search field used to run wider than its own title), a bounded height with only the body scrolling, width presets, an optional close button and an optional pinned footer.
+- [ ] [Internal] ↔️ Moved the value-dependent hint into the label column so it wraps against the caption instead of spanning the row under the control.
+- [ ] [Internal] 🧪 Regression coverage for the dialog gutter, height cap and footer, the card layout, the shared control track, the stepper buttons, the double-toggle trap and the discard flow.

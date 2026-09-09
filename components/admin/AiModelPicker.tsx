@@ -5,8 +5,9 @@ import { AiProviderLogo } from './AiProviderLogo';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
+import { cn } from '../../lib/utils';
 import { groupAiModelsByProvider, type AiModelCatalogItem } from '../../config/aiModelCatalog';
 
 const matchesQuery = (model: AiModelCatalogItem, query: string): boolean => {
@@ -31,7 +32,13 @@ const ModelSearchList: React.FC<{
     emptyLabel: string;
     placeholder: string;
     autoFocus?: boolean;
-}> = ({ models, query, onQueryChange, onPick, isSelected, emptyLabel, placeholder, autoFocus }) => {
+    /**
+     * Horizontal inset for the search row and the result rows. In a dialog
+     * this is the dialog's own gutter, so the list lines up with the title
+     * instead of running edge to edge.
+     */
+    inset?: string;
+}> = ({ models, query, onQueryChange, onPick, isSelected, emptyLabel, placeholder, autoFocus, inset }) => {
     const [activeIndex, setActiveIndex] = useState(0);
     const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -57,7 +64,7 @@ const ModelSearchList: React.FC<{
 
     return (
         <div className="flex min-h-0 flex-col">
-            <div className="relative">
+            <div className={cn('relative shrink-0', inset)}>
                 <MagnifyingGlass className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                 <Input
                     autoFocus={autoFocus}
@@ -83,7 +90,7 @@ const ModelSearchList: React.FC<{
                 />
             </div>
 
-            <div ref={listRef} className="mt-3 min-h-0 flex-1 overflow-y-auto pe-1">
+            <div ref={listRef} className={cn('mt-3 min-h-0 flex-1 overflow-y-auto', inset)}>
                 {flat.length === 0 ? (
                     <p className="py-8 text-center text-sm text-slate-500">{emptyLabel}</p>
                 ) : Object.entries(grouped).map(([providerLabel, providerModels]: [string, AiModelCatalogItem[]]) => (
@@ -159,26 +166,30 @@ export const AiModelPicker: React.FC<{
             </button>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="flex max-h-[80vh] flex-col sm:max-w-lg">
+                <DialogContent size="md" showCloseButton>
                     <DialogHeader>
                         <DialogTitle>Default AI model</DialogTitle>
                         <DialogDescription>
                             The planner and the Trip Agent both follow this. Only approved models are used at runtime.
                         </DialogDescription>
                     </DialogHeader>
-                    <ModelSearchList
-                        autoFocus
-                        models={models}
-                        query={query}
-                        onQueryChange={setQuery}
-                        isSelected={(item) => item.id === value}
-                        placeholder="Search a provider or model…"
-                        emptyLabel="No model matches that search."
-                        onPick={(item) => {
-                            onChange(item.id);
-                            setIsOpen(false);
-                        }}
-                    />
+                    {/* The result list runs its own scroller, so the body must not add a second one. */}
+                    <DialogBody padded={false} scroll={false} className="flex flex-col pb-5">
+                        <ModelSearchList
+                            autoFocus
+                            inset="px-5"
+                            models={models}
+                            query={query}
+                            onQueryChange={setQuery}
+                            isSelected={(item) => item.id === value}
+                            placeholder="Search a provider or model…"
+                            emptyLabel="No model matches that search."
+                            onPick={(item) => {
+                                onChange(item.id);
+                                setIsOpen(false);
+                            }}
+                        />
+                    </DialogBody>
                 </DialogContent>
             </Dialog>
         </>
@@ -219,7 +230,7 @@ export const ApprovedOpenRouterModelsField: React.FC<{
                 <Badge variant="secondary">{value.length} approved</Badge>
             </div>
 
-            <div className="rounded-xl border border-slate-200 p-2">
+            <div className="rounded-lg border border-slate-200 p-2">
                 <div className="flex h-72 flex-col">
                     <ModelSearchList
                         models={openRouterModels}

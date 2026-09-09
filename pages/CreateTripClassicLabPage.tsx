@@ -1631,8 +1631,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                     <DialogTitle>{t('traveler.settings.title', { traveler: settingsTravelerLabel })}</DialogTitle>
                     <DialogDescription>{t('traveler.settings.description')}</DialogDescription>
                 </DialogHeader>
-                <div className="mt-4">{settingsContent}</div>
-                <DialogFooter className="p-0 pt-4">
+                <div className="mt-4 min-h-0 flex-1 overflow-y-auto">{settingsContent}</div>
+                <DialogFooter sticky={false} className="p-0 pt-4">
                     <button
                         type="button"
                         onClick={() => setTravelerSettingsOpen(false)}

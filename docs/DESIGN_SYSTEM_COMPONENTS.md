@@ -131,6 +131,48 @@ Tests: `tests/browser/ui/settingsPanel.browser.test.ts`.
 
 ---
 
+## `dialog.tsx` — content, header, body, footer
+
+`DialogContent` is a **flex column with a bounded height**. Put the long part in `DialogBody`;
+the header and footer are its flex siblings, so they stay pinned while it scrolls — no
+`position: sticky` involved.
+
+```tsx
+<DialogContent size="md" showCloseButton>
+  <DialogHeader>
+    <DialogTitle>Default AI model</DialogTitle>
+    <DialogDescription>Only approved models are used at runtime.</DialogDescription>
+  </DialogHeader>
+  <DialogBody>…the long, scrolling part…</DialogBody>
+  <DialogFooter>
+    <Button variant="ghost">Cancel</Button>
+    <Button>Save</Button>
+  </DialogFooter>
+</DialogContent>
+```
+
+**Every horizontal inset is the same `px-5`**, so the title, the body and the footer buttons
+line up. Content placed directly inside `DialogContent` instead of `DialogBody` gets **no
+padding** and sits flush against the edge — that was the bug that made the model picker's
+search field wider than its own title.
+
+| part | prop | notes |
+| --- | --- | --- |
+| `DialogContent` | `size` | `sm` 420 · `md` 560 · `lg` 680 (default) · `xl` 860. Prefer these over a hand-written width. |
+| | `showCloseButton` | Off by default — several dialogs here draw their own, and two in one corner looks broken. |
+| `DialogHeader` | `divided` | Rule beneath the header, for when the body scrolls under it. |
+| `DialogBody` | `padded` | Off when the body owns its own padding. |
+| | `scroll` | Off when a **child** owns the scrolling. Two nested scrollers trap the wheel in the inner one and strand the outer scrollbar. |
+| `DialogFooter` | `sticky` | On by default: rule above, solid background. Off for a dialog that pads itself inline. |
+
+The height cap is `max-h-[min(85dvh,48rem)]`. A dialog whose content must not be clipped — a
+free-form visual rather than a form — opts out with `max-h-none` plus `overflow-visible`.
+
+For a modal with a title bar, its own close button and a footer slot already assembled, use
+`app-modal.tsx` instead of composing these by hand.
+
+---
+
 ## `label.tsx`
 
 The shadcn label primitive, on Radix. Use it for controls that own a real form element
@@ -197,3 +239,8 @@ unconstrained trigger sizes to its content, and two selects then disagree on wid
 Anything landing in `components/ui/` needs: a `forwardRef` where a ref could plausibly be
 passed, a `data-slot` attribute for testing and styling, a Vitest file under `tests/browser/ui/`,
 and an entry in this document.
+
+Changing one of these is a change to every caller. Before editing a shared primitive, grep for
+its usages and check each one still holds up — adding a height cap to `DialogContent`, for
+example, silently clipped two long forms that had previously been free to grow past the
+viewport.

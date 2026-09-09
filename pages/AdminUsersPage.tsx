@@ -3431,7 +3431,7 @@ export const AdminUsersPage: React.FC = () => {
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-4 px-5 pb-5">
+                    <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-5">
                         <div className="inline-flex rounded-lg border border-slate-300 p-0.5 text-xs">
                             <button
                                 type="button"

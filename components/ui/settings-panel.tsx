@@ -142,7 +142,12 @@ export interface SettingsRowProps extends Omit<React.ComponentProps<'div'>, 'chi
      * need the room: pickers, lists, editors.
      */
     layout?: 'inline' | 'stacked';
-    /** Rendered under the control. Use it for the consequence of the current value. */
+    /**
+     * The consequence of the *current* value, as opposed to the static
+     * `description`. Sits in the text column beneath the description on an
+     * inline row, and beneath the control on a stacked one — never spanning
+     * both columns, which reads as a stray line disconnected from either.
+     */
     note?: React.ReactNode;
     children: React.ReactNode;
 }
@@ -150,6 +155,10 @@ export interface SettingsRowProps extends Omit<React.ComponentProps<'div'>, 'chi
 /** One setting: caption and helper on one side, its control on the other. */
 export const SettingsRow = React.forwardRef<HTMLDivElement, SettingsRowProps>(
     ({ className, label, description, htmlFor, layout = 'inline', note, children, ...props }, ref) => {
+        const noteText = note ? (
+            <span className="mt-0.5 block text-sm text-slate-500">{note}</span>
+        ) : null;
+
         const caption = (
             <div className="min-w-0">
                 {htmlFor ? (
@@ -158,6 +167,7 @@ export const SettingsRow = React.forwardRef<HTMLDivElement, SettingsRowProps>(
                     <span className="block text-sm font-medium text-slate-900">{label}</span>
                 )}
                 {description && <span className="mt-0.5 block text-sm text-slate-500">{description}</span>}
+                {layout === 'inline' && noteText}
             </div>
         );
 
@@ -188,16 +198,8 @@ export const SettingsRow = React.forwardRef<HTMLDivElement, SettingsRowProps>(
                 >
                     {children}
                 </div>
-                {note && (
-                    <p
-                        className={cn(
-                            'mt-1.5 text-xs text-slate-500',
-                            layout === 'inline' && 'sm:col-span-2 sm:mt-0',
-                        )}
-                    >
-                        {note}
-                    </p>
-                )}
+                {layout === 'stacked' && noteText}
+
             </div>
         );
     },
