@@ -1034,12 +1034,12 @@ const resolveSelectedMapFocusPosition = ({
     selectedCityId?: string | null;
     activityMarkerPositions: Map<string, google.maps.LatLngLiteral>;
     cities: ITimelineItem[];
-}): { position: google.maps.LatLngLiteral; zoom: number } | null => {
+}): { position: google.maps.LatLngLiteral; zoom: number; kind: 'activity' | 'city' } | null => {
     const selectionTuning = getTripMapProviderTuning(provider).selection;
     if (selectedActivityId) {
         const activityPosition = activityMarkerPositions.get(selectedActivityId);
         if (activityPosition) {
-            return { position: activityPosition, zoom: selectionTuning.activityFocusZoom };
+            return { position: activityPosition, zoom: selectionTuning.activityFocusZoom, kind: 'activity' };
         }
     }
     if (selectedCityId) {
@@ -1048,6 +1048,7 @@ const resolveSelectedMapFocusPosition = ({
             return {
                 position: { lat: selectedCity.coordinates.lat, lng: selectedCity.coordinates.lng },
                 zoom: selectionTuning.cityFocusZoom,
+                kind: 'city',
             };
         }
     }
@@ -1079,15 +1080,20 @@ const resolveSelectionViewportActions = ({
     isTargetWithinSafeZone,
     currentZoom,
     targetZoom,
+    alwaysCenter = false,
 }: {
     isTargetVisible: boolean;
     isTargetWithinSafeZone?: boolean;
     currentZoom: number | null;
     targetZoom: number;
+    // Activity pins are small and easy to lose among the city markers, so
+    // selecting one always recenters the map instead of leaving an
+    // already-visible pin wherever it happens to sit.
+    alwaysCenter?: boolean;
 }): { shouldPan: boolean; shouldZoom: boolean } => {
     const isTargetComfortablyVisible = isTargetWithinSafeZone ?? isTargetVisible;
     const shouldZoom = currentZoom === null || currentZoom < targetZoom;
-    const shouldPan = !isTargetComfortablyVisible || shouldZoom;
+    const shouldPan = alwaysCenter || !isTargetComfortablyVisible || shouldZoom;
     return { shouldPan, shouldZoom };
 };
 
@@ -1466,7 +1472,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const [mapboxBasemapFailureKey, setMapboxBasemapFailureKey] = useState<string | null>(null);
     const [isMapboxSurfaceReady, setIsMapboxSurfaceReady] = useState(false);
     const [mapboxStyleReloadNonce, setMapboxStyleReloadNonce] = useState(0);
-    const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(false);
+    // On by default: the zoom gate in `shouldDisplayActivityMarkers` keeps them
+    // out of a country-wide view, so they only appear once the map is close
+    // enough for them to mean something.
+    const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(true);
     const [mapZoomLevel, setMapZoomLevel] = useState<number | null>(null);
     const [mapViewportSize, setMapViewportSize] = useState<{ width: number; height: number } | null>(null);
     const previousMapDockModeRef = useRef<'docked' | 'floating'>(mapDockMode);
@@ -2991,6 +3000,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 isTargetWithinSafeZone,
                 currentZoom,
                 targetZoom: focusTarget.zoom,
+                alwaysCenter: focusTarget.kind === 'activity',
             });
 
             if (!shouldPan && !shouldZoom) return;

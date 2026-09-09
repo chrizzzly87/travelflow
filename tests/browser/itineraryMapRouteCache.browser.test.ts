@@ -626,6 +626,30 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(focusTarget).toEqual({
       position: { lat: 50.11, lng: 8.67 },
       zoom: 13,
+      kind: 'activity',
+    });
+  });
+
+  it('reports a city focus target as a city so it keeps the stable-viewport behaviour', () => {
+    const cities = [{
+      id: 'city-1',
+      type: 'city',
+      title: 'Frankfurt',
+      startDateOffset: 0,
+      duration: 2,
+      color: 'bg-blue-100 border-blue-300 text-blue-800',
+      coordinates: { lat: 50.1109, lng: 8.6821 },
+    }] as any;
+
+    expect(resolveSelectedMapFocusPosition({
+      selectedActivityId: null,
+      selectedCityId: 'city-1',
+      activityMarkerPositions: new Map() as any,
+      cities,
+    })).toEqual({
+      position: { lat: 50.1109, lng: 8.6821 },
+      zoom: 10,
+      kind: 'city',
     });
   });
 
@@ -691,6 +715,19 @@ describe('components/ItineraryMap route cache helpers', () => {
       targetZoom: 13,
     })).toEqual({
       shouldPan: false,
+      shouldZoom: false,
+    });
+  });
+
+  it('always recenters an activity selection, even when it is already comfortably visible', () => {
+    expect(resolveSelectionViewportActions({
+      isTargetVisible: true,
+      isTargetWithinSafeZone: true,
+      currentZoom: 13,
+      targetZoom: 13,
+      alwaysCenter: true,
+    })).toEqual({
+      shouldPan: true,
       shouldZoom: false,
     });
   });

@@ -1033,12 +1033,12 @@ export const resolveSelectedMapFocusPosition = ({
     selectedCityId?: string | null;
     activityMarkerPositions: Map<string, google.maps.LatLngLiteral>;
     cities: ITimelineItem[];
-}): { position: google.maps.LatLngLiteral; zoom: number } | null => {
+}): { position: google.maps.LatLngLiteral; zoom: number; kind: 'activity' | 'city' } | null => {
     const selectionTuning = getTripMapProviderTuning(provider).selection;
     if (selectedActivityId) {
         const activityPosition = activityMarkerPositions.get(selectedActivityId);
         if (activityPosition) {
-            return { position: activityPosition, zoom: selectionTuning.activityFocusZoom };
+            return { position: activityPosition, zoom: selectionTuning.activityFocusZoom, kind: 'activity' };
         }
     }
     if (selectedCityId) {
@@ -1047,6 +1047,7 @@ export const resolveSelectedMapFocusPosition = ({
             return {
                 position: { lat: selectedCity.coordinates.lat, lng: selectedCity.coordinates.lng },
                 zoom: selectionTuning.cityFocusZoom,
+                kind: 'city',
             };
         }
     }
@@ -1078,15 +1079,20 @@ export const resolveSelectionViewportActions = ({
     isTargetWithinSafeZone,
     currentZoom,
     targetZoom,
+    alwaysCenter = false,
 }: {
     isTargetVisible: boolean;
     isTargetWithinSafeZone?: boolean;
     currentZoom: number | null;
     targetZoom: number;
+    // Activity pins are small and easy to lose among the city markers, so
+    // selecting one always recenters the map instead of leaving an
+    // already-visible pin wherever it happens to sit.
+    alwaysCenter?: boolean;
 }): { shouldPan: boolean; shouldZoom: boolean } => {
     const isTargetComfortablyVisible = isTargetWithinSafeZone ?? isTargetVisible;
     const shouldZoom = currentZoom === null || currentZoom < targetZoom;
-    const shouldPan = !isTargetComfortablyVisible || shouldZoom;
+    const shouldPan = alwaysCenter || !isTargetComfortablyVisible || shouldZoom;
     return { shouldPan, shouldZoom };
 };
 
