@@ -7,7 +7,7 @@
 4. For any locale, translation, or page-routing change, read `docs/I18N_PAGE_WORKFLOW.md`.
 5. For any user-facing text changes (marketing, CTA, planner), read `docs/UX_COPY_GUIDELINES.md`.
 6. For analytics instrumentation, read `docs/ANALYTICS_CONVENTION.md`.
-7. For localized copy placeholders, always use ICU syntax (`{name}`), never `{{name}}` (project uses `i18next-icu`).
+7. For localized copy placeholders, always use single-brace interpolation (`{name}`), never `{{name}}`. `i18next-icu` is installed but never registered in `i18n.ts`, so ICU plural/select blocks render as raw text. For plurals use i18next suffix keys (`key_one`, `key_other`, plus `key_few`/`key_many` where the locale needs them) with a `count` option.
 8. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
 
 9. For work on model-backed features (Trip Agent, AI generation), read `docs/AI_AGENT_FEATURE_GUARDRAILS.md` first.
@@ -40,7 +40,7 @@ Rules:
 
 ## Validation
 Run `pnpm updates:validate` (or `pnpm build`, which includes validation) before final handoff when possible.
-For locale changes, run `pnpm i18n:validate` to enforce namespace parity and ICU placeholder syntax.
+For locale changes, run `pnpm i18n:validate` to enforce namespace parity and single-brace placeholder syntax.
 For behavioral code changes, add/update Vitest tests in the same PR and run `pnpm test:core` before final handoff when feasible.
 For bug fixes, include a regression test that fails pre-fix and passes post-fix.
 Docs-only, copy-only, and style-only edits are exempt from mandatory new tests.
