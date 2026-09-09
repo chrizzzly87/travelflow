@@ -126,6 +126,10 @@ export interface DialogBodyProps extends React.HTMLAttributes<HTMLDivElement> {
      * Set false when a child owns the scrolling — a virtualised list or a
      * search result pane, say. Two nested scrollers trap the wheel in the
      * inner one and strand the outer scrollbar.
+     *
+     * This yields `overflow-visible`, not `overflow-hidden`: the point is to
+     * avoid a second scroll container, not to clip. Clipping here cut the
+     * focus ring off a control sitting at the body's top edge.
      */
     scroll?: boolean;
 }
@@ -138,7 +142,7 @@ export const DialogBody = React.forwardRef<HTMLDivElement, DialogBodyProps>(
             data-slot="dialog-body"
             className={cn(
                 'min-h-0 flex-1',
-                scroll ? 'overflow-y-auto' : 'overflow-hidden',
+                scroll ? 'overflow-y-auto' : 'overflow-visible',
                 padded && 'px-5 py-1',
                 className,
             )}

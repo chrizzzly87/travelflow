@@ -3,8 +3,8 @@ id: rel-2026-09-09-admin-settings-redesign
 version: v0.165.0
 title: "Global settings, rebuilt around the decision you are making"
 date: 2026-09-09
-published_at: 2026-09-09T12:00:00Z
-status: draft
+published_at: 2026-09-09T11:55:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "The admin global settings page is now a card per product area, built on shared components."

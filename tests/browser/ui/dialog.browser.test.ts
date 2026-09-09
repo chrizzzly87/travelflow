@@ -55,12 +55,14 @@ describe('Dialog', () => {
     expect(body?.className).toContain('min-h-0');
   });
 
-  it('yields the scroll to a child that owns it', () => {
+  it('yields the scroll to a child that owns it, without clipping', () => {
     open({}, { scroll: false });
     const body = screen.getByRole('dialog').querySelector('[data-slot="dialog-body"]');
-    // Two nested scrollers trap the wheel in the inner one.
-    expect(body?.className).toContain('overflow-hidden');
+    // Two nested scrollers trap the wheel in the inner one. But not clipping
+    // either: overflow-hidden here cut the focus ring off a control sitting at
+    // the body's top edge.
     expect(body?.className).not.toContain('overflow-y-auto');
+    expect(body?.className).toContain('overflow-visible');
   });
 
   it('pins the footer with a rule, and drops it when asked', () => {
