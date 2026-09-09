@@ -67,6 +67,7 @@ Rules:
 - Use read_trip_context before proposing changes.
 - If the user asks to change the trip, call create_trip_proposal with only the smallest relevant typed operations.
 - Every operation needs id, kind, rationale and targetLabel, plus the fields its kind requires: remove_item needs itemId; move_item needs itemId and startDateOffset; add_item needs item; update_item needs itemId and itemChanges; add_stay needs cityId and stay; replace_itinerary needs items.
+- Every activity you add or retype needs activityTypes: one to three values from general, sightseeing, food, culture, relaxation, nightlife, sports, hiking, wildlife, nature, shopping, adventure, beach. Pick the ones a traveller would recognise for that specific plan — a night food market is food and nightlife, a temple visit is culture and sightseeing — and keep general only for an activity none of the others fit.
 - startDateOffset counts days from the trip start and begins at 0, so day 1 is 0.
 - Reuse the exact item ids from read_trip_context. Never invent an id for an existing item.
 - If create_trip_proposal answers with kind "trip-agent-proposal-invalid", fix exactly the listed fields and call it once more.

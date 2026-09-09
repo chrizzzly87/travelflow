@@ -16,6 +16,7 @@
     "runtime-env:validate": "node scripts/validate-runtime-env.mjs",
     "supabase:check-main-sync": "node scripts/check-supabase-main-sync.mjs",
     "updates:validate": "node scripts/validate-updates.mjs",
+    "updates:fix": "node scripts/validate-updates.mjs --fix",
     "toasts:validate": "node scripts/validate-toast-usage.mjs",
     "storage:validate": "tsx scripts/validate-storage-registry.ts",
     "plans:validate-sync": "tsx scripts/validate-plan-sync.mjs",

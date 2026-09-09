@@ -2,6 +2,12 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle, WarningCircle } from '@phosphor-icons/react';
 
 import { AdminShell } from '../components/admin/AdminShell';
+import { AiModelPicker, ApprovedOpenRouterModelsField } from '../components/admin/AiModelPicker';
+import { Button } from '../components/ui/button';
+import { NumberInput } from '../components/ui/number-input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Switch } from '../components/ui/switch';
+import { AI_MODEL_CATALOG, sortAiModels, type AiModelCatalogItem } from '../config/aiModelCatalog';
 import {
     MAP_STYLE_OPTIONS,
     refreshPublicAiRuntimeSettings,
@@ -11,7 +17,15 @@ import {
 import type { MapStyle } from '../types';
 import type { MapRuntimePreset } from '../shared/mapRuntime';
 
-const fieldClassName = 'w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-accent-400 focus:ring-2 focus:ring-accent-100';
+// A plain wrapper rather than a <label>: these controls are Radix triggers and
+// buttons, and wrapping one in a label makes a click on the caption fire twice.
+const Field: React.FC<{ label: string; hint?: string; children: React.ReactNode }> = ({ label, hint, children }) => (
+    <div>
+        <span className="mb-1.5 block text-xs font-medium text-slate-600">{label}</span>
+        {children}
+        {hint && <span className="mt-1.5 block text-xs text-slate-500">{hint}</span>}
+    </div>
+);
 
 const MAP_STYLE_LABELS: Record<MapStyle, string> = {
     minimal: 'Minimal',
@@ -56,22 +70,15 @@ const Toggle: React.FC<{
     label: string;
     hint: string;
     checked: boolean;
-    disabled?: boolean;
     onChange: (next: boolean) => void;
-}> = ({ label, hint, checked, disabled, onChange }) => (
-    <label className="flex cursor-pointer items-start gap-3">
-        <input
-            type="checkbox"
-            checked={checked}
-            disabled={disabled}
-            onChange={(event) => onChange(event.currentTarget.checked)}
-            className="mt-0.5 size-4 rounded border-slate-300 text-accent-600 focus:ring-accent-400"
-        />
+}> = ({ label, hint, checked, onChange }) => (
+    <div className="flex items-start justify-between gap-4">
         <span className="min-w-0">
             <span className="block text-sm font-medium text-slate-900">{label}</span>
             <span className="block text-xs text-slate-500">{hint}</span>
         </span>
-    </label>
+        <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
+    </div>
 );
 
 /**
@@ -101,6 +108,26 @@ export const AdminGlobalSettingsPage: React.FC = () => {
             });
         return () => { active = false; };
     }, []);
+
+    // The stored default may be a live OpenRouter id the catalogue does not
+    // carry; keep it in the list so the picker can show what is actually set.
+    const catalogModels = useMemo<AiModelCatalogItem[]>(() => {
+        const models = sortAiModels(AI_MODEL_CATALOG);
+        if (!draft?.defaultModelId || models.some((model) => model.id === draft.defaultModelId)) return models;
+        const [provider, model] = draft.defaultModelId.split(/:(.*)/s);
+        return [...models, {
+            id: draft.defaultModelId,
+            provider: provider as AiModelCatalogItem['provider'],
+            providerLabel: 'Configured',
+            providerShortName: provider || 'Custom',
+            model: model || draft.defaultModelId,
+            label: model || draft.defaultModelId,
+            availability: 'active',
+            releasedAt: new Date().toISOString().slice(0, 10),
+            estimatedCostPerQueryLabel: 'Live pricing',
+            costNote: 'Set as the runtime default.',
+        }];
+    }, [draft?.defaultModelId]);
 
     const isDirty = useMemo(() => (
         Boolean(settings && draft) && JSON.stringify(settings) !== JSON.stringify(draft)
@@ -143,14 +170,13 @@ export const AdminGlobalSettingsPage: React.FC = () => {
             showGlobalSearch={false}
             showDateRange={false}
             actions={(
-                <button
+                <Button
                     type="button"
                     onClick={() => { void save(); }}
                     disabled={!isDirty || status !== 'idle'}
-                    className="inline-flex min-h-10 items-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                     {status === 'saving' ? 'Saving…' : 'Save changes'}
-                </button>
+                </Button>
             )}
         >
             {error && (
@@ -192,57 +218,38 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                         title="AI model"
                         description="The app-wide default the planner and the Trip Agent both follow. A model that is not on the approved list is never used."
                     >
-                        <label className="block">
-                            <span className="mb-1 block text-xs font-medium text-slate-600">Default model id</span>
-                            <input
-                                type="text"
+                        <Field label="Default model" hint="Search by provider or model name.">
+                            <AiModelPicker
                                 value={draft.defaultModelId}
-                                spellCheck={false}
-                                onChange={(event) => update({ defaultModelId: event.currentTarget.value })}
-                                placeholder="openrouter:google/gemini-3.8-flash"
-                                className={fieldClassName}
+                                models={catalogModels}
+                                onChange={(defaultModelId) => update({ defaultModelId })}
                             />
-                            <span className="mt-1 block text-xs text-slate-500">
-                                Provider and model, separated by a colon.
-                            </span>
-                        </label>
-                        <label className="block">
-                            <span className="mb-1 block text-xs font-medium text-slate-600">
-                                Approved OpenRouter models, one per line
-                            </span>
-                            <textarea
-                                value={draft.approvedOpenRouterModels.join('\n')}
-                                rows={6}
-                                spellCheck={false}
-                                onChange={(event) => update({
-                                    approvedOpenRouterModels: event.currentTarget.value
-                                        .split('\n')
-                                        .map((line) => line.trim())
-                                        .filter(Boolean),
-                                })}
-                                className={`${fieldClassName} font-mono text-xs`}
-                            />
-                        </label>
-                        <div className="flex flex-wrap items-end gap-4">
-                            <label className="block">
-                                <span className="mb-1 block text-xs font-medium text-slate-600">Model age limit (months)</span>
-                                <input
-                                    type="number"
+                        </Field>
+                        <ApprovedOpenRouterModelsField
+                            value={draft.approvedOpenRouterModels}
+                            models={catalogModels}
+                            onChange={(approvedOpenRouterModels) => update({ approvedOpenRouterModels })}
+                        />
+                        <div className="flex flex-wrap items-start gap-6">
+                            <Field label="Model age limit (months)">
+                                <NumberInput
                                     min={1}
                                     max={36}
                                     value={draft.modelMaxAgeMonths}
+                                    className="w-32"
                                     onChange={(event) => update({
-                                        modelMaxAgeMonths: Math.max(1, Math.min(36, Number(event.currentTarget.value) || 1)),
+                                        modelMaxAgeMonths: Math.max(1, Math.min(36, Math.round(Number(event.target.value) || 1))),
                                     })}
-                                    className={`${fieldClassName} w-32`}
                                 />
-                            </label>
-                            <Toggle
-                                label="Show older models"
-                                hint="List models past the age limit in the pickers."
-                                checked={draft.showOlderModels}
-                                onChange={(showOlderModels) => update({ showOlderModels })}
-                            />
+                            </Field>
+                            <div className="flex-1 pt-5">
+                                <Toggle
+                                    label="Show older models"
+                                    hint="List models past the age limit in the pickers."
+                                    checked={draft.showOlderModels}
+                                    onChange={(showOlderModels) => update({ showOlderModels })}
+                                />
+                            </div>
                         </div>
                     </Section>
 
@@ -250,33 +257,35 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                         title="Map"
                         description="Which map stack the app runs on, and which style a visitor starts on. Anyone who picks a style themselves keeps their choice."
                     >
-                        <label className="block">
-                            <span className="mb-1 block text-xs font-medium text-slate-600">Map provider</span>
-                            <select
+                        <Field
+                            label="Map provider"
+                            hint={MAP_RUNTIME_PRESETS.find((preset) => preset.value === draft.mapRuntimePreset)?.hint}
+                        >
+                            <Select
                                 value={draft.mapRuntimePreset}
-                                onChange={(event) => update({ mapRuntimePreset: event.currentTarget.value as MapRuntimePreset })}
-                                className={fieldClassName}
+                                onValueChange={(value) => update({ mapRuntimePreset: value as MapRuntimePreset })}
                             >
-                                {MAP_RUNTIME_PRESETS.map((preset) => (
-                                    <option key={preset.value} value={preset.value}>{preset.label}</option>
-                                ))}
-                            </select>
-                            <span className="mt-1 block text-xs text-slate-500">
-                                {MAP_RUNTIME_PRESETS.find((preset) => preset.value === draft.mapRuntimePreset)?.hint}
-                            </span>
-                        </label>
-                        <label className="block">
-                            <span className="mb-1 block text-xs font-medium text-slate-600">Default map style</span>
-                            <select
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {MAP_RUNTIME_PRESETS.map((preset) => (
+                                        <SelectItem key={preset.value} value={preset.value}>{preset.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Default map style">
+                            <Select
                                 value={draft.mapDefaultStyle}
-                                onChange={(event) => update({ mapDefaultStyle: event.currentTarget.value as MapStyle })}
-                                className={fieldClassName}
+                                onValueChange={(value) => update({ mapDefaultStyle: value as MapStyle })}
                             >
-                                {MAP_STYLE_OPTIONS.map((style) => (
-                                    <option key={style} value={style}>{MAP_STYLE_LABELS[style]}</option>
-                                ))}
-                            </select>
-                        </label>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {MAP_STYLE_OPTIONS.map((style) => (
+                                        <SelectItem key={style} value={style}>{MAP_STYLE_LABELS[style]}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </Section>
 
                     <Section

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { getActivityColorByTypes, normalizeActivityTypes } from './activityTypes.ts';
 import { TRANSPORT_MODE_VALUES } from './transportModes.ts';
 import { tripChangeOperationV1Schema, type TripChangeOperationV1 } from './tripAgent.ts';
 
@@ -31,6 +32,14 @@ const DEFAULT_ITEM_COLORS: Record<string, string> = {
     activity: '#7c3aed',
     travel: '#0f766e',
 };
+
+/**
+ * Models write activity types as an array, a single string, or a comma-joined
+ * list, and they invent labels ("street food", "market") that the taxonomy has
+ * a home for. Anything unrecognised falls back to "general" in
+ * `normalizeActivityTypes` rather than failing the call.
+ */
+const wireActivityTypes = z.union([z.string(), z.array(z.string())]).optional();
 
 // Models are inconsistent about numbers and extra keys. Unknown keys are
 // dropped rather than rejected, and numeric strings are coerced, because the
@@ -66,6 +75,7 @@ const wireItemSchema = z.object({
     coordinates: wireCoordinatesSchema.optional(),
     transportMode: wireTransportMode,
     departureTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
+    activityTypes: wireActivityTypes,
 });
 
 const wireStaySchema = z.object({
@@ -86,6 +96,7 @@ const wireItemChangesSchema = z.object({
     transportMode: wireTransportMode,
     departureTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
     coordinates: wireCoordinatesSchema.optional(),
+    activityTypes: wireActivityTypes,
 });
 
 const wireTripChangesSchema = z.object({
@@ -133,11 +144,28 @@ const generateId = (prefix: string): string => (
     `${prefix}-${(globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)).slice(0, 8)}`
 );
 
-const normalizeItem = (item: z.infer<typeof wireItemSchema>) => ({
-    ...item,
-    id: item.id || generateId(item.type),
-    color: item.color || DEFAULT_ITEM_COLORS[item.type] || '#2563eb',
-});
+const normalizeItem = (item: z.infer<typeof wireItemSchema>) => {
+    const { activityTypes, ...rest } = item;
+    const base = { ...rest, id: item.id || generateId(item.type) };
+    if (item.type !== 'activity') {
+        return { ...base, color: item.color || DEFAULT_ITEM_COLORS[item.type] || '#2563eb' };
+    }
+    // Every activity carries at least one type, and the timeline colors it from
+    // the primary one, so the derived color wins over whatever the model sent.
+    const resolved = normalizeActivityTypes(activityTypes);
+    return { ...base, activityType: resolved, color: getActivityColorByTypes(resolved) };
+};
+
+/**
+ * Retypes an existing activity. The color follows the new primary type so the
+ * timeline block does not keep the shade of the type it no longer has.
+ */
+const normalizeItemChanges = (changes: z.infer<typeof wireItemChangesSchema>) => {
+    const { activityTypes, ...rest } = changes;
+    if (activityTypes === undefined) return rest;
+    const resolved = normalizeActivityTypes(activityTypes);
+    return { ...rest, activityType: resolved, color: getActivityColorByTypes(resolved) };
+};
 
 const normalizeStay = (stay: z.infer<typeof wireStaySchema>) => ({
     ...stay,
@@ -177,7 +205,12 @@ export const toTypedTripChangeOperation = (
             if (!operation.itemId) issues.push(missing(operation, 'itemId'));
             if (!operation.itemChanges) issues.push(missing(operation, 'itemChanges'));
             if (issues.length === 0) {
-                candidate = { ...base, kind: 'update_item', itemId: operation.itemId, changes: operation.itemChanges };
+                candidate = {
+                    ...base,
+                    kind: 'update_item',
+                    itemId: operation.itemId,
+                    changes: normalizeItemChanges(operation.itemChanges!),
+                };
             }
             break;
         }

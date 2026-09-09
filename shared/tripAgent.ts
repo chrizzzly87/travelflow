@@ -2,6 +2,7 @@ import type { UIMessage } from 'ai';
 import { z } from 'zod';
 
 import type { ITrip, ITimelineItem } from '../types';
+import { ACTIVITY_TYPE_VALUES } from './activityTypes.ts';
 import { TRANSPORT_MODE_VALUES } from './transportModes.ts';
 
 export const TRIP_AGENT_SCHEMA_VERSION = 1 as const;
@@ -49,10 +50,7 @@ const timelineItemSchema = z.object({
     cityPlanOptionIndex: z.number().int().nonnegative().optional(),
     isApproved: z.boolean().optional(),
     transportMode: z.enum(TRANSPORT_MODE_VALUES).optional(),
-    activityType: z.array(z.enum([
-        'general', 'food', 'culture', 'sightseeing', 'relaxation', 'nightlife',
-        'sports', 'hiking', 'wildlife', 'shopping', 'adventure', 'beach', 'nature',
-    ])).max(13).optional(),
+    activityType: z.array(z.enum(ACTIVITY_TYPE_VALUES)).max(ACTIVITY_TYPE_VALUES.length).optional(),
     aiInsights: z.object({
         cost: z.string().max(240),
         bestTime: z.string().max(500),

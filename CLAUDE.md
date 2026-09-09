@@ -1,5 +1,14 @@
 # CLAUDE.md
 
+## This project is TravelFlow
+
+- This repository (`travelflow` / `travelflow-codex`) is **TravelFlow**. Always call it TravelFlow.
+- TravelFlow deploys **only** to Netlify project `travelflowapp`
+  (site ID `1abc3d37-f6af-4810-9097-489b2a282ac6`, `https://travelflowapp.netlify.app`).
+- Before any deploy, run `netlify status` and stop unless `Current project:` reads `travelflowapp`.
+  Resolve the target from this repo (`netlify status`, `.netlify/state.json`, `netlify.toml`, the git
+  remote) — never from memory.
+
 ## Startup checklist
 1. Read `docs/UPDATE_FORMAT.md` before making product changes.
 2. Follow existing project conventions and keep routes/components non-breaking.
