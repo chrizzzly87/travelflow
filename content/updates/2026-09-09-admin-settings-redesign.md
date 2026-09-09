@@ -1,6 +1,6 @@
 ---
 id: rel-2026-09-09-admin-settings-redesign
-version: v0.165.0
+version: v0.167.0
 title: "Global settings, rebuilt around the decision you are making"
 date: 2026-09-09
 published_at: 2026-09-09T11:55:00Z
