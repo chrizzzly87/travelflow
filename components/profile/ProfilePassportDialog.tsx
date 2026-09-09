@@ -45,7 +45,7 @@ export const ProfilePassportDialog: React.FC<ProfilePassportDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
         ref={contentRef as any}
-        className="profile-passport-dialog-content !fixed !top-1/2 !left-1/2 !translate-x-0 !translate-y-0 w-[min(96vw,1120px)] max-w-6xl overflow-visible !border-none !bg-transparent !p-0 !shadow-none !rounded-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0"
+        className="profile-passport-dialog-content !fixed !top-1/2 !left-1/2 !translate-x-0 !translate-y-0 w-[min(96vw,1120px)] max-w-6xl max-h-none overflow-visible !border-none !bg-transparent !p-0 !shadow-none !rounded-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0"
         overlayClassName="bg-black/5 backdrop-blur-[1px] transition-all duration-500"
         style={{ 
           animationDuration: '820ms' 

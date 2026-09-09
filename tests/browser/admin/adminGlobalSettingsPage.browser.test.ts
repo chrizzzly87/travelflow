@@ -46,8 +46,9 @@ const settings = {
 
 const renderPage = async () => {
   const { AdminGlobalSettingsPage } = await import('../../../pages/AdminGlobalSettingsPage');
-  render(React.createElement(AdminGlobalSettingsPage));
-  await screen.findByText('Trip Agent');
+  const result = render(React.createElement(AdminGlobalSettingsPage));
+  await screen.findByRole('heading', { level: 2, name: 'Trip Agent' });
+  return result;
 };
 
 describe('AdminGlobalSettingsPage', () => {
@@ -61,11 +62,19 @@ describe('AdminGlobalSettingsPage', () => {
     vi.clearAllMocks();
   });
 
-  it('shows every settings group once the row loads', async () => {
+  it('puts each product area on its own card', async () => {
+    const { container } = await renderPage();
+
+    const titles = Array.from(container.querySelectorAll('[data-slot="settings-card"] h2'))
+      .map((heading) => heading.textContent);
+    expect(titles).toEqual(['Trip Agent', 'Planner', 'AI model', 'Map']);
+  });
+
+  it('names the chat switches after the chat they gate', async () => {
     await renderPage();
-    expect(screen.getByText('AI model')).toBeTruthy();
-    expect(screen.getByText('Map')).toBeTruthy();
-    expect(screen.getByText('Planner')).toBeTruthy();
+    expect(screen.getByRole('switch', { name: 'Open to everyone' })).toBeTruthy();
+    expect(screen.getByRole('switch', { name: 'Administrator preview' })).toBeTruthy();
+    expect(screen.getByRole('switch', { name: 'Planner beta' })).toBeTruthy();
   });
 
   it('keeps the save disabled until something actually changes', async () => {
@@ -73,13 +82,25 @@ describe('AdminGlobalSettingsPage', () => {
     const save = screen.getByRole('button', { name: 'Save changes' }) as HTMLButtonElement;
     expect(save.disabled).toBe(true);
 
-    await userEvent.click(screen.getByRole('switch', { name: 'Enabled for everyone' }));
+    await userEvent.click(screen.getByRole('switch', { name: 'Open to everyone' }));
     await waitFor(() => expect(save.disabled).toBe(false));
+  });
+
+  it('offers a discard that puts the loaded values back', async () => {
+    await renderPage();
+    const save = screen.getByRole('button', { name: 'Save changes' }) as HTMLButtonElement;
+    expect(screen.queryByRole('button', { name: 'Discard' })).toBeNull();
+
+    await userEvent.click(screen.getByRole('switch', { name: 'Planner beta' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Discard' }));
+
+    await waitFor(() => expect(save.disabled).toBe(true));
+    expect(mocks.updateAppRuntimeSettings).not.toHaveBeenCalled();
   });
 
   it('sends only the settings it was given, with the toggled value', async () => {
     await renderPage();
-    await userEvent.click(screen.getByRole('switch', { name: 'Planner beta open' }));
+    await userEvent.click(screen.getByRole('switch', { name: 'Planner beta' }));
     await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() => expect(mocks.updateAppRuntimeSettings).toHaveBeenCalledTimes(1));

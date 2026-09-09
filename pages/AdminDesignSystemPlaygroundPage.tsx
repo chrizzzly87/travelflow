@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, Eye, PaintBrush, SlidersHorizontal } from '@phosphor-icons/react';
+import { Bell, ChatCircleDots, CheckCircle, Eye, MapTrifold, PaintBrush, SlidersHorizontal, WarningCircle } from '@phosphor-icons/react';
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminFilterMenu } from '../components/admin/AdminFilterMenu';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
@@ -23,6 +23,7 @@ import {
 } from '../components/admin/AdminDataTableUtils';
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -37,7 +38,10 @@ import {
     DrawerHeader,
     DrawerTitle,
 } from '../components/ui/drawer';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { Input } from '../components/ui/input';
+import { SearchInput } from '../components/ui/search-input';
+import { SettingsCard, SettingsGroup, SettingsRow } from '../components/ui/settings-panel';
 import { NumberInput } from '../components/ui/number-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
@@ -66,6 +70,7 @@ type ComponentGroupId =
     | 'switches'
     | 'tabs'
     | 'dialogs'
+    | 'settings'
     | 'cards'
     | 'tables'
     | 'tooltips';
@@ -106,6 +111,12 @@ interface PlaygroundTableRow {
     updated: string;
     uuid: string;
 }
+
+const SAMPLE_MAP_STYLE_OPTIONS: Array<{ value: string; label: string }> = [
+    { value: 'standard', label: 'Standard (Mapbox)' },
+    { value: 'minimal', label: 'Minimal' },
+    { value: 'satellite', label: 'Satellite' },
+];
 
 const COMPONENT_GROUPS: ComponentGroupDefinition[] = [
     {
@@ -156,6 +167,13 @@ const COMPONENT_GROUPS: ComponentGroupDefinition[] = [
         description: 'Overlay primitives for confirmations, detail sheets, and structured modal content.',
         sourcePath: 'components/ui/dialog.tsx',
         usagePaths: ['components/ui/drawer.tsx', 'components/ui/app-modal.tsx', 'components/AppDialogProvider.tsx'],
+    },
+    {
+        id: 'settings',
+        title: 'Settings Panels',
+        description: 'Grouped settings surfaces: a card per product area, one caption column, one control track.',
+        sourcePath: 'components/ui/settings-panel.tsx',
+        usagePaths: ['pages/AdminGlobalSettingsPage.tsx', 'components/ui/label.tsx', 'docs/DESIGN_SYSTEM_COMPONENTS.md'],
     },
     {
         id: 'cards',
@@ -301,6 +319,11 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
     const [notificationScenarioId, setNotificationScenarioId] = useState<ToastScenarioId>('trip_archived');
     const [appDialogResult, setAppDialogResult] = useState('No confirm/prompt result yet.');
 
+    const [sampleSearchQuery, setSampleSearchQuery] = useState('');
+    const [sampleSettingsChat, setSampleSettingsChat] = useState(true);
+    const [sampleSettingsPreview, setSampleSettingsPreview] = useState(false);
+    const [sampleSettingsStyle, setSampleSettingsStyle] = useState('standard');
+    const [sampleSettingsAge, setSampleSettingsAge] = useState(3);
     const [sampleSelectValue, setSampleSelectValue] = useState('updated');
     const [sampleFilterValues, setSampleFilterValues] = useState<string[]>(['active']);
     const [sampleSwitchEnabled, setSampleSwitchEnabled] = useState(true);
@@ -679,6 +702,32 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
         if (activeGroup === 'inputs') {
             return (
                 <div className={`${previewPanelClassName} grid gap-3 lg:grid-cols-2`}>
+                    <div className="space-y-1 lg:col-span-2">
+                        <div className={subtleHeadingClassName}>Search input (shared)</div>
+                        <SearchInput
+                            placeholder="Search a provider or model…"
+                            value={sampleSearchQuery}
+                            onChange={(event) => setSampleSearchQuery(event.currentTarget.value)}
+                            onClear={() => setSampleSearchQuery('')}
+                        />
+                        <p className="text-xs text-slate-500">
+                            Icon and clear button are flex siblings of the field. Never rebuild this with an
+                            absolutely positioned icon over a padded input — see docs/DESIGN_SYSTEM_COMPONENTS.md.
+                        </p>
+                    </div>
+                    <div className="space-y-1">
+                        <div className={subtleHeadingClassName}>Number input with steppers</div>
+                        <NumberInput
+                            aria-label="Sample stepper"
+                            min={1}
+                            max={36}
+                            steppers
+                            suffix=" months"
+                            value={sampleSettingsAge}
+                            className="w-40"
+                            onChange={(event) => setSampleSettingsAge(Number(event.target.value) || 1)}
+                        />
+                    </div>
                     <div className="space-y-1">
                         <label htmlFor={sampleTextInputId} className={subtleHeadingClassName}>Text input</label>
                         <Input
@@ -925,11 +974,20 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                     </div>
 
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                        <DialogContent>
-                            <DialogHeader>
+                        <DialogContent size="md" showCloseButton>
+                            <DialogHeader divided>
                                 <DialogTitle>Dialog sample</DialogTitle>
-                                <DialogDescription>Shared dialog primitive used by multiple admin and app overlays.</DialogDescription>
+                                <DialogDescription>
+                                    Header, body and footer share one gutter. Only the body scrolls; the footer stays pinned.
+                                </DialogDescription>
                             </DialogHeader>
+                            <DialogBody className="space-y-2 py-4">
+                                {Array.from({ length: 30 }, (_, index) => (
+                                    <p key={`dialog-sample-line-${index}`} className="text-sm text-slate-600">
+                                        Line {index + 1} — scroll to see the footer hold its place while this region moves.
+                                    </p>
+                                ))}
+                            </DialogBody>
                             <DialogFooter>
                                 <button
                                     type="button"
@@ -997,6 +1055,88 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                     >
                         <p className="text-sm text-slate-700">This modal preview is read-only and does not persist data.</p>
                     </AppModal>
+                </div>
+            );
+        }
+
+        if (activeGroup === 'settings') {
+            return (
+                <div className={`${previewPanelClassName} space-y-4`}>
+                    <SettingsGroup>
+                        <SettingsCard
+                            icon={<ChatCircleDots weight="duotone" />}
+                            title="Trip Agent"
+                            description="The planning chat inside a trip."
+                        >
+                            <SettingsRow label="Open to everyone" description="Every account whose plan allows the chat.">
+                                <Switch
+                                    checked={sampleSettingsChat}
+                                    onCheckedChange={setSampleSettingsChat}
+                                    aria-label="Open to everyone"
+                                />
+                            </SettingsRow>
+                            <SettingsRow label="Administrator preview" description="Administrators keep access while it is off.">
+                                <Switch
+                                    checked={sampleSettingsPreview}
+                                    onCheckedChange={setSampleSettingsPreview}
+                                    aria-label="Administrator preview"
+                                />
+                            </SettingsRow>
+                        </SettingsCard>
+
+                        <SettingsCard
+                            icon={<MapTrifold weight="duotone" />}
+                            title="Map"
+                            description="Which stack renders the map, and the style a visitor starts on."
+                        >
+                            <SettingsRow
+                                label="Default style"
+                                note="Anyone who picks a style themselves keeps their choice."
+                            >
+                                <Select value={sampleSettingsStyle} onValueChange={setSampleSettingsStyle}>
+                                    <SelectTrigger className="w-full" aria-label="Default style">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {SAMPLE_MAP_STYLE_OPTIONS.map((option) => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </SettingsRow>
+                            <SettingsRow label="Age limit" description="Short inputs keep their own width and right-align.">
+                                <NumberInput
+                                    aria-label="Age limit"
+                                    min={1}
+                                    max={36}
+                                    steppers
+                                    suffix=" months"
+                                    value={sampleSettingsAge}
+                                    className="w-36"
+                                    onChange={(event) => setSampleSettingsAge(Number(event.target.value) || 1)}
+                                />
+                            </SettingsRow>
+                        </SettingsCard>
+                    </SettingsGroup>
+
+                    <div className="space-y-2">
+                        <div className={subtleHeadingClassName}>Alert tones</div>
+                        <Alert variant="success">
+                            <CheckCircle weight="duotone" />
+                            <AlertDescription>Saved. Visitors pick the change up on their next page load.</AlertDescription>
+                        </Alert>
+                        <Alert variant="warning">
+                            <WarningCircle weight="duotone" />
+                            <AlertTitle>Migration pending</AlertTitle>
+                            <AlertDescription>No deploy applies this; run it from the runbook.</AlertDescription>
+                        </Alert>
+                        <Alert variant="danger">
+                            <WarningCircle weight="duotone" />
+                            <AlertDescription>The save was refused.</AlertDescription>
+                        </Alert>
+                    </div>
                 </div>
             );
         }

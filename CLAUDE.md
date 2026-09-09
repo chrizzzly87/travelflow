@@ -14,9 +14,10 @@
 2. Follow existing project conventions and keep routes/components non-breaking.
 3. For locale/translation/routing updates, follow `docs/I18N_PAGE_WORKFLOW.md`.
 4. For user-facing copy updates (marketing, CTA, planner), follow `docs/UX_COPY_GUIDELINES.md`.
-5. For analytics updates, follow `docs/ANALYTICS_CONVENTION.md`.
-6. For localized copy placeholders, use ICU syntax (`{name}`), never `{{name}}`. Note: `i18next-icu` ships but is not registered in `i18n.ts`, so ICU plural/select blocks render as raw text — use plain interpolation.
-7. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
+5. Before building any UI layout by hand, check `docs/DESIGN_SYSTEM_COMPONENTS.md` for an existing shared component in `components/ui/`; the admin visual contract is `docs/DESIGN.md`.
+6. For analytics updates, follow `docs/ANALYTICS_CONVENTION.md`.
+7. For localized copy placeholders, use ICU syntax (`{name}`), never `{{name}}`. Note: `i18next-icu` ships but is not registered in `i18n.ts`, so ICU plural/select blocks render as raw text — use plain interpolation.
+8. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
 
 ## Skill usage policy
 - Use `vercel-react-best-practices` for React performance/refactor tasks; apply only relevant high-impact guidance for the active change.
