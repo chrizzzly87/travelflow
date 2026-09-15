@@ -348,7 +348,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
 
   return (
     <div
-      className={`absolute transition-all group flex flex-col justify-center select-none timeline-block-item
+      className={`absolute transition-[left,top,width,height,transform,background-color,border-color,color,box-shadow,opacity] duration-150 ease-out motion-reduce:transition-none group flex flex-col justify-center select-none timeline-block-item
         ${isLoadingItem ? 'bg-slate-100 border-slate-200 text-slate-400 animate-pulse' : resolvedColorClass}
         ${isCity ? 'rounded-md border-2 cursor-pointer backdrop-blur-[1px]' : 'rounded-lg border shadow-sm'}
         ${isSelected ? 'z-30 opacity-100' : 'z-10'}
@@ -563,7 +563,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 <button type="button"
                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onSwapSelectedCities(); }}
                     disabled={!canEdit}
-                    className={`bg-white text-accent-600 shadow-md border border-gray-200 p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-accent-50 hover:scale-110' : 'cursor-not-allowed opacity-60'}`}
+                    className={`bg-white text-accent-600 shadow-[var(--tf-shadow-surface)] p-1 rounded-full transition-[background-color,color] duration-150 ease-out motion-reduce:transition-none ${canEdit ? 'hover:bg-accent-50' : 'cursor-not-allowed opacity-60'}`}
                     title={swapSelectedLabel || 'Reverse selected cities'}
                 >
                     {vertical ? <ArrowUpDown size={12} strokeWidth={3} /> : <ArrowLeftRight size={12} strokeWidth={3} />}
@@ -573,7 +573,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 <button type="button"
                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onForceFill(item.id); }}
                     disabled={!canEdit}
-                    className={`bg-white text-accent-600 shadow-md border border-gray-200 p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-accent-50 hover:scale-110' : 'cursor-not-allowed opacity-60'}`}
+                    className={`bg-white text-accent-600 shadow-[var(--tf-shadow-surface)] p-1 rounded-full transition-[background-color,color] duration-150 ease-out motion-reduce:transition-none ${canEdit ? 'hover:bg-accent-50' : 'cursor-not-allowed opacity-60'}`}
                     title={forceFillLabel || 'Occupy available space'}
                 >
                     {(forceFillMode === 'shrink') ? <Minimize size={12} strokeWidth={3} /> : <Maximize size={12} strokeWidth={3} />}
