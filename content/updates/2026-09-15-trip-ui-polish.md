@@ -14,3 +14,4 @@ summary: "Softer cards and more restrained interaction feedback bring a consiste
 - [x] [Improved] 🎨 Trip details have softer card edges and neatly nested date controls.
 - [x] [Improved] 🖱️ Buttons and timeline controls respond with shorter, more restrained visual feedback.
 - [x] [Improved] ♿ Trip header buttons respect reduced-motion preferences.
+- [ ] [Internal] 🧭 Documented the repository-specific Netlify target to prevent cross-project deployment confusion.
