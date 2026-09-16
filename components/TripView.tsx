@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMe
 import { Lock, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState } from '../types';
+import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState, ITripRecommendationState } from '../types';
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import { buildLocalizedCreateTripPath, extractLocaleFromPath } from '../config/routes';
 import { DB_ENABLED } from '../config/db';
@@ -89,6 +89,7 @@ import { TripTimelineCanvas } from './tripview/TripTimelineCanvas';
 import { TripViewHeader } from './tripview/TripViewHeader';
 import { TripViewHudOverlays } from './tripview/TripViewHudOverlays';
 import { TripViewPlannerWorkspace } from './tripview/TripViewPlannerWorkspace';
+import { buildMobileDayPlan } from './tripview/mobileDayPlanModel';
 import { TripViewStatusBanners } from './tripview/TripViewStatusBanners';
 import { showAppToast } from './ui/appToast';
 import {
@@ -634,6 +635,10 @@ interface TripViewModalLayerProps {
     claimConflictCreateSimilarPath: string;
     onClaimConflictLogin: () => void;
 }
+
+const TripDiscoverOverlay = lazyWithRecovery('TripDiscoverOverlay', () =>
+    import('./recommendations/TripDiscoverOverlay').then((module) => ({ default: module.TripDiscoverOverlay }))
+);
 
 const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     addActivityState,
@@ -2963,6 +2968,34 @@ const useTripViewRender = ({
         handleUpdateItem(itemId, { description: nextDescription });
     }, [handleUpdateItem, trip.items]);
 
+    // Deep-linkable so a trip can be shared straight into the idea deck.
+    const isDiscoverOpen = new URLSearchParams(location.search).get('discover') === '1';
+    const setDiscoverOpen = useCallback((open: boolean) => {
+        const params = new URLSearchParams(location.search);
+        if (open) params.set('discover', '1');
+        else params.delete('discover');
+        const query = params.toString();
+        navigate(`${location.pathname}${query ? `?${query}` : ''}`, { replace: true });
+    }, [location.pathname, location.search, navigate]);
+
+    const discoverCountryCodes = useMemo(() => {
+        const codes = new Set<string>();
+        displayTrip.items.forEach((item) => {
+            if (item.type === 'city' && item.countryCode) codes.add(item.countryCode.toUpperCase());
+        });
+        return Array.from(codes);
+    }, [displayTrip.items]);
+
+    const discoverDays = useMemo(
+        () => buildMobileDayPlan(displayTrip, { locale: appLanguage }),
+        [appLanguage, displayTrip],
+    );
+
+    const handleRecommendationStateChange = useCallback((next: ITripRecommendationState) => {
+        setPendingLabel('Data: Updated saved ideas');
+        safeUpdateTrip({ ...tripRef.current, recommendationState: next }, { persist: true });
+    }, [safeUpdateTrip, setPendingLabel, tripRef]);
+
     const timelineCanvas = (
         <TripTimelineCanvas
             // A trip replaced from outside the planner (agent apply, revert, or a
@@ -3264,6 +3297,7 @@ const useTripViewRender = ({
                         onSelectTimelineItem={handleTimelineSelect}
                         onUpdateTimelineItem={canEdit ? handleUpdateItem : undefined}
                         onAddTimelineActivity={canEdit ? handleOpenAddActivity : undefined}
+                        onOpenDiscover={discoverCountryCodes.length > 0 ? () => setDiscoverOpen(true) : undefined}
                         appLanguage={appLanguage}
                         timelineCanvas={timelineCanvas}
                         onTimelineTouchStart={handleTimelineTouchStart}
@@ -3445,6 +3479,20 @@ const useTripViewRender = ({
                                 onReapplyAgentChange={({ trip: nextTrip, label, changeSetId }) => {
                                     adoptAgentTrip(nextTrip, label, changeSetId);
                                 }}
+                            />
+                        </Suspense>
+                    )}
+                    {isDiscoverOpen && (
+                        <Suspense fallback={null}>
+                            <TripDiscoverOverlay
+                                open={isDiscoverOpen}
+                                onClose={() => setDiscoverOpen(false)}
+                                trip={displayTrip}
+                                countryCodes={discoverCountryCodes}
+                                days={discoverDays}
+                                canEdit={canEdit}
+                                onRecommendationStateChange={handleRecommendationStateChange}
+                                onAddActivity={handleAddActivityItem}
                             />
                         </Suspense>
                     )}

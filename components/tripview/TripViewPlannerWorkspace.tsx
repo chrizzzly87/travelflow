@@ -14,6 +14,7 @@ interface TripViewPlannerWorkspaceProps {
     onSelectTimelineItem: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
     onUpdateTimelineItem?: (itemId: string, patch: Partial<ITimelineItem>) => void;
     onAddTimelineActivity?: (dayOffset: number) => void;
+    onOpenDiscover?: () => void;
     appLanguage?: string;
     timelineCanvas: React.ReactNode;
     onTimelineTouchStart: (event: React.TouchEvent<HTMLDivElement>) => void;
@@ -81,6 +82,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onSelectTimelineItem,
     onUpdateTimelineItem,
     onAddTimelineActivity,
+    onOpenDiscover,
     appLanguage,
     timelineCanvas,
     onTimelineTouchStart,
@@ -385,6 +387,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                         appLanguage={appLanguage}
                         onUpdateItem={onUpdateTimelineItem}
                         onAddActivity={onAddTimelineActivity}
+                        onOpenDiscover={onOpenDiscover}
                     />
                 ) : (
                     <>

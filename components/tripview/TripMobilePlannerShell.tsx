@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarDays, ChevronDown, ChevronUp, List } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronUp, List, Sparkles } from 'lucide-react';
 
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
@@ -71,6 +71,7 @@ interface TripMobilePlannerShellProps {
     /** Absent when the trip is read-only, which hides the editing affordances. */
     onUpdateItem?: (itemId: string, patch: Partial<ITimelineItem>) => void;
     onAddActivity?: (dayOffset: number) => void;
+    onOpenDiscover?: () => void;
 }
 
 export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
@@ -86,6 +87,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
     appLanguage,
     onUpdateItem,
     onAddActivity,
+    onOpenDiscover,
 }) => {
     const days = useMemo(
         () => buildMobileDayPlan(trip, { locale: appLanguage }),
@@ -272,6 +274,18 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                                 <List size={15} />
                             </button>
                         </div>
+                        {onOpenDiscover && (
+                            <button
+                                type="button"
+                                onClick={onOpenDiscover}
+                                data-testid="mobile-open-discover"
+                                className="ms-auto me-1 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 text-xs font-semibold text-accent-700 transition-colors hover:bg-accent-100"
+                                {...getAnalyticsDebugAttributes('trip_view__recommendations--open', { trip_id: tripId })}
+                            >
+                                <Sparkles size={14} />
+                                Ideas
+                            </button>
+                        )}
                         <button
                             type="button"
                             onClick={toggleSheet}

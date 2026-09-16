@@ -2,6 +2,7 @@
 import type { TransportMode as CanonicalTransportMode } from './shared/transportModes';
 import type { ActivityType as CanonicalActivityType } from './shared/activityTypes';
 import type { CreateTripPrefillDraft } from './shared/createTripPreferences';
+import type { SavedRecommendation } from './shared/recommendations';
 
 export type ItemType = 'city' | 'activity' | 'travel' | 'travel-empty';
 export type TransportMode = CanonicalTransportMode;
@@ -219,6 +220,13 @@ export interface ITimelineItem {
   loading?: boolean;
 }
 
+export interface ITripRecommendationState {
+    /** Kept, not yet placed on a day. */
+    saved: SavedRecommendation[];
+    /** Swiped away; never offered again for this trip. */
+    dismissedIds: string[];
+}
+
 export interface ITrip {
   id: string;
   title: string;
@@ -245,6 +253,14 @@ export interface ITrip {
   sourceTemplateId?: string | null;
   sourceOwnerType?: 'user' | 'system_catalog';
   sourceOwnerHandle?: string | null;
+  /**
+   * Recommendations kept or rejected for this trip.
+   *
+   * Lives on the trip because a trip already persists as a JSON document and
+   * the pool is meaningless without it; keeping it here also means a dismissal
+   * follows the traveller across devices instead of living in one browser.
+   */
+  recommendationState?: ITripRecommendationState;
   requiredTierKey?: TripAccessClassKey;
   isExample?: boolean;
   exampleTemplateId?: string;

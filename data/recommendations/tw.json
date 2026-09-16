@@ -1,0 +1,4052 @@
+{
+  "countryCode": "TW",
+  "countryName": "Taiwan",
+  "generatedAt": "2026-09-16T17:24:31.799Z",
+  "sourceName": "Taiwan Saved Posts - Chris",
+  "recommendations": [
+    {
+      "id": "rec_tw_wang-s-broth",
+      "slug": "wang-s-broth",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.039219,
+        "lng": 121.498604,
+        "address": "Wang's Broth, Taipei, Taiwan",
+        "formattedAddress": "108, Taiwan, Taipei City, Wanhua District, Huaxi St, 17之4號攤位153號",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJGaiHCqmpQjQReQD8Dmqjdvk",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Wang's Broth (王記府城)",
+      "summary": "Michelin Bib Gourmand braised pork rice (Lu Rou Fan), 50+ years, budget-friendly (<$5)",
+      "description": "Michelin Bib Gourmand braised pork rice (Lu Rou Fan), 50+ years, budget-friendly (<$5)",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "michelin",
+        "taipei"
+      ],
+      "costBand": "$",
+      "costNote": "$5",
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@doitforicecream",
+          "url": "https://www.instagram.com/doitforicecream/reel/DZzG8QAxblI/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_fu-ba-wang-pig-s-knuckles",
+      "slug": "fu-ba-wang-pig-s-knuckles",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.053319,
+        "lng": 121.533574,
+        "address": "富霸王豬腳, Siping Street, Taipei, Taiwan",
+        "formattedAddress": "No. 20號, Section 2 Nanjing East Rd Lane 115, Zhongyang Village, Zhongshan District, Taipei City, Taiwan 10491",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJO2QW8mCpQjQRyMjgSoG-j7o",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Fu Ba Wang Pig's Knuckles (富霸王豬腳)",
+      "summary": "Famous braised pork leg, chewy skin, soy-based sauce",
+      "description": "Famous braised pork leg, chewy skin, soy-based sauce, Jensen Huang's favorite spot",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@elsafoodparadise",
+          "url": "https://www.instagram.com/elsafoodparadise/reel/DY3QygMNw3A/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_brasserie-regent-taipei",
+      "slug": "brasserie-regent-taipei",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.054158,
+        "lng": 121.524288,
+        "address": "Regent Taipei, Taiwan",
+        "formattedAddress": "No. 3號, Lane 39, Section 2, Zhongshan N Rd, Kangle Village, Zhongshan District, Taipei City, Taiwan 104",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJ5ymH9mipQjQRqo6WdCNtP24",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Brasserie, Regent Taipei (晶華酒店)",
+      "summary": "Hotel buffet - seafood, sushi, carved meats, desserts",
+      "description": "Hotel buffet - seafood, sushi, carved meats, desserts",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@bositravelfam",
+          "url": "https://www.instagram.com/bositravelfam/reel/DcIxfeUBG68/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_din-tai-fung-xinsheng-branch",
+      "slug": "din-tai-fung-xinsheng-branch",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.033889,
+        "lng": 121.532134,
+        "address": "Din Tai Fung, No. 277, Section 2, Xinyi Rd, Zhongzheng District, Taipei",
+        "formattedAddress": "No. 277號, Section 2, Xinyi Rd, San'ai Village, Zhongzheng District, Taipei City, Taiwan 100",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJA-U6X-epQjQR-T9BLmEfUlc",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Din Tai Fung (Xinsheng Branch)",
+      "summary": "Famous soup dumplings (xiao long bao), expect a queue",
+      "description": "Famous soup dumplings (xiao long bao), expect a queue",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@ericnyker",
+          "url": "https://www.instagram.com/ericnyker/reel/DcIQ09WSBif/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@megsandalex",
+          "url": "https://www.instagram.com/megsandalex/reel/Dc8tADqgTVz/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": null,
+          "url": "https://www.instagram.com/ericnyker/reel/DYxAeynyeb4/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_shengyuan-xiao-long-bao",
+      "slug": "shengyuan-xiao-long-bao",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.033939,
+        "lng": 121.523922,
+        "address": "No. 1, Lane 25, Section 2, Hangzhou S Rd, Da'an District, Taipei",
+        "formattedAddress": "No. 1, Lane 25, Section 2, Hangzhou S Rd, Guangming Village, Da’an District, Taipei City, Taiwan 106",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJtyBvF52pQjQRorkuOiO14BM",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Shengyuan Xiao Long Bao",
+      "summary": "Xiao long bao spot",
+      "description": "Xiao long bao spot",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@ericnyker",
+          "url": "https://www.instagram.com/ericnyker/reel/DcIQ09WSBif/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": null,
+          "url": "https://www.instagram.com/ericnyker/reel/DYxAeynyeb4/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_hangzhou-xiao-long-bao",
+      "slug": "hangzhou-xiao-long-bao",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.034079,
+        "lng": 121.52377,
+        "address": "No. 19, Section 2, Hangzhou S Rd, Da'an District, Taipei",
+        "formattedAddress": "No. 19, Section 2, Hangzhou S Rd, Guangming Village, Da’an District, Taipei City, Taiwan 106",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJN9jREJ2pQjQRFHByFGlGzpY",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Hangzhou Xiao Long Bao",
+      "summary": "Xiao long bao spot",
+      "description": "Xiao long bao spot",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@ericnyker",
+          "url": "https://www.instagram.com/ericnyker/reel/DcIQ09WSBif/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": null,
+          "url": "https://www.instagram.com/ericnyker/reel/DYxAeynyeb4/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_mingyue-tangbao",
+      "slug": "mingyue-tangbao",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.027817,
+        "lng": 121.554669,
+        "address": "Lane 171, Tonghua St, Da'an District, Taipei",
+        "formattedAddress": "Lane 171, Tonghua St, Da’an District, Taipei City, Taiwan 106",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "Ej9MYW5lIDE3MSwgVG9uZ2h1YSBTdCwgRGHigJlhbiBEaXN0cmljdCwgVGFpcGVpIENpdHksIFRhaXdhbiAxMDYiLiosChQKEgnFOcikNKpCNBHOabialRZ7ThIUChIJTfhpGSyqQjQRXZXZ8su1oG4",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Mingyue Tangbao",
+      "summary": "Xiao long bao / soup dumpling spot",
+      "description": "Xiao long bao / soup dumpling spot",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@ericnyker",
+          "url": "https://www.instagram.com/ericnyker/reel/DcIQ09WSBif/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": null,
+          "url": "https://www.instagram.com/ericnyker/reel/DYxAeynyeb4/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_iceeisbock",
+      "slug": "iceeisbock",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.028338,
+        "lng": 121.529469,
+        "address": "IceEisBock, No.168 Chaozhou St, Da'an District, Taipei",
+        "formattedAddress": "No. 168, Chaozhou St, Jin'an Village, Da’an District, Taipei City, Taiwan 106",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJQZekboSpQjQRshnOMXOqZZ4",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "IceEisBock (艾斯博客)",
+      "summary": "Sub-zero (-86C) ice cup coffee using Eisbock milk, shot-style",
+      "description": "Sub-zero (-86C) ice cup coffee using Eisbock milk, shot-style",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@52_foodie",
+          "url": "https://www.instagram.com/52_foodie/reel/DamwoxbpIFx/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_ice-eisbock-wu-space",
+      "slug": "ice-eisbock-wu-space",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.028338,
+        "lng": 121.529469,
+        "address": "Wu Space, Taipei, Taiwan",
+        "formattedAddress": "106, Taiwan, Taipei City, Da’an District, Jin'an Village, Chaozhou St, 168號1樓",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJn1-__5epQjQRG5nQE8kP-SA",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Ice Eisbock @ Wu Space (伍空間)",
+      "summary": "Same brand -86C frozen coffee",
+      "description": "Same brand -86C frozen coffee, Wu Space branch, ~NTD198",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@thefoodtok1",
+          "url": "https://www.instagram.com/thefoodtok1/reel/DaKqaKQy9Z0/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_zhongcheng-shandong-scallion-pancake",
+      "slug": "zhongcheng-shandong-scallion-pancake",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.108643,
+        "lng": 121.524872,
+        "address": "No. 3, Keqiang Rd, Shilin District, Taipei 111",
+        "formattedAddress": "No. 3, Keqiang Rd, Lanxing Village, Shilin District, Taipei City, Taiwan 111",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJ77ZYDZCuQjQRXThdLXM-7io",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Zhongcheng Shandong Scallion Pancake (忠誠山東蔥油餅)",
+      "summary": "Popular hand-pulled scallion pancake",
+      "description": "Popular hand-pulled scallion pancake, Tianmu area",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@elsafoodparadise",
+          "url": "https://www.instagram.com/elsafoodparadise/reel/DbZtyExt4de/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_tian-jin-scallion-pancake",
+      "slug": "tian-jin-scallion-pancake",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.032669,
+        "lng": 121.529706,
+        "address": "天津蔥抓餅, Yongkang St, Dongmen, Taipei",
+        "formattedAddress": "No. 1號, Lane 6, Yongkang St, Yongkang Village, Da’an District, Taipei City, Taiwan 106",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJQzBnhYWpQjQR7Vr5CPt4quk",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Tian Jin Scallion Pancake (天津蔥抓餅)",
+      "summary": "Since 2001, always a queue, open 8AM-10PM daily",
+      "description": "Since 2001, always a queue, open 8AM-10PM daily",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@foodie.taiwan",
+          "url": "https://www.instagram.com/foodie.taiwan/reel/DagwlzLSJM3/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_modern-toilet-restaurant",
+      "slug": "modern-toilet-restaurant",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.044443,
+        "lng": 121.505753,
+        "address": "Modern Toilet Restaurant, Taipei, Taiwan",
+        "formattedAddress": "108, Taiwan, Taipei City, Wanhua District, Wanshou Village, Lane 50, Xining S Rd, 7號2樓",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJNazWIAmpQjQRoqSVTRnHUKY",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Modern Toilet Restaurant",
+      "summary": "Toilet-themed dining - seats are toilets, glass bathtub tables, porcelain bowl food",
+      "description": "Toilet-themed dining - seats are toilets, glass bathtub tables, porcelain bowl food",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@checkedouttocheckin",
+          "url": "https://www.instagram.com/checkedouttocheckin/reel/DbJ9zibuKRU/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_yu-pin-yuan-iced-and-hot-tangyuan",
+      "slug": "yu-pin-yuan-iced-and-hot-tangyuan",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.030232,
+        "lng": 121.555401,
+        "address": "No. 31, Alley 50, Lane 39, Tonghua St, Taipei",
+        "formattedAddress": "No. 31, Alley 50, Lane 39, Tonghua St, Tonghua Village, Da’an District, Taipei City, Taiwan 106",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJQe3zbMurQjQRkKXhQ5sFi5E",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Yu Pin Yuan Iced and Hot Tangyuan",
+      "summary": "Taiwanese tangyuan (glutinous rice ball) dessert shop",
+      "description": "Taiwanese tangyuan (glutinous rice ball) dessert shop",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@liindaahn",
+          "url": "https://www.instagram.com/liindaahn/reel/DYm3ZsEu0Ty/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_yuan-fang-gua-bao",
+      "slug": "yuan-fang-gua-bao",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.039188,
+        "lng": 121.498688,
+        "address": "No. 17-2, Huaxi St, Wanhua District, Taipei",
+        "formattedAddress": "No. 17-2, Huaxi St, Qingshan Village, Wanhua District, Taipei City, Taiwan 108",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJO9WcoKmpQjQRYyml4EAJXiA",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Yuan Fang Gua Bao (元芳割包)",
+      "summary": "Taiwanese pork belly bun (gua bao)",
+      "description": "Taiwanese pork belly bun (gua bao)",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@liindaahn",
+          "url": "https://www.instagram.com/liindaahn/reel/DYpPYvGOyUa/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_mozhuting-ranmian-honjia",
+      "slug": "mozhuting-ranmian-honjia",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.033581,
+        "lng": 121.539326,
+        "address": "232 Heping E Rd Sec 3, Da'an District, Taipei (near MRT Liuzhangli)",
+        "formattedAddress": "Section 3, Xinyi Road, Da’an District, Taipei City, Taiwan 106",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJoTzHRtWrQjQRc_-hDCnccwI",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Mozhuting Ranmian Honjia (墨竹亭燃麵本家)",
+      "summary": "Crab roe noodles, ~180 NTD/bowl",
+      "description": "Crab roe noodles, ~180 NTD/bowl",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@theisabellee",
+          "url": "https://www.instagram.com/theisabellee/reel/DXyCLg1x5FU/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_toriaezu-curry",
+      "slug": "toriaezu-curry",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.060827,
+        "lng": 121.563423,
+        "address": "No. 146, Sanmin Rd, Songshan District, Taipei",
+        "formattedAddress": "No. 146, Sanmin Rd, Fujin Village, Songshan District, Taipei City, Taiwan 105",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJd_GNrY2rQjQRR54JKPl71QQ",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Toriaezu Curry (武田咖喱)",
+      "summary": "Taiwan's first Michelin Bib Gourmand curry restaurant, founded by ex-Michelin 2-star chef",
+      "description": "Taiwan's first Michelin Bib Gourmand curry restaurant, founded by ex-Michelin 2-star chef",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "michelin",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@celinechews",
+          "url": "https://www.instagram.com/celinechews/reel/DbIeZkYh0-E/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_lao-shan-dong-homemade-noodles",
+      "slug": "lao-shan-dong-homemade-noodles",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.04358,
+        "lng": 121.506086,
+        "address": "Lao Shan Dong Homemade Noodles, Taipei, Taiwan",
+        "formattedAddress": "108, Taiwan, Taipei City, Wanhua District, Ximen Village, Xining Rd, 70號B1之15室",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJsSC8HAmpQjQR7uCNzzunDRw",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Lao Shan Dong Homemade Noodles (老山東牛肉麵)",
+      "summary": "Hole-in-the-wall beef noodle soup since the 1950s",
+      "description": "Hole-in-the-wall beef noodle soup since the 1950s",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@always.elin",
+          "url": "https://www.instagram.com/always.elin/reel/DZCx_qNSQlF/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_iyoshi-cola",
+      "slug": "iyoshi-cola",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.055199,
+        "lng": 121.521298,
+        "address": "Iyoshi Cola, Taiwan",
+        "formattedAddress": "No. 21-4號, Lane 44, Section 2, Zhongshan N Rd, Min'an Village, Zhongshan District, Taipei City, Taiwan 104",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJNwu7BACpQjQRx841v6FTH08",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Iyoshi Cola (伊良可樂)",
+      "summary": "Japanese-style craft cola shop, ~NTD150",
+      "description": "Japanese-style craft cola shop, ~NTD150",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@thefoodtok1",
+          "url": "https://www.instagram.com/thefoodtok1/reel/DYhI3-ahWA8/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_coffee-dumbo",
+      "slug": "coffee-dumbo",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.055804,
+        "lng": 121.520375,
+        "address": "登波咖啡 Coffee Dumbo, Taipei, Taiwan",
+        "formattedAddress": "No. 25號, Lane 49, Chifeng St, Guangneng Village, Datong District, Taipei City, Taiwan 104",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJX2DQnZWpQjQRefIW1psv_IQ",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Coffee Dumbo (登波咖啡)",
+      "summary": "Retro cafe, iconic yellow chairs, 90s playlist, apple americano",
+      "description": "Retro cafe, iconic yellow chairs, 90s playlist, apple americano",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@blurrrrytwenties",
+          "url": "https://www.instagram.com/blurrrrytwenties/reel/DbFzW-XsidQ/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_master-of-tea",
+      "slug": "master-of-tea",
+      "countryCode": "TW",
+      "cityName": null,
+      "citySlug": null,
+      "location": {
+        "lat": 23.69781,
+        "lng": 120.960515,
+        "address": "Master of Tea, Taiwan",
+        "formattedAddress": "Taiwan",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJL1cHXAbzbjQRaVScvwTwEec",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Master of Tea",
+      "summary": "Famous 'rose tea' shop (viral for its strong laxative effect)",
+      "description": "Famous 'rose tea' shop (viral for its strong laxative effect)",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@wander.licious",
+          "url": "https://www.instagram.com/wander.licious/reel/DaR70cXxAqq/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_ba-ma-shui-le",
+      "slug": "ba-ma-shui-le",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.055682,
+        "lng": 121.520158,
+        "address": "1F, No.18, Lane 49, Chifeng St, Datong District, Taipei (near MRT Zhongshan/Shuanglian)",
+        "formattedAddress": "1f, No. 18號二樓, Lane 49, Chifeng St, Guangneng Village, Datong District, Taipei City, Taiwan 103",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "EmUxZiwgTm8uIDE46Jmf5LqM5qiTLCBMYW5lIDQ5LCBDaGlmZW5nIFN0LCBHdWFuZ25lbmcgVmlsbGFnZSwgRGF0b25nIERpc3RyaWN0LCBUYWlwZWkgQ2l0eSwgVGFpd2FuIDEwMyIeGhwKFgoUChIJlW60hmmpQjQRI7TFUws2fUUSAjFm",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Ba Ma Shui Le (爸媽睡了)",
+      "summary": "Retro 1990s-style cafe with classic console games",
+      "description": "Retro 1990s-style cafe with classic console games",
+      "activityTypes": [
+        "food"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@danielfoodshare",
+          "url": "https://www.instagram.com/danielfoodshare/reel/DaeeG3VztHT/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@sipnseek.byfel",
+          "url": "https://www.instagram.com/sipnseek.byfel/reel/DbGMmr3TNP0/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_imaya-burger",
+      "slug": "imaya-burger",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.054159,
+        "lng": 121.563862,
+        "address": "Imaya Burger, Songshan District, Taipei",
+        "formattedAddress": "Songshan District, Taipei City, Taiwan 105",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJkRGtsfKrQjQRYWPBFx-XsMA",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Imaya Burger (今屋漢堡)",
+      "summary": "Legendary Japanese burger shop from Fukuoka's Nishi Park, first overseas location; oval koppepan rolls",
+      "description": "Legendary Japanese burger shop from Fukuoka's Nishi Park, first overseas location; oval koppepan rolls",
+      "activityTypes": [
+        "food",
+        "nature"
+      ],
+      "tags": [
+        "food-drink",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@taiwannews_",
+          "url": "https://www.instagram.com/taiwannews_/reel/Dck4zDZvGfz/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_ningxia-night-market",
+      "slug": "ningxia-night-market",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.056681,
+        "lng": 121.515364,
+        "address": "寧夏夜市 Ningxia Night Market, Taipei",
+        "formattedAddress": "Ningxia Rd, Xingming Village, Datong District, Taipei City, Taiwan 103",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJxUXPVmupQjQRtBB6oj-S5qI",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Ningxia Night Market (寧夏夜市)",
+      "summary": "Popular night market, good for a guided food walking tour",
+      "description": "Popular night market, good for a guided food walking tour",
+      "activityTypes": [
+        "food",
+        "shopping"
+      ],
+      "tags": [
+        "night-market",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": [
+        "night"
+      ],
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@weeteck",
+          "url": "https://www.instagram.com/weeteck/reel/Dbm_YZMxeAB/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_linjiang-tonghua-night-market",
+      "slug": "linjiang-tonghua-night-market",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.029975,
+        "lng": 121.555237,
+        "address": "Linjiang St, Da'an District, Taipei",
+        "formattedAddress": "Linjiang St, Da’an District, Taipei City, Taiwan 106",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJvZQdaMurQjQRfS4-rYWw9cQ",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Linjiang (Tonghua) Night Market",
+      "summary": "Lively, local-meets-tourist vibe",
+      "description": "Lively, local-meets-tourist vibe",
+      "activityTypes": [
+        "food",
+        "shopping"
+      ],
+      "tags": [
+        "night-market",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@leofromtaiwan",
+          "url": "https://www.instagram.com/leofromtaiwan/reel/DZaNrbiJIAq/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_nanjichang-night-market",
+      "slug": "nanjichang-night-market",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.028882,
+        "lng": 121.505275,
+        "address": "Lane 307, Sec. 2, Zhonghua Rd, Zhongzheng District, Taipei",
+        "formattedAddress": "No. 307, Section 2, Zhonghua Rd, Zhongqin Village, Zhongzheng District, Taipei City, Taiwan 100",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJX1uO2bqpQjQRzHVciztCcB4",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Nanjichang Night Market",
+      "summary": "Local neighborhood night market, almost zero tourists, great prices",
+      "description": "Local neighborhood night market, almost zero tourists, great prices",
+      "activityTypes": [
+        "food",
+        "shopping"
+      ],
+      "tags": [
+        "night-market",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": [
+        "night"
+      ],
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@emails_to_airports",
+          "url": "https://www.instagram.com/emails_to_airports/reel/DYlx2HtIRiq/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@leofromtaiwan",
+          "url": "https://www.instagram.com/leofromtaiwan/reel/DZaNrbiJIAq/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@mansonyms",
+          "url": "https://www.instagram.com/mansonyms/p/DaNZCRHESLH/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@stamping_groundd",
+          "url": "https://www.instagram.com/stamping_groundd/p/DcBsm6-E_yc/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": null,
+          "url": "https://www.instagram.com/mansonyms/p/DbDd3VAlKJt/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_huaxi-street-night-market",
+      "slug": "huaxi-street-night-market",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.038079,
+        "lng": 121.498353,
+        "address": "Huaxi St, Wanhua District, Taipei",
+        "formattedAddress": "Huaxi St, Wanhua District, Taipei City, Taiwan 108",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJZb6LQKmpQjQRH9wMUVFCmUo",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Huaxi Street Night Market",
+      "summary": "Old-Taipei energy, historic night market",
+      "description": "Old-Taipei energy, historic night market",
+      "activityTypes": [
+        "food",
+        "shopping",
+        "culture"
+      ],
+      "tags": [
+        "night-market",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": [
+        "night"
+      ],
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@leofromtaiwan",
+          "url": "https://www.instagram.com/leofromtaiwan/reel/DZaNrbiJIAq/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_raohe-night-market",
+      "slug": "raohe-night-market",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.050885,
+        "lng": 121.577489,
+        "address": "Raohe Street Night Market, Taipei",
+        "formattedAddress": "Raohe St, Ciyou Village, Songshan District, Taipei City, Taiwan 105",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJg6W0DZyrQjQR9vZdgYMRoj0",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Raohe Night Market",
+      "summary": "Famous for pepper buns (hu jiao bing), better food than Shilin",
+      "description": "Famous for pepper buns (hu jiao bing), better food than Shilin",
+      "activityTypes": [
+        "food",
+        "shopping"
+      ],
+      "tags": [
+        "night-market",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@emails_to_airports",
+          "url": "https://www.instagram.com/emails_to_airports/reel/DYlx2HtIRiq/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@megsandalex",
+          "url": "https://www.instagram.com/megsandalex/reel/Dc8tADqgTVz/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@nessahuangg",
+          "url": "https://www.instagram.com/nessahuangg/reel/DYmQEadJYh7/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_shilin-night-market",
+      "slug": "shilin-night-market",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.088497,
+        "lng": 121.52435,
+        "address": "Shilin Night Market, Taipei",
+        "formattedAddress": "No. 101, Jihe Rd, Yixin Village, Shilin District, Taipei City, Taiwan 111",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJBa_9xLGuQjQRKfnnhr5twuc",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Shilin Night Market",
+      "summary": "One of Taipei's biggest and most famous night markets",
+      "description": "One of Taipei's biggest and most famous night markets",
+      "activityTypes": [
+        "food",
+        "shopping"
+      ],
+      "tags": [
+        "night-market",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": [
+        "night"
+      ],
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@megsandalex",
+          "url": "https://www.instagram.com/megsandalex/reel/Dc8tADqgTVz/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@nessahuangg",
+          "url": "https://www.instagram.com/nessahuangg/reel/DYmQEadJYh7/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_elephant-mountain-xiangshan",
+      "slug": "elephant-mountain-xiangshan",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.027223,
+        "lng": 121.576499,
+        "address": "Elephant Mountain, Taipei, Taiwan",
+        "formattedAddress": "110, Taiwan, 臺北市信義區象山",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJZbFYW6yrQjQRIGUPSTaQuG0",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Elephant Mountain (Xiangshan)",
+      "summary": "Free 20-min hike, best sunset/skyline view of Taipei 101",
+      "description": "Free 20-min hike, best sunset/skyline view of Taipei 101",
+      "activityTypes": [
+        "sightseeing",
+        "hiking"
+      ],
+      "tags": [
+        "landmark",
+        "viewpoint",
+        "taipei"
+      ],
+      "costBand": "free",
+      "costNote": null,
+      "typicalDurationMinutes": 20,
+      "bestTimeOfDay": [
+        "evening"
+      ],
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@daisywerld",
+          "url": "https://www.instagram.com/daisywerld/p/DbFY_rKDxhm/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@emails_to_airports",
+          "url": "https://www.instagram.com/emails_to_airports/reel/DYlx2HtIRiq/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@leofromtaiwan",
+          "url": "https://www.instagram.com/leofromtaiwan/reel/Da1EirMygQI/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@megsandalex",
+          "url": "https://www.instagram.com/megsandalex/reel/Dc8tADqgTVz/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_taipei-101",
+      "slug": "taipei-101",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.033228,
+        "lng": 121.564868,
+        "address": "Taipei 101, Taiwan",
+        "formattedAddress": "110, Taiwan, Taipei City, Xinyi District, Xicun Village, Section 5, Xinyi Rd, No. 7號",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJh8s4AuGrQjQRIw2M8SmpDIw",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Taipei 101",
+      "summary": "Iconic skyscraper, observatory (many say Elephant Mtn view is better value)",
+      "description": "Iconic skyscraper, observatory (many say Elephant Mtn view is better value)",
+      "activityTypes": [
+        "sightseeing"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@emails_to_airports",
+          "url": "https://www.instagram.com/emails_to_airports/reel/DYlx2HtIRiq/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@hichienchien_mandarin",
+          "url": "https://www.instagram.com/hichienchien_mandarin/p/Dci3hCKgDSg/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@lovekosiopao",
+          "url": "https://www.instagram.com/lovekosiopao/reel/DcXuF4hkUzk/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@megsandalex",
+          "url": "https://www.instagram.com/megsandalex/reel/Dc8tADqgTVz/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_longshan-temple-lungshan-temple",
+      "slug": "longshan-temple-lungshan-temple",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.037311,
+        "lng": 121.499865,
+        "address": "Longshan Temple, Wanhua District, Taipei",
+        "formattedAddress": "No. 211, Guangzhou St, Wanhua District, Taipei City, Taiwan 10853",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJCd7n16ipQjQRihzEWF4z6Pg",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Longshan Temple (Lungshan Temple)",
+      "summary": "Historic, beautiful temple; try the traditional moon blocks",
+      "description": "Historic, beautiful temple; try the traditional moon blocks",
+      "activityTypes": [
+        "sightseeing",
+        "culture"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@emails_to_airports",
+          "url": "https://www.instagram.com/emails_to_airports/reel/DYlx2HtIRiq/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@leofromtaiwan",
+          "url": "https://www.instagram.com/leofromtaiwan/reel/Da1EirMygQI/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@megsandalex",
+          "url": "https://www.instagram.com/megsandalex/reel/Dc8tADqgTVz/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@taiwancheapo",
+          "url": "https://www.instagram.com/taiwancheapo/p/DcTJJ1EDKws/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_chiang-kai-shek-memorial-hall",
+      "slug": "chiang-kai-shek-memorial-hall",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.035502,
+        "lng": 121.520183,
+        "address": "Chiang Kai-shek Memorial Hall, Taipei",
+        "formattedAddress": "Zhongzheng District, Taipei City, Taiwan 100",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJTamiuZ2pQjQRsmnfkkID6UM",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Chiang Kai-shek Memorial Hall",
+      "summary": "Taipei's most recognisable landmark",
+      "description": "Taipei's most recognisable landmark",
+      "activityTypes": [
+        "sightseeing"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@leofromtaiwan",
+          "url": "https://www.instagram.com/leofromtaiwan/reel/Da1EirMygQI/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@megsandalex",
+          "url": "https://www.instagram.com/megsandalex/reel/Dc8tADqgTVz/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@stamping_groundd",
+          "url": "https://www.instagram.com/stamping_groundd/p/DcBsm6-E_yc/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@taiwancheapo",
+          "url": "https://www.instagram.com/taiwancheapo/p/DcTJJ1EDKws/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_ximending",
+      "slug": "ximending",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.044666,
+        "lng": 121.50631,
+        "address": "Ximending, Wanhua District, Taipei",
+        "formattedAddress": "Shi-men Ting, Wanhua District, Taipei City, Taiwan 108",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJKyaoGAmpQjQR99RS3zrx9Ms",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Ximending",
+      "summary": "Buzzing entertainment district - shops, street food, neon",
+      "description": "Buzzing entertainment district - shops, street food, neon",
+      "activityTypes": [
+        "sightseeing"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@adrianwidjy",
+          "url": "https://www.instagram.com/adrianwidjy/reel/DcSFIRFzhHb/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@bositravelfam",
+          "url": "https://www.instagram.com/bositravelfam/reel/Dbx5jXlOpHw/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@jadesseee",
+          "url": "https://www.instagram.com/jadesseee/reel/Da4QoRENEca/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@lovekosiopao",
+          "url": "https://www.instagram.com/lovekosiopao/reel/DcavCtjEis6/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@megsandalex",
+          "url": "https://www.instagram.com/megsandalex/reel/Dc8tADqgTVz/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@nessahuangg",
+          "url": "https://www.instagram.com/nessahuangg/reel/DYmQEadJYh7/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@taiwancheapo",
+          "url": "https://www.instagram.com/taiwancheapo/p/Dcog3U1jKin/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@weeteck",
+          "url": "https://www.instagram.com/weeteck/reel/DbnFtKwRomu/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": null,
+          "url": "https://www.instagram.com/taiwancheapo/p/DcTJJ1EDKws/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_dadaocheng",
+      "slug": "dadaocheng",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.056803,
+        "lng": 121.507778,
+        "address": "Dadaocheng, Datong District, Taipei",
+        "formattedAddress": "Datong District, Taipei City, Taiwan 103",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJx4IVtBapQjQRSP3RxLSLdg0",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Dadaocheng",
+      "summary": "Historic old street district, riverside sunsets at the wharf",
+      "description": "Historic old street district, riverside sunsets at the wharf",
+      "activityTypes": [
+        "sightseeing",
+        "culture"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@emails_to_airports",
+          "url": "https://www.instagram.com/emails_to_airports/reel/DYlx2HtIRiq/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@taiwancheapo",
+          "url": "https://www.instagram.com/taiwancheapo/p/Dcog3U1jKin/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": null,
+          "url": "https://www.instagram.com/taiwancheapo/p/DcTJJ1EDKws/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_dihua-street",
+      "slug": "dihua-street",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.055102,
+        "lng": 121.509983,
+        "address": "Dihua Street, Datong District, Taipei",
+        "formattedAddress": "Section 1, Dihua St, Datong District, Taipei City, Taiwan 103",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJeXELiROpQjQR1REJMdOO8Xo",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Dihua Street (迪化街)",
+      "summary": "Historic street, traditional shops, part of Dadaocheng",
+      "description": "Historic street, traditional shops, part of Dadaocheng",
+      "activityTypes": [
+        "sightseeing",
+        "culture"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@taiwancheapo",
+          "url": "https://www.instagram.com/taiwancheapo/p/DcTJJ1EDKws/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_xinyi-district",
+      "slug": "xinyi-district",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.04092,
+        "lng": 121.572006,
+        "address": "Xinyi District, Taipei",
+        "formattedAddress": "Xinyi District, Taipei City, Taiwan 110",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJxUN17K2rQjQRzThIo3q9jUA",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Xinyi District",
+      "summary": "Modern downtown district around Taipei 101",
+      "description": "Modern downtown district around Taipei 101",
+      "activityTypes": [
+        "sightseeing"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@nessahuangg",
+          "url": "https://www.instagram.com/nessahuangg/reel/DYmQEadJYh7/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@taiwancheapo",
+          "url": "https://www.instagram.com/taiwancheapo/p/Dcog3U1jKin/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_tamsui-danshui",
+      "slug": "tamsui-danshui",
+      "countryCode": "TW",
+      "cityName": "New Taipei City",
+      "citySlug": "new-taipei-city",
+      "location": {
+        "lat": 25.171981,
+        "lng": 121.443371,
+        "address": "Tamsui, New Taipei City, Taiwan",
+        "formattedAddress": "Tamsui District, New Taipei City, Taiwan",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJ5Sf2QxmwQjQRsn3QcZ95QNI",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Tamsui (Danshui)",
+      "summary": "Riverside old town, famous for sunset views",
+      "description": "Riverside old town, famous for sunset views",
+      "activityTypes": [
+        "sightseeing"
+      ],
+      "tags": [
+        "landmark",
+        "viewpoint",
+        "new-taipei-city"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": [
+        "evening"
+      ],
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@taiwancheapo",
+          "url": "https://www.instagram.com/taiwancheapo/p/Dcog3U1jKin/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_taipei-performing-arts-center",
+      "slug": "taipei-performing-arts-center",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.085124,
+        "lng": 121.524369,
+        "address": "臺北表演藝術中心 Taipei Performing Arts Center, Shilin District, Taipei",
+        "formattedAddress": "No. 1號, Jiantan Rd, Chengde Village, Shilin District, Taipei City, Taiwan 111",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJ8fWvxLGuQjQRpnyrqt4UzQ8",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Taipei Performing Arts Center",
+      "summary": "Arts venue - site of large-scale street performances/festivals",
+      "description": "Arts venue - site of large-scale street performances/festivals",
+      "activityTypes": [
+        "sightseeing"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@sonyabiteslife",
+          "url": "https://www.instagram.com/sonyabiteslife/reel/Dc9_0HoOe_P/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_rixing-type-foundry-approx",
+      "slug": "rixing-type-foundry-approx",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.052178,
+        "lng": 121.516381,
+        "address": "Rixing Type Foundry, Taipei, Taiwan",
+        "formattedAddress": "No. 13號, Lane 97, Taiyuan Rd, Jiantai Village, Datong District, Taipei City, Taiwan 103",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJG28g82ypQjQRUxV0pGWRxGs",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Rixing Type Foundry (approx.)",
+      "summary": "Possibly the last traditional Chinese movable-type foundry in the world (name inferred from description)",
+      "description": "Possibly the last traditional Chinese movable-type foundry in the world (name inferred from description)",
+      "activityTypes": [
+        "sightseeing"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@thecharlottemei",
+          "url": "https://www.instagram.com/thecharlottemei/reel/DZe4aAqSY9b/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_c-lab-dome-theater",
+      "slug": "c-lab-dome-theater",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.039088,
+        "lng": 121.538901,
+        "address": "C-LAB Taiwan, Kong Zong Cultural Base, Taipei",
+        "formattedAddress": "No. 177, Section 1, Jianguo S Rd, Yicun Village, Da’an District, Taipei City, Taiwan 106",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJD-XzStarQjQRobpzaAY5wbE",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "C-LAB Dome Theater (穹頂劇場)",
+      "summary": "Taiwan's only immersive dome theater, free entry, rotating exhibitions",
+      "description": "Taiwan's only immersive dome theater, free entry, rotating exhibitions",
+      "activityTypes": [
+        "sightseeing"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": "free",
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@jingxin_kevin",
+          "url": "https://www.instagram.com/jingxin_kevin/reel/DbhhcN9hXw9/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_xiangshan-six-boulders-observation-deck",
+      "slug": "xiangshan-six-boulders-observation-deck",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.027223,
+        "lng": 121.576499,
+        "address": "Xiangshan Six Boulders, Taipei, Taiwan",
+        "formattedAddress": "110, Taiwan, 臺北市信義區象山",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJZbFYW6yrQjQRIGUPSTaQuG0",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Xiangshan Six Boulders Observation Deck",
+      "summary": "Photography viewpoint near Elephant Mountain",
+      "description": "Photography viewpoint near Elephant Mountain",
+      "activityTypes": [
+        "sightseeing",
+        "nature"
+      ],
+      "tags": [
+        "landmark",
+        "viewpoint",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@mansonyms",
+          "url": "https://www.instagram.com/mansonyms/p/DbDd3VAlKJt/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_national-taiwan-museum",
+      "slug": "national-taiwan-museum",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.042787,
+        "lng": 121.515119,
+        "address": "National Taiwan Museum, Taipei",
+        "formattedAddress": "No. 2號, Xiangyang Rd, Liming Village, Zhongzheng District, Taipei City, Taiwan 100",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJcRV3WHOpQjQRFpgzTpxZWgo",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "National Taiwan Museum",
+      "summary": "Museum, also a photography spot",
+      "description": "Museum, also a photography spot",
+      "activityTypes": [
+        "sightseeing",
+        "culture"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@leofromtaiwan",
+          "url": "https://www.instagram.com/leofromtaiwan/reel/DaiZ6y9pc4u/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@mansonyms",
+          "url": "https://www.instagram.com/mansonyms/p/DbDd3VAlKJt/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_taipei-fine-arts-museum",
+      "slug": "taipei-fine-arts-museum",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.069896,
+        "lng": 121.524511,
+        "address": "No. 181, Section 3, Zhongshan N. Rd, Zhongshan District, Taipei",
+        "formattedAddress": "No. 181, Section 3, Zhongshan N Rd, Yuanshan Village, Zhongshan District, Taipei City, Taiwan 10491",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJL00dCU6pQjQRWEmC8IEN8HU",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Taipei Fine Arts Museum",
+      "summary": "Contemporary art museum, good rainy day activity",
+      "description": "Contemporary art museum, good rainy day activity",
+      "activityTypes": [
+        "sightseeing",
+        "culture"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@leofromtaiwan",
+          "url": "https://www.instagram.com/leofromtaiwan/reel/DaiZ6y9pc4u/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_national-palace-museum",
+      "slug": "national-palace-museum",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.102355,
+        "lng": 121.548492,
+        "address": "No. 221, Section 2, Zhishan Rd, Shilin District, Taipei",
+        "formattedAddress": "No. 221, Sec 2, Zhi Shan Rd, Shilin District, Taipei City, Taiwan 111",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJfUpAzTqsQjQRjKjZzpxQgSc",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "National Palace Museum",
+      "summary": "World-renowned Chinese imperial art collection",
+      "description": "World-renowned Chinese imperial art collection",
+      "activityTypes": [
+        "sightseeing"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@leofromtaiwan",
+          "url": "https://www.instagram.com/leofromtaiwan/reel/DaiZ6y9pc4u/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_wan-nian-commercial-building",
+      "slug": "wan-nian-commercial-building",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.043465,
+        "lng": 121.505942,
+        "address": "Wan Nian Commercial Building, Ximending, Taipei",
+        "formattedAddress": "No. 70, Xining Rd, Ximen Village, Wanhua District, Taipei City, Taiwan 108",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJsSC8HAmpQjQRiL0XbavmjVc",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Wan Nian Commercial Building",
+      "summary": "Retro shopping building, also a photography spot",
+      "description": "Retro shopping building, also a photography spot",
+      "activityTypes": [
+        "sightseeing"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@justinelovesushi",
+          "url": "https://www.instagram.com/justinelovesushi/reel/DZQzaJxhW-f/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@mansonyms",
+          "url": "https://www.instagram.com/mansonyms/p/DbDd3VAlKJt/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_binjiang-market",
+      "slug": "binjiang-market",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.067767,
+        "lng": 121.537269,
+        "address": "Binjiang Market, Taipei, Taiwan",
+        "formattedAddress": "No. 336, Minzu E Rd, Xingxiao Village, Zhongshan District, Taipei City, Taiwan 10491",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJia3QRv2rQjQRR24UgeLjW0s",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Binjiang Market",
+      "summary": "Photography spot / local market",
+      "description": "Photography spot / local market",
+      "activityTypes": [
+        "sightseeing"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@mansonyms",
+          "url": "https://www.instagram.com/mansonyms/p/DbDd3VAlKJt/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_qiyan-metro-station",
+      "slug": "qiyan-metro-station",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.125535,
+        "lng": 121.501109,
+        "address": "Qiyan MRT Station, Taipei, Taiwan",
+        "formattedAddress": "Qiyan, No. 489, Section 2, Sanhe St, Beitou District, Taipei City, Taiwan 112",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJW_B9cviuQjQR9JI_g0Job3w",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Qiyan Metro Station",
+      "summary": "Photography spot",
+      "description": "Photography spot",
+      "activityTypes": [
+        "sightseeing"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@mansonyms",
+          "url": "https://www.instagram.com/mansonyms/p/DbDd3VAlKJt/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_songshan-ciyou-temple",
+      "slug": "songshan-ciyou-temple",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.051218,
+        "lng": 121.57769,
+        "address": "松山慈祐宮 Songshan Ciyou Temple, Taipei",
+        "formattedAddress": "No. 761號, Section 4, Bade Rd, Ciyou Village, Songshan District, Taipei City, Taiwan 105",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJy55HbZyrQjQRgTcmZb7QnQ4",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Songshan Ciyou Temple (松山慈祐宮)",
+      "summary": "Historic temple, photography spot",
+      "description": "Historic temple, photography spot",
+      "activityTypes": [
+        "sightseeing",
+        "culture"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@mansonyms",
+          "url": "https://www.instagram.com/mansonyms/p/DbDd3VAlKJt/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_yonghe-baofu-temple",
+      "slug": "yonghe-baofu-temple",
+      "countryCode": "TW",
+      "cityName": "New Taipei City",
+      "citySlug": "new-taipei-city",
+      "location": {
+        "lat": 25.013082,
+        "lng": 121.50867,
+        "address": "永和保福宮, Yonghe District, New Taipei City",
+        "formattedAddress": "No. 11, Lane 202, Ren'ai Rd, Xiaxi Village, Yonghe District, New Taipei City, Taiwan 234",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJv4UMA8SpQjQRFLGB4RHHsHY",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Yonghe Baofu Temple (永和保福宮)",
+      "summary": "Temple, photography spot",
+      "description": "Temple, photography spot",
+      "activityTypes": [
+        "sightseeing",
+        "culture"
+      ],
+      "tags": [
+        "landmark",
+        "new-taipei-city"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@mansonyms",
+          "url": "https://www.instagram.com/mansonyms/p/DaNZCRHESLH/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_sanchong-xianse-temple",
+      "slug": "sanchong-xianse-temple",
+      "countryCode": "TW",
+      "cityName": "New Taipei City",
+      "citySlug": "new-taipei-city",
+      "location": {
+        "lat": 25.05053,
+        "lng": 121.476048,
+        "address": "三重先嗇宮, Sanchong District, New Taipei City",
+        "formattedAddress": "No. 77, Wuguwang N St, Wugu Village, Sanchong District, New Taipei City, Taiwan 241",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJ7QcT7vaoQjQRwWvltWO14iw",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Sanchong Xianse Temple (三重先嗇宮)",
+      "summary": "Temple, photography spot",
+      "description": "Temple, photography spot",
+      "activityTypes": [
+        "sightseeing",
+        "culture"
+      ],
+      "tags": [
+        "landmark",
+        "new-taipei-city"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@mansonyms",
+          "url": "https://www.instagram.com/mansonyms/p/DbDd3VAlKJt/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_zhongshan-district",
+      "slug": "zhongshan-district",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.079202,
+        "lng": 121.542709,
+        "address": "Zhongshan District, Taipei",
+        "formattedAddress": "Zhongshan District, Taipei City, Taiwan 104",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJAR6jgvmrQjQRKbIugg0XTUY",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Zhongshan District",
+      "summary": "Hidden-gem neighborhood - cafes, boutiques, less touristy",
+      "description": "Hidden-gem neighborhood - cafes, boutiques, less touristy",
+      "activityTypes": [
+        "sightseeing"
+      ],
+      "tags": [
+        "landmark",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@nessahuangg",
+          "url": "https://www.instagram.com/nessahuangg/reel/DYmQEadJYh7/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_vintage-toy-shopping-plaza-zhongshan",
+      "slug": "vintage-toy-shopping-plaza-zhongshan",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.052426,
+        "lng": 121.521279,
+        "address": "Nanjing West Road area, Zhongshan District, Taipei",
+        "formattedAddress": "Nanjing W Rd, Zhongshan District, Taipei City, Taiwan",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "EjVOYW5qaW5nIFcgUmQsIFpob25nc2hhbiBEaXN0cmljdCwgVGFpcGVpIENpdHksIFRhaXdhbiIuKiwKFAoSCQWLwLpsqUI0EfqsjkoKBqsmEhQKEgkBHqOC-atCNBEpsi6CDRdNRg",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Vintage Toy Shopping Plaza (Zhongshan)",
+      "summary": "Unique retro toy shopping plaza, many unmanned shops",
+      "description": "Unique retro toy shopping plaza, many unmanned shops",
+      "activityTypes": [
+        "shopping"
+      ],
+      "tags": [
+        "souvenirs",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@sonyabiteslife",
+          "url": "https://www.instagram.com/sonyabiteslife/reel/Dag4gMkOEQA/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_pokemon-themed-7-eleven",
+      "slug": "pokemon-themed-7-eleven",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.043727,
+        "lng": 121.506178,
+        "address": "7-Eleven Pokemon Store, Ximending, Taipei",
+        "formattedAddress": "Ximen, Guangfu Village, Wanhua District, Taipei City, Taiwan 108",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJy-310AupQjQR8ZuZYcEg91g",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Pokemon-themed 7-Eleven",
+      "summary": "Pokemon-branded convenience store",
+      "description": "Pokemon-branded convenience store",
+      "activityTypes": [
+        "shopping"
+      ],
+      "tags": [
+        "souvenirs",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@adrianwidjy",
+          "url": "https://www.instagram.com/adrianwidjy/reel/DcSFIRFzhHb/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_free-souvenir-stamps-mrt-museums",
+      "slug": "free-souvenir-stamps-mrt-museums",
+      "countryCode": "TW",
+      "cityName": null,
+      "citySlug": null,
+      "location": {
+        "lat": 25.033228,
+        "lng": 121.564868,
+        "address": "Taipei Tourist Info Center, Taipei 101, Taiwan",
+        "formattedAddress": "110, Taiwan, Taipei City, Xinyi District, Xicun Village, Section 5, Xinyi Rd, No. 7號",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJh8s4AuGrQjQRIw2M8SmpDIw",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Free Souvenir Stamps (MRT/Museums)",
+      "summary": "Collect free commemorative stamps at train stations, museums & attractions across Taiwan",
+      "description": "Collect free commemorative stamps at train stations, museums & attractions across Taiwan",
+      "activityTypes": [
+        "shopping"
+      ],
+      "tags": [
+        "souvenirs"
+      ],
+      "costBand": "free",
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@atf.pintaiwan",
+          "url": "https://www.instagram.com/atf.pintaiwan/reel/DbibH54FJ2o/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@lovekosiopao",
+          "url": "https://www.instagram.com/lovekosiopao/reel/DcXuF4hkUzk/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_wan-nian-building-toy-store",
+      "slug": "wan-nian-building-toy-store",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.043484,
+        "lng": 121.505942,
+        "address": "4F, No. 70, Xining Rd, Wanhua District, Taipei 108",
+        "formattedAddress": "108, Taiwan, Taipei City, Wanhua District, Ximen Village, Xining Rd, 70號4F",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJHyGnHAmpQjQRmcWh7NqFDxI",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Wan Nian Building Toy Store (萬年の以前玩具店)",
+      "summary": "Fun retro souvenir toy shop",
+      "description": "Fun retro souvenir toy shop",
+      "activityTypes": [
+        "shopping"
+      ],
+      "tags": [
+        "souvenirs",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@justinelovesushi",
+          "url": "https://www.instagram.com/justinelovesushi/reel/DZQzaJxhW-f/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_scrumps-and-mushrooms-24hr-movie-theatre-cafe",
+      "slug": "scrumps-and-mushrooms-24hr-movie-theatre-cafe",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.032964,
+        "lng": 121.565427,
+        "address": "Taipei, Taiwan",
+        "formattedAddress": "Taipei City, Taiwan",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJi73bYWusQjQRgqQGXK260bw",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Scrumps and Mushrooms (24hr movie theatre cafe)",
+      "summary": "24hr private movie theatre with couches, food delivered to your room",
+      "description": "24hr private movie theatre with couches, food delivered to your room",
+      "activityTypes": [
+        "adventure"
+      ],
+      "tags": [
+        "experience",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": 1440,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@tomatz2go",
+          "url": "https://www.instagram.com/tomatz2go/reel/DdHo54cyDA2/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_capybara-knight-cafe",
+      "slug": "capybara-knight-cafe",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 24.97758,
+        "lng": 121.444823,
+        "address": "Capybara Knight Cafe, Taipei, Taiwan",
+        "formattedAddress": "No. 18號, Alley 2, Lane 61, Yuanlin St, Yuanlin Village, Tucheng District, New Taipei City, Taiwan 236",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJdRrk0HEdaDQRtlh-uOxyvAs",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Capybara Knight Cafe (水豚騎士)",
+      "summary": "Capybara animal cafe",
+      "description": "Capybara animal cafe",
+      "activityTypes": [
+        "adventure"
+      ],
+      "tags": [
+        "experience",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@lonandeds",
+          "url": "https://www.instagram.com/lonandeds/reel/DdF6fX2vzWX/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_bu-lao-song-massage",
+      "slug": "bu-lao-song-massage",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.056883,
+        "lng": 121.527154,
+        "address": "不老松 massage, Taipei (multiple outlets)",
+        "formattedAddress": "No. 70號, Section 2, Xinsheng N Rd, Zhongshan Village, Zhongshan District, Taipei City, Taiwan 10491",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJL5I9Zl2pQjQRk2Po2zwQ-Y8",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Bu Lao Song Massage (不老松)",
+      "summary": "Easy-to-book foot/body massage chain, multiple outlets",
+      "description": "Easy-to-book foot/body massage chain, multiple outlets",
+      "activityTypes": [
+        "adventure"
+      ],
+      "tags": [
+        "experience",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@chillwithcillaa",
+          "url": "https://www.instagram.com/chillwithcillaa/reel/DdBzg3SOnVk/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_major-league-batting-field",
+      "slug": "major-league-batting-field",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.043653,
+        "lng": 121.505328,
+        "address": "No. 52, Emei St, Wanhua District, Taipei",
+        "formattedAddress": "No. 52, Emei St, Ximen Village, Wanhua District, Taipei City, Taiwan 108",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJL7Nt4wipQjQRj3z4a_wUFHI",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Major League Batting Field (大聯盟棒壘球打擊場)",
+      "summary": "Indoor baseball/softball batting cages in Ximending",
+      "description": "Indoor baseball/softball batting cages in Ximending",
+      "activityTypes": [
+        "adventure"
+      ],
+      "tags": [
+        "experience",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@lovekosiopao",
+          "url": "https://www.instagram.com/lovekosiopao/reel/DcavCtjEis6/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_ye-sen-animal-school",
+      "slug": "ye-sen-animal-school",
+      "countryCode": "TW",
+      "cityName": "Kaohsiung",
+      "citySlug": "kaohsiung",
+      "location": {
+        "lat": 22.917097,
+        "lng": 120.457461,
+        "address": "No. 168, Lane 39, Zhongzheng Rd, Neimen District, Kaohsiung City",
+        "formattedAddress": "No. 39, Zhongzheng Rd, Guanting Village, Neimen District, Kaohsiung City, Taiwan 845",
+        "geocodePrecision": "exact",
+        "googlePlaceId": "ElROby4gMzksIFpob25nemhlbmcgUmQsIEd1YW50aW5nIFZpbGxhZ2UsIE5laW1lbiBEaXN0cmljdCwgS2FvaHNpdW5nIENpdHksIFRhaXdhbiA4NDUiMBIuChQKEgl5HBfr52tuNBHVQrna6ud_whAnKhQKEgnVdd1M5mtuNBHWA4h5woZPLw",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Ye Sen Animal School (野森動物學校)",
+      "summary": "Hands-on animal interaction park - foxes, eagles, ponies etc; open 10-17, closed Wed",
+      "description": "Hands-on animal interaction park - foxes, eagles, ponies etc; open 10-17, closed Wed",
+      "activityTypes": [
+        "adventure",
+        "nature"
+      ],
+      "tags": [
+        "experience",
+        "kaohsiung"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@taiwanfood_kao",
+          "url": "https://www.instagram.com/taiwanfood_kao/reel/DcYHei6yjiz/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_kun-s-crystal-diy-glass-blowing",
+      "slug": "kun-s-crystal-diy-glass-blowing",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.044608,
+        "lng": 121.561199,
+        "address": "坤水晶琉璃 Kun's Crystal, Taipei, Taiwan",
+        "formattedAddress": "110, Taiwan, Taipei City, Xinyi District, Xinren Village, Yanchang Rd, 88號2樓",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJNdlGa7-rQjQR15n_gSGf76o",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Kun's Crystal DIY Glass Blowing (坤水晶琉璃)",
+      "summary": "DIY glass-blowing / jewelry-making experience",
+      "description": "DIY glass-blowing / jewelry-making experience",
+      "activityTypes": [
+        "adventure"
+      ],
+      "tags": [
+        "experience",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@sonyabiteslife",
+          "url": "https://www.instagram.com/sonyabiteslife/reel/DcAMqjxv07G/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_retro-jam-print-studio",
+      "slug": "retro-jam-print-studio",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.051469,
+        "lng": 121.512472,
+        "address": "RETRO印刷JAM, Taipei, Taiwan",
+        "formattedAddress": "103, Taiwan, Taipei City, Datong District, Jiangong Village, Lane 69, Section 1, Yanping N Rd, 5號2 樓",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJR00t4RKpQjQRuF5mwx89YQE",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "RETRO印刷JAM Print Studio",
+      "summary": "DIY silkscreen & risograph printing studio, zines/posters",
+      "description": "DIY silkscreen & risograph printing studio, zines/posters",
+      "activityTypes": [
+        "adventure"
+      ],
+      "tags": [
+        "experience",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@blurrrrytwenties",
+          "url": "https://www.instagram.com/blurrrrytwenties/reel/Db2-b8ns78B/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_custom-pet-portrait-street-artist",
+      "slug": "custom-pet-portrait-street-artist",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.044666,
+        "lng": 121.50631,
+        "address": "outside Gold's Gym, Ximending, Taipei",
+        "formattedAddress": "Shi-men Ting, Wanhua District, Taipei City, Taiwan 108",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJKyaoGAmpQjQR99RS3zrx9Ms",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Custom Pet Portrait Street Artist",
+      "summary": "Street artist draws custom pet portraits, ~350 TWD, ~2hrs",
+      "description": "Street artist draws custom pet portraits, ~350 TWD, ~2hrs",
+      "activityTypes": [
+        "adventure"
+      ],
+      "tags": [
+        "experience",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@weeteck",
+          "url": "https://www.instagram.com/weeteck/reel/DbnFtKwRomu/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_go-shrimping-hejiang-st",
+      "slug": "go-shrimping-hejiang-st",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.061588,
+        "lng": 121.539456,
+        "address": "No. 139, Hejiang St, Zhongshan District, Taipei",
+        "formattedAddress": "No. 139, Hejiang St, Jiangning Village, Zhongshan District, Taipei City, Taiwan 10491",
+        "geocodePrecision": "exact",
+        "googlePlaceId": "ElVOby4gMTM5LCBIZWppYW5nIFN0LCBKaWFuZ25pbmcgVmlsbGFnZSwgWmhvbmdzaGFuIERpc3RyaWN0LCBUYWlwZWkgQ2l0eSwgVGFpd2FuIDEwNDkxIjESLwoUChIJ_QW3-eKrQjQRBnUMoG-u_FEQiwEqFAoSCW3w-4Xhq0I0EQ5MmMma6fWu",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Go Shrimping (Hejiang St)",
+      "summary": "Classic Taiwanese shrimping experience",
+      "description": "Classic Taiwanese shrimping experience",
+      "activityTypes": [
+        "adventure"
+      ],
+      "tags": [
+        "experience",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@leofromtaiwan",
+          "url": "https://www.instagram.com/leofromtaiwan/reel/DaiZ6y9pc4u/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_186-roller-skating",
+      "slug": "186-roller-skating",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.044146,
+        "lng": 121.55358,
+        "address": "No. 186, Section 4, Civic Blvd, Songshan District, Taipei",
+        "formattedAddress": "No. 186, Section 4, Civic Blvd, Checeng Village, Da’an District, Taipei City, Taiwan 106",
+        "geocodePrecision": "exact",
+        "googlePlaceId": "ElpOby4gMTg2LCBTZWN0aW9uIDQsIENpdmljIEJsdmQsIENoZWNlbmcgVmlsbGFnZSwgRGHigJlhbiBEaXN0cmljdCwgVGFpcGVpIENpdHksIFRhaXdhbiAxMDYiMRIvChQKEgl9hGwFxKtCNBHmu3_5VNBpghC6ASoUChIJ3Zpoj8SrQjQRBhhFnQy_7EE",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "186 Roller Skating",
+      "summary": "Indoor roller skating rink",
+      "description": "Indoor roller skating rink",
+      "activityTypes": [
+        "adventure"
+      ],
+      "tags": [
+        "experience",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@leofromtaiwan",
+          "url": "https://www.instagram.com/leofromtaiwan/reel/DaiZ6y9pc4u/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_xiang-diao-diao-shrimp-fishing",
+      "slug": "xiang-diao-diao-shrimp-fishing",
+      "countryCode": "TW",
+      "cityName": "Taoyuan",
+      "citySlug": "taoyuan",
+      "location": {
+        "lat": 25.040751,
+        "lng": 121.267646,
+        "address": "No. 383, Section 2, Fuguo Rd, Luzhu District, Taoyuan City 338",
+        "formattedAddress": "No. 383號, Section 2, Fuguo Rd, Luzhu Village, Luzhu District, Taoyuan City, Taiwan 338",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJ-28AMPcfaDQRAhwgjSqVm6g",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Xiang Diao Diao Shrimp Fishing (饗釣釣蝦美食城)",
+      "summary": "24hr shrimp/lobster fishing venue, popular for Taipei airport layovers",
+      "description": "24hr shrimp/lobster fishing venue, popular for Taipei airport layovers",
+      "activityTypes": [
+        "adventure"
+      ],
+      "tags": [
+        "experience",
+        "taoyuan"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": 1440,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@sologirlstravelguide",
+          "url": "https://www.instagram.com/sologirlstravelguide/reel/DXzWsVFq0UF/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_babylon-club",
+      "slug": "babylon-club",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.03531,
+        "lng": 121.566067,
+        "address": "Babylon club, Taipei, Taiwan",
+        "formattedAddress": "110, Taiwan, Taipei City, Xinyi District, Xicun Village, Songshou Rd, 12號Babylon Taipei11樓",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJFdR9pRWrQjQRMSPS-MGaMA0",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Babylon (club)",
+      "summary": "Nightclub",
+      "description": "Nightclub",
+      "activityTypes": [
+        "nightlife"
+      ],
+      "tags": [
+        "nightlife",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@liindaahn",
+          "url": "https://www.instagram.com/liindaahn/reel/DY92rVlOvRS/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_wave-club",
+      "slug": "wave-club",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.035076,
+        "lng": 121.566035,
+        "address": "Wave club, Taipei, Taiwan",
+        "formattedAddress": "110, Taiwan, Taipei City, Xinyi District, Xicun Village, Songshou Rd, 12號7樓",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJpbpfyLCrQjQRQ4GSojxLbEY",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Wave (club)",
+      "summary": "Nightclub",
+      "description": "Nightclub",
+      "activityTypes": [
+        "nightlife"
+      ],
+      "tags": [
+        "nightlife",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@liindaahn",
+          "url": "https://www.instagram.com/liindaahn/reel/DY92rVlOvRS/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_fake-sober-bar",
+      "slug": "fake-sober-bar",
+      "countryCode": "TW",
+      "cityName": "Taipei",
+      "citySlug": "taipei",
+      "location": {
+        "lat": 25.035205,
+        "lng": 121.56745,
+        "address": "Fake Sober bar, Taipei, Taiwan",
+        "formattedAddress": "No. 20號, Songshou Rd, Xicun Village, Xinyi District, Taipei City, Taiwan 110",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJbXITl4OrQjQR3XJqpKT5DYM",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Fake Sober (bar)",
+      "summary": "Bar",
+      "description": "Bar",
+      "activityTypes": [
+        "nightlife"
+      ],
+      "tags": [
+        "nightlife",
+        "taipei"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": [
+        "night"
+      ],
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@liindaahn",
+          "url": "https://www.instagram.com/liindaahn/reel/DY92rVlOvRS/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_sun-moon-lake",
+      "slug": "sun-moon-lake",
+      "countryCode": "TW",
+      "cityName": "Nantou",
+      "citySlug": "nantou",
+      "location": {
+        "lat": 23.865473,
+        "lng": 120.912099,
+        "address": "Sun Moon Lake, Nantou County, Taiwan",
+        "formattedAddress": "Sun Moon Lake National Scenic Area, Nantou County, Taiwan",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJKVPhyfHVaDQRWTJlh1W7AA0",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Sun Moon Lake (日月潭)",
+      "summary": "33km bike loop around the lake, bike rental ~150 TWD/day; reachable via Taichung",
+      "description": "33km bike loop around the lake, bike rental ~150 TWD/day; reachable via Taichung",
+      "activityTypes": [
+        "nature"
+      ],
+      "tags": [
+        "day-trip",
+        "nantou"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@malina.schwager.ifbbpro",
+          "url": "https://www.instagram.com/malina.schwager.ifbbpro/reel/DdCHDODyTax/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@wheresysabelle",
+          "url": "https://www.instagram.com/wheresysabelle/p/DUslBcyDavT/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_alishan-forest-railway-national-forest",
+      "slug": "alishan-forest-railway-national-forest",
+      "countryCode": "TW",
+      "cityName": "Chiayi",
+      "citySlug": "chiayi",
+      "location": {
+        "lat": 23.435468,
+        "lng": 120.780968,
+        "address": "Alishan, Chiayi County, Taiwan",
+        "formattedAddress": "Alishan Township, Chiayi County, Taiwan 605",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJKxKvSVTnbjQR7LSozO_p2ZE",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Alishan Forest Railway & National Forest",
+      "summary": "Mountain railway Chiayi-Fenqihu-Alishan; also Mianyue Line hiking trail through old rail tunnels",
+      "description": "Mountain railway Chiayi-Fenqihu-Alishan; also Mianyue Line hiking trail through old rail tunnels",
+      "activityTypes": [
+        "nature",
+        "hiking"
+      ],
+      "tags": [
+        "day-trip",
+        "chiayi"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@coconut_sports",
+          "url": "https://www.instagram.com/coconut_sports/reel/DcWsRzPxHSK/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@global.and.beyond.travel",
+          "url": "https://www.instagram.com/global.and.beyond.travel/reel/Dcvg9-aT8eo/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@wheresysabelle",
+          "url": "https://www.instagram.com/wheresysabelle/p/DUslBcyDavT/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_teapot-mountain",
+      "slug": "teapot-mountain",
+      "countryCode": "TW",
+      "cityName": "New Taipei City",
+      "citySlug": "new-taipei-city",
+      "location": {
+        "lat": 25.106355,
+        "lng": 121.865977,
+        "address": "茶壺山 Teapot Mountain, Ruifang District, New Taipei City",
+        "formattedAddress": "Ruifang District, New Taipei City, Taiwan 224",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJW3FvzDRFXTQRo5jRIVyn1hk",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Teapot Mountain (無耳茶壺山)",
+      "summary": "Hike near Jiufen from Jinguashi Gold Museum, views of Yin-Yang Sea, teapot-shaped rock summit",
+      "description": "Hike near Jiufen from Jinguashi Gold Museum, views of Yin-Yang Sea, teapot-shaped rock summit",
+      "activityTypes": [
+        "nature",
+        "hiking",
+        "culture"
+      ],
+      "tags": [
+        "day-trip",
+        "new-taipei-city"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@supark.zipped",
+          "url": "https://www.instagram.com/supark.zipped/reel/DbDm2yySwn5/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_jiufen-old-street",
+      "slug": "jiufen-old-street",
+      "countryCode": "TW",
+      "cityName": "New Taipei City",
+      "citySlug": "new-taipei-city",
+      "location": {
+        "lat": 25.109806,
+        "lng": 121.845223,
+        "address": "Jiufen Old Street, Ruifang District, New Taipei City",
+        "formattedAddress": "Jishan St, Ruifang District, New Taipei City, Taiwan 224",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJcZT7-hdFXTQR0qekplqCFV8",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Jiufen Old Street (九份老街)",
+      "summary": "Mountain town, lantern-lit streets, tea houses, famous views",
+      "description": "Mountain town, lantern-lit streets, tea houses, famous views",
+      "activityTypes": [
+        "nature"
+      ],
+      "tags": [
+        "day-trip",
+        "new-taipei-city"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@adeletravelss",
+          "url": "https://www.instagram.com/adeletravelss/reel/DZaa10Upqb6/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@daisywerld",
+          "url": "https://www.instagram.com/daisywerld/p/DbFY_rKDxhm/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@nessahuangg",
+          "url": "https://www.instagram.com/nessahuangg/reel/DYmQEadJYh7/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@supark.zipped",
+          "url": "https://www.instagram.com/supark.zipped/reel/DbDm2yySwn5/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_shifen",
+      "slug": "shifen",
+      "countryCode": "TW",
+      "cityName": "New Taipei City",
+      "citySlug": "new-taipei-city",
+      "location": {
+        "lat": 25.042707,
+        "lng": 121.777303,
+        "address": "Shifen, Pingxi District, New Taipei City",
+        "formattedAddress": "Shifen St, Shifen Village, Pingxi District, New Taipei City, Taiwan 226",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJD--ChehQXTQRotXSFri_dH8",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Shifen (十分)",
+      "summary": "Waterfall, old street, release a traditional sky lantern; also has a stamp station",
+      "description": "Waterfall, old street, release a traditional sky lantern; also has a stamp station",
+      "activityTypes": [
+        "nature"
+      ],
+      "tags": [
+        "day-trip",
+        "new-taipei-city"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@daisywerld",
+          "url": "https://www.instagram.com/daisywerld/p/DbFY_rKDxhm/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@megsandalex",
+          "url": "https://www.instagram.com/megsandalex/reel/Dc8tADqgTVz/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@nessahuangg",
+          "url": "https://www.instagram.com/nessahuangg/reel/DYmQEadJYh7/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@stamping_groundd",
+          "url": "https://www.instagram.com/stamping_groundd/p/DcBsm6-E_yc/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_yeh-liu-geopark",
+      "slug": "yeh-liu-geopark",
+      "countryCode": "TW",
+      "cityName": "New Taipei City",
+      "citySlug": "new-taipei-city",
+      "location": {
+        "lat": 25.205409,
+        "lng": 121.690688,
+        "address": "Yeh Liu Geopark, New Taipei City",
+        "formattedAddress": "Yehliu Geopark, No. 167-1號港東路 Wanli District, New Taipei City, Taiwan 207",
+        "geocodePrecision": "rooftop",
+        "googlePlaceId": "ChIJ1ZrmCnZMXTQRV2jCWjAX0eQ",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Yeh Liu Geopark (野柳地質公園)",
+      "summary": "Famous rock formations on the north coast",
+      "description": "Famous rock formations on the north coast",
+      "activityTypes": [
+        "nature"
+      ],
+      "tags": [
+        "day-trip",
+        "new-taipei-city"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@stamping_groundd",
+          "url": "https://www.instagram.com/stamping_groundd/p/DcBsm6-E_yc/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_matsu-islands",
+      "slug": "matsu-islands",
+      "countryCode": "TW",
+      "cityName": "Matsu",
+      "citySlug": "matsu",
+      "location": {
+        "lat": 26.160243,
+        "lng": 119.951665,
+        "address": "Matsu Islands, Taiwan",
+        "formattedAddress": "Lienchiang County",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJ2aunYmllQTQRntXu6lNDlCU",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Matsu Islands (馬祖)",
+      "summary": "Remote islands - bioluminescent 'blue tears', military history, views of China",
+      "description": "Remote islands - bioluminescent 'blue tears', military history, views of China",
+      "activityTypes": [
+        "nature"
+      ],
+      "tags": [
+        "day-trip",
+        "matsu"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@adeletravelss",
+          "url": "https://www.instagram.com/adeletravelss/reel/DZkqhqrPusC/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": null,
+          "url": "https://www.instagram.com/adeletravelss/reel/DZaa10Upqb6/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_shanhu-beike-temple",
+      "slug": "shanhu-beike-temple",
+      "countryCode": "TW",
+      "cityName": null,
+      "citySlug": null,
+      "location": {
+        "lat": 25.270101,
+        "lng": 121.535133,
+        "address": "珊瑚貝殼廟 Shanhu Beike Temple, Taiwan",
+        "formattedAddress": "253, Taiwan, New Taipei City, Shimen District, 珊瑚貝殼廟",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJa3M2RJ62QjQRhNTbvxHcNMI",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Shanhu Beike Temple (珊瑚貝殼廟)",
+      "summary": "One-of-a-kind temple covered in millions of seashells and corals",
+      "description": "One-of-a-kind temple covered in millions of seashells and corals",
+      "activityTypes": [
+        "nature",
+        "culture"
+      ],
+      "tags": [
+        "day-trip"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@adeletravelss",
+          "url": "https://www.instagram.com/adeletravelss/reel/DZaa10Upqb6/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_zhengbin-fishing-harbor",
+      "slug": "zhengbin-fishing-harbor",
+      "countryCode": "TW",
+      "cityName": "Keelung",
+      "citySlug": "keelung",
+      "location": {
+        "lat": 25.152845,
+        "lng": 121.769736,
+        "address": "正濱漁港 Zhengbin Fishing Harbor, Keelung, Taiwan",
+        "formattedAddress": "正 濱 漁港, 中正區基隆市 Taiwan 202",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJbatnzv9OXTQRyMvTEGC4w3A",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Zhengbin Fishing Harbor (正濱漁港)",
+      "summary": "Taiwan's most colorful harbor, 'Little Venice of Taiwan'",
+      "description": "Taiwan's most colorful harbor, 'Little Venice of Taiwan'",
+      "activityTypes": [
+        "nature"
+      ],
+      "tags": [
+        "day-trip",
+        "keelung"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@adeletravelss",
+          "url": "https://www.instagram.com/adeletravelss/reel/DZaa10Upqb6/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_bitoujiao-trail",
+      "slug": "bitoujiao-trail",
+      "countryCode": "TW",
+      "cityName": "New Taipei City",
+      "citySlug": "new-taipei-city",
+      "location": {
+        "lat": 25.125067,
+        "lng": 121.921414,
+        "address": "鼻頭角步道 Bitoujiao Trail, New Taipei City",
+        "formattedAddress": "Bitou Rd, Ruifang District, New Taipei City, Taiwan 224",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJa-bmgJBDXTQR7UOjGLWI5KI",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Bitoujiao Trail (鼻頭角步道)",
+      "summary": "Dramatic coastal hiking trail",
+      "description": "Dramatic coastal hiking trail",
+      "activityTypes": [
+        "nature",
+        "hiking"
+      ],
+      "tags": [
+        "day-trip",
+        "new-taipei-city"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@adeletravelss",
+          "url": "https://www.instagram.com/adeletravelss/reel/DZaa10Upqb6/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_houtong-cat-village",
+      "slug": "houtong-cat-village",
+      "countryCode": "TW",
+      "cityName": "New Taipei City",
+      "citySlug": "new-taipei-city",
+      "location": {
+        "lat": 25.087201,
+        "lng": 121.826808,
+        "address": "猴硐貓村 Houtong Cat Village, Ruifang District, New Taipei City",
+        "formattedAddress": "224, Taiwan, New Taipei City, Ruifang District, 龍山里Fengjia Road",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJPU_4MvZPXTQR0BJpGnJlaPs",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Houtong Cat Village (猴硐貓村)",
+      "summary": "Former mining town turned cat sanctuary village",
+      "description": "Former mining town turned cat sanctuary village",
+      "activityTypes": [
+        "nature"
+      ],
+      "tags": [
+        "day-trip",
+        "new-taipei-city"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@adeletravelss",
+          "url": "https://www.instagram.com/adeletravelss/reel/DZaa10Upqb6/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_tainan",
+      "slug": "tainan",
+      "countryCode": "TW",
+      "cityName": "Tainan",
+      "citySlug": "tainan",
+      "location": {
+        "lat": 22.999476,
+        "lng": 120.229272,
+        "address": "Tainan, Taiwan",
+        "formattedAddress": "Tainan, Daxue Village, East District, Tainan City, Taiwan",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJK_I1UZN2bjQRnLZaGDT61Rw",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Tainan (台南)",
+      "summary": "Taiwan's oldest city - food, temples, historic streets",
+      "description": "Taiwan's oldest city - food, temples, historic streets",
+      "activityTypes": [
+        "nature",
+        "culture"
+      ],
+      "tags": [
+        "day-trip",
+        "tainan"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@adeletravelss",
+          "url": "https://www.instagram.com/adeletravelss/reel/DZaa10Upqb6/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_taichung",
+      "slug": "taichung",
+      "countryCode": "TW",
+      "cityName": "Taichung",
+      "citySlug": "taichung",
+      "location": {
+        "lat": 24.147736,
+        "lng": 120.673648,
+        "address": "Taichung, Taiwan",
+        "formattedAddress": "Taichung City, Taiwan",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJ7yJ5-d8XaTQRf0SmfuQ-Uoc",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Taichung (台中)",
+      "summary": "City stop, e.g.",
+      "description": "City stop, e.g. en route to Sun Moon Lake; also home to a Michelin-star ice cream shop",
+      "activityTypes": [
+        "nature"
+      ],
+      "tags": [
+        "day-trip",
+        "michelin",
+        "taichung"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@malina.schwager.ifbbpro",
+          "url": "https://www.instagram.com/malina.schwager.ifbbpro/reel/DdCHDODyTax/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@suzyandaustin",
+          "url": "https://www.instagram.com/suzyandaustin/reel/DYMMPUdSoJh/",
+          "capturedAt": "2026-09-16"
+        },
+        {
+          "kind": "instagram",
+          "handle": "@wheresysabelle",
+          "url": "https://www.instagram.com/wheresysabelle/p/DUslBcyDavT/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_crown-coast-north-coast-corridor",
+      "slug": "crown-coast-north-coast-corridor",
+      "countryCode": "TW",
+      "cityName": "New Taipei City",
+      "citySlug": "new-taipei-city",
+      "location": {
+        "lat": 25.016983,
+        "lng": 121.462787,
+        "address": "North Coast, New Taipei City, Taiwan",
+        "formattedAddress": "New Taipei City, Taiwan",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJX2S2sDhVXTQRwO0gZvoNqVo",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Crown Coast (North Coast corridor)",
+      "summary": "Scenic tourism corridor: colorful fishing port, sea-carved rock, retired coal railway you pedal",
+      "description": "Scenic tourism corridor: colorful fishing port, sea-carved rock, retired coal railway you pedal, Zaha Hadid bridge, mountain village",
+      "activityTypes": [
+        "nature"
+      ],
+      "tags": [
+        "day-trip",
+        "new-taipei-city"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@itskeith_m",
+          "url": "https://www.instagram.com/itskeith_m/p/DbxlnHqEvNL/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    },
+    {
+      "id": "rec_tw_crocodile-island-possibly-turtle-guishan-island",
+      "slug": "crocodile-island-possibly-turtle-guishan-island",
+      "countryCode": "TW",
+      "cityName": "Yilan",
+      "citySlug": "yilan",
+      "location": {
+        "lat": 24.842374,
+        "lng": 121.950155,
+        "address": "Guishan Island, Yilan, Taiwan",
+        "formattedAddress": "Guishan Island, Toucheng Township, Yilan County, Taiwan 261",
+        "geocodePrecision": "approximate",
+        "googlePlaceId": "ChIJY3b_nfn0ZzQRvJ7loapYCpU",
+        "geocodedAt": "2026-09-16"
+      },
+      "locale": "en",
+      "title": "Crocodile Island' (possibly Turtle/Guishan Island)",
+      "summary": "Mentioned as a day-trip island - name as given by poster, likely refers to Turtle Island (Guishan Dao) off…",
+      "description": "Mentioned as a day-trip island - name as given by poster, likely refers to Turtle Island (Guishan Dao) off Yilan",
+      "activityTypes": [
+        "nature"
+      ],
+      "tags": [
+        "day-trip",
+        "yilan"
+      ],
+      "costBand": null,
+      "costNote": null,
+      "typicalDurationMinutes": null,
+      "bestTimeOfDay": null,
+      "image": null,
+      "origin": "import",
+      "sources": [
+        {
+          "kind": "instagram",
+          "handle": "@daisywerld",
+          "url": "https://www.instagram.com/daisywerld/p/DbFY_rKDxhm/",
+          "capturedAt": "2026-09-16"
+        }
+      ],
+      "likeCount": 0,
+      "qualityScore": null,
+      "status": "in_review"
+    }
+  ]
+}
