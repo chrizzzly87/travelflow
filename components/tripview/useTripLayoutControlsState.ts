@@ -24,13 +24,16 @@ export const useTripLayoutControlsState = ({
         return 'simple';
     });
 
+    // Off unless the traveller asked for them: the labels crowd the route on a
+    // phone, and a trip that has never had the setting touched should open on
+    // the map itself. A trip or a device that carries the setting keeps it.
     const [showCityNames, setShowCityNames] = useState<boolean>(() => {
         if (initialViewSettings?.showCityNames !== undefined) return initialViewSettings.showCityNames;
         if (typeof window !== 'undefined') {
             const stored = readLocalStorageItem('tf_city_names');
             if (stored !== null) return stored === 'true';
         }
-        return true;
+        return false;
     });
 
     const [layoutMode, setLayoutMode] = useState<'vertical' | 'horizontal'>(() => {

@@ -2,10 +2,16 @@ import React, { useCallback, useEffect, useRef } from 'react';
 
 import { TransportModeIcon } from '../TransportModeIcon';
 import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
-import { buildMobileDayStripNodes, type MobileDayPlanDay, type MobileDayStripLink } from './mobileDayPlanModel';
+import {
+    buildMobileDayStripNodes,
+    type MobileDayPlanDay,
+    type MobileDayPlanTransfer,
+    type MobileDayStripLink,
+} from './mobileDayPlanModel';
 
 const DEFAULT_STAY_COLOR = '#64748b';
 const TRANSFER_LINK_COLOR = '#cbd5e1';
+const BUBBLE_INTERIOR_COLOR = '#ffffff';
 /** Pointer travel past which a drag is a scroll, not a tap. */
 const DRAG_TAP_THRESHOLD_PX = 6;
 
@@ -14,13 +20,43 @@ interface TripMobileDayStripProps {
     days: MobileDayPlanDay[];
     activeDayIndex: number;
     onSelectDay: (index: number) => void;
-    onSelectTransfer: (dayIndex: number, travelItemId: string | null) => void;
+    onSelectTransfer: (dayIndex: number, transfer: MobileDayPlanTransfer) => void;
 }
 
-const resolveLinkColor = (link: MobileDayStripLink, stayColor: string): string | null => {
-    if (link === 'none') return null;
-    return link === 'stay' ? stayColor : TRANSFER_LINK_COLOR;
+const resolveLinkColor = (link: MobileDayStripLink): string | null => {
+    if (link.kind === 'none') return null;
+    return link.kind === 'stay' ? (link.colorHex || DEFAULT_STAY_COLOR) : TRANSFER_LINK_COLOR;
 };
+
+/**
+ * Paints the day's ring from the stays it touches.
+ *
+ * A day spent in one city is a plain ring; a day the traveller moves through
+ * is split into an equal arc per stay, in travel order, so a move inside a day
+ * is legible without reading the labels. The gradient runs along the strip, so
+ * it has to follow the document direction the same way the strip itself does.
+ */
+const buildRingBackground = (stays: MobileDayPlanDay['stays'], isRtl: boolean): string => {
+    const colors = (stays.length > 0 ? stays : [{ colorHex: '' }])
+        .map((stay) => stay.colorHex || DEFAULT_STAY_COLOR);
+    if (colors.length === 1) return `linear-gradient(${colors[0]}, ${colors[0]})`;
+
+    const stops = colors.map((color, index) => {
+        const from = Math.round((index / colors.length) * 1000) / 10;
+        const to = Math.round(((index + 1) / colors.length) * 1000) / 10;
+        return `${color} ${from}% ${to}%`;
+    });
+    return `linear-gradient(to ${isRtl ? 'left' : 'right'}, ${stops.join(', ')})`;
+};
+
+/**
+ * The ring is drawn as a gradient on the border box over an opaque interior on
+ * the padding box. A bare border left the ring's inner gap transparent, and the
+ * strip's connecting line ran straight through the circle.
+ */
+const buildBubbleBackground = (ring: string, interior: string): string => (
+    `linear-gradient(${interior}, ${interior}) padding-box, ${ring} border-box`
+);
 
 const StripLink: React.FC<{ side: 'before' | 'after'; color: string | null }> = ({ side, color }) => {
     if (!color) return null;
@@ -41,6 +77,7 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
     onSelectTransfer,
 }) => {
     const nodes = React.useMemo(() => buildMobileDayStripNodes(days), [days]);
+    const isRtl = typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
     const scrollerRef = useRef<HTMLDivElement | null>(null);
     const dayButtonRefs = useRef<Record<number, HTMLButtonElement | null>>({});
 
@@ -139,7 +176,8 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                                 <StripLink side="after" color={TRANSFER_LINK_COLOR} />
                                 <button
                                     type="button"
-                                    onClick={() => onSelectTransfer(node.dayIndex, transfer.item?.id ?? null)}
+                                    data-testid="planner-mobile-transfer-node"
+                                    onClick={() => onSelectTransfer(node.dayIndex, transfer)}
                                     title={`${transfer.modeLabel} to ${transfer.toCityTitle}${scheduleLabel ? ` — ${scheduleLabel}` : ''}`}
                                     className="relative z-10 inline-flex size-9 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 shadow-sm transition-colors hover:border-slate-400 hover:text-accent-600"
                                     {...getAnalyticsDebugAttributes('trip_view__mobile_transfer--select', {
@@ -166,20 +204,16 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                 const { day, dayIndex } = node;
                 const isActive = dayIndex === activeDayIndex;
                 const stayColor = day.cityColorHex || DEFAULT_STAY_COLOR;
-                const departingColor = day.departingCityColorHex || DEFAULT_STAY_COLOR;
-                const handoverLeg = day.legs.find((leg) => leg.role === 'handover') ?? null;
-                // A handover happens inside the day, so the day's own bubble has
-                // to carry it: the ring runs from the stay being left to the one
-                // being reached, and the leg's transport sits on the edge.
-                const bubbleStyle: React.CSSProperties = day.isHandoverDay
-                    ? {
-                        borderColor: 'transparent',
-                        backgroundImage: `linear-gradient(${isActive ? '90deg' : '90deg'}, ${departingColor} 0 50%, ${stayColor} 50% 100%)`,
-                    }
-                    : {
-                        borderColor: stayColor,
-                        backgroundColor: isActive ? stayColor : undefined,
-                    };
+                // The interior carries the selection, the ring carries the
+                // stays: one colour on an ordinary day, an arc each on a day
+                // the traveller moves through.
+                const bubbleStyle: React.CSSProperties = {
+                    borderColor: 'transparent',
+                    background: buildBubbleBackground(
+                        buildRingBackground(day.stays, isRtl),
+                        isActive ? stayColor : BUBBLE_INTERIOR_COLOR,
+                    ),
+                };
 
                 return (
                     <div key={node.key} className="flex w-[4.25rem] shrink-0 snap-center flex-col items-center">
@@ -187,8 +221,8 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                             {day.isArrivalDay ? day.monthLabel : ''}
                         </span>
                         <div className="relative flex h-14 w-full items-center justify-center">
-                            <StripLink side="before" color={resolveLinkColor(node.linkBefore, day.isHandoverDay ? departingColor : stayColor)} />
-                            <StripLink side="after" color={resolveLinkColor(node.linkAfter, stayColor)} />
+                            <StripLink side="before" color={resolveLinkColor(node.linkBefore)} />
+                            <StripLink side="after" color={resolveLinkColor(node.linkAfter)} />
                             <button
                                 ref={(element) => {
                                     dayButtonRefs.current[dayIndex] = element;
@@ -209,11 +243,8 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                             >
                                 <span
                                     className={`flex size-full flex-col items-center justify-center rounded-full ${
-                                        isActive && !day.isHandoverDay ? 'text-white' : 'bg-white text-slate-700'
+                                        isActive ? 'text-white' : 'text-slate-700'
                                     }`}
-                                    style={isActive && day.isHandoverDay
-                                        ? { backgroundColor: stayColor, color: '#ffffff' }
-                                        : undefined}
                                 >
                                     <span className={`text-[9px] font-semibold uppercase leading-none tracking-[0.08em] ${isActive ? 'text-white/80' : 'text-slate-400'}`}>
                                         {day.weekdayLabel}
@@ -222,17 +253,11 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                                         {day.dayOfMonthLabel}
                                     </span>
                                 </span>
-                                {handoverLeg && (
-                                    <span
-                                        aria-hidden="true"
-                                        className="absolute -bottom-1 end-0 inline-flex size-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm"
-                                    >
-                                        <TransportModeIcon mode={handoverLeg.mode as never} size={11} />
-                                    </span>
-                                )}
                                 <span className="sr-only">
                                     {day.fullDateLabel}
-                                    {handoverLeg ? `, ${handoverLeg.modeLabel} to ${handoverLeg.toCityTitle}` : ''}
+                                    {day.stays.length > 1
+                                        ? `, ${day.stays.map((stay) => stay.title).filter(Boolean).join(' to ')}`
+                                        : ''}
                                 </span>
                             </button>
                         </div>

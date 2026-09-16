@@ -380,6 +380,84 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     }));
   });
 
+  it('keeps a transport node of its own for a move that happens inside one day', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    const transferNodes = screen.getAllByTestId('planner-mobile-transfer-node');
+    expect(transferNodes).toHaveLength(1);
+
+    // It sits before the day the traveller lands in, between the two bubbles.
+    const stripChildren = Array.from(screen.getByTestId('planner-mobile-day-strip').children);
+    const nodeColumn = transferNodes[0].closest('div.shrink-0');
+    expect(stripChildren.indexOf(nodeColumn as Element)).toBe(1);
+  });
+
+  it('opens the transport picker straight from the strip node', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+    fireEvent.click(screen.getByTestId('planner-mobile-transfer-node'));
+
+    expect(screen.getByTestId('mobile-transport-modal')).toBeInTheDocument();
+    expect(props.onSelectTimelineItem).toHaveBeenCalledWith('travel-a');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Bus' }));
+    expect(props.onUpdateTimelineItem).toHaveBeenCalledWith('travel-a', expect.objectContaining({
+      transportMode: 'bus',
+    }));
+  });
+
+  it('leaves the transport node selecting only when the trip cannot be edited', () => {
+    const props = baseProps();
+    props.isMobile = true;
+    props.onUpdateTimelineItem = undefined;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+    fireEvent.click(screen.getByTestId('planner-mobile-transfer-node'));
+
+    expect(screen.queryByTestId('mobile-transport-modal')).not.toBeInTheDocument();
+    expect(props.onSelectTimelineItem).toHaveBeenCalledWith('travel-a');
+  });
+
+  it('paints the day ring over an opaque interior so the strip line cannot cross it', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    // An unselected plain day: one ring colour, white inside. The interior
+    // layer is what hides the connecting line, which used to run straight
+    // through the ring's gap.
+    const plainDay = screen.getAllByRole('tab')[2];
+    expect(plainDay.style.background).toContain('rgb(255, 255, 255)) padding-box');
+    expect(plainDay.style.background).toContain('rgb(37, 99, 235)) border-box');
+    expect(plainDay.style.borderColor).toBe('transparent');
+  });
+
+  it('splits the ring across every stay a day touches', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    // Day 2 holds both stays, so its ring runs from one colour to the other.
+    const handoverDay = screen.getAllByRole('tab')[1];
+    expect(handoverDay.style.background).toContain('to right');
+    expect(handoverDay.style.background).toContain('rgb(22, 163, 74) 0% 50%');
+    expect(handoverDay.style.background).toContain('rgb(37, 99, 235) 50% 100%');
+
+    // Selecting a day fills its interior; the ring keeps both stays.
+    fireEvent.click(handoverDay);
+    const selected = screen.getAllByRole('tab')[1];
+    expect(selected.style.background).toContain('rgb(37, 99, 235) 50% 100%');
+    // The interior is the stay's colour now, not white.
+    expect(selected.style.background).toContain('rgb(37, 99, 235), rgb(37, 99, 235)) padding-box');
+  });
+
   it('offers a quick way to add an activity to the shown day', () => {
     const props = baseProps();
     props.isMobile = true;

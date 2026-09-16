@@ -35,6 +35,13 @@ export interface MobileDayPlanLeg extends MobileDayPlanTransfer {
     role: MobileDayPlanLegRole;
 }
 
+/** One stay the traveller is in for part of a day, in travel order. */
+export interface MobileDayPlanStay {
+    id: string;
+    title: string;
+    colorHex: string;
+}
+
 export interface MobileDayPlanDay {
     /** Whole-day offset from `trip.startDate`. */
     dayOffset: number;
@@ -45,6 +52,13 @@ export interface MobileDayPlanDay {
     dayOfMonthLabel: string;
     monthLabel: string;
     fullDateLabel: string;
+    /**
+     * Every stay the day touches, in travel order — one on an ordinary day,
+     * more when the traveller changes city inside it. The strip paints the
+     * day's ring from these, so a day spent in three cities cannot lose the
+     * one in the middle.
+     */
+    stays: MobileDayPlanStay[];
     /** Stay the traveller ends the day in. */
     city: ITimelineItem | null;
     cityColorHex: string;
@@ -327,6 +341,11 @@ export const buildMobileDayPlan = (
             dayOfMonthLabel: date.toLocaleDateString(locale, { day: 'numeric' }),
             monthLabel: date.toLocaleDateString(locale, { month: 'short' }),
             fullDateLabel: date.toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' }),
+            stays: overlappingStays.map((stay) => ({
+                id: stay.city.id,
+                title: stay.city.title?.trim() || stay.city.location?.trim() || '',
+                colorHex: getHexFromColorClass(stay.city.color || ''),
+            })),
             city,
             cityColorHex: city ? getHexFromColorClass(city.color || '') : '',
             departingCity: departingStay?.city ?? null,
@@ -363,7 +382,14 @@ export const findMobileDayPlanIndexForItem = (
 };
 
 /** How a strip node joins the node before or after it. */
-export type MobileDayStripLink = 'none' | 'stay' | 'transfer';
+export interface MobileDayStripLink {
+    kind: 'none' | 'stay' | 'transfer';
+    /** Colour of the stay the line continues, set only for a `stay` link. */
+    colorHex: string | null;
+}
+
+const NO_LINK: MobileDayStripLink = { kind: 'none', colorHex: null };
+const TRANSFER_LINK: MobileDayStripLink = { kind: 'transfer', colorHex: null };
 
 export type MobileDayStripNode =
     | {
@@ -377,19 +403,42 @@ export type MobileDayStripNode =
     | {
         kind: 'transfer';
         key: string;
-        /** Index of the day the leg departs on, which is what the strip selects. */
+        /** Index of the day the leg lands in, which is what the strip selects. */
         dayIndex: number;
         transfer: MobileDayPlanTransfer;
-        cityColorHex: string;
     };
 
+/** Legs that get a node of their own before a day: the ones that land in it. */
+const findArrivingLegs = (day: MobileDayPlanDay): MobileDayPlanLeg[] => (
+    day.legs.filter((leg) => leg.role === 'handover' || leg.role === 'arrival')
+);
+
 /**
- * Interleaves the days with the legs that need a node of their own.
+ * How two neighbouring days join.
  *
- * The strip reads as one continuous route: days of the same stay are joined by
- * a line in the stay's colour. A leg that departs and arrives inside one day is
- * drawn on that day's own bubble, because there is no gap between two days to
- * put it in; only an overnight leg gets a node between the days it separates.
+ * Days that share a stay are joined by a line in that stay's colour, so a stay
+ * reads as one run even when the day it starts on also belongs to the city
+ * before it. Everything else is a transfer, drawn in the neutral colour that
+ * carries the leg's own node.
+ */
+const resolveDayLink = (
+    from: MobileDayPlanDay | null,
+    to: MobileDayPlanDay | null,
+): MobileDayStripLink => {
+    if (!from || !to) return NO_LINK;
+    const shared = from.stays.find((stay) => to.stays.some((other) => other.id === stay.id));
+    if (!shared) return TRANSFER_LINK;
+    return { kind: 'stay', colorHex: shared.colorHex || null };
+};
+
+/**
+ * Interleaves the days with the legs travelled between them.
+ *
+ * Every leg carries its own node, placed immediately before the day it lands
+ * in: the transport is what the traveller taps to change it, and burying it on
+ * a day bubble made it too small to find. A day that holds a move still shows
+ * both of its stays on its own ring, because the traveller spends part of the
+ * day in each.
  */
 export const buildMobileDayStripNodes = (days: MobileDayPlanDay[]): MobileDayStripNode[] => {
     const nodes: MobileDayStripNode[] = [];
@@ -397,33 +446,28 @@ export const buildMobileDayStripNodes = (days: MobileDayPlanDay[]): MobileDayStr
     days.forEach((day, index) => {
         const previousDay = index > 0 ? days[index - 1] : null;
         const nextDay = index < days.length - 1 ? days[index + 1] : null;
-        const sharesStayWithPrevious = Boolean(previousDay?.city && day.city && previousDay.city.id === day.city.id);
-        const sharesStayWithNext = Boolean(nextDay?.city && day.city && nextDay.city.id === day.city.id);
-        const overnightLeg = day.legs.find((leg) => leg.role === 'departure') ?? null;
-        const hasOvernightNode = Boolean(overnightLeg) && Boolean(nextDay);
+        const arrivingLegs = findArrivingLegs(day);
+        const nextArrivingLegs = nextDay ? findArrivingLegs(nextDay) : [];
+
+        arrivingLegs.forEach((leg, legIndex) => {
+            nodes.push({
+                kind: 'transfer',
+                key: `transfer-${day.dayOffset}-${legIndex}`,
+                dayIndex: index,
+                transfer: leg,
+            });
+        });
 
         nodes.push({
             kind: 'day',
             key: `day-${day.dayOffset}`,
             dayIndex: index,
             day,
-            linkBefore: index === 0
-                ? 'none'
-                : (sharesStayWithPrevious ? 'stay' : 'transfer'),
-            linkAfter: !nextDay
-                ? 'none'
-                : (hasOvernightNode ? 'transfer' : (sharesStayWithNext ? 'stay' : 'transfer')),
+            // A leg's node sits between the two days, so both sides of it read
+            // as a transfer rather than as a stay running through it.
+            linkBefore: arrivingLegs.length > 0 ? TRANSFER_LINK : resolveDayLink(previousDay, day),
+            linkAfter: nextArrivingLegs.length > 0 ? TRANSFER_LINK : resolveDayLink(day, nextDay),
         });
-
-        if (hasOvernightNode && overnightLeg) {
-            nodes.push({
-                kind: 'transfer',
-                key: `transfer-${day.dayOffset}`,
-                dayIndex: index,
-                transfer: overnightLeg,
-                cityColorHex: day.cityColorHex,
-            });
-        }
     });
 
     return nodes;

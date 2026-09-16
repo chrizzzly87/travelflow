@@ -6,6 +6,7 @@ import {
     buildMobileDayPlan,
     doesMobileDayPlanDayContainItem,
     findMobileDayPlanIndexForItem,
+    type MobileDayPlanTransfer,
 } from './mobileDayPlanModel';
 import { TripMobileDayPanel } from './TripMobileDayPanel';
 import { TripMobileDayStrip } from './TripMobileDayStrip';
@@ -140,6 +141,14 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
     }, [activeDayIndex, panelMode]);
 
     const sheetHeight = dragHeightPx ?? resolveSnapHeightPx(snap, containerHeight);
+    const editedLeg = useMemo(() => {
+        if (!transportEditItem) return null;
+        for (const day of days) {
+            const leg = day.legs.find((candidate) => candidate.item?.id === transportEditItem.id);
+            if (leg) return leg;
+        }
+        return null;
+    }, [days, transportEditItem]);
 
     const applySnap = useCallback((next: TripMobileSheetSnap) => {
         setSnap((current) => {
@@ -202,10 +211,18 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
         }
     }, [days, onSelect, tripId]);
 
-    const handleSelectTransfer = useCallback((dayIndex: number, travelItemId: string | null) => {
+    // The strip's transport node is the editing affordance: tapping it opens the
+    // picker for that leg. Without editing rights it still selects the leg, so
+    // the map and the day panel follow it.
+    const handleSelectTransfer = useCallback((dayIndex: number, transfer: MobileDayPlanTransfer) => {
         setManualDayIndex(dayIndex);
-        if (travelItemId) onSelect(travelItemId);
-    }, [onSelect]);
+        const travelItem = transfer.item;
+        if (!travelItem) return;
+        onSelect(travelItem.id);
+        if (!onUpdateItem) return;
+        trackEvent('trip_view__mobile_transport--open', { trip_id: tripId, mode: transfer.mode });
+        setTransportEditItem(travelItem);
+    }, [onSelect, onUpdateItem, tripId]);
 
     return (
         <div
@@ -329,8 +346,8 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                 <TripMobileTransportModal
                     tripId={tripId}
                     travelItem={transportEditItem}
-                    fromCityTitle={activeDay?.legs.find((leg) => leg.item?.id === transportEditItem?.id)?.fromCityTitle}
-                    toCityTitle={activeDay?.legs.find((leg) => leg.item?.id === transportEditItem?.id)?.toCityTitle}
+                    fromCityTitle={editedLeg?.fromCityTitle}
+                    toCityTitle={editedLeg?.toCityTitle}
                     onClose={() => setTransportEditItem(null)}
                     onUpdateItem={onUpdateItem}
                 />
