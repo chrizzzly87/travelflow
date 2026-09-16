@@ -1,7 +1,7 @@
 {
   "countryCode": "TW",
   "countryName": "Taiwan",
-  "generatedAt": "2026-09-16T17:24:31.799Z",
+  "generatedAt": "2026-09-16T19:11:53.470Z",
   "sourceName": "Taiwan Saved Posts - Chris",
   "recommendations": [
     {
@@ -35,7 +35,13 @@
       "costNote": "$5",
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJGaiHCqmpQjQReQD8Dmqjdvk%2Fphotos%2FAVoNoXTl5K29D4TeUdZUwQgykauxLSmziPNer2q0EkoqyJakWDNovFxHVo2y5JXsxZAltnIzA-GQCI9q6RPqcAFsSu8fyQeiJzlfb2_hD-nPf88Xmfqpahi0OKWhQ127heB4RMGZ8ViJd1TCBovGRzGHmHIgrlLd4BHPYpRsKRHMbGy2kqruQRhFK4_lEt27Lk97XjdPfrWZl0vcnTpqjxyEQSjFXc1zgPKqOMp4B7ctXXX-n7JmEzaZlfh8RKVYjyuMtXlBubPdD4BORjXXbGXNFHup8dY0ZY0Mflon_vdtlWBh60CaU7nFEuPw8Ml3KGgKXA1jDO1ZPDvxx-WnVe3p44zwLUiCRQSqMHCyuUqX61F638gKkYtCq-b_AmxH8_WeRbU__usUKnX_FCa8Ahz4gX8I9oOZgXJvjy4i3Ru3GVtNUHl1",
+        "provider": "google_places",
+        "attribution": "蔡小胖",
+        "authorUrl": "https://maps.google.com/maps/contrib/101270023429551960375",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -79,7 +85,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJO2QW8mCpQjQRyMjgSoG-j7o%2Fphotos%2FAVoNoXT9XW8UGJWugV6dXXO7L-jC5BO_qbYRKTbBjvdk9wpTf6Nhg6HKJfc7gkSPLowREzc8kOz_8kwyn0rdbdXSdLyMZJasz9LCQjte-0aG1S3yfXl3Y7Utjz8yp8AKCwscklADiL9UGkIgiDBajR-AZFw85RH6pANgUTFQVQQiwNtEtRfFUnopjNufISjiiVVeVy6hvmnh5OkRLXD54-NDEtqGW6rmtFqjSBi-VTz-13LG7mzYa9Mzg0TYaSBml0B6e4LeKL39UqIEXHkTOOjZHtH-gsssxxk3_8zkUFcgnCn-GWq28CDglUSlw38jKbyz-iTdiSRr_Cv6QId7Mtq4GpfJUCcYp5FUnT54fAxmqLfj_0r35nqAah2t_Mno6Bc7chahSO42BAnocqu9VloEuB6UeEP1j13pUYgWJGaymBfyMCqxD6-fr5Q2dr2rOEd8",
+        "provider": "google_places",
+        "attribution": "Traveler",
+        "authorUrl": "https://maps.google.com/maps/contrib/118201514016811001892",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -123,7 +135,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJ5ymH9mipQjQRqo6WdCNtP24%2Fphotos%2FAVoNoXQYLNv0sUi6peiunfY6d-PoSxvQc9_V0wI7asqQyzIFZAW9rCopiC_sCo_pjWWnOoCw2kcatkHyO-mnfdflwiP1HwYnQoNf9sxXv5hNYJ9zHYLAxY0-ZxSAn_jM1KmSEuJpZeppxcsECN6wUJyboY2ECCUwem_OIVMPvjGckr2C0YDhfqg5CNorm7BVJPRzZ06-DPbwHxswwIpPolxpNiTsiK7RqUvdQJ7_1Coj6D0ZPULAWsfgQ3xXepJpWo0GhP0aBIC6SPD6Q5S9GLPRDgv76biB_k2jsU2o3G6m1dZjC_tTVYkglrqlDOKTeJJotbkggEMqcoh0OJpiYgD4Rij7Dq3IUDmTGrkKjfYeMPILf5dL20FnRwbG8FNIrXPc_hs4NfdfyNq6w4y_nuiKKaJW8yxObmrsasZQ4GHyb34mCOU",
+        "provider": "google_places",
+        "attribution": "台北晶華酒店",
+        "authorUrl": "https://maps.google.com/maps/contrib/117821057100083244661",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -167,7 +185,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJA-U6X-epQjQR-T9BLmEfUlc%2Fphotos%2FAVoNoXR1h94lCdJINS1MsN6TyRrEhEphU4Ck-Ey1vxIhzLEtVNHGA3A71ikcrQllpBrNdoGGRcBJh40NCEEavDseJBdeS--FFyfqZXW-ChyHK149LNHM-lQNLhh-fpW4PkMzAIrZU857vel7DnUv9NTLYNVWFa622U6e4CXATP2JGdlAkgEz5CyRtOj5TdFczYkbdomcxJpb2Mfz03erOW0dhUkJVevFW5l5S95MI8TGR9zZHEeWgF6KqYQO9vw9WLh_L6EVky6qzyMmgtbCD46d3EiAJBzpaS5TvRdRwE0IwDzMUBYy-EdzKlD1S-lMUbfAuxKrGyFwm0-8IecXSrDPWpMYJBQkAJPZrnezmYH3cZUsYUoCg2AgnXC-w5TDIrI9HYW4bwWmscS9uJnXtwX1-NsRcvlm1B8PJVF-RMHBWyvGU33y",
+        "provider": "google_places",
+        "attribution": "鼎泰豐 新生店",
+        "authorUrl": "https://maps.google.com/maps/contrib/111092218489865257516",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -417,7 +441,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJn1-__5epQjQRG5nQE8kP-SA%2Fphotos%2FAVoNoXRjhgozGQVtQJxNThsWON3OP376gW0SzCWhopCGsT78UIkn-JhoyoqnQp9hBZsETGU_y6hqOSJJxbtWVPS_O1n9gUWDWWC61s5e39v_MnErqvM4qoZMCVX35_e_zNAJwYVyxhrL9DgIPLyCxdvyW10JPv978jpSX_H3rPa_zCUFRLPr8HlQbwOy4f04atPaL37uSspfyjR0PAeyormV7ok5FOWRsw_Abnpr4hanHFnBNB0U3dfr9MaZUieaIXWih-xrFeTp3LrZwPG2iKAS5GAOrcftIuAbF1awhV8azPWNDQqNsekcbXY2INYCFB94JEVG9A5Wokyj1KUxkyZID263KeGOpQJ8KriXFFSzhi5bYWDOUvaIO93ytuC5DykDM4yB1JUs6rlOUZhZv0fFSv7_cn8hBsVCTxQ03Ivnys0jpg",
+        "provider": "google_places",
+        "attribution": "Wu Space 伍空間",
+        "authorUrl": "https://maps.google.com/maps/contrib/105754084647258452616",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -505,7 +535,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJQzBnhYWpQjQR7Vr5CPt4quk%2Fphotos%2FAVoNoXSnK90qwr8B0nCounGNv9TAkMpWf0G5xylp2Eks-cWDo_lPu-6kmNBNQEKgJaWuDPeFB1pUYEcBvPyKgV6iQHPKepIw8OCJ8f1m-IKbZ3tyehJXYFHHA9cDZBiyaaSaMHgK4cjUb3S5U3qwXSd0Yzk_mtWA7_-_uOuA4q5t_2Ibnpr76AHQCtLOxz7bqPJDMhNSfmU-dUfZuL0V90FnUv9h_vm13Wsr_yheLp-eA4-dU-oZZghJvbwu7rKZJ9dzO_JolZhKiVi_nMvIbgnmL9qI5D-xv7GlG6700-kAjaLXQ6XWwrjn_oAaP8lOagfhczvvxX_ucW_DDbHifmTJ6HeOd3iwsf6oSj-NURMRrj6MrGBzsNomaVacmtcJgaMi0jf74f2ZUBfED1eq_a5NPojdjrw",
+        "provider": "google_places",
+        "attribution": "WK C",
+        "authorUrl": "https://maps.google.com/maps/contrib/109182883906783051248",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -549,7 +585,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJNazWIAmpQjQRoqSVTRnHUKY%2Fphotos%2FAVoNoXTD_cJuT-VkBQovSsgsN3JlQYQfEbiC0F4Q-Sr5x78yROSQ8E87Lta3VEJUh9JTmd9JqFeVtioSOatfQwGieg6VOBmADwQ2_50ReCRwgK6GFvyKDjfBawKw-aM2IzwftfJlEVJxFm3wdEqVcEPRkqDgXHi2oAoNqL4jNt_MdiFa113tX6DrMiWoWjA5uT0mQR-TX1nzxh2LVMg4ccycdk59sM-5rnf1MS9ZSMnhQ6rllqA8Q3dlmuuTogxFySb8-AS7dbG_2tWoflmsAiVHem9LdrQ92KBKd1-OnK0y2DV6e8IP6FdiIMu1KRsyzbpHXJ6vVXW88QJo8mq4yN9T81_QaezvrjVYcTlAeSudRXaB30U9HQOAXcMBUqhmHNAE4beOnOoiKiy_jDtrF14tnZ6PsLJIQxgXDD3z1nEU9LLZaR2A",
+        "provider": "google_places",
+        "attribution": "便所主題餐廳 西門店",
+        "authorUrl": "https://maps.google.com/maps/contrib/106913215949997727314",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -637,7 +679,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJO9WcoKmpQjQRYyml4EAJXiA%2Fphotos%2FAVoNoXQX_PSqjxZADlP8Fr5xf7cF36ibxdQKzzvSEaLVpkaRw6RqtRmiznSwgIlwjvsiCYDAyntWmoyldF9HZn8wvMKWai25gygTYy5wU2Dqk2EJc6BlNtob69ct_eq-hrrme2suWic9gBN-crf8Zsl-S9nEoJep0Nfkl65tike3IXeHGjWKQwTH23jarEjMRfkup1yu3oTdusD4MNRqa0qZhoo9t2YngQVbzoRowwfwzG8Zvax-AKcIO4fXhzQfqn-HAzU6uj1Y8N6al6wxZTSam2d_UOpQh6NfqjWEcGK6rHm9LTA_IB0-Cn97qVAUxWyU8pk2PAmQOCKEU3sDUTq4RWYAccAg1Q7Kv8ctOzPRKqhAB6dGGztF08RMwRD-9vpvJa9fBKTEvqNUoorJN1xHyrYgNwJMzBQ5eDC1QqDhiWBqXg",
+        "provider": "google_places",
+        "attribution": "張正忠",
+        "authorUrl": "https://maps.google.com/maps/contrib/101124927793077921795",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -681,7 +729,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJoTzHRtWrQjQRc_-hDCnccwI%2Fphotos%2FAVoNoXQnEEpbImVgmF8HQ-slh9bBFDinLFrUG5-ABTKkQQ5D7q4mSKpS1onQzLTMZgjyxZWArJOw7J7tHal22Am1LWGzkn62Ub0ATsMaBTVHkD_zYimuG_VKT6kYpCeunqsNlauOzeudlM7ZZOYllGUzp_6oOzJKmpOz8_vZga3SDS_4v9CQCOQNydzv_pMM1nTfT9m92JlCQLQF0P1jXHc4z033VbQMZfHtaypzhwL_EDuYuT8a6kEyBf9l8TGTw9Tzgeev97WsGNN5yO6WeT-9DJvGNEFdgZKGEY8SQDdCXCs1hb9X4f6psEf_pBFHJ5f3HLVwKltIZXG5RtrxxQvgmRGHg_grsAS12eoT9hrZzIGpE1gLerLDtSEV3ifauLmaWlJNsOllAxnDu3bAx7g16asxWw_Aab-g9vBBJ4uu-IjV-w",
+        "provider": "google_places",
+        "attribution": "hsien-sheng Chen",
+        "authorUrl": "https://maps.google.com/maps/contrib/104409937552619652378",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -770,7 +824,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJsSC8HAmpQjQR7uCNzzunDRw%2Fphotos%2FAVoNoXRfQ5jOLZZaqUe65tJMmu5bnhMJ_xzxv5yvFNH-3bC0YsmfEJV44BFueW-4J3xeLVUIUabfMgRbiFyevDUoLP4dqVaRNdXfi2Lvpw9B8SvMwsels1q7Bvcmog2qxmd8766qHqkuykou1mzAtKDAouCRRHNG_h7qs49J8ndJFbCazycA-mO8ZTFFl4lihyOjbQwhl9kLmSvBX1vGcRHWmg1vbVIza6_Klh-DPKgGmpL7M2xlJqjCKwkK0FsqlLnBuourBozJuJj5YbMWT9shwuYuaGPqATnGmTPTapp5xOnSr6lQ3lNRcvuYj614899jOn9ljVMtdoD4_dIlhiOAJg6aRMBfV5UeIOQUm5rS2GqMz_Y8FjtCDI-2uwggZu458X54iuczbV5Hf3fz0SjCKuKj1sG0pbk9dJWnZaKj6RUtp3m_0lKDXDR63bWay8yD",
+        "provider": "google_places",
+        "attribution": "Brook Li",
+        "authorUrl": "https://maps.google.com/maps/contrib/102858033790446409074",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -814,7 +874,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJNwu7BACpQjQRx841v6FTH08%2Fphotos%2FAVoNoXSWaZyUnULIZwocjEJF5MX7NhdkppRPNVhQyyLLE8Z8fhe5gTa36R14tBKVpSAU4jJqt84pgjGbPrXoFiDPrRPeuOBqNzWa2Ijo-rXD-p2WhMMAq29vQ2k0JoDQuKR_udtBf8hJypMH4oTExk1FQl4fok3AZHfaT6i7R4jmv3VtDM5ONfm14Wgmo-HdibeK5btCEcDK-dWGFWVgF_rGLWyzGdmwMpbCnh-Z1au6hr2AZzG0frnsOxISJkP38ZF3nc8zUGT6Nx_UW2P_ZtcZYTv9ge8_P8j00MLpbsD5vKOi35X5V7gWmXf0tJbgYRv9BWbs9zn2VinbYIjpwRMVb5YMk_9mWHM8s_Y7m8CyKSRVqC0EPCq5mvkbwCLgbQjn9_V94OxDgrEZ9oSR7mbc2EFhUZwUxpBt0BkvYwGL9-nCWKn0DyuQlFSrRow0bLXS",
+        "provider": "google_places",
+        "attribution": "Vincent Chien",
+        "authorUrl": "https://maps.google.com/maps/contrib/112805707399184928693",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -858,7 +924,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJX2DQnZWpQjQRefIW1psv_IQ%2Fphotos%2FAVoNoXTlpIZAhxjyNNJujYjjz0_9MeySl1-tcIICDyyhwPH3w963zhQGKT3F8RuZVkfyosKWwXIEncz5Rt9QE5g8y8EtfNmcibL3w-lg1Go-UEC6R0APZUGapT7IgzquB3Nv0EI5JVxbyl1h_lRZV6fkY4pfgeTGsokUiuaHl4OZcvPiEI0YGsBUPtxegDST3TFfUk42wU7FL8StKYD9sh9Kbp5PZ9stWEdU2cEMUnvfpkFYXP6bhYe67Lw8TDOl5CEuQfZzN5aelFXGnAZJzaW7MUB3sxbj8CC7RPq4v7MGPhIt3JuUnJab2anwzOvqxvdUWgJHFajtLZ2jLTDL7LIejEgwhr7NNzPuJJ7HR9tjHuFlef6t8aMsAA84cX_pnAIRvAM4YxYY0PMgDVxF22ARPqe8r0IKBWIXD-3Ls6GkER-8zg",
+        "provider": "google_places",
+        "attribution": "登波咖啡",
+        "authorUrl": "https://maps.google.com/maps/contrib/102821162200218499130",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -901,7 +973,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJL1cHXAbzbjQRaVScvwTwEec%2Fphotos%2FAVoNoXRu09q-ePNtOxb7Qe9Sd520cv-3k-YXXnvZA3-Jznf-aXO64GkxXH-P1t3wLxGEwvpYpavolJF-6ZhhlmQkIR230rNopNDvkFbNS1BKDRtk6l0Td8l5hTU2DwunRTTRr7mP03vCzQO56pryiu6MU7RbEDd8MVJeJCN3e1IOsz6V17DScG-0HYH8mmLctwDJRAx0Y6W_B3zdAesUvXTPN7NWR4ZFgJ3X4varnj-erR5Z2gtocC49NxiMnOFjLfERj2oK1zrZuU_vpArNrYXRxTS2dE3AGMlZ2MK6ZQGZxs3eigN8DU_0uvY5sohVhV_VeN275K_Bqn3quuMy558x3e1tS1n1NwGakSSIQCOblNi7BwQrlftFlKSeF28-j_zQ38lJWPHwIVdn6r9u0aNBBkbzA-RjZE6WvctPt6PbMFdt",
+        "provider": "google_places",
+        "attribution": "Alvin Leow",
+        "authorUrl": "https://maps.google.com/maps/contrib/111645868226341218727",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -996,7 +1074,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJkRGtsfKrQjQRYWPBFx-XsMA%2Fphotos%2FAVoNoXTh8YEX4VFSpRO5LSUjo3sRW6NUKLWzPgiQOuNoGT2PxyJ-0bkUyxzrLDc7FYQ60QgTXkdLd279lfmFUoCErdTBfyfMYdNLQWspa7BHIjRO17KYSuOz1DUcj13iqHAVh6yUDXdTwtZD_xC7-_gmo5RjOiowwEBqxwLiDa7W9eEjD3D4AHzmudpOk8bC5kmg4fWHtvGI8T04wTOK4ClIqAcROAkSDGtBcoY6DXb7hDYxLWGmG3qoLhBvVcII5me_F8WHx4XcSRNON1oXh0Wiiz-hXonYPYyuLXPIDTn33gcwt69vfS4r03C564es59IviHPipmqyXRepgaitI6WzWR_hGK63n5ZhthiWoz1wIMsB8Q8UjQclkUv8C87eKC3beJuXhifREuetuM5Icl6FYNwJhG6HoE50_PHbm4ajBONVEQ",
+        "provider": "google_places",
+        "attribution": "gen shu",
+        "authorUrl": "https://maps.google.com/maps/contrib/101622139801656826498",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1043,7 +1127,13 @@
       "bestTimeOfDay": [
         "night"
       ],
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJxUXPVmupQjQRtBB6oj-S5qI%2Fphotos%2FAVoNoXQVKcwDFFZaMGYd3ItgUOEyhIgAY_XQaUqU5BKLCYDmVd0I6SCVhAZ0jlt8nbtHgxGngh96_s60w0l9aAqcoIoqSr5WmO9yNrrvTH-bdZcxjuMi8CQJcjPWts8D_icJODjmvidOGgMW_LwAAv44KjhGAnMkRQOkJchP0Vs49RcjXAJMACoEmKHj1UKhx9wPriI4qJql2eWjR6_nQrO5LV4T2iHf34yx20EPQ_JqaXAemNK3sPGkgTeH7jEaCsQyqKeAPTf-qaX3uWjRvPXWUN0tH63UGqRGmmf54ka8Q4illR_WF8XHDCWiU8aAuRCfHDrJuzpCZYQzeJXcFs5o7ffM1eznpla_72iPFGFSfuUbWo04Ae0tK4jLJ5hHllm81dhgDPE-jTcaaIGVgZlhd1_IWCUL5E5jtSI5OtLA8Fo0DlwB",
+        "provider": "google_places",
+        "attribution": "雅雅雅雅",
+        "authorUrl": "https://maps.google.com/maps/contrib/106268058510488839609",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1088,7 +1178,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJvZQdaMurQjQRfS4-rYWw9cQ%2Fphotos%2FAVoNoXTS8onn1l_42tBj1G1lBr_01bNEWfxsGeo-1g1xio_bmUqwl1aiF93MwgFMfz-wOpQ-6paJ3BGcegQlnwsp_BMcLdjPZVyEmuaJLaiOcZrzmY8i92in-1vC5Is82MuxRcBmjGt1ClDZ5z7DylgH6BOGzGpajacXaTLsxKyiwh1UpEhtNQjXgs5025elb3lP3FjUbrfvsUm-hVB7C86qIYLH7KRFmzE_330rKMKVaeGuqD6cuGryrRQfzMuoDPYa7QhyC5ByIuww2lTfRODEYC_qJUwLou-Di3WdFz4gTVUBXJHeBrK2fAzrLp8l_vg4U-lEzVz7XjJGU5mG2g_OB1mzXaf2S9CfmCsgXvjeAn4Y1uEsO0qwfHcxZ-VvFELkN8NTKFNyCobfB1Ty5EJknUSeEt8_v5HH8r_nvw_TPk78SwQG",
+        "provider": "google_places",
+        "attribution": "黎烈中",
+        "authorUrl": "https://maps.google.com/maps/contrib/116060453290487927407",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1207,7 +1303,13 @@
       "bestTimeOfDay": [
         "night"
       ],
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJZb6LQKmpQjQRH9wMUVFCmUo%2Fphotos%2FAVoNoXQmDBO_KWruWg3ohQejJXAMh_NFImkiJBbFlK-fkoVOe2QzK2BkiecQ6kQqK_DTssa6ORMb4YnXXz7MjGU7bdM-nduyrdoI3iui7OcLgJVy7_LmDZvaJRZYr--tayYz_yUUTt9ud3R4SEHs83Jlsr8H66R2E8b2FDyvyeLsfOM_RJanQCbyhbXqOb_JSujC6H9TxIk7A6YplGkGZtqbB22XbvFcsCFwekCHYeDKZ6NsAh4YrrOSxiAA2CId_djTWNp1fVzA1I2RUCWdMPyzv5rcmK5s7_gbvoK6MzSRZErnzaoA5ohv9nZ6iShm-qZUlIHN_b-RxpV2I99vYfADatfDqUD6W-IFZpE24doeu2Kpzp4AyHlRN1DEk7sGtVOcRpKwL67_AjM5VvL7couCv5s2pE0",
+        "provider": "google_places",
+        "attribution": "李國魁",
+        "authorUrl": "https://maps.google.com/maps/contrib/101066197605432929996",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1252,7 +1354,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJg6W0DZyrQjQR9vZdgYMRoj0%2Fphotos%2FAVoNoXQ5zNFkUR14OiA8omLlpWfPmHyz5BhqF2o9V5TLOeWPP6DdDcB4NOgTLZBgmmYxSJue6lTO72jB8kasWAK7riF091QHNRstaJVUEXEhXxrl9qknFhItfBet1HEVfMXQC2ghwRicxjmrm56vl_7utDF94En5XdBABiT9hpvPotRj0NM1_E6EKcgduTSTAKlkfE3XnFzAeNA9Ht6EESC8_a9FH9kv-oG5kWONlEZVrCJ3RsvXYiBtJ20I1gE6mUa7PT2YBHm7_rAKlzJBCwL9ikc3D7ZEkOfeTeoMfxWgO0GPulr0HcRHWV9qqlJvNV7E7l596gmzl4b07BSNz-BMrM9U_JHomRawVdxZ5dZKfNUI0lJXhLvQTGJ_ReOnALe7N4eJBqEbKbn7hmbPJu8_taPV5r6rRtIUp3i1LKYuLzUwp7U",
+        "provider": "google_places",
+        "attribution": "迪麗歐爸",
+        "authorUrl": "https://maps.google.com/maps/contrib/106898605513419475021",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1311,7 +1419,13 @@
       "bestTimeOfDay": [
         "night"
       ],
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJBa_9xLGuQjQRKfnnhr5twuc%2Fphotos%2FAVoNoXSIlFem2fitJOxjdaqMhS3ufJlJ414ufaX0qHUbma42uRUoj1PF_XjkyK1Sbzp0sYWgwvnkkPK3WL7sSEKjYuT3DMskesgXmnybgCxKVPDXpHR0vlGHf4MtGS4cIxPjP_P6n0ra5fWq0VedbFl43fgsGsDDJ5UsFw8LCwXgydHx_eCNLWChd2dW6Gnk7_rrYicqOJVm-kUko2dEu3UnuQADJG8gvabZrmIoG5LWm5a0v8rOI6Z1BuuIVktgNQ3Qf9huoTALvUodPNzhW-Ktl4_q1qWKAKMe_wAute3zfue6iH26GI6E72d8FnKxBJ3r24bGU39jIuJWV-BA4Pps3zu0OoOjq1sYwISk-YC-dpe4f0oQa4j55IWXgx5NWiCXL7BgupPA5nIGn_vLlUZ5TqsdQenBpWIelPBQHqjwEAFxgA",
+        "provider": "google_places",
+        "attribution": "Ook",
+        "authorUrl": "https://maps.google.com/maps/contrib/101090374854004432537",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1365,7 +1479,13 @@
       "bestTimeOfDay": [
         "evening"
       ],
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJZbFYW6yrQjQRIGUPSTaQuG0%2Fphotos%2FAVoNoXS7xzyD6wsmU0kIYZ6N_FTkwoX7Slu2dcRr9QHUILRGIH16Emm07RTet9JRoE1TTaSLl1Gzf6LQZZBiunMILlp1gy217EAII3YXVmV6bypV-XqR7G6Pj1sil_kYwokdgA8elOfVd7SwzGaxko8U_rALfYxp8jrDmaC2STL6sBfoA21K7VpRrNP6Xf1UNdErZR6FPthoCSCymVhGk0eXL76DVqQb3PpvYmtENr98NPtR60HjTqj7au5Uf1Z54s1d1TZG0Aze5PO4eqGR8d55DFv6ZSz4I4L61fVe5i__zVWhk3b1SlXFekE7AV9D0PJhsFH9Ln73il7viYswfOEadmLCnihHtkU86hIB7HOklpid03pqv7bhAYOXRGG-vlYTiBwGPk9M0xFL6bUqSFDr-Y9GLDulHtdEVl2hBc9KNK5l3jGF",
+        "provider": "google_places",
+        "attribution": "Kelly Roxanne",
+        "authorUrl": "https://maps.google.com/maps/contrib/100767785739814563790",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1427,7 +1547,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJh8s4AuGrQjQRIw2M8SmpDIw%2Fphotos%2FAVoNoXTnxzGXz5H0BxgdW2dQmoNpT70B1543eJQs4cjxFqaP7J7Dxjgf7-BNmU7Pl7FNEdgiPnY9gTadAuJ6MBKK-to70TZdCyd81dSMREviLr783Oq7toLwD15Gwy_nvvve5hs848OFuEqicmpTCBnvwrET7bTCavSAEjz4Dwg6k-uziOTXhTa1UHTTtfYcMYhfLxbrN4jAFBZgrvmX-rOkV0Qa9zB4-JNUv60xBlpVvgmCJB-FCacatTvdfT6PczsjwgeuYJAXjiNG4JedLDcXnP9l07DLwa_h91LLC8eBh63DKFJOSz5c4WXKqqjZ7CBLDzpyiRIYcwq1CElHaRRjFS6bxMdTXaUfHcBhu4piOHxa7iKgWlXXhRThA6H245dQV7lvQ9QJ7ZHN9VKEmGJnW-Pm1Oi-KryvwIaHqf8nA6fUKLApyyfOBgRNiZqSbKnt",
+        "provider": "google_places",
+        "attribution": "Thierry Dpst",
+        "authorUrl": "https://maps.google.com/maps/contrib/102782416645971623845",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1490,7 +1616,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJCd7n16ipQjQRihzEWF4z6Pg%2Fphotos%2FAVoNoXTYgRZ4nEbQzf5xe_sm9qA2vAldRvESw0vPp8e6Grm3vH1MgBTJWMhk46zb5Ff3JfD4BuDjcBPGsFhZSlqJYU2WupsmTejtr7K0XDTPXMTlZqv-DAxAoE1AdrcaqWNXBa1gaTvtGSUIEcWzIeCN7Vk9fL1ZLaXSdBIbUVB13lCLRICKJxQu6rMlAc2gua5e1Xl6Gu3RdalYw2eOy6H-1u5m42jxG2pKxB2H2Wspa03mR3es1aVPeAyv4rwNIFbFoLKKz-qnV5WTHl3KG85yTgQOrYbf-nytYjN3M1HegbPwDz7qfETkiuD-W26IWqhuzqQbwqzsvlofZp5kO6WHowf2nYzBocDu_CCQJS6qpfq6Ty2oF8UjWqghPBaAkyTjp1ExaL1dxBfWILpMAod4TsShh22-fetVfMv7bG15JkncOTVN",
+        "provider": "google_places",
+        "attribution": "はせがわたくみ",
+        "authorUrl": "https://maps.google.com/maps/contrib/116091105803029763335",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1552,7 +1684,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJTamiuZ2pQjQRsmnfkkID6UM%2Fphotos%2FAVoNoXQsUYF9_h63g80L36_BpexMjZDci15HrV0znmH1YR1c-3oMiiCyaDP8DZ3i4OJp_z2mWaq7wNX9Y6gMrJ5TrJPTEOoedX6f6Hcv1s1A3ZZN9oZATA-0wNqvRuPoPq3CzisRtwGENZ5U16zwc-9L4oNIsfygR9G57Lb1SKi3TdPjS4rlPaNxoxED4bc_rXFXkd_gWLWeDqrwZ8NuyloHDH8Bsac_sWxw_UwUTSFClkP5QfKvibmRfd-yCJCmEcxmht3XpN4CRaWohVz3k2YI_-ulZcXDm9YyDa0jjWGuk9J9VlJzT6bIEPdhO8h6ZspU9lCq6lPCgoi9FtCF2cRXhdPTlyamqM73fZNRyx47iyNzH3Xy6vcvqfJtfGqX4DExFzYbpab3__jcH_WQWZlCoTUt6TxyuQB0duXfhnLkq90MJ9X-zWJM2CRl8F6j48Z9",
+        "provider": "google_places",
+        "attribution": "王宣普",
+        "authorUrl": "https://maps.google.com/maps/contrib/106692434599022400345",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1614,7 +1752,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJKyaoGAmpQjQR99RS3zrx9Ms%2Fphotos%2FAVoNoXTO-LHIn1y_kFqK_OU-zyaYr3sFfPYc8NCq5aCORIndowyAK9qKU50IE0TGBfYtAaAffNdjgH6J9qQyhke0D6d8LE23xOq0bNRpvk2OnW0LbMIXeL3qSBayORKD89XmFQO1GLkebnpeM_jGMggueS2K8DHPbOFGBz_o600vLpFvR8AwY3BuSHXyKvy3z2lBIyz1NHio6M-_o7CN9YVtJPni81EKf7rIDoybSNANhJeZdm-QWlmr5VYr9IyLkudWUYgswqShKSg7hL_j_jGFRd8Wv72jDjyFKX4Tr1UguGTMuCyaKv3UW6Mb--1thXHllyicGqQzIk1oeW4Xeuhg0lvbZF3s2xPy1uFrv1Rr_knUz9CIYVgUhb99pEZXMr6TVEqf1v8PYocmvuA11nLJ-ofKigcKL6Ry-MxnveInkDNO0A",
+        "provider": "google_places",
+        "attribution": "Tony Chang (82東尼)",
+        "authorUrl": "https://maps.google.com/maps/contrib/105195572425031700474",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1707,7 +1851,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJx4IVtBapQjQRSP3RxLSLdg0%2Fphotos%2FAVoNoXRnUNavI0L7n96Z7qxhiR4l-rs5G82h_2PEqUAXhf1_g8W3P53-hKsOomN8q1ZhSnYrjvez17wx8RrVwEJ6Kt4c-RPRL99XanUWUDjBbrLqZVCoU2y-TjnW2UDUYxLtVqkrvQ_T-PTgunPC5lqGgnUwMRv_u3uN9YfeGAc5flJXIT27boA_7RLABALJD1FHokbPoJNf0bVtTnfQ1PCKxR4dDNhVCjqH4Sk7X2y2TtrNMJe-SAYJAzxMNUTLKh3SsWFqWcvZPf8P-4rtlynAz8WpvAeFGj5QJXTj67FtHd8cLts5yEGAV2bU9QJOw4Ex9iUOWmjR_sb9Q5Tp1a6-Li2u0BHQsAeYFqRJpZPXD_QKG5kYhFRBhwS47Zq8ZwuQLQrSDRMrdUVkX_hAVqGGhhGRjK6sgERWC-Dh4DFHPnYYLsRm",
+        "provider": "google_places",
+        "attribution": "My Life Enjoy",
+        "authorUrl": "https://maps.google.com/maps/contrib/111390815423802326697",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1764,7 +1914,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJeXELiROpQjQR1REJMdOO8Xo%2Fphotos%2FAVoNoXQCBJSyRlzdFlGG-Es9npVl4AqG7v-SVnPAmHCEor71b2Rg5Rlf5-_jvhUnvdYRvVjEu9explwt9SSyxhKwVeDwNc7km0pC1V8_MD73YHU_JGHo6djJur5arirpQmDsoCNjoEiMy3CJM2GVWe6zwlH1c8cXAmyojeoLQh0VyA-PQmRycZG2vqGBTJ3Z_m0bGv0JrEHWFNydESIKUr3eUIoQhmXFjo2HY6I0KflQh0Gta1FuNINoDS_hTq4tePBJf81LYx2xGqbPOCgsHpESQ7wsyAIP6uQeTwJtoYVdQJMaEZu_NzYrYf9RjTpnR0ExwIgqv5xL9VmYySjdgmSo5waqpQNY1gGiU-ZfiH8fxKn0wEvReDYx1k4OavVrygYy925oSkMKJe4CdLQ-lTpUoV-Bthe4FJhD19Pgvo5sHS1wE_l9pSj50KXWqBKfbQ",
+        "provider": "google_places",
+        "attribution": "真實感受",
+        "authorUrl": "https://maps.google.com/maps/contrib/110911458822123117785",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1808,7 +1964,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJxUN17K2rQjQRzThIo3q9jUA%2Fphotos%2FAVoNoXQ4DsrDaLIMtztfP8b1CwdXRniB37oPG5ne_ANCwxlUKdovBE8RxwrZNgcVR14DbvPtyQjnGMgecLggSfXoQMsrmlQRnHblEvbrrc-sBDh6P1ci9wnpxugPEiqPaEyXLkJiWNFZvzL0K-eJ_VJAv1oYs9UYgQDLx2I1cnEhXiqOLnoiEUa2BJTK71702QWb2hcFF1TBQl7dRe-zBMElJEb0F1jzIpm1ZBx8nH0Gcb7NDxE4SjdIoJM_qSvZJTOOu5Ey3rr5MOs_2qMy6kmTETUel8vpvjQYvjNeULx7M0AsYQLyhMzlwuXp9TPil3hYwfNBynzZwOrkac6ndlYSAaFqxCYl6B91-WktPQKS7D6u0C0Fb1G6SipieRC31TqabtyPexuhssOcqz5rz1vkYJdOM-J6X9E3W7LDLCreShmw88j7",
+        "provider": "google_places",
+        "attribution": "Enid Vargas",
+        "authorUrl": "https://maps.google.com/maps/contrib/112829168259300672198",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1861,7 +2023,13 @@
       "bestTimeOfDay": [
         "evening"
       ],
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJ5Sf2QxmwQjQRsn3QcZ95QNI%2Fphotos%2FAVoNoXTy214L8vLE20FOgfpcoXHD2xyeDsdcqs9Yp5eprTZsTlHDROl8XEfY4Ga0WhRSs3j15s7c1Vw7GKz2b61X7pwRyFNt82O7UFHxIYG34dNY6wcnz5efsg4hWxIbTZL9DHtsWKmomkrDg7mtLDVFaerV0Q_VIW_z5lbMM5ec5pnIW0ooeTuQ16O1lHJUk-g7Ni__QPjNEcKoBY3ssFkcPm-di6B3MTMAaSxLP-k0X75jOZLAvqo6KkZMFEQt20FBM1G_CiTzy3fcBnCcoe4zj7sGTnRMxdqV_zTFY_MKYjgST0b0jVAYIjCfDS5no7WOJ57Pud-479SGuIorjQSu4T1nBJDMXHcmEkuokMed-0bhYLw0sxWDbg4Shg40RdsLndDrKSDQolVIbzzHuD1an396Jj0rHbJ8v0rOwJm51DVGVGw",
+        "provider": "google_places",
+        "attribution": "江順安",
+        "authorUrl": "https://maps.google.com/maps/contrib/103182428657579067996",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1905,7 +2073,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJ8fWvxLGuQjQRpnyrqt4UzQ8%2Fphotos%2FAVoNoXRlm4Qn2Xgz1oaeuwy2PHOa8FcC3cnw3WYImeUUWXIec-E3xWbb_JoF0Zd1taWvfviLzzOr85vSsjsauDtxjFCAg2-MuMUZ2W0juW1ydnEDZbQY0HglI0ZJJAlOFddy5y-RmX_NmgcIkfmq-kknXaS38j1eqNvKU0bZfZzcCOO6n38U_Q6b9Hsf70VcgSWSxKBA3txsxzE9e-2-BQTlNY3p6e5ZDGRP5OmJOEOxyw1NXN8cbCqdOZAbcGPZUCrKfvuaUTCjtLlr1CykcT4OTuR-m4ttCC8mGdoikIuI4GmgofnF0clIlRCpSu24p_uA5DZBuOAXs4hyZqVyOKArvGdlXydrMcHRPexY4vVeHtOIHd3nPzdcv1ZezESb2b9nk-LCy2LOIKkk05x-C3bQvCDeLLdynrzBcfPU0qviKJE",
+        "provider": "google_places",
+        "attribution": "臺北表演藝術中心",
+        "authorUrl": "https://maps.google.com/maps/contrib/110409424638374789413",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1949,7 +2123,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJG28g82ypQjQRUxV0pGWRxGs%2Fphotos%2FAVoNoXTjgdkIL9RZBtITFL0drcfkpELYJcxgOga7EUmRLwU6rwur9-s_O003AqYiQDs581OdUMiQC-lVzBeT8n5gAJrskKEtjDYWsK_sW1nX7sPKZ7eR7sYtRA0kOCZQWd1GcQQeRjRYpNfnvvpYo5H34snYo_ITY-d-rNbk81BwUB1pM0Kdm9CikJ9xoABwCI6yjMnNxQL4ium0noPS5KqAnc5P5u02zjU_wxsr4hAqSK05hOqCSL4IrJvczdrj5ZNfgjP8th8RHaOO9vCdbyb0mGbVMWHJDOFGtC2W7zJiqEk0y1RcFl470d8r3dxNGOtuqJ1Mj-jPxDmEuJ2OqJ1p1Jg-BAVoV7xjDIfEtRVBiSkRZ6uefU7qnUhIkFLZm9fKJ2jinkFdkzUn1iHKJa9SKXI0e6PRmviohA2tVStQ1rQuMQEM",
+        "provider": "google_places",
+        "attribution": "許小咕",
+        "authorUrl": "https://maps.google.com/maps/contrib/114222122076872669000",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -1993,7 +2173,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJD-XzStarQjQRobpzaAY5wbE%2Fphotos%2FAVoNoXQaHNllSHbM63zkf6ULjvNpNtfxH3GwK2ZITIiuvvZi-dKvnVEkuc1cZWUwelcSLjqj1_coA3HXU7wEtXeVSS7kBTvaWCuf-Sa2grPnH1XKBg-LTwHsxoxNOIGJKrkOdh7xEZBBJk3pjytyOzrebU1Hi5j2SJXXbnI3HL5Sp3T8Oz-eD8ijNXIfvsbZ6UBaLKS7fHcoA_Qnon-BGYK9KBkY4lwZ4nB8p9JAkerFWSS93kYH5tzY91xz0i8AiNXk1w7Tw6bc0l6BzAbVHU3GbThEjJps_QMI7xxO_EjHzPPr7JMy0wr-7CJop0hZuqzL6aJekH1bxrW0mW0pu61ST5-wFzXxoDjPgJAl94AK3NeBej95jFX-p4ejuxQ6hJNtcyEzk-sqlk9Bhg1512yoAD71KQyHxqbqDfyoBeYLa5Udb3vY",
+        "provider": "google_places",
+        "attribution": "Z",
+        "authorUrl": "https://maps.google.com/maps/contrib/108481346334448038409",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2039,7 +2225,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJZbFYW6yrQjQRIGUPSTaQuG0%2Fphotos%2FAVoNoXTeDMZbIsuDbIVQrnQDP43sZoIVlsy7LNldw-jUnrwyMiuKUG730DUrvR9_ZwvC12ZyEmRlc-8q-3Gbg3lAllp0Ga4wBXg8sPYnBnthgL7FAV07m_ys_jGoTwiEQTkr7j__JXZ6Ih0vbROEViO6uh6yU7WDe5mlRMC9TPIkNtzsr28vRa2cpledkWeurhyAlvivCPt3K3JdwTbxwzt8ak-kdM7ONjeHCZQCAejPnTWSVDCDb0qeFdSoLvP4TBYNc5DCE0f2a7EqBC00Xi2z1qldpujFxK9hc3usQmQCU_bjkqQ3u_oHVYpQrceNElqfSNWLtlSMtrjMlwvAjo1O1eTgX-jwj2lGPnwDtrF04ZiG6QeNW8B3XGrsBJDk_7CV_uzYKgauBqrxnhOZpoIcbOSecSqMf7hINEYLoQ1gwLSVPkfw",
+        "provider": "google_places",
+        "attribution": "Kelly Roxanne",
+        "authorUrl": "https://maps.google.com/maps/contrib/100767785739814563790",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2084,7 +2276,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJcRV3WHOpQjQRFpgzTpxZWgo%2Fphotos%2FAVoNoXQkGbRJ4U8afNqozCfZRMqxbmhSFuLzb25hI5QgatFpB5yO58dMzAgcJK5NAmfVavBD2OFecW5iznnlHTUzaSlnEuGkrlJVACXAxwy4r3f_Yk6WFfeqHdn73RRPjAGNbtLbnuV0SpDJtJkvIDi0O22aR0a2ykPZt6LYpp9-m0TYXtutRG7_dkhrlnjlV3Kp7TZLRuCRxH5p-A0UGmuj5HQPxP9BaZTAfFGh7GQ3YiQqso6wab_2lvSF3SeEkINwy4hFpkrzi3rzyhASWI6km2sbn5LpMZK8xae79BZBuOHu8SRYgJBvyRMCZA_eBUqTFCpx0Y2xo0TAljS5UuM5kSMl3yf9qloZLG-bhdW22cmowmOeoDnrgERBTQsQ9IdLqesrtQONvnv6OQHkivTQ1o5L6-YDWGly6o4kA1bWpVvE_pzYmfiWkb6-CtplhLYM",
+        "provider": "google_places",
+        "attribution": "神秘客",
+        "authorUrl": "https://maps.google.com/maps/contrib/116689782956899881155",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2135,7 +2333,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJL00dCU6pQjQRWEmC8IEN8HU%2Fphotos%2FAVoNoXRkfw9VjPPA_O56ngu_v5bWtXv1pFoOrUZm1li3oU9rNOThtdsQ_lE6LGCsuqKgLzq-PWvmLXsAIh2QHI2iYr1kWbTv8NsB5J_F0RgwaEd14GpSAjCruMF-eavN91QQ3pYHVv0q-DrQtF7LZYzuR4EQO1_eHa6Gt3cwZ7Rz7WGXuL_F1VdB4bmUaFvo4CcJWcN_WiCbBTkFHYsgptO7l_tCPb6vCXA5N4HB4g4Mh00M8mzz0KfO06Yknb1izFSAM_XxFvPoUVuFu5A1UneT8yTGcSIEuvbEg3ogw8HjUECthTzn6oPggNxQBrbzX4SCE1Ez9qUcUl2nDNKH5BLg8um4BZZNFLbmNHDbpL9atTemwHQn7W-8feB1HUqFVUVqkJqJnnzCEnqnX1mFnX_aWckw-xXf3svI7NvSnclVB6thXt__",
+        "provider": "google_places",
+        "attribution": "MJ MJ",
+        "authorUrl": "https://maps.google.com/maps/contrib/106788718744226920601",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2179,7 +2383,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJfUpAzTqsQjQRjKjZzpxQgSc%2Fphotos%2FAVoNoXSfk2pVgKtDP7qqEIreTmApiy6CWOgo8eqv20dyBsPm7qzUxPxi_QII44FhLc4KgIMcCDsAm8BHeAApLDQAWtC_IJdbf_cvz-BZWAPJN3RQNn2VMBp71wI5Fu4WDk3nlHxK3GqVHW1thyGPDfgBs9ht7WLV7cpqrVJ9rn5RHzZ95toSY5TqbPDvbds1DQGaggvM2U6Zjl2CpW-gWbuoeHF1CdH50kbn5BwQEKR4UOTdf-_Nxog_ERS_SHOv8iClSiQP1_OdMpe8cF-HkZzHw7QS5Qanhv4pvmBQFlR2oqEZJcouH7nv6WuP-jvgu8cCF39kr70cBqy-uoBvIOD0_pvq9JOyYinQMRczsvDwjqw2S7UqvdIy7jKEXM6tudqUyTP1s-MfPLV7OYuYDtJw0zbdvSnPipW1MnhC8093NWs",
+        "provider": "google_places",
+        "attribution": "Zong Sen Liu",
+        "authorUrl": "https://maps.google.com/maps/contrib/117335168589193631977",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2223,7 +2433,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJsSC8HAmpQjQRiL0XbavmjVc%2Fphotos%2FAVoNoXTnwIbBojdE2KugOLHkSrBd1KlmtxCqXiavurLwlEEIRAxtnIBkoocVZ6JylvBuHWihVFt00qQtnHmcIcBin-H8DYs7x_HXBmNIhTbXeRR_gKfZzYY1xv0puTMuuLK1poCvuEDPdp0wzflGWbdw1dthX3hU79IkfiD08CBAitOqS_FCuu9J8a4fBrQClqhQxRSloWDBRQKbvs0sphEucQviOhsarHI0SsFfuNb0obWr9DFG82oJ2QHc5FRv8vEO0qZSyGB9gM3GMqphPCuXohikUQ1YpwqMJxseT-QQ4K03JZr48IJN6WGcFZIGwemH30AZOFaJdFNSQy6p2I8cGjzVQo-wio-yKmBIBLhE46kBE2QDIIAQZqt_3dyFfjSLdSWBm6UnbNz2AjT129ew1--uq2-z2bO52YgtqLol3ak0SQ",
+        "provider": "google_places",
+        "attribution": "陳錫勳",
+        "authorUrl": "https://maps.google.com/maps/contrib/109021920969197568632",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2273,7 +2489,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJia3QRv2rQjQRR24UgeLjW0s%2Fphotos%2FAVoNoXSC0d7NUg1-uL1GvsSfrHw4dW6sp4-gmgFskDOQ-aCgMgScGsO-nY5F1q_TCTdmypGH_rAphGQuKl6VWLgheR1FzkBLPzsmKiZp26X_BoQpC5cp4XNJesjuyXB9yBDdB6Rdopc05BIDty-vb-NTAhBHrneHTFsmhfkqlc501mnNh55p131FO4Zfjh8WBHfdqjjunr59CREV7rcIOupWi5EVZPIh7XbtFeTq-_03tEI2i48FgpmqwnIEK684K0R5q-2x7DJqZ1jcrGtRJhsdKAYDU2WhwizgtLIEEij2lwe7pVvECe_7QRgqd0IlbZiiXwMdhQ8IszuBu3zHKMXjSi-P1hOSLM-dq1j2LT60MSG5GIRKkp265DJFVizayTm-vhoyTAs-IEB1uE81_apwcCBQ0LI_R-Ol68j--EyU9xo",
+        "provider": "google_places",
+        "attribution": "濱江果菜市場",
+        "authorUrl": "https://maps.google.com/maps/contrib/116167255682794990381",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2317,7 +2539,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJW_B9cviuQjQR9JI_g0Job3w%2Fphotos%2FAVoNoXQe2-DAyxTbU9aTOE4L3kRiDJ7rWzLRr7-XwSiA64N3kamyySf-DJyQVxyqjy8OH0hjIZQbr3sQNYbp7m3itrDQhnYS_BgEmseQq_ey8FPjDKn66G5cKRIvVc8j5r_Au9X-1-UUCzLs4uYm5rtEXA9jSx3suINPIdX96FvpQJ8HvjFXSIOKIgJ2yLWrj90bBycWqwfo4ASJ_bvidSgF9YWm9saoObNLwCXReXK1HTjJKuErgi8L_T4Py9tG1K0OydWN1jHZ9GbxVGpGuQQIzzLnuFAs-K_2iMAYU83jFQfK8qXGemMvo6VPgHp6xy1mWlIcg9vthCaURszkXdxHKTxqtGro4xiIXl4dYKoWKiProo2vTeKbldRA-QyEB9IYqpE5Yof_eZhMgSMxkksG0qoW24RKqBw0IwYxK7zCtDv1Yg",
+        "provider": "google_places",
+        "attribution": "3億粉絲Google專家-AIBI",
+        "authorUrl": "https://maps.google.com/maps/contrib/115557625770384789640",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2362,7 +2590,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJy55HbZyrQjQRgTcmZb7QnQ4%2Fphotos%2FAVoNoXRUyfPm0mG9iVU2eGqqYrjSkKTMQNjTT9IbBRv55mvD7TQX9iBydCDIqWR_XR54z7eS6n3CJOhBvlHtyNlOwZZ-GGWnl6Dq4Q_veX3nICvUE4-YSqXR_MVeDlEeR8qlte6McjyBn09l3Cn1RqCjWUUHmhOzel7d81Xmg8OMO2b2wh_QGvBbB8Q_2OLgwkpVxiYkIX8iOZXwdpQWuMVwF7oaafuWoPczTio3zvaNK-qjnznbmDBkjGd27gtIFOw-hM4R_oPcUS4H79it6P5x87z2ni_civaPf59wNJjdIpT8nEKDkUElVCa0JwctQSltwq4v2l5pQt22DJC5WA7833cI9p7cX5ik14QIaWIxpzUjHLmB8c8as4YJ9CHdpXrdoZG5wKuicavlSEWUxapp61NGEFZwqyN9DUjEltbZ-pNAMw",
+        "provider": "google_places",
+        "attribution": "gnaF uyhihs",
+        "authorUrl": "https://maps.google.com/maps/contrib/112567722663522800172",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2407,7 +2641,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJv4UMA8SpQjQRFLGB4RHHsHY%2Fphotos%2FAVoNoXQ14mLOEFCNMPwsgd-4XDJeDhDvXKtnlQvp5sAjosnDUdeZ4Qx5E5LUUpz8z9wOQ5ZtTT4ezEaF4Bri_weFiNEs3skGSCW5JSqtMq_REBFvXWBV3zBVKAC-2sikqSLX6Gh9JyVSQC5xKC7uUb-x7Ry-YXjGdKfWQWZSReBGzwB8Nxtiyv3ezktEfMrTovpydYZ_42__Fiz_xlix0vUpmWpx0e6YE25ZY8pWsfIirlXaVc5Ah05QRJ9-SLCSZ6kFkIXH6jaQmfkhHiYwMTQ1CrqattJ2_cSYoUWMEuZs6kfHPcGJgeTr3hLomyMDaqqtSVVVjTL9KxktquyuLY7FDMfiw7bKwo_xUfRPD8ZmV8QjBFaDwIdbzxu3DiHNaqI5iny7DOScJto0vI9QLQVXEox1XRitzgmYTiu_oQPnDY3KJqCKOqON_JA5KnxEaOSP",
+        "provider": "google_places",
+        "attribution": "范寶營",
+        "authorUrl": "https://maps.google.com/maps/contrib/113843507363973347057",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2452,7 +2692,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJ7QcT7vaoQjQRwWvltWO14iw%2Fphotos%2FAVoNoXQCKvwWkg4mEfyTQpEpB386GQI6DGaYlpgv17TOC0Zm5GNoRcCnBF7_yGvz4p-hBuHBu4Qz2OAnXukhyrNVvvdPiHfzsdLqUDxif1J0h0tExnb_kE_d1ntNVAwCqxND4HBuJlV8Bf_VRaXd22GbzzTbnzMfDmQrAGuHxmddOzHKSVIlalSgZsSRzF3ZWyymShh7Cf5-AYllm8NRPcqn9OidqxLZQqb9WwHoFgJJtXQczaFF6HcCNe_AoPU0YJgWfdmvwKumwwplRNwlQVe1Ar8OfSO0tIJ6iMfNkvikJn6YCPTAtfSRDJRb32TnP6rOb_nVKvRklrXWCplKhpZt59-lpAVadLkDO3K_C-Uy55LSy4sC0NOkAPJkd1AcIyQHbjrK9Czin0eUNFgMOER0_GdaS01RtlrnF6Qmj1q72PINYg",
+        "provider": "google_places",
+        "attribution": "Kenghung Chung (Chung)",
+        "authorUrl": "https://maps.google.com/maps/contrib/118271860698774752640",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2496,7 +2742,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJAR6jgvmrQjQRKbIugg0XTUY%2Fphotos%2FAVoNoXRZrF9ZjKcrkpYaWet7pA7OdPsfP2kZyi2_jRPiWl0McVXaHb2K0dXzv7M0i4S2yTkX0O1RPSkYggDU0xwtX_IUe8v1BNOyv_RhBqSMapjmY_dd3t3NCvk7R1QXzVAuOTPcvPxOEqHicUoegmjtZ-beiNS54xtTQoAKWqIpH5pgpRHMeU5e4xt6Npb7zsUkSIef-P9JiWQxkUPjq2uwqyPASgXxqrVFbd1-IaPuuiD3IBzZjua5RgZUP1LfG8hFPKNjEWQAWFWT-8OAPU7ISsjmWpRRhBotluZVIaFS6hny3AHo3XTvLhNLEjLfvvJ7Nh899pIki3uyggDyNRNPYknZ7TyRBxgiGeCyn9Kih5L88r7bF_2Gp-VN7DCXdCb1ISksWhC0lI4RH7jaCAU_D1DR6zWmHWJ4HoEMgUimUu8",
+        "provider": "google_places",
+        "attribution": "君莫笑",
+        "authorUrl": "https://maps.google.com/maps/contrib/107616737539593036015",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2540,7 +2792,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FEjVOYW5qaW5nIFcgUmQsIFpob25nc2hhbiBEaXN0cmljdCwgVGFpcGVpIENpdHksIFRhaXdhbiIuKiwKFAoSCQWLwLpsqUI0EfqsjkoKBqsmEhQKEgkBHqOC-atCNBEpsi6CDRdNRg%2Fphotos%2FAVoNoXR7AjU6U1X_Z1tW8A8kS-Qc6QA-SuYHIF7rwjUeELM30McbLRzlGsYBVI3IXdIEiyNrL7eAgkKmb-Y4Z_FlwU9yCmjSPNNueIGaa-7YfcCtnTtSlWecG6wmyscUqq9CYPs4YtmMm8GOlqbKoJtEbEv74r8KqqE4yT8R2p_BzxoyHZUSRYEOSdHfsYAiufPYPGbAaZm-7Ln9WMupIt9t82jEN14azjH7PZOLEC0jkXrC6m0zXplwecAE6IDcsn8jtrOV0ADMgWwI-59I8lU9U7BkVvVE0DPhLYY0bC0RmvWAetbdL291AtXkwWFBkIMMAi_fY97lLr5-6L7LUlDEd_kxFrdKso3Q5sjk4RlvBt1rWOJtbFDCOWk-33bJKqAEcAFGUPUny-UlW8t1uKs6zwgIaCKDlrBYHtRkOUI2av60QLkrNZeE_xMeqyWN322zMiheaI_VG0obmW0cDhbMfczsT396eOWjSoZvwMr9QYkJIgazLwmOp9BLjnszViyPOWH6qVOLE8oBfOwOZH9xusy9Kpl9tu2PDDl275-Mh5qBgD9AQO85tGHOIqkMKRh9od9IFg",
+        "provider": "google_places",
+        "attribution": "Peter Wang",
+        "authorUrl": "https://maps.google.com/maps/contrib/103856250206063283195",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2584,7 +2842,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJy-310AupQjQR8ZuZYcEg91g%2Fphotos%2FAVoNoXRUGZxejEhzUdVlQOi-vikZKhuJMagwH6x324El_8oiB1wy7fdfl56WVlVcHtq1mZ0SPchfB3nBi_WFYJ-TrwuX6GwLKjSxsRvJQc-O5QvPhVwqNI6SQWS7k8LCwp5Gbe1T1uKX51S5keNtqb6lMrYn_hn1HfiMV11ETOL4ffQ4JHazga1E1UdWQ0oumTHsFw1Co-q2ON98s3fNH4pIvdgUhRrRZO8FokGsVWZdwZKRorqitngXY8l7O0jKM5aJIF43pNuZtqvIpUE_RjweyZPPnCIhjG-oQkcFaagFwdvcl-gKpepx0_zcAUQunYR1gsU4w5l0W-rV4bTUNCN_2XFgZj7rVBYVxz4W8rETYo8ugaLMywtaQfnYFXMueR_z_r4s7Djwp4jN6m0QiEO-nGzTj8wU_gEyGsDji9a-8iOFOg",
+        "provider": "google_places",
+        "attribution": "Tony Chang (82東尼)",
+        "authorUrl": "https://maps.google.com/maps/contrib/105195572425031700474",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2627,7 +2891,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJh8s4AuGrQjQRIw2M8SmpDIw%2Fphotos%2FAVoNoXQN2FVAvUg2amYKtGj0-0LV_CSsY8vgvyO4a-HhKgnzDZiigTGu2RvIqo_9s4LrMN1crU9X08b6q5zmtz4YMW4S2dIOc1ayoFmVissw9K5pjuQQ4YjUpo5VV8rNzatrZPkW5sgFs0Q0CwqByqhlnvDJWxii8ZkIT659I9ooG1PPAshi-7o-_CIR-Bb0pwJhknWWIAGTvIPTDOU_n0Dm4UyOQbMrzv4keLTjcJvW-HFaRVSqoxGRjTikWO0H_IFt93rib_YrM1UGzvm4Mdd4LS0R1VTYKsFg3v-L5GsW9CXmsO78G8mxSjR8RKLMg2Biljd7f8X1-aravyQ_71K8gZxDvHaVInM7RMq9asAjfe9NRN6k9_-aaNUOxaMQnKFl0lLj6jfKBb05Msiw2jVpzfTEjvgFrLvz-e_9OQCAihe8YghmoGpZeTaq9HGUVHwL",
+        "provider": "google_places",
+        "attribution": "Thierry Dpst",
+        "authorUrl": "https://maps.google.com/maps/contrib/102782416645971623845",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2721,7 +2991,13 @@
       "costNote": null,
       "typicalDurationMinutes": 1440,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJi73bYWusQjQRgqQGXK260bw%2Fphotos%2FAVoNoXSOepgrEptRYAmx_GvpoQTNaXx_o5VsOyqAXTTvDfcLNe5iIn39V7AU7XMloNQltT7ijkID4at7bFyI2DiGrCpHnGy1Pm8ltu93NSke9ALp_R4wBD-1gGWaod3GPEoXCQ_aBIOYi3rf1Rm1Npbs-lcSuqdAXvKPKtr7muzBW7V5P1xDd394WgeREVwCWo0MiEdsnYrrTPSNm--8uZQNA8GukBKNFxwk8tST_JkyFOJUIeTggsnmi3ImtPyh9ODyhn5FtlBUppNHWTkQgAZDGabq_vQ7tryV5zd-504QaMAea2-sv70BykFNaQH0qz8krIWKKx1a1Teem6PKcHu2PVUydIV7UDUSqkIeg8mnX4JYZKxRPSNbminyNrh5YryAn0HQJxQROcBTkxCHiqYJjs91pPctpv797KFBLm5-pVU",
+        "provider": "google_places",
+        "attribution": "Shivam Mishra",
+        "authorUrl": "https://maps.google.com/maps/contrib/115650215843117179410",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2765,7 +3041,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJdRrk0HEdaDQRtlh-uOxyvAs%2Fphotos%2FAVoNoXQc4hMDKLyXqtpJ-Q0Ho3nIEdFq1qsxkkvt8TvJPT9ePZ92P0fmgkCwpAbVANHkRxv1tIn_HPSSxyCTuDgSvE0v9cySSfEGZFeGV9_hOt5u6fUyj3p1BEAm6crMsd0m7En-FgsJMx-V57nRIKmts3n7v4gr1aPuap-uFEoYCAEjLCs0nUC9u0qyZvFQvx5CQ_DOgpIv8tj-6CWJR4o9Vj_aKnn5y7rjvik6TSG7moAohdh9YPKgP409Cv0Wb_DAtvzEC3zYkiTBRxZ6u7GxJxCnf644UQUZhcAhK2txKvteqwndMukvLH6J0NzbE0FgwtLcrBIwNz6pI2cKtwoquNF8tW1YwN780dn7Ml3Md-hzoDF3iW48DFRMzwNV2ztxFhj3xoVcWXR1lJ7rbrOikShzjsNPnAoNeymi9Gzq6dJWvQ",
+        "provider": "google_places",
+        "attribution": "咖逼趴拉",
+        "authorUrl": "https://maps.google.com/maps/contrib/107084888808175868470",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2809,7 +3091,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJL5I9Zl2pQjQRk2Po2zwQ-Y8%2Fphotos%2FAVoNoXS0xD7Gy1Rv0q1WQ9_eshcRudY2S738esDjltejinofvrDM8c-oJ92JhSLZIsdwIS5kK1gFoC48N8uONgt6hdp5lDJ6SUjHMMF7pXNbYhdba70CrXV5oJtJPmG1MOjGIzlVIIU-fihfOXy8pFZO15UMzShIBOCt076z7yuacnY05h7Bjyr5hp7DQFAvyOyaN84MYgOkNTBfU-N0VtZbsr11Qd2D5jSXFeNLVk6lwGREraLC-QuaJd1VfmHuRhdfC0jCMhproTxDJSipBWU9tUEtEh-6jjFvrd9gj4hTAPKcKB4sp0qPXannG-ZTvkMJf2Ulnzorhijh3FC2McJubNj2KqcKaZUIrcFP4V1c_clgsIt8QbffXd2i3ykegPQA2ObLZn2xUNEabTMaafrvTrjRvAHq7XLkfjvq0a-WsxpFORe7",
+        "provider": "google_places",
+        "attribution": "不老松足湯台北新生行館 ふろう まつ",
+        "authorUrl": "https://maps.google.com/maps/contrib/106683493646116692613",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2853,7 +3141,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJL7Nt4wipQjQRj3z4a_wUFHI%2Fphotos%2FAVoNoXR78d5YLbdIXRmVudbJDtHbySpb7r-LC2UIpfy4ii1qGQGtj4WrzqY9hMWpFPko_kNvo4pS7t_qxHCc1WHiGGWOC_tf-eaYdHgDGU3ieqtT9vowz2_kzfXcAc2tamTopZQb1Ty6Yp4-I4sacu6kMZI0f1QE_4YQRKRMd5O5W_Hc4MPqICS4-e8nguecOE8P8YvRzNaK2oez3dUAY_bGUXWEpblJMYRfN0gukfbweUJFwOgIe7wyb7d-MtV2XSozHJN_SbGNX8fBLyCkes7KHsa2H8xCsrbO_p8QXxzUqfDItSyMfg2Nf8CFLJnVsS7mYlBU1Sii5SEZESa4POvxcNiTruWsqrZR5urN0iQs9NP2EdqmXZkJ7A6Je3_H0vJxilN-9Y8Gfhd6RVSk-7hJjmfW8T_xiQbVGZ6u0r7b1tM",
+        "provider": "google_places",
+        "attribution": "Ho Chien Chen",
+        "authorUrl": "https://maps.google.com/maps/contrib/107698784590755644734",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2942,7 +3236,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJNdlGa7-rQjQR15n_gSGf76o%2Fphotos%2FAVoNoXTmft1n91Kn2anisA_HwvJgdoFqOgc0esO2xQrOUttc3xYv4YpOqCF2kgSEYazZ3u7r74Ps1h68ScJz4AckRfFA5DpYEqD05Dzn1FLOaE3mTLdwnW4ZzZnIIczmGBu3QriwANZp2lqAPn0aPiwe0Cao4VbenPjEQsWu0zdhIS27-gfpvK4UQZ8_A5vVSvYSSg6wP05Fc99uhaBoARSmsYumMff_rhNCBMfTgNdpdi19Znk6gJJRRVSwYqvntumuAl-Kt-fGeaEYrt_VRf-QXe2_W62eG7nDTo_ZPGNRZGIdyEMFXgtAglfUTj1ub6SENgku9LFZp8I-IH7LpEboj2-rC-OnoGB_G0Ue010M1gc8IDjMo1NavG6HfeR8f4eG7rupBbmsvOeTdXRnz4MCmNA7JuY5CTSIq-Nx97KewDKW1Y07GDq-1jn1hW4SWm99",
+        "provider": "google_places",
+        "attribution": "坤水晶 Kun's Crystal ｜ 誠品生活松菸店",
+        "authorUrl": "https://maps.google.com/maps/contrib/102398587489162584236",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -2986,7 +3286,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJR00t4RKpQjQRuF5mwx89YQE%2Fphotos%2FAVoNoXSeCiV2Wd2oqXVDm_wVbWNWYjkd5qzwwco604wbyMmQqfhti4bWcXo1w4jydbSDg-XhY-XBy67BTaP2qzgiq45AdwnN0gE-1T8ElgNUjmNf2CmltZk_taLoZXaUCxvKzC198Vc938ZxEWUqnu79mVS_5_I7SorxBfM5Lb-6FNfGNgnkgKsdCAL5NuIbFILwVrzYeF69bC9-LHER_KxrWznMAAzvtT0J1m9UV5s92sRG10mlJfNdN9XpgjKh20gLh4AzijBwzQLn5r7Gm0faVTrYcgy_C5HkVdQMk9oyynH2tZOtrMVObGbU3gznXfEAoaytadB4FCLQulw5P3s8bRDk6jLWJv2yeL8YMsiooOIGyv5jypbw9LvYZvbQlr0SqKtRzWUIYsqVo254sCWKCkLuUlu_8ok0nQSFm-WdFzsot6JdTxOLlXPWi-BCTnff",
+        "provider": "google_places",
+        "attribution": "Sofia Magno",
+        "authorUrl": "https://maps.google.com/maps/contrib/106285316936413712846",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3030,7 +3336,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJKyaoGAmpQjQR99RS3zrx9Ms%2Fphotos%2FAVoNoXQbFLzd1M-c0UGTZbA-l6uDMaTLkdYtIRk3AsEqVTraLTW9UClqGlqPibzTcVETKrC3X2rFGrmMyu3MiYKFXxZcKslGGPXCbs6ntvir8OJ8wjjpMbPQ2tlNpstDOy_gaIaETrnQhiGJhPL_N5zIkqlZxfJAS8-fbA-kYda1_ysBNPibwj4rm_et8FM2WDFb-QZevrzgDix-4ixwbsFN9J6qO08jP9ND8JvjFe0MtE0HkZ_AgnzrcXt0RqdCm2QQtFxn3pR12KHwfdtyQZJ63wZMKZ2yxCYuvST-T18gsfvCIqpT9DeDEMisRsJdebAmj7xsV3ioN1PDDc3KlKNVvFG8aeXcnDKiY8UTjiI4yvUVPuZPrqs68lezIZvTEsHS3_v57exI5Fa1fxr6dc2rI7-63Tkl0tdVpMhy5FXQ5guclw",
+        "provider": "google_places",
+        "attribution": "Tony Chang (82東尼)",
+        "authorUrl": "https://maps.google.com/maps/contrib/105195572425031700474",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3206,7 +3518,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJFdR9pRWrQjQRMSPS-MGaMA0%2Fphotos%2FAVoNoXRouXHj-Oo1BHZaIz3U68sdqSfaAfIzqHx1BHR98D2GSVMZJ_BMV48iFULGIADE1SyOcngyK1evASDqD4jRZ43mW8VA_pa2Kw0XWzJTUVX7slD-n7nHJxHR-mjy6HMoW3e3h80MnoLFFR0xPrFaa-_upplDU4W2KOgp8eZbWb6Zm0CIl5W9zE9XbrkoOGmiU7s5NlUFAF7PANee4d9EC1YjBDuiOXuYxJ9K0zdwn8rhIa1lbuBP-uKDYsRQX0HZqtboqMwlL8aTaqYi-AvpY8cXDA4cmklULpnKGCozVbW-0ZhNb7vxUO9GRjpyyqIkfvP0hjom5eH3SgfGsaBcqwES54bd-ygxszvgDWyEb-XqhTOWjD0qOJbMuGUN-V1i4Me6RwhDiUg5uChcMmmYZSgTcjMssI4Tn5ZvQ46UMyw",
+        "provider": "google_places",
+        "attribution": "Wise Lin",
+        "authorUrl": "https://maps.google.com/maps/contrib/109370588211711481952",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3250,7 +3568,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJpbpfyLCrQjQRQ4GSojxLbEY%2Fphotos%2FAVoNoXQgJBhVxkPY2sdApxbqRBgiTHRR7aqkMg9yZFAMnLtADGmbaSUIbUBHxNxz003Zo-ogw6rgh4KImeK4zNVNy-wrGQya1CYh1dFpJYCrDlskrmZVhLh2zuDc-qmqyZC1Y5H3CRV3_m1XADvJmdIPEFpR8U86Uriws7NZVQbngycdGjN0Vc7yBLZh9wBhsezUB1DvlbviUgfEH79Lr7kO56mEiFJIdR6oXa-vA6RNi0rSHMrlEvmXhvY6Eo2pj1vsbZLpzEG3UPzypnic9AOz824rIg8tOalrRCV-evtw1MExZfJ9-zr0Mw0BnvMiSnrLjH-3gaxdWrT3l3LfWtK_0BpsLGq6AY9Q7cvDnpK9Brf5nLAk6xFxXX47l1c4Uj8naqRxxpxk8JgGzKJononI6KQlAJ_VySdI5lr_bA3EBkCz5lsZKJtFKH-YLena7qTp",
+        "provider": "google_places",
+        "attribution": "WAVE CLUB Taipei",
+        "authorUrl": "https://maps.google.com/maps/contrib/101906274477417177032",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3296,7 +3620,13 @@
       "bestTimeOfDay": [
         "night"
       ],
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJbXITl4OrQjQR3XJqpKT5DYM%2Fphotos%2FAVoNoXQLMhjt3jQvUw1gk4IPOqQqZ_zkyO5W6L8QSSXKLvGM8x8SbG_gvet7KhCde-g6pocxQcWYvcLYbL0Z_Og846zaK7FpY2GFuzL0e8EA2j277HrQWBwlX8R93vBhEnxJ6DAHK99MTI2VunC8OcZpX1z-dTct9M-FixP2VkgHKQjQIET71-hqiv2AlBURP82euBns_pwSeOkVy86HGHkMkgRVCmNmvNZjcRfFUuUqS53ZczkiPt18PrBFxup424g_T3NbYQdwQo61VaEbmgD2ao6saL8W1W68sq_xHvBzJM_IrQxdynZCJwZe88vr7R32ilfhTJqTeZWqGLQnlDfWXqZ7CPEvscr_Ba_hN4E1iiDhGnjFiswbcxoi_9DF36Np9Ws621xlMpv_xlwO4JED5wHULy5j1xRWMOcOyxtgR8OJnBvc1QeNmHu1oQsGz_0W",
+        "provider": "google_places",
+        "attribution": "Eva Wang",
+        "authorUrl": "https://maps.google.com/maps/contrib/108303173088817325599",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3340,7 +3670,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJKVPhyfHVaDQRWTJlh1W7AA0%2Fphotos%2FAVoNoXQAC-2KLwnlA5JiUkmxpkLQJ4gdQ8dgWTUFCiTC6MzImjEwRHQAEuhvF1kwQVQByFGXpaVk-0ta3B5Iy5E6j_MMT_VUEY5n27IxNQ2-IYhQsqZyZToL6qLrKTBSNYKqUyWNrwd8Sijv4AN99Xz8o7d1U9KT-mm1Gq0_BaRLRHPZH1bn35Tr3adeW2XKSpk8jut6zfL7dXl1np4cXJbNlY28gnM9ZgaUX5e7db4kJhF9I5Zfo45UZmq4biTq1eeyCfSazVr9QpBvRnB2nPYzvJgaPEAnSBVNEU64G0G2zkD2UCHRGh9YMAVcxWkz4zkKTZnh4MJb40J-EvXvh7b5HOnV3yVte862gJCXyLuHO6bwxPV2Ya2_edO_bfED65LR-h5Aeaov3FPw_08A2rNAR4BHwUQxKKaHKWuLoKLMv2m2eCAO",
+        "provider": "google_places",
+        "attribution": "Brande Prestige",
+        "authorUrl": "https://maps.google.com/maps/contrib/102981056380450305287",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3391,7 +3727,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJKxKvSVTnbjQR7LSozO_p2ZE%2Fphotos%2FAVoNoXQA-Hz_1QU74v5NB0I4DJCrR1FpyOuZOBMDWJz0ND4w6jxUB8LnE60U_MvQgHBI3ceDYbtj53cYvbar7PMp8AilLR1Ytwgm8uHKkRo0GBTw43RMiJzPUppsoFkeNOYuCO-JETxkJGCQeblAL6EuEfcYiktXywtaB5KrvQAeBy10rhdhTiFu-GlzgKtFFjibxxCbrCwXnCk6Wq7NZcT17NhSd0r0gu4CiCrRfLIx5ZGMbEuhVXdlkxMpximpp6cnwW10PLA_N60k-9XiUzwh6J-pv2vnhtgf5gSiiaQ4oVCnVPtRGoS_WmS6J6XmJs-kisLlbZ3vWAb4MCezstssZT4fFFSMTCramVsNkOTjlJIrFJQYl00zW-EQ_7UEkwVwCs_i9Wd55Equ1x2G2i6SrE5NaL1b0ZtljFQRASVfFEoAeQ",
+        "provider": "google_places",
+        "attribution": "阿龍",
+        "authorUrl": "https://maps.google.com/maps/contrib/110156914132810610834",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3449,7 +3791,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJW3FvzDRFXTQRo5jRIVyn1hk%2Fphotos%2FAVoNoXT0Ox5NcQaCtnalH_bxxbNb2RR0FgSYnx3J56IuFN_KC3IT5sN4BguYTN2jH3-EBO2r_5eWP3NEelb4qoBaJRWTnGGeykdIPnaZYhMDl3auDLogNLjnczcnex9p4SLn93mO1wdVRx7S0khZ3TYu9lwmflwWIgA20yjwuKUrhd9zdv2TwC7S1BUJbwtqKIeiFDXEqcyiB5A7zDDWVmmI-jznOPFq0SsdyQ1aqfumZBWEvNV0bGIckJrFeb2KAWRdKvA4KAep0tsyWELTJgkdZCsVuOtqvSinJ_WqC3VWnS9DlqGo9SPxkhpnAGLNcqbcgPhpeU2m3CL0W-Jbu4YU3Ijs5-uWBkIOBn9Awl7UscPB5LvO9PURRFwRhFsraClI2L2KjWKeHGcI7eu-Uv--GBZJe7InAhfB9wF79J9IA_T0WV-UZgr-X-3ocukBT5tg",
+        "provider": "google_places",
+        "attribution": "Fankuroll",
+        "authorUrl": "https://maps.google.com/maps/contrib/116944173449902770168",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3493,7 +3841,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJcZT7-hdFXTQR0qekplqCFV8%2Fphotos%2FAVoNoXSRl0Gkl28yz1wvvJRTnEB-zCL7zRJ433m1yrshwtJFYZ6X131mP0VRt-p_2e2BOAMQuYSlMuLeBguoM0LZHmopKDUZcVlhFeIUIscpQrCyguoE76hGrEazsAS5p31gDCF3LT92Xb9LZq6RPga4tnpMo6PjdQKE5DbqxucKkNF6ts47HX8MqNE22WNOdbl7_Fcb9let6wf_0xJJBaJosYdxw38CPZAWKGueFftebWlKtlWF1idY78juxOAn0zGKW4oekfYv3l5ECwW3HEp59Rph7PYJLCz_8FAa-3k-yh8THzRAf1rm5d1iznirK2odbuHt9oUFQB_8cUJ-Ph15-W8TSuTDR8U-x_w_B-dely8f0QLFco2BOUsRSd_I-WUtGUWUSW88MFxor8HZBy9G9GfVoS8yWfclRycdy-AzmdsYvuOV",
+        "provider": "google_places",
+        "attribution": "계동한",
+        "authorUrl": "https://maps.google.com/maps/contrib/108229902868471705180",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3555,7 +3909,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJD--ChehQXTQRotXSFri_dH8%2Fphotos%2FAVoNoXRAs2tmiajaJ4HaKKlpzdnEW2Yexa9SU-QliQtIBOWbzosyX5H-TbByANk0qW8iivc-LXUhnl7hv1IRtvE2d7mJ83oN6gNQaEFACef_V2fgwCtyVvFK_SLUXjLoI2N_-OIHyeSflCovUackPWExNAg4XDEc_rp5LziTo_rEK-KN-CrbftfehdkXaf0kM-RGkLqPbf6ts7y9RFfluKuYz2HSf_tXaePXG1lc0leELjmOBGxdj_tz9kYFWskbTI5gNjK6PjIssflXhGr-6CBYZwGHI0MeIJAPGcwACtEeqG3gU7m9MmLMS33wRk-R0wEfaKVcEe-mtL1umPho6DP7H2nlKTFs2Xv_VEv-KJTv3LXOE-8bbgA3SEuyM5RAEzHhIPd3gv9iOZ0g0EYOR_MK3mpDwZJdTVNeJavQWdY-aitnRw",
+        "provider": "google_places",
+        "attribution": "Control KONG",
+        "authorUrl": "https://maps.google.com/maps/contrib/109939486153421695610",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3617,7 +3977,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJ1ZrmCnZMXTQRV2jCWjAX0eQ%2Fphotos%2FAVoNoXQiodG_r_m1hRTA_zs3Mu4VYWi9JPTv96dbRecL1voUnX4RSehn2eLNdkjziAQe_MRmKVMxprEB67YSGYtMMuOgZhX7-nmWGaoJbAppNoGGxARDbcGnSTaybcmLp1D48l0IXVUwLc6Sv86IJkwngHqtih9meKaiuCTaNX3WK-m1YfZSaygpeQzqdxpdU6CjVPg0KI4zzfh-fmjODJ1S_utt3-689WMD0WuDTm6Rv46VVO9osTLBfjkLbgvAdsMEqxpU2Z7gC6XFfljjCnnufEMyf_hyulqOUdVmum4vDC9y9piDGhXOmYPGJBXy2wTlcbCqyycLdr29_qK2-tS_j34402Nq4aajti4Gb6BYznV-fKmL4tcLp4fNHvuDX7nhiPIkf1eyP1IDeTGJqTiFeTbYeki1trAMsOpMFqzHhHPwOsFD",
+        "provider": "google_places",
+        "attribution": "野柳地質公園",
+        "authorUrl": "https://maps.google.com/maps/contrib/106393320365927516695",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3661,7 +4027,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJ2aunYmllQTQRntXu6lNDlCU%2Fphotos%2FAVoNoXRaEVhGTpS0hw5wT5SZqvX8Wm3wXc1zhjS2f6_sCQgcBywLtR7Agot8FEeGskaZ5BX6eoYKb4rNnD6mhz37_TnjKNT3U1s9ar-L9thPBpmmnXL44DwcdOOsONfy1UllU4N2HAKCdXmrNBkvnh7AUKVN9h8TojepAhKz3NA98swv37NwvJNA0ECGRDlA_3gvO5-n94RCGiMQHWKlj2gvHGuN7rit17PFxFnssehYKpuT8DolqFlAA3ssuvpkl-NtsVVOwPlVCDbsKOYGHq3YsekHVM-5mn-U7xVX5NOCdLEafQJhqN1R5QYtm0-gEGx-a2HxdEXUVmcV2ZtXjrefYmSX2sT1wyl8koceTrBA33tWtVBP1LJ0ZkwyitKE5mhAa_XIsiP5OcqgaTwb5sXTJ65qY37RH4kShYUE8uPZUwYlXA",
+        "provider": "google_places",
+        "attribution": "南華聖凱",
+        "authorUrl": "https://maps.google.com/maps/contrib/102555613218550718956",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3711,7 +4083,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJa3M2RJ62QjQRhNTbvxHcNMI%2Fphotos%2FAVoNoXTptfzTSbM8fUOaN_JivPrVHRfERjQ_8SFQ2bUrisWtbr_FxvH3LEUeVtG_lKCdZRBulS9QTfXYbI9ZCnI1vip55ZMbPTBO9Jeu8c5f5O_VUYg_1iczLqbo1Wqp7ekB6QOHLoyjPKHAnTBFita8O17CFWbSc-jpkhUjljtjjrAkKucixFlaiykgDOEgL-asIs-9ZTRlpBxAvPiXR27bgWS-wAdNZ4JO5P7XdgVY9LsbqvbtGpCQCGqD_bcFC-NAIKCNRODTm5zee6UB8GZZawaOnciGtWtOVg8Jc-Ti_KXvbt0vd6hf4Iqm4KhAoI2oK2VBDycW2mV5ZeVIdkyusuep9mVeVqXWn3FYx9HL2dhVIKM6yeTnuesfadDGrnwBsojp6LAzSHxVoYwrBES7AORBFEofi3k",
+        "provider": "google_places",
+        "attribution": "CINDY 張 (甜點)",
+        "authorUrl": "https://maps.google.com/maps/contrib/102175455715000630090",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3755,7 +4133,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJbatnzv9OXTQRyMvTEGC4w3A%2Fphotos%2FAVoNoXSn5H24CZ8syfBnYRNcAcZLgjwB2rdQo01IHLu16BEvnuKNStqqk5xYkwEksDTnP2W5FuWxzGmC5cbE6P_3vTLUZaaIdPMj2DSqSO0RETLYzaeHBaU2-b2ZsmkS7nb31ZzZOIY3VQC-jpJwGHPjDEiZm9BaE6_MH3KfzCkGZo-tfWCJxggPg1lXkGkVAvHXWYh5ulGfjc9yzgz4aBaQuJpnMKKmL6w4zx6BMLSxMmHFyKmYllapaPZhKsmcJA6nieEv3KmaCWpD8RLeiIrayzwLORhuw2hQbx3crhjYNn4DQmsMnEkcp9HcYzOPHhtD2TC31o0tQDF6Y2xnsaoH3i_MDlEYFpxGUBnbkEICYSg5EvhpqwjFRjh3S6OUPlV2MjxAQwmFZlHdWdVi0w4WzyuPkTOOhbst7pz1CCZVMWBMDw",
+        "provider": "google_places",
+        "attribution": "張玉麒",
+        "authorUrl": "https://maps.google.com/maps/contrib/108546310117396242897",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3800,7 +4184,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJa-bmgJBDXTQR7UOjGLWI5KI%2Fphotos%2FAVoNoXSxwFtC3anBCk6zSVdZDhpiu0RRYzpa3b_74pKg-rBT3TfqBX7vRgikvDrJrmb4HM11g0iSJq2MSTWhUUDPFx6NSsbaGtH7_A4Hb4PnClEmhL0KjYRqXHT5vdhe0vsjWiinTRXzXTPr9viLmngMhDhSmqtfOz1YRDz7T1M_vEocNky_mgB7334e52WzzTEroNcm-WWnoGPH8uS6ov3TwVUAwfwdyy3kHpjgGadsvMh-Tj3i0WBzsCYO1grmGf0wS3oUjlybHVh2UkEwkBd2IDsIpTHNs9a4KT0YrvwOiBcG7yk4QjzcoEVGhrDJNLpeTgE6Vi8iD1mW4ptSqdRGiPcVjyXxRLPENYJgRbG8JRoy-lD3dSk8ECwldBdgCFYT_S8TFlz1OCKdUJvtczqO8QJqiy7v_ah5JCUkZLjj_hKZcPMW",
+        "provider": "google_places",
+        "attribution": "林裕偉",
+        "authorUrl": "https://maps.google.com/maps/contrib/117558214131453667744",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3844,7 +4234,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJPU_4MvZPXTQR0BJpGnJlaPs%2Fphotos%2FAVoNoXSEJsvA6VcgipqH4mKGhfoot-nXUCYJFDdoSXVal1YEttOvOBcyDczpuBaFCuzuriNNqeTLCYNbesrjFxkkgn7d5O5CMJZohk4dcpjLDMf7lM46UL2ZnAoC1E_OXSG0IE0UG8PbAI1GgEI9seAZoGHSBeJOZKBCpxdq74b9prYFLbQdXf3vVY1372H3zz3MjpzvpbJwDtdIsVFA19Mb-z_BjI14GQnw87eQWYzEZNJiIIzvd34zC6Bv7HeWDu4M_0SHV8nb2UDSYoweexuKB_ovcUotVnjLDRjTQtfnakwMtPSK3DdCCY81PgMls_Jwj4zmgvDm5nnD1oeAvhBcXfw0tkKmYs4v7S9iXHa8l8xNv6AAP6bKJhXQn5saGtxdhRZOcYic0SlUcnrxs9QLDAi8xH4",
+        "provider": "google_places",
+        "attribution": "Dina Shiddiq",
+        "authorUrl": "https://maps.google.com/maps/contrib/105424324748021687459",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3889,7 +4285,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJK_I1UZN2bjQRnLZaGDT61Rw%2Fphotos%2FAVoNoXQF14ZiEbtRmpFHFTL2odWRtE6sconB0B-fsbx5OhIRarixnV83QQ1gs7EcsAvPoFW0aAN3en9ru7SVCoLgBoGJc3Na3ze4ndNjdEOtzBCGK77DM9Xfj7Tt2-1juU_t1yB4R6t_AQzFqv96zVDwAv0er0A3f7P75SztbOwUR4UFnbbKM6EaJsatGXtKwY_s4e8lVdzpflFc2oOozD4HqOK6WFvrWoNIorgOpo8gfbJFIWThOGba08A8lL19_DCQtvLWVrIDfPMYR2fu4X5mR46Ny1vteyg25nFq8PM13dsNc0gJpzl96PsSdpUwP6AFbqiGUBtDGIzDqyqgwaVYz3ypnzDbQTWMgBKwsFOon2T9To-Sb4gxlnjnM4DT-CIWSMWrFsOSrDd0f3CSE4-ESGVFD0HsWgiMZZ_HmgGUAt6ylQ",
+        "provider": "google_places",
+        "attribution": "靈子創造宇宙主宰者",
+        "authorUrl": "https://maps.google.com/maps/contrib/113462442624073502262",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3934,7 +4336,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJ7yJ5-d8XaTQRf0SmfuQ-Uoc%2Fphotos%2FAVoNoXT0WxZGMBjoTpiIEmc7YmOt5nKUIny68crRKTKY0o0xGSnawR5C0JAfu6XOGgCqXZTYc2wYeXkxLVjKTsG-FNDuaW_gaxiM9m3HHiph85dJjkpxIDlhiZxP-rCB1XdKm-PuR0y4KhC_tt4__CGvRMQhTTBrZAx6DDw6wUpps_dsBkkFWUZARlWB-LgX0gQbISUqPNIlJ0yIMTqO6Am2ZWSdns1p2kkeUN1OMA5b_-IX-QjrUFIIpRzs_JMh0qDxayy4Sr6O7wtcwxPfhXGb_ZZeq9VBtX_qv4F2MlHt6_Y-PRJBmNK_GamscnjE9sZ0iXeKbwzcwL-gKh5aXeKwwfbMEJ34kN1WRKqsomsYSSIOcCCpiOWar_4xZfVlJkohkbm-S_wwI_ojz8YQ7gmacRTWkMkUaLOh7L3Oo-ULwQ8",
+        "provider": "google_places",
+        "attribution": "我是中國人",
+        "authorUrl": "https://maps.google.com/maps/contrib/110862784517285014847",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -3990,7 +4398,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJX2S2sDhVXTQRwO0gZvoNqVo%2Fphotos%2FAVoNoXQ3l6fJVMUu1d_U6DMJ2Tg8NmSTrJ0iL-7jzlyLWTt8qhr8mf29XRtRHXR7kl7CXyfRHVHtBajASuC3mwXjSUv6G96cI87BJX_M_onYCLkWCRK6HTU4qvKKqNxCw5Osm-v781pkwQi8BUnko-JHYevkOLjyiCswEtW38pJhyhADtq31HzRGjZqboff1g9nnQICJBbTy2RG7iRb13JSOh6sxgXYuzQtmifKAUHjmjfhiP6JGaFAQPytOXC-VWV35Hio6m4bZHqabOeb_M6FKq5pf7qkanAp-hZN9DauO1M2kOMR0P7i5knA86mRXsu2mhTpyuOlrJSHPRgdYSsZjW1EwD87e7rCLSZ021UlZy2aifJKbxu3AwPRGJSjMA1JcalZp_66C0089s9t8XlfCYBMxdpsPFbZ40ns1mPd4bLHxPg",
+        "provider": "google_places",
+        "attribution": "林赤龍",
+        "authorUrl": "https://maps.google.com/maps/contrib/105467597562801748862",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
@@ -4034,7 +4448,13 @@
       "costNote": null,
       "typicalDurationMinutes": null,
       "bestTimeOfDay": null,
-      "image": null,
+      "image": {
+        "url": "/api/place-photo?ref=places%2FChIJY3b_nfn0ZzQRvJ7loapYCpU%2Fphotos%2FAVoNoXRDX34CUxshXuFtqI95UK4-qiluVmbrRrCms_tooRsx_0yGTRjP2G2LuaQf936JBEZg5_5s_gS4W3kPraB3bBZFLcY8gjF0B8k56waEaR3jZEqStqYNazrATItEFmN-Ok43Z_7qU0S1jwqK205V7NckDohcPr2LeTU6WBs5RwfzcTvU-SJhH-EABdLoZEZN7txGBms9Or6v5hbbVp_LM-wymKThxV4bcQrMF8fEClEDuSD1k7I3Xh-C49DMSCgXvEJNdgK4hIZJbmrq95Ph556G9Ojn9gY9XmwZozWH6XFTvsi6IRCub__PjoFjm80BhtegsTvzqN-21UOaYppzx2w9I2CK4AULf76SZnoSz297Ddek4ay6hIiyYzZH8KsnNNOHP2mcLL4zWdgZH2yl0AgbaRaf-WpJOvjjqpXQ6NWg7C5gd9t11fCQKDjvSLJn",
+        "provider": "google_places",
+        "attribution": "joylog weekend",
+        "authorUrl": "https://maps.google.com/maps/contrib/118251031455688144250",
+        "blurhash": null
+      },
       "origin": "import",
       "sources": [
         {
