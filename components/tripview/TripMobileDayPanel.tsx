@@ -9,6 +9,8 @@ import { TransportModeIcon } from '../TransportModeIcon';
 import { normalizeActivityTypes } from '../../utils';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { MARKDOWN_HEADS_UP_BANNER_CLASS, remarkHeadsUpBanners } from '../markdownPresentation';
+import { TripDirectionsButton } from './TripDirectionsButton';
+import { buildActivityDirectionsLabel } from '../../shared/mapDirectionsLinks';
 import type { MobileDayPlanDay, MobileDayPlanTransfer } from './mobileDayPlanModel';
 
 interface TripMobileDayPanelProps {
@@ -216,8 +218,16 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                     {day.activities.map((activity) => {
                         const isSelected = selectedItemId === activity.id;
                         const activityTypes = normalizeActivityTypes(activity.activityType, []);
+                        const directionsLabel = buildActivityDirectionsLabel(
+                            activity.title,
+                            activity.location,
+                            cityTitle,
+                        );
                         return (
-                            <li key={activity.id}>
+                            <li
+                                key={activity.id}
+                                className={`flex items-start gap-2 ${isSelected ? 'bg-accent-50/50' : ''}`}
+                            >
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -227,7 +237,8 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                                         });
                                         onSelect(activity.id);
                                     }}
-                                    className="w-full py-3.5 text-start"
+                                    aria-pressed={isSelected}
+                                    className="min-w-0 flex-1 py-3.5 text-start"
                                     {...getAnalyticsDebugAttributes('trip_view__mobile_day_activity--open', {
                                         trip_id: tripId,
                                         item_id: activity.id,
@@ -260,6 +271,16 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                                         </div>
                                     )}
                                 </button>
+                                <span className="shrink-0 self-center py-3.5 ps-1">
+                                    <TripDirectionsButton
+                                        tripId={tripId}
+                                        itemId={activity.id}
+                                        target={{
+                                            coordinates: activity.coordinates ?? city?.coordinates ?? null,
+                                            label: directionsLabel,
+                                        }}
+                                    />
+                                </span>
                             </li>
                         );
                     })}

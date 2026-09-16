@@ -15,6 +15,7 @@ summary: "On a phone the map now fills the screen with a day-by-day panel over i
 - [x] [New feature] ↕️ Drag the panel's handle to size it, or use the single arrow to grow it to full screen and collapse it again — with a mouse as well as a finger.
 - [x] [New feature] 🚆 The day strip now reads as your route: days in one city share a coloured line, and a change of city is its own stop showing the transport, the departure time and how long the leg takes.
 - [x] [New feature] 🛎️ Each day opens with its fixed points — when you arrive and from where, when you leave and how long it takes, and hotel check-in and check-out.
+- [x] [New feature] ➡️ Every activity has a directions button. On Android your phone asks which map app to use, on iPhone you pick Apple Maps or Google Maps, and on a computer it opens in a new tab.
 - [x] [Improved] 🧭 "Fit to itinerary" finally frames your trip on a phone instead of zooming out to the whole world with the city names piled on top of each other.
 - [x] [New feature] 🏷️ A one-tap button on the map turns the stop labels off when they crowd the route, and back on when you need them.
 - [x] [Improved] 🛣️ Trip cards and example trips now draw the real driving route between stops instead of a straight line across the map.
@@ -32,4 +33,5 @@ summary: "On a phone the map now fills the screen with a day-by-day panel over i
 - [ ] [Internal] 🖱️ The day strip and the sheet handle are driven by pointer events, so click-and-drag works on a desktop pointer and a drag no longer fires the control it started on.
 - [ ] [Internal] 🚪 `useTripSelectionController` takes a `detailsPanelEnabled` flag; mobile turns the panel off entirely rather than relying on clear-on-close, which was dropping the selection.
 - [ ] [Internal] 🧪 Regression coverage for the day model and its strip nodes, overlapping stay ranges, arrival-time and overnight maths, hotel check-in/out, the mobile sheet snaps and controls placement, the disabled details panel, Mapbox realistic routes with and without a Google key, and phone-sized fit padding.
+- [ ] [Internal] 🧭 Directions use the `geo:` scheme on Android, which is what triggers the system app chooser; iOS has no equivalent, so the choice is offered in-app. Activities without coordinates fall back to a place query qualified by their city.
 - [ ] [Internal] 📝 `react-doctor` is documented as an optional check rather than a merge gate.
