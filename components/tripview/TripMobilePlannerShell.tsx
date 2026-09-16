@@ -1,11 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, List, Rows3 } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronUp, List } from 'lucide-react';
 
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildMobileDayPlan, findMobileDayPlanIndexForItem } from './mobileDayPlanModel';
+import {
+    buildMobileDayPlan,
+    doesMobileDayPlanDayContainItem,
+    findMobileDayPlanIndexForItem,
+} from './mobileDayPlanModel';
 import { TripMobileDayPanel } from './TripMobileDayPanel';
 import { TripMobileDayStrip } from './TripMobileDayStrip';
-import type { ITrip } from '../../types';
+import { TripMobileTransportModal } from './TripMobileTransportModal';
+import type { ITimelineItem, ITrip } from '../../types';
 
 export type TripMobileSheetSnap = 'peek' | 'half' | 'full';
 
@@ -63,6 +68,9 @@ interface TripMobilePlannerShellProps {
     onSelect: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
     isPaywallLocked: boolean;
     appLanguage?: string;
+    /** Absent when the trip is read-only, which hides the editing affordances. */
+    onUpdateItem?: (itemId: string, patch: Partial<ITimelineItem>) => void;
+    onAddActivity?: (dayOffset: number) => void;
 }
 
 export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
@@ -76,6 +84,8 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
     onSelect,
     isPaywallLocked,
     appLanguage,
+    onUpdateItem,
+    onAddActivity,
 }) => {
     const days = useMemo(
         () => buildMobileDayPlan(trip, { locale: appLanguage }),
@@ -86,32 +96,30 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
     const [panelMode, setPanelMode] = useState<'days' | 'timeline'>('days');
     const [manualDayIndex, setManualDayIndex] = useState<number | null>(null);
     const [containerHeight, setContainerHeight] = useState(0);
+    const [transportEditItem, setTransportEditItem] = useState<ITimelineItem | null>(null);
     const [dragHeightPx, setDragHeightPx] = useState<number | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const contentRef = useRef<HTMLDivElement | null>(null);
 
-    // Selection made anywhere else (a map marker, the timeline) decides which
-    // day is shown, so the panel never drifts away from the map.
-    const selectionDayIndex = useMemo(
-        () => findMobileDayPlanIndexForItem(days, selectedItemId),
-        [days, selectedItemId],
-    );
     const todayIndex = useMemo(() => days.findIndex((day) => day.isToday), [days]);
     const fallbackDayIndex = todayIndex >= 0 ? todayIndex : 0;
     const activeDayIndex = Math.min(
-        Math.max(0, manualDayIndex ?? (selectionDayIndex >= 0 ? selectionDayIndex : fallbackDayIndex)),
+        Math.max(0, manualDayIndex ?? fallbackDayIndex),
         Math.max(0, days.length - 1),
     );
     const activeDay = days[activeDayIndex] ?? null;
 
-    // A selection made outside the strip (map marker, timeline) moves the day,
-    // and takes precedence over whichever day was last tapped here.
-    const lastSelectionDayIndexRef = useRef(selectionDayIndex);
+    // A selection made elsewhere — a map marker, the timeline — moves the panel
+    // to the day holding it. A selection the shown day already contains must
+    // not: tapping the third day of a stay selects that stay's city, and
+    // jumping to the first day it appears on took the traveller back a day and
+    // made every day need two taps.
     useEffect(() => {
-        if (selectionDayIndex === lastSelectionDayIndexRef.current) return;
-        lastSelectionDayIndexRef.current = selectionDayIndex;
-        if (selectionDayIndex >= 0) setManualDayIndex(selectionDayIndex);
-    }, [selectionDayIndex]);
+        if (!selectedItemId) return;
+        if (activeDay && doesMobileDayPlanDayContainItem(activeDay, selectedItemId)) return;
+        const index = findMobileDayPlanIndexForItem(days, selectedItemId);
+        if (index >= 0) setManualDayIndex(index);
+    }, [activeDay, days, selectedItemId]);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -224,7 +232,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                 data-testid="planner-mobile-sheet"
                 data-snap={snap}
                 aria-label="Trip days"
-                className={`absolute inset-x-0 bottom-0 z-[60] flex flex-col overflow-hidden rounded-t-3xl border-t border-slate-200 bg-white shadow-[0_-12px_40px_rgba(15,23,42,0.18)] ${dragHeightPx === null ? 'transition-[height] duration-300 ease-out motion-reduce:transition-none' : ''}`}
+                className={`absolute inset-x-0 bottom-0 z-[60] flex touch-manipulation flex-col overflow-hidden rounded-t-3xl border-t border-slate-200 bg-white shadow-[0_-12px_40px_rgba(15,23,42,0.18)] ${dragHeightPx === null ? 'transition-[height] duration-300 ease-out motion-reduce:transition-none' : ''}`}
                 style={{ height: sheetHeight }}
             >
                 <div
@@ -251,7 +259,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                                 aria-pressed={panelMode === 'days'}
                                 {...getAnalyticsDebugAttributes('trip_view__mobile_panel--days', { trip_id: tripId })}
                             >
-                                <Rows3 size={15} />
+                                <CalendarDays size={15} />
                             </button>
                             <button
                                 type="button"
@@ -308,12 +316,25 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                             day={activeDay}
                             selectedItemId={selectedItemId}
                             onSelect={onSelect}
+                            onEditTransport={onUpdateItem ? setTransportEditItem : undefined}
+                            onAddActivity={onAddActivity}
                         />
                     ) : (
                         <p className="px-4 py-8 text-sm text-slate-500">This trip has no planned days yet.</p>
                     )}
                 </div>
             </section>
+
+            {onUpdateItem && (
+                <TripMobileTransportModal
+                    tripId={tripId}
+                    travelItem={transportEditItem}
+                    fromCityTitle={activeDay?.legs.find((leg) => leg.item?.id === transportEditItem?.id)?.fromCityTitle}
+                    toCityTitle={activeDay?.legs.find((leg) => leg.item?.id === transportEditItem?.id)?.toCityTitle}
+                    onClose={() => setTransportEditItem(null)}
+                    onUpdateItem={onUpdateItem}
+                />
+            )}
         </div>
     );
 };

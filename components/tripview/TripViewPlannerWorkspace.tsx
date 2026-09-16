@@ -12,6 +12,8 @@ interface TripViewPlannerWorkspaceProps {
     /** Drives the mobile day planner; the desktop layout renders from `timelineCanvas`. */
     trip: ITrip;
     onSelectTimelineItem: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
+    onUpdateTimelineItem?: (itemId: string, patch: Partial<ITimelineItem>) => void;
+    onAddTimelineActivity?: (dayOffset: number) => void;
     appLanguage?: string;
     timelineCanvas: React.ReactNode;
     onTimelineTouchStart: (event: React.TouchEvent<HTMLDivElement>) => void;
@@ -77,6 +79,8 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     isMobile,
     trip,
     onSelectTimelineItem,
+    onUpdateTimelineItem,
+    onAddTimelineActivity,
     appLanguage,
     timelineCanvas,
     onTimelineTouchStart,
@@ -379,6 +383,8 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                         onSelect={onSelectTimelineItem}
                         isPaywallLocked={isPaywallLocked}
                         appLanguage={appLanguage}
+                        onUpdateItem={onUpdateTimelineItem}
+                        onAddActivity={onAddTimelineActivity}
                     />
                 ) : (
                     <>

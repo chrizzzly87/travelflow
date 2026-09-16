@@ -424,7 +424,7 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(highZoomProfile).toEqual(baseProfile);
   });
 
-  it('boosts default city marker size on high zoom without affecting compact tiers', () => {
+  it('trims the default city marker on high zoom without affecting compact tiers', () => {
     const defaultCityProfile = resolveMarkerRenderProfile({ mapDockMode: 'floating', markerTier: 'default' }).city;
     const compactCityProfile = resolveMarkerRenderProfile({ mapDockMode: 'floating', markerTier: 'compact' }).city;
     const zoomBoostedDefaultProfile = resolveZoomEnhancedCityMarkerProfile({
@@ -438,8 +438,10 @@ describe('components/ItineraryMap route cache helpers', () => {
       zoom: 12,
     });
 
-    expect(zoomBoostedDefaultProfile.size).toBeGreaterThan(defaultCityProfile.size);
-    expect(zoomBoostedDefaultProfile.selectedSize).toBeGreaterThan(defaultCityProfile.selectedSize);
+    // Focusing a city now flies in close, so a marker that grew with zoom sat
+    // on top of the city centre it had just framed.
+    expect(zoomBoostedDefaultProfile.size).toBeLessThan(defaultCityProfile.size);
+    expect(zoomBoostedDefaultProfile.selectedSize).toBeLessThan(defaultCityProfile.selectedSize);
     expect(compactUnchangedProfile).toEqual(compactCityProfile);
   });
 
@@ -648,7 +650,7 @@ describe('components/ItineraryMap route cache helpers', () => {
       cities,
     })).toEqual({
       position: { lat: 50.1109, lng: 8.6821 },
-      zoom: 10,
+      zoom: 12,
       kind: 'city',
     });
   });

@@ -118,7 +118,7 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
             onClickCapture={handleClickCapture}
-            className="flex shrink-0 snap-x snap-mandatory items-stretch overflow-x-auto overscroll-x-contain px-6 pb-2 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="flex shrink-0 touch-manipulation snap-x snap-mandatory items-stretch overflow-x-auto overscroll-x-contain px-6 pb-2 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
             {nodes.map((node) => {
                 if (node.kind === 'transfer') {
@@ -166,6 +166,20 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                 const { day, dayIndex } = node;
                 const isActive = dayIndex === activeDayIndex;
                 const stayColor = day.cityColorHex || DEFAULT_STAY_COLOR;
+                const departingColor = day.departingCityColorHex || DEFAULT_STAY_COLOR;
+                const handoverLeg = day.legs.find((leg) => leg.role === 'handover') ?? null;
+                // A handover happens inside the day, so the day's own bubble has
+                // to carry it: the ring runs from the stay being left to the one
+                // being reached, and the leg's transport sits on the edge.
+                const bubbleStyle: React.CSSProperties = day.isHandoverDay
+                    ? {
+                        borderColor: 'transparent',
+                        backgroundImage: `linear-gradient(${isActive ? '90deg' : '90deg'}, ${departingColor} 0 50%, ${stayColor} 50% 100%)`,
+                    }
+                    : {
+                        borderColor: stayColor,
+                        backgroundColor: isActive ? stayColor : undefined,
+                    };
 
                 return (
                     <div key={node.key} className="flex w-[4.25rem] shrink-0 snap-center flex-col items-center">
@@ -173,7 +187,7 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                             {day.isArrivalDay ? day.monthLabel : ''}
                         </span>
                         <div className="relative flex h-14 w-full items-center justify-center">
-                            <StripLink side="before" color={resolveLinkColor(node.linkBefore, stayColor)} />
+                            <StripLink side="before" color={resolveLinkColor(node.linkBefore, day.isHandoverDay ? departingColor : stayColor)} />
                             <StripLink side="after" color={resolveLinkColor(node.linkAfter, stayColor)} />
                             <button
                                 ref={(element) => {
@@ -184,25 +198,42 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                                 aria-selected={isActive}
                                 onClick={() => onSelectDay(dayIndex)}
                                 title={day.fullDateLabel}
-                                className={`relative z-10 flex size-12 flex-col items-center justify-center rounded-full border-2 text-center transition-[background-color,box-shadow] ${
-                                    isActive ? 'text-white shadow-lg' : 'bg-white text-slate-700'
+                                className={`relative z-10 flex size-12 items-center justify-center rounded-full border-2 p-[3px] text-center transition-[background-color,box-shadow] ${
+                                    isActive ? 'shadow-lg' : ''
                                 }`}
-                                style={{
-                                    borderColor: stayColor,
-                                    backgroundColor: isActive ? stayColor : undefined,
-                                }}
+                                style={bubbleStyle}
                                 {...getAnalyticsDebugAttributes('trip_view__mobile_day--select', {
                                     trip_id: tripId,
                                     day_number: day.dayNumber,
                                 })}
                             >
-                                <span className={`text-[9px] font-semibold uppercase leading-none tracking-[0.08em] ${isActive ? 'text-white/80' : 'text-slate-400'}`}>
-                                    {day.weekdayLabel}
+                                <span
+                                    className={`flex size-full flex-col items-center justify-center rounded-full ${
+                                        isActive && !day.isHandoverDay ? 'text-white' : 'bg-white text-slate-700'
+                                    }`}
+                                    style={isActive && day.isHandoverDay
+                                        ? { backgroundColor: stayColor, color: '#ffffff' }
+                                        : undefined}
+                                >
+                                    <span className={`text-[9px] font-semibold uppercase leading-none tracking-[0.08em] ${isActive ? 'text-white/80' : 'text-slate-400'}`}>
+                                        {day.weekdayLabel}
+                                    </span>
+                                    <span className="text-[15px] font-bold leading-tight tabular-nums">
+                                        {day.dayOfMonthLabel}
+                                    </span>
                                 </span>
-                                <span className="text-[15px] font-bold leading-tight tabular-nums">
-                                    {day.dayOfMonthLabel}
+                                {handoverLeg && (
+                                    <span
+                                        aria-hidden="true"
+                                        className="absolute -bottom-1 end-0 inline-flex size-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm"
+                                    >
+                                        <TransportModeIcon mode={handoverLeg.mode as never} size={11} />
+                                    </span>
+                                )}
+                                <span className="sr-only">
+                                    {day.fullDateLabel}
+                                    {handoverLeg ? `, ${handoverLeg.modeLabel} to ${handoverLeg.toCityTitle}` : ''}
                                 </span>
-                                <span className="sr-only">{day.fullDateLabel}</span>
                             </button>
                         </div>
                         <span className="flex h-7 items-start justify-center pt-0.5">

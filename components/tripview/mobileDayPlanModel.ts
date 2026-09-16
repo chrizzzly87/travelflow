@@ -23,6 +23,18 @@ export interface MobileDayPlanTransfer {
     durationLabel: string | null;
 }
 
+/**
+ * How a leg relates to the day it is shown on.
+ *
+ * `handover` is the common case once a stay carries half-day offsets: the
+ * traveller leaves one city and reaches the next inside the same day.
+ */
+export type MobileDayPlanLegRole = 'handover' | 'departure' | 'arrival';
+
+export interface MobileDayPlanLeg extends MobileDayPlanTransfer {
+    role: MobileDayPlanLegRole;
+}
+
 export interface MobileDayPlanDay {
     /** Whole-day offset from `trip.startDate`. */
     dayOffset: number;
@@ -33,16 +45,20 @@ export interface MobileDayPlanDay {
     dayOfMonthLabel: string;
     monthLabel: string;
     fullDateLabel: string;
+    /** Stay the traveller ends the day in. */
     city: ITimelineItem | null;
     cityColorHex: string;
+    /** Stay left behind today, set only when a handover happens inside this day. */
+    departingCity: ITimelineItem | null;
+    departingCityColorHex: string;
+    /** True when the traveller changes city within this day. */
+    isHandoverDay: boolean;
     /** The stay starts on this day, so the panel leads with the arrival. */
     isArrivalDay: boolean;
-    /** Last day of the stay, which is when the traveller moves on. */
+    /** The stay ends on this day, which is when the traveller moves on. */
     isDepartureDay: boolean;
-    /** Leg that brought the traveller here, present on the arrival day only. */
-    arrival: MobileDayPlanTransfer | null;
-    /** Leg that leaves today, present on the departure day only. */
-    departure: MobileDayPlanTransfer | null;
+    /** Every leg that happens today, in travel order. */
+    legs: MobileDayPlanLeg[];
     /** Hotel the stay checks into today, when the trip records one. */
     hotelCheckIn: IHotel | null;
     /** Hotel the stay checks out of today. */
@@ -52,6 +68,18 @@ export interface MobileDayPlanDay {
 }
 
 const toDayOffset = (offset: number): number => Math.max(0, Math.floor(offset + OFFSET_EPSILON));
+
+/**
+ * Day an interval ends on.
+ *
+ * An interval closing exactly on a day boundary belongs to the day it was lived
+ * through, not to the one starting at that instant — a stay running 0 to 3 ends
+ * on day 2. `toDayOffset` cannot express this: it rounds a boundary up.
+ */
+const toIntervalEndDay = (start: number, end: number): number => Math.max(
+    toDayOffset(start),
+    Math.max(0, Math.ceil(end - OFFSET_EPSILON) - 1),
+);
 
 const parseLocalDate = (dateValue: string): Date | null => {
     const [year, month, day] = String(dateValue || '').split('-').map(Number);
@@ -152,30 +180,76 @@ const findStayHotel = (city: ITimelineItem | null): IHotel | null => {
     return city.hotels.find((hotel) => hotel.name?.trim() || hotel.address?.trim()) ?? null;
 };
 
-interface CityDayRange {
-    startDay: number;
-    endDay: number;
+interface CityStayWindow {
+    city: ITimelineItem;
+    start: number;
+    end: number;
 }
 
+interface CityLegWindow {
+    fromCity: ITimelineItem;
+    toCity: ITimelineItem;
+    travelItem: ITimelineItem | null;
+    departureDay: number;
+    arrivalDay: number;
+}
+
+const buildCityStayWindows = (cities: ITimelineItem[]): CityStayWindow[] => (
+    cities.map((city) => ({
+        city,
+        start: city.startDateOffset,
+        end: city.startDateOffset + Math.max(0, city.duration),
+    }))
+);
+
 /**
- * Resolves each stay to a whole-day range that no other stay overlaps.
+ * Resolves the legs between stays to the days they are travelled on.
  *
- * Rounding a fractional offset independently per city lets two stays claim the
- * same calendar day — the day the traveller moves. The earlier stay then wins
- * the day lookup and the later one never reports an arrival at all, so its
- * arrival row and hotel check-in silently disappeared. Anchoring each start to
- * the previous stay's end keeps the sequence contiguous.
+ * A stay normally ends on a half-day offset and the next begins at the same
+ * point, so a leg usually departs and arrives inside one day. Only an
+ * overnight leg spans two, and the two cases have to read differently: one is
+ * a handover the traveller lives through, the other is a night in transit.
  */
-const buildCityDayRanges = (cities: ITimelineItem[]): CityDayRange[] => {
-    let cursor = 0;
-    return cities.map((city, index) => {
-        const rawStartDay = toDayOffset(city.startDateOffset);
-        const startDay = index === 0 ? rawStartDay : Math.max(rawStartDay, cursor);
-        const rawEndDay = Math.ceil(city.startDateOffset + Math.max(0, city.duration) - OFFSET_EPSILON);
-        const endDay = Math.max(startDay + 1, rawEndDay);
-        cursor = endDay;
-        return { startDay, endDay };
-    });
+const buildCityLegWindows = (
+    items: ITimelineItem[],
+    stays: CityStayWindow[],
+): CityLegWindow[] => (
+    stays.slice(0, -1).map((stay, index) => {
+        const nextStay = stays[index + 1];
+        const travelItem = findTravelBetweenCities(items, stay.city, nextStay.city);
+        const travelStart = travelItem ? travelItem.startDateOffset : stay.end;
+        const travelEnd = travelItem
+            ? travelItem.startDateOffset + Math.max(0, travelItem.duration)
+            : nextStay.start;
+
+        return {
+            fromCity: stay.city,
+            toCity: nextStay.city,
+            travelItem: travelItem ?? null,
+            departureDay: toDayOffset(travelStart),
+            arrivalDay: toIntervalEndDay(travelStart, travelEnd),
+        };
+    })
+);
+
+/**
+ * A leg is a handover only when the traveller actually spends part of the day
+ * in both cities. A leg that departs on a whole-day boundary reads as a plain
+ * arrival, because the day it lands on contains none of the city it left.
+ */
+const resolveLegRole = (
+    leg: CityLegWindow,
+    dayOffset: number,
+    stayIdsToday: ReadonlySet<string>,
+): MobileDayPlanLegRole | null => {
+    const departsToday = leg.departureDay === dayOffset;
+    const arrivesToday = leg.arrivalDay === dayOffset;
+    if (!departsToday && !arrivesToday) return null;
+
+    const spansBothStays = stayIdsToday.has(leg.fromCity.id) && stayIdsToday.has(leg.toCity.id);
+    if (departsToday && arrivesToday && spansBothStays) return 'handover';
+    if (arrivesToday) return 'arrival';
+    return 'departure';
 };
 
 /**
@@ -195,7 +269,8 @@ export const buildMobileDayPlan = (
 
     const locale = options.locale || undefined;
     const cities = buildApprovedCityRoute(trip.items);
-    const cityRanges = buildCityDayRanges(cities);
+    const stays = buildCityStayWindows(cities);
+    const legs = buildCityLegWindows(trip.items, stays);
     const range = getTripRangeOffsets(trip);
     const firstDay = toDayOffset(range.startOffset);
     const lastDay = Math.max(firstDay, Math.ceil(range.endOffset - OFFSET_EPSILON) - 1);
@@ -214,28 +289,35 @@ export const buildMobileDayPlan = (
         const dayOffset = firstDay + index;
         const date = addDays(tripStart, dayOffset);
 
-        const cityIndex = cityRanges.findIndex(
-            ({ startDay, endDay }) => dayOffset >= startDay && dayOffset < endDay,
-        );
-        const city = cityIndex >= 0 ? cities[cityIndex] : null;
-        const previousCity = cityIndex > 0 ? cities[cityIndex - 1] : null;
-        const nextCity = cityIndex >= 0 ? cities[cityIndex + 1] ?? null : null;
-        const cityRange = cityIndex >= 0 ? cityRanges[cityIndex] : null;
-        const isArrivalDay = Boolean(cityRange) && cityRange!.startDay === dayOffset;
-        // A departure belongs to the last day of the outgoing stay, not to the
-        // arrival day of the next city. Travel items usually carry the boundary
-        // offset itself, which would otherwise file the departure under the day
-        // the traveller arrives somewhere else.
-        const isDepartureDay = Boolean(cityRange) && cityRange!.endDay - 1 === dayOffset;
+        // Stays are matched by overlap rather than by rounding each one to whole
+        // days: a half-day offset means two stays legitimately share the day the
+        // traveller moves, and rounding them apart hid one of them entirely.
+        const overlappingStays = stays.filter((stay) => (
+            stay.start < dayOffset + 1 - OFFSET_EPSILON
+            && stay.end > dayOffset + OFFSET_EPSILON
+        ));
+        const arrivingStay = overlappingStays[overlappingStays.length - 1] ?? null;
+        const departingStay = overlappingStays.length > 1 ? overlappingStays[0] : null;
+        const city = arrivingStay?.city ?? null;
 
-        const arrival = city && previousCity && isArrivalDay
-            ? buildTransfer(findTravelBetweenCities(trip.items, previousCity, city), previousCity, city)
-            : null;
-        const departure = city && nextCity && isDepartureDay
-            ? buildTransfer(findTravelBetweenCities(trip.items, city, nextCity), city, nextCity)
-            : null;
+        const stayIdsToday = new Set(overlappingStays.map((stay) => stay.city.id));
+        const dayLegs: MobileDayPlanLeg[] = legs.flatMap((leg) => {
+            const role = resolveLegRole(leg, dayOffset, stayIdsToday);
+            if (!role) return [];
+            return [{ ...buildTransfer(leg.travelItem, leg.fromCity, leg.toCity), role }];
+        });
 
-        const stayHotel = findStayHotel(city);
+        const isArrivalDay = Boolean(arrivingStay) && toDayOffset(arrivingStay!.start) === dayOffset;
+        const isDepartureDay = Boolean(arrivingStay)
+            && toIntervalEndDay(arrivingStay!.start, arrivingStay!.end) === dayOffset;
+
+        // Check-in belongs to the stay being entered, check-out to the one being
+        // left, which on a handover day are two different hotels.
+        const checkInStay = isArrivalDay ? arrivingStay : null;
+        const checkOutStay = departingStay
+            ?? (isDepartureDay ? arrivingStay : null);
+        const checkOutEndsToday = checkOutStay
+            && toIntervalEndDay(checkOutStay.start, checkOutStay.end) === dayOffset;
 
         return {
             dayOffset,
@@ -247,16 +329,29 @@ export const buildMobileDayPlan = (
             fullDateLabel: date.toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' }),
             city,
             cityColorHex: city ? getHexFromColorClass(city.color || '') : '',
+            departingCity: departingStay?.city ?? null,
+            departingCityColorHex: departingStay ? getHexFromColorClass(departingStay.city.color || '') : '',
+            isHandoverDay: Boolean(departingStay),
             isArrivalDay,
             isDepartureDay,
-            arrival,
-            departure,
-            hotelCheckIn: isArrivalDay ? stayHotel : null,
-            hotelCheckOut: isDepartureDay ? stayHotel : null,
+            legs: dayLegs,
+            hotelCheckIn: findStayHotel(checkInStay?.city ?? null),
+            hotelCheckOut: checkOutEndsToday ? findStayHotel(checkOutStay!.city) : null,
             activities: activities.filter((activity) => toDayOffset(activity.startDateOffset) === dayOffset),
             isToday: todayOffset !== null && todayOffset === dayOffset,
         };
     });
+};
+
+export const doesMobileDayPlanDayContainItem = (
+    day: MobileDayPlanDay,
+    itemId: string | null,
+): boolean => {
+    if (!itemId) return false;
+    return day.city?.id === itemId
+        || day.departingCity?.id === itemId
+        || day.legs.some((leg) => leg.item?.id === itemId)
+        || day.activities.some((activity) => activity.id === itemId);
 };
 
 export const findMobileDayPlanIndexForItem = (
@@ -264,12 +359,7 @@ export const findMobileDayPlanIndexForItem = (
     itemId: string | null,
 ): number => {
     if (!itemId) return -1;
-    return days.findIndex((day) => (
-        day.city?.id === itemId
-        || day.departure?.item?.id === itemId
-        || day.arrival?.item?.id === itemId
-        || day.activities.some((activity) => activity.id === itemId)
-    ));
+    return days.findIndex((day) => doesMobileDayPlanDayContainItem(day, itemId));
 };
 
 /** How a strip node joins the node before or after it. */
@@ -294,11 +384,12 @@ export type MobileDayStripNode =
     };
 
 /**
- * Interleaves the days with the legs between stays.
+ * Interleaves the days with the legs that need a node of their own.
  *
  * The strip reads as one continuous route: days of the same stay are joined by
- * a line in the stay's colour, and a change of city is a separate, smaller node
- * carrying the leg's schedule.
+ * a line in the stay's colour. A leg that departs and arrives inside one day is
+ * drawn on that day's own bubble, because there is no gap between two days to
+ * put it in; only an overnight leg gets a node between the days it separates.
  */
 export const buildMobileDayStripNodes = (days: MobileDayPlanDay[]): MobileDayStripNode[] => {
     const nodes: MobileDayStripNode[] = [];
@@ -308,7 +399,8 @@ export const buildMobileDayStripNodes = (days: MobileDayPlanDay[]): MobileDayStr
         const nextDay = index < days.length - 1 ? days[index + 1] : null;
         const sharesStayWithPrevious = Boolean(previousDay?.city && day.city && previousDay.city.id === day.city.id);
         const sharesStayWithNext = Boolean(nextDay?.city && day.city && nextDay.city.id === day.city.id);
-        const hasOutgoingLeg = Boolean(day.departure) && Boolean(nextDay);
+        const overnightLeg = day.legs.find((leg) => leg.role === 'departure') ?? null;
+        const hasOvernightNode = Boolean(overnightLeg) && Boolean(nextDay);
 
         nodes.push({
             kind: 'day',
@@ -320,15 +412,15 @@ export const buildMobileDayStripNodes = (days: MobileDayPlanDay[]): MobileDayStr
                 : (sharesStayWithPrevious ? 'stay' : 'transfer'),
             linkAfter: !nextDay
                 ? 'none'
-                : (hasOutgoingLeg ? 'transfer' : (sharesStayWithNext ? 'stay' : 'transfer')),
+                : (hasOvernightNode ? 'transfer' : (sharesStayWithNext ? 'stay' : 'transfer')),
         });
 
-        if (hasOutgoingLeg && day.departure) {
+        if (hasOvernightNode && overnightLeg) {
             nodes.push({
                 kind: 'transfer',
                 key: `transfer-${day.dayOffset}`,
                 dayIndex: index,
-                transfer: day.departure,
+                transfer: overnightLeg,
                 cityColorHex: day.cityColorHex,
             });
         }
