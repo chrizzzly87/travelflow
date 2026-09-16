@@ -65,7 +65,7 @@ const CardMedia: React.FC<{ recommendation: Recommendation }> = ({ recommendatio
     const mapUrl = mapFailed ? null : buildRecommendationMapUrl(recommendation);
 
     return (
-        <div className="relative h-40 shrink-0 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+        <div className="relative h-52 shrink-0 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
             {photoUrl ? (
                 <img
                     src={photoUrl}
@@ -100,7 +100,7 @@ const CardMedia: React.FC<{ recommendation: Recommendation }> = ({ recommendatio
                     draggable={false}
                     data-testid="recommendation-card-map"
                     onError={() => setMapFailed(true)}
-                    className="absolute bottom-2 end-2 size-16 rounded-xl border-2 border-white object-cover shadow-md"
+                    className="absolute bottom-2 end-2 size-20 rounded-xl border-2 border-white object-cover shadow-md"
                 />
             )}
 
@@ -331,7 +331,7 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
         <LazyMotion features={domMax} strict>
             <div className="flex flex-1 flex-col" onKeyDown={handleKeyDown}>
                 <div className="flex flex-1 items-center justify-center px-5 py-2">
-                    <div className="relative h-[min(34rem,100%)] w-full max-w-sm">
+                    <div className="relative h-[min(31rem,100%)] w-full max-w-sm">
                         {behind.map((recommendation, index) => (
                             <m.div
                                 key={recommendation.id}
