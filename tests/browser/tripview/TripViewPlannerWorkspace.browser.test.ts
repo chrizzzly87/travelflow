@@ -14,11 +14,17 @@ const baseProps = (): PlannerProps => ({
     id: 'trip-1',
     title: 'Test trip',
     startDate: '2026-05-04',
-    items: [],
+    items: [
+      { id: 'city-a', type: 'city', title: 'Sintra', startDateOffset: 0, duration: 1.5, color: '#16a34a' },
+      { id: 'travel-a', type: 'travel', title: 'Train', startDateOffset: 1.5, duration: 0.3, color: '#64748b', transportMode: 'train', departureTime: '11:00' },
+      { id: 'city-b', type: 'city', title: 'Porto', startDateOffset: 1.5, duration: 2, color: '#2563eb' },
+    ],
     createdAt: 0,
     updatedAt: 0,
   },
   onSelectTimelineItem: vi.fn(),
+  onUpdateTimelineItem: vi.fn(),
+  onAddTimelineActivity: vi.fn(),
   appLanguage: 'en',
   timelineCanvas: React.createElement('div', { 'data-testid': 'timeline-canvas' }, 'canvas'),
   onTimelineTouchStart: vi.fn(),
@@ -344,4 +350,99 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(gripBar).toHaveClass('group-hover:bg-accent-500');
   });
 
+  it('uses a calendar icon for the day-by-day view', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    const dayViewButton = screen.getByLabelText('Day by day');
+    expect(dayViewButton.querySelector('.lucide-calendar-days')).toBeTruthy();
+  });
+
+  it('opens the transport picker for a leg and writes the chosen mode', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    // Day 2 is the half-day handover between the two stays.
+    fireEvent.click(screen.getAllByRole('tab')[1]);
+    fireEvent.click(screen.getByTestId('mobile-day-transport-edit'));
+
+    expect(screen.getByTestId('mobile-transport-modal')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Plane' }));
+
+    expect(props.onUpdateTimelineItem).toHaveBeenCalledWith('travel-a', expect.objectContaining({
+      type: 'travel',
+      transportMode: 'plane',
+    }));
+  });
+
+  it('offers a quick way to add an activity to the shown day', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+    fireEvent.click(screen.getByTestId('mobile-day-add-activity'));
+
+    expect(props.onAddTimelineActivity).toHaveBeenCalledWith(0);
+  });
+
+  it('hides the editing affordances when the trip cannot be edited', () => {
+    const props = baseProps();
+    props.isMobile = true;
+    props.onUpdateTimelineItem = undefined;
+    props.onAddTimelineActivity = undefined;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    expect(screen.queryByTestId('mobile-day-transport-edit')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('mobile-day-add-activity')).not.toBeInTheDocument();
+  });
+
+  it('stays on the tapped day when selecting it also selects its city', () => {
+    const props = baseProps();
+    props.isMobile = true;
+    // Porto starts mid-day 1 and runs to day 3, so a tap on its last day must
+    // survive the selection that same tap produces.
+    const { rerender } = render(React.createElement(TripViewPlannerWorkspace, props));
+
+    const tabs = screen.getAllByRole('tab');
+    fireEvent.click(tabs[3]);
+
+    expect(props.onSelectTimelineItem).toHaveBeenCalledWith('city-b', { isCity: true });
+    expect(screen.getAllByRole('tab')[3]).toHaveAttribute('aria-selected', 'true');
+
+    // The selection then arrives back as a prop, the way TripView feeds it.
+    rerender(React.createElement(TripViewPlannerWorkspace, { ...props, selectedItemId: 'city-b' }));
+
+    // Day 3 is where the traveller tapped; day 1 is where that city first appears.
+    expect(screen.getAllByRole('tab')[3]).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getAllByRole('tab')[1]).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('moves to the day holding a selection made outside the strip', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    const { rerender } = render(React.createElement(TripViewPlannerWorkspace, props));
+    expect(screen.getAllByRole('tab')[0]).toHaveAttribute('aria-selected', 'true');
+
+    rerender(React.createElement(TripViewPlannerWorkspace, { ...props, selectedItemId: 'city-b' }));
+
+    // Porto first appears on the handover day, which is day 1.
+    expect(screen.getAllByRole('tab')[1]).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('turns off double-tap zoom on the sheet and the day strip', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    expect(screen.getByTestId('planner-mobile-sheet').className).toContain('touch-manipulation');
+    expect(screen.getByTestId('planner-mobile-day-strip').className).toContain('touch-manipulation');
+  });
 });

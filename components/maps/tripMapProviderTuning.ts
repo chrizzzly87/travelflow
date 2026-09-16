@@ -138,7 +138,8 @@ const GOOGLE_TRIP_MAP_TUNING: TripMapProviderTuning = {
   },
   selection: {
     activityFocusZoom: 13,
-    cityFocusZoom: 10,
+    // Close enough to read the city itself rather than the region around it.
+    cityFocusZoom: 12,
     queryFocusZoom: 5,
     safeInsetRatio: 0.28,
     floatingSafeInsetRatio: 0.24,
@@ -163,10 +164,10 @@ const GOOGLE_TRIP_MAP_TUNING: TripMapProviderTuning = {
       nearCircleMaxZoom: 10.1,
       compactPinMaxZoom: 10.9,
       scaleBands: [
-        { minZoom: 13, scale: 1.2 },
-        { minZoom: 12, scale: 1.14 },
-        { minZoom: 11, scale: 1.1 },
-        { minZoom: 10.9, scale: 1.06 },
+        { minZoom: 13, scale: 0.92 },
+        { minZoom: 12, scale: 0.96 },
+        { minZoom: 11, scale: 1 },
+        { minZoom: 10.9, scale: 1.02 },
       ],
     },
     crowding: {
@@ -240,7 +241,7 @@ const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
   },
   selection: {
     activityFocusZoom: 12.6,
-    cityFocusZoom: 9.6,
+    cityFocusZoom: 11.8,
     queryFocusZoom: 4.7,
     safeInsetRatio: 0.24,
     floatingSafeInsetRatio: 0.16,
@@ -265,10 +266,10 @@ const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
       nearCircleMaxZoom: 10.5,
       compactPinMaxZoom: 11.2,
       scaleBands: [
-        { minZoom: 12.6, scale: 1.22 },
-        { minZoom: 11.8, scale: 1.16 },
-        { minZoom: 11.0, scale: 1.1 },
-        { minZoom: 10.2, scale: 1.05 },
+        { minZoom: 12.6, scale: 0.92 },
+        { minZoom: 11.8, scale: 0.96 },
+        { minZoom: 11.0, scale: 1 },
+        { minZoom: 10.2, scale: 1.02 },
       ],
     },
     crowding: {

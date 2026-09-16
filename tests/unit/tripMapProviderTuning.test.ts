@@ -13,7 +13,8 @@ describe('components/maps/tripMapProviderTuning', () => {
     const googleTuning = getTripMapProviderTuning('google');
     const mapboxTuning = getTripMapProviderTuning('mapbox');
 
-    expect(googleTuning.selection.cityFocusZoom).toBe(10);
+    // Close enough to read the city rather than the region around it.
+    expect(googleTuning.selection.cityFocusZoom).toBe(12);
     expect(mapboxTuning.selection.cityFocusZoom).toBeLessThan(googleTuning.selection.cityFocusZoom);
     expect(mapboxTuning.selection.safeInsetRatio).toBeLessThan(googleTuning.selection.safeInsetRatio);
     expect(mapboxTuning.selection.floatingSafeInsetRatio).toBeLessThan(mapboxTuning.selection.safeInsetRatio);

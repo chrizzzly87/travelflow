@@ -60,39 +60,66 @@ describe('components/tripview/mobileDayPlanModel', () => {
         ]);
     });
 
-    it('attaches a departure to the last day of the stay, not the arrival day', () => {
+    it('reports a whole-day boundary leg as an arrival on the day it lands', () => {
         const days = buildMobileDayPlan(trip);
 
-        expect(days[2].departure?.item?.id).toBe('travel-a');
-        expect(days[2].departure?.toCityTitle).toBe('Porto');
-        expect(days[2].departure?.departureTime).toBe('09:30');
-        expect(days[2].isDepartureDay).toBe(true);
-        expect(days[3].departure).toBeNull();
-    });
-
-    it('mirrors the same leg as the arrival of the next stay', () => {
-        const days = buildMobileDayPlan(trip);
-
-        expect(days[3].arrival?.item?.id).toBe('travel-a');
-        expect(days[3].arrival?.fromCityTitle).toBe('Lisbon');
-        expect(days[3].arrival?.modeLabel).toBe('Train');
+        // Lisbon ends exactly at offset 3, so day 3 contains no Lisbon at all.
+        expect(days[3].legs.map((leg) => leg.role)).toEqual(['arrival']);
+        expect(days[3].legs[0].item?.id).toBe('travel-a');
+        expect(days[3].legs[0].fromCityTitle).toBe('Lisbon');
+        expect(days[3].legs[0].modeLabel).toBe('Train');
         // 09:30 plus a 0.2-day (4.8h) leg.
-        expect(days[3].arrival?.arrivalTime).toBe('14:18');
-        expect(days[3].arrival?.arrivalDayShift).toBe(0);
-        expect(days[0].arrival).toBeNull();
+        expect(days[3].legs[0].arrivalTime).toBe('14:18');
+        expect(days[3].legs[0].arrivalDayShift).toBe(0);
+        expect(days[3].isHandoverDay).toBe(false);
+        expect(days[2].legs).toEqual([]);
     });
 
-    it('rolls an overnight arrival into the following day', () => {
+    it('keeps a half-day handover inside one day, with both stays on it', () => {
+        // The shape every generated trip uses: a stay ends mid-day and the next
+        // begins at the same offset, so one day holds the whole move.
+        const handover = makeTrip([
+            item({ id: 'city-a', type: 'city', title: 'Sintra', startDateOffset: 0, duration: 1.5 }),
+            item({ id: 'travel-a', type: 'travel', title: 'Train', startDateOffset: 1.5, duration: 0.3, transportMode: 'train', departureTime: '11:00' }),
+            item({
+                id: 'city-b',
+                type: 'city',
+                title: 'Porto',
+                startDateOffset: 1.5,
+                duration: 2,
+                hotels: [{ id: 'hotel-1', name: 'The Yeatman', address: '' }],
+            }),
+        ]);
+
+        const days = buildMobileDayPlan(handover);
+
+        expect(days).toHaveLength(4);
+        expect(days[1].isHandoverDay).toBe(true);
+        expect(days[1].departingCity?.id).toBe('city-a');
+        expect(days[1].city?.id).toBe('city-b');
+        expect(days[1].legs.map((leg) => leg.role)).toEqual(['handover']);
+        expect(days[1].legs[0].departureTime).toBe('11:00');
+        expect(days[1].legs[0].arrivalTime).toBe('18:12');
+        // Both ends of the move are recorded on the same day.
+        expect(days[1].hotelCheckIn?.name).toBe('The Yeatman');
+        expect(days[1].isArrivalDay).toBe(true);
+        expect(days[0].isHandoverDay).toBe(false);
+        expect(days[2].legs).toEqual([]);
+    });
+
+    it('splits an overnight leg into a departure and an arrival on two days', () => {
         const overnight = makeTrip([
             item({ id: 'city-a', type: 'city', title: 'Lisbon', startDateOffset: 0, duration: 2 }),
-            item({ id: 'travel-a', type: 'travel', title: 'Night train', startDateOffset: 2, duration: 0.5, transportMode: 'train', departureTime: '22:00' }),
-            item({ id: 'city-b', type: 'city', title: 'Porto', startDateOffset: 2, duration: 2 }),
+            item({ id: 'travel-a', type: 'travel', title: 'Night train', startDateOffset: 1.9, duration: 0.5, transportMode: 'train', departureTime: '22:00' }),
+            item({ id: 'city-b', type: 'city', title: 'Porto', startDateOffset: 2.4, duration: 2 }),
         ]);
         const days = buildMobileDayPlan(overnight);
 
-        expect(days[2].arrival?.arrivalTime).toBe('10:00');
-        expect(days[2].arrival?.arrivalDayShift).toBe(1);
-        expect(days[2].arrival?.durationLabel).toBe('12 h');
+        expect(days[1].legs.map((leg) => leg.role)).toEqual(['departure']);
+        expect(days[2].legs.map((leg) => leg.role)).toEqual(['arrival']);
+        expect(days[2].legs[0].arrivalTime).toBe('10:00');
+        expect(days[2].legs[0].arrivalDayShift).toBe(1);
+        expect(days[2].legs[0].durationLabel).toBe('12 h');
     });
 
     it('marks hotel check-in on arrival and check-out on the last day of the stay', () => {
@@ -130,15 +157,16 @@ describe('components/tripview/mobileDayPlanModel', () => {
         const days = buildMobileDayPlan(trip);
 
         expect(findMobileDayPlanIndexForItem(days, 'act-3')).toBe(3);
-        expect(findMobileDayPlanIndexForItem(days, 'travel-a')).toBe(2);
+        expect(findMobileDayPlanIndexForItem(days, 'travel-a')).toBe(3);
         expect(findMobileDayPlanIndexForItem(days, 'city-b')).toBe(3);
         expect(findMobileDayPlanIndexForItem(days, 'missing')).toBe(-1);
         expect(findMobileDayPlanIndexForItem(days, null)).toBe(-1);
     });
 
-    it('gives every stay its own arrival day when fractional offsets overlap (regression: missing arrival and check-in)', () => {
-        // Sintra runs 19.0–20.6 and Porto starts at 20.6: rounding each stay on
-        // its own made both claim day 20, and Porto never reported an arrival.
+    it('never loses a stay when two share the day of the move (regression: missing arrival and check-in)', () => {
+        // Sintra runs 2.0-3.6 and Porto starts at 3.6: rounding each stay to
+        // whole days on its own made both claim day 3, and whichever lost the
+        // lookup reported no arrival and no hotel check-in at all.
         const overlapping = makeTrip([
             item({ id: 'city-a', type: 'city', title: 'Lisbon', startDateOffset: 0, duration: 2 }),
             item({ id: 'city-b', type: 'city', title: 'Sintra', startDateOffset: 2, duration: 1.6 }),
@@ -154,35 +182,39 @@ describe('components/tripview/mobileDayPlanModel', () => {
 
         const days = buildMobileDayPlan(overlapping);
 
-        expect(days.map((day) => day.city?.id)).toEqual(['city-a', 'city-a', 'city-b', 'city-b', 'city-c', 'city-c']);
-        expect(days.map((day) => day.isArrivalDay)).toEqual([true, false, true, false, true, false]);
-        expect(days[4].arrival?.fromCityTitle).toBe('Sintra');
-        expect(days[4].hotelCheckIn?.name).toBe('The Yeatman');
+        expect(days.map((day) => day.city?.id)).toEqual(['city-a', 'city-a', 'city-b', 'city-c', 'city-c', 'city-c']);
+        expect(days[3].isHandoverDay).toBe(true);
+        expect(days[3].departingCity?.id).toBe('city-b');
+        expect(days[3].legs.map((leg) => leg.role)).toEqual(['handover']);
+        expect(days[3].hotelCheckIn?.name).toBe('The Yeatman');
     });
 
     describe('buildMobileDayStripNodes', () => {
         it('joins days of one stay and inserts the leg between stays', () => {
             const nodes = buildMobileDayStripNodes(buildMobileDayPlan(trip));
 
-            expect(nodes.map((node) => node.kind)).toEqual([
-                'day', 'day', 'day', 'transfer', 'day', 'day',
-            ]);
+            // The move lands inside day 3, so it is drawn on that day's bubble
+            // rather than as a node between two days.
+            expect(nodes.map((node) => node.kind)).toEqual(['day', 'day', 'day', 'day', 'day']);
 
             const dayNodes = nodes.filter((node) => node.kind === 'day');
-            // Days inside one stay link with the stay's colour; the boundary
-            // days link through the transfer node instead.
             expect(dayNodes.map((node) => (node.kind === 'day' ? node.linkBefore : null)))
                 .toEqual(['none', 'stay', 'stay', 'transfer', 'stay']);
             expect(dayNodes.map((node) => (node.kind === 'day' ? node.linkAfter : null)))
                 .toEqual(['stay', 'stay', 'transfer', 'stay', 'none']);
         });
 
-        it('points a transfer node at the day it departs on', () => {
-            const nodes = buildMobileDayStripNodes(buildMobileDayPlan(trip));
+        it('gives an overnight leg a node between the days it separates', () => {
+            const overnight = makeTrip([
+                item({ id: 'city-a', type: 'city', title: 'Lisbon', startDateOffset: 0, duration: 2 }),
+                item({ id: 'travel-a', type: 'travel', title: 'Night train', startDateOffset: 1.9, duration: 0.5, transportMode: 'train' }),
+                item({ id: 'city-b', type: 'city', title: 'Porto', startDateOffset: 2.4, duration: 2 }),
+            ]);
+            const nodes = buildMobileDayStripNodes(buildMobileDayPlan(overnight));
             const transferNode = nodes.find((node) => node.kind === 'transfer');
 
             expect(transferNode?.kind).toBe('transfer');
-            expect(transferNode && transferNode.kind === 'transfer' ? transferNode.dayIndex : null).toBe(2);
+            expect(transferNode && transferNode.kind === 'transfer' ? transferNode.dayIndex : null).toBe(1);
             expect(transferNode && transferNode.kind === 'transfer' ? transferNode.transfer.item?.id : null).toBe('travel-a');
         });
 
