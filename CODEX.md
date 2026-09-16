@@ -15,7 +15,7 @@
 
 ## Skill usage policy
 - For React performance or refactor work, consult `vercel-react-best-practices` and apply only the rules that materially affect the task.
-- After substantial React changes, run `pnpm dlx react-doctor@latest . --verbose --diff`; fix errors before merge and prioritize warnings by risk.
+- `react-doctor` is optional: run `pnpm dlx react-doctor@latest . --verbose --diff` when a React change feels risky, and prioritize what it reports by risk.
 - Use `find-skills` only for targeted capability discovery when existing project workflows/skills are insufficient.
 - Do not overuse skills for routine edits that are already covered by current repo conventions.
 

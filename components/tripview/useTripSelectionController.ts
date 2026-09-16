@@ -14,6 +14,13 @@ interface UseTripSelectionControllerOptions {
     isTripInfoOpen: boolean;
     autoOpenOnSelect?: boolean;
     clearSelectionOnClose?: boolean;
+    /**
+     * When false there is no details surface at all: nothing opens it, and
+     * closing it never clears the selection. The mobile planner shows a day's
+     * detail inline, and the old drawer dropped the selection on close, which
+     * made the day strip forget which day the traveller was on.
+     */
+    detailsPanelEnabled?: boolean;
     setPendingLabel: (label: string) => void;
     handleUpdateItems: (items: ITimelineItem[]) => void;
 }
@@ -29,6 +36,7 @@ export const useTripSelectionController = ({
     isTripInfoOpen,
     autoOpenOnSelect = true,
     clearSelectionOnClose = false,
+    detailsPanelEnabled = true,
     setPendingLabel,
     handleUpdateItems,
 }: UseTripSelectionControllerOptions) => {
@@ -44,7 +52,7 @@ export const useTripSelectionController = ({
 
     const showSelectedCitiesPanel = selectedCitiesInTimeline.length > 1;
     const hasSelection = showSelectedCitiesPanel || !!selectedItemId;
-    const detailsPanelVisible = hasSelection && isDetailsPanelOpen;
+    const detailsPanelVisible = detailsPanelEnabled && hasSelection && isDetailsPanelOpen;
 
     const clearSelection = useCallback(() => {
         setIsDetailsPanelOpen(autoOpenOnSelect);
@@ -53,23 +61,23 @@ export const useTripSelectionController = ({
     }, [autoOpenOnSelect, setSelectedCityIds, setSelectedItemId]);
 
     const openDetailsPanel = useCallback(() => {
-        if (!hasSelection) return;
+        if (!detailsPanelEnabled || !hasSelection) return;
         setIsDetailsPanelOpen(true);
-    }, [hasSelection]);
+    }, [detailsPanelEnabled, hasSelection]);
 
     const closeDetailsPanel = useCallback(() => {
-        if (!hasSelection) return;
+        if (!detailsPanelEnabled || !hasSelection) return;
         if (clearSelectionOnClose) {
             clearSelection();
             return;
         }
         setIsDetailsPanelOpen(false);
-    }, [clearSelection, clearSelectionOnClose, hasSelection]);
+    }, [clearSelection, clearSelectionOnClose, detailsPanelEnabled, hasSelection]);
 
     const toggleDetailsPanel = useCallback(() => {
-        if (!hasSelection) return;
+        if (!detailsPanelEnabled || !hasSelection) return;
         setIsDetailsPanelOpen((previous) => !previous);
-    }, [hasSelection]);
+    }, [detailsPanelEnabled, hasSelection]);
 
     useEffect(() => {
         if (hasSelection) return;
@@ -100,7 +108,8 @@ export const useTripSelectionController = ({
             return;
         }
 
-        const shouldOpenHiddenDetails = !autoOpenOnSelect
+        const shouldOpenHiddenDetails = detailsPanelEnabled
+            && !autoOpenOnSelect
             && !options?.multi
             && selectedItemId === id
             && !isDetailsPanelOpen;
@@ -164,6 +173,7 @@ export const useTripSelectionController = ({
     }, [
         clearSelection,
         autoOpenOnSelect,
+        detailsPanelEnabled,
         isDetailsPanelOpen,
         selectedItemId,
         setSelectedCityIds,

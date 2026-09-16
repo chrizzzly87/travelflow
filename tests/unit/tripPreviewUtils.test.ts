@@ -42,7 +42,7 @@ describe('components/profile/tripPreviewUtils buildMiniMapUrl', () => {
 
     expect(params.get('coords')).toBe('34.693700,135.502300|35.011600,135.768100|35.676200,139.650300');
     expect(params.get('style')).toBe('standard');
-    expect(params.get('routeMode')).toBe('simple');
+    expect(params.get('routeMode')).toBe('realistic');
     expect(params.get('colorMode')).toBe('trip');
     expect(params.get('pathColor')).toBe('16a34a');
     expect(params.get('legColors')).toBe('dc2626|2563eb');

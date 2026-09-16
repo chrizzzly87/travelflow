@@ -144,9 +144,6 @@ const SelectedCitiesPanel = lazyWithRecovery('SelectedCitiesPanel', () =>
     import('./SelectedCitiesPanel').then((module) => ({ default: module.SelectedCitiesPanel }))
 );
 
-const TripDetailsDrawer = lazyWithRecovery('TripDetailsDrawer', () =>
-    import('./TripDetailsDrawer').then((module) => ({ default: module.TripDetailsDrawer }))
-);
 
 const AddActivityModal = lazyWithRecovery('AddActivityModal', () =>
     import('./AddActivityModal').then((module) => ({ default: module.AddActivityModal }))
@@ -542,11 +539,6 @@ const TripInfoModalLoadingFallback: React.FC<{ onClose: () => void }> = ({ onClo
 };
 
 interface TripViewModalLayerProps {
-    isMobile: boolean;
-    detailsPanelVisible: boolean;
-    detailsPanelContent: React.ReactNode;
-    onCloseDetailsDrawer: () => void;
-    onOpenDetailsDrawer: () => void;
     addActivityState: { isOpen: boolean; dayOffset: number; location: string };
     onCloseAddActivity: () => void;
     onAddActivity: (...args: any[]) => void;
@@ -644,11 +636,6 @@ interface TripViewModalLayerProps {
 }
 
 const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
-    isMobile,
-    detailsPanelVisible,
-    detailsPanelContent,
-    onCloseDetailsDrawer,
-    onOpenDetailsDrawer,
     addActivityState,
     onCloseAddActivity,
     onAddActivity,
@@ -736,26 +723,6 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     onClaimConflictLogin,
 }) => (
     <>
-        {isMobile && detailsPanelVisible && (
-            <Suspense fallback={null}>
-                <TripDetailsDrawer
-                    open={detailsPanelVisible}
-                    expanded={detailsPanelVisible}
-                    onOpenChange={(open) => {
-                        if (!open) onCloseDetailsDrawer();
-                    }}
-                    onExpandedChange={(expanded) => {
-                        if (expanded) {
-                            onOpenDetailsDrawer();
-                            return;
-                        }
-                        onCloseDetailsDrawer();
-                    }}
-                >
-                    {detailsPanelContent}
-                </TripDetailsDrawer>
-            </Suspense>
-        )}
         {addActivityState.isOpen && (
             <Suspense fallback={null}>
                 <AddActivityModal
@@ -2624,7 +2591,10 @@ const useTripViewRender = ({
         isHistoryOpen,
         isTripInfoOpen,
         autoOpenOnSelect: !isMobileViewport,
-        clearSelectionOnClose: isMobileViewport,
+        // The mobile planner renders a day's detail inline, so there is no
+        // drawer to close — and no close that could drop the selected day.
+        detailsPanelEnabled: !isMobileViewport,
+        clearSelectionOnClose: false,
         setPendingLabel,
         handleUpdateItems,
     });
@@ -3290,9 +3260,9 @@ const useTripViewRender = ({
                     <TripViewPlannerWorkspace
                         isPaywallLocked={isPaywallLocked}
                         isMobile={isMobile}
-                        isMobileMapExpanded={isMobileMapExpanded}
-                        onCloseMobileMap={() => setIsMobileMapExpanded(false)}
-                        onToggleMobileMapExpanded={() => setIsMobileMapExpanded((value) => !value)}
+                        trip={displayTrip}
+                        onSelectTimelineItem={handleTimelineSelect}
+                        appLanguage={appLanguage}
                         timelineCanvas={timelineCanvas}
                         onTimelineTouchStart={handleTimelineTouchStart}
                         onTimelineTouchMove={handleTimelineTouchMove}
@@ -3477,11 +3447,6 @@ const useTripViewRender = ({
                         </Suspense>
                     )}
                     <TripViewModalLayer
-                        isMobile={isMobile}
-                        detailsPanelVisible={detailsPanelVisible}
-                        detailsPanelContent={detailsPanelContent}
-                        onCloseDetailsDrawer={closeDetailsPanel}
-                        onOpenDetailsDrawer={openDetailsPanel}
                         addActivityState={addActivityState}
                         onCloseAddActivity={() => setAddActivityState((prev) => ({ ...prev, isOpen: false }))}
                         onAddActivity={handleAddActivityItem}

@@ -5,7 +5,7 @@ import { normalizeTransportMode } from '../../shared/transportModes';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const OFFSET_EPSILON = 0.0001;
 
-const TRANSPORT_MODE_LABEL: Record<string, string> = {
+export const TRANSPORT_MODE_LABEL: Record<string, string> = {
     plane: 'Flight',
     train: 'Train',
     bus: 'Bus',

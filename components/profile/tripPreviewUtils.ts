@@ -491,7 +491,9 @@ export const buildMiniMapUrl = (
   const params = new URLSearchParams();
   params.set('coords', routeCoordinates.map((coord) => formatCoord(coord.coordinates)).join('|'));
   params.set('style', variant === 'accent' ? 'clean' : 'standard');
-  params.set('routeMode', 'simple');
+  // Trip cards trace the itinerary the same way the planner map does: a straight
+  // line between two stops reads as a flight even when the leg is a road trip.
+  params.set('routeMode', 'realistic');
   params.set('colorMode', 'trip');
   params.set('pathColor', pathColor);
   params.set('startMarkerColor', start.colorHex || mapColors.start);

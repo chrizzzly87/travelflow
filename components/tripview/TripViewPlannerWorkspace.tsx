@@ -2,15 +2,17 @@ import React, { Suspense, useCallback, useRef } from 'react';
 import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react';
 import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
 import { TripFloatingMapPreview } from './TripFloatingMapPreview';
+import { TripMobilePlannerShell } from './TripMobilePlannerShell';
 
-import type { ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../../types';
+import type { ITimelineItem, ITrip, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../../types';
 
 interface TripViewPlannerWorkspaceProps {
     isPaywallLocked: boolean;
     isMobile: boolean;
-    isMobileMapExpanded: boolean;
-    onCloseMobileMap: () => void;
-    onToggleMobileMapExpanded: () => void;
+    /** Drives the mobile day planner; the desktop layout renders from `timelineCanvas`. */
+    trip: ITrip;
+    onSelectTimelineItem: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
+    appLanguage?: string;
     timelineCanvas: React.ReactNode;
     onTimelineTouchStart: (event: React.TouchEvent<HTMLDivElement>) => void;
     onTimelineTouchMove: (event: React.TouchEvent<HTMLDivElement>) => void;
@@ -73,9 +75,9 @@ const CONTROL_TOGGLE_INACTIVE_CLASS_NAME = 'text-gray-600 hover:bg-gray-100 hove
 export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> = ({
     isPaywallLocked,
     isMobile,
-    isMobileMapExpanded,
-    onCloseMobileMap,
-    onToggleMobileMapExpanded,
+    trip,
+    onSelectTimelineItem,
+    appLanguage,
     timelineCanvas,
     onTimelineTouchStart,
     onTimelineTouchMove,
@@ -333,8 +335,6 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     onShowCityNamesChange={isPaywallLocked ? undefined : onShowCityNamesChange}
                     mapColorMode={mapColorMode}
                     onMapColorModeChange={onMapColorModeChange}
-                    isExpanded={isMobile ? isMobileMapExpanded : undefined}
-                    onToggleExpanded={isMobile ? onToggleMobileMapExpanded : undefined}
                     mapDockMode={isFloatingMapPreviewEnabled ? effectiveMapDockMode : undefined}
                     onMapDockModeToggle={isFloatingMapPreviewEnabled ? toggleMapDockMode : undefined}
                     focusLocationQuery={initialMapFocusQuery}
@@ -350,39 +350,36 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
 
     return (
         <>
-            {isMobileMapExpanded && (
-                <button
-                    type="button"
-                    className="fixed inset-0 z-[1430] bg-black/25"
-                    aria-label="Close expanded map"
-                    onClick={onCloseMobileMap}
-                />
-            )}
             <div className={`w-full h-full ${isPaywallLocked ? 'pointer-events-none select-none' : ''}`}>
                 {isMobile ? (
-                    <div className="w-full h-full flex flex-col">
-                        <div
-                            ref={mapViewportRef}
-                            data-testid="planner-mobile-map-pane"
-                            className={`${isMobileMapExpanded ? 'fixed inset-x-0 bottom-0 h-[70vh] z-[1450] border-t border-gray-200 shadow-2xl bg-white' : 'relative h-[26vh] min-h-[180px] bg-gray-100'}`}
-                        >
-                            {buildMap('vertical', false)}
-                        </div>
-                        <div
-                            ref={verticalLayoutTimelineRef}
-                            data-testid="planner-mobile-timeline-pane"
-                            className="flex-1 min-h-0 w-full bg-white border-t border-gray-200 relative overflow-hidden"
-                            onTouchStart={timelineMode === 'calendar' ? onTimelineTouchStart : undefined}
-                            onTouchMove={timelineMode === 'calendar' ? onTimelineTouchMove : undefined}
-                            onTouchEnd={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
-                            onTouchCancel={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
-                        >
-                            {timelineCanvas}
-                            <div data-testid="planner-timeline-controls" className={`absolute top-3 end-3 ${plannerControlsLayerClassName} pointer-events-auto`}>
+                    <TripMobilePlannerShell
+                        trip={trip}
+                        tripId={tripId}
+                        mapNode={buildMap('vertical', false)}
+                        mapViewportRef={mapViewportRef}
+                        timelineCanvas={(
+                            <div
+                                ref={verticalLayoutTimelineRef}
+                                data-testid="planner-mobile-timeline-pane"
+                                className="relative h-full w-full overflow-hidden"
+                                onTouchStart={timelineMode === 'calendar' ? onTimelineTouchStart : undefined}
+                                onTouchMove={timelineMode === 'calendar' ? onTimelineTouchMove : undefined}
+                                onTouchEnd={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
+                                onTouchCancel={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
+                            >
+                                {timelineCanvas}
+                            </div>
+                        )}
+                        timelineControls={(
+                            <div data-testid="planner-timeline-controls" className="pointer-events-auto">
                                 {timelineControls}
                             </div>
-                        </div>
-                    </div>
+                        )}
+                        selectedItemId={selectedItemId}
+                        onSelect={onSelectTimelineItem}
+                        isPaywallLocked={isPaywallLocked}
+                        appLanguage={appLanguage}
+                    />
                 ) : (
                     <>
                         <div className={`w-full h-full flex ${

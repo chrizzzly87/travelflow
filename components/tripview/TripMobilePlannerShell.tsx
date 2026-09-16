@@ -1,0 +1,319 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDown, ChevronUp, List, Rows3 } from 'lucide-react';
+
+import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import { buildMobileDayPlan, findMobileDayPlanIndexForItem } from './mobileDayPlanModel';
+import { TripMobileDayPanel } from './TripMobileDayPanel';
+import { TripMobileDayStrip } from './TripMobileDayStrip';
+import type { ITrip } from '../../types';
+
+export type TripMobileSheetSnap = 'peek' | 'half' | 'full';
+
+const SNAP_ORDER: TripMobileSheetSnap[] = ['peek', 'half', 'full'];
+
+/** How far the map slides under the sheet's rounded top edge. */
+const MAP_UNDERLAP_PX = 28;
+
+/**
+ * Snap sizes are a share of the planner viewport rather than of `vh`: the trip
+ * header and status banners already consume part of the screen, and a `vh`
+ * sheet would overshoot them.
+ */
+const SNAP_FRACTION: Record<TripMobileSheetSnap, number> = {
+    peek: 0,
+    half: 0.58,
+    full: 1,
+};
+
+/** Floor for the smallest snap, which has to fit the handle and the day strip. */
+const PEEK_HEIGHT_PX = 168;
+
+const SNAP_LABEL: Record<TripMobileSheetSnap, string> = {
+    peek: 'Days only',
+    half: 'Half screen',
+    full: 'Full screen',
+};
+
+const resolveSnapHeightPx = (snap: TripMobileSheetSnap, containerHeight: number): number => {
+    if (containerHeight <= 0) return PEEK_HEIGHT_PX;
+    return Math.max(PEEK_HEIGHT_PX, Math.round(containerHeight * SNAP_FRACTION[snap]));
+};
+
+const resolveNearestSnap = (heightPx: number, containerHeight: number): TripMobileSheetSnap => {
+    let nearest: TripMobileSheetSnap = 'half';
+    let smallestDistance = Number.POSITIVE_INFINITY;
+    SNAP_ORDER.forEach((snap) => {
+        const distance = Math.abs(resolveSnapHeightPx(snap, containerHeight) - heightPx);
+        if (distance < smallestDistance) {
+            smallestDistance = distance;
+            nearest = snap;
+        }
+    });
+    return nearest;
+};
+
+interface TripMobilePlannerShellProps {
+    trip: ITrip;
+    tripId: string;
+    mapNode: React.ReactNode;
+    mapViewportRef: React.RefObject<HTMLDivElement | null>;
+    timelineCanvas: React.ReactNode;
+    timelineControls: React.ReactNode;
+    selectedItemId: string | null;
+    onSelect: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
+    isPaywallLocked: boolean;
+    appLanguage?: string;
+}
+
+export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
+    trip,
+    tripId,
+    mapNode,
+    mapViewportRef,
+    timelineCanvas,
+    timelineControls,
+    selectedItemId,
+    onSelect,
+    isPaywallLocked,
+    appLanguage,
+}) => {
+    const days = useMemo(
+        () => buildMobileDayPlan(trip, { locale: appLanguage }),
+        [appLanguage, trip],
+    );
+
+    const [snap, setSnap] = useState<TripMobileSheetSnap>('half');
+    const [panelMode, setPanelMode] = useState<'days' | 'timeline'>('days');
+    const [manualDayIndex, setManualDayIndex] = useState<number | null>(null);
+    const [containerHeight, setContainerHeight] = useState(0);
+    const [dragHeightPx, setDragHeightPx] = useState<number | null>(null);
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const contentRef = useRef<HTMLDivElement | null>(null);
+
+    // Selection made anywhere else (a map marker, the timeline) decides which
+    // day is shown, so the panel never drifts away from the map.
+    const selectionDayIndex = useMemo(
+        () => findMobileDayPlanIndexForItem(days, selectedItemId),
+        [days, selectedItemId],
+    );
+    const todayIndex = useMemo(() => days.findIndex((day) => day.isToday), [days]);
+    const fallbackDayIndex = todayIndex >= 0 ? todayIndex : 0;
+    const activeDayIndex = Math.min(
+        Math.max(0, manualDayIndex ?? (selectionDayIndex >= 0 ? selectionDayIndex : fallbackDayIndex)),
+        Math.max(0, days.length - 1),
+    );
+    const activeDay = days[activeDayIndex] ?? null;
+
+    // A selection made outside the strip (map marker, timeline) moves the day,
+    // and takes precedence over whichever day was last tapped here.
+    const lastSelectionDayIndexRef = useRef(selectionDayIndex);
+    useEffect(() => {
+        if (selectionDayIndex === lastSelectionDayIndexRef.current) return;
+        lastSelectionDayIndexRef.current = selectionDayIndex;
+        if (selectionDayIndex >= 0) setManualDayIndex(selectionDayIndex);
+    }, [selectionDayIndex]);
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container || typeof ResizeObserver === 'undefined') return;
+        const measure = () => setContainerHeight(Math.round(container.getBoundingClientRect().height));
+        const observer = new ResizeObserver(measure);
+        observer.observe(container);
+        measure();
+        return () => {
+            observer.disconnect();
+        };
+    }, []);
+
+    useEffect(() => {
+        const content = contentRef.current;
+        if (!content || typeof content.scrollTo !== 'function') return;
+        content.scrollTo({ top: 0 });
+    }, [activeDayIndex, panelMode]);
+
+    const sheetHeight = dragHeightPx ?? resolveSnapHeightPx(snap, containerHeight);
+
+    const applySnap = useCallback((next: TripMobileSheetSnap) => {
+        setSnap((current) => {
+            if (current === next) return current;
+            trackEvent('trip_view__mobile_sheet--snap', { trip_id: tripId, snap: next });
+            return next;
+        });
+    }, [tripId]);
+
+    // One control, because the sheet only ever has one useful next state: grow
+    // while there is room, and collapse straight back once it is full.
+    const isFullyExpanded = snap === 'full';
+    const toggleSheet = useCallback(() => {
+        applySnap(isFullyExpanded ? 'peek' : (snap === 'peek' ? 'half' : 'full'));
+    }, [applySnap, isFullyExpanded, snap]);
+
+    const dragRef = useRef<{ pointerId: number; startY: number; startHeight: number; moved: boolean } | null>(null);
+    const handleDragStart = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+        if (event.button !== undefined && event.button !== 0) return;
+        dragRef.current = {
+            pointerId: event.pointerId,
+            startY: event.clientY,
+            startHeight: sheetHeight,
+            moved: false,
+        };
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+    }, [sheetHeight]);
+
+    const handleDragMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+        const drag = dragRef.current;
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        const delta = drag.startY - event.clientY;
+        if (!drag.moved && Math.abs(delta) < 4) return;
+        drag.moved = true;
+        event.preventDefault();
+        const maxHeight = containerHeight > 0 ? containerHeight : drag.startHeight + delta;
+        setDragHeightPx(Math.max(PEEK_HEIGHT_PX, Math.min(maxHeight, drag.startHeight + delta)));
+    }, [containerHeight]);
+
+    const handleDragEnd = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+        const drag = dragRef.current;
+        dragRef.current = null;
+        event.currentTarget.releasePointerCapture?.(event.pointerId);
+        if (!drag) return;
+        const released = dragHeightPx;
+        setDragHeightPx(null);
+        if (!drag.moved || released === null) return;
+        applySnap(resolveNearestSnap(released, containerHeight));
+    }, [applySnap, containerHeight, dragHeightPx]);
+
+    const handleSelectDay = useCallback((index: number) => {
+        const day = days[index];
+        setManualDayIndex(index);
+        if (!day) return;
+        trackEvent('trip_view__mobile_day--select', { trip_id: tripId, day_number: day.dayNumber });
+        // Selecting the day's stay pans the map through the existing selection
+        // pipeline instead of a second, parallel camera path.
+        if (day.city) {
+            onSelect(day.city.id, { isCity: true });
+        }
+    }, [days, onSelect, tripId]);
+
+    const handleSelectTransfer = useCallback((dayIndex: number, travelItemId: string | null) => {
+        setManualDayIndex(dayIndex);
+        if (travelItemId) onSelect(travelItemId);
+    }, [onSelect]);
+
+    return (
+        <div
+            ref={containerRef}
+            className="relative h-full w-full overflow-hidden"
+        >
+            {/*
+              * The map reads as a full-bleed background but its element stops
+              * just under the sheet's rounded lip. Letting it run the whole
+              * height instead made every camera fit frame the route into the
+              * part the sheet covers, since fit padding cannot model an
+              * overlay.
+              */}
+            <div
+                ref={mapViewportRef}
+                data-testid="planner-mobile-map-pane"
+                className={`absolute inset-x-0 top-0 bg-gray-100 ${dragHeightPx === null ? 'transition-[bottom] duration-300 ease-out motion-reduce:transition-none' : ''}`}
+                style={{ bottom: Math.max(0, sheetHeight - MAP_UNDERLAP_PX) }}
+            >
+                {mapNode}
+            </div>
+
+            <section
+                data-testid="planner-mobile-sheet"
+                data-snap={snap}
+                aria-label="Trip days"
+                className={`absolute inset-x-0 bottom-0 z-[60] flex flex-col overflow-hidden rounded-t-3xl border-t border-slate-200 bg-white shadow-[0_-12px_40px_rgba(15,23,42,0.18)] ${dragHeightPx === null ? 'transition-[height] duration-300 ease-out motion-reduce:transition-none' : ''}`}
+                style={{ height: sheetHeight }}
+            >
+                <div
+                    data-testid="planner-mobile-sheet-handle"
+                    onPointerDown={handleDragStart}
+                    onPointerMove={handleDragMove}
+                    onPointerUp={handleDragEnd}
+                    onPointerCancel={handleDragEnd}
+                    className="relative shrink-0 cursor-grab touch-none select-none px-2 pb-1 pt-2 active:cursor-grabbing"
+                >
+                    {/* Absolutely centred so it stays on the sheet's axis no
+                      * matter how many controls sit beside it. */}
+                    <span
+                        aria-hidden="true"
+                        className="absolute left-1/2 top-2.5 h-1.5 w-11 -translate-x-1/2 rounded-full bg-slate-300"
+                    />
+                    <div className="flex h-9 items-center justify-between">
+                        <div className="inline-flex shrink-0 items-center rounded-full bg-slate-100 p-0.5">
+                            <button
+                                type="button"
+                                onClick={() => setPanelMode('days')}
+                                className={`inline-flex size-8 items-center justify-center rounded-full transition-colors ${panelMode === 'days' ? 'bg-white text-accent-600 shadow-sm' : 'text-slate-500'}`}
+                                aria-label="Day by day"
+                                aria-pressed={panelMode === 'days'}
+                                {...getAnalyticsDebugAttributes('trip_view__mobile_panel--days', { trip_id: tripId })}
+                            >
+                                <Rows3 size={15} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPanelMode('timeline')}
+                                className={`inline-flex size-8 items-center justify-center rounded-full transition-colors ${panelMode === 'timeline' ? 'bg-white text-accent-600 shadow-sm' : 'text-slate-500'}`}
+                                aria-label="Full itinerary"
+                                aria-pressed={panelMode === 'timeline'}
+                                {...getAnalyticsDebugAttributes('trip_view__mobile_panel--timeline', { trip_id: tripId })}
+                            >
+                                <List size={15} />
+                            </button>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={toggleSheet}
+                            data-testid="planner-mobile-sheet-toggle"
+                            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100"
+                            aria-label={isFullyExpanded ? 'Collapse day panel' : 'Expand day panel'}
+                            aria-expanded={isFullyExpanded}
+                            {...getAnalyticsDebugAttributes('trip_view__mobile_sheet--toggle', { trip_id: tripId })}
+                        >
+                            {isFullyExpanded ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+                        </button>
+                    </div>
+                    <span className="sr-only" role="status" aria-live="polite">{SNAP_LABEL[snap]}</span>
+                </div>
+
+                {panelMode === 'days' && (
+                    <TripMobileDayStrip
+                        tripId={tripId}
+                        days={days}
+                        activeDayIndex={activeDayIndex}
+                        onSelectDay={handleSelectDay}
+                        onSelectTransfer={handleSelectTransfer}
+                    />
+                )}
+
+                {panelMode === 'timeline' && (
+                    <div className="flex shrink-0 justify-end border-t border-slate-100 px-3 py-2">
+                        {timelineControls}
+                    </div>
+                )}
+
+                <div
+                    ref={contentRef}
+                    data-testid="planner-mobile-day-content"
+                    className={`min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-slate-100 ${isPaywallLocked ? 'pointer-events-none select-none' : ''}`}
+                >
+                    {panelMode === 'timeline' ? (
+                        <div className="relative h-full w-full">{timelineCanvas}</div>
+                    ) : activeDay ? (
+                        <TripMobileDayPanel
+                            tripId={tripId}
+                            day={activeDay}
+                            selectedItemId={selectedItemId}
+                            onSelect={onSelect}
+                        />
+                    ) : (
+                        <p className="px-4 py-8 text-sm text-slate-500">This trip has no planned days yet.</p>
+                    )}
+                </div>
+            </section>
+        </div>
+    );
+};

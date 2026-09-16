@@ -34,6 +34,8 @@ type MapPreviewColorMode = "brand" | "trip";
 const BRAND_ROUTE_COLOR = "4f46e5";
 const MAX_REALISTIC_DIRECTION_LEGS = 8;
 const STATIC_MAP_SATELLITE_FALLBACK: MapPreviewStyle = "clean";
+// Mapbox Static Images caps the whole request URL at 8192 characters.
+const MAPBOX_MAX_OVERLAY_SEGMENT_LENGTH = 7000;
 
 const CLEAN_STYLE = [
   "element:geometry|color:0xf9f9f9",
@@ -237,6 +239,30 @@ const fetchDirectionsPolyline = async (
   }
 };
 
+const fetchMapboxDirectionsPolyline = async (
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+  mapboxToken: string,
+): Promise<string | null> => {
+  const coordinatePair = `${from.lng.toFixed(6)},${from.lat.toFixed(6)};${to.lng.toFixed(6)},${to.lat.toFixed(6)}`;
+  const directionsUrl = new URL(`https://api.mapbox.com/directions/v5/mapbox/driving/${coordinatePair}`);
+  directionsUrl.searchParams.set("geometries", "polyline");
+  directionsUrl.searchParams.set("overview", "simplified");
+  directionsUrl.searchParams.set("alternatives", "false");
+  directionsUrl.searchParams.set("steps", "false");
+  directionsUrl.searchParams.set("access_token", mapboxToken);
+
+  try {
+    const response = await fetch(directionsUrl.toString());
+    if (!response.ok) return null;
+    const data = await response.json();
+    const encoded = data?.routes?.[0]?.geometry;
+    return typeof encoded === "string" && encoded.length > 0 ? encoded : null;
+  } catch {
+    return null;
+  }
+};
+
 const buildSimplePath = (
   coords: Array<{ lat: number; lng: number }>,
   color: string,
@@ -317,11 +343,19 @@ const buildMapboxSimpleSegmentOverlays = (
   return overlays;
 };
 
+/**
+ * Mapbox previews draw the same realistic geometry as the Google ones.
+ * Directions come from Mapbox first (the provider whose token is guaranteed to
+ * be present on a Mapbox preview), and only fall back to Google Directions when
+ * Mapbox has no route for a leg. Without this the Mapbox branch silently drew
+ * straight lines on every deployment that has no Google key.
+ */
 const buildMapboxRealisticOverlays = async (
   coords: Array<{ lat: number; lng: number }>,
   legColors: string[],
   fallbackColor: string,
-  apiKey: string,
+  mapboxToken: string,
+  googleApiKey: string,
 ): Promise<string[]> => {
   if (coords.length < 2) return [];
   const overlays: string[] = [];
@@ -334,8 +368,13 @@ const buildMapboxRealisticOverlays = async (
 
     let encodedPolyline: string | null = null;
     if (calls < MAX_REALISTIC_DIRECTION_LEGS) {
-      encodedPolyline = await fetchDirectionsPolyline(from, to, apiKey);
       calls += 1;
+      if (mapboxToken) {
+        encodedPolyline = await fetchMapboxDirectionsPolyline(from, to, mapboxToken);
+      }
+      if (!encodedPolyline && googleApiKey) {
+        encodedPolyline = await fetchDirectionsPolyline(from, to, googleApiKey);
+      }
     }
 
     overlays.push(buildMapboxPathOverlay(encodedPolyline || encodePolyline([from, to]), color));
@@ -401,14 +440,27 @@ const buildMapboxStaticPreviewUrl = async ({
   googleApiKey: string;
 }): Promise<string> => {
   const styleDescriptor = MAPBOX_STYLE_IDS[style] || MAPBOX_STYLE_IDS.standard;
-  const pathOverlays = routeMode === "realistic" && googleApiKey
-    ? await buildMapboxRealisticOverlays(coords, legColors, pathColor, googleApiKey)
-    : buildMapboxSimpleSegmentOverlays(coords, legColors, pathColor);
-  const overlays = [
-    ...pathOverlays,
-    ...buildMapboxMarkerOverlays(coords, legColors, pathColor, startMarkerColor, endMarkerColor, waypointColor),
-  ];
-  const overlaySegment = overlays.map((overlay) => encodeURIComponent(overlay)).join(",");
+  const simpleOverlays = buildMapboxSimpleSegmentOverlays(coords, legColors, pathColor);
+  const pathOverlays = routeMode === "realistic" && (mapboxToken || googleApiKey)
+    ? await buildMapboxRealisticOverlays(coords, legColors, pathColor, mapboxToken, googleApiKey)
+    : simpleOverlays;
+  const markerOverlays = buildMapboxMarkerOverlays(
+    coords,
+    legColors,
+    pathColor,
+    startMarkerColor,
+    endMarkerColor,
+    waypointColor,
+  );
+  const encodeOverlays = (entries: string[]): string =>
+    entries.map((overlay) => encodeURIComponent(overlay)).join(",");
+  // Mapbox rejects requests past its URL limit, and realistic geometry is what
+  // pushes a long itinerary over it. Degrade that request to the straight-line
+  // overlays rather than serving a broken image.
+  let overlaySegment = encodeOverlays([...pathOverlays, ...markerOverlays]);
+  if (overlaySegment.length > MAPBOX_MAX_OVERLAY_SEGMENT_LENGTH) {
+    overlaySegment = encodeOverlays([...simpleOverlays, ...markerOverlays]);
+  }
   const scaleSuffix = scale === 2 ? "@2x" : "";
   const url = new URL(`https://api.mapbox.com/styles/v1/${styleDescriptor.owner}/${styleDescriptor.styleId}/static/${overlaySegment}/auto/${width}x${height}${scaleSuffix}`);
   url.searchParams.set("padding", "32,32,32,32");
@@ -418,9 +470,13 @@ const buildMapboxStaticPreviewUrl = async ({
 
 // One request costs 1 token; a "realistic" route request costs more because it
 // can fan out to up to MAX_REALISTIC_DIRECTION_LEGS paid Directions API calls.
-const RATE_LIMIT_BUCKET_CAPACITY = 40;
+// The bucket has to absorb a whole card grid at once: trip cards now request
+// realistic routes, and a profile or manager page renders a dozen of them in a
+// single paint, so a capacity that only covered a handful returned 429s as
+// broken card images.
+const RATE_LIMIT_BUCKET_CAPACITY = 90;
 const RATE_LIMIT_REFILL_PER_SECOND = 0.5; // ≈30 simple previews per minute per IP
-const REALISTIC_ROUTE_REQUEST_COST = 5;
+const REALISTIC_ROUTE_REQUEST_COST = 3;
 
 const previewRateLimiter = createTokenBucketLimiter({
   capacity: RATE_LIMIT_BUCKET_CAPACITY,

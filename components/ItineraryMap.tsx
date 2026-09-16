@@ -3,7 +3,7 @@ import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type mapboxgl from 'mapbox-gl';
 import { ActivityType, ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
-import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2, Tag, TagsIcon } from 'lucide-react';
 import { MapPinArea } from '@phosphor-icons/react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName, pickPrimaryActivityType } from '../utils';
@@ -1643,10 +1643,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }).forEach((point) => {
             bounds.extend(point);
         });
+        // Measure the container here rather than trusting the observed size:
+        // the pane can change without a resize observation (a sheet sliding over
+        // a full-bleed map), and a stale size produces padding that no longer
+        // fits, which is how "fit to itinerary" ended up framing nothing.
+        const liveRect = mapContainerRef.current?.getBoundingClientRect();
+        const fitViewportSize = liveRect && liveRect.width > 0 && liveRect.height > 0
+            ? { width: liveRect.width, height: liveRect.height }
+            : mapViewportSize;
         googleMapRef.current.fitBounds(bounds, resolveMapViewportPadding({
             provider: tripMapProvider,
             mapDockMode,
-            mapViewportSize,
+            mapViewportSize: fitViewportSize,
         }));
     }, [cities, items, mapDockMode, mapViewportSize, tripMapProvider]);
 
@@ -3347,17 +3355,6 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                           <button type="button" onClick={() => { onRouteModeChange('realistic'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'realistic' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Realistic</button>
                                       </>
                                   )}
-                                  {!isPaywalled && onShowCityNamesChange && (
-                                      <>
-                                          <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Labels</div>
-                                          <button type="button"
-                                              onClick={() => { onShowCityNamesChange(!showCityNames); setIsStyleMenuOpen(false); }}
-                                              className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${showCityNames ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}
-                                          >
-                                              City names {showCityNames ? 'On' : 'Off'}
-                                          </button>
-                                      </>
-                                  )}
                                   {onMapColorModeChange && (
                                       <>
                                           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Colors</div>
@@ -3378,6 +3375,30 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                               </div>
                           )}
                       </div>
+                    )}
+                    {!isPaywalled && onShowCityNamesChange && (
+                        <button
+                            type="button"
+                            onClick={() => onShowCityNamesChange(!showCityNames)}
+                            disabled={mapActionsDisabled}
+                            className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
+                                mapActionsDisabled
+                                    ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
+                                    : showCityNames
+                                        ? 'bg-accent-600 border-accent-700 text-white hover:bg-accent-700'
+                                        : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'
+                            }`}
+                            aria-label={showCityNames ? 'Hide map labels' : 'Show map labels'}
+                            aria-pressed={showCityNames}
+                            title={showCityNames ? 'Hide map labels' : 'Show map labels'}
+                            {...getAnalyticsDebugAttributes('trip_view__map_labels--toggle', {
+                                surface: 'map_controls',
+                                active: showCityNames,
+                            })}
+                        >
+                            {showCityNames ? <TagsIcon size={18} /> : <Tag size={18} />}
+                            <span className="sr-only">{showCityNames ? 'Hide map labels' : 'Show map labels'}</span>
+                        </button>
                     )}
                     {!isPaywalled && (
                         <button

@@ -82,7 +82,7 @@ describe('trip-map-preview edge function hardening', () => {
       const ip = nextIp();
       let lastStatus = 0;
       let rejected: Response | null = null;
-      for (let index = 0; index < 60; index += 1) {
+      for (let index = 0; index < 200; index += 1) {
         const response = await callPreview('coords=35.68,139.65|34.69,135.50', { ip });
         lastStatus = response.status;
         if (response.status === 429) {
@@ -98,7 +98,7 @@ describe('trip-map-preview edge function hardening', () => {
 
     it('does not throttle other client IPs', async () => {
       const throttledIp = nextIp();
-      for (let index = 0; index < 60; index += 1) {
+      for (let index = 0; index < 200; index += 1) {
         await callPreview('coords=35.68,139.65|34.69,135.50', { ip: throttledIp });
       }
       const other = await callPreview('coords=35.68,139.65|34.69,135.50');
@@ -110,14 +110,14 @@ describe('trip-map-preview edge function hardening', () => {
       const realisticIp = nextIp();
 
       let simpleAllowed = 0;
-      for (let index = 0; index < 60; index += 1) {
+      for (let index = 0; index < 200; index += 1) {
         const response = await callPreview('coords=35.68,139.65|34.69,135.50', { ip: simpleIp });
         if (response.status !== 302) break;
         simpleAllowed += 1;
       }
 
       let realisticAllowed = 0;
-      for (let index = 0; index < 60; index += 1) {
+      for (let index = 0; index < 200; index += 1) {
         const response = await callPreview(
           'coords=35.68,139.65|34.69,135.50&routeMode=realistic',
           { ip: realisticIp },
@@ -128,6 +128,58 @@ describe('trip-map-preview edge function hardening', () => {
 
       expect(realisticAllowed).toBeGreaterThan(0);
       expect(realisticAllowed).toBeLessThan(simpleAllowed);
+    });
+  });
+
+  describe('mapbox realistic routes', () => {
+    const MAPBOX_DIRECTIONS_POLYLINE = 'yxk|Fyi~uOtCaB';
+
+    beforeEach(() => {
+      const edgeEnv: Record<string, string> = {
+        // No Google key: the Mapbox branch used to fall back to straight lines here.
+        VITE_GOOGLE_MAPS_API_KEY: '',
+        VITE_MAPBOX_ACCESS_TOKEN: 'test-mapbox-token',
+        VITE_MAP_RUNTIME_PRESET: 'mapbox_all',
+      };
+      vi.stubGlobal('Deno', { env: { get: (name: string) => edgeEnv[name] } });
+    });
+
+    it('draws Mapbox Directions geometry when no Google key is configured', async () => {
+      const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+        const requestUrl = typeof input === 'string' ? input : input.toString();
+        if (requestUrl.includes('api.mapbox.com/directions')) {
+          return new Response(
+            JSON.stringify({ routes: [{ geometry: MAPBOX_DIRECTIONS_POLYLINE }] }),
+            { status: 200 },
+          );
+        }
+        return new Response('{}', { status: 500 });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const response = await callPreview('coords=35.68,139.65|34.69,135.50&routeMode=realistic');
+      expect(response.status).toBe(302);
+
+      const location = response.headers.get('Location') || '';
+      expect(location).toContain('api.mapbox.com/styles/v1/');
+      expect(decodeURIComponent(location)).toContain(MAPBOX_DIRECTIONS_POLYLINE);
+
+      const directionsCalls = fetchMock.mock.calls.filter(([input]) =>
+        String(input).includes('api.mapbox.com/directions'));
+      expect(directionsCalls.length).toBe(1);
+      expect(String(directionsCalls[0][0])).toContain('access_token=test-mapbox-token');
+    });
+
+    it('falls back to the straight-line overlay when Mapbox has no route for a leg', async () => {
+      vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 500 })));
+
+      const response = await callPreview('coords=35.68,139.65|34.69,135.50&routeMode=realistic');
+      expect(response.status).toBe(302);
+
+      const location = decodeURIComponent(response.headers.get('Location') || '');
+      expect(location).toContain('api.mapbox.com/styles/v1/');
+      expect(location).toContain('path-4+');
+      expect(location).not.toContain(MAPBOX_DIRECTIONS_POLYLINE);
     });
   });
 });
