@@ -10,9 +10,16 @@ type PlannerProps = React.ComponentProps<typeof TripViewPlannerWorkspace>;
 const baseProps = (): PlannerProps => ({
   isPaywallLocked: false,
   isMobile: false,
-  isMobileMapExpanded: false,
-  onCloseMobileMap: vi.fn(),
-  onToggleMobileMapExpanded: vi.fn(),
+  trip: {
+    id: 'trip-1',
+    title: 'Test trip',
+    startDate: '2026-05-04',
+    items: [],
+    createdAt: 0,
+    updatedAt: 0,
+  },
+  onSelectTimelineItem: vi.fn(),
+  appLanguage: 'en',
   timelineCanvas: React.createElement('div', { 'data-testid': 'timeline-canvas' }, 'canvas'),
   onTimelineTouchStart: vi.fn(),
   onTimelineTouchMove: vi.fn(),
@@ -104,15 +111,21 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.queryByLabelText('Zoom in timeline')).not.toBeInTheDocument();
   });
 
-  it('hides the zoom indicator on mobile while keeping the zoom actions available', () => {
+  it('keeps the timeline controls out of the map layer on mobile until the itinerary panel is open', () => {
     const props = baseProps();
     props.isMobile = true;
 
     render(React.createElement(TripViewPlannerWorkspace, props));
 
+    // The controls used to float over the map pane, which put the map's own
+    // dropdowns underneath them.
+    expect(screen.queryByTestId('planner-timeline-controls')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Full itinerary'));
+
+    expect(screen.getByTestId('planner-timeline-controls')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom out timeline')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom in timeline')).toBeInTheDocument();
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('falls back to a safe zoom label when the incoming zoom level is malformed', () => {
@@ -124,17 +137,27 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.getByRole('status')).toHaveTextContent('×1.0');
   });
 
-  it('renders the map above the timeline on mobile', () => {
+  it('gives the mobile map the full pane behind the day sheet', () => {
     const props = baseProps();
     props.isMobile = true;
 
     render(React.createElement(TripViewPlannerWorkspace, props));
 
     const mapPane = screen.getByTestId('planner-mobile-map-pane');
-    const timelinePane = screen.getByTestId('planner-mobile-timeline-pane');
-    expect(mapPane.className).toContain('h-[26vh]');
-    expect(mapPane.className).toContain('min-h-[180px]');
-    expect(mapPane.compareDocumentPosition(timelinePane) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const sheet = screen.getByTestId('planner-mobile-sheet');
+
+    expect(mapPane.className).toContain('absolute');
+    expect(mapPane.className).toContain('inset-x-0');
+    expect(mapPane.className).toContain('top-0');
+    expect(screen.getByTestId('planner-mobile-day-strip')).toBeInTheDocument();
+    expect(sheet).toHaveAttribute('data-snap', 'half');
+
+    fireEvent.click(screen.getByLabelText('Expand day panel'));
+    expect(sheet).toHaveAttribute('data-snap', 'full');
+
+    fireEvent.click(screen.getByLabelText('Shrink day panel'));
+    fireEvent.click(screen.getByLabelText('Shrink day panel'));
+    expect(sheet).toHaveAttribute('data-snap', 'peek');
   });
 
   it('minimizes map into floating mode when toggle is clicked', () => {

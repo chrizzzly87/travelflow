@@ -766,14 +766,34 @@ describe('components/ItineraryMap route cache helpers', () => {
       left: 130,
     });
 
+    // Vertical padding is clamped here: the raw 148/148 left only 124px of a
+    // 420px-tall pane for the route itself.
     expect(resolveMapViewportPadding({
       mapDockMode: 'floating',
       mapViewportSize: { width: 640, height: 420 },
     })).toEqual({
-      top: 148,
+      top: 134,
       right: 140,
-      bottom: 148,
+      bottom: 134,
       left: 140,
+    });
+  });
+
+  it('keeps fit padding inside a phone-sized map pane (regression: fit to itinerary framed nothing on mobile)', () => {
+    const mapViewportSize = { width: 360, height: 210 };
+
+    (['google', 'mapbox'] as const).forEach((provider) => {
+      const padding = resolveMapViewportPadding({
+        provider,
+        mapDockMode: 'docked',
+        mapViewportSize,
+      });
+
+      // The pane must keep a usable strip of map on both axes, or `fitBounds`
+      // stops framing the itinerary at all.
+      expect(mapViewportSize.height - (padding.top + padding.bottom)).toBeGreaterThanOrEqual(120);
+      expect(mapViewportSize.width - (padding.left + padding.right)).toBeGreaterThanOrEqual(120);
+      expect(Math.min(padding.top, padding.right, padding.bottom, padding.left)).toBeGreaterThan(0);
     });
   });
 

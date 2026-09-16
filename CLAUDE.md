@@ -21,7 +21,7 @@
 
 ## Skill usage policy
 - Use `vercel-react-best-practices` for React performance/refactor tasks; apply only relevant high-impact guidance for the active change.
-- Run `pnpm dlx react-doctor@latest . --verbose --diff` after substantial React edits, fix errors before merge, and triage warnings pragmatically.
+- `react-doctor` is optional, not a gate: reach for `pnpm dlx react-doctor@latest . --verbose --diff` when a React change feels risky, and triage what it reports pragmatically.
 - Avoid adding `useEffect` unless the component must synchronize with an external system such as network state, browser APIs, timers, subscriptions, or imperative third-party widgets. Prefer render-time derivation, event handlers, `useMemo` for expensive pure calculations, `useSyncExternalStore` for external stores, and `key`-based resets; every remaining effect should have tight dependencies and cleanup when it owns external resources.
 - Use `find-skills` only when a task requires discovery of capabilities not already covered by current skills/workflows.
 - Avoid unnecessary skill runs for straightforward changes.
@@ -64,7 +64,6 @@ When a user-facing feature, fix, or behavior change is completed, you must updat
 - Tick a checklist box against the issue's own wording, not your memory of the session; audit inherited `Closes #123` lines before pushing to a branch.
 - State exactly what was verified. "No longer bundled" is not "removed from package.json".
 - Keep one curated release note per feature: a dozen user-facing lines for the release, not one line per iteration.
-- Run `pnpm dlx react-doctor@latest <changed dirs> --verbose` after each UI batch, not once at the end.
 - New overlays are dialogs: `role="dialog"`, `aria-modal`, focus capture and trap, Escape, mobile backdrop, focus restored to the trigger.
 
 ## Completion gate

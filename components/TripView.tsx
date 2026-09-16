@@ -3290,9 +3290,9 @@ const useTripViewRender = ({
                     <TripViewPlannerWorkspace
                         isPaywallLocked={isPaywallLocked}
                         isMobile={isMobile}
-                        isMobileMapExpanded={isMobileMapExpanded}
-                        onCloseMobileMap={() => setIsMobileMapExpanded(false)}
-                        onToggleMobileMapExpanded={() => setIsMobileMapExpanded((value) => !value)}
+                        trip={displayTrip}
+                        onSelectTimelineItem={handleTimelineSelect}
+                        appLanguage={appLanguage}
                         timelineCanvas={timelineCanvas}
                         onTimelineTouchStart={handleTimelineTouchStart}
                         onTimelineTouchMove={handleTimelineTouchMove}
