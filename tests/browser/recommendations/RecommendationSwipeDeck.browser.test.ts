@@ -161,4 +161,41 @@ describe('components/recommendations/RecommendationSwipeDeck', () => {
     expect(screen.getByTestId('recommendation-deck-empty')).toBeInTheDocument();
     expect(screen.queryByTestId('recommendation-card')).not.toBeInTheDocument();
   });
+
+  it('keeps the leaving card mounted so it can animate out while the next arrives', () => {
+    const { rerender } = renderDeck();
+    expect(screen.getByTestId('recommendation-card')).toHaveAttribute('data-recommendation-id', 'a');
+
+    rerender(React.createElement(RecommendationSwipeDeck, {
+      tripId: 'trip-1',
+      recommendations: [makeRecommendation('b'), makeRecommendation('c')],
+      onDecide: vi.fn(),
+    }));
+
+    // Both are present mid-transition: the old deck replaced the card outright,
+    // so it disappeared instead of flying off.
+    const cards = screen.getAllByTestId('recommendation-card');
+    const ids = cards.map((card) => card.getAttribute('data-recommendation-id'));
+    expect(ids).toContain('a');
+    expect(ids).toContain('b');
+  });
+
+  it('gives the entering card its own drag position', () => {
+    const { rerender } = renderDeck();
+
+    rerender(React.createElement(RecommendationSwipeDeck, {
+      tripId: 'trip-1',
+      recommendations: [makeRecommendation('b'), makeRecommendation('c')],
+      onDecide: vi.fn(),
+    }));
+
+    // A single shared motion value made the incoming card inherit the
+    // outgoing card's x, so it arrived already thrown off-centre.
+    const entering = screen
+      .getAllByTestId('recommendation-card')
+      .find((card) => card.getAttribute('data-recommendation-id') === 'b');
+    expect(entering).toBeTruthy();
+    expect(entering!.style.transform ?? '').not.toMatch(/translateX\((?!0px)/);
+  });
+
 });

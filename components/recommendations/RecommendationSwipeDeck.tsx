@@ -1,5 +1,14 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { AnimatePresence, LazyMotion, domMax, m, useMotionValue, useTransform, type PanInfo } from 'framer-motion';
+import {
+    AnimatePresence,
+    LazyMotion,
+    domMax,
+    m,
+    useMotionValue,
+    useTransform,
+    type PanInfo,
+    type Variants,
+} from 'framer-motion';
 import { Check, MapPin, RotateCcw, X } from 'lucide-react';
 
 import { ActivityTypeIcon } from '../ActivityTypeVisuals';
@@ -21,14 +30,26 @@ const VISIBLE_STACK = 3;
 
 export type SwipeDecision = 'save' | 'dismiss';
 
-interface RecommendationSwipeDeckProps {
-    tripId: string;
-    recommendations: Recommendation[];
-    onDecide: (recommendation: Recommendation, decision: SwipeDecision) => void;
-    onUndo?: () => void;
-    canUndo?: boolean;
-    emptyState?: React.ReactNode;
-}
+/**
+ * `exit` reads the direction through `custom` rather than a closure: the
+ * decision and the new list land in the same render, so a closed-over value
+ * would still hold the previous card's direction when the exit runs.
+ */
+const CARD_VARIANTS: Variants = {
+    enter: { scale: 0.94, y: 16, opacity: 0 },
+    center: {
+        scale: 1,
+        y: 0,
+        opacity: 1,
+        transition: { type: 'spring', stiffness: 320, damping: 32 },
+    },
+    exit: (direction: SwipeDecision | null) => ({
+        x: direction === 'dismiss' ? -560 : 560,
+        rotate: direction === 'dismiss' ? -22 : 22,
+        opacity: 0,
+        transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+    }),
+};
 
 const formatDuration = (minutes: number | null): string | null => {
     if (!minutes || minutes <= 0) return null;
@@ -103,6 +124,7 @@ const CardMedia: React.FC<{ recommendation: Recommendation }> = ({ recommendatio
 const CardBody: React.FC<{ recommendation: Recommendation }> = ({ recommendation }) => {
     const durationLabel = formatDuration(recommendation.typicalDurationMinutes);
     const costLabel = formatCostBandLabel(recommendation.costBand);
+    const address = recommendation.location.formattedAddress || recommendation.location.address;
 
     return (
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 pb-3 pt-3">
@@ -136,12 +158,10 @@ const CardBody: React.FC<{ recommendation: Recommendation }> = ({ recommendation
                 <p className="text-[13px] leading-5 text-slate-600">{recommendation.description}</p>
             )}
 
-            {(recommendation.location.formattedAddress || recommendation.location.address) && (
+            {address && (
                 <p className="flex items-start gap-1 text-[11px] leading-4 text-slate-400">
                     <MapPin size={11} className="mt-0.5 shrink-0" />
-                    <span className="line-clamp-2">
-                        {recommendation.location.formattedAddress || recommendation.location.address}
-                    </span>
+                    <span className="line-clamp-2">{address}</span>
                 </p>
             )}
 
@@ -173,6 +193,78 @@ const CardBody: React.FC<{ recommendation: Recommendation }> = ({ recommendation
     );
 };
 
+/**
+ * The draggable top card.
+ *
+ * Each card owns its own motion value. Sharing one across the deck made the
+ * card flying out and the card settling in animate the same `x`, so the
+ * incoming card inherited the outgoing card's position.
+ */
+const SwipeableCard: React.FC<{
+    recommendation: Recommendation;
+    exitDirection: SwipeDecision | null;
+    onCommit: (recommendation: Recommendation, decision: SwipeDecision) => void;
+}> = ({ recommendation, exitDirection, onCommit }) => {
+    const x = useMotionValue(0);
+    const rotate = useTransform(x, [-240, 0, 240], [-MAX_ROTATION_DEG, 0, MAX_ROTATION_DEG]);
+    const keepOpacity = useTransform(x, [30, 130], [0, 1]);
+    const skipOpacity = useTransform(x, [-130, -30], [1, 0]);
+
+    const handleDragEnd = useCallback((_event: unknown, info: PanInfo) => {
+        const travelled = info.offset.x;
+        const flicked = Math.abs(info.velocity.x) > COMMIT_VELOCITY;
+        if (Math.abs(travelled) < COMMIT_DISTANCE_PX && !flicked) return;
+        onCommit(recommendation, travelled > 0 || info.velocity.x > 0 ? 'save' : 'dismiss');
+    }, [onCommit, recommendation]);
+
+    return (
+        <m.div
+            data-testid="recommendation-card"
+            data-recommendation-id={recommendation.id}
+            aria-label={`${recommendation.title}. Swipe, or use the left and right arrow keys.`}
+            drag="x"
+            dragSnapToOrigin
+            dragElastic={0.65}
+            dragConstraints={{ left: 0, right: 0 }}
+            onDragEnd={handleDragEnd}
+            style={{ x, rotate, zIndex: VISIBLE_STACK + 1 }}
+            custom={exitDirection}
+            variants={CARD_VARIANTS}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="absolute inset-0 flex cursor-grab touch-pan-y select-none flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl active:cursor-grabbing"
+        >
+            <m.span
+                aria-hidden="true"
+                style={{ opacity: keepOpacity }}
+                className="absolute top-4 start-4 z-10 rounded-lg border-[3px] border-emerald-500 px-2.5 py-0.5 text-sm font-black uppercase tracking-wider text-emerald-600"
+            >
+                Keep
+            </m.span>
+            <m.span
+                aria-hidden="true"
+                style={{ opacity: skipOpacity }}
+                className="absolute top-4 end-4 z-10 rounded-lg border-[3px] border-rose-500 px-2.5 py-0.5 text-sm font-black uppercase tracking-wider text-rose-600"
+            >
+                Skip
+            </m.span>
+
+            <CardMedia recommendation={recommendation} />
+            <CardBody recommendation={recommendation} />
+        </m.div>
+    );
+};
+
+interface RecommendationSwipeDeckProps {
+    tripId: string;
+    recommendations: Recommendation[];
+    onDecide: (recommendation: Recommendation, decision: SwipeDecision) => void;
+    onUndo?: () => void;
+    canUndo?: boolean;
+    emptyState?: React.ReactNode;
+}
+
 export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = ({
     tripId,
     recommendations,
@@ -181,14 +273,11 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
     canUndo = false,
     emptyState,
 }) => {
-    const x = useMotionValue(0);
-    const rotate = useTransform(x, [-240, 0, 240], [-MAX_ROTATION_DEG, 0, MAX_ROTATION_DEG]);
-    const keepOpacity = useTransform(x, [30, 130], [0, 1]);
-    const skipOpacity = useTransform(x, [-130, -30], [1, 0]);
     const [exitDirection, setExitDirection] = useState<SwipeDecision | null>(null);
 
     const stack = useMemo(() => recommendations.slice(0, VISIBLE_STACK), [recommendations]);
     const top = stack[0] ?? null;
+    const behind = stack.slice(1);
 
     const commit = useCallback((recommendation: Recommendation, decision: SwipeDecision) => {
         trackEvent('trip_view__recommendation--decide', {
@@ -198,20 +287,7 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
         });
         setExitDirection(decision);
         onDecide(recommendation, decision);
-        // The next card starts centred, not wherever the last one was released.
-        x.set(0);
-    }, [onDecide, tripId, x]);
-
-    const handleDragEnd = useCallback((_event: unknown, info: PanInfo) => {
-        if (!top) return;
-        const travelled = info.offset.x;
-        const flicked = Math.abs(info.velocity.x) > COMMIT_VELOCITY;
-        if (Math.abs(travelled) < COMMIT_DISTANCE_PX && !flicked) {
-            x.set(0);
-            return;
-        }
-        commit(top, travelled > 0 || info.velocity.x > 0 ? 'save' : 'dismiss');
-    }, [commit, top, x]);
+    }, [onDecide, tripId]);
 
     const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
         if (!top) return;
@@ -255,77 +331,34 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
         <LazyMotion features={domMax} strict>
             <div className="flex flex-1 flex-col" onKeyDown={handleKeyDown}>
                 <div className="flex flex-1 items-center justify-center px-5 py-2">
-                  <div className="relative h-[min(27rem,100%)] w-full max-w-sm">
-                    {/* Drawn back to front so the top card paints last. */}
-                    {stack.map((recommendation, index) => {
-                        const isTop = index === 0;
+                    <div className="relative h-[min(34rem,100%)] w-full max-w-sm">
+                        {behind.map((recommendation, index) => (
+                            <m.div
+                                key={recommendation.id}
+                                aria-hidden="true"
+                                data-testid="recommendation-card-behind"
+                                initial={false}
+                                animate={{ scale: 1 - (index + 1) * 0.04, y: (index + 1) * 10 }}
+                                transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+                                className="absolute inset-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-md"
+                                style={{ zIndex: VISIBLE_STACK - index - 1 }}
+                            >
+                                <CardMedia recommendation={recommendation} />
+                            </m.div>
+                        ))}
 
-                        if (!isTop) {
-                            return (
-                                <m.div
-                                    key={recommendation.id}
-                                    aria-hidden="true"
-                                    data-testid="recommendation-card-behind"
-                                    initial={false}
-                                    animate={{
-                                        scale: 1 - index * 0.04,
-                                        y: index * 10,
-                                        opacity: 1,
-                                    }}
-                                    transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-                                    className="absolute inset-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-md"
-                                    style={{ zIndex: VISIBLE_STACK - index }}
-                                >
-                                    <CardMedia recommendation={recommendation} />
-                                </m.div>
-                            );
-                        }
-
-                        return (
-                            <AnimatePresence key={recommendation.id} initial={false} mode="popLayout">
-                                <m.div
-                                    data-testid="recommendation-card"
-                                    data-recommendation-id={recommendation.id}
-                                    aria-label={`${recommendation.title}. Swipe, or use the left and right arrow keys.`}
-                                    drag="x"
-                                    dragSnapToOrigin
-                                    dragElastic={0.7}
-                                    dragConstraints={{ left: 0, right: 0 }}
-                                    onDragEnd={handleDragEnd}
-                                    style={{ x, rotate, zIndex: VISIBLE_STACK + 1 }}
-                                    initial={{ scale: 0.96, y: 10, opacity: 0 }}
-                                    animate={{ scale: 1, y: 0, opacity: 1 }}
-                                    exit={{
-                                        x: exitDirection === 'dismiss' ? -520 : 520,
-                                        rotate: exitDirection === 'dismiss' ? -18 : 18,
-                                        opacity: 0,
-                                        transition: { duration: 0.22, ease: 'easeOut' },
-                                    }}
-                                    transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-                                    className="absolute inset-0 flex cursor-grab touch-pan-y select-none flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl active:cursor-grabbing"
-                                >
-                                    <m.span
-                                        aria-hidden="true"
-                                        style={{ opacity: keepOpacity }}
-                                        className="absolute top-4 start-4 z-10 rounded-lg border-[3px] border-emerald-500 px-2.5 py-0.5 text-sm font-black uppercase tracking-wider text-emerald-600"
-                                    >
-                                        Keep
-                                    </m.span>
-                                    <m.span
-                                        aria-hidden="true"
-                                        style={{ opacity: skipOpacity }}
-                                        className="absolute top-4 end-4 z-10 rounded-lg border-[3px] border-rose-500 px-2.5 py-0.5 text-sm font-black uppercase tracking-wider text-rose-600"
-                                    >
-                                        Skip
-                                    </m.span>
-
-                                    <CardMedia recommendation={recommendation} />
-                                    <CardBody recommendation={recommendation} />
-                                </m.div>
-                            </AnimatePresence>
-                        );
-                    })}
-                  </div>
+                        {/* One presence for the whole deck. Nesting it inside the
+                          * loop meant it unmounted together with its own child,
+                          * so the exit animation never ran. */}
+                        <AnimatePresence initial={false} custom={exitDirection} mode="popLayout">
+                            <SwipeableCard
+                                key={top.id}
+                                recommendation={top}
+                                exitDirection={exitDirection}
+                                onCommit={commit}
+                            />
+                        </AnimatePresence>
+                    </div>
                 </div>
 
                 <div className="flex shrink-0 items-center justify-center gap-5 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">

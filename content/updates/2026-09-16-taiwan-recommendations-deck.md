@@ -15,7 +15,8 @@ summary: "Keep or skip place ideas one card at a time — each with a photo, a m
 - [x] [New feature] 📥 Kept ideas wait in their own list until you know where they fit, then go onto any day of the trip in one tap.
 - [x] [New feature] 🇹🇼 Taiwan comes with 84 places to start from, each with its city, what it costs, how long it takes and who recommended it.
 - [x] [New feature] 📸 Every card shows a photo of the place and a map of exactly where it is, with the photographer credited.
-- [x] [Improved] 🂠 The deck looks and feels like a deck: cards sit stacked behind the one you are reading, and a card follows your finger, tilts, and flies off the way you flicked it.
+- [x] [Improved] 🂠 The deck looks and feels like a deck: cards sit stacked behind the one you are reading, and a card follows your finger, tilts, and flies off the way you flicked it while the next one rises into its place.
+- [x] [Fixed] 🔁 Closing the ideas view and opening it again now brings the cards back.
 - [x] [Improved] ⌨️ The card deck answers the arrow keys as well as a swipe, so it works on a laptop too.
 - [x] [Improved] 🙏 Every idea credits the person who recommended it, with a link to their post.
 - [ ] [Internal] 🗺️ Added a KML importer for Google My Maps: no pin in an export carries coordinates, so it geocodes each one and records the precision. All 84 Taiwan pins resolved — 44 rooftop, 37 approximate, 3 exact.
@@ -25,5 +26,8 @@ summary: "Keep or skip place ideas one card at a time — each with a photo, a m
 - [ ] [Internal] 🧳 The kept pool lives on the trip document, so it needs no migration and a dismissal follows the traveller across devices.
 - [ ] [Internal] 🖼️ Photos come from Google Places by reference, never rehosted: the dataset stores the photo resource name and the photographer's attribution, and a new `/api/place-photo` edge function resolves it so the key stays server-side. 70 of the 84 Taiwan places have one.
 - [ ] [Internal] 🗺️ The card map reuses the existing trip map preview endpoint with a single coordinate, so it needs no new provider integration.
+- [ ] [Internal] 🚪 The ideas view is a full surface rather than a bottom drawer — it already opens from the planner's own sheet, and a sheet inside a sheet reads as redundant. Radix Dialog still supplies focus trap, Escape, scroll lock and restored focus.
+- [ ] [Internal] 🔗 Its open state moved from the URL into React: `useTripViewSettingsSync` rewrites the query with `history.replaceState`, which React Router never sees, so the router's `location.search` went stale and the next write dropped the parameter — which is why reopening came up empty. The deep link is still read once on mount.
+- [ ] [Internal] 🎬 `AnimatePresence` was nested inside the card loop and keyed per card, so it unmounted together with its own child and the exit never ran. One presence now wraps the top card, with the direction passed through `custom` because the decision and the new list land in the same render.
 - [ ] [Internal] 🎞️ The deck is built on framer-motion, already a dependency: drag with `useMotionValue`, rotation and the Keep/Skip stamps via `useTransform`, and an exit animation through `AnimatePresence`. A release commits on distance *or* flick velocity — without the velocity test a fast short flick springs back and the deck feels dead. shadcn has no swipe or card-stack component; this is the common motion pattern.
 - [ ] [Internal] 🧪 Coverage for source pairing, note enrichment, deck ordering and exclusion, the library-row-to-timeline-item copy, and the deck's swipe, keyboard and undo behaviour.

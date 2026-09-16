@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { CalendarPlus, Sparkles, Trash2, X } from 'lucide-react';
 
-import { Drawer, DrawerContent } from '../ui/drawer';
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import { RecommendationSwipeDeck, type SwipeDecision } from './RecommendationSwipeDeck';
 import { buildRecommendationDeck, loadRecommendationDataset } from '../../services/recommendationsService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -146,13 +146,19 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
     const savedCount = state.saved.length;
 
     return (
-        <Drawer open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
-            <DrawerContent
-                accessibleTitle="Discover things to do"
-                accessibleDescription="Swipe through recommendations for this trip and keep the ones you want."
-                className="flex h-[92dvh] flex-col"
+        <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
+            {/*
+              * A full surface rather than a bottom drawer: the deck already
+              * lives inside the planner's own sheet, and a sheet inside a sheet
+              * reads as redundant furniture. Radix still provides the dialog
+              * semantics — focus trap, Escape, scroll lock, restored focus.
+              */}
+            <DialogContent
+                size="lg"
+                className="inset-0 left-0 top-0 h-dvh max-h-none w-full max-w-none translate-x-0 translate-y-0 rounded-none border-0"
             >
-                <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 pb-3 pt-2">
+                <DialogTitle className="sr-only">Discover things to do</DialogTitle>
+                <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
                     <div className="inline-flex items-center rounded-full bg-slate-100 p-0.5">
                         <button
                             type="button"
@@ -277,8 +283,8 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
                         )}
                     </div>
                 )}
-            </DrawerContent>
-        </Drawer>
+            </DialogContent>
+        </Dialog>
     );
 };
 

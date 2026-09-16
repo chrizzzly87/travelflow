@@ -2968,15 +2968,17 @@ const useTripViewRender = ({
         handleUpdateItem(itemId, { description: nextDescription });
     }, [handleUpdateItem, trip.items]);
 
-    // Deep-linkable so a trip can be shared straight into the idea deck.
-    const isDiscoverOpen = new URLSearchParams(location.search).get('discover') === '1';
-    const setDiscoverOpen = useCallback((open: boolean) => {
-        const params = new URLSearchParams(location.search);
-        if (open) params.set('discover', '1');
-        else params.delete('discover');
-        const query = params.toString();
-        navigate(`${location.pathname}${query ? `?${query}` : ''}`, { replace: true });
-    }, [location.pathname, location.search, navigate]);
+    // Read once for the deep link, then owned by React.
+    //
+    // The URL cannot hold this: `useTripViewSettingsSync` rewrites the query
+    // with `history.replaceState`, which React Router never sees, so the
+    // router's `location.search` goes stale and the next write drops whichever
+    // parameter the other owner had just added. Reopening the deck read a
+    // stale query and closed itself again.
+    const [isDiscoverOpen, setDiscoverOpen] = useState(() => (
+        typeof window !== 'undefined'
+        && new URLSearchParams(window.location.search).get('discover') === '1'
+    ));
 
     const discoverCountryCodes = useMemo(() => {
         const codes = new Set<string>();
