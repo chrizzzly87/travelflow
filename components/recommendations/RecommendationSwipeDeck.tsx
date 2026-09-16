@@ -136,6 +136,15 @@ const CardBody: React.FC<{ recommendation: Recommendation }> = ({ recommendation
                 <p className="text-[13px] leading-5 text-slate-600">{recommendation.description}</p>
             )}
 
+            {(recommendation.location.formattedAddress || recommendation.location.address) && (
+                <p className="flex items-start gap-1 text-[11px] leading-4 text-slate-400">
+                    <MapPin size={11} className="mt-0.5 shrink-0" />
+                    <span className="line-clamp-2">
+                        {recommendation.location.formattedAddress || recommendation.location.address}
+                    </span>
+                </p>
+            )}
+
             {recommendation.sources.length > 0 && (
                 <div className="mt-auto flex flex-wrap items-center gap-1 pt-1">
                     <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">via</span>

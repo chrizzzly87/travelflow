@@ -17,7 +17,7 @@ export const buildRecommendationMapUrl = (
 
     const params = new URLSearchParams();
     params.set('coords', `${lat.toFixed(6)},${lng.toFixed(6)}`);
-    params.set('style', 'clean');
+    params.set('style', 'standard');
     params.set('routeMode', 'simple');
     params.set('colorMode', 'brand');
     params.set('w', String(options.width ?? 320));
