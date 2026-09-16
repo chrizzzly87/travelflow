@@ -9,9 +9,13 @@ const MAX_PLANNED_DAYS = 400;
 const MINUTES_PER_DAY = 24 * 60;
 
 export interface MobileDayPlanTransfer {
+    /** The trip's travel item, absent when the leg has never been given one. */
     item: ITimelineItem | null;
     mode: string;
     modeLabel: string;
+    /** The stays the leg joins, so a leg without an item can still be written. */
+    fromCityId: string;
+    toCityId: string;
     fromCityTitle: string;
     toCityTitle: string;
     departureTime: string | null;
@@ -35,6 +39,18 @@ export interface MobileDayPlanLeg extends MobileDayPlanTransfer {
     role: MobileDayPlanLegRole;
 }
 
+/** One stay the traveller is in for part of a day, in travel order. */
+export interface MobileDayPlanStay {
+    id: string;
+    title: string;
+    colorHex: string;
+    /** The stay's own item, so a segment can read its hotels and coordinates. */
+    item: ITimelineItem;
+    /** Whole-trip offsets of the stay, used to split a shared day between them. */
+    startOffset: number;
+    endOffset: number;
+}
+
 export interface MobileDayPlanDay {
     /** Whole-day offset from `trip.startDate`. */
     dayOffset: number;
@@ -45,6 +61,13 @@ export interface MobileDayPlanDay {
     dayOfMonthLabel: string;
     monthLabel: string;
     fullDateLabel: string;
+    /**
+     * Every stay the day touches, in travel order — one on an ordinary day,
+     * more when the traveller changes city inside it. The strip paints the
+     * day's ring from these, so a day spent in three cities cannot lose the
+     * one in the middle.
+     */
+    stays: MobileDayPlanStay[];
     /** Stay the traveller ends the day in. */
     city: ITimelineItem | null;
     cityColorHex: string;
@@ -165,6 +188,8 @@ const buildTransfer = (
         item: travelItem,
         mode,
         modeLabel: TRANSPORT_MODE_LABEL[mode] || TRANSPORT_MODE_LABEL.na,
+        fromCityId: fromCity.id,
+        toCityId: toCity.id,
         fromCityTitle: fromCity.title?.trim() || fromCity.location?.trim() || '',
         toCityTitle: toCity.title?.trim() || toCity.location?.trim() || '',
         departureTime: departureMinutes !== null ? formatClock(departureMinutes) : null,
@@ -327,6 +352,14 @@ export const buildMobileDayPlan = (
             dayOfMonthLabel: date.toLocaleDateString(locale, { day: 'numeric' }),
             monthLabel: date.toLocaleDateString(locale, { month: 'short' }),
             fullDateLabel: date.toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' }),
+            stays: overlappingStays.map((stay) => ({
+                id: stay.city.id,
+                title: stay.city.title?.trim() || stay.city.location?.trim() || '',
+                colorHex: getHexFromColorClass(stay.city.color || ''),
+                item: stay.city,
+                startOffset: stay.start,
+                endOffset: stay.end,
+            })),
             city,
             cityColorHex: city ? getHexFromColorClass(city.color || '') : '',
             departingCity: departingStay?.city ?? null,
@@ -362,68 +395,219 @@ export const findMobileDayPlanIndexForItem = (
     return days.findIndex((day) => doesMobileDayPlanDayContainItem(day, itemId));
 };
 
+/**
+ * One city-day: the part of a day the traveller spends in a single stay.
+ *
+ * The strip is a run of these rather than of days, so a day the traveller moves
+ * on appears once before the transport and once after it — each circle a single
+ * colour, each showing what happens in that city. A day drawn as one circle
+ * split between two cities could not answer "what am I doing in which".
+ */
+export interface MobileDayPlanSegment {
+    key: string;
+    /** Index of the day this segment belongs to, for adding to the day. */
+    dayIndex: number;
+    dayOffset: number;
+    dayNumber: number;
+    date: Date;
+    weekdayLabel: string;
+    dayOfMonthLabel: string;
+    monthLabel: string;
+    fullDateLabel: string;
+    isToday: boolean;
+    /** The stay this part of the day belongs to; absent on an unplanned day. */
+    stay: MobileDayPlanStay | null;
+    city: ITimelineItem | null;
+    cityColorHex: string;
+    /** True when more than one stay shares this day, so the date repeats. */
+    sharesDayWithAnotherStay: boolean;
+    /** The stay begins today, which is when its hotel is checked into. */
+    isStayStart: boolean;
+    /** The stay ends today, which is when the traveller moves on. */
+    isStayEnd: boolean;
+    /** The legs bounding this part of the day, read from this city's side. */
+    legs: MobileDayPlanLeg[];
+    hotelCheckIn: IHotel | null;
+    hotelCheckOut: IHotel | null;
+    activities: ITimelineItem[];
+}
+
+const buildUnscheduledSegment = (day: MobileDayPlanDay, dayIndex: number): MobileDayPlanSegment => ({
+    key: `${day.dayOffset}-unscheduled`,
+    dayIndex,
+    dayOffset: day.dayOffset,
+    dayNumber: day.dayNumber,
+    date: day.date,
+    weekdayLabel: day.weekdayLabel,
+    dayOfMonthLabel: day.dayOfMonthLabel,
+    monthLabel: day.monthLabel,
+    fullDateLabel: day.fullDateLabel,
+    isToday: day.isToday,
+    stay: null,
+    city: null,
+    cityColorHex: '',
+    sharesDayWithAnotherStay: false,
+    isStayStart: false,
+    isStayEnd: false,
+    legs: [],
+    hotelCheckIn: null,
+    hotelCheckOut: null,
+    activities: day.activities,
+});
+
+/**
+ * Splits each day into one segment per stay it touches.
+ *
+ * Activities go to the stay whose window holds them, so the morning in the city
+ * being left stays there and the afternoon belongs to the one being reached. A
+ * leg is read from each side it touches: the city being left shows a departure,
+ * the city being reached an arrival.
+ */
+export const buildMobileDayPlanSegments = (days: MobileDayPlanDay[]): MobileDayPlanSegment[] => (
+    days.flatMap((day, dayIndex) => {
+        if (day.stays.length === 0) return [buildUnscheduledSegment(day, dayIndex)];
+        const stays = day.stays;
+
+        return stays.map((stay, stayIndex) => {
+            const isFirst = stayIndex === 0;
+            const isLast = stayIndex === stays.length - 1;
+            const isStayStart = toDayOffset(stay.startOffset) === day.dayOffset;
+            const isStayEnd = toIntervalEndDay(stay.startOffset, stay.endOffset) === day.dayOffset;
+
+            const legs = day.legs.flatMap((leg): MobileDayPlanLeg[] => {
+                if (leg.fromCityId === stay.id) return [{ ...leg, role: 'departure' }];
+                if (leg.toCityId === stay.id) return [{ ...leg, role: 'arrival' }];
+                return [];
+            });
+
+            // An activity belongs to the stay that was under way when it starts.
+            // The day's first and last stay also take anything falling outside
+            // every window, so nothing can drop off the plan.
+            const activities = day.activities.filter((activity) => {
+                const at = activity.startDateOffset;
+                if (at >= stay.startOffset - OFFSET_EPSILON && at < stay.endOffset - OFFSET_EPSILON) return true;
+                if (isFirst && at < stay.startOffset) return true;
+                if (isLast && at >= stay.endOffset - OFFSET_EPSILON) return true;
+                return false;
+            });
+
+            return {
+                key: `${day.dayOffset}-${stay.id}`,
+                dayIndex,
+                dayOffset: day.dayOffset,
+                dayNumber: day.dayNumber,
+                date: day.date,
+                weekdayLabel: day.weekdayLabel,
+                dayOfMonthLabel: day.dayOfMonthLabel,
+                monthLabel: day.monthLabel,
+                fullDateLabel: day.fullDateLabel,
+                isToday: day.isToday,
+                stay,
+                city: stay.item,
+                cityColorHex: stay.colorHex,
+                sharesDayWithAnotherStay: stays.length > 1,
+                isStayStart,
+                isStayEnd,
+                legs,
+                hotelCheckIn: isStayStart ? day.hotelCheckIn : null,
+                hotelCheckOut: isStayEnd ? day.hotelCheckOut : null,
+                activities,
+            };
+        });
+    })
+);
+
+export const doesMobileDayPlanSegmentContainItem = (
+    segment: MobileDayPlanSegment,
+    itemId: string | null,
+): boolean => {
+    if (!itemId) return false;
+    return segment.stay?.id === itemId
+        || segment.legs.some((leg) => leg.item?.id === itemId)
+        || segment.activities.some((activity) => activity.id === itemId);
+};
+
+export const findMobileDayPlanSegmentIndexForItem = (
+    segments: MobileDayPlanSegment[],
+    itemId: string | null,
+): number => {
+    if (!itemId) return -1;
+    return segments.findIndex((segment) => doesMobileDayPlanSegmentContainItem(segment, itemId));
+};
+
 /** How a strip node joins the node before or after it. */
-export type MobileDayStripLink = 'none' | 'stay' | 'transfer';
+export interface MobileDayStripLink {
+    kind: 'none' | 'stay' | 'transfer';
+    /** Colour of the stay the line continues, set only for a `stay` link. */
+    colorHex: string | null;
+}
+
+const NO_LINK: MobileDayStripLink = { kind: 'none', colorHex: null };
+const TRANSFER_LINK: MobileDayStripLink = { kind: 'transfer', colorHex: null };
 
 export type MobileDayStripNode =
     | {
-        kind: 'day';
+        kind: 'segment';
         key: string;
-        dayIndex: number;
-        day: MobileDayPlanDay;
+        segmentIndex: number;
+        segment: MobileDayPlanSegment;
         linkBefore: MobileDayStripLink;
         linkAfter: MobileDayStripLink;
     }
     | {
         kind: 'transfer';
         key: string;
-        /** Index of the day the leg departs on, which is what the strip selects. */
-        dayIndex: number;
+        /** Segment the leg lands in, which is what the strip selects. */
+        segmentIndex: number;
         transfer: MobileDayPlanTransfer;
-        cityColorHex: string;
     };
 
 /**
- * Interleaves the days with the legs that need a node of their own.
+ * Interleaves the city-days with the legs travelled between them.
  *
- * The strip reads as one continuous route: days of the same stay are joined by
- * a line in the stay's colour. A leg that departs and arrives inside one day is
- * drawn on that day's own bubble, because there is no gap between two days to
- * put it in; only an overnight leg gets a node between the days it separates.
+ * Two neighbouring segments are either the same stay carried into the next day
+ * — joined by a line in that stay's colour — or two different cities, and then
+ * the leg between them gets a node of its own. Every change of city on the trip
+ * therefore has exactly one transport control, whether the move happens inside
+ * a day or overnight.
  */
-export const buildMobileDayStripNodes = (days: MobileDayPlanDay[]): MobileDayStripNode[] => {
+export const buildMobileDayStripNodes = (segments: MobileDayPlanSegment[]): MobileDayStripNode[] => {
     const nodes: MobileDayStripNode[] = [];
 
-    days.forEach((day, index) => {
-        const previousDay = index > 0 ? days[index - 1] : null;
-        const nextDay = index < days.length - 1 ? days[index + 1] : null;
-        const sharesStayWithPrevious = Boolean(previousDay?.city && day.city && previousDay.city.id === day.city.id);
-        const sharesStayWithNext = Boolean(nextDay?.city && day.city && nextDay.city.id === day.city.id);
-        const overnightLeg = day.legs.find((leg) => leg.role === 'departure') ?? null;
-        const hasOvernightNode = Boolean(overnightLeg) && Boolean(nextDay);
+    segments.forEach((segment, index) => {
+        const previous = index > 0 ? segments[index - 1] : null;
+        const next = index < segments.length - 1 ? segments[index + 1] : null;
+        const continuesPrevious = Boolean(previous?.stay && segment.stay && previous.stay.id === segment.stay.id);
+        const continuesNext = Boolean(next?.stay && segment.stay && next.stay.id === segment.stay.id);
+
+        if (previous && !continuesPrevious) {
+            const leg = segment.legs.find((candidate) => (
+                candidate.role === 'arrival' && candidate.fromCityId === previous.stay?.id
+            )) ?? previous.legs.find((candidate) => (
+                candidate.role === 'departure' && candidate.toCityId === segment.stay?.id
+            ));
+            if (leg) {
+                nodes.push({
+                    kind: 'transfer',
+                    key: `transfer-${previous.key}-${segment.key}`,
+                    segmentIndex: index,
+                    transfer: leg,
+                });
+            }
+        }
 
         nodes.push({
-            kind: 'day',
-            key: `day-${day.dayOffset}`,
-            dayIndex: index,
-            day,
-            linkBefore: index === 0
-                ? 'none'
-                : (sharesStayWithPrevious ? 'stay' : 'transfer'),
-            linkAfter: !nextDay
-                ? 'none'
-                : (hasOvernightNode ? 'transfer' : (sharesStayWithNext ? 'stay' : 'transfer')),
+            kind: 'segment',
+            key: segment.key,
+            segmentIndex: index,
+            segment,
+            linkBefore: !previous
+                ? NO_LINK
+                : (continuesPrevious ? { kind: 'stay', colorHex: segment.cityColorHex || null } : TRANSFER_LINK),
+            linkAfter: !next
+                ? NO_LINK
+                : (continuesNext ? { kind: 'stay', colorHex: segment.cityColorHex || null } : TRANSFER_LINK),
         });
-
-        if (hasOvernightNode && overnightLeg) {
-            nodes.push({
-                kind: 'transfer',
-                key: `transfer-${day.dayOffset}`,
-                dayIndex: index,
-                transfer: overnightLeg,
-                cityColorHex: day.cityColorHex,
-            });
-        }
     });
 
     return nodes;

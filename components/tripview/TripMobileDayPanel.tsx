@@ -12,14 +12,15 @@ import { MARKDOWN_HEADS_UP_BANNER_CLASS, remarkHeadsUpBanners } from '../markdow
 import { TripDirectionsButton } from './TripDirectionsButton';
 import { buildActivityDirectionsLabel } from '../../shared/mapDirectionsLinks';
 import type { ITimelineItem } from '../../types';
-import type { MobileDayPlanDay, MobileDayPlanLeg, MobileDayPlanTransfer } from './mobileDayPlanModel';
+import type { MobileDayPlanLeg, MobileDayPlanSegment, MobileDayPlanTransfer } from './mobileDayPlanModel';
 
 interface TripMobileDayPanelProps {
     tripId: string;
-    day: MobileDayPlanDay;
+    /** One city-day: the part of a day spent in a single stay. */
+    segment: MobileDayPlanSegment;
     selectedItemId: string | null;
     onSelect: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
-    onEditTransport?: (travelItem: ITimelineItem) => void;
+    onEditTransport?: (leg: MobileDayPlanTransfer) => void;
     onAddActivity?: (dayOffset: number) => void;
 }
 
@@ -96,7 +97,10 @@ const ScheduleRow: React.FC<{
 };
 
 const buildTransferDetail = (transfer: MobileDayPlanTransfer): string | null => {
-    const parts = [transfer.modeLabel, transfer.durationLabel].filter(Boolean) as string[];
+    const parts = [
+        transfer.item ? transfer.modeLabel : 'Transport not set',
+        transfer.durationLabel || 'duration n/a',
+    ].filter(Boolean) as string[];
     return parts.length > 0 ? parts.join(' · ') : null;
 };
 
@@ -108,13 +112,14 @@ const buildLegTitle = (leg: MobileDayPlanLeg): string => {
 
 export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
     tripId,
-    day,
+    segment,
     selectedItemId,
     onSelect,
     onEditTransport,
     onAddActivity,
 }) => {
-    const city = day.city;
+    const day = segment;
+    const city = segment.city;
     const cityTitle = city?.title?.trim() || city?.location?.trim() || '';
     const hotels = (city?.hotels || []).filter((hotel) => hotel.name?.trim() || hotel.address?.trim());
 
@@ -177,10 +182,10 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                             ].filter(Boolean).join(' · ') || null}
                             time={leg.role === 'arrival' ? leg.arrivalTime : leg.departureTime}
                             onClick={leg.item ? () => onSelect(leg.item!.id) : undefined}
-                            action={leg.item && onEditTransport
+                            action={onEditTransport
                                 ? {
                                     label: `Change transport for ${buildLegTitle(leg)}`,
-                                    onClick: () => onEditTransport(leg.item!),
+                                    onClick: () => onEditTransport(leg),
                                 }
                                 : undefined}
                             analyticsId="trip_view__mobile_day_leg--open"

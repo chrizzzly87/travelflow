@@ -13,9 +13,12 @@ describe('components/maps/tripMapProviderTuning', () => {
     const googleTuning = getTripMapProviderTuning('google');
     const mapboxTuning = getTripMapProviderTuning('mapbox');
 
-    // Close enough to read the city rather than the region around it.
-    expect(googleTuning.selection.cityFocusZoom).toBe(12);
+    // Street level: a selected city lands on the place itself, and an activity
+    // inside it closer still.
+    expect(googleTuning.selection.cityFocusZoom).toBe(14);
     expect(mapboxTuning.selection.cityFocusZoom).toBeLessThan(googleTuning.selection.cityFocusZoom);
+    expect(googleTuning.selection.activityFocusZoom).toBeGreaterThan(googleTuning.selection.cityFocusZoom);
+    expect(mapboxTuning.selection.activityFocusZoom).toBeGreaterThan(mapboxTuning.selection.cityFocusZoom);
     expect(mapboxTuning.selection.safeInsetRatio).toBeLessThan(googleTuning.selection.safeInsetRatio);
     expect(mapboxTuning.selection.floatingSafeInsetRatio).toBeLessThan(mapboxTuning.selection.safeInsetRatio);
     expect(mapboxTuning.markers.cityZoomProfile.mediumCircleMaxZoom)
