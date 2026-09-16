@@ -7,9 +7,10 @@ import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import { buildLocalizedCreateTripPath, extractLocaleFromPath } from '../config/routes';
 import { DB_ENABLED } from '../config/db';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
-import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
+import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, TRAVEL_COLOR, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
 import { buildTripMapLocationContextQueries } from '../shared/tripMapCityResolution';
 import { getTripSpan } from '../shared/tripSpan';
+import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
 import { dbGetTrip, type DbTripAccessMetadata } from '../services/dbApi';
 import {
@@ -2955,6 +2956,55 @@ const useTripViewRender = ({
         return null;
     }, [adminOverrideEnabled, tripAccess?.source]);
 
+    /**
+     * Sets how a leg between two stays is travelled, creating the travel item
+     * when the leg has never had one.
+     *
+     * A generated trip can carry stays with no leg between them at all — the
+     * mobile strip still shows the journey, and it has to be possible to give
+     * it a transport from there rather than only being able to edit one that
+     * already exists.
+     */
+    const handleSetLegTransport = useCallback((
+        leg: { fromCityId: string; toCityId: string; travelItemId: string | null },
+        mode: string,
+    ) => {
+        if (!canEdit) return;
+        const nextMode = normalizeTransportMode(mode);
+        const modeTitle = `${nextMode.charAt(0).toUpperCase()}${nextMode.slice(1)} Travel`;
+
+        if (leg.travelItemId) {
+            const existing = trip.items.find((candidate) => candidate.id === leg.travelItemId);
+            if (!existing) return;
+            handleUpdateItem(leg.travelItemId, {
+                type: 'travel',
+                transportMode: nextMode,
+                title: modeTitle,
+                color: TRAVEL_COLOR,
+                duration: Math.max(0.1, existing.duration),
+            });
+            return;
+        }
+
+        const fromCity = trip.items.find((candidate) => candidate.id === leg.fromCityId);
+        const toCity = trip.items.find((candidate) => candidate.id === leg.toCityId);
+        if (!fromCity || !toCity) return;
+
+        const newItem: ITimelineItem = {
+            id: `travel-new-${Date.now()}`,
+            type: 'travel',
+            title: modeTitle,
+            description: `Travel from ${fromCity.title} to ${toCity.title}`,
+            transportMode: nextMode,
+            color: TRAVEL_COLOR,
+            startDateOffset: fromCity.startDateOffset + fromCity.duration,
+            duration: 0.2,
+        };
+        setPendingLabel('Data: Added transport');
+        handleUpdateItems([...trip.items, newItem]);
+        setSelectedItemId(newItem.id);
+    }, [canEdit, handleUpdateItem, handleUpdateItems, setPendingLabel, setSelectedItemId, trip.items]);
+
     const handleTimelineTaskToggle = useCallback((itemId: string, taskLineNumber: number, checked: boolean) => {
         const item = trip.items.find((candidate) => candidate.id === itemId);
         if (!item || typeof item.description !== 'string') return;
@@ -3263,6 +3313,7 @@ const useTripViewRender = ({
                         trip={displayTrip}
                         onSelectTimelineItem={handleTimelineSelect}
                         onUpdateTimelineItem={canEdit ? handleUpdateItem : undefined}
+                        onSetLegTransport={canEdit ? handleSetLegTransport : undefined}
                         onAddTimelineActivity={canEdit ? handleOpenAddActivity : undefined}
                         appLanguage={appLanguage}
                         timelineCanvas={timelineCanvas}

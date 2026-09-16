@@ -1,24 +1,25 @@
 ---
 id: rel-2026-09-17-mobile-day-strip-transport-nodes
 version: v0.170.0
-title: "Every journey back on the day strip, and cleaner day circles"
+title: "Every journey on the day strip, and a day of travel shown in both cities"
 date: 2026-09-17
 published_at: 2026-09-17T16:00:00Z
 status: draft
 notify_in_app: true
 in_app_hours: 24
-summary: "Each journey has its own stop on the day strip again and opens the transport picker in one tap, the day circles no longer have the strip's line running through them, a day spent in three cities shows all three, and the map opens on the place itself without city labels."
+summary: "A day you travel now appears twice — once in the city you leave and once in the one you reach — with the journey between them, its duration on it, and one tap to set how you travel it, even on a leg that never had transport."
 ---
 
 ## Changes
-- [x] [Fixed] 🚆 Every journey has its own stop on the day strip again, with its own transport icon — a move that happens inside one day is no longer squeezed onto the edge of a day circle.
-- [x] [New feature] 🎛️ Tap that transport icon to change how you travel the leg, straight from the strip.
-- [x] [Fixed] 🎯 The line joining your days no longer runs through the day circles. The circles are filled now, so the route reads as a line of stops rather than a line crossed by rings.
-- [x] [Fixed] 🏙️ A day spent in three cities shows all three on its circle. Only the first and last used to appear, and the city in the middle vanished from the strip entirely.
-- [x] [Improved] 🔍 Picking a city on the map now lands on the city itself, close enough to see where you actually are, and an activity closer still.
+- [x] [New feature] 🔁 A day you change city now appears twice on the day strip: once in the city you leave and once in the one you reach, with the journey between them. You can see what you are doing in each city instead of reading half a circle of each colour.
+- [x] [Fixed] 🚆 Every journey has its own stop on the strip again, with its own transport icon — no longer squeezed onto the edge of a day circle.
+- [x] [New feature] 🎛️ Tap a journey to set how you travel it. This now works on journeys that never had any transport: picking a mode creates it instead of doing nothing.
+- [x] [Fixed] ⏱️ Every journey shows its duration, and says n/a when it does not have one yet, so a leg still to be planned is visible rather than blank.
+- [x] [Fixed] 🎯 The line joining your days no longer runs through the day circles.
+- [x] [Improved] 🔍 Picking a city on the map lands on the city itself, close enough to see where you are, and an activity closer still.
 - [x] [Improved] 🧭 City labels start switched off, so the map opens on your route instead of a page of names. Turn them back on any time — if you already had them on, they stay on.
-- [ ] [Internal] 🧱 A day carries every stay it touches in travel order, so the circle's ring is painted from the stays themselves instead of a first-and-last pair.
-- [ ] [Internal] 🎨 The ring is a border-box gradient over an opaque padding-box fill; the previous bare border left the ring's inner gap transparent, which is what let the connecting line through.
-- [ ] [Internal] ↔️ The ring gradient follows the document direction, so a split day reads the same way round in RTL.
-- [ ] [Internal] 🔗 Strip links resolve by shared stay and carry that stay's colour, replacing a comparison of each day's final city that could not see a stay continuing through a move.
-- [ ] [Internal] 🧪 Coverage for the per-leg nodes, the three-stay day, the ring layers in both selected and unselected states, and the picker opening from the strip in editable and read-only trips.
+- [ ] [Internal] 🧱 The strip walks city-days rather than days: `buildMobileDayPlanSegments` splits each day into one segment per stay it touches, with the day's activities, hotel events and legs resolved to the stay they belong to.
+- [ ] [Internal] 🔗 A leg gets exactly one node, between the two segments it joins, which covers a same-day move and an overnight leg through the same rule and retires the handover badge.
+- [ ] [Internal] 🆕 `handleSetLegTransport` writes a leg's transport by stay pair, creating the travel item when the leg has none; the mobile picker works on the leg rather than on an item id.
+- [ ] [Internal] 🎨 The circle is a border-box gradient over an opaque padding-box fill; the previous bare border left the ring's inner gap transparent, which let the connecting line through.
+- [ ] [Internal] 🧪 Coverage for the per-city split of a travel day, the activity and hotel split across it, a three-city day, the per-leg nodes, the n/a duration, and the picker writing a leg with and without an existing item.

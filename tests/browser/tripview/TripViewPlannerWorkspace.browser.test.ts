@@ -24,6 +24,7 @@ const baseProps = (): PlannerProps => ({
   },
   onSelectTimelineItem: vi.fn(),
   onUpdateTimelineItem: vi.fn(),
+  onSetLegTransport: vi.fn(),
   onAddTimelineActivity: vi.fn(),
   appLanguage: 'en',
   timelineCanvas: React.createElement('div', { 'data-testid': 'timeline-canvas' }, 'canvas'),
@@ -374,25 +375,85 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Plane' }));
 
-    expect(props.onUpdateTimelineItem).toHaveBeenCalledWith('travel-a', expect.objectContaining({
-      type: 'travel',
-      transportMode: 'plane',
-    }));
+    expect(props.onSetLegTransport).toHaveBeenCalledWith(
+      { fromCityId: 'city-a', toCityId: 'city-b', travelItemId: 'travel-a' },
+      'plane',
+    );
   });
 
-  it('keeps a transport node of its own for a move that happens inside one day', () => {
+  it('shows the day of a move twice, once per city, with the journey between them', () => {
     const props = baseProps();
     props.isMobile = true;
 
     render(React.createElement(TripViewPlannerWorkspace, props));
 
-    const transferNodes = screen.getAllByTestId('planner-mobile-transfer-node');
-    expect(transferNodes).toHaveLength(1);
+    // Sintra runs into the middle of day 2 and Porto takes the rest of it, so
+    // day 2 is both a Sintra day and a Porto day.
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.map((tab) => tab.getAttribute('title'))).toEqual([
+      'Monday, May 4 — Sintra',
+      'Tuesday, May 5 — Sintra',
+      'Tuesday, May 5 — Porto',
+      'Wednesday, May 6 — Porto',
+      'Thursday, May 7 — Porto',
+    ]);
 
-    // It sits before the day the traveller lands in, between the two bubbles.
+    // The journey sits between the two halves of that day.
     const stripChildren = Array.from(screen.getByTestId('planner-mobile-day-strip').children);
-    const nodeColumn = transferNodes[0].closest('div.shrink-0');
-    expect(stripChildren.indexOf(nodeColumn as Element)).toBe(1);
+    const nodeColumn = screen.getByTestId('planner-mobile-transfer-node').closest('div.shrink-0');
+    expect(stripChildren.indexOf(nodeColumn as Element)).toBe(2);
+  });
+
+  it('shows what happens in each city on the day of a move', () => {
+    const props = baseProps();
+    props.isMobile = true;
+    props.trip = {
+      ...props.trip,
+      items: [
+        ...props.trip.items,
+        { id: 'act-morning', type: 'activity', title: 'Pena Palace', startDateOffset: 1.2, duration: 0.1, color: '#f59e0b' },
+        { id: 'act-evening', type: 'activity', title: 'Porto dinner', startDateOffset: 1.8, duration: 0.1, color: '#f59e0b' },
+      ],
+    };
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    // The Sintra half of the day holds the morning, and leads with leaving.
+    fireEvent.click(screen.getAllByRole('tab')[1]);
+    expect(screen.getByText('Pena Palace')).toBeInTheDocument();
+    expect(screen.queryByText('Porto dinner')).not.toBeInTheDocument();
+    expect(screen.getByText('Leave Sintra for Porto')).toBeInTheDocument();
+
+    // The Porto half holds the evening, and leads with arriving.
+    fireEvent.click(screen.getAllByRole('tab')[2]);
+    expect(screen.getByText('Porto dinner')).toBeInTheDocument();
+    expect(screen.queryByText('Pena Palace')).not.toBeInTheDocument();
+    expect(screen.getByText('Arrive in Porto')).toBeInTheDocument();
+  });
+
+  it('gives a leg with no transport a node that reads n/a and can still be set', () => {
+    const props = baseProps();
+    props.isMobile = true;
+    // A generated trip can hold two stays with nothing between them.
+    props.trip = {
+      ...props.trip,
+      items: props.trip.items.filter((item) => item.type !== 'travel'),
+    };
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    expect(screen.getByTestId('planner-mobile-transfer-duration')).toHaveTextContent('n/a');
+
+    fireEvent.click(screen.getByTestId('planner-mobile-transfer-node'));
+    expect(screen.getByTestId('mobile-transport-modal')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Train' }));
+
+    // No item to patch, so the leg is written from the two stays it joins.
+    expect(props.onSetLegTransport).toHaveBeenCalledWith(
+      { fromCityId: 'city-a', toCityId: 'city-b', travelItemId: null },
+      'train',
+    );
   });
 
   it('opens the transport picker straight from the strip node', () => {
@@ -406,15 +467,17 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(props.onSelectTimelineItem).toHaveBeenCalledWith('travel-a');
 
     fireEvent.click(screen.getByRole('button', { name: 'Bus' }));
-    expect(props.onUpdateTimelineItem).toHaveBeenCalledWith('travel-a', expect.objectContaining({
-      transportMode: 'bus',
-    }));
+    expect(props.onSetLegTransport).toHaveBeenCalledWith(
+      { fromCityId: 'city-a', toCityId: 'city-b', travelItemId: 'travel-a' },
+      'bus',
+    );
   });
 
   it('leaves the transport node selecting only when the trip cannot be edited', () => {
     const props = baseProps();
     props.isMobile = true;
     props.onUpdateTimelineItem = undefined;
+    props.onSetLegTransport = undefined;
 
     render(React.createElement(TripViewPlannerWorkspace, props));
     fireEvent.click(screen.getByTestId('planner-mobile-transfer-node'));
@@ -438,24 +501,23 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(plainDay.style.borderColor).toBe('transparent');
   });
 
-  it('splits the ring across every stay a day touches', () => {
+  it('gives each circle one city colour and fills the selected one', () => {
     const props = baseProps();
     props.isMobile = true;
 
     render(React.createElement(TripViewPlannerWorkspace, props));
 
-    // Day 2 holds both stays, so its ring runs from one colour to the other.
-    const handoverDay = screen.getAllByRole('tab')[1];
-    expect(handoverDay.style.background).toContain('to right');
-    expect(handoverDay.style.background).toContain('rgb(22, 163, 74) 0% 50%');
-    expect(handoverDay.style.background).toContain('rgb(37, 99, 235) 50% 100%');
+    // The two halves of the day of the move are each a whole circle in their
+    // own city's colour, rather than one circle split between them.
+    const sintraHalf = screen.getAllByRole('tab')[1];
+    const portoHalf = screen.getAllByRole('tab')[2];
+    expect(sintraHalf.style.background).toContain('rgb(22, 163, 74)) border-box');
+    expect(sintraHalf.style.background).not.toContain('to right');
+    expect(portoHalf.style.background).toContain('rgb(37, 99, 235)) border-box');
 
-    // Selecting a day fills its interior; the ring keeps both stays.
-    fireEvent.click(handoverDay);
-    const selected = screen.getAllByRole('tab')[1];
-    expect(selected.style.background).toContain('rgb(37, 99, 235) 50% 100%');
-    // The interior is the stay's colour now, not white.
-    expect(selected.style.background).toContain('rgb(37, 99, 235), rgb(37, 99, 235)) padding-box');
+    fireEvent.click(portoHalf);
+    expect(screen.getAllByRole('tab')[2].style.background)
+      .toContain('rgb(37, 99, 235), rgb(37, 99, 235)) padding-box');
   });
 
   it('offers a quick way to add an activity to the shown day', () => {
@@ -510,8 +572,9 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
 
     rerender(React.createElement(TripViewPlannerWorkspace, { ...props, selectedItemId: 'city-b' }));
 
-    // Porto first appears on the handover day, which is day 1.
-    expect(screen.getAllByRole('tab')[1]).toHaveAttribute('aria-selected', 'true');
+    // Porto first appears as the second half of the day of the move, which is
+    // the third circle on the strip.
+    expect(screen.getAllByRole('tab')[2]).toHaveAttribute('aria-selected', 'true');
   });
 
   it('turns off double-tap zoom on the sheet and the day strip', () => {

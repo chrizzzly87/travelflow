@@ -4,16 +4,18 @@ import { Drawer, DrawerContent } from '../ui/drawer';
 import { TransportModeIcon } from '../TransportModeIcon';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { normalizeTransportMode, TRANSPORT_MODE_UI_ORDER } from '../../shared/transportModes';
-import { TRAVEL_COLOR } from '../../utils';
-import type { ITimelineItem, TransportMode } from '../../types';
+import type { TransportMode } from '../../types';
+import type { MobileDayPlanTransfer } from './mobileDayPlanModel';
 
 interface TripMobileTransportModalProps {
     tripId: string;
-    travelItem: ITimelineItem | null;
-    fromCityTitle?: string;
-    toCityTitle?: string;
+    /** The leg being edited; null closes the picker. */
+    leg: MobileDayPlanTransfer | null;
     onClose: () => void;
-    onUpdateItem: (itemId: string, patch: Partial<ITimelineItem>) => void;
+    onSetLegTransport: (
+        legRef: { fromCityId: string; toCityId: string; travelItemId: string | null },
+        mode: string,
+    ) => void;
 }
 
 const formatModeLabel = (mode: TransportMode): string => (
@@ -23,47 +25,46 @@ const formatModeLabel = (mode: TransportMode): string => (
 /**
  * Mobile equivalent of the details panel's transport picker.
  *
- * It writes the same patch the desktop picker does — the item becomes a travel
- * item in the chosen mode, keeping a non-zero duration — so a leg edited on a
- * phone is indistinguishable from one edited on a desktop.
+ * It works on the leg rather than on a travel item, because a generated trip
+ * can hold two stays with no travel item between them at all: picking a mode
+ * there has to create the leg, not silently do nothing.
  */
 export const TripMobileTransportModal: React.FC<TripMobileTransportModalProps> = ({
     tripId,
-    travelItem,
-    fromCityTitle,
-    toCityTitle,
+    leg,
     onClose,
-    onUpdateItem,
+    onSetLegTransport,
 }) => {
-    const currentMode = normalizeTransportMode(travelItem?.transportMode);
+    const currentMode = leg?.item ? normalizeTransportMode(leg.mode) : null;
 
     const selectMode = useCallback((mode: TransportMode) => {
-        if (!travelItem) return;
+        if (!leg) return;
         const nextMode = normalizeTransportMode(mode);
-        if (nextMode === currentMode) {
+        if (leg.item && nextMode === normalizeTransportMode(leg.mode)) {
             onClose();
             return;
         }
 
         trackEvent('trip_view__mobile_transport--change', {
             trip_id: tripId,
-            item_id: travelItem.id,
+            item_id: leg.item?.id ?? 'new',
             mode: nextMode,
         });
-        onUpdateItem(travelItem.id, {
-            type: 'travel',
-            transportMode: nextMode,
-            title: `${formatModeLabel(nextMode)} Travel`,
-            color: TRAVEL_COLOR,
-            duration: Math.max(0.1, travelItem.duration),
-        });
+        onSetLegTransport(
+            {
+                fromCityId: leg.fromCityId,
+                toCityId: leg.toCityId,
+                travelItemId: leg.item?.id ?? null,
+            },
+            nextMode,
+        );
         onClose();
-    }, [currentMode, onClose, onUpdateItem, travelItem, tripId]);
+    }, [leg, onClose, onSetLegTransport, tripId]);
 
-    const legLabel = [fromCityTitle, toCityTitle].filter(Boolean).join(' → ');
+    const legLabel = [leg?.fromCityTitle, leg?.toCityTitle].filter(Boolean).join(' → ');
 
     return (
-        <Drawer open={Boolean(travelItem)} onOpenChange={(open) => { if (!open) onClose(); }}>
+        <Drawer open={Boolean(leg)} onOpenChange={(open) => { if (!open) onClose(); }}>
             <DrawerContent
                 accessibleTitle="Change transport"
                 accessibleDescription={`Choose how this leg${legLabel ? ` from ${legLabel}` : ''} is travelled.`}
@@ -75,6 +76,11 @@ export const TripMobileTransportModal: React.FC<TripMobileTransportModalProps> =
                     </p>
                     {legLabel && (
                         <p className="mt-1 truncate text-base font-semibold text-slate-900">{legLabel}</p>
+                    )}
+                    {leg && !leg.item && (
+                        <p className="mt-1 text-xs text-slate-500">
+                            This journey has no transport yet. Pick one to add it.
+                        </p>
                     )}
 
                     <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
