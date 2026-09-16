@@ -3,8 +3,8 @@ id: rel-2026-09-16-popup-click-swallowing-fix
 version: v0.171.0
 title: "Pop-ups no longer swallow your first click"
 date: 2026-09-16
-published_at: 2026-09-16T09:00:00Z
-status: draft
+published_at: 2026-09-16T20:16:12Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "The cookie notice and the release notice now wait until your click is finished before appearing, so the button you actually pressed responds."
