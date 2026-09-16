@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Hotel, MapPin } from 'lucide-react';
+import { BedDouble, LogOut, MapPin } from 'lucide-react';
 
 import { ActivityTypeIcon } from '../ActivityTypeVisuals';
 import { formatActivityTypeLabel, getActivityTypePaletteClass } from '../ActivityTypeVisualsUtils';
@@ -9,7 +9,7 @@ import { TransportModeIcon } from '../TransportModeIcon';
 import { normalizeActivityTypes } from '../../utils';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { MARKDOWN_HEADS_UP_BANNER_CLASS, remarkHeadsUpBanners } from '../markdownPresentation';
-import type { MobileDayPlanDay } from './mobileDayPlanModel';
+import type { MobileDayPlanDay, MobileDayPlanTransfer } from './mobileDayPlanModel';
 
 interface TripMobileDayPanelProps {
     tripId: string;
@@ -35,13 +35,49 @@ const MARKDOWN_COMPONENTS = {
     ),
 };
 
-const formatTransferDuration = (durationHours: number | null): string | null => {
-    if (!durationHours || !Number.isFinite(durationHours) || durationHours <= 0) return null;
-    if (durationHours >= 24) {
-        const days = durationHours / 24;
-        return Number.isInteger(days) ? `${days.toFixed(0)}d` : `${days.toFixed(1)}d`;
+const ScheduleRow: React.FC<{
+    icon: React.ReactNode;
+    title: string;
+    detail: string | null;
+    time: string | null;
+    onClick?: () => void;
+    analytics?: Record<string, string | number | boolean>;
+    analyticsId?: string;
+}> = ({ icon, title, detail, time, onClick, analytics, analyticsId }) => {
+    const body = (
+        <>
+            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm">
+                {icon}
+            </span>
+            <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-slate-900">{title}</span>
+                {detail && <span className="block truncate text-xs text-slate-500">{detail}</span>}
+            </span>
+            {time && (
+                <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-700">{time}</span>
+            )}
+        </>
+    );
+
+    if (!onClick) {
+        return <div className="flex items-center gap-2.5 px-3 py-2.5">{body}</div>;
     }
-    return Number.isInteger(durationHours) ? `${durationHours.toFixed(0)}h` : `${durationHours.toFixed(1)}h`;
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-start transition-colors hover:bg-white/70"
+            {...(analyticsId ? getAnalyticsDebugAttributes(analyticsId, analytics) : {})}
+        >
+            {body}
+        </button>
+    );
+};
+
+const buildTransferDetail = (transfer: MobileDayPlanTransfer): string | null => {
+    const parts = [transfer.modeLabel, transfer.durationLabel].filter(Boolean) as string[];
+    return parts.length > 0 ? parts.join(' · ') : null;
 };
 
 export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
@@ -53,7 +89,8 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
     const city = day.city;
     const cityTitle = city?.title?.trim() || city?.location?.trim() || '';
     const hotels = (city?.hotels || []).filter((hotel) => hotel.name?.trim() || hotel.address?.trim());
-    const transferDuration = formatTransferDuration(day.transfer?.durationHours ?? null);
+
+    const hasSchedule = Boolean(day.arrival || day.departure || day.hotelCheckIn || day.hotelCheckOut);
 
     return (
         <div className="px-4 pb-10 pt-1">
@@ -80,27 +117,84 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                 >
                     <span
                         aria-hidden="true"
-                        className="size-3 shrink-0 rounded-full border-2 border-white shadow-sm"
+                        className="h-5 w-1.5 shrink-0 rounded-full"
                         style={{ backgroundColor: day.cityColorHex || 'var(--tf-accent-500, #4f46e5)' }}
                     />
                     <span className={`truncate text-xl font-semibold tracking-tight ${selectedItemId === city.id ? 'text-accent-700' : 'text-slate-900'}`}>
                         {cityTitle}
                     </span>
-                    {day.isArrivalDay && (
-                        <span className="shrink-0 rounded-full border border-slate-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">
-                            Arrival
-                        </span>
-                    )}
                 </button>
             ) : (
                 <p className="mt-1 text-xl font-semibold tracking-tight text-slate-400">Unscheduled day</p>
             )}
 
+            {/* The day's fixed points come first: they are what the traveller
+              * has to be somewhere for, and everything else is flexible. */}
+            {hasSchedule && (
+                <div
+                    data-testid="planner-mobile-day-schedule"
+                    className="mt-3 divide-y divide-slate-200/70 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/80"
+                >
+                    {day.arrival && (
+                        <ScheduleRow
+                            icon={<TransportModeIcon mode={day.arrival.mode as never} size={15} />}
+                            title={`Arrive in ${day.arrival.toCityTitle}`}
+                            detail={[
+                                `From ${day.arrival.fromCityTitle}`,
+                                buildTransferDetail(day.arrival),
+                                day.arrival.departureTime ? `departs ${day.arrival.departureTime}` : null,
+                            ].filter(Boolean).join(' · ')}
+                            time={day.arrival.arrivalTime
+                                ? `${day.arrival.arrivalTime}${day.arrival.arrivalDayShift > 0 ? ` +${day.arrival.arrivalDayShift}` : ''}`
+                                : null}
+                            onClick={day.arrival.item ? () => onSelect(day.arrival!.item!.id) : undefined}
+                            analyticsId="trip_view__mobile_day_arrival--open"
+                            analytics={{ trip_id: tripId }}
+                        />
+                    )}
+
+                    {day.hotelCheckIn && (
+                        <ScheduleRow
+                            icon={<BedDouble size={15} />}
+                            title="Hotel check-in"
+                            detail={day.hotelCheckIn.name?.trim() || day.hotelCheckIn.address?.trim() || null}
+                            time={null}
+                        />
+                    )}
+
+                    {day.hotelCheckOut && (
+                        <ScheduleRow
+                            icon={<LogOut size={15} />}
+                            title="Hotel check-out"
+                            detail={day.hotelCheckOut.name?.trim() || day.hotelCheckOut.address?.trim() || null}
+                            time={null}
+                        />
+                    )}
+
+                    {day.departure && (
+                        <ScheduleRow
+                            icon={<TransportModeIcon mode={day.departure.mode as never} size={15} />}
+                            title={`On to ${day.departure.toCityTitle}`}
+                            detail={[
+                                buildTransferDetail(day.departure),
+                                day.departure.arrivalTime
+                                    ? `arrives ${day.departure.arrivalTime}${day.departure.arrivalDayShift > 0 ? ` +${day.departure.arrivalDayShift}` : ''}`
+                                    : null,
+                            ].filter(Boolean).join(' · ') || null}
+                            time={day.departure.departureTime}
+                            onClick={day.departure.item ? () => onSelect(day.departure!.item!.id) : undefined}
+                            analyticsId="trip_view__mobile_day_transfer--open"
+                            analytics={{ trip_id: tripId }}
+                        />
+                    )}
+                </div>
+            )}
+
             {hotels.length > 0 && (
                 <div className="mt-3 flex flex-col gap-2">
                     {hotels.map((hotel) => (
-                        <div key={hotel.id} className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                            <Hotel size={14} className="mt-0.5 shrink-0 text-accent-600" />
+                        <div key={hotel.id} className="flex items-start gap-2 rounded-2xl border border-slate-200 px-3 py-2 text-sm text-slate-700">
+                            <BedDouble size={14} className="mt-0.5 shrink-0 text-accent-600" />
                             <div className="min-w-0">
                                 {hotel.name?.trim() && <p className="truncate font-semibold text-slate-900">{hotel.name.trim()}</p>}
                                 {hotel.address?.trim() && (
@@ -170,34 +264,6 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                         );
                     })}
                 </ol>
-            )}
-
-            {day.transfer && (
-                <button
-                    type="button"
-                    onClick={() => {
-                        if (!day.transfer?.item) return;
-                        onSelect(day.transfer.item.id);
-                    }}
-                    disabled={!day.transfer.item}
-                    className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 px-3 py-3 text-start disabled:cursor-default"
-                    {...getAnalyticsDebugAttributes('trip_view__mobile_day_transfer--open', {
-                        trip_id: tripId,
-                        item_id: day.transfer.item?.id || 'none',
-                    })}
-                >
-                    <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm">
-                        <TransportModeIcon mode={day.transfer.mode as never} size={16} />
-                    </span>
-                    <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold text-slate-900">
-                            On to {day.transfer.toCityTitle}
-                        </span>
-                        <span className="block text-xs text-slate-500">
-                            {[day.transfer.departureTime, transferDuration].filter(Boolean).join(' · ') || 'Departure today'}
-                        </span>
-                    </span>
-                </button>
             )}
         </div>
     );

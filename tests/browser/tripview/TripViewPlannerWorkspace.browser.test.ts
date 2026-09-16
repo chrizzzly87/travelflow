@@ -152,12 +152,29 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.getByTestId('planner-mobile-day-strip')).toBeInTheDocument();
     expect(sheet).toHaveAttribute('data-snap', 'half');
 
-    fireEvent.click(screen.getByLabelText('Expand day panel'));
+    // One control: it grows the sheet while there is room, then collapses.
+    fireEvent.click(screen.getByTestId('planner-mobile-sheet-toggle'));
     expect(sheet).toHaveAttribute('data-snap', 'full');
+    expect(screen.getByLabelText('Collapse day panel')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText('Shrink day panel'));
-    fireEvent.click(screen.getByLabelText('Shrink day panel'));
+    fireEvent.click(screen.getByTestId('planner-mobile-sheet-toggle'));
     expect(sheet).toHaveAttribute('data-snap', 'peek');
+    expect(screen.getByLabelText('Expand day panel')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('planner-mobile-sheet-toggle'));
+    expect(sheet).toHaveAttribute('data-snap', 'half');
+  });
+
+  it('keeps the day strip snapping and drag-scrollable on mobile', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    const strip = screen.getByTestId('planner-mobile-day-strip');
+    expect(strip.className).toContain('snap-x');
+    expect(strip.className).toContain('snap-mandatory');
+    expect(strip.className).toContain('overflow-x-auto');
   });
 
   it('minimizes map into floating mode when toggle is clicked', () => {
