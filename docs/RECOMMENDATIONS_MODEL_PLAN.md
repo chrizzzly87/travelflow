@@ -227,6 +227,14 @@ The importer walks placemarks and maps `ExtendedData` to the model. The interest
 
 Import is preview-then-apply, like the AtoBeach importer: a dry run that exits non-zero with totals and failures, and an `--apply` that writes.
 
+### Two things a trial conversion of the real pins exposed
+
+Converting a sample of the Taiwan pins into the shape above found both of these, and both are importer requirements rather than model changes:
+
+**A single pin can cite several creators.** `Elephant Mountain (Xiangshan)` carries four handles in `Source` and four URLs in `PostURL`, semicolon-separated and in a different order from each other. `sources` is already an array, which holds up — but the importer has to split on `;`, pair handle to URL by matching the handle inside the URL path rather than by position, and drop a source it cannot pair rather than mis-attributing it.
+
+**The category alone mis-types a pin.** The same pin is filed under `Sights & Landmarks`, which maps to `sightseeing, culture`, while its note reads *"Free 20-min hike, best sunset/skyline view of Taipei 101"* — that is `hiking` and `nature`, and `costBand: 'free'`. The category is a starting point; the note carries the truth. The enrichment pass must be allowed to *add* types and set a cost band from the note text, and because it is guessing, those stay candidate values a human accepts. A naive price regex over the same note also missed the word "Free" while catching "budget-friendly" elsewhere, which is the argument for enrichment by model rather than by pattern.
+
 ### The media question, which needs a decision before any image ships
 
 Instagram and Google Places photos cannot simply be copied onto TravelFlow's CDN — both providers' terms restrict rehosting, and 56 of these creators own their footage. Three workable options, in order of preference:
