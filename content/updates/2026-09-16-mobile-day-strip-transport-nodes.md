@@ -1,10 +1,10 @@
 ---
-id: rel-2026-09-17-mobile-day-strip-transport-nodes
+id: rel-2026-09-16-mobile-day-strip-transport-nodes
 version: v0.170.0
 title: "Every journey on the day strip, and a day of travel shown in both cities"
-date: 2026-09-17
-published_at: 2026-09-17T16:00:00Z
-status: draft
+date: 2026-09-16
+published_at: 2026-09-16T19:45:00Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "A day you travel now appears twice — once in the city you leave and once in the one you reach — with the journey between them, its duration on it, and one tap to set how you travel it, even on a leg that never had transport."
