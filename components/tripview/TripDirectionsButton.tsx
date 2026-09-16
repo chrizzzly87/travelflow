@@ -40,7 +40,7 @@ export const TripDirectionsButton: React.FC<TripDirectionsButtonProps> = ({
         [],
     );
 
-    const handleClick = useCallback(() => {
+    const openDirections = useCallback(() => {
         if (!links) return;
         trackEvent('trip_view__directions--open', { trip_id: tripId, item_id: itemId, platform });
 
@@ -71,7 +71,7 @@ export const TripDirectionsButton: React.FC<TripDirectionsButtonProps> = ({
         <>
             <button
                 type="button"
-                onClick={handleClick}
+                onClick={openDirections}
                 data-testid="trip-directions-button"
                 className={className ?? 'inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-600'}
                 aria-label={`Directions to ${target.label}`}
