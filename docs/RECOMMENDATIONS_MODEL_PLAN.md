@@ -1,8 +1,43 @@
 # Recommendations model plan
 
-Status: proposed
-Last updated: 2026-09-16
+Status: largely implemented — see **What actually shipped** below
+Last updated: 2026-09-17
 Feeds: issue #505 (unassigned activity pool and swipe triage)
+Shipped in: v0.173.0 (PR #508)
+
+> This document was written before the implementation and is kept as the
+> reasoning behind it. The analysis of the source data still holds; some of the
+> design did not survive contact. The next section records where, so nothing
+> below is mistaken for a description of what exists. The operational guide is
+> `docs/RECOMMENDATIONS_CONTENT_RUNBOOK.md`.
+
+## What actually shipped
+
+Built in v0.173.0, against this plan:
+
+- `public.recommendations` with a published-only read policy for `anon` and
+  `authenticated`, read over PostgREST exactly as the destination tables are.
+- `/api/recommendations` (public read) and `/api/internal/admin/recommendations`
+  (admin CRUD), plus the admin surface at `/admin/recommendations`.
+- The KML importer, geocoding, and the Taiwan 84.
+- The swipe deck, the kept pool and the skipped pool.
+
+Where reality diverged from this plan, and why:
+
+| Plan | Shipped | Why |
+| --- | --- | --- |
+| `id: uuid, never a provider id` | `rec_<cc>_<slug>`, a stable text id | The id has to survive re-running the importer. A uuid would mint a new row per run; the country-plus-slug pair is the natural key and is already unique. It is still not a provider id. |
+| Four tables, incl. `recommendation_reactions` | One table | A traveller's keeps and skips are per **trip**, not per library, and a trip already persists as a JSON document. They live on `ITrip.recommendationState` plus a per-device store, which also works on a read-only shared link where nothing can be written back. |
+| `recommendation_candidates` review queue | The `status` column | A separate staging table buys nothing over `draft` / `in_review` / `published` when one admin screen edits both. |
+| `recommendation_import_runs` | Not built | The importer is a CLI with a preview mode; there is no unattended run to audit yet. Worth adding when import becomes scheduled. |
+| Phase 6 last, after the media decision | Deck built alongside | The media question was answered early (below), which unblocked it. |
+| Phase 4, AI authoring | **Not built** | The `generateActivityProposals` stub still returns `[]`. |
+
+The dataset in `data/recommendations/*.json` did not become dead weight: it is
+the seed for a new country and the offline fallback when the endpoint cannot
+answer.
+
+---
 
 ## Outcome
 
@@ -14,7 +49,7 @@ A country-enrichable library of place recommendations that can be:
 - searched by tag, city and activity type,
 - swiped through on mobile and dropped onto a trip day.
 
-This document is the data model and the sequencing. It does not implement anything.
+This document was the data model and the sequencing. It implemented nothing itself; v0.173.0 did, and **What actually shipped** above records where the two differ.
 
 ---
 
@@ -245,6 +280,14 @@ Instagram and Google Places photos cannot simply be copied onto TravelFlow's CDN
 
 The schema supports all three through `RecommendationImage.provider`; the decision is product and legal, not technical, and it should be made before the swipe deck is built, because a deck of cards without images is a different feature.
 
+**Decided (2026-09-17): option 1, reference and do not rehost** — with more than
+the plan expected. Google Places photo *references* are stored (the resource
+name, not the bytes) and `/api/place-photo` 302s to Google at render time, so
+the key stays server-side and the photographer keeps the credit. That gives a
+real photograph of the place rather than the "weaker visual" this section
+anticipated. All 84 Taiwan entries carry one. Instagram footage is still only
+linked, never embedded.
+
 ---
 
 ## AI
@@ -315,12 +358,17 @@ The conversion is the seam worth getting right: a recommendation is a library ro
 
 Phases 3, 4 and 5 are independent once 1 and 2 land.
 
+**Status:** 1, 2, 3, 5 and 6 shipped in v0.173.0. Phase 4 (AI authoring) has
+not started — the `generateActivityProposals` stub still returns `[]`. The
+phase 1 migration is written and verified but, as this document warned, is
+**not applied by a deploy**; `docs/SUPABASE_RUNBOOK.md` tracks it as pending.
+
 ---
 
 ## Open questions
 
-1. **Media**: reference, generate, or license? Blocks the deck's visual design.
+1. ~~**Media**: reference, generate, or license?~~ **Answered**: reference, via Google Places photo references resolved through `/api/place-photo`.
 2. **Who can submit?** Editors only, or travellers too? `origin: 'user_submission'` is in the model but the moderation path is not designed.
-3. **Are likes global or per trip?** The model supports both; the deck's ranking changes depending on the answer.
+3. **Are likes global or per trip?** Still open for *likes*. A keep or a skip is per trip, which is settled; a global like count that feeds ranking is not built.
 4. **Locale**: one row per language, or a translations table? The Taiwan set is English-only, but the app ships nine locales.
 5. **Duplicate policy** when two imports, or an import and the AI, produce the same place. Match on `googlePlaceId` first, then name plus proximity — needs a threshold.
