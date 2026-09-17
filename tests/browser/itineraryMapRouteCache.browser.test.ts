@@ -45,6 +45,7 @@ import {
   shouldDisplayActivityMarkers,
 } from '../../components/itineraryMapUtils';
 import { isFiniteLatLngLiteral } from '../../shared/coordinateUtils';
+import { getTripMapProviderTuning } from '../../components/maps/tripMapProviderTuning';
 
 describe('components/ItineraryMap route cache helpers', () => {
   it('filters persisted route entries by status and ttl', () => {
@@ -627,7 +628,7 @@ describe('components/ItineraryMap route cache helpers', () => {
 
     expect(focusTarget).toEqual({
       position: { lat: 50.11, lng: 8.67 },
-      zoom: 13,
+      zoom: getTripMapProviderTuning('google').selection.activityFocusZoom,
       kind: 'activity',
     });
   });
@@ -650,7 +651,7 @@ describe('components/ItineraryMap route cache helpers', () => {
       cities,
     })).toEqual({
       position: { lat: 50.1109, lng: 8.6821 },
-      zoom: 12,
+      zoom: getTripMapProviderTuning('google').selection.cityFocusZoom,
       kind: 'city',
     });
   });

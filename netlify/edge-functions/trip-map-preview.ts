@@ -6,6 +6,7 @@
  *   coords     — pipe-separated lat,lng pairs (e.g. "35.68,139.65|34.69,135.50")
  *   style      — "clean" (default) | "minimal" | "standard" | "dark" | "satellite"
  *   routeMode  — "simple" (default) | "realistic"
+ *   legModes   — optional pipe-separated transport mode per leg (e.g. "plane|car")
  *   colorMode  — "brand" (default) | "trip"
  *   pathColor  — optional hex/rgb color (used when colorMode=trip)
  *   legColors  — optional pipe/comma-separated hex/rgb colors (used per route leg when colorMode=trip)
@@ -20,6 +21,9 @@
 
 import { getMapboxAccessTokenFromEnv, getMapsApiKeyFromEnv } from "../edge-lib/trip-og-data.ts";
 import { resolveEdgeMapRuntimeAsync } from "../edge-lib/map-runtime.ts";
+import { buildFlightPreviewCurvePath } from "../../shared/flightRouteCurve.ts";
+import { parseMapPreviewLegModes } from "../../shared/mapPreviewLegModes.ts";
+import type { TransportMode } from "../../shared/transportModes.ts";
 import {
   buildPreviewNetlifyVaryValue,
   createTokenBucketLimiter,
@@ -156,6 +160,20 @@ const encodePolyline = (coords: Array<{ lat: number; lng: number }>): string => 
   return encoded;
 };
 
+const isFlightLeg = (legModes: TransportMode[], index: number): boolean => legModes[index] === "plane";
+
+/**
+ * A plane leg is drawn as the same arc the planner map draws. Anything else
+ * keeps its straight two-point geometry until a routing provider replaces it.
+ */
+const buildLegGeometry = (
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+  isFlight: boolean,
+): Array<{ lat: number; lng: number }> => (
+  isFlight ? buildFlightPreviewCurvePath(from, to) : [from, to]
+);
+
 const normalizeColor = (value: string | null): string | null => {
   if (!value) return null;
   const trimmed = value.trim().toLowerCase();
@@ -283,12 +301,18 @@ const buildSimpleSegmentPaths = (
   coords: Array<{ lat: number; lng: number }>,
   legColors: string[],
   fallbackColor: string,
+  legModes: TransportMode[] = [],
 ): string[] => {
   if (coords.length < 2) return [];
   const paths: string[] = [];
 
   for (let index = 0; index < coords.length - 1; index += 1) {
     const color = resolveLegColor(legColors, index, fallbackColor);
+    if (isFlightLeg(legModes, index)) {
+      const curve = buildLegGeometry(coords[index], coords[index + 1], true);
+      paths.push(`color:0x${color}|weight:4|enc:${encodePolyline(curve)}`);
+      continue;
+    }
     const segment = buildSimplePath([coords[index], coords[index + 1]], color);
     if (segment) paths.push(segment);
   }
@@ -301,6 +325,7 @@ const buildRealisticPaths = async (
   legColors: string[],
   fallbackColor: string,
   apiKey: string,
+  legModes: TransportMode[] = [],
 ): Promise<string[]> => {
   if (coords.length < 2) return [];
   const paths: string[] = [];
@@ -310,6 +335,14 @@ const buildRealisticPaths = async (
     const from = coords[index];
     const to = coords[index + 1];
     const color = resolveLegColor(legColors, index, fallbackColor);
+
+    // Directions have no answer for a flight, so asking would only buy a
+    // straight-line fallback. Draw the arc and keep the paid call for a leg
+    // that can actually be routed.
+    if (isFlightLeg(legModes, index)) {
+      paths.push(`color:0x${color}|weight:4|enc:${encodePolyline(buildLegGeometry(from, to, true))}`);
+      continue;
+    }
 
     let encodedPolyline: string | null = null;
     if (calls < MAX_REALISTIC_DIRECTION_LEGS) {
@@ -333,15 +366,24 @@ const buildMapboxSimpleSegmentOverlays = (
   coords: Array<{ lat: number; lng: number }>,
   legColors: string[],
   fallbackColor: string,
+  legModes: TransportMode[] = [],
 ): string[] => {
   if (coords.length < 2) return [];
   const overlays: string[] = [];
   for (let index = 0; index < coords.length - 1; index += 1) {
     const color = resolveLegColor(legColors, index, fallbackColor);
-    overlays.push(buildMapboxPathOverlay(encodePolyline([coords[index], coords[index + 1]]), color));
+    const geometry = buildLegGeometry(coords[index], coords[index + 1], isFlightLeg(legModes, index));
+    overlays.push(buildMapboxPathOverlay(encodePolyline(geometry), color));
   }
   return overlays;
 };
+
+/** Last-resort overlays: straight lines everywhere, used only past the URL cap. */
+const buildMapboxStraightSegmentOverlays = (
+  coords: Array<{ lat: number; lng: number }>,
+  legColors: string[],
+  fallbackColor: string,
+): string[] => buildMapboxSimpleSegmentOverlays(coords, legColors, fallbackColor, []);
 
 /**
  * Mapbox previews draw the same realistic geometry as the Google ones.
@@ -356,6 +398,7 @@ const buildMapboxRealisticOverlays = async (
   fallbackColor: string,
   mapboxToken: string,
   googleApiKey: string,
+  legModes: TransportMode[] = [],
 ): Promise<string[]> => {
   if (coords.length < 2) return [];
   const overlays: string[] = [];
@@ -365,6 +408,11 @@ const buildMapboxRealisticOverlays = async (
     const from = coords[index];
     const to = coords[index + 1];
     const color = resolveLegColor(legColors, index, fallbackColor);
+
+    if (isFlightLeg(legModes, index)) {
+      overlays.push(buildMapboxPathOverlay(encodePolyline(buildLegGeometry(from, to, true)), color));
+      continue;
+    }
 
     let encodedPolyline: string | null = null;
     if (calls < MAX_REALISTIC_DIRECTION_LEGS) {
@@ -415,6 +463,7 @@ const buildMapboxStaticPreviewUrl = async ({
   style,
   routeMode,
   legColors,
+  legModes,
   pathColor,
   startMarkerColor,
   endMarkerColor,
@@ -430,6 +479,7 @@ const buildMapboxStaticPreviewUrl = async ({
   style: MapPreviewStyle;
   routeMode: RoutePreviewMode;
   legColors: string[];
+  legModes: TransportMode[];
   pathColor: string;
   startMarkerColor: string;
   endMarkerColor: string;
@@ -442,9 +492,10 @@ const buildMapboxStaticPreviewUrl = async ({
   googleApiKey: string;
 }): Promise<string> => {
   const styleDescriptor = MAPBOX_STYLE_IDS[style] || MAPBOX_STYLE_IDS.standard;
-  const simpleOverlays = buildMapboxSimpleSegmentOverlays(coords, legColors, pathColor);
+  const simpleOverlays = buildMapboxSimpleSegmentOverlays(coords, legColors, pathColor, legModes);
+  const straightOverlays = buildMapboxStraightSegmentOverlays(coords, legColors, pathColor);
   const pathOverlays = routeMode === "realistic" && (mapboxToken || googleApiKey)
-    ? await buildMapboxRealisticOverlays(coords, legColors, pathColor, mapboxToken, googleApiKey)
+    ? await buildMapboxRealisticOverlays(coords, legColors, pathColor, mapboxToken, googleApiKey, legModes)
     : simpleOverlays;
   const markerOverlays = buildMapboxMarkerOverlays(
     coords,
@@ -461,7 +512,11 @@ const buildMapboxStaticPreviewUrl = async ({
   // overlays rather than serving a broken image.
   let overlaySegment = encodeOverlays([...pathOverlays, ...markerOverlays]);
   if (overlaySegment.length > MAPBOX_MAX_OVERLAY_SEGMENT_LENGTH) {
+    // Drop routed geometry first, flight arcs only if the request is still too long.
     overlaySegment = encodeOverlays([...simpleOverlays, ...markerOverlays]);
+  }
+  if (overlaySegment.length > MAPBOX_MAX_OVERLAY_SEGMENT_LENGTH) {
+    overlaySegment = encodeOverlays([...straightOverlays, ...markerOverlays]);
   }
   const scaleSuffix = scale === 2 ? "@2x" : "";
   // `auto` fits the overlays, which for a single pin means the tightest frame
@@ -519,6 +574,7 @@ export default async (request: Request, context?: { ip?: string }) => {
   const coords = parsedCoords.coords;
 
   const routeMode = parseRouteMode(url.searchParams.get("routeMode"));
+  const legModes = parseMapPreviewLegModes(url.searchParams.get("legModes"));
 
   const clientIp = resolvePreviewClientIp(request, context);
   const requestCost = routeMode === "realistic" ? REALISTIC_ROUTE_REQUEST_COST : 1;
@@ -568,6 +624,7 @@ export default async (request: Request, context?: { ip?: string }) => {
       style: requestedStyle,
       routeMode,
       legColors,
+      legModes,
       pathColor,
       startMarkerColor,
       endMarkerColor,
@@ -609,9 +666,9 @@ export default async (request: Request, context?: { ip?: string }) => {
     params.append("style", token);
   });
 
-  const simplePathParams = buildSimpleSegmentPaths(coords, legColors, pathColor);
+  const simplePathParams = buildSimpleSegmentPaths(coords, legColors, pathColor, legModes);
   const pathParams = routeMode === "realistic"
-    ? await buildRealisticPaths(coords, legColors, pathColor, googleApiKey)
+    ? await buildRealisticPaths(coords, legColors, pathColor, googleApiKey, legModes)
     : simplePathParams;
 
   if (pathParams.length === 0) {

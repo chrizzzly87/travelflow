@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
     buildMobileDayPlan,
+    buildMobileDayPlanSegments,
     buildMobileDayStripNodes,
     findMobileDayPlanIndexForItem,
+    findMobileDayPlanSegmentIndexForItem,
 } from '../../components/tripview/mobileDayPlanModel';
 import type { ITimelineItem, ITrip } from '../../types';
 
@@ -189,43 +191,166 @@ describe('components/tripview/mobileDayPlanModel', () => {
         expect(days[3].hotelCheckIn?.name).toBe('The Yeatman');
     });
 
-    describe('buildMobileDayStripNodes', () => {
-        it('joins days of one stay and inserts the leg between stays', () => {
-            const nodes = buildMobileDayStripNodes(buildMobileDayPlan(trip));
+    describe('buildMobileDayPlanSegments', () => {
+        const sameDayMove = makeTrip([
+            item({ id: 'city-a', type: 'city', title: 'Lisbon', startDateOffset: 0, duration: 1.5 }),
+            item({ id: 'travel-a', type: 'travel', title: 'Train', startDateOffset: 1.5, duration: 0.1, transportMode: 'train' }),
+            item({ id: 'city-b', type: 'city', title: 'Porto', startDateOffset: 1.6, duration: 1.4 }),
+        ]);
 
-            // The move lands inside day 3, so it is drawn on that day's bubble
-            // rather than as a node between two days.
-            expect(nodes.map((node) => node.kind)).toEqual(['day', 'day', 'day', 'day', 'day']);
+        it('splits the day of a move into one city-day per stay', () => {
+            const segments = buildMobileDayPlanSegments(buildMobileDayPlan(sameDayMove));
 
-            const dayNodes = nodes.filter((node) => node.kind === 'day');
-            expect(dayNodes.map((node) => (node.kind === 'day' ? node.linkBefore : null)))
-                .toEqual(['none', 'stay', 'stay', 'transfer', 'stay']);
-            expect(dayNodes.map((node) => (node.kind === 'day' ? node.linkAfter : null)))
-                .toEqual(['stay', 'stay', 'transfer', 'stay', 'none']);
+            // Day 2 is the move. It appears twice — once in the city being
+            // left, once in the one being reached — so the strip can show what
+            // happens in each instead of half a circle of each colour.
+            expect(segments.map((segment) => [segment.dayOffset, segment.stay?.id]))
+                .toEqual([
+                    [0, 'city-a'],
+                    [1, 'city-a'],
+                    [1, 'city-b'],
+                    [2, 'city-b'],
+                ]);
+            expect(segments[1].sharesDayWithAnotherStay).toBe(true);
+            expect(segments[1].fullDateLabel).toBe(segments[2].fullDateLabel);
         });
 
-        it('gives an overnight leg a node between the days it separates', () => {
-            const overnight = makeTrip([
-                item({ id: 'city-a', type: 'city', title: 'Lisbon', startDateOffset: 0, duration: 2 }),
-                item({ id: 'travel-a', type: 'travel', title: 'Night train', startDateOffset: 1.9, duration: 0.5, transportMode: 'train' }),
-                item({ id: 'city-b', type: 'city', title: 'Porto', startDateOffset: 2.4, duration: 2 }),
+        it('reads the leg from each side it touches', () => {
+            const segments = buildMobileDayPlanSegments(buildMobileDayPlan(sameDayMove));
+
+            expect(segments[1].legs.map((leg) => leg.role)).toEqual(['departure']);
+            expect(segments[1].legs[0].toCityTitle).toBe('Porto');
+            expect(segments[2].legs.map((leg) => leg.role)).toEqual(['arrival']);
+            expect(segments[2].legs[0].fromCityTitle).toBe('Lisbon');
+        });
+
+        it('gives each city-day the activities that happen while it is under way', () => {
+            const sameDayActivities = makeTrip([
+                item({ id: 'city-a', type: 'city', title: 'Lisbon', startDateOffset: 0, duration: 1.5 }),
+                item({ id: 'travel-a', type: 'travel', startDateOffset: 1.5, duration: 0.1, transportMode: 'train' }),
+                item({ id: 'city-b', type: 'city', title: 'Porto', startDateOffset: 1.6, duration: 1.4 }),
+                item({ id: 'act-morning', type: 'activity', title: 'Market', startDateOffset: 1.2, duration: 0.1 }),
+                item({ id: 'act-evening', type: 'activity', title: 'Dinner', startDateOffset: 1.8, duration: 0.1 }),
             ]);
-            const nodes = buildMobileDayStripNodes(buildMobileDayPlan(overnight));
+            const segments = buildMobileDayPlanSegments(buildMobileDayPlan(sameDayActivities));
+            const movingDay = segments.filter((segment) => segment.dayOffset === 1);
+
+            expect(movingDay).toHaveLength(2);
+            expect(movingDay[0].activities.map((activity) => activity.id)).toEqual(['act-morning']);
+            expect(movingDay[1].activities.map((activity) => activity.id)).toEqual(['act-evening']);
+        });
+
+        it('puts a hotel check-out on the city being left and check-in on the one reached', () => {
+            const withHotels = makeTrip([
+                item({
+                    id: 'city-a',
+                    type: 'city',
+                    title: 'Lisbon',
+                    startDateOffset: 0,
+                    duration: 1.5,
+                    hotels: [{ id: 'h1', name: 'Lisbon Hotel' }],
+                }),
+                item({ id: 'travel-a', type: 'travel', startDateOffset: 1.5, duration: 0.1, transportMode: 'train' }),
+                item({
+                    id: 'city-b',
+                    type: 'city',
+                    title: 'Porto',
+                    startDateOffset: 1.6,
+                    duration: 1.4,
+                    hotels: [{ id: 'h2', name: 'Porto Hotel' }],
+                }),
+            ]);
+            const segments = buildMobileDayPlanSegments(buildMobileDayPlan(withHotels));
+            const movingDay = segments.filter((segment) => segment.dayOffset === 1);
+
+            expect(movingDay[0].hotelCheckOut?.name).toBe('Lisbon Hotel');
+            expect(movingDay[0].hotelCheckIn).toBeNull();
+            expect(movingDay[1].hotelCheckIn?.name).toBe('Porto Hotel');
+            expect(movingDay[1].hotelCheckOut).toBeNull();
+        });
+
+        it('locates the city-day holding a given item', () => {
+            const segments = buildMobileDayPlanSegments(buildMobileDayPlan(trip));
+
+            // The stay's own id finds its first city-day, and an activity finds
+            // the city-day it happens in.
+            expect(findMobileDayPlanSegmentIndexForItem(segments, 'city-b')).toBe(3);
+            expect(findMobileDayPlanSegmentIndexForItem(segments, 'act-3')).toBe(3);
+            expect(findMobileDayPlanSegmentIndexForItem(segments, 'nope')).toBe(-1);
+        });
+    });
+
+    describe('buildMobileDayStripNodes', () => {
+        it('puts one transport node between every pair of different cities', () => {
+            const nodes = buildMobileDayStripNodes(buildMobileDayPlanSegments(buildMobileDayPlan(trip)));
+
+            expect(nodes.map((node) => node.kind))
+                .toEqual(['segment', 'segment', 'segment', 'transfer', 'segment', 'segment']);
+
+            const transferNode = nodes[3];
+            expect(transferNode.kind === 'transfer' ? transferNode.transfer.item?.id : null).toBe('travel-a');
+            // Tapping it shows the city-day the leg lands in.
+            expect(transferNode.kind === 'transfer' ? transferNode.segmentIndex : null).toBe(3);
+        });
+
+        it('joins the days of one stay in that stay\'s colour and breaks at a move', () => {
+            const nodes = buildMobileDayStripNodes(buildMobileDayPlanSegments(buildMobileDayPlan(trip)));
+            const segmentNodes = nodes.filter((node) => node.kind === 'segment');
+
+            expect(segmentNodes.map((node) => (node.kind === 'segment' ? node.linkBefore.kind : null)))
+                .toEqual(['none', 'stay', 'stay', 'transfer', 'stay']);
+            expect(segmentNodes.map((node) => (node.kind === 'segment' ? node.linkAfter.kind : null)))
+                .toEqual(['stay', 'stay', 'transfer', 'stay', 'none']);
+            expect(segmentNodes[1].kind === 'segment' ? segmentNodes[1].linkBefore.colorHex : null)
+                .toBe('#4f46e5');
+        });
+
+        it('keeps a node for a leg that has no travel item yet', () => {
+            // A generated trip can hold two stays with nothing between them.
+            const noTravelItem = makeTrip([
+                item({ id: 'city-a', type: 'city', title: 'Lisbon', startDateOffset: 0, duration: 2 }),
+                item({ id: 'city-b', type: 'city', title: 'Porto', startDateOffset: 2, duration: 2 }),
+            ]);
+            const nodes = buildMobileDayStripNodes(buildMobileDayPlanSegments(buildMobileDayPlan(noTravelItem)));
             const transferNode = nodes.find((node) => node.kind === 'transfer');
 
             expect(transferNode?.kind).toBe('transfer');
-            expect(transferNode && transferNode.kind === 'transfer' ? transferNode.dayIndex : null).toBe(1);
-            expect(transferNode && transferNode.kind === 'transfer' ? transferNode.transfer.item?.id : null).toBe('travel-a');
+            expect(transferNode && transferNode.kind === 'transfer' ? transferNode.transfer.item : 'missing').toBeNull();
+            // The leg still knows which stays it joins, which is what lets the
+            // picker create the travel item.
+            expect(transferNode && transferNode.kind === 'transfer' ? transferNode.transfer.fromCityId : null)
+                .toBe('city-a');
+            expect(transferNode && transferNode.kind === 'transfer' ? transferNode.transfer.toCityId : null)
+                .toBe('city-b');
         });
 
-        it('emits day nodes only for a single-stay trip', () => {
+        it('emits one node per day for a single-stay trip', () => {
             const single = makeTrip([
                 item({ id: 'city-a', type: 'city', title: 'Lisbon', startDateOffset: 0, duration: 2 }),
             ]);
-            const nodes = buildMobileDayStripNodes(buildMobileDayPlan(single));
+            const nodes = buildMobileDayStripNodes(buildMobileDayPlanSegments(buildMobileDayPlan(single)));
 
-            expect(nodes.every((node) => node.kind === 'day')).toBe(true);
+            expect(nodes.every((node) => node.kind === 'segment')).toBe(true);
             expect(nodes).toHaveLength(2);
+        });
+
+        it('gives a day in three cities three circles and two transports', () => {
+            const twoMoves = makeTrip([
+                item({ id: 'city-a', type: 'city', title: 'Lisbon', startDateOffset: 0, duration: 1.2, color: '#16a34a' }),
+                item({ id: 'travel-a', type: 'travel', title: 'Train', startDateOffset: 1.2, duration: 0.1, transportMode: 'train' }),
+                item({ id: 'city-b', type: 'city', title: 'Coimbra', startDateOffset: 1.3, duration: 0.4, color: '#2563eb' }),
+                item({ id: 'travel-b', type: 'travel', title: 'Bus', startDateOffset: 1.7, duration: 0.1, transportMode: 'bus' }),
+                item({ id: 'city-c', type: 'city', title: 'Porto', startDateOffset: 1.8, duration: 1.2, color: '#db2777' }),
+            ]);
+            const nodes = buildMobileDayStripNodes(buildMobileDayPlanSegments(buildMobileDayPlan(twoMoves)));
+
+            // The day appears three times, once per city, with the two
+            // journeys between them.
+            expect(nodes.map((node) => node.kind))
+                .toEqual(['segment', 'segment', 'transfer', 'segment', 'transfer', 'segment', 'segment']);
+            expect(nodes.filter((node) => node.kind === 'transfer')
+                .map((node) => (node.kind === 'transfer' ? node.transfer.item?.id : null)))
+                .toEqual(['travel-a', 'travel-b']);
         });
     });
 });

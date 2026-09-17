@@ -13,6 +13,11 @@ interface TripViewPlannerWorkspaceProps {
     trip: ITrip;
     onSelectTimelineItem: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
     onUpdateTimelineItem?: (itemId: string, patch: Partial<ITimelineItem>) => void;
+    /** Writes a leg's transport, creating the travel item when it has none. */
+    onSetLegTransport?: (
+        leg: { fromCityId: string; toCityId: string; travelItemId: string | null },
+        mode: string,
+    ) => void;
     onAddTimelineActivity?: (dayOffset: number) => void;
     onOpenDiscover?: () => void;
     appLanguage?: string;
@@ -81,6 +86,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     trip,
     onSelectTimelineItem,
     onUpdateTimelineItem,
+    onSetLegTransport,
     onAddTimelineActivity,
     onOpenDiscover,
     appLanguage,
@@ -386,6 +392,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                         isPaywallLocked={isPaywallLocked}
                         appLanguage={appLanguage}
                         onUpdateItem={onUpdateTimelineItem}
+                        onSetLegTransport={onSetLegTransport}
                         onAddActivity={onAddTimelineActivity}
                         onOpenDiscover={onOpenDiscover}
                     />

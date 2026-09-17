@@ -4,8 +4,10 @@ import { CalendarDays, ChevronDown, ChevronUp, List, Sparkles } from 'lucide-rea
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
     buildMobileDayPlan,
-    doesMobileDayPlanDayContainItem,
-    findMobileDayPlanIndexForItem,
+    buildMobileDayPlanSegments,
+    doesMobileDayPlanSegmentContainItem,
+    findMobileDayPlanSegmentIndexForItem,
+    type MobileDayPlanTransfer,
 } from './mobileDayPlanModel';
 import { TripMobileDayPanel } from './TripMobileDayPanel';
 import { TripMobileDayStrip } from './TripMobileDayStrip';
@@ -70,6 +72,11 @@ interface TripMobilePlannerShellProps {
     appLanguage?: string;
     /** Absent when the trip is read-only, which hides the editing affordances. */
     onUpdateItem?: (itemId: string, patch: Partial<ITimelineItem>) => void;
+    /** Writes a leg's transport, creating the travel item when it has none. */
+    onSetLegTransport?: (
+        leg: { fromCityId: string; toCityId: string; travelItemId: string | null },
+        mode: string,
+    ) => void;
     onAddActivity?: (dayOffset: number) => void;
     onOpenDiscover?: () => void;
 }
@@ -86,6 +93,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
     isPaywallLocked,
     appLanguage,
     onUpdateItem,
+    onSetLegTransport,
     onAddActivity,
     onOpenDiscover,
 }) => {
@@ -93,23 +101,27 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
         () => buildMobileDayPlan(trip, { locale: appLanguage }),
         [appLanguage, trip],
     );
+    // The strip walks city-days, not days: a day the traveller moves on appears
+    // once in the city being left and once in the one being reached.
+    const segments = useMemo(() => buildMobileDayPlanSegments(days), [days]);
+
+    const canEditTransport = Boolean(onSetLegTransport);
 
     const [snap, setSnap] = useState<TripMobileSheetSnap>('half');
     const [panelMode, setPanelMode] = useState<'days' | 'timeline'>('days');
-    const [manualDayIndex, setManualDayIndex] = useState<number | null>(null);
+    const [manualSegmentIndex, setManualSegmentIndex] = useState<number | null>(null);
     const [containerHeight, setContainerHeight] = useState(0);
-    const [transportEditItem, setTransportEditItem] = useState<ITimelineItem | null>(null);
     const [dragHeightPx, setDragHeightPx] = useState<number | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const contentRef = useRef<HTMLDivElement | null>(null);
 
-    const todayIndex = useMemo(() => days.findIndex((day) => day.isToday), [days]);
-    const fallbackDayIndex = todayIndex >= 0 ? todayIndex : 0;
-    const activeDayIndex = Math.min(
-        Math.max(0, manualDayIndex ?? fallbackDayIndex),
-        Math.max(0, days.length - 1),
+    const todayIndex = useMemo(() => segments.findIndex((segment) => segment.isToday), [segments]);
+    const fallbackSegmentIndex = todayIndex >= 0 ? todayIndex : 0;
+    const activeSegmentIndex = Math.min(
+        Math.max(0, manualSegmentIndex ?? fallbackSegmentIndex),
+        Math.max(0, segments.length - 1),
     );
-    const activeDay = days[activeDayIndex] ?? null;
+    const activeSegment = segments[activeSegmentIndex] ?? null;
 
     // A selection made elsewhere — a map marker, the timeline — moves the panel
     // to the day holding it. A selection the shown day already contains must
@@ -118,10 +130,10 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
     // made every day need two taps.
     useEffect(() => {
         if (!selectedItemId) return;
-        if (activeDay && doesMobileDayPlanDayContainItem(activeDay, selectedItemId)) return;
-        const index = findMobileDayPlanIndexForItem(days, selectedItemId);
-        if (index >= 0) setManualDayIndex(index);
-    }, [activeDay, days, selectedItemId]);
+        if (activeSegment && doesMobileDayPlanSegmentContainItem(activeSegment, selectedItemId)) return;
+        const index = findMobileDayPlanSegmentIndexForItem(segments, selectedItemId);
+        if (index >= 0) setManualSegmentIndex(index);
+    }, [activeSegment, segments, selectedItemId]);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -139,9 +151,13 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
         const content = contentRef.current;
         if (!content || typeof content.scrollTo !== 'function') return;
         content.scrollTo({ top: 0 });
-    }, [activeDayIndex, panelMode]);
+    }, [activeSegmentIndex, panelMode]);
 
     const sheetHeight = dragHeightPx ?? resolveSnapHeightPx(snap, containerHeight);
+    // The leg the picker is open for, which is either a trip item or a leg that
+    // has none yet — the second case is why the picker carries the transfer
+    // rather than only an item id.
+    const [transportEditLeg, setTransportEditLeg] = useState<MobileDayPlanTransfer | null>(null);
 
     const applySnap = useCallback((next: TripMobileSheetSnap) => {
         setSnap((current) => {
@@ -196,22 +212,32 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
         applySnap(resolveNearestSnap(released, containerHeight));
     }, [applySnap, containerHeight, dragHeightPx]);
 
-    const handleSelectDay = useCallback((index: number) => {
-        const day = days[index];
-        setManualDayIndex(index);
-        if (!day) return;
-        trackEvent('trip_view__mobile_day--select', { trip_id: tripId, day_number: day.dayNumber });
-        // Selecting the day's stay pans the map through the existing selection
-        // pipeline instead of a second, parallel camera path.
-        if (day.city) {
-            onSelect(day.city.id, { isCity: true });
+    const handleSelectSegment = useCallback((index: number) => {
+        const segment = segments[index];
+        setManualSegmentIndex(index);
+        if (!segment) return;
+        trackEvent('trip_view__mobile_day--select', { trip_id: tripId, day_number: segment.dayNumber });
+        // Selecting the segment's stay pans the map through the existing
+        // selection pipeline instead of a second, parallel camera path.
+        if (segment.city) {
+            onSelect(segment.city.id, { isCity: true });
         }
-    }, [days, onSelect, tripId]);
+    }, [onSelect, segments, tripId]);
 
-    const handleSelectTransfer = useCallback((dayIndex: number, travelItemId: string | null) => {
-        setManualDayIndex(dayIndex);
-        if (travelItemId) onSelect(travelItemId);
-    }, [onSelect]);
+    // The strip's transport node is the editing affordance: tapping it opens the
+    // picker for that leg. Without editing rights it still selects the leg, so
+    // the map and the day panel follow it.
+    const handleSelectTransfer = useCallback((segmentIndex: number, transfer: MobileDayPlanTransfer) => {
+        setManualSegmentIndex(segmentIndex);
+        if (transfer.item) onSelect(transfer.item.id);
+        if (!canEditTransport) return;
+        trackEvent('trip_view__mobile_transport--open', {
+            trip_id: tripId,
+            mode: transfer.mode,
+            has_item: Boolean(transfer.item),
+        });
+        setTransportEditLeg(transfer);
+    }, [canEditTransport, onSelect, tripId]);
 
     return (
         <div
@@ -308,9 +334,9 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                 {panelMode === 'days' && (
                     <TripMobileDayStrip
                         tripId={tripId}
-                        days={days}
-                        activeDayIndex={activeDayIndex}
-                        onSelectDay={handleSelectDay}
+                        segments={segments}
+                        activeSegmentIndex={activeSegmentIndex}
+                        onSelectSegment={handleSelectSegment}
                         onSelectTransfer={handleSelectTransfer}
                     />
                 )}
@@ -328,13 +354,13 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                 >
                     {panelMode === 'timeline' ? (
                         <div className="relative h-full w-full">{timelineCanvas}</div>
-                    ) : activeDay ? (
+                    ) : activeSegment ? (
                         <TripMobileDayPanel
                             tripId={tripId}
-                            day={activeDay}
+                            segment={activeSegment}
                             selectedItemId={selectedItemId}
                             onSelect={onSelect}
-                            onEditTransport={onUpdateItem ? setTransportEditItem : undefined}
+                            onEditTransport={canEditTransport ? setTransportEditLeg : undefined}
                             onAddActivity={onAddActivity}
                         />
                     ) : (
@@ -343,14 +369,12 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                 </div>
             </section>
 
-            {onUpdateItem && (
+            {onSetLegTransport && (
                 <TripMobileTransportModal
                     tripId={tripId}
-                    travelItem={transportEditItem}
-                    fromCityTitle={activeDay?.legs.find((leg) => leg.item?.id === transportEditItem?.id)?.fromCityTitle}
-                    toCityTitle={activeDay?.legs.find((leg) => leg.item?.id === transportEditItem?.id)?.toCityTitle}
-                    onClose={() => setTransportEditItem(null)}
-                    onUpdateItem={onUpdateItem}
+                    leg={transportEditLeg}
+                    onClose={() => setTransportEditLeg(null)}
+                    onSetLegTransport={onSetLegTransport}
                 />
             )}
         </div>

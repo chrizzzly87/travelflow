@@ -137,9 +137,10 @@ const GOOGLE_TRIP_MAP_TUNING: TripMapProviderTuning = {
     },
   },
   selection: {
-    activityFocusZoom: 13,
-    // Close enough to read the city itself rather than the region around it.
-    cityFocusZoom: 12,
+    activityFocusZoom: 15.4,
+    // Street level: a selected city should land on the place itself, not on the
+    // region around it, so the map answers "where am I today" at a glance.
+    cityFocusZoom: 14,
     queryFocusZoom: 5,
     safeInsetRatio: 0.28,
     floatingSafeInsetRatio: 0.24,
@@ -240,8 +241,8 @@ const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
     },
   },
   selection: {
-    activityFocusZoom: 12.6,
-    cityFocusZoom: 11.8,
+    activityFocusZoom: 15.2,
+    cityFocusZoom: 13.8,
     queryFocusZoom: 4.7,
     safeInsetRatio: 0.24,
     floatingSafeInsetRatio: 0.16,
