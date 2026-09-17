@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarPlus, RotateCcw, Sparkles, Trash2, X } from 'lucide-react';
+import { RotateCcw, Sparkles, Trash2, X } from 'lucide-react';
 
 import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import { RecommendationSwipeDeck, type SwipeDecision } from './RecommendationSwipeDeck';
-import { RecommendationMiniCard } from './RecommendationMiniCard';
+import { RecommendationPoolList } from './RecommendationPoolList';
 import { RecommendationDetailDialog } from './RecommendationDetailDialog';
+import { RecommendationDetailActions } from './RecommendationDetailActions';
 import { buildRecommendationDeck, loadRecommendationDataset } from '../../services/recommendationsService';
 import {
     mergeRecommendationState,
@@ -295,117 +296,61 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
                 )}
 
                 {tab === 'saved' && (
-                    <div data-testid="recommendation-saved-list" className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-                        {savedCount === 0 ? (
-                            <p className="py-10 text-center text-sm text-slate-500">
-                                Nothing kept yet. Swipe right on an idea to park it here.
-                            </p>
-                        ) : (
-                            <ul className="flex flex-col gap-2">
-                                {savedCards.map((recommendation) => (
-                                    <li key={recommendation.id}>
-                                        <RecommendationMiniCard
-                                            recommendation={recommendation}
-                                            onOpen={() => setOpenDetailId(recommendation.id)}
-                                            action={(
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeSaved(recommendation.id)}
-                                                    className="inline-flex size-8 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-rose-600"
-                                                    aria-label={`Remove ${recommendation.title}`}
-                                                >
-                                                    <Trash2 size={15} />
-                                                </button>
-                                            )}
-                                        />
-                                    </li>
-                                ))}
-                            </ul>
+                    <RecommendationPoolList
+                        testId="recommendation-saved-list"
+                        recommendations={savedCards}
+                        emptyMessage="Nothing kept yet. Swipe right on an idea to park it here."
+                        onOpen={setOpenDetailId}
+                        renderAction={(recommendation) => (
+                            <button
+                                type="button"
+                                onClick={() => removeSaved(recommendation.id)}
+                                className="inline-flex size-8 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-rose-600"
+                                aria-label={`Remove ${recommendation.title}`}
+                            >
+                                <Trash2 size={15} />
+                            </button>
                         )}
-                    </div>
+                    />
                 )}
 
                 {tab === 'skipped' && (
-                    <div data-testid="recommendation-skipped-list" className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-                        {skippedCards.length === 0 ? (
-                            <p className="py-10 text-center text-sm text-slate-500">
-                                {skippedCount === 0
-                                    ? 'Nothing skipped yet. Swipe left on an idea to move it here.'
-                                    : 'These ideas are no longer in the library.'}
-                            </p>
-                        ) : (
-                            <ul className="flex flex-col gap-2">
-                                {skippedCards.map((recommendation) => (
-                                    <li key={recommendation.id}>
-                                        <RecommendationMiniCard
-                                            recommendation={recommendation}
-                                            onOpen={() => setOpenDetailId(recommendation.id)}
-                                            action={(
-                                                <button
-                                                    type="button"
-                                                    onClick={() => restoreSkipped(recommendation.id)}
-                                                    data-testid="recommendation-restore"
-                                                    className="inline-flex size-8 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-accent-600"
-                                                    aria-label={`Put ${recommendation.title} back in the deck`}
-                                                >
-                                                    <RotateCcw size={15} />
-                                                </button>
-                                            )}
-                                        />
-                                    </li>
-                                ))}
-                            </ul>
+                    <RecommendationPoolList
+                        testId="recommendation-skipped-list"
+                        recommendations={skippedCards}
+                        emptyMessage={skippedCount === 0
+                            ? 'Nothing skipped yet. Swipe left on an idea to move it here.'
+                            : 'These ideas are no longer in the library.'}
+                        onOpen={setOpenDetailId}
+                        renderAction={(recommendation) => (
+                            <button
+                                type="button"
+                                onClick={() => restoreSkipped(recommendation.id)}
+                                data-testid="recommendation-restore"
+                                className="inline-flex size-8 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-accent-600"
+                                aria-label={`Put ${recommendation.title} back in the deck`}
+                            >
+                                <RotateCcw size={15} />
+                            </button>
                         )}
-                    </div>
+                    />
                 )}
 
                 <RecommendationDetailDialog
                     recommendation={openDetail}
                     tripId={trip.id}
                     onClose={() => { setOpenDetailId(null); setAssigningId(null); }}
-                    actions={openDetail && openDetailSaved ? (
-                        canEdit && (
-                            assigningId === openDetailSaved.recommendationId ? (
-                                <div className="flex flex-wrap gap-1.5">
-                                    {days.map((day) => (
-                                        <button
-                                            key={day.dayOffset}
-                                            type="button"
-                                            onClick={() => assignToDay(openDetailSaved, day)}
-                                            className="inline-flex min-h-9 items-center rounded-lg border border-slate-200 px-2.5 text-xs font-semibold text-slate-700 transition-colors hover:border-accent-300 hover:text-accent-700"
-                                        >
-                                            {day.weekdayLabel} {day.dayOfMonthLabel}
-                                        </button>
-                                    ))}
-                                    <button
-                                        type="button"
-                                        onClick={() => setAssigningId(null)}
-                                        className="inline-flex min-h-9 items-center rounded-lg px-2.5 text-xs font-semibold text-slate-500"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={() => setAssigningId(openDetailSaved.recommendationId)}
-                                    data-testid="recommendation-assign"
-                                    className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-accent-200 bg-accent-50 px-3 text-sm font-semibold text-accent-700 transition-colors hover:bg-accent-100"
-                                >
-                                    <CalendarPlus size={15} />
-                                    Add to a day
-                                </button>
-                            )
-                        )
-                    ) : openDetail ? (
-                        <button
-                            type="button"
-                            onClick={() => restoreSkipped(openDetail.id)}
-                            className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-                        >
-                            <RotateCcw size={15} />
-                            Put back in the deck
-                        </button>
+                    actions={openDetail ? (
+                        <RecommendationDetailActions
+                            saved={openDetailSaved}
+                            canEdit={canEdit}
+                            days={days}
+                            isAssigning={assigningId === openDetailSaved?.recommendationId}
+                            onStartAssigning={() => setAssigningId(openDetail.id)}
+                            onCancelAssigning={() => setAssigningId(null)}
+                            onAssignToDay={assignToDay}
+                            onRestore={() => restoreSkipped(openDetail.id)}
+                        />
                     ) : undefined}
                 />
             </DialogContent>
