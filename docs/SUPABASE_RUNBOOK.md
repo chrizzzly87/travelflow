@@ -178,13 +178,20 @@ initdb -D /tmp/pgdata -U postgres --auth=trust
 LC_ALL=C pg_ctl -D /tmp/pgdata -o "-p 55432 -h 127.0.0.1" -l /tmp/pg.log start
 psql -h 127.0.0.1 -p 55432 -U postgres -c "create role anon; create role authenticated; create role service_role;"
 psql -h 127.0.0.1 -p 55432 -U postgres -f supabase/tests/_trip_agent_stub_schema.sql
-psql -h 127.0.0.1 -p 55432 -U postgres -f supabase/migrations/<migration>.sql
-psql -h 127.0.0.1 -p 55432 -U postgres -f supabase/tests/<migration>.verify.sql
+psql -h 127.0.0.1 -p 55432 -U postgres -v ON_ERROR_STOP=1 -f supabase/migrations/<migration>.sql
+psql -h 127.0.0.1 -p 55432 -U postgres -v ON_ERROR_STOP=1 -f supabase/tests/<migration>.verify.sql
 pg_ctl -D /tmp/pgdata stop -m fast
 ```
 
 `LC_ALL=C` is required on macOS, where the server otherwise refuses to start
 ("Postmaster became multithreaded during startup").
+
+**A `.verify.sql` is for a throwaway database only.** These scripts insert
+fixture rows, and a fixture with `status = 'published'` in a table the app reads
+is live data. On 2026-09-17 the recommendations verify script reached the real
+project and put a place called "Renamed" into the Ideas deck. Verify scripts now
+refuse to run where an `auth` schema exists and delete their own fixtures, but
+treat the rule as the protection and the guard as the backstop.
 
 Two things make an RLS check mean something, and both are easy to skip: run it
 inside a transaction (`set local role` outside one is silently ignored) and as a
@@ -195,14 +202,19 @@ passes for the wrong reason.
 
 | Migration | What it adds | Applied |
 |---|---|---|
-| `20260917090000_recommendations_library.sql` | `public.recommendations` — the place-idea library behind the trip Ideas deck, with a published-only read policy for `anon` and `authenticated`. Verified against a throwaway Postgres by `supabase/tests/20260917090000_recommendations_library.verify.sql`. | **No** |
+| `20260917090000_recommendations_library.sql` | `public.recommendations` — the place-idea library behind the trip Ideas deck, with a published-only read policy for `anon` and `authenticated`. Verified against a throwaway Postgres by `supabase/tests/20260917090000_recommendations_library.verify.sql`. | **Yes**, 2026-09-17, and Taiwan seeded with 84 published rows |
 
-Until it is applied, `/api/recommendations` returns 502 and the deck falls back
-to the dataset bundled in the repo, which is the behaviour shipped today —
-nothing breaks, and nothing an editor writes becomes visible. After applying it,
+Where an unapplied recommendations migration leaves things: `/api/recommendations`
+returns 502 and the deck falls back to the dataset bundled in the repo, so
+nothing breaks and nothing an editor writes becomes visible. After applying it,
 seed a country with **Import bundled** at `/admin/recommendations` or with
 `scripts/sync-recommendations-to-supabase.ts`, then publish. The full procedure
 is in `docs/RECOMMENDATIONS_CONTENT_RUNBOOK.md`.
+
+Note the asymmetry that makes seeding part of "applied": an **empty** published
+list is a real answer and does **not** fall back, because falling back would
+show ideas an editor deliberately unpublished. So a migration applied without a
+seed gives an empty deck, not the bundled one.
 
 ## Data Model (Current)
 

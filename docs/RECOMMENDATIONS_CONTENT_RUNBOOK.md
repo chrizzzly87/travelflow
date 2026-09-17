@@ -11,11 +11,18 @@ the rows live, how to maintain them, and how to seed a new country.
 - The repo file `data/recommendations/tw.json` is now a **seed and a fallback**,
   not the source of truth.
 - **The migration is not applied by a deploy.** Apply it by hand once, then seed.
+- Taiwan is live: the migration was applied on 2026-09-17 and the 84 entries are
+  seeded and published. The steps below are for the next country.
 
 ## First-time setup
 
 1. Apply `supabase/migrations/20260917090000_recommendations_library.sql`
    following `docs/SUPABASE_RUNBOOK.md`. Nothing works before this.
+
+   Apply the **migration** only. `supabase/tests/*.verify.sql` is for a
+   throwaway database: it seeds fixtures, one of them published, which against
+   the real project become live recommendations. It now refuses to run where an
+   `auth` schema exists, because that is exactly what happened once.
 2. Seed a country, either way round:
    - In the admin: open `/admin/recommendations`, pick the country, press
      **Import bundled**. Rows arrive with the status the dataset carries

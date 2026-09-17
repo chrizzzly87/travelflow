@@ -1,13 +1,38 @@
--- Behaviour checks for migration 20260917090000, runnable against a throwaway
--- Postgres:
+-- Behaviour checks for migration 20260917090000.
+--
+-- !! THROWAWAY POSTGRES ONLY. NEVER RUN THIS AGAINST THE SUPABASE PROJECT. !!
+--
+-- It inserts fixture rows, and one of them is `published` — which means that
+-- against the real project it would put a place called "Renamed" into every
+-- traveller's Ideas deck. It happened once, on 2026-09-17. The script now
+-- refuses to run outside a throwaway and deletes its own fixtures at the end,
+-- but the header is the first line of defence.
+--
+-- Runnable against a throwaway Postgres:
 --
 --   initdb -D /tmp/pgdata-rec -U postgres --auth=trust
 --   LC_ALL=C pg_ctl -D /tmp/pgdata-rec -o "-p 55433 -h 127.0.0.1" start
 --   psql -h 127.0.0.1 -p 55433 -U postgres -c "create role anon; create role authenticated; create role service_role;"
---   psql -h 127.0.0.1 -p 55433 -U postgres -f supabase/migrations/20260917090000_recommendations_library.sql
---   psql -h 127.0.0.1 -p 55433 -U postgres -f supabase/tests/20260917090000_recommendations_library.verify.sql
+--   psql -h 127.0.0.1 -p 55433 -U postgres -v ON_ERROR_STOP=1 \
+--     -f supabase/migrations/20260917090000_recommendations_library.sql
+--   psql -h 127.0.0.1 -p 55433 -U postgres -v ON_ERROR_STOP=1 \
+--     -f supabase/tests/20260917090000_recommendations_library.verify.sql
+--
+-- `ON_ERROR_STOP=1` matters: without it psql prints the guard's error and then
+-- carries on running the rest of the file.
 --
 -- Every `result` below must match the expectation in its case label.
+
+-- Refuse to run anywhere that looks like the real project. Supabase always has
+-- the `auth` schema; a bare throwaway created by the recipe above does not.
+do $$
+begin
+  if exists (select 1 from information_schema.schemata where schema_name = 'auth') then
+    raise exception
+      'REFUSING TO RUN: this database has an auth schema, so it looks like the real Supabase project. These fixtures would become live recommendations.';
+  end if;
+end;
+$$;
 
 insert into public.recommendations (id, slug, country_code, title, status)
 values ('rec_tw_a', 'a', 'TW', 'Published place', 'published');
@@ -83,3 +108,11 @@ select 'anon cannot see the draft (expect 0)' as case,
        count(*)::text as result
   from public.recommendations where id = 'rec_tw_b';
 commit;
+
+-- Leave nothing behind. A verification script that seeds rows and walks away is
+-- one copy-paste from being live data.
+delete from public.recommendations where id in ('rec_tw_a', 'rec_tw_b', 'rec_jp_a', 'rec_tw_lat', 'rec_tw_dupe', 'rec_tw_bad');
+
+select 'fixtures cleaned up (expect 0)' as case,
+       count(*)::text as result
+  from public.recommendations;
