@@ -76,6 +76,7 @@ export const PREVIEW_CACHE_QUERY_PARAMS = [
   "w",
   "h",
   "scale",
+  "zoom",
   "mr",
 ] as const;
 

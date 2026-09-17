@@ -471,6 +471,7 @@ const buildMapboxStaticPreviewUrl = async ({
   width,
   height,
   scale,
+  zoom,
   mapboxToken,
   googleApiKey,
 }: {
@@ -486,6 +487,7 @@ const buildMapboxStaticPreviewUrl = async ({
   width: number;
   height: number;
   scale: number;
+  zoom: number | null;
   mapboxToken: string;
   googleApiKey: string;
 }): Promise<string> => {
@@ -517,8 +519,14 @@ const buildMapboxStaticPreviewUrl = async ({
     overlaySegment = encodeOverlays([...straightOverlays, ...markerOverlays]);
   }
   const scaleSuffix = scale === 2 ? "@2x" : "";
-  const url = new URL(`https://api.mapbox.com/styles/v1/${styleDescriptor.owner}/${styleDescriptor.styleId}/static/${overlaySegment}/auto/${width}x${height}${scaleSuffix}`);
-  url.searchParams.set("padding", "32,32,32,32");
+  // `auto` fits the overlays, which for a single pin means the tightest frame
+  // Mapbox can draw — a rooftop with no surroundings. An explicit camera is
+  // what lets one place be shown in its neighbourhood.
+  const camera = zoom !== null && coords.length === 1
+    ? `${coords[0].lng.toFixed(6)},${coords[0].lat.toFixed(6)},${zoom},0`
+    : "auto";
+  const url = new URL(`https://api.mapbox.com/styles/v1/${styleDescriptor.owner}/${styleDescriptor.styleId}/static/${overlaySegment}/${camera}/${width}x${height}${scaleSuffix}`);
+  if (camera === "auto") url.searchParams.set("padding", "32,32,32,32");
   url.searchParams.set("access_token", mapboxToken);
   return url.toString();
 };
@@ -584,6 +592,10 @@ export default async (request: Request, context?: { ip?: string }) => {
   const w = clampInt(Number.parseInt(url.searchParams.get("w") || "680", 10), 240, 1280);
   const h = clampInt(Number.parseInt(url.searchParams.get("h") || "288", 10), 160, 960);
   const scale = clampInt(Number.parseInt(url.searchParams.get("scale") || "2", 10), 1, 2);
+  const zoomParam = url.searchParams.get("zoom");
+  const zoom = zoomParam === null || zoomParam.trim() === ""
+    ? null
+    : clampInt(Number.parseInt(zoomParam, 10), 1, 20);
   const requestedStyle = parseStyle(url.searchParams.get("style"));
   const style = getEffectiveStaticMapStyle(requestedStyle);
   const colorMode = parseColorMode(url.searchParams.get("colorMode"));
@@ -620,6 +632,7 @@ export default async (request: Request, context?: { ip?: string }) => {
       width: w,
       height: h,
       scale,
+      zoom,
       mapboxToken,
       googleApiKey,
     });
@@ -641,6 +654,10 @@ export default async (request: Request, context?: { ip?: string }) => {
   params.set("size", `${w}x${h}`);
   params.set("scale", String(scale));
   params.set("maptype", getMapType(style));
+  if (zoom !== null && coords.length === 1) {
+    params.set("zoom", String(zoom));
+    params.set("center", formatCoord(coords[0]));
+  }
   if (mapLanguage) {
     params.set("language", mapLanguage);
   }

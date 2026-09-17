@@ -47,6 +47,14 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'localStorage',
     },
     {
+      name: 'tf_trip_recommendations_v1',
+      purpose: 'Remembers which trip ideas you kept or skipped so they survive a reload.',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+      notes: 'Needed for shared and example trips, which cannot be written back to an account.',
+    },
+    {
       name: 'sb-*-auth-token',
       purpose: 'Supabase auth session token for signed-in users.',
       duration: 'Session lifecycle (rotating)',

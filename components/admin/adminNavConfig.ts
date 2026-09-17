@@ -7,7 +7,7 @@ export interface AdminNavItem {
 }
 
 export type AdminNavSectionId = 'workspace' | 'operations' | 'tools';
-export type AdminNavItemIconKey = 'settings' | 'overview' | 'users' | 'trips' | 'tiers' | 'billing' | 'audit' | 'legal' | 'benchmark' | 'telemetry' | 'og_tools' | 'design_system' | 'airports' | 'destinations';
+export type AdminNavItemIconKey = 'settings' | 'overview' | 'users' | 'trips' | 'tiers' | 'billing' | 'audit' | 'legal' | 'benchmark' | 'telemetry' | 'og_tools' | 'design_system' | 'airports' | 'destinations' | 'recommendations';
 
 export interface AdminNavSection {
     id: AdminNavSectionId;
@@ -49,6 +49,13 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
         path: '/admin/destinations',
         section: 'operations',
         icon: 'destinations',
+    },
+    {
+        id: 'recommendations',
+        label: 'Recommendations',
+        path: '/admin/recommendations',
+        section: 'operations',
+        icon: 'recommendations',
     },
     {
         id: 'tiers',

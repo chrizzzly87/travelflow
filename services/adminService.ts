@@ -19,6 +19,8 @@ import { dbGetAccessToken, ensureExistingDbSession } from './dbService';
 import { normalizeProfileCountryCode } from './profileCountryService';
 import { isSimulatedLoggedIn } from './simulatedLoginService';
 import { supabase } from './supabaseClient';
+import type { RecommendationRow } from '../shared/recommendationRows';
+import type { RecommendationStatus } from '../shared/recommendations';
 
 type AdminTripGenerationState = 'failed' | 'running' | 'queued' | 'succeeded';
 
@@ -1307,6 +1309,12 @@ const resolveInternalApiDevMessages = (path: string): { notFound: string; proxyF
             proxyFailure: 'Vite could not reach Netlify dev for admin destination requests. Start `pnpm dev:netlify` before testing destination editing.',
         };
     }
+    if (path.startsWith('/api/internal/admin/recommendations')) {
+        return {
+            notFound: 'Admin recommendation routes are unavailable in Vite-only dev. Run `pnpm dev:netlify` alongside `pnpm dev` to browse and edit the idea library.',
+            proxyFailure: 'Vite could not reach Netlify dev for admin recommendation requests. Start `pnpm dev:netlify` before testing the idea library.',
+        };
+    }
     return null;
 };
 
@@ -1818,4 +1826,88 @@ export const adminDeleteDestinationOverride = async (
         targetKind,
         targetId,
     });
+};
+
+
+// ---------------------------------------------------------------------------
+// Recommendations library
+// ---------------------------------------------------------------------------
+
+/**
+ * A row exactly as the table stores it, plus the timestamps the list sorts by.
+ * The admin edits rows rather than the app's camelCase shape, so that what is
+ * saved is visibly the same thing that is stored.
+ */
+export interface AdminRecommendationRow extends RecommendationRow {
+    created_at?: string | null;
+    updated_at?: string | null;
+}
+
+export interface AdminRecommendationCatalog {
+    rows: AdminRecommendationRow[];
+    countries: string[];
+}
+
+export const adminGetRecommendationCatalog = async (
+    countryCode?: string,
+): Promise<AdminRecommendationCatalog> => {
+    const query = countryCode ? `?country=${encodeURIComponent(countryCode)}` : '';
+    const payload = await callAdminInternalApiGet<Record<string, unknown>>(
+        `/api/internal/admin/recommendations${query}`,
+    );
+    return {
+        rows: Array.isArray(payload.rows) ? payload.rows as AdminRecommendationRow[] : [],
+        countries: Array.isArray(payload.countries) ? payload.countries as string[] : [],
+    };
+};
+
+export const adminSaveRecommendation = async (
+    recommendation: Record<string, unknown>,
+): Promise<AdminRecommendationRow> => {
+    const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/recommendations', {
+        action: 'save',
+        recommendation,
+    });
+    if (!payload.recommendation || typeof payload.recommendation !== 'object') {
+        throw new Error('The saved recommendation was not returned.');
+    }
+    return payload.recommendation as AdminRecommendationRow;
+};
+
+export const adminSetRecommendationStatus = async (
+    id: string,
+    status: RecommendationStatus,
+): Promise<AdminRecommendationRow> => {
+    const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/recommendations', {
+        action: 'setStatus',
+        id,
+        status,
+    });
+    if (!payload.recommendation || typeof payload.recommendation !== 'object') {
+        throw new Error('The updated recommendation was not returned.');
+    }
+    return payload.recommendation as AdminRecommendationRow;
+};
+
+export const adminDeleteRecommendation = async (id: string): Promise<void> => {
+    await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/recommendations', {
+        action: 'delete',
+        id,
+    });
+};
+
+/** Seeds a country from the bundled dataset, in chunks the gateway accepts. */
+export const adminImportRecommendations = async (
+    recommendations: Record<string, unknown>[],
+): Promise<number> => {
+    let imported = 0;
+    const CHUNK = 200;
+    for (let index = 0; index < recommendations.length; index += CHUNK) {
+        const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/recommendations', {
+            action: 'import',
+            recommendations: recommendations.slice(index, index + CHUNK),
+        });
+        imported += typeof payload.imported === 'number' ? payload.imported : 0;
+    }
+    return imported;
 };

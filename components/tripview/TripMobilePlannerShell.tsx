@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarDays, ChevronDown, ChevronUp, List } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronUp, List, Sparkles } from 'lucide-react';
 
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
@@ -78,6 +78,7 @@ interface TripMobilePlannerShellProps {
         mode: string,
     ) => void;
     onAddActivity?: (dayOffset: number) => void;
+    onOpenDiscover?: () => void;
 }
 
 export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
@@ -94,6 +95,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
     onUpdateItem,
     onSetLegTransport,
     onAddActivity,
+    onOpenDiscover,
 }) => {
     const days = useMemo(
         () => buildMobileDayPlan(trip, { locale: appLanguage }),
@@ -175,6 +177,10 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
     const dragRef = useRef<{ pointerId: number; startY: number; startHeight: number; moved: boolean } | null>(null);
     const handleDragStart = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
         if (event.button !== undefined && event.button !== 0) return;
+        // Capturing the pointer retargets the following pointerup, so the click
+        // never reaches the control the gesture started on. The header carries
+        // the Ideas button and the view toggles, and none of them fired.
+        if ((event.target as Element | null)?.closest?.('button, a, input, [role="button"]')) return;
         dragRef.current = {
             pointerId: event.pointerId,
             startY: event.clientY,
@@ -298,6 +304,18 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                                 <List size={15} />
                             </button>
                         </div>
+                        {onOpenDiscover && (
+                            <button
+                                type="button"
+                                onClick={onOpenDiscover}
+                                data-testid="mobile-open-discover"
+                                className="ms-auto me-1 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 text-xs font-semibold text-accent-700 transition-colors hover:bg-accent-100"
+                                {...getAnalyticsDebugAttributes('trip_view__recommendations--open', { trip_id: tripId })}
+                            >
+                                <Sparkles size={14} />
+                                Ideas
+                            </button>
+                        )}
                         <button
                             type="button"
                             onClick={toggleSheet}
