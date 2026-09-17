@@ -1,3 +1,5 @@
+import { buildFlightPreviewCurvePath } from "../../shared/flightRouteCurve.ts";
+import { normalizeTransportMode } from "../../shared/transportModes.ts";
 import { APP_DEFAULT_DESCRIPTION } from "../../config/appGlobals.ts";
 import {
   MAP_RUNTIME_CACHE_KEY_QUERY_PARAM,
@@ -856,9 +858,18 @@ const buildRealisticPathParams = async (
     const toCoord = toCity.coordinates;
     if (!fromCoord || !toCoord) continue;
 
+    const travelItem = findTravelBetweenCities(items, fromCity, toCity);
+
+    // Directions have no route for a flight, so the leg used to degrade to a
+    // straight line. Draw the same arc the planner map draws.
+    if (normalizeTransportMode(travelItem?.transportMode) === "plane") {
+      const curve = encodePolyline(buildFlightPreviewCurvePath(fromCoord, toCoord));
+      pathParams.push(`path=${encodeURIComponent(`color:0x${color}|weight:${weight}|enc:${curve}`)}`);
+      continue;
+    }
+
     let encodedPolyline: string | null = null;
     if (directionsCalls < MAX_REALISTIC_DIRECTION_LEGS) {
-      const travelItem = findTravelBetweenCities(items, fromCity, toCity);
       encodedPolyline = await fetchDirectionsPolyline(
         fromCoord,
         toCoord,
@@ -900,9 +911,17 @@ const buildMapboxRealisticPathOverlays = async (
     const toCoord = toCity.coordinates;
     if (!fromCoord || !toCoord) continue;
 
+    const travelItem = findTravelBetweenCities(items, fromCity, toCity);
+
+    if (normalizeTransportMode(travelItem?.transportMode) === "plane") {
+      overlays.push(
+        buildMapboxPathOverlay(encodePolyline(buildFlightPreviewCurvePath(fromCoord, toCoord)), color, weight),
+      );
+      continue;
+    }
+
     let encodedPolyline: string | null = null;
     if (directionsCalls < MAX_REALISTIC_DIRECTION_LEGS) {
-      const travelItem = findTravelBetweenCities(items, fromCity, toCity);
       encodedPolyline = await fetchDirectionsPolyline(
         fromCoord,
         toCoord,

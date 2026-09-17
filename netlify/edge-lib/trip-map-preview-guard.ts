@@ -65,6 +65,7 @@ export const PREVIEW_CACHE_QUERY_PARAMS = [
   "coords",
   "style",
   "routeMode",
+  "legModes",
   "colorMode",
   "pathColor",
   "legColors",

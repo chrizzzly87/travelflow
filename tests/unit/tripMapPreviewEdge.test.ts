@@ -131,6 +131,73 @@ describe('trip-map-preview edge function hardening', () => {
     });
   });
 
+  describe('flight legs', () => {
+    it('draws a curved arc for a plane leg instead of a straight line', async () => {
+      const fetchMock = vi.fn(async () => new Response('{}', { status: 500 }));
+      vi.stubGlobal('fetch', fetchMock);
+
+      const straight = await callPreview('coords=-12.046,-77.043|-13.532,-71.967&routeMode=realistic');
+      const flight = await callPreview(
+        'coords=-12.046,-77.043|-13.532,-71.967&routeMode=realistic&legModes=plane',
+      );
+
+      const straightLocation = decodeURIComponent(straight.headers.get('Location') || '');
+      const flightLocation = decodeURIComponent(flight.headers.get('Location') || '');
+
+      expect(flight.status).toBe(302);
+      expect(flightLocation).toContain('path=color:');
+      expect(flightLocation).toContain('|enc:');
+      expect(flightLocation).not.toBe(straightLocation);
+    });
+
+    it('does not spend a Directions call on a plane leg (regression: flights fell back to straight lines)', async () => {
+      const fetchMock = vi.fn(async () => new Response('{}', { status: 500 }));
+      vi.stubGlobal('fetch', fetchMock);
+
+      await callPreview('coords=-12.046,-77.043|-13.532,-71.967&routeMode=realistic&legModes=plane');
+
+      const directionsCalls = fetchMock.mock.calls.filter(([input]) =>
+        String(input).includes('/maps/api/directions'));
+      expect(directionsCalls.length).toBe(0);
+    });
+
+    it('still routes non-plane legs while curving the plane leg', async () => {
+      const fetchMock = vi.fn(async () => new Response('{}', { status: 500 }));
+      vi.stubGlobal('fetch', fetchMock);
+
+      await callPreview(
+        'coords=-12.046,-77.043|-13.532,-71.967|-13.163,-72.545&routeMode=realistic&legModes=plane|car',
+      );
+
+      const directionsCalls = fetchMock.mock.calls.filter(([input]) =>
+        String(input).includes('/maps/api/directions'));
+      expect(directionsCalls.length).toBe(1);
+    });
+
+    it('curves plane legs on the Mapbox branch too', async () => {
+      const edgeEnv: Record<string, string> = {
+        VITE_GOOGLE_MAPS_API_KEY: '',
+        VITE_MAPBOX_ACCESS_TOKEN: 'test-mapbox-token',
+        VITE_MAP_RUNTIME_PRESET: 'mapbox_all',
+      };
+      vi.stubGlobal('Deno', { env: { get: (name: string) => edgeEnv[name] } });
+      const fetchMock = vi.fn(async () => new Response('{}', { status: 500 }));
+      vi.stubGlobal('fetch', fetchMock);
+
+      const straight = await callPreview('coords=-12.046,-77.043|-13.532,-71.967&routeMode=realistic');
+      fetchMock.mockClear();
+      const flight = await callPreview(
+        'coords=-12.046,-77.043|-13.532,-71.967&routeMode=realistic&legModes=plane',
+      );
+
+      expect(flight.status).toBe(302);
+      expect(decodeURIComponent(flight.headers.get('Location') || '')).toContain('path-4+');
+      expect(flight.headers.get('Location')).not.toBe(straight.headers.get('Location'));
+      expect(fetchMock.mock.calls.filter(([input]) =>
+        String(input).includes('api.mapbox.com/directions')).length).toBe(0);
+    });
+  });
+
   describe('mapbox realistic routes', () => {
     const MAPBOX_DIRECTIONS_POLYLINE = 'yxk|Fyi~uOtCaB';
 
