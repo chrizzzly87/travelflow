@@ -505,6 +505,15 @@
     "addActivity": {
       "aiError": "Не удалось загрузить идеи занятий. Попробуйте ещё раз.",
       "aiRetry": "Повторить"
+    },
+    "mapLinks": {
+      "google": "Google Карты",
+      "apple": "Apple Карты",
+      "heading": "Открыть в картах",
+      "approximate": "Приблизительное положение",
+      "openDetails": "Открыть детали",
+      "close": "Закрыть",
+      "popupLabel": "Детали активности"
     }
   },
   "tripRouteShell": {

@@ -505,6 +505,15 @@
     "addActivity": {
       "aiError": "활동 아이디어를 불러오지 못했습니다. 다시 시도해 주세요.",
       "aiRetry": "다시 시도"
+    },
+    "mapLinks": {
+      "google": "Google 지도",
+      "apple": "Apple 지도",
+      "heading": "지도에서 열기",
+      "approximate": "대략적인 위치",
+      "openDetails": "세부정보 열기",
+      "close": "닫기",
+      "popupLabel": "액티비티 세부정보"
     }
   },
   "tripRouteShell": {

@@ -505,6 +505,15 @@
     "addActivity": {
       "aiError": "We couldn't load activity ideas. Please try again.",
       "aiRetry": "Try again"
+    },
+    "mapLinks": {
+      "google": "Google Maps",
+      "apple": "Apple Maps",
+      "heading": "Open in maps",
+      "approximate": "Approximate position",
+      "openDetails": "Open details",
+      "close": "Close",
+      "popupLabel": "Activity details"
     }
   },
   "tripRouteShell": {

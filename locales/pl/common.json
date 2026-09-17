@@ -503,6 +503,15 @@
     "addActivity": {
       "aiError": "Nie udało się wczytać pomysłów na aktywności. Spróbuj ponownie.",
       "aiRetry": "Spróbuj ponownie"
+    },
+    "mapLinks": {
+      "google": "Mapy Google",
+      "apple": "Mapy Apple",
+      "heading": "Otwórz w mapach",
+      "approximate": "Przybliżona pozycja",
+      "openDetails": "Otwórz szczegóły",
+      "close": "Zamknij",
+      "popupLabel": "Szczegóły aktywności"
     }
   },
   "tripRouteShell": {
