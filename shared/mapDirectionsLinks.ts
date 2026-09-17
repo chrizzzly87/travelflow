@@ -1,4 +1,5 @@
 import type { ICoordinates } from '../types';
+import { composePlaceQuery, hasUsableCoordinates } from './mapPlaceLinks';
 
 export type DirectionsPlatform = 'ios' | 'android' | 'web';
 
@@ -19,14 +20,6 @@ export interface DirectionsLinks {
     googleMapsUrl: string;
 }
 
-const isFiniteCoordinate = (coordinates: ICoordinates | null | undefined): coordinates is ICoordinates => (
-    Boolean(coordinates)
-    && Number.isFinite(coordinates!.lat)
-    && Number.isFinite(coordinates!.lng)
-    && Math.abs(coordinates!.lat) <= 90
-    && Math.abs(coordinates!.lng) <= 180
-);
-
 /**
  * Resolves the platform from a user-agent string.
  *
@@ -46,7 +39,7 @@ export const resolveDirectionsPlatform = (userAgent: string | undefined): Direct
 
 export const buildDirectionsLinks = (target: DirectionsTarget): DirectionsLinks | null => {
     const label = target.label.trim();
-    const coordinates = isFiniteCoordinate(target.coordinates) ? target.coordinates : null;
+    const coordinates = hasUsableCoordinates(target.coordinates) ? target.coordinates : null;
     if (!coordinates && !label) return null;
 
     if (coordinates) {
@@ -77,14 +70,9 @@ export const buildActivityDirectionsLabel = (
     activityTitle: string,
     activityLocation: string | undefined,
     cityTitle: string | undefined,
-): string => {
-    const place = activityLocation?.trim() || activityTitle?.trim() || '';
-    const city = cityTitle?.trim() || '';
-    if (!city) return place;
-    if (!place) return city;
-
-    // A stored address usually already ends with the city, and repeating it
-    // ("Rua de Belém 84, Lisbon, Lisbon") makes the search term worse.
-    if (place.toLowerCase().includes(city.toLowerCase())) return place;
-    return `${place}, ${city}`;
-};
+): string => composePlaceQuery(
+    // An explicit location beats the title: "Time Out Market" finds the place,
+    // "Lunch" finds nothing.
+    activityLocation?.trim() || activityTitle?.trim() || '',
+    cityTitle,
+);

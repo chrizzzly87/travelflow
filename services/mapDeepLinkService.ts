@@ -1,4 +1,5 @@
 import type { ICoordinates } from '../types';
+import { composePlaceQuery, formatLatLng, hasUsableCoordinates } from '../shared/mapPlaceLinks';
 
 /**
  * Builds the "open this place in a maps app" links used by the activity popup,
@@ -9,6 +10,11 @@ import type { ICoordinates } from '../types';
  * installed, while `google.com/maps` and `maps.apple.com` hand off to the
  * native app when it is there and fall back to the web map when it is not — so
  * the same href works on a phone and on a desktop with no platform sniffing.
+ *
+ * `shared/mapDirectionsLinks.ts` answers a different question — *navigate me
+ * there* rather than *show me this* — and does use `geo:` on Android, because
+ * that is what surfaces Android's own app chooser. The two share their
+ * primitives through `shared/mapPlaceLinks.ts`; the split is by intent.
  */
 
 export interface MapDeepLinkTarget {
@@ -35,42 +41,24 @@ const APPLE_MAPS_URL = 'https://maps.apple.com/';
 
 const trimmed = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 
-const hasFiniteCoordinates = (
-  coordinates: ICoordinates | null | undefined,
-): coordinates is ICoordinates => (
-  Boolean(coordinates)
-  && Number.isFinite(coordinates.lat)
-  && Number.isFinite(coordinates.lng)
-);
-
-/**
- * Six decimals is roughly 10cm — more than a map pin needs, and it keeps the
- * links short and stable enough to compare in tests.
- */
-const formatLatLng = (coordinates: ICoordinates): string => (
-  `${Number(coordinates.lat.toFixed(6))},${Number(coordinates.lng.toFixed(6))}`
-);
-
 /**
  * "Louvre, Paris, France" — the title alone is too ambiguous for a search
  * fallback, and the location alone loses the place the traveller picked.
+ *
+ * Here the title leads and the location qualifies it, which is the opposite
+ * order from the directions label, where a stored address is the more specific
+ * of the two. The dedupe rule underneath is the same one.
  */
-export const buildMapSearchQuery = (target: MapDeepLinkTarget): string => {
-  const title = trimmed(target.title);
-  const location = trimmed(target.location);
-  if (!title) return location;
-  if (!location) return title;
-  // A location that already repeats the title would produce "Louvre, Louvre".
-  if (location.toLocaleLowerCase().includes(title.toLocaleLowerCase())) return location;
-  return `${title}, ${location}`;
-};
+export const buildMapSearchQuery = (target: MapDeepLinkTarget): string => (
+  composePlaceQuery(trimmed(target.title), trimmed(target.location))
+);
 
 export const canOpenInMaps = (target: MapDeepLinkTarget): boolean => (
-  hasFiniteCoordinates(target.coordinates) || buildMapSearchQuery(target).length > 0
+  hasUsableCoordinates(target.coordinates) || buildMapSearchQuery(target).length > 0
 );
 
 export const buildMapDeepLinks = (target: MapDeepLinkTarget): MapDeepLinks | null => {
-  const coordinates = hasFiniteCoordinates(target.coordinates) ? target.coordinates : null;
+  const coordinates = hasUsableCoordinates(target.coordinates) ? target.coordinates : null;
   const searchQuery = buildMapSearchQuery(target);
   if (!coordinates && !searchQuery) return null;
 
