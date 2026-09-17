@@ -1,9 +1,9 @@
 ---
 id: rel-2026-09-16-taiwan-recommendations-deck
-version: v0.170.0
+version: v0.173.0
 title: "Swipe through ideas for your trip"
-date: 2026-09-16
-published_at: 2026-09-16T20:00:00Z
+date: 2026-09-17
+published_at: 2026-09-17T20:00:00Z
 status: draft
 notify_in_app: true
 in_app_hours: 24
@@ -17,6 +17,9 @@ summary: "Keep or skip place ideas one card at a time — each with a photo, a m
 - [x] [New feature] 🧭 Tap the address at the bottom of a card to open the place in your own map app; Android offers its usual chooser and iPhone asks whether you want Apple Maps or Google Maps.
 - [x] [New feature] 🗂️ A Skipped tab keeps everything you passed on, so a card you swiped away too fast can be put straight back into the deck.
 - [x] [New feature] 🍜 Every Taiwan idea now has a proper write-up plus a short Recommendations list — the dishes to order, when to go, what to skip.
+- [x] [New feature] 🗃️ Ideas are now maintained in the admin: add a place, write it up, publish it, and it appears in the deck without waiting for a release.
+- [x] [Improved] 🔢 The deck says how many ideas are still ahead of you, so you know whether you are three cards in or thirty.
+- [x] [Improved] 🏙️ When you put a kept idea on a day, the days are grouped by the city you are in that day, so you are choosing a place in Taipei rather than a date in a list of twenty.
 - [x] [New feature] 🇹🇼 Taiwan comes with 84 places to start from, each with its city, what it costs, how long it takes and who recommended it.
 - [x] [New feature] 📸 Every card shows a photo of the place and a map of exactly where it is, with the photographer credited.
 - [x] [Improved] 🖼️ Every Taiwan place has a picture now, and the pictures are better chosen — a restaurant shows its own food or storefront rather than a stranger's snapshot of their table.
@@ -31,7 +34,10 @@ summary: "Keep or skip place ideas one card at a time — each with a photo, a m
 - [ ] [Internal] 🗺️ Added a KML importer for Google My Maps: no pin in an export carries coordinates, so it geocodes each one and records the precision. All 84 Taiwan pins resolved — 44 rooftop, 37 approximate, 3 exact.
 - [ ] [Internal] 🔗 A pin can cite several creators with the handles and URLs in different orders, so sources are paired by matching the handle inside the URL path rather than by position. 24 of the 84 pins cite more than one.
 - [ ] [Internal] 🏷️ The source category alone mis-types a pin — one filed under sights reads "Free 20-min hike" — so the note is read for types, cost band, duration and time of day, and everything imported lands `in_review`.
-- [ ] [Internal] 📦 The dataset ships in the repo the way `destinationGuides.json` does, which keeps the deck working without a Supabase round trip; the tables in the plan are still pending.
+- [ ] [Internal] 🗄️ The library moved into Supabase: `public.recommendations` with a published-only read policy, an admin edge function that proves the caller's role with their own token and then writes on the service role, and `/admin/recommendations` on top. **The migration is not applied by a deploy** — apply `supabase/migrations/20260917090000_recommendations_library.sql` by hand, then seed. Verified against a throwaway Postgres: defaults, every check constraint, country/slug uniqueness, the updated_at trigger, and that anon sees the published row and not the draft.
+- [ ] [Internal] 📦 The repo dataset is now a seed and an offline fallback rather than the source of truth. The client asks the API first and drops to the file only when it cannot answer; an empty published list is a real answer, because falling back there would show ideas an editor deliberately unpublished.
+- [ ] [Internal] 🌱 Seeding works both ways: **Import bundled** in the admin, or `scripts/sync-recommendations-to-supabase.ts`, which previews what it would overwrite before `--apply`.
+- [ ] [Internal] 🖼️ The photo-reference guard rejected a real photo: its length bound came from a sample, and the longest id in the Taiwan library is 586 characters. The character class is what closes the open redirect; the length was only a sanity bound, and is now set well clear.
 - [ ] [Internal] 🧳 The kept pool lives on the trip document, so it needs no migration and a dismissal follows the traveller across devices.
 - [ ] [Internal] 🖼️ Photos come from Google Places by reference, never rehosted: the dataset stores the photo resource name and the photographer's attribution, and a new `/api/place-photo` edge function resolves it so the key stays server-side. All 84 Taiwan places have one.
 - [ ] [Internal] 🗺️ The card map reuses the existing trip map preview endpoint with a single coordinate, so it needs no new provider integration.

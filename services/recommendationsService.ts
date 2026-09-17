@@ -1,15 +1,19 @@
 /**
- * Reads the bundled recommendation datasets.
+ * Reads the recommendation library.
  *
- * The datasets ship in the repo the same way `destinationGuides.json` does, so
- * the deck works without a Supabase round trip. When the recommendation tables
- * land (see `docs/RECOMMENDATIONS_MODEL_PLAN.md`), this module becomes the
- * place where the fetch replaces the import — nothing above it needs to know.
+ * The library lives in Supabase and is maintained in the admin, so a
+ * correction is a save rather than a deploy. The repo dataset is still here as
+ * a seed and a fallback: if the endpoint is unreachable — a preview without
+ * environment variables, an outage, a country not yet migrated — the deck
+ * shows yesterday's copy instead of nothing.
+ *
+ * `docs/RECOMMENDATIONS_CONTENT_RUNBOOK.md` is the operational side of this.
  */
 
 import type { ActivityType } from '../shared/activityTypes';
 import type { Recommendation, RecommendationDataset } from '../shared/recommendations';
 
+/** Countries with a bundled fallback copy. The database may hold more. */
 const DATASET_LOADERS: Record<string, () => Promise<RecommendationDataset>> = {
     TW: () => import('../data/recommendations/tw.json').then((module) => module.default as RecommendationDataset),
 };
@@ -20,6 +24,41 @@ export const hasRecommendationsForCountry = (countryCode: string | null | undefi
     Boolean(countryCode) && countryCode!.toUpperCase() in DATASET_LOADERS
 );
 
+const loadBundledDataset = (countryCode: string): Promise<RecommendationDataset | null> => {
+    const loader = DATASET_LOADERS[countryCode];
+    return loader ? loader().catch(() => null) : Promise.resolve(null);
+};
+
+/**
+ * Asks the API first, and only reaches for the bundled copy when it cannot
+ * answer. An empty published list is a real answer — a country whose rows are
+ * all still drafts has no ideas yet, and falling back there would show a
+ * traveller entries an editor deliberately unpublished.
+ */
+const fetchPublishedDataset = async (countryCode: string): Promise<RecommendationDataset | null> => {
+    if (typeof fetch !== 'function') return null;
+    try {
+        const response = await fetch(`/api/recommendations?country=${encodeURIComponent(countryCode)}`, {
+            headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) return null;
+        const payload = await response.json() as {
+            ok?: boolean;
+            recommendations?: Recommendation[];
+        };
+        if (!payload?.ok || !Array.isArray(payload.recommendations)) return null;
+        return {
+            countryCode,
+            countryName: '',
+            generatedAt: new Date().toISOString(),
+            sourceName: 'supabase',
+            recommendations: payload.recommendations,
+        };
+    } catch {
+        return null;
+    }
+};
+
 export const loadRecommendationDataset = (
     countryCode: string,
 ): Promise<RecommendationDataset | null> => {
@@ -27,12 +66,16 @@ export const loadRecommendationDataset = (
     const cached = datasetCache.get(key);
     if (cached) return cached;
 
-    const loader = DATASET_LOADERS[key];
-    const promise: Promise<RecommendationDataset | null> = loader
-        ? loader().catch(() => null)
-        : Promise.resolve(null);
+    const promise = fetchPublishedDataset(key)
+        .then((dataset) => dataset ?? loadBundledDataset(key))
+        .catch(() => loadBundledDataset(key));
     datasetCache.set(key, promise);
     return promise;
+};
+
+/** Testing seam: the module-level cache would otherwise leak between cases. */
+export const __resetRecommendationDatasetCache = (): void => {
+    datasetCache.clear();
 };
 
 export interface RecommendationDeckFilters {

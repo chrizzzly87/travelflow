@@ -156,6 +156,10 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
 
     const stack = useMemo(() => recommendations.slice(0, VISIBLE_STACK), [recommendations]);
     const top = stack[0] ?? null;
+    // Counting what is still in front of the traveller, the current card
+    // included: "1 left" on the last card is what makes the deck finite.
+    const remaining = recommendations.length;
+    const remainingLabel = remaining === 1 ? '1 idea left' : `${remaining} ideas left`;
 
     const commit = useCallback((recommendation: Recommendation, decision: SwipeDecision) => {
         trackEvent('trip_view__recommendation--decide', {
@@ -208,6 +212,13 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
     return (
         <LazyMotion features={domMax} strict>
             <div className="flex flex-1 flex-col" onKeyDown={handleKeyDown}>
+                <p
+                    data-testid="recommendation-remaining"
+                    className="shrink-0 pt-1 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400"
+                >
+                    {remainingLabel}
+                </p>
+
                 <div className="flex flex-1 items-center justify-center px-4 py-2">
                     {/* The box leaves room under the stack for the staggered
                       * cards, so the deepest one is not clipped by the frame. */}

@@ -48,6 +48,10 @@ exit 1
   function = "place-photo"
 
 [[edge_functions]]
+  path = "/api/recommendations"
+  function = "recommendations"
+
+[[edge_functions]]
   path = "/api/health"
   function = "health"
 
@@ -162,6 +166,10 @@ exit 1
 [[edge_functions]]
   path = "/api/internal/admin/destinations"
   function = "admin-destinations"
+
+[[edge_functions]]
+  path = "/api/internal/admin/recommendations"
+  function = "admin-recommendations"
 
 [[edge_functions]]
   path = "/api/internal/admin/iam"

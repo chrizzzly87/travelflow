@@ -13,8 +13,15 @@
 
 import { getMapsApiKeyFromEnv } from "../edge-lib/trip-og-data.ts";
 
-/** `places/<placeId>/photos/<photoId>` and nothing else. */
-const PHOTO_REFERENCE_PATTERN = /^places\/[A-Za-z0-9_-]{1,256}\/photos\/[A-Za-z0-9_-]{1,512}$/;
+/**
+ * `places/<placeId>/photos/<photoId>` and nothing else.
+ *
+ * The photo id is an opaque token whose length Google does not document; the
+ * longest in the Taiwan library is 586 characters, and a limit set from a
+ * sample rejected a real photo rather than an attack. The character class is
+ * what closes the open redirect — the length is only a sanity bound.
+ */
+const PHOTO_REFERENCE_PATTERN = /^places\/[A-Za-z0-9_-]{1,256}\/photos\/[A-Za-z0-9_-]{1,2048}$/;
 
 const CACHE_HEADERS: Record<string, string> = {
   // Places photo URLs are stable for a place; a day at the edge is well inside

@@ -4,6 +4,34 @@ import { CalendarPlus, RotateCcw } from 'lucide-react';
 import type { SavedRecommendation } from '../../shared/recommendations';
 import type { MobileDayPlanDay } from '../tripview/mobileDayPlanModel';
 
+interface DayGroup {
+    cityName: string;
+    days: MobileDayPlanDay[];
+}
+
+/**
+ * Days under the city they belong to, in travel order.
+ *
+ * An idea is placed on a day, not on a city — a city stay is a range of days,
+ * and an activity has to land on one of them. Grouping is what makes that
+ * legible: "Taipei · Thu 12" instead of a wall of twenty undifferentiated
+ * dates. A trip that returns to a city later gets a second group, because the
+ * grouping follows the itinerary rather than collapsing by name.
+ */
+export const groupDaysByCity = (days: MobileDayPlanDay[]): DayGroup[] => {
+    const groups: DayGroup[] = [];
+    days.forEach((day) => {
+        const cityName = (day.city?.title || day.city?.location || 'Unassigned').trim() || 'Unassigned';
+        const last = groups[groups.length - 1];
+        if (last && last.cityName === cityName) {
+            last.days.push(day);
+            return;
+        }
+        groups.push({ cityName, days: [day] });
+    });
+    return groups;
+};
+
 /**
  * What an open card offers, which depends on which pool it came from.
  *
@@ -47,22 +75,32 @@ export const RecommendationDetailActions: React.FC<{
     if (!canEdit) return null;
 
     if (isAssigning) {
+        const groups = groupDaysByCity(days);
         return (
-            <div className="flex flex-wrap gap-1.5">
-                {days.map((day) => (
-                    <button
-                        key={day.dayOffset}
-                        type="button"
-                        onClick={() => onAssignToDay(saved, day)}
-                        className="inline-flex min-h-9 items-center rounded-lg border border-slate-200 px-2.5 text-xs font-semibold text-slate-700 transition-colors hover:border-accent-300 hover:text-accent-700"
-                    >
-                        {day.weekdayLabel} {day.dayOfMonthLabel}
-                    </button>
+            <div className="flex max-h-56 flex-col gap-2.5 overflow-y-auto">
+                {groups.map((group) => (
+                    <div key={`${group.cityName}-${group.days[0]?.dayOffset}`}>
+                        <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                            {group.cityName}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                            {group.days.map((day) => (
+                                <button
+                                    key={day.dayOffset}
+                                    type="button"
+                                    onClick={() => onAssignToDay(saved, day)}
+                                    className="inline-flex min-h-9 items-center rounded-lg border border-slate-200 px-2.5 text-xs font-semibold text-slate-700 transition-colors hover:border-accent-300 hover:text-accent-700"
+                                >
+                                    {day.weekdayLabel} {day.dayOfMonthLabel}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 ))}
                 <button
                     type="button"
                     onClick={onCancelAssigning}
-                    className="inline-flex min-h-9 items-center rounded-lg px-2.5 text-xs font-semibold text-slate-500"
+                    className="inline-flex min-h-9 shrink-0 items-center self-start rounded-lg px-2.5 text-xs font-semibold text-slate-500"
                 >
                     Cancel
                 </button>

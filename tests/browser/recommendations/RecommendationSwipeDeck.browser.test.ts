@@ -186,6 +186,19 @@ describe('components/recommendations/RecommendationSwipeDeck', () => {
     expect(onUndo).toHaveBeenCalled();
   });
 
+  it('says how many ideas are still in front of the traveller', () => {
+    renderDeck({
+      recommendations: [makeRecommendation('a'), makeRecommendation('b'), makeRecommendation('c'), makeRecommendation('d')],
+    });
+
+    expect(screen.getByTestId('recommendation-remaining')).toHaveTextContent('4 ideas left');
+  });
+
+  it('counts the last card as one left rather than none', () => {
+    renderDeck({ recommendations: [makeRecommendation('a')] });
+    expect(screen.getByTestId('recommendation-remaining')).toHaveTextContent('1 idea left');
+  });
+
   it('says so when the deck runs out', () => {
     renderDeck({ recommendations: [] });
 

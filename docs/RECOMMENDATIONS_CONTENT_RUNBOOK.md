@@ -1,66 +1,80 @@
 # Recommendations: where the data lives and how to change it
 
-This is the operational answer for the place recommendations that power the
-Ideas deck. The model itself is described in `docs/RECOMMENDATIONS_MODEL_PLAN.md`.
+The operational guide for the place recommendations behind the Ideas deck. The
+model itself is described in `docs/RECOMMENDATIONS_MODEL_PLAN.md`.
 
 ## Short version
 
-- The recommendations are **files in this repository**, not rows in Supabase.
-- There is **no admin UI for them yet**. Editing means editing a JSON file and
-  opening a pull request.
-- **No SQL, no migration** is needed to change, add or remove one.
-- What a *traveller* decides (kept and skipped) is not part of this data at all:
-  it lives on the trip document plus that browser's own storage.
+- Recommendations live in the **Supabase table `public.recommendations`**.
+- Maintain them at **`/admin/recommendations`**: add, edit, publish, delete.
+- Travellers only ever see rows with `status = 'published'`.
+- The repo file `data/recommendations/tw.json` is now a **seed and a fallback**,
+  not the source of truth.
+- **The migration is not applied by a deploy.** Apply it by hand once, then seed.
 
-## The files
+## First-time setup
 
-| File | What it is | Who writes it |
-| --- | --- | --- |
-| `data/recommendations/tw.json` | The generated dataset the app loads. 84 Taiwan places. | Scripts. Do not hand-edit. |
-| `data/recommendations/tw.content.json` | The written copy: description, `highlights`, cost band, duration — keyed by slug. | **A human. This is the file you edit.** |
-| `shared/recommendations.ts` | The types, and the copy from a library row onto a trip. | Code review. |
-| `services/recommendationsService.ts` | Lazy-loads the dataset per country and orders the deck. | Code review. |
-
-One file per country, named by lowercase ISO-2 code. Adding a country means
-adding `xx.json` and `xx.content.json` and registering the loader in
-`services/recommendationsService.ts`.
-
-`tw.json` is around 230 KB and is loaded lazily, only when the deck opens.
-
-## Editing the words on a card
-
-1. Open `data/recommendations/tw.content.json`.
-2. Find the entry by its slug (the same slug as in `tw.json`).
-3. Change `description`, `highlights`, `costBand` or `typicalDurationMinutes`.
-4. Apply it:
+1. Apply `supabase/migrations/20260917090000_recommendations_library.sql`
+   following `docs/SUPABASE_RUNBOOK.md`. Nothing works before this.
+2. Seed a country, either way round:
+   - In the admin: open `/admin/recommendations`, pick the country, press
+     **Import bundled**. Rows arrive with the status the dataset carries
+     (`in_review` for imported pins), so nothing is public yet.
+   - From the terminal, with `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`:
 
 ```bash
-pnpm tsx scripts/apply-recommendation-content.ts --country TW --apply
+pnpm tsx scripts/sync-recommendations-to-supabase.ts --country TW --apply
 ```
 
-Without `--apply` the script previews and exits non-zero, listing any slug that
-has no copy and any slug in the content file that no longer exists.
+   Add `--publish` to publish everything it writes. Without `--apply` it only
+   reports what it would do, including how many rows it would overwrite.
+3. Publish what you want travellers to see — per row in the admin, or in bulk
+   in the SQL editor:
 
-`highlights` renders as the bulleted **Recommendations** block on the card:
-dishes to order, when to go, what to skip. Keep each line to one idea.
+```sql
+update public.recommendations
+   set status = 'published'
+ where country_code = 'TW' and status = 'in_review';
+```
 
-The copy is deliberately kept out of `tw.json` so that re-running the import or
-the photo pass never overwrites something a person wrote.
+## Day-to-day maintenance
 
-## Refreshing photos and price bands
+Everything happens at `/admin/recommendations`:
+
+- **New** writes a recommendation from scratch. Title and country code are the
+  only required fields; the id and slug are derived from them.
+- The **Recommendations** box is the bulleted list on the card — one per line,
+  the dishes to order, when to go, what to skip.
+- **Status** is the visibility switch. `draft` and `in_review` are admin-only,
+  `published` is live, `retired` and `rejected` are kept for the record.
+- **Import bundled** re-seeds a country from the shipped dataset. It overwrites
+  rows with the same id, edits included, so it is a seeding tool rather than a
+  sync.
+
+Coordinates are what draw the card's map, so fill in latitude and longitude for
+anything you want placed. Leave them empty and the card falls back to the photo
+alone.
+
+### Photos
+
+Photos are **referenced, never copied** — that is what keeps us inside the
+Google Places terms. Paste a path of the form
+
+```
+/api/place-photo?ref=places/<placeId>/photos/<photoId>
+```
+
+into **Photo URL** and put the photographer in **Photo credit**. The edge
+function resolves the reference at render time so the API key stays server-side.
+
+To refresh photos and price bands for a whole country from Google Places:
 
 ```bash
 pnpm tsx scripts/enrich-recommendation-photos.ts --country TW --apply
 ```
 
-Needs `VITE_GOOGLE_MAPS_API_KEY` in `.env.local`. It fetches each place from
-Google Places, picks a photo, fills an empty `costBand` from Google's price
-level, and writes the result into `tw.json`.
-
-Photos are **never** copied. The dataset stores the Places photo resource name
-and the photographer's attribution; `/api/place-photo` redirects to Google at
-render time, which keeps the API key server-side and stays inside the Places
-terms.
+That writes the repo dataset, not the table. Re-seed afterwards if you want the
+new photos in the database.
 
 How a photo is chosen (`scripts/lib/recommendationPlaceEnrichment.ts`):
 
@@ -74,19 +88,35 @@ If a place's stored `googlePlaceId` came from the geocoder rather than Places it
 resolves to nothing; the script re-searches by name and writes the working id
 back. Coordinates are never moved — those come from the original pins.
 
-To force a specific photo, put the photo resource name into the entry's `image`
-in `tw.json` by hand and leave that entry out of the next enrichment run.
+## The files that are still files
 
-## Importing a new source map
+| File | What it is |
+| --- | --- |
+| `data/recommendations/tw.json` | The seed and offline fallback. Generated — do not hand-edit. |
+| `data/recommendations/tw.content.json` | Written copy keyed by slug, applied into the dataset before seeding. |
+| `shared/recommendationRows.ts` | The table ↔ app mapping, and what validates an editor's input. |
+| `services/recommendationsService.ts` | Reads the API, falls back to the file. |
 
-`scripts/import-recommendations-kml.ts` takes a Google My Maps KML export,
-geocodes every pin, reads the note for activity types, cost and duration, and
-writes the dataset. Everything it produces lands `status: 'in_review'`.
+To change the seed rather than the live rows:
 
-Order of operations for a new country: import → enrich photos → write copy →
-apply copy.
+1. Edit `data/recommendations/tw.content.json`.
+2. `pnpm tsx scripts/apply-recommendation-content.ts --country TW --apply`
+3. Re-seed, if the database should take the change too.
 
-## What is *not* in these files
+## How the app reads it
+
+`/api/recommendations?country=TW` returns published rows, read with the anon key
+so row-level security decides what is visible rather than a filter somebody
+might forget. The client calls it first and drops to the bundled dataset only
+when the endpoint cannot answer — an outage, a preview without environment
+variables, a country not yet migrated. An **empty** published list is treated as
+a real answer, because falling back there would show ideas an editor
+deliberately unpublished.
+
+Admin writes go through `/api/internal/admin/recommendations`, which checks the
+caller's admin role with their own token and then writes on the service role.
+
+## What is *not* in this table
 
 A traveller's keeps and skips are per trip, not per library:
 
@@ -101,8 +131,14 @@ Both are read on open and merged; a merge never un-makes a decision. The key is
 registered in `lib/legal/cookies.config.ts`, which `pnpm storage:validate`
 enforces.
 
-## Still to come
+A kept idea is **copied** onto the trip, not referenced. Retiring or deleting a
+library row therefore never changes a trip that already planned around it.
 
-An admin surface and Supabase tables are phases 3 to 5 of
-`docs/RECOMMENDATIONS_MODEL_PLAN.md`. Until then the repository is the source of
-truth and a pull request is the edit mechanism.
+## Importing a new source map
+
+`scripts/import-recommendations-kml.ts` takes a Google My Maps KML export,
+geocodes every pin, reads the note for activity types, cost and duration, and
+writes the dataset. Everything it produces lands `status: 'in_review'`.
+
+Order of operations for a new country: import → enrich photos → write copy →
+apply copy → seed the table → publish.
