@@ -283,8 +283,11 @@ export const AdminRecommendationsPage: React.FC = () => {
         setSaving(true);
         setError(null);
         try {
-            const { loadRecommendationDataset } = await import('../services/recommendationsService');
-            const dataset = await loadRecommendationDataset(country);
+            // The bundled file, not the ordinary loader: once the table exists
+            // and is empty, that loader correctly answers "nothing published",
+            // which is exactly the wrong answer for a seed.
+            const { loadBundledRecommendationDataset } = await import('../services/recommendationsService');
+            const dataset = await loadBundledRecommendationDataset(country);
             const entries = dataset?.recommendations ?? [];
             if (entries.length === 0) throw new Error(`No bundled dataset is available for ${country}.`);
             const imported = await adminImportRecommendations(entries as unknown as Record<string, unknown>[]);

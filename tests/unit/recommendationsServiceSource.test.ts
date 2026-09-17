@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
     __resetRecommendationDatasetCache,
+    loadBundledRecommendationDataset,
     loadRecommendationDataset,
 } from '../../services/recommendationsService';
 
@@ -70,6 +71,22 @@ describe('services/recommendationsService — where the library comes from', () 
         globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }) as unknown as typeof fetch;
 
         expect(await loadRecommendationDataset('PT')).toBeNull();
+    });
+
+    it('reads the bundled file directly when seeding, whatever the API says', async () => {
+        // Once the table exists and is empty, the ordinary loader correctly
+        // answers "nothing published" — which would leave the admin's seed
+        // with nothing to import.
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ ok: true, recommendations: [] }),
+        });
+        globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+        const bundled = await loadBundledRecommendationDataset('tw');
+
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect((bundled?.recommendations.length ?? 0)).toBeGreaterThan(50);
     });
 
     it('asks once per country and reuses the answer', async () => {

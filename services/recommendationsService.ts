@@ -24,10 +24,22 @@ export const hasRecommendationsForCountry = (countryCode: string | null | undefi
     Boolean(countryCode) && countryCode!.toUpperCase() in DATASET_LOADERS
 );
 
-const loadBundledDataset = (countryCode: string): Promise<RecommendationDataset | null> => {
-    const loader = DATASET_LOADERS[countryCode];
+/**
+ * The bundled copy, deliberately bypassing the API.
+ *
+ * The admin's "Import bundled" needs the file itself: once the table exists
+ * but is empty, the ordinary loader answers with that empty published list —
+ * which is correct for a traveller and useless for seeding.
+ */
+export const loadBundledRecommendationDataset = (
+    countryCode: string,
+): Promise<RecommendationDataset | null> => {
+    const loader = DATASET_LOADERS[countryCode.toUpperCase()];
     return loader ? loader().catch(() => null) : Promise.resolve(null);
 };
+
+const loadBundledDataset = (countryCode: string): Promise<RecommendationDataset | null> =>
+    loadBundledRecommendationDataset(countryCode);
 
 /**
  * Asks the API first, and only reaches for the bundled copy when it cannot
