@@ -19,8 +19,8 @@ import {
     type RecommendationSource,
     type RecommendationStatus,
     type TimeOfDay,
-} from './recommendations';
-import type { ActivityType } from './activityTypes';
+} from './recommendations.ts';
+import type { ActivityType } from './activityTypes.ts';
 
 export interface RecommendationRow {
     id: string;
