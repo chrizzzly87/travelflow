@@ -53,6 +53,16 @@ describe('shared/mapPlaceLinks', () => {
             expect(composePlaceQuery('Louvre', 'Louvre, Paris')).toBe('Louvre, Paris');
         });
 
+        it('keeps the city when the name only mentions it in passing', () => {
+            // Found on the Deploy Preview: a generated activity title that
+            // happens to contain its city. A plain "contains" test dropped the
+            // city and left a search for a name nobody has ever heard of.
+            expect(composePlaceQuery('Old Taipei Temple and Street-Food Quest', 'Taipei'))
+                .toBe('Old Taipei Temple and Street-Food Quest, Taipei');
+            expect(composePlaceQuery('Lisbon Cathedral by night', 'Lisbon'))
+                .toBe('Lisbon Cathedral by night, Lisbon');
+        });
+
         it('ignores case when deciding whether one repeats the other', () => {
             expect(composePlaceQuery('rua de belém 84, LISBON', 'Lisbon')).toBe('rua de belém 84, LISBON');
         });

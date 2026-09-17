@@ -51,11 +51,23 @@ export const formatLatLng = (coordinates: ICoordinates): string => (
  * Both features need this because an activity often has no coordinates of its
  * own, and "Belém" on its own lands anywhere.
  *
- * Either side can turn out to be the redundant one, which is why the check runs
- * both ways. A stored address usually already ends with the city
- * ("Rua de Belém 84, Lisbon" + "Lisbon"), and a resolved location usually
- * already starts with the name ("Louvre" + "Louvre, Paris"). In both cases the
- * longer string is the complete one and the other adds only a repetition.
+ * Either side can be the redundant one. A stored address usually already *ends*
+ * with the city ("Rua de Belém 84, Lisbon" + "Lisbon") and a resolved location
+ * usually already *starts* with the name ("Louvre" + "Louvre, Paris"); in both
+ * cases the longer string is the complete one.
+ *
+ * The two checks are deliberately not symmetric, because a title can mention a
+ * city in passing and dropping the city there leaves a search term that finds
+ * nothing:
+ *
+ * - "Old Taipei Temple and Street-Food Quest" + "Taipei" — contains it, but the
+ *   title is a name somebody invented, so the city still has to be appended.
+ * - "Lisbon Cathedral by night" + "Lisbon" — starts with it, same story.
+ *
+ * So the qualifier is dropped only when the place already *ends* with it, which
+ * is what an address that was built by appending a city looks like. The
+ * qualifier wins only when it is the fuller form of the place, which is what a
+ * resolved location looks like.
  */
 export const composePlaceQuery = (
     primary: string | null | undefined,
@@ -68,7 +80,10 @@ export const composePlaceQuery = (
 
     const placeLower = place.toLocaleLowerCase();
     const qualifierLower = qualifier.toLocaleLowerCase();
-    if (placeLower.includes(qualifierLower)) return place;
-    if (qualifierLower.includes(placeLower)) return qualifier;
+
+    // "Rua de Belém 84, Lisbon" + "Lisbon" — the city is already appended.
+    if (placeLower.endsWith(qualifierLower)) return place;
+    // "Louvre" + "Louvre, Paris" — the qualifier is the complete description.
+    if (qualifierLower.startsWith(placeLower) || qualifierLower.endsWith(placeLower)) return qualifier;
     return `${place}, ${qualifier}`;
 };
