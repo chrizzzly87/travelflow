@@ -25,6 +25,8 @@ Rules for any module reachable from `netlify/edge-functions/`, including files i
 
 The 2026-08-18 outage: an edge function began importing `config/aiModelCatalog.ts`, which pulled in `services/openRouterModelCatalogService.ts`, which imported `"../shared/aiReasoning"` with no extension. Every Netlify build failed from then on, and because the edge bundle never built, the destination API silently returned the SPA shell.
 
+2026-09-17: `shared/recommendationRows.ts` was written for the browser first and imported `"./recommendations"` for a value (`COST_BAND_VALUES`). The moment two edge functions started using it, the Netlify build failed — `pnpm test:core` and `vite build` had both been green locally. `pnpm edge:validate` caught it in one run; it is worth running by hand after wiring any existing `shared/` module into an edge function.
+
 ## Inventory
 
 | Function file | Route(s) | Purpose | Type |
@@ -46,6 +48,9 @@ The 2026-08-18 outage: an edge function began importing `config/aiModelCatalog.t
 | `trip-map-preview.ts` | `/api/trip-map-preview` | Proxies Google Static Maps API; returns 302 redirect to styled map | API proxy |
 | `trip-share-resolve.ts` | `/api/trip-share-resolve` | Resolves active share token by trip id for non-owner route handoff | API |
 | `runtime-location.ts` | `/api/runtime/location` | Returns the current request’s normalized Netlify GeoIP snapshot for client bootstrap and debugger diagnostics | API |
+| `place-photo.ts` | `/api/place-photo` | Resolves a Google Places photo resource name to its hosted image with a 302, keeping the Maps key server-side. The `ref` allowlist pattern is what prevents an open redirect into any Google path — photo ids are opaque and long, so the pattern bounds the character set, not a guessed length. | API proxy |
+| `recommendations.ts` | `/api/recommendations` | Public read of the place-recommendation library for one country. Uses the **anon** key so row-level security decides visibility rather than a query filter; only `status = 'published'` rows can leave. | API |
+| `admin-recommendations.ts` | `/api/internal/admin/recommendations` | Admin CRUD for the recommendation library — list (drafts included), save, change status, delete, bulk import. Proves the caller's admin role with their own token via `get_current_user_access`, then writes on the service role. | API |
 
 **Shared helper:** `netlify/edge-lib/trip-og-data.ts` — Supabase RPC calls, HTML escaping, URL builders, map API key access.
 

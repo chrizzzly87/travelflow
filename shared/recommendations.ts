@@ -6,8 +6,8 @@
  * centrally. A timeline item is a copy owned by one trip. Assigning copies the
  * content across; a trip never points at a library row an editor can retire.
  *
- * The full model, its storage plan and the open questions live in
- * `docs/RECOMMENDATIONS_MODEL_PLAN.md`.
+ * Where the rows live, how they are maintained and how a country is seeded:
+ * `docs/RECOMMENDATIONS_CONTENT_RUNBOOK.md`.
  */
 
 import type { ActivityType } from './activityTypes';

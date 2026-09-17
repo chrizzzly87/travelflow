@@ -3,34 +3,27 @@ id: rel-2026-09-16-taiwan-recommendations-deck
 version: v0.173.0
 title: "Swipe through ideas for your trip"
 date: 2026-09-17
-published_at: 2026-09-17T20:00:00Z
-status: draft
+published_at: 2026-09-17T07:35:19Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Keep or skip place ideas one card at a time — each with a photo, a map, a proper write-up and the dishes worth ordering — park the ones you like, and drop them onto a day when you know where they fit."
 ---
 
 ## Changes
-- [x] [New feature] 🃏 Open Ideas on a trip and go through places one card at a time — swipe right to keep, left to skip, with an undo if you were too quick.
-- [x] [New feature] 📥 Kept ideas wait in their own list until you know where they fit, then go onto any day of the trip in one tap.
-- [x] [Fixed] 💾 Your keeps and skips are remembered on your device, so a reload no longer wipes everything you just went through — including on a shared link you cannot edit.
-- [x] [New feature] 🧭 Tap the address at the bottom of a card to open the place in your own map app; Android offers its usual chooser and iPhone asks whether you want Apple Maps or Google Maps.
-- [x] [New feature] 🗂️ A Skipped tab keeps everything you passed on, so a card you swiped away too fast can be put straight back into the deck.
-- [x] [New feature] 🍜 Every Taiwan idea now has a proper write-up plus a short Recommendations list — the dishes to order, when to go, what to skip.
-- [x] [New feature] 🗃️ Ideas are now maintained in the admin: add a place, write it up, publish it, and it appears in the deck without waiting for a release.
-- [x] [Improved] 🔢 The deck says how many ideas are still ahead of you, so you know whether you are three cards in or thirty.
-- [x] [Improved] 🏙️ When you put a kept idea on a day, the days are grouped by the city you are in that day, so you are choosing a place in Taipei rather than a date in a list of twenty.
-- [x] [New feature] 🇹🇼 Taiwan comes with 84 places to start from, each with its city, what it costs, how long it takes and who recommended it.
-- [x] [New feature] 📸 Every card shows a photo of the place and a map of exactly where it is, with the photographer credited.
-- [x] [Improved] 🖼️ Every Taiwan place has a picture now, and the pictures are better chosen — a restaurant shows its own food or storefront rather than a stranger's snapshot of their table.
-- [x] [Improved] 🔍 The little map on a card is zoomed out enough to show the neighbourhood instead of just the roof.
-- [x] [Improved] 🂠 The deck looks and feels like a deck: bigger cards, two more stacked and staggered behind the one you are reading, and when you swipe one away the rest glide forward and grow into place.
-- [x] [Improved] 👀 The next card is drawn in full behind the current one, so its text no longer flashes into existence mid-swipe.
-- [x] [Improved] 🖇️ Kept and skipped ideas are shown as small cards with a picture, and tapping one opens the whole card to read.
-- [x] [Improved] 📍 The address now sits pinned to the bottom of every card instead of the creator credit, so it stays visible however long the write-up is.
-- [x] [Fixed] 🔁 Closing the ideas view and opening it again now brings the cards back.
-- [x] [Improved] ⌨️ The card deck answers the arrow keys as well as a swipe, so it works on a laptop too.
-- [x] [Improved] 🙏 Every idea still credits the person who recommended it, with a link to their post — now on the full card you open rather than in the way while you are deciding.
+- [x] [New feature] 🃏 Open **Ideas** on a trip and go through places one card at a time — swipe right to keep, left to skip, and undo if you were too quick.
+- [x] [New feature] 🇹🇼 Taiwan comes with 84 places to start from, each with its city, what it costs and how long to allow.
+- [x] [New feature] 🍜 Every one has a proper write-up and a short **Recommendations** list — the dishes to order, when to go, what to skip.
+- [x] [New feature] 📸 Each card carries a photograph of the place and a map of the neighbourhood it sits in, with the photographer credited.
+- [x] [New feature] 📥 Keep the ones you like in their own list until you know where they fit, then drop one onto a day — the days are grouped by the city you are in, so you are choosing a spot in Taipei rather than a date in a list of twenty.
+- [x] [New feature] 🧭 Tap the address at the foot of a card to open the place in your own map app; Android offers its usual chooser, iPhone asks between Apple Maps and Google Maps.
+- [x] [New feature] 🗂️ A **Skipped** tab keeps everything you passed on, so a card you swiped away too fast goes straight back into the deck.
+- [x] [New feature] 💾 Your keeps and skips are remembered, so closing the tab or reloading does not wipe the pile you just went through — including on a shared link you cannot edit.
+- [x] [New feature] 🗃️ Ideas are maintained in the admin now: add a place, write it up, publish it, and it is in the deck without waiting for a release.
+- [x] [Improved] 🂠 The deck reads and moves like a deck — cards stacked and staggered behind the one you are holding, each fully drawn, gliding forward as you swipe the front one away.
+- [x] [Improved] 🔢 It tells you how many ideas are still ahead, so you know whether you are three cards in or thirty.
+- [x] [Improved] 🙏 Every idea credits the person who recommended it, with a link to their post.
+- [x] [Improved] ⌨️ The deck answers the arrow keys as well as a swipe, so it works on a laptop too.
 - [ ] [Internal] 🗺️ Added a KML importer for Google My Maps: no pin in an export carries coordinates, so it geocodes each one and records the precision. All 84 Taiwan pins resolved — 44 rooftop, 37 approximate, 3 exact.
 - [ ] [Internal] 🔗 A pin can cite several creators with the handles and URLs in different orders, so sources are paired by matching the handle inside the URL path rather than by position. 24 of the 84 pins cite more than one.
 - [ ] [Internal] 🏷️ The source category alone mis-types a pin — one filed under sights reads "Free 20-min hike" — so the note is read for types, cost band, duration and time of day, and everything imported lands `in_review`.
@@ -52,4 +45,6 @@ summary: "Keep or skip place ideas one card at a time — each with a photo, a m
 - [ ] [Internal] 🧩 Card media, body and the sticky location footer moved into one shared component, so the deck's front card, the cards behind it and the detail modal cannot drift apart.
 - [ ] [Internal] 🎬 `mode="popLayout"` was dropped from the deck: it wraps each child in a component that hands it a ref, and preact/compat drops refs on function components. The cards are absolutely positioned, so there is no layout to pop out of.
 - [ ] [Internal] 👆 The planner sheet captures the pointer on its drag handle, which retargets the following `pointerup` and swallowed the click on every control in the header — the Ideas button included. Verified with a real click rather than a scripted `.click()`, which bypasses pointer capture entirely.
+- [ ] [Internal] 🔁 Reopening the ideas view came up empty: its open state lived in the URL, and `useTripViewSettingsSync` rewrites the query with `history.replaceState`, which React Router never sees — so `location.search` went stale and the next write dropped the parameter. Now React state, with the deep link read once on mount.
+- [ ] [Internal] 👀 Every card in the stack renders its real content, not just the top one, so text no longer appears for the first time mid-swipe. The address moved into a pinned footer and the creator credit onto the full card, so a long write-up cannot push "where is this" out of sight.
 - [ ] [Internal] 🧪 Coverage for source pairing, note enrichment, deck ordering and exclusion, the library-row-to-timeline-item copy, the deck's swipe, keyboard and undo behaviour, the device store and its merge rules, and the photo-scoring heuristic.

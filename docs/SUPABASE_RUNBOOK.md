@@ -186,6 +186,24 @@ pg_ctl -D /tmp/pgdata stop -m fast
 `LC_ALL=C` is required on macOS, where the server otherwise refuses to start
 ("Postmaster became multithreaded during startup").
 
+Two things make an RLS check mean something, and both are easy to skip: run it
+inside a transaction (`set local role` outside one is silently ignored) and as a
+non-superuser (a superuser bypasses RLS entirely). A check that misses either
+passes for the wrong reason.
+
+### Pending migrations
+
+| Migration | What it adds | Applied |
+|---|---|---|
+| `20260917090000_recommendations_library.sql` | `public.recommendations` — the place-idea library behind the trip Ideas deck, with a published-only read policy for `anon` and `authenticated`. Verified against a throwaway Postgres by `supabase/tests/20260917090000_recommendations_library.verify.sql`. | **No** |
+
+Until it is applied, `/api/recommendations` returns 502 and the deck falls back
+to the dataset bundled in the repo, which is the behaviour shipped today —
+nothing breaks, and nothing an editor writes becomes visible. After applying it,
+seed a country with **Import bundled** at `/admin/recommendations` or with
+`scripts/sync-recommendations-to-supabase.ts`, then publish. The full procedure
+is in `docs/RECOMMENDATIONS_CONTENT_RUNBOOK.md`.
+
 ## Data Model (Current)
 
 Core tables:

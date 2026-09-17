@@ -1,7 +1,7 @@
 # Recommendations: where the data lives and how to change it
 
-The operational guide for the place recommendations behind the Ideas deck. The
-model itself is described in `docs/RECOMMENDATIONS_MODEL_PLAN.md`.
+The operational guide for the place recommendations behind the Ideas deck: where
+the rows live, how to maintain them, and how to seed a new country.
 
 ## Short version
 
