@@ -62,6 +62,12 @@ export interface Recommendation {
     title: string;
     summary: string;
     description: string | null;
+    /**
+     * Short "what to do here" lines — the dishes worth ordering, the viewpoint
+     * worth the detour. Rendered as bullets under the description, which is why
+     * they are kept apart from it rather than being prose.
+     */
+    highlights?: string[];
     activityTypes: ActivityType[];
     tags: string[];
 
@@ -95,9 +101,11 @@ export interface SavedRecommendation {
     title: string;
     summary: string;
     description: string | null;
+    highlights?: string[];
     activityTypes: ActivityType[];
     tags: string[];
     cityName: string | null;
+    image?: RecommendationImage | null;
     location: { lat: number | null; lng: number | null; address: string | null };
     costBand: CostBand | null;
     typicalDurationMinutes: number | null;
@@ -184,9 +192,12 @@ export const toSavedRecommendation = (
     title: recommendation.title,
     summary: recommendation.summary,
     description: recommendation.description,
+    highlights: recommendation.highlights ? [...recommendation.highlights] : undefined,
     activityTypes: [...recommendation.activityTypes],
     tags: [...recommendation.tags],
     cityName: recommendation.cityName,
+    // Kept so the pool still shows a picture when the library is not loaded.
+    image: recommendation.image,
     location: {
         lat: recommendation.location.lat,
         lng: recommendation.location.lng,
@@ -195,4 +206,45 @@ export const toSavedRecommendation = (
     costBand: recommendation.costBand,
     typicalDurationMinutes: recommendation.typicalDurationMinutes,
     sources: recommendation.sources.map((source) => ({ ...source })),
+});
+
+/**
+ * Rebuilds a card-shaped record from what a trip kept.
+ *
+ * The kept pool stores a copy, not a reference, so a saved idea has to be
+ * displayable on its own — the library row may be retired, or simply not
+ * loaded yet. Everything the copy does not carry degrades to empty.
+ */
+export const savedToRecommendation = (saved: SavedRecommendation): Recommendation => ({
+    id: saved.recommendationId,
+    slug: saved.recommendationId,
+    countryCode: '',
+    cityName: saved.cityName,
+    citySlug: null,
+    location: {
+        lat: saved.location.lat,
+        lng: saved.location.lng,
+        address: saved.location.address,
+        formattedAddress: saved.location.address,
+        geocodePrecision: 'unknown',
+        googlePlaceId: null,
+        geocodedAt: null,
+    },
+    locale: 'en',
+    title: saved.title,
+    summary: saved.summary,
+    description: saved.description,
+    highlights: saved.highlights,
+    activityTypes: [...saved.activityTypes],
+    tags: [...saved.tags],
+    costBand: saved.costBand,
+    costNote: null,
+    typicalDurationMinutes: saved.typicalDurationMinutes,
+    bestTimeOfDay: null,
+    image: saved.image ?? null,
+    origin: 'import',
+    sources: saved.sources.map((source) => ({ ...source })),
+    likeCount: 0,
+    qualityScore: null,
+    status: 'published',
 });

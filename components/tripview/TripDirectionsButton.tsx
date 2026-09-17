@@ -1,13 +1,10 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Navigation } from 'lucide-react';
 
 import { Drawer, DrawerContent } from '../ui/drawer';
-import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import {
-    buildDirectionsLinks,
-    resolveDirectionsPlatform,
-    type DirectionsTarget,
-} from '../../shared/mapDirectionsLinks';
+import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
+import { useDirectionsChooser } from '../maps/useDirectionsChooser';
+import type { DirectionsTarget } from '../../shared/mapDirectionsLinks';
 
 interface TripDirectionsButtonProps {
     target: DirectionsTarget;
@@ -16,54 +13,20 @@ interface TripDirectionsButtonProps {
     className?: string;
 }
 
-const openExternally = (url: string): void => {
-    if (typeof window === 'undefined') return;
-    // `geo:` and `maps:` hand off to a native app, which a new tab would leave
-    // behind as an empty window, so the app schemes navigate in place.
-    if (url.startsWith('http')) {
-        window.open(url, '_blank', 'noopener,noreferrer');
-        return;
-    }
-    window.location.href = url;
-};
-
 export const TripDirectionsButton: React.FC<TripDirectionsButtonProps> = ({
     target,
     tripId,
     itemId,
     className,
 }) => {
-    const [isChooserOpen, setIsChooserOpen] = useState(false);
-    const links = useMemo(() => buildDirectionsLinks(target), [target]);
-    const platform = useMemo(
-        () => resolveDirectionsPlatform(typeof navigator !== 'undefined' ? navigator.userAgent : undefined),
-        [],
+    const stableTarget = useMemo(
+        () => target,
+        [target.label, target.coordinates?.lat, target.coordinates?.lng],
     );
-
-    const openDirections = useCallback(() => {
-        if (!links) return;
-        trackEvent('trip_view__directions--open', { trip_id: tripId, item_id: itemId, platform });
-
-        // Android resolves `geo:` through its own app chooser, which is exactly
-        // the native picker asked for. iOS has no such chooser for map links,
-        // so the choice is offered in-app instead.
-        if (platform === 'android') {
-            openExternally(links.geoUri);
-            return;
-        }
-        if (platform === 'ios') {
-            setIsChooserOpen(true);
-            return;
-        }
-        openExternally(links.googleMapsUrl);
-    }, [itemId, links, platform, tripId]);
-
-    const chooseApp = useCallback((app: 'apple' | 'google') => {
-        if (!links) return;
-        trackEvent('trip_view__directions--choose_app', { trip_id: tripId, item_id: itemId, app });
-        setIsChooserOpen(false);
-        openExternally(app === 'apple' ? links.appleMapsUrl : links.googleMapsUrl);
-    }, [itemId, links, tripId]);
+    const { links, isChooserOpen, setIsChooserOpen, openDirections, chooseApp } = useDirectionsChooser(
+        stableTarget,
+        { tripId, itemId },
+    );
 
     if (!links) return null;
 

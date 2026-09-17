@@ -97,12 +97,43 @@ describe('components/recommendations/RecommendationSwipeDeck', () => {
     expect(within(card).getByRole('presentation', { hidden: true })).toBeTruthy();
   });
 
-  it('credits the creator with a link out rather than rehosting anything', () => {
+  it('keeps the creator credit off the swipe card, where the address has to live', () => {
     renderDeck();
 
-    const credit = within(screen.getByTestId('recommendation-card')).getByRole('link', { name: '@creator' });
-    expect(credit).toHaveAttribute('href', 'https://example.test/p');
-    expect(credit).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    const card = screen.getByTestId('recommendation-card');
+    expect(within(card).queryByRole('link', { name: '@creator' })).not.toBeInTheDocument();
+  });
+
+  it('pins the address to the bottom of the card and makes it tappable', () => {
+    renderDeck({
+      recommendations: [makeRecommendation('a')],
+    });
+
+    const address = within(screen.getByTestId('recommendation-card')).getByTestId('recommendation-card-address');
+    expect(address).toHaveAccessibleName('Open Place a in Maps');
+    expect(address).not.toBeDisabled();
+  });
+
+  it('lists the highlights as their own bullets, not buried in the description', () => {
+    renderDeck({
+      recommendations: [makeRecommendation('a', {
+        highlights: ['Order the xiaolongbao', 'Queue before 11:00'],
+      })],
+    });
+
+    const card = screen.getByTestId('recommendation-card');
+    expect(within(card).getByTestId('recommendation-highlights')).toBeInTheDocument();
+    expect(within(card).getByText('Order the xiaolongbao')).toBeInTheDocument();
+    expect(within(card).getByText('Queue before 11:00')).toBeInTheDocument();
+  });
+
+  it('renders the next card whole, so its text is not drawn for the first time mid-swipe', () => {
+    renderDeck({
+      recommendations: [makeRecommendation('a', { title: 'Front' }), makeRecommendation('b', { title: 'Next up' })],
+    });
+
+    const behind = screen.getByTestId('recommendation-card-behind');
+    expect(within(behind).getByText('Next up')).toBeInTheDocument();
   });
 
   it('keeps and skips through the buttons', () => {

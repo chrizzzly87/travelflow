@@ -9,13 +9,11 @@ import {
     type PanInfo,
     type Variants,
 } from 'framer-motion';
-import { Check, MapPin, RotateCcw, X } from 'lucide-react';
+import { Check, RotateCcw, X } from 'lucide-react';
 
-import { ActivityTypeIcon } from '../ActivityTypeVisuals';
-import { formatActivityTypeLabel, getActivityTypePaletteClass } from '../ActivityTypeVisualsUtils';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildRecommendationMapUrl, buildRecommendationPhotoUrl } from './recommendationCardMedia';
-import { formatCostBandLabel, type Recommendation } from '../../shared/recommendations';
+import { RecommendationCardFace } from './RecommendationCardContent';
+import type { Recommendation } from '../../shared/recommendations';
 
 /**
  * Distance past which a release commits, and the flick speed that commits
@@ -25,8 +23,24 @@ import { formatCostBandLabel, type Recommendation } from '../../shared/recommend
 const COMMIT_DISTANCE_PX = 110;
 const COMMIT_VELOCITY = 500;
 const MAX_ROTATION_DEG = 14;
-/** Cards drawn behind the top one, so the stack reads as a stack. */
+/** Cards drawn at once: the top one plus the two staggered behind it. */
 const VISIBLE_STACK = 3;
+
+/**
+ * How far back each card sits.
+ *
+ * Scaling alone hides the cards behind, because a card shrinks around its own
+ * centre and its bottom edge moves *up*. The downward offset has to outrun
+ * that to leave a visible sliver, which is what makes the deck read as a deck.
+ */
+const STACK_SCALE_STEP = 0.05;
+const STACK_OFFSET_PX = 26;
+
+const stackScale = (depth: number): number => Math.max(0.8, 1 - depth * STACK_SCALE_STEP);
+const stackOffset = (depth: number): number => depth * STACK_OFFSET_PX;
+
+/** One spring for the whole stack, so promotion looks like a single motion. */
+const STACK_TRANSITION = { type: 'spring', stiffness: 260, damping: 30, mass: 0.7 } as const;
 
 export type SwipeDecision = 'save' | 'dismiss';
 
@@ -36,13 +50,6 @@ export type SwipeDecision = 'save' | 'dismiss';
  * would still hold the previous card's direction when the exit runs.
  */
 const CARD_VARIANTS: Variants = {
-    enter: { scale: 0.94, y: 16, opacity: 0 },
-    center: {
-        scale: 1,
-        y: 0,
-        opacity: 1,
-        transition: { type: 'spring', stiffness: 320, damping: 32 },
-    },
     exit: (direction: SwipeDecision | null) => ({
         x: direction === 'dismiss' ? -560 : 560,
         rotate: direction === 'dismiss' ? -22 : 22,
@@ -51,160 +58,23 @@ const CARD_VARIANTS: Variants = {
     }),
 };
 
-const formatDuration = (minutes: number | null): string | null => {
-    if (!minutes || minutes <= 0) return null;
-    if (minutes < 60) return `${minutes} min`;
-    const hours = minutes / 60;
-    return Number.isInteger(hours) ? `${hours} h` : `${hours.toFixed(1)} h`;
-};
-
-const CardMedia: React.FC<{ recommendation: Recommendation }> = ({ recommendation }) => {
-    const [photoFailed, setPhotoFailed] = useState(false);
-    const [mapFailed, setMapFailed] = useState(false);
-    const photoUrl = photoFailed ? null : buildRecommendationPhotoUrl(recommendation);
-    const mapUrl = mapFailed ? null : buildRecommendationMapUrl(recommendation);
-
-    return (
-        <div className="relative h-52 shrink-0 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
-            {photoUrl ? (
-                <img
-                    src={photoUrl}
-                    alt=""
-                    loading="lazy"
-                    draggable={false}
-                    onError={() => setPhotoFailed(true)}
-                    className="size-full object-cover"
-                />
-            ) : mapUrl ? (
-                <img
-                    src={mapUrl}
-                    alt=""
-                    loading="lazy"
-                    draggable={false}
-                    onError={() => setMapFailed(true)}
-                    className="size-full object-cover"
-                />
-            ) : (
-                <div className="flex size-full items-center justify-center text-slate-300">
-                    <MapPin size={28} />
-                </div>
-            )}
-
-            {/* The map is always present: as the hero when there is no photo,
-              * and as an inset alongside one, so every card places itself. */}
-            {photoUrl && mapUrl && (
-                <img
-                    src={mapUrl}
-                    alt=""
-                    loading="lazy"
-                    draggable={false}
-                    data-testid="recommendation-card-map"
-                    onError={() => setMapFailed(true)}
-                    className="absolute bottom-2 end-2 size-20 rounded-xl border-2 border-white object-cover shadow-md"
-                />
-            )}
-
-            <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/55 to-transparent" />
-
-            {recommendation.cityName && (
-                <p className="absolute bottom-2 start-3 text-[11px] font-bold uppercase tracking-[0.14em] text-white drop-shadow">
-                    {recommendation.cityName}
-                </p>
-            )}
-
-            {recommendation.image?.attribution && (
-                <p className="absolute top-2 start-3 max-w-[60%] truncate text-[10px] font-medium text-white/85 drop-shadow">
-                    Photo: {recommendation.image.attribution}
-                </p>
-            )}
-        </div>
-    );
-};
-
-const CardBody: React.FC<{ recommendation: Recommendation }> = ({ recommendation }) => {
-    const durationLabel = formatDuration(recommendation.typicalDurationMinutes);
-    const costLabel = formatCostBandLabel(recommendation.costBand);
-    const address = recommendation.location.formattedAddress || recommendation.location.address;
-
-    return (
-        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 pb-3 pt-3">
-            <h2 className="text-[19px] font-semibold leading-tight tracking-tight text-slate-900">
-                {recommendation.title}
-            </h2>
-
-            <div className="flex flex-wrap items-center gap-1">
-                {recommendation.activityTypes.slice(0, 3).map((type) => (
-                    <span
-                        key={type}
-                        className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${getActivityTypePaletteClass(type)}`}
-                    >
-                        <ActivityTypeIcon type={type} size={11} />
-                        {formatActivityTypeLabel(type)}
-                    </span>
-                ))}
-                {costLabel && (
-                    <span className="rounded-full border border-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                        {costLabel}
-                    </span>
-                )}
-                {durationLabel && (
-                    <span className="rounded-full border border-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                        {durationLabel}
-                    </span>
-                )}
-            </div>
-
-            {recommendation.description && (
-                <p className="text-[13px] leading-5 text-slate-600">{recommendation.description}</p>
-            )}
-
-            {address && (
-                <p className="flex items-start gap-1 text-[11px] leading-4 text-slate-400">
-                    <MapPin size={11} className="mt-0.5 shrink-0" />
-                    <span className="line-clamp-2">{address}</span>
-                </p>
-            )}
-
-            {recommendation.sources.length > 0 && (
-                <div className="mt-auto flex flex-wrap items-center gap-1 pt-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">via</span>
-                    {recommendation.sources.slice(0, 3).map((source, index) => {
-                        const label = source.handle ?? 'source';
-                        const key = `${source.url ?? label}-${index}`;
-                        if (!source.url) {
-                            return <span key={key} className="text-[11px] text-slate-500">{label}</span>;
-                        }
-                        return (
-                            <a
-                                key={key}
-                                href={source.url}
-                                target="_blank"
-                                rel="noopener noreferrer nofollow"
-                                onPointerDown={(event) => event.stopPropagation()}
-                                className="text-[11px] font-medium text-accent-700 underline decoration-accent-300 underline-offset-2"
-                            >
-                                {label}
-                            </a>
-                        );
-                    })}
-                </div>
-            )}
-        </div>
-    );
-};
-
 /**
- * The draggable top card.
+ * One card in the stack.
  *
- * Each card owns its own motion value. Sharing one across the deck made the
- * card flying out and the card settling in animate the same `x`, so the
- * incoming card inherited the outgoing card's position.
+ * The same component covers every depth, and only its `depth` prop changes as
+ * the deck advances. That is deliberate: React keeps the element, so framer
+ * animates the promoted card from where it stood to the front instead of it
+ * popping into place. It also means every card — not only the front one —
+ * renders its real content, so nothing appears for the first time mid-swipe.
  */
-const SwipeableCard: React.FC<{
+const StackCard: React.FC<{
     recommendation: Recommendation;
+    tripId: string;
+    depth: number;
     exitDirection: SwipeDecision | null;
     onCommit: (recommendation: Recommendation, decision: SwipeDecision) => void;
-}> = ({ recommendation, exitDirection, onCommit }) => {
+}> = ({ recommendation, tripId, depth, exitDirection, onCommit }) => {
+    const isTop = depth === 0;
     const x = useMotionValue(0);
     const rotate = useTransform(x, [-240, 0, 240], [-MAX_ROTATION_DEG, 0, MAX_ROTATION_DEG]);
     const keepOpacity = useTransform(x, [30, 130], [0, 1]);
@@ -219,39 +89,48 @@ const SwipeableCard: React.FC<{
 
     return (
         <m.div
-            data-testid="recommendation-card"
+            data-testid={isTop ? 'recommendation-card' : 'recommendation-card-behind'}
             data-recommendation-id={recommendation.id}
-            aria-label={`${recommendation.title}. Swipe, or use the left and right arrow keys.`}
-            drag="x"
+            aria-hidden={isTop ? undefined : 'true'}
+            aria-label={isTop ? `${recommendation.title}. Swipe, or use the left and right arrow keys.` : undefined}
+            drag={isTop ? 'x' : false}
             dragSnapToOrigin
             dragElastic={0.65}
             dragConstraints={{ left: 0, right: 0 }}
             onDragEnd={handleDragEnd}
-            style={{ x, rotate, zIndex: VISIBLE_STACK + 1 }}
+            style={{ x, rotate, zIndex: VISIBLE_STACK - depth }}
             custom={exitDirection}
             variants={CARD_VARIANTS}
-            initial="enter"
-            animate="center"
+            initial={{ scale: stackScale(depth + 1), y: stackOffset(depth + 1), opacity: 0 }}
+            animate={{ scale: stackScale(depth), y: stackOffset(depth), opacity: 1 }}
+            transition={STACK_TRANSITION}
             exit="exit"
-            className="absolute inset-0 flex cursor-grab touch-pan-y select-none flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl active:cursor-grabbing"
+            className={`absolute inset-0 flex select-none flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white ${
+                isTop
+                    ? 'cursor-grab touch-pan-y shadow-xl active:cursor-grabbing'
+                    : 'pointer-events-none shadow-md'
+            }`}
         >
-            <m.span
-                aria-hidden="true"
-                style={{ opacity: keepOpacity }}
-                className="absolute top-4 start-4 z-10 rounded-lg border-[3px] border-emerald-500 px-2.5 py-0.5 text-sm font-black uppercase tracking-wider text-emerald-600"
-            >
-                Keep
-            </m.span>
-            <m.span
-                aria-hidden="true"
-                style={{ opacity: skipOpacity }}
-                className="absolute top-4 end-4 z-10 rounded-lg border-[3px] border-rose-500 px-2.5 py-0.5 text-sm font-black uppercase tracking-wider text-rose-600"
-            >
-                Skip
-            </m.span>
+            {isTop && (
+                <>
+                    <m.span
+                        aria-hidden="true"
+                        style={{ opacity: keepOpacity }}
+                        className="absolute top-4 start-4 z-10 rounded-lg border-[3px] border-emerald-500 bg-white/80 px-2.5 py-0.5 text-sm font-black uppercase tracking-wider text-emerald-600"
+                    >
+                        Keep
+                    </m.span>
+                    <m.span
+                        aria-hidden="true"
+                        style={{ opacity: skipOpacity }}
+                        className="absolute top-4 end-4 z-10 rounded-lg border-[3px] border-rose-500 bg-white/80 px-2.5 py-0.5 text-sm font-black uppercase tracking-wider text-rose-600"
+                    >
+                        Skip
+                    </m.span>
+                </>
+            )}
 
-            <CardMedia recommendation={recommendation} />
-            <CardBody recommendation={recommendation} />
+            <RecommendationCardFace recommendation={recommendation} tripId={tripId} interactive={isTop} />
         </m.div>
     );
 };
@@ -277,7 +156,6 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
 
     const stack = useMemo(() => recommendations.slice(0, VISIBLE_STACK), [recommendations]);
     const top = stack[0] ?? null;
-    const behind = stack.slice(1);
 
     const commit = useCallback((recommendation: Recommendation, decision: SwipeDecision) => {
         trackEvent('trip_view__recommendation--decide', {
@@ -330,33 +208,33 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
     return (
         <LazyMotion features={domMax} strict>
             <div className="flex flex-1 flex-col" onKeyDown={handleKeyDown}>
-                <div className="flex flex-1 items-center justify-center px-5 py-2">
-                    <div className="relative h-[min(31rem,100%)] w-full max-w-sm">
-                        {behind.map((recommendation, index) => (
-                            <m.div
-                                key={recommendation.id}
-                                aria-hidden="true"
-                                data-testid="recommendation-card-behind"
-                                initial={false}
-                                animate={{ scale: 1 - (index + 1) * 0.04, y: (index + 1) * 10 }}
-                                transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-                                className="absolute inset-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-md"
-                                style={{ zIndex: VISIBLE_STACK - index - 1 }}
-                            >
-                                <CardMedia recommendation={recommendation} />
-                            </m.div>
-                        ))}
-
+                <div className="flex flex-1 items-center justify-center px-4 py-2">
+                    {/* The box leaves room under the stack for the staggered
+                      * cards, so the deepest one is not clipped by the frame. */}
+                    <div
+                        className="relative w-full max-w-[26rem]"
+                        style={{ height: `min(36rem, 100% - ${stackOffset(VISIBLE_STACK - 1)}px)` }}
+                    >
                         {/* One presence for the whole deck. Nesting it inside the
                           * loop meant it unmounted together with its own child,
-                          * so the exit animation never ran. */}
-                        <AnimatePresence initial={false} custom={exitDirection} mode="popLayout">
-                            <SwipeableCard
-                                key={top.id}
-                                recommendation={top}
-                                exitDirection={exitDirection}
-                                onCommit={commit}
-                            />
+                          * so the exit animation never ran.
+                          *
+                          * No `popLayout`: it wraps each child in a component
+                          * that hands it a ref, and preact/compat drops refs on
+                          * function components. The cards are absolutely
+                          * positioned anyway, so a leaving card displaces
+                          * nothing and there is no layout to pop out of. */}
+                        <AnimatePresence initial={false} custom={exitDirection}>
+                            {stack.map((recommendation, depth) => (
+                                <StackCard
+                                    key={recommendation.id}
+                                    recommendation={recommendation}
+                                    tripId={tripId}
+                                    depth={depth}
+                                    exitDirection={exitDirection}
+                                    onCommit={commit}
+                                />
+                            ))}
                         </AnimatePresence>
                     </div>
                 </div>
