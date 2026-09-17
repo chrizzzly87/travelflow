@@ -45,6 +45,7 @@ import {
   shouldDisplayActivityMarkers,
 } from '../../components/itineraryMapUtils';
 import { isFiniteLatLngLiteral } from '../../shared/coordinateUtils';
+import { getTripMapProviderTuning } from '../../components/maps/tripMapProviderTuning';
 
 describe('components/ItineraryMap route cache helpers', () => {
   it('filters persisted route entries by status and ttl', () => {
@@ -424,7 +425,7 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(highZoomProfile).toEqual(baseProfile);
   });
 
-  it('boosts default city marker size on high zoom without affecting compact tiers', () => {
+  it('trims the default city marker on high zoom without affecting compact tiers', () => {
     const defaultCityProfile = resolveMarkerRenderProfile({ mapDockMode: 'floating', markerTier: 'default' }).city;
     const compactCityProfile = resolveMarkerRenderProfile({ mapDockMode: 'floating', markerTier: 'compact' }).city;
     const zoomBoostedDefaultProfile = resolveZoomEnhancedCityMarkerProfile({
@@ -438,8 +439,10 @@ describe('components/ItineraryMap route cache helpers', () => {
       zoom: 12,
     });
 
-    expect(zoomBoostedDefaultProfile.size).toBeGreaterThan(defaultCityProfile.size);
-    expect(zoomBoostedDefaultProfile.selectedSize).toBeGreaterThan(defaultCityProfile.selectedSize);
+    // Focusing a city now flies in close, so a marker that grew with zoom sat
+    // on top of the city centre it had just framed.
+    expect(zoomBoostedDefaultProfile.size).toBeLessThan(defaultCityProfile.size);
+    expect(zoomBoostedDefaultProfile.selectedSize).toBeLessThan(defaultCityProfile.selectedSize);
     expect(compactUnchangedProfile).toEqual(compactCityProfile);
   });
 
@@ -625,7 +628,31 @@ describe('components/ItineraryMap route cache helpers', () => {
 
     expect(focusTarget).toEqual({
       position: { lat: 50.11, lng: 8.67 },
-      zoom: 13,
+      zoom: getTripMapProviderTuning('google').selection.activityFocusZoom,
+      kind: 'activity',
+    });
+  });
+
+  it('reports a city focus target as a city so it keeps the stable-viewport behaviour', () => {
+    const cities = [{
+      id: 'city-1',
+      type: 'city',
+      title: 'Frankfurt',
+      startDateOffset: 0,
+      duration: 2,
+      color: 'bg-blue-100 border-blue-300 text-blue-800',
+      coordinates: { lat: 50.1109, lng: 8.6821 },
+    }] as any;
+
+    expect(resolveSelectedMapFocusPosition({
+      selectedActivityId: null,
+      selectedCityId: 'city-1',
+      activityMarkerPositions: new Map() as any,
+      cities,
+    })).toEqual({
+      position: { lat: 50.1109, lng: 8.6821 },
+      zoom: getTripMapProviderTuning('google').selection.cityFocusZoom,
+      kind: 'city',
     });
   });
 
@@ -695,6 +722,19 @@ describe('components/ItineraryMap route cache helpers', () => {
     });
   });
 
+  it('always recenters an activity selection, even when it is already comfortably visible', () => {
+    expect(resolveSelectionViewportActions({
+      isTargetVisible: true,
+      isTargetWithinSafeZone: true,
+      currentZoom: 13,
+      targetZoom: 13,
+      alwaysCenter: true,
+    })).toEqual({
+      shouldPan: true,
+      shouldZoom: false,
+    });
+  });
+
   it('re-centers when a selected target is visible but too close to the viewport edge', () => {
     expect(resolveSelectionViewportActions({
       isTargetVisible: true,
@@ -729,14 +769,34 @@ describe('components/ItineraryMap route cache helpers', () => {
       left: 130,
     });
 
+    // Vertical padding is clamped here: the raw 148/148 left only 124px of a
+    // 420px-tall pane for the route itself.
     expect(resolveMapViewportPadding({
       mapDockMode: 'floating',
       mapViewportSize: { width: 640, height: 420 },
     })).toEqual({
-      top: 148,
+      top: 134,
       right: 140,
-      bottom: 148,
+      bottom: 134,
       left: 140,
+    });
+  });
+
+  it('keeps fit padding inside a phone-sized map pane (regression: fit to itinerary framed nothing on mobile)', () => {
+    const mapViewportSize = { width: 360, height: 210 };
+
+    (['google', 'mapbox'] as const).forEach((provider) => {
+      const padding = resolveMapViewportPadding({
+        provider,
+        mapDockMode: 'docked',
+        mapViewportSize,
+      });
+
+      // The pane must keep a usable strip of map on both axes, or `fitBounds`
+      // stops framing the itinerary at all.
+      expect(mapViewportSize.height - (padding.top + padding.bottom)).toBeGreaterThanOrEqual(120);
+      expect(mapViewportSize.width - (padding.left + padding.right)).toBeGreaterThanOrEqual(120);
+      expect(Math.min(padding.top, padding.right, padding.bottom, padding.left)).toBeGreaterThan(0);
     });
   });
 

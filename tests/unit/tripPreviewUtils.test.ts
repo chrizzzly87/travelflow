@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { makeCityItem, makeTrip } from '../helpers/tripFixtures';
+import { makeCityItem, makeTravelItem, makeTrip } from '../helpers/tripFixtures';
 
-import { buildDirectStaticMapPreviewUrlWithKey, buildMiniMapUrl } from '../../components/profile/tripPreviewUtils';
+import {
+  buildDirectMapboxStaticMapPreviewUrlWithToken,
+  buildDirectStaticMapPreviewUrlWithKey,
+  buildMiniMapUrl,
+} from '../../components/profile/tripPreviewUtils';
 
 describe('components/profile/tripPreviewUtils buildMiniMapUrl', () => {
   it('uses city colors for markers and route legs when color data is available', () => {
@@ -42,7 +46,7 @@ describe('components/profile/tripPreviewUtils buildMiniMapUrl', () => {
 
     expect(params.get('coords')).toBe('34.693700,135.502300|35.011600,135.768100|35.676200,139.650300');
     expect(params.get('style')).toBe('standard');
-    expect(params.get('routeMode')).toBe('simple');
+    expect(params.get('routeMode')).toBe('realistic');
     expect(params.get('colorMode')).toBe('trip');
     expect(params.get('pathColor')).toBe('16a34a');
     expect(params.get('legColors')).toBe('dc2626|2563eb');
@@ -174,5 +178,96 @@ describe('components/profile/tripPreviewUtils buildMiniMapUrl', () => {
       'size:mid|color:0x2563eb|label:S|52.520000,13.405000',
     ]);
     expect(query.getAll('style').length).toBeGreaterThan(0);
+  });
+});
+
+describe('components/profile/tripPreviewUtils flight legs', () => {
+  const makeFlightTrip = () => makeTrip({
+    items: [
+      makeCityItem({
+        id: 'city-lim',
+        title: 'Lima',
+        startDateOffset: 0,
+        duration: 2,
+        color: '#16a34a',
+        coordinates: { lat: -12.0464, lng: -77.0428 },
+      }),
+      { ...makeTravelItem('travel-1', 2, 'Lima to Cusco'), transportMode: 'plane' as const },
+      makeCityItem({
+        id: 'city-cus',
+        title: 'Cusco',
+        startDateOffset: 2.2,
+        duration: 3,
+        color: '#2563eb',
+        coordinates: { lat: -13.5319, lng: -71.9675 },
+      }),
+    ],
+  });
+
+  it('sends the per-leg transport mode so a flight is not drawn as a road trip', () => {
+    const url = buildMiniMapUrl(makeFlightTrip(), 'en');
+    const params = new URL(url!, 'https://travelflow.local').searchParams;
+    expect(params.get('legModes')).toBe('plane');
+  });
+
+  it('omits legModes when no leg is a flight (keeps the existing CDN cache key)', () => {
+    const trip = makeTrip({
+      items: [
+        makeCityItem({
+          id: 'city-1',
+          title: 'Osaka',
+          startDateOffset: 0,
+          duration: 2,
+          coordinates: { lat: 34.6937, lng: 135.5023 },
+        }),
+        makeTravelItem('travel-1', 2, 'Osaka to Kyoto'),
+        makeCityItem({
+          id: 'city-2',
+          title: 'Kyoto',
+          startDateOffset: 2.2,
+          duration: 2,
+          coordinates: { lat: 35.0116, lng: 135.7681 },
+        }),
+      ],
+    });
+
+    const params = new URL(buildMiniMapUrl(trip, 'en')!, 'https://travelflow.local').searchParams;
+    expect(params.get('legModes')).toBeNull();
+  });
+
+  it('draws an encoded arc for a plane leg on the direct Static Maps URL', () => {
+    const params = new URLSearchParams();
+    params.set('coords', '-12.046400,-77.042800|-13.531900,-71.967500');
+    params.set('colorMode', 'trip');
+    params.set('pathColor', '16a34a');
+    params.set('legModes', 'plane');
+
+    const paths = new URL(
+      buildDirectStaticMapPreviewUrlWithKey(params, 'test-key')!,
+      'https://travelflow.local',
+    ).searchParams.getAll('path');
+
+    expect(paths).toHaveLength(1);
+    expect(paths[0]).toContain('|enc:');
+    expect(paths[0]).not.toContain('-12.046400,-77.042800|-13.531900,-71.967500');
+  });
+
+  it('draws an arc, not a two-point line, for a plane leg on the direct Mapbox URL', () => {
+    const buildFor = (legModes: string | null): string => {
+      const params = new URLSearchParams();
+      params.set('coords', '-12.046400,-77.042800|-13.531900,-71.967500');
+      params.set('colorMode', 'trip');
+      params.set('pathColor', '16a34a');
+      if (legModes) params.set('legModes', legModes);
+      return buildDirectMapboxStaticMapPreviewUrlWithToken(params, 'test-token')!;
+    };
+
+    const straight = buildFor(null);
+    const flight = buildFor('plane');
+
+    expect(flight).toContain('api.mapbox.com/styles/v1/');
+    expect(decodeURIComponent(flight)).toContain('path-4+16a34a');
+    expect(flight).not.toBe(straight);
+    expect(flight.length).toBeGreaterThan(straight.length);
   });
 });

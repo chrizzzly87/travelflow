@@ -128,37 +128,40 @@ function InputGroupText({ className, ...props }: React.ComponentProps<"span">) {
   )
 }
 
-function InputGroupInput({
-  className,
-  ...props
-}: React.ComponentProps<"input">) {
-  return (
-    <Input
-      data-slot="input-group-control"
-      className={cn(
-        "flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent",
-        className
-      )}
-      {...props}
-    />
-  )
-}
+// forwardRef, not a plain function component: this app renders through
+// preact/compat, where a plain function component never receives `ref`, so a
+// caller that needs to focus or measure the field would silently get nothing.
+const InputGroupInput = React.forwardRef<
+  HTMLInputElement,
+  React.ComponentProps<"input">
+>(({ className, ...props }, ref) => (
+  <Input
+    ref={ref}
+    data-slot="input-group-control"
+    className={cn(
+      "flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent",
+      className
+    )}
+    {...props}
+  />
+))
+InputGroupInput.displayName = "InputGroupInput"
 
-function InputGroupTextarea({
-  className,
-  ...props
-}: React.ComponentProps<"textarea">) {
-  return (
-    <Textarea
-      data-slot="input-group-control"
-      className={cn(
-        "flex-1 resize-none rounded-none border-0 bg-transparent py-3 shadow-none focus-visible:ring-0 dark:bg-transparent",
-        className
-      )}
-      {...props}
-    />
-  )
-}
+const InputGroupTextarea = React.forwardRef<
+  HTMLTextAreaElement,
+  React.ComponentProps<"textarea">
+>(({ className, ...props }, ref) => (
+  <Textarea
+    ref={ref}
+    data-slot="input-group-control"
+    className={cn(
+      "flex-1 resize-none rounded-none border-0 bg-transparent py-3 shadow-none focus-visible:ring-0 dark:bg-transparent",
+      className
+    )}
+    {...props}
+  />
+))
+InputGroupTextarea.displayName = "InputGroupTextarea"
 
 export {
   InputGroup,

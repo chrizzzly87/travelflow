@@ -185,9 +185,9 @@ const mapLanguageToGoogleLanguage = (language?: AppLanguage): string | undefined
   return language;
 };
 
-export const searchCitySuggestions = async (
+const searchSuggestions = async (
   query: string,
-  options?: { language?: AppLanguage; maxResults?: number },
+  options?: { language?: AppLanguage; maxResults?: number; includedType?: string },
 ): Promise<CityLookupSuggestion[]> => {
   const trimmedQuery = query.trim();
   if (!trimmedQuery) return [];
@@ -216,12 +216,14 @@ export const searchCitySuggestions = async (
           baseRequest.language = language;
         }
 
-        const typedResponse = await searchByText({
-          ...baseRequest,
-          includedType: 'locality',
-        }) as SearchByTextResponseShape;
-        const typedSuggestions = mapSearchByTextResponseToCitySuggestions(typedResponse, maxResults);
-        if (typedSuggestions.length > 0) return typedSuggestions;
+        if (options?.includedType) {
+          const typedResponse = await searchByText({
+            ...baseRequest,
+            includedType: options.includedType,
+          }) as SearchByTextResponseShape;
+          const typedSuggestions = mapSearchByTextResponseToCitySuggestions(typedResponse, maxResults);
+          if (typedSuggestions.length > 0) return typedSuggestions;
+        }
 
         const relaxedResponse = await searchByText(baseRequest) as SearchByTextResponseShape;
         const relaxedSuggestions = mapSearchByTextResponseToCitySuggestions(relaxedResponse, maxResults);
@@ -241,6 +243,24 @@ export const searchCitySuggestions = async (
     return [];
   }
 };
+
+export const searchCitySuggestions = (
+  query: string,
+  options?: { language?: AppLanguage; maxResults?: number },
+): Promise<CityLookupSuggestion[]> => (
+  searchSuggestions(query, { ...options, includedType: 'locality' })
+);
+
+/**
+ * Same lookup as `searchCitySuggestions`, but without the locality bias so that
+ * venues, landmarks and addresses can be found (used for activity locations).
+ */
+export const searchPlaceSuggestions = (
+  query: string,
+  options?: { language?: AppLanguage; maxResults?: number },
+): Promise<CityLookupSuggestion[]> => (
+  searchSuggestions(query, { ...options, includedType: undefined })
+);
 
 export const resolveCitySuggestion = async (
   query: string,

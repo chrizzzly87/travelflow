@@ -19,6 +19,7 @@ import {
     SlidersHorizontal,
     UsersThree,
     X,
+    MapPin,
 } from '@phosphor-icons/react';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
@@ -61,6 +62,7 @@ const NAV_ICONS: Record<AdminNavIconKey, React.ComponentType<{ size?: number; we
     trips: SuitcaseRolling,
     airports: AirplaneTakeoff,
     destinations: GlobeHemisphereWest,
+    recommendations: MapPin,
     tiers: StackSimple,
     billing: CreditCard,
     audit: Scroll,

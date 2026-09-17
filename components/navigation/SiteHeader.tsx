@@ -22,9 +22,16 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
     importer: () => Promise<TModule>
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
 
-const MobileMenu = lazyWithRecovery('MobileMenu', () =>
-    import('./MobileMenu').then((module) => ({ default: module.MobileMenu }))
-);
+const loadMobileMenuModule = () => import('./MobileMenu').then((module) => ({ default: module.MobileMenu }));
+
+const MobileMenu = lazyWithRecovery('MobileMenu', loadMobileMenuModule);
+
+// The burger is painted by the prerendered shell long before this chunk exists,
+// so a tap used to sit dead while the chunk was fetched (Suspense renders
+// nothing). Warm it on the first hint of intent instead.
+const prewarmMobileMenu = () => {
+    void loadMobileMenuModule().catch(() => undefined);
+};
 
 const AccountMenu = lazyWithRecovery('AccountMenu', () =>
     import('./AccountMenu').then((module) => ({ default: module.AccountMenu }))
@@ -275,6 +282,9 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                         )}
                         <button type="button"
                             onClick={() => setIsMobileMenuOpen(true)}
+                            onPointerEnter={prewarmMobileMenu}
+                            onPointerDown={prewarmMobileMenu}
+                            onFocus={prewarmMobileMenu}
                             className={burgerClass}
                             aria-label={t('nav.openMenu')}
                             {...getAnalyticsDebugAttributes('mobile_nav__menu--open')}

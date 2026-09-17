@@ -14,13 +14,14 @@
 2. Follow existing project conventions and keep routes/components non-breaking.
 3. For locale/translation/routing updates, follow `docs/I18N_PAGE_WORKFLOW.md`.
 4. For user-facing copy updates (marketing, CTA, planner), follow `docs/UX_COPY_GUIDELINES.md`.
-5. For analytics updates, follow `docs/ANALYTICS_CONVENTION.md`.
-6. For localized copy placeholders, use ICU syntax (`{name}`), never `{{name}}`. Note: `i18next-icu` ships but is not registered in `i18n.ts`, so ICU plural/select blocks render as raw text — use plain interpolation.
-7. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
+5. Before building any UI layout by hand, check `docs/DESIGN_SYSTEM_COMPONENTS.md` for an existing shared component in `components/ui/`; the admin visual contract is `docs/DESIGN.md`.
+6. For analytics updates, follow `docs/ANALYTICS_CONVENTION.md`.
+7. For localized copy placeholders, use ICU syntax (`{name}`), never `{{name}}`. Note: `i18next-icu` ships but is not registered in `i18n.ts`, so ICU plural/select blocks render as raw text — use plain interpolation.
+8. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
 
 ## Skill usage policy
 - Use `vercel-react-best-practices` for React performance/refactor tasks; apply only relevant high-impact guidance for the active change.
-- Run `pnpm dlx react-doctor@latest . --verbose --diff` after substantial React edits, fix errors before merge, and triage warnings pragmatically.
+- `react-doctor` is optional, not a gate: reach for `pnpm dlx react-doctor@latest . --verbose --diff` when a React change feels risky, and triage what it reports pragmatically.
 - Avoid adding `useEffect` unless the component must synchronize with an external system such as network state, browser APIs, timers, subscriptions, or imperative third-party widgets. Prefer render-time derivation, event handlers, `useMemo` for expensive pure calculations, `useSyncExternalStore` for external stores, and `key`-based resets; every remaining effect should have tight dependencies and cleanup when it owns external resources.
 - Use `find-skills` only when a task requires discovery of capabilities not already covered by current skills/workflows.
 - Avoid unnecessary skill runs for straightforward changes.
@@ -63,7 +64,6 @@ When a user-facing feature, fix, or behavior change is completed, you must updat
 - Tick a checklist box against the issue's own wording, not your memory of the session; audit inherited `Closes #123` lines before pushing to a branch.
 - State exactly what was verified. "No longer bundled" is not "removed from package.json".
 - Keep one curated release note per feature: a dozen user-facing lines for the release, not one line per iteration.
-- Run `pnpm dlx react-doctor@latest <changed dirs> --verbose` after each UI batch, not once at the end.
 - New overlays are dialogs: `role="dialog"`, `aria-modal`, focus capture and trap, Escape, mobile backdrop, focus restored to the trigger.
 
 ## Completion gate
@@ -75,6 +75,7 @@ Before finalizing, ensure all applicable code changes are represented in release
 - For PRs adding files under `services/` or `config/`, include corresponding `tests/**` entries in the PR checklist/description.
 - For TripView/route-loader orchestration changes, follow `docs/TESTING_PHASE2_SCOPE.md` for phase-2 regression coverage.
 - For destination coverage changes (new countries, cities, islands, or refreshed source data), regenerating `data/destinationGuides.json` is not enough: the public API reads from Supabase. Run the sync steps in `docs/DESTINATION_INGESTION_RUNBOOK.md` and verify with `curl /api/destinations/<slug>?include=source-profile`, not by checking that the page returns 200.
+- For place-recommendation changes, `data/recommendations/*.json` is a seed and an offline fallback, not the source of truth — the deck reads published rows from Supabase. Follow `docs/RECOMMENDATIONS_CONTENT_RUNBOOK.md`, and verify with `curl "/api/recommendations?country=TW"` rather than by checking the bundled file.
 - Manual CLI alias deploys (`netlify deploy --no-build --dir=dist --alias ...`) do not serve Netlify edge functions, so every `/api/*` route returns the SPA shell. Verify API-dependent behaviour on a real Deploy Preview or production — see `docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md`.
 
 ## Direction-Safety Requirement

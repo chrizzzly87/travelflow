@@ -1,12 +1,22 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, ChevronsUpDown, Plus, Search, X } from 'lucide-react';
+import { CaretUpDown, Check, Plus, X } from '@phosphor-icons/react';
 
 import { AiProviderLogo } from './AiProviderLogo';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
+import {
+    Dialog,
+    DialogBody,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '../ui/dialog';
 import { Input } from '../ui/input';
+import { SearchInput } from '../ui/search-input';
+import { cn } from '../../lib/utils';
 import { groupAiModelsByProvider, type AiModelCatalogItem } from '../../config/aiModelCatalog';
 
 const matchesQuery = (model: AiModelCatalogItem, query: string): boolean => {
@@ -31,7 +41,13 @@ const ModelSearchList: React.FC<{
     emptyLabel: string;
     placeholder: string;
     autoFocus?: boolean;
-}> = ({ models, query, onQueryChange, onPick, isSelected, emptyLabel, placeholder, autoFocus }) => {
+    /**
+     * Horizontal inset for the search row and the result rows. In a dialog
+     * this is the dialog's own gutter, so the list lines up with the title
+     * instead of running edge to edge.
+     */
+    inset?: string;
+}> = ({ models, query, onQueryChange, onPick, isSelected, emptyLabel, placeholder, autoFocus, inset }) => {
     const [activeIndex, setActiveIndex] = useState(0);
     const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -57,13 +73,15 @@ const ModelSearchList: React.FC<{
 
     return (
         <div className="flex min-h-0 flex-col">
-            <div className="relative">
-                <Search className="pointer-events-none absolute inset-inline-start-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                <Input
+            <div className={cn('shrink-0', inset)}>
+                <SearchInput
                     autoFocus={autoFocus}
                     value={query}
                     placeholder={placeholder}
-                    className="ps-9"
+                    onClear={() => {
+                        onQueryChange('');
+                        setActiveIndex(0);
+                    }}
                     onChange={(event) => {
                         onQueryChange(event.currentTarget.value);
                         setActiveIndex(0);
@@ -83,7 +101,7 @@ const ModelSearchList: React.FC<{
                 />
             </div>
 
-            <div ref={listRef} className="mt-3 min-h-0 flex-1 overflow-y-auto pe-1">
+            <div ref={listRef} className={cn('mt-3 min-h-0 flex-1 overflow-y-auto', inset)}>
                 {flat.length === 0 ? (
                     <p className="py-8 text-center text-sm text-slate-500">{emptyLabel}</p>
                 ) : Object.entries(grouped).map(([providerLabel, providerModels]: [string, AiModelCatalogItem[]]) => (
@@ -117,7 +135,7 @@ const ModelSearchList: React.FC<{
                                             {model.availability !== 'active' && (
                                                 <Badge variant="secondary" className="shrink-0">Planned</Badge>
                                             )}
-                                            {selected && <Check className="size-4 shrink-0 text-accent-600" />}
+                                            {selected && <Check weight="bold" className="size-4 shrink-0 text-accent-600" />}
                                         </button>
                                     </li>
                                 );
@@ -138,15 +156,30 @@ export const AiModelPicker: React.FC<{
 }> = ({ value, models, onChange }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState('');
+    // Picking a row stages the choice; the footer commits it. That keeps the
+    // model you are about to set visible while you scroll a long catalogue.
+    const [pendingId, setPendingId] = useState(value);
     const selected = models.find((model) => model.id === value) || null;
+    const pending = models.find((model) => model.id === pendingId) || null;
     const [provider, model] = value.includes(':') ? value.split(/:(.*)/s) : ['', value];
+
+    const openPicker = () => {
+        setQuery('');
+        setPendingId(value);
+        setIsOpen(true);
+    };
+
+    const commit = () => {
+        if (pendingId) onChange(pendingId);
+        setIsOpen(false);
+    };
 
     return (
         <>
             <button
                 type="button"
-                onClick={() => { setQuery(''); setIsOpen(true); }}
-                className="flex h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 transition hover:border-slate-400 focus-visible:border-accent-400 focus-visible:outline-none"
+                onClick={openPicker}
+                className="flex min-h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 transition hover:border-slate-400 focus-visible:border-accent-400 focus-visible:outline-none"
             >
                 <span className="flex min-w-0 items-center gap-2">
                     <AiProviderLogo provider={selected?.provider || provider} model={selected?.model || model} size={18} />
@@ -155,30 +188,57 @@ export const AiModelPicker: React.FC<{
                         <span className="block truncate font-mono text-[11px] text-slate-500">{value}</span>
                     </span>
                 </span>
-                <ChevronsUpDown className="size-4 shrink-0 opacity-60" />
+                <CaretUpDown weight="bold" className="size-4 shrink-0 text-slate-500" />
             </button>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="flex max-h-[80vh] flex-col sm:max-w-lg">
+                <DialogContent size="md" showCloseButton>
                     <DialogHeader>
                         <DialogTitle>Default AI model</DialogTitle>
                         <DialogDescription>
                             The planner and the Trip Agent both follow this. Only approved models are used at runtime.
                         </DialogDescription>
                     </DialogHeader>
-                    <ModelSearchList
-                        autoFocus
-                        models={models}
-                        query={query}
-                        onQueryChange={setQuery}
-                        isSelected={(item) => item.id === value}
-                        placeholder="Search a provider or model…"
-                        emptyLabel="No model matches that search."
-                        onPick={(item) => {
-                            onChange(item.id);
-                            setIsOpen(false);
-                        }}
-                    />
+                    {/* The result list runs its own scroller, so the body must not add a second one. */}
+                    <DialogBody padded={false} scroll={false} className="flex flex-col pb-4">
+                        <ModelSearchList
+                            autoFocus
+                            inset="px-5"
+                            models={models}
+                            query={query}
+                            onQueryChange={setQuery}
+                            isSelected={(item) => item.id === pendingId}
+                            placeholder="Search a provider or model…"
+                            emptyLabel="No model matches that search."
+                            onPick={(item) => setPendingId(item.id)}
+                        />
+                    </DialogBody>
+
+                    <DialogFooter className="justify-between gap-3">
+                        <span className="flex min-w-0 flex-1 items-center gap-2">
+                            <AiProviderLogo
+                                provider={pending?.provider || pendingId.split(':')[0]}
+                                model={pending?.model || pendingId}
+                                size={18}
+                            />
+                            <span className="min-w-0 text-start">
+                                <span className="block truncate text-sm font-medium text-slate-900">
+                                    {pending?.label || pendingId || 'No model selected'}
+                                </span>
+                                <span className="block truncate font-mono text-[11px] text-slate-500">
+                                    {pendingId}
+                                </span>
+                            </span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2">
+                            <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button type="button" onClick={commit} disabled={!pendingId || pendingId === value}>
+                                Use this model
+                            </Button>
+                        </span>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </>
@@ -215,12 +275,11 @@ export const ApprovedOpenRouterModelsField: React.FC<{
 
     return (
         <div>
-            <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-slate-600">Approved OpenRouter models</span>
+            <div className="mb-2 flex items-center justify-end">
                 <Badge variant="secondary">{value.length} approved</Badge>
             </div>
 
-            <div className="rounded-xl border border-slate-200 p-2">
+            <div className="rounded-lg border border-slate-200 p-2">
                 <div className="flex h-72 flex-col">
                     <ModelSearchList
                         models={openRouterModels}
@@ -248,7 +307,7 @@ export const ApprovedOpenRouterModelsField: React.FC<{
                                 onClick={() => onChange(value.filter((entry) => entry !== model))}
                                 className="rounded-full p-0.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
                             >
-                                <X className="size-3" />
+                                <X weight="bold" className="size-3" />
                             </button>
                         </span>
                     ))}
@@ -283,7 +342,7 @@ export const ApprovedOpenRouterModelsField: React.FC<{
                         setCustomModel('');
                     }}
                 >
-                    <Plus className="size-4" /> Add
+                    <Plus weight="bold" className="size-4" /> Add
                 </Button>
             </div>
         </div>

@@ -24,23 +24,39 @@ export const CookieConsentBanner: React.FC = () => {
             return;
         }
 
+        let mountTimeoutId: number | null = null;
+
         const triggerBanner = () => {
-            setShouldRender(true);
-            cleanup();
+            removeListeners();
+            // Render on the next macrotask rather than inside the interaction that
+            // armed the banner. Mounting on `mousedown` inserted a fixed bar over
+            // the bottom of the viewport while the pointer was still down, so a
+            // click started on a control down there resolved against the banner.
+            mountTimeoutId = window.setTimeout(() => {
+                mountTimeoutId = null;
+                setShouldRender(true);
+            }, 0);
+        };
+
+        const removeListeners = () => {
+            window.removeEventListener('scroll', triggerBanner);
+            window.removeEventListener('pointerup', triggerBanner);
+            window.removeEventListener('keyup', triggerBanner);
         };
 
         const cleanup = () => {
-            window.removeEventListener('scroll', triggerBanner);
-            window.removeEventListener('mousedown', triggerBanner);
-            window.removeEventListener('touchstart', triggerBanner);
-            window.removeEventListener('keydown', triggerBanner);
+            removeListeners();
+            if (mountTimeoutId !== null) {
+                window.clearTimeout(mountTimeoutId);
+                mountTimeoutId = null;
+            }
         };
 
-        // Trigger rendering immediately on first user interaction
+        // Arm on the first user interaction, but only once it has finished:
+        // `pointerup` covers both mouse and touch, `scroll` covers a plain swipe.
         window.addEventListener('scroll', triggerBanner, { passive: true });
-        window.addEventListener('mousedown', triggerBanner, { passive: true });
-        window.addEventListener('touchstart', triggerBanner, { passive: true });
-        window.addEventListener('keydown', triggerBanner, { passive: true });
+        window.addEventListener('pointerup', triggerBanner, { passive: true });
+        window.addEventListener('keyup', triggerBanner, { passive: true });
 
         return cleanup;
     }, []);

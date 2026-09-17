@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Check, CopySimple, Sparkle } from '@phosphor-icons/react';
-import { AlertTriangle, WifiOff } from 'lucide-react';
+import { AlertTriangle, WifiOff, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { PLAN_CATALOG } from '../../config/planCatalog';
@@ -128,6 +128,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     exampleTripBanner,
 }) => {
     const { t, i18n } = useTranslation(['common', 'pricing']);
+    const [isExampleBannerDismissed, setIsExampleBannerDismissed] = React.useState(false);
     const shouldShowConnectivityStrip = Boolean(connectivityState && connectivityState !== 'online');
     const shouldShowSyncStrip = pendingSyncCount > 0 || isSyncingQueue;
     const showSyncStatusStrip = shouldShowConnectivityStrip || shouldShowSyncStrip;
@@ -575,10 +576,22 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                 </div>
             )}
 
-            {exampleTripBanner && (
-                <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[1450] sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-[420px]">
-                    <div className="rounded-2xl border border-accent-200 bg-white/95 px-4 py-3 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/85">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700">Example trip playground</p>
+            {/* Sits below the header on a phone rather than pinned to the bottom:
+              * the bottom belongs to the day sheet, and this notice used to lie
+              * on top of it and swallow its taps. It is dismissible so it never
+              * keeps the map controls covered either. */}
+            {exampleTripBanner && !isExampleBannerDismissed && (
+                <div className="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+4.75rem)] z-[1450] sm:inset-x-auto sm:right-6 sm:top-auto sm:bottom-6 sm:w-[420px]">
+                    <div className="relative rounded-2xl border border-accent-200 bg-white/95 px-4 py-3 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/85">
+                        <button
+                            type="button"
+                            onClick={() => setIsExampleBannerDismissed(true)}
+                            className="absolute end-2 top-2 inline-flex size-7 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                            aria-label="Dismiss example trip notice"
+                        >
+                            <X size={14} />
+                        </button>
+                        <p className="pe-8 text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700">Example trip playground</p>
                         <p className="mt-1 text-sm font-semibold text-slate-900">Explore freely. Copy when you want to keep and edit.</p>
                         <p className="mt-1 text-xs leading-relaxed text-slate-600">
                             This itinerary is for illustration only and never saves changes.

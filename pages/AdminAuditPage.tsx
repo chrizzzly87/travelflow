@@ -1686,7 +1686,7 @@ export const AdminAuditPage: React.FC = () => {
                             Pick the start and end date used by the audit filters and replay export.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="px-5 py-4">
+                    <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                         <DateRangePicker
                             startDate={customStartDate}
                             endDate={customEndDate}

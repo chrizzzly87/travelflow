@@ -10,9 +10,23 @@ type PlannerProps = React.ComponentProps<typeof TripViewPlannerWorkspace>;
 const baseProps = (): PlannerProps => ({
   isPaywallLocked: false,
   isMobile: false,
-  isMobileMapExpanded: false,
-  onCloseMobileMap: vi.fn(),
-  onToggleMobileMapExpanded: vi.fn(),
+  trip: {
+    id: 'trip-1',
+    title: 'Test trip',
+    startDate: '2026-05-04',
+    items: [
+      { id: 'city-a', type: 'city', title: 'Sintra', startDateOffset: 0, duration: 1.5, color: '#16a34a' },
+      { id: 'travel-a', type: 'travel', title: 'Train', startDateOffset: 1.5, duration: 0.3, color: '#64748b', transportMode: 'train', departureTime: '11:00' },
+      { id: 'city-b', type: 'city', title: 'Porto', startDateOffset: 1.5, duration: 2, color: '#2563eb' },
+    ],
+    createdAt: 0,
+    updatedAt: 0,
+  },
+  onSelectTimelineItem: vi.fn(),
+  onUpdateTimelineItem: vi.fn(),
+  onSetLegTransport: vi.fn(),
+  onAddTimelineActivity: vi.fn(),
+  appLanguage: 'en',
   timelineCanvas: React.createElement('div', { 'data-testid': 'timeline-canvas' }, 'canvas'),
   onTimelineTouchStart: vi.fn(),
   onTimelineTouchMove: vi.fn(),
@@ -104,15 +118,21 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.queryByLabelText('Zoom in timeline')).not.toBeInTheDocument();
   });
 
-  it('hides the zoom indicator on mobile while keeping the zoom actions available', () => {
+  it('keeps the timeline controls out of the map layer on mobile until the itinerary panel is open', () => {
     const props = baseProps();
     props.isMobile = true;
 
     render(React.createElement(TripViewPlannerWorkspace, props));
 
+    // The controls used to float over the map pane, which put the map's own
+    // dropdowns underneath them.
+    expect(screen.queryByTestId('planner-timeline-controls')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Full itinerary'));
+
+    expect(screen.getByTestId('planner-timeline-controls')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom out timeline')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom in timeline')).toBeInTheDocument();
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('falls back to a safe zoom label when the incoming zoom level is malformed', () => {
@@ -124,17 +144,44 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.getByRole('status')).toHaveTextContent('×1.0');
   });
 
-  it('renders the map above the timeline on mobile', () => {
+  it('gives the mobile map the full pane behind the day sheet', () => {
     const props = baseProps();
     props.isMobile = true;
 
     render(React.createElement(TripViewPlannerWorkspace, props));
 
     const mapPane = screen.getByTestId('planner-mobile-map-pane');
-    const timelinePane = screen.getByTestId('planner-mobile-timeline-pane');
-    expect(mapPane.className).toContain('h-[26vh]');
-    expect(mapPane.className).toContain('min-h-[180px]');
-    expect(mapPane.compareDocumentPosition(timelinePane) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const sheet = screen.getByTestId('planner-mobile-sheet');
+
+    expect(mapPane.className).toContain('absolute');
+    expect(mapPane.className).toContain('inset-x-0');
+    expect(mapPane.className).toContain('top-0');
+    expect(screen.getByTestId('planner-mobile-day-strip')).toBeInTheDocument();
+    expect(sheet).toHaveAttribute('data-snap', 'half');
+
+    // One control: it grows the sheet while there is room, then collapses.
+    fireEvent.click(screen.getByTestId('planner-mobile-sheet-toggle'));
+    expect(sheet).toHaveAttribute('data-snap', 'full');
+    expect(screen.getByLabelText('Collapse day panel')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('planner-mobile-sheet-toggle'));
+    expect(sheet).toHaveAttribute('data-snap', 'peek');
+    expect(screen.getByLabelText('Expand day panel')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('planner-mobile-sheet-toggle'));
+    expect(sheet).toHaveAttribute('data-snap', 'half');
+  });
+
+  it('keeps the day strip snapping and drag-scrollable on mobile', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    const strip = screen.getByTestId('planner-mobile-day-strip');
+    expect(strip.className).toContain('snap-x');
+    expect(strip.className).toContain('snap-mandatory');
+    expect(strip.className).toContain('overflow-x-auto');
   });
 
   it('minimizes map into floating mode when toggle is clicked', () => {
@@ -304,4 +351,239 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(gripBar).toHaveClass('group-hover:bg-accent-500');
   });
 
+  it('uses a calendar icon for the day-by-day view', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    const dayViewButton = screen.getByLabelText('Day by day');
+    expect(dayViewButton.querySelector('.lucide-calendar-days')).toBeTruthy();
+  });
+
+  it('opens the transport picker for a leg and writes the chosen mode', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    // Day 2 is the half-day handover between the two stays.
+    fireEvent.click(screen.getAllByRole('tab')[1]);
+    fireEvent.click(screen.getByTestId('mobile-day-transport-edit'));
+
+    expect(screen.getByTestId('mobile-transport-modal')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Plane' }));
+
+    expect(props.onSetLegTransport).toHaveBeenCalledWith(
+      { fromCityId: 'city-a', toCityId: 'city-b', travelItemId: 'travel-a' },
+      'plane',
+    );
+  });
+
+  it('shows the day of a move twice, once per city, with the journey between them', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    // Sintra runs into the middle of day 2 and Porto takes the rest of it, so
+    // day 2 is both a Sintra day and a Porto day.
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.map((tab) => tab.getAttribute('title'))).toEqual([
+      'Monday, May 4 — Sintra',
+      'Tuesday, May 5 — Sintra',
+      'Tuesday, May 5 — Porto',
+      'Wednesday, May 6 — Porto',
+      'Thursday, May 7 — Porto',
+    ]);
+
+    // The journey sits between the two halves of that day.
+    const stripChildren = Array.from(screen.getByTestId('planner-mobile-day-strip').children);
+    const nodeColumn = screen.getByTestId('planner-mobile-transfer-node').closest('div.shrink-0');
+    expect(stripChildren.indexOf(nodeColumn as Element)).toBe(2);
+  });
+
+  it('shows what happens in each city on the day of a move', () => {
+    const props = baseProps();
+    props.isMobile = true;
+    props.trip = {
+      ...props.trip,
+      items: [
+        ...props.trip.items,
+        { id: 'act-morning', type: 'activity', title: 'Pena Palace', startDateOffset: 1.2, duration: 0.1, color: '#f59e0b' },
+        { id: 'act-evening', type: 'activity', title: 'Porto dinner', startDateOffset: 1.8, duration: 0.1, color: '#f59e0b' },
+      ],
+    };
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    // The Sintra half of the day holds the morning, and leads with leaving.
+    fireEvent.click(screen.getAllByRole('tab')[1]);
+    expect(screen.getByText('Pena Palace')).toBeInTheDocument();
+    expect(screen.queryByText('Porto dinner')).not.toBeInTheDocument();
+    expect(screen.getByText('Leave Sintra for Porto')).toBeInTheDocument();
+
+    // The Porto half holds the evening, and leads with arriving.
+    fireEvent.click(screen.getAllByRole('tab')[2]);
+    expect(screen.getByText('Porto dinner')).toBeInTheDocument();
+    expect(screen.queryByText('Pena Palace')).not.toBeInTheDocument();
+    expect(screen.getByText('Arrive in Porto')).toBeInTheDocument();
+  });
+
+  it('gives a leg with no transport a node that reads n/a and can still be set', () => {
+    const props = baseProps();
+    props.isMobile = true;
+    // A generated trip can hold two stays with nothing between them.
+    props.trip = {
+      ...props.trip,
+      items: props.trip.items.filter((item) => item.type !== 'travel'),
+    };
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    expect(screen.getByTestId('planner-mobile-transfer-duration')).toHaveTextContent('n/a');
+
+    fireEvent.click(screen.getByTestId('planner-mobile-transfer-node'));
+    expect(screen.getByTestId('mobile-transport-modal')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Train' }));
+
+    // No item to patch, so the leg is written from the two stays it joins.
+    expect(props.onSetLegTransport).toHaveBeenCalledWith(
+      { fromCityId: 'city-a', toCityId: 'city-b', travelItemId: null },
+      'train',
+    );
+  });
+
+  it('opens the transport picker straight from the strip node', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+    fireEvent.click(screen.getByTestId('planner-mobile-transfer-node'));
+
+    expect(screen.getByTestId('mobile-transport-modal')).toBeInTheDocument();
+    expect(props.onSelectTimelineItem).toHaveBeenCalledWith('travel-a');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Bus' }));
+    expect(props.onSetLegTransport).toHaveBeenCalledWith(
+      { fromCityId: 'city-a', toCityId: 'city-b', travelItemId: 'travel-a' },
+      'bus',
+    );
+  });
+
+  it('leaves the transport node selecting only when the trip cannot be edited', () => {
+    const props = baseProps();
+    props.isMobile = true;
+    props.onUpdateTimelineItem = undefined;
+    props.onSetLegTransport = undefined;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+    fireEvent.click(screen.getByTestId('planner-mobile-transfer-node'));
+
+    expect(screen.queryByTestId('mobile-transport-modal')).not.toBeInTheDocument();
+    expect(props.onSelectTimelineItem).toHaveBeenCalledWith('travel-a');
+  });
+
+  it('paints the day ring over an opaque interior so the strip line cannot cross it', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    // An unselected plain day: one ring colour, white inside. The interior
+    // layer is what hides the connecting line, which used to run straight
+    // through the ring's gap.
+    const plainDay = screen.getAllByRole('tab')[2];
+    expect(plainDay.style.background).toContain('rgb(255, 255, 255)) padding-box');
+    expect(plainDay.style.background).toContain('rgb(37, 99, 235)) border-box');
+    expect(plainDay.style.borderColor).toBe('transparent');
+  });
+
+  it('gives each circle one city colour and fills the selected one', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    // The two halves of the day of the move are each a whole circle in their
+    // own city's colour, rather than one circle split between them.
+    const sintraHalf = screen.getAllByRole('tab')[1];
+    const portoHalf = screen.getAllByRole('tab')[2];
+    expect(sintraHalf.style.background).toContain('rgb(22, 163, 74)) border-box');
+    expect(sintraHalf.style.background).not.toContain('to right');
+    expect(portoHalf.style.background).toContain('rgb(37, 99, 235)) border-box');
+
+    fireEvent.click(portoHalf);
+    expect(screen.getAllByRole('tab')[2].style.background)
+      .toContain('rgb(37, 99, 235), rgb(37, 99, 235)) padding-box');
+  });
+
+  it('offers a quick way to add an activity to the shown day', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+    fireEvent.click(screen.getByTestId('mobile-day-add-activity'));
+
+    expect(props.onAddTimelineActivity).toHaveBeenCalledWith(0);
+  });
+
+  it('hides the editing affordances when the trip cannot be edited', () => {
+    const props = baseProps();
+    props.isMobile = true;
+    props.onUpdateTimelineItem = undefined;
+    props.onAddTimelineActivity = undefined;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    expect(screen.queryByTestId('mobile-day-transport-edit')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('mobile-day-add-activity')).not.toBeInTheDocument();
+  });
+
+  it('stays on the tapped day when selecting it also selects its city', () => {
+    const props = baseProps();
+    props.isMobile = true;
+    // Porto starts mid-day 1 and runs to day 3, so a tap on its last day must
+    // survive the selection that same tap produces.
+    const { rerender } = render(React.createElement(TripViewPlannerWorkspace, props));
+
+    const tabs = screen.getAllByRole('tab');
+    fireEvent.click(tabs[3]);
+
+    expect(props.onSelectTimelineItem).toHaveBeenCalledWith('city-b', { isCity: true });
+    expect(screen.getAllByRole('tab')[3]).toHaveAttribute('aria-selected', 'true');
+
+    // The selection then arrives back as a prop, the way TripView feeds it.
+    rerender(React.createElement(TripViewPlannerWorkspace, { ...props, selectedItemId: 'city-b' }));
+
+    // Day 3 is where the traveller tapped; day 1 is where that city first appears.
+    expect(screen.getAllByRole('tab')[3]).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getAllByRole('tab')[1]).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('moves to the day holding a selection made outside the strip', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    const { rerender } = render(React.createElement(TripViewPlannerWorkspace, props));
+    expect(screen.getAllByRole('tab')[0]).toHaveAttribute('aria-selected', 'true');
+
+    rerender(React.createElement(TripViewPlannerWorkspace, { ...props, selectedItemId: 'city-b' }));
+
+    // Porto first appears as the second half of the day of the move, which is
+    // the third circle on the strip.
+    expect(screen.getAllByRole('tab')[2]).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('turns off double-tap zoom on the sheet and the day strip', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    expect(screen.getByTestId('planner-mobile-sheet').className).toContain('touch-manipulation');
+    expect(screen.getByTestId('planner-mobile-day-strip').className).toContain('touch-manipulation');
+  });
 });

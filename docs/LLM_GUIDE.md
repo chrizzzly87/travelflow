@@ -3,6 +3,7 @@
 This doc is a compact, structured overview of the app to help future agents make safe, consistent changes.
 
 **Design Reference**
+- Shared `components/ui/` catalogue — read before hand-rolling a wrapper, caption, row or panel: `docs/DESIGN_SYSTEM_COMPONENTS.md`.
 - UI and component styling rules: `docs/BRAND_CI_GUIDELINES.md`.
 - Paywall/lifecycle behavior rules: `docs/PAYWALL_GUIDELINES.md`.
 - Locale routing + translation workflow: `docs/I18N_PAGE_WORKFLOW.md`.

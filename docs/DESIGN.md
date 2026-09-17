@@ -2,6 +2,8 @@
 
 This is the design contract for TravelFlow admin and operations interfaces. Internal tools should feel calm, precise, and task-oriented: compact enough for regular use, but never visually cramped.
 
+The shared components that implement this contract are catalogued in `docs/DESIGN_SYSTEM_COMPONENTS.md`. Reach for one of those before building a layout by hand.
+
 ## Product principles
 
 1. **Lead with the task.** Put the page title, current state, and one primary action in the first visual group.
@@ -20,7 +22,7 @@ Use this hierarchy for configuration and data-heavy pages:
 4. Supporting data: tables, charts, or logs below or in a dedicated tab.
 5. Contextual detail: modal, sheet, or inspector for JSON and diagnostics.
 
-Avoid card grids when the controls form one workflow. Nested cards should be rare; use dividers, section headings, and subtle inset backgrounds inside one surface instead.
+Avoid card grids when the controls form one workflow. Nested cards should be rare; use dividers, section headings, and subtle inset backgrounds inside one surface instead. For a page that is a list of settings, `SettingsPanel` / `SettingsSection` / `SettingsRow` already encode this.
 
 ## Geometry and density
 

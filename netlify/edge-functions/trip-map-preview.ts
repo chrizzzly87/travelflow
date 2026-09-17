@@ -6,6 +6,7 @@
  *   coords     — pipe-separated lat,lng pairs (e.g. "35.68,139.65|34.69,135.50")
  *   style      — "clean" (default) | "minimal" | "standard" | "dark" | "satellite"
  *   routeMode  — "simple" (default) | "realistic"
+ *   legModes   — optional pipe-separated transport mode per leg (e.g. "plane|car")
  *   colorMode  — "brand" (default) | "trip"
  *   pathColor  — optional hex/rgb color (used when colorMode=trip)
  *   legColors  — optional pipe/comma-separated hex/rgb colors (used per route leg when colorMode=trip)
@@ -20,6 +21,9 @@
 
 import { getMapboxAccessTokenFromEnv, getMapsApiKeyFromEnv } from "../edge-lib/trip-og-data.ts";
 import { resolveEdgeMapRuntimeAsync } from "../edge-lib/map-runtime.ts";
+import { buildFlightPreviewCurvePath } from "../../shared/flightRouteCurve.ts";
+import { parseMapPreviewLegModes } from "../../shared/mapPreviewLegModes.ts";
+import type { TransportMode } from "../../shared/transportModes.ts";
 import {
   buildPreviewNetlifyVaryValue,
   createTokenBucketLimiter,
@@ -34,6 +38,8 @@ type MapPreviewColorMode = "brand" | "trip";
 const BRAND_ROUTE_COLOR = "4f46e5";
 const MAX_REALISTIC_DIRECTION_LEGS = 8;
 const STATIC_MAP_SATELLITE_FALLBACK: MapPreviewStyle = "clean";
+// Mapbox Static Images caps the whole request URL at 8192 characters.
+const MAPBOX_MAX_OVERLAY_SEGMENT_LENGTH = 7000;
 
 const CLEAN_STYLE = [
   "element:geometry|color:0xf9f9f9",
@@ -154,6 +160,20 @@ const encodePolyline = (coords: Array<{ lat: number; lng: number }>): string => 
   return encoded;
 };
 
+const isFlightLeg = (legModes: TransportMode[], index: number): boolean => legModes[index] === "plane";
+
+/**
+ * A plane leg is drawn as the same arc the planner map draws. Anything else
+ * keeps its straight two-point geometry until a routing provider replaces it.
+ */
+const buildLegGeometry = (
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+  isFlight: boolean,
+): Array<{ lat: number; lng: number }> => (
+  isFlight ? buildFlightPreviewCurvePath(from, to) : [from, to]
+);
+
 const normalizeColor = (value: string | null): string | null => {
   if (!value) return null;
   const trimmed = value.trim().toLowerCase();
@@ -237,6 +257,30 @@ const fetchDirectionsPolyline = async (
   }
 };
 
+const fetchMapboxDirectionsPolyline = async (
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+  mapboxToken: string,
+): Promise<string | null> => {
+  const coordinatePair = `${from.lng.toFixed(6)},${from.lat.toFixed(6)};${to.lng.toFixed(6)},${to.lat.toFixed(6)}`;
+  const directionsUrl = new URL(`https://api.mapbox.com/directions/v5/mapbox/driving/${coordinatePair}`);
+  directionsUrl.searchParams.set("geometries", "polyline");
+  directionsUrl.searchParams.set("overview", "simplified");
+  directionsUrl.searchParams.set("alternatives", "false");
+  directionsUrl.searchParams.set("steps", "false");
+  directionsUrl.searchParams.set("access_token", mapboxToken);
+
+  try {
+    const response = await fetch(directionsUrl.toString());
+    if (!response.ok) return null;
+    const data = await response.json();
+    const encoded = data?.routes?.[0]?.geometry;
+    return typeof encoded === "string" && encoded.length > 0 ? encoded : null;
+  } catch {
+    return null;
+  }
+};
+
 const buildSimplePath = (
   coords: Array<{ lat: number; lng: number }>,
   color: string,
@@ -257,12 +301,18 @@ const buildSimpleSegmentPaths = (
   coords: Array<{ lat: number; lng: number }>,
   legColors: string[],
   fallbackColor: string,
+  legModes: TransportMode[] = [],
 ): string[] => {
   if (coords.length < 2) return [];
   const paths: string[] = [];
 
   for (let index = 0; index < coords.length - 1; index += 1) {
     const color = resolveLegColor(legColors, index, fallbackColor);
+    if (isFlightLeg(legModes, index)) {
+      const curve = buildLegGeometry(coords[index], coords[index + 1], true);
+      paths.push(`color:0x${color}|weight:4|enc:${encodePolyline(curve)}`);
+      continue;
+    }
     const segment = buildSimplePath([coords[index], coords[index + 1]], color);
     if (segment) paths.push(segment);
   }
@@ -275,6 +325,7 @@ const buildRealisticPaths = async (
   legColors: string[],
   fallbackColor: string,
   apiKey: string,
+  legModes: TransportMode[] = [],
 ): Promise<string[]> => {
   if (coords.length < 2) return [];
   const paths: string[] = [];
@@ -284,6 +335,14 @@ const buildRealisticPaths = async (
     const from = coords[index];
     const to = coords[index + 1];
     const color = resolveLegColor(legColors, index, fallbackColor);
+
+    // Directions have no answer for a flight, so asking would only buy a
+    // straight-line fallback. Draw the arc and keep the paid call for a leg
+    // that can actually be routed.
+    if (isFlightLeg(legModes, index)) {
+      paths.push(`color:0x${color}|weight:4|enc:${encodePolyline(buildLegGeometry(from, to, true))}`);
+      continue;
+    }
 
     let encodedPolyline: string | null = null;
     if (calls < MAX_REALISTIC_DIRECTION_LEGS) {
@@ -307,21 +366,39 @@ const buildMapboxSimpleSegmentOverlays = (
   coords: Array<{ lat: number; lng: number }>,
   legColors: string[],
   fallbackColor: string,
+  legModes: TransportMode[] = [],
 ): string[] => {
   if (coords.length < 2) return [];
   const overlays: string[] = [];
   for (let index = 0; index < coords.length - 1; index += 1) {
     const color = resolveLegColor(legColors, index, fallbackColor);
-    overlays.push(buildMapboxPathOverlay(encodePolyline([coords[index], coords[index + 1]]), color));
+    const geometry = buildLegGeometry(coords[index], coords[index + 1], isFlightLeg(legModes, index));
+    overlays.push(buildMapboxPathOverlay(encodePolyline(geometry), color));
   }
   return overlays;
 };
 
+/** Last-resort overlays: straight lines everywhere, used only past the URL cap. */
+const buildMapboxStraightSegmentOverlays = (
+  coords: Array<{ lat: number; lng: number }>,
+  legColors: string[],
+  fallbackColor: string,
+): string[] => buildMapboxSimpleSegmentOverlays(coords, legColors, fallbackColor, []);
+
+/**
+ * Mapbox previews draw the same realistic geometry as the Google ones.
+ * Directions come from Mapbox first (the provider whose token is guaranteed to
+ * be present on a Mapbox preview), and only fall back to Google Directions when
+ * Mapbox has no route for a leg. Without this the Mapbox branch silently drew
+ * straight lines on every deployment that has no Google key.
+ */
 const buildMapboxRealisticOverlays = async (
   coords: Array<{ lat: number; lng: number }>,
   legColors: string[],
   fallbackColor: string,
-  apiKey: string,
+  mapboxToken: string,
+  googleApiKey: string,
+  legModes: TransportMode[] = [],
 ): Promise<string[]> => {
   if (coords.length < 2) return [];
   const overlays: string[] = [];
@@ -332,10 +409,20 @@ const buildMapboxRealisticOverlays = async (
     const to = coords[index + 1];
     const color = resolveLegColor(legColors, index, fallbackColor);
 
+    if (isFlightLeg(legModes, index)) {
+      overlays.push(buildMapboxPathOverlay(encodePolyline(buildLegGeometry(from, to, true)), color));
+      continue;
+    }
+
     let encodedPolyline: string | null = null;
     if (calls < MAX_REALISTIC_DIRECTION_LEGS) {
-      encodedPolyline = await fetchDirectionsPolyline(from, to, apiKey);
       calls += 1;
+      if (mapboxToken) {
+        encodedPolyline = await fetchMapboxDirectionsPolyline(from, to, mapboxToken);
+      }
+      if (!encodedPolyline && googleApiKey) {
+        encodedPolyline = await fetchDirectionsPolyline(from, to, googleApiKey);
+      }
     }
 
     overlays.push(buildMapboxPathOverlay(encodedPolyline || encodePolyline([from, to]), color));
@@ -376,6 +463,7 @@ const buildMapboxStaticPreviewUrl = async ({
   style,
   routeMode,
   legColors,
+  legModes,
   pathColor,
   startMarkerColor,
   endMarkerColor,
@@ -383,6 +471,7 @@ const buildMapboxStaticPreviewUrl = async ({
   width,
   height,
   scale,
+  zoom,
   mapboxToken,
   googleApiKey,
 }: {
@@ -390,6 +479,7 @@ const buildMapboxStaticPreviewUrl = async ({
   style: MapPreviewStyle;
   routeMode: RoutePreviewMode;
   legColors: string[];
+  legModes: TransportMode[];
   pathColor: string;
   startMarkerColor: string;
   endMarkerColor: string;
@@ -397,30 +487,59 @@ const buildMapboxStaticPreviewUrl = async ({
   width: number;
   height: number;
   scale: number;
+  zoom: number | null;
   mapboxToken: string;
   googleApiKey: string;
 }): Promise<string> => {
   const styleDescriptor = MAPBOX_STYLE_IDS[style] || MAPBOX_STYLE_IDS.standard;
-  const pathOverlays = routeMode === "realistic" && googleApiKey
-    ? await buildMapboxRealisticOverlays(coords, legColors, pathColor, googleApiKey)
-    : buildMapboxSimpleSegmentOverlays(coords, legColors, pathColor);
-  const overlays = [
-    ...pathOverlays,
-    ...buildMapboxMarkerOverlays(coords, legColors, pathColor, startMarkerColor, endMarkerColor, waypointColor),
-  ];
-  const overlaySegment = overlays.map((overlay) => encodeURIComponent(overlay)).join(",");
+  const simpleOverlays = buildMapboxSimpleSegmentOverlays(coords, legColors, pathColor, legModes);
+  const straightOverlays = buildMapboxStraightSegmentOverlays(coords, legColors, pathColor);
+  const pathOverlays = routeMode === "realistic" && (mapboxToken || googleApiKey)
+    ? await buildMapboxRealisticOverlays(coords, legColors, pathColor, mapboxToken, googleApiKey, legModes)
+    : simpleOverlays;
+  const markerOverlays = buildMapboxMarkerOverlays(
+    coords,
+    legColors,
+    pathColor,
+    startMarkerColor,
+    endMarkerColor,
+    waypointColor,
+  );
+  const encodeOverlays = (entries: string[]): string =>
+    entries.map((overlay) => encodeURIComponent(overlay)).join(",");
+  // Mapbox rejects requests past its URL limit, and realistic geometry is what
+  // pushes a long itinerary over it. Degrade that request to the straight-line
+  // overlays rather than serving a broken image.
+  let overlaySegment = encodeOverlays([...pathOverlays, ...markerOverlays]);
+  if (overlaySegment.length > MAPBOX_MAX_OVERLAY_SEGMENT_LENGTH) {
+    // Drop routed geometry first, flight arcs only if the request is still too long.
+    overlaySegment = encodeOverlays([...simpleOverlays, ...markerOverlays]);
+  }
+  if (overlaySegment.length > MAPBOX_MAX_OVERLAY_SEGMENT_LENGTH) {
+    overlaySegment = encodeOverlays([...straightOverlays, ...markerOverlays]);
+  }
   const scaleSuffix = scale === 2 ? "@2x" : "";
-  const url = new URL(`https://api.mapbox.com/styles/v1/${styleDescriptor.owner}/${styleDescriptor.styleId}/static/${overlaySegment}/auto/${width}x${height}${scaleSuffix}`);
-  url.searchParams.set("padding", "32,32,32,32");
+  // `auto` fits the overlays, which for a single pin means the tightest frame
+  // Mapbox can draw — a rooftop with no surroundings. An explicit camera is
+  // what lets one place be shown in its neighbourhood.
+  const camera = zoom !== null && coords.length === 1
+    ? `${coords[0].lng.toFixed(6)},${coords[0].lat.toFixed(6)},${zoom},0`
+    : "auto";
+  const url = new URL(`https://api.mapbox.com/styles/v1/${styleDescriptor.owner}/${styleDescriptor.styleId}/static/${overlaySegment}/${camera}/${width}x${height}${scaleSuffix}`);
+  if (camera === "auto") url.searchParams.set("padding", "32,32,32,32");
   url.searchParams.set("access_token", mapboxToken);
   return url.toString();
 };
 
 // One request costs 1 token; a "realistic" route request costs more because it
 // can fan out to up to MAX_REALISTIC_DIRECTION_LEGS paid Directions API calls.
-const RATE_LIMIT_BUCKET_CAPACITY = 40;
+// The bucket has to absorb a whole card grid at once: trip cards now request
+// realistic routes, and a profile or manager page renders a dozen of them in a
+// single paint, so a capacity that only covered a handful returned 429s as
+// broken card images.
+const RATE_LIMIT_BUCKET_CAPACITY = 90;
 const RATE_LIMIT_REFILL_PER_SECOND = 0.5; // ≈30 simple previews per minute per IP
-const REALISTIC_ROUTE_REQUEST_COST = 5;
+const REALISTIC_ROUTE_REQUEST_COST = 3;
 
 const previewRateLimiter = createTokenBucketLimiter({
   capacity: RATE_LIMIT_BUCKET_CAPACITY,
@@ -455,6 +574,7 @@ export default async (request: Request, context?: { ip?: string }) => {
   const coords = parsedCoords.coords;
 
   const routeMode = parseRouteMode(url.searchParams.get("routeMode"));
+  const legModes = parseMapPreviewLegModes(url.searchParams.get("legModes"));
 
   const clientIp = resolvePreviewClientIp(request, context);
   const requestCost = routeMode === "realistic" ? REALISTIC_ROUTE_REQUEST_COST : 1;
@@ -472,6 +592,10 @@ export default async (request: Request, context?: { ip?: string }) => {
   const w = clampInt(Number.parseInt(url.searchParams.get("w") || "680", 10), 240, 1280);
   const h = clampInt(Number.parseInt(url.searchParams.get("h") || "288", 10), 160, 960);
   const scale = clampInt(Number.parseInt(url.searchParams.get("scale") || "2", 10), 1, 2);
+  const zoomParam = url.searchParams.get("zoom");
+  const zoom = zoomParam === null || zoomParam.trim() === ""
+    ? null
+    : clampInt(Number.parseInt(zoomParam, 10), 1, 20);
   const requestedStyle = parseStyle(url.searchParams.get("style"));
   const style = getEffectiveStaticMapStyle(requestedStyle);
   const colorMode = parseColorMode(url.searchParams.get("colorMode"));
@@ -500,6 +624,7 @@ export default async (request: Request, context?: { ip?: string }) => {
       style: requestedStyle,
       routeMode,
       legColors,
+      legModes,
       pathColor,
       startMarkerColor,
       endMarkerColor,
@@ -507,6 +632,7 @@ export default async (request: Request, context?: { ip?: string }) => {
       width: w,
       height: h,
       scale,
+      zoom,
       mapboxToken,
       googleApiKey,
     });
@@ -528,6 +654,10 @@ export default async (request: Request, context?: { ip?: string }) => {
   params.set("size", `${w}x${h}`);
   params.set("scale", String(scale));
   params.set("maptype", getMapType(style));
+  if (zoom !== null && coords.length === 1) {
+    params.set("zoom", String(zoom));
+    params.set("center", formatCoord(coords[0]));
+  }
   if (mapLanguage) {
     params.set("language", mapLanguage);
   }
@@ -536,9 +666,9 @@ export default async (request: Request, context?: { ip?: string }) => {
     params.append("style", token);
   });
 
-  const simplePathParams = buildSimpleSegmentPaths(coords, legColors, pathColor);
+  const simplePathParams = buildSimpleSegmentPaths(coords, legColors, pathColor, legModes);
   const pathParams = routeMode === "realistic"
-    ? await buildRealisticPaths(coords, legColors, pathColor, googleApiKey)
+    ? await buildRealisticPaths(coords, legColors, pathColor, googleApiKey, legModes)
     : simplePathParams;
 
   if (pathParams.length === 0) {

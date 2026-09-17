@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as SelectPrimitive from '@radix-ui/react-select';
-import { Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { CaretDown, CaretUp, Check } from '@phosphor-icons/react';
 
 const Select = SelectPrimitive.Root;
 const SelectGroup = SelectPrimitive.Group;
@@ -13,16 +13,18 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={[
-      'flex h-10 w-full cursor-pointer items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900',
+      'flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900',
       'outline-none ring-offset-white placeholder:text-slate-500 focus-visible:border-accent-400',
       'disabled:cursor-not-allowed disabled:opacity-50',
       className || '',
     ].join(' ')}
     {...props}
   >
-    {children}
+    {/* The value has to truncate on its own: a long option in a narrow
+        trigger otherwise pushes the caret past the trigger's edge. */}
+    <span className="min-w-0 flex-1 truncate text-start">{children}</span>
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="size-4 opacity-60" />
+      <CaretDown weight="bold" className="size-4 shrink-0 text-slate-500" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
@@ -40,7 +42,7 @@ const SelectScrollUpButton = React.forwardRef<
     ].join(' ')}
     {...props}
   >
-    <ChevronUp className="size-4" />
+    <CaretUp weight="bold" className="size-4" />
   </SelectPrimitive.ScrollUpButton>
 ));
 SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName;
@@ -57,7 +59,7 @@ const SelectScrollDownButton = React.forwardRef<
     ].join(' ')}
     {...props}
   >
-    <ChevronDown className="size-4" />
+    <CaretDown weight="bold" className="size-4" />
   </SelectPrimitive.ScrollDownButton>
 ));
 SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayName;
@@ -137,7 +139,7 @@ const SelectItem = React.forwardRef<
       ].join(' ')}
     >
       <SelectPrimitive.ItemIndicator>
-        <Check className="size-4" />
+        <Check weight="bold" className="size-4" />
       </SelectPrimitive.ItemIndicator>
     </span>
 
