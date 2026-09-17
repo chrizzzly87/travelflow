@@ -3,8 +3,8 @@ id: rel-2026-09-09-activity-map-links
 version: v0.174.0
 title: "Open any activity in Google Maps or Apple Maps"
 date: 2026-09-17
-published_at: 2026-09-17T12:00:00Z
-status: draft
+published_at: 2026-09-17T09:50:44Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Tap an activity on the map to see what it is and open it straight in Google Maps or Apple Maps — on a phone the navigation app launches directly."
