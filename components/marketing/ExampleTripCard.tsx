@@ -10,7 +10,7 @@ import {
     type ExampleTripCard as ExampleTripCardType,
 } from '../../data/exampleTripCards';
 import type { ExampleTemplateMiniCalendar } from '../../data/exampleTripTemplates';
-import { getDestinationDisplayName } from '../../services/destinationService';
+import { getExampleTripCountryDisplayName } from '../../data/exampleTripCountryNames.generated';
 import { getExampleCityLaneViewTransitionName, getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../../shared/viewTransitionNames';
 import { ProgressiveImage } from '../ProgressiveImage';
 import { buildBlurhashEndpointUrl, isImageCdnEnabled } from '../../utils/imageDelivery';
@@ -182,7 +182,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                     {card.countries.map((c) => (
                         <span key={c.name} className="inline-flex items-center gap-1">
                             <FlagIcon value={c.flag} />
-                            <span>{getDestinationDisplayName(c.name, currentLocale)}</span>
+                            <span>{getExampleTripCountryDisplayName(c.name, currentLocale)}</span>
                         </span>
                     ))}
                 </div>

@@ -1,31 +1,11 @@
-export type ReleaseStatus = 'published' | 'draft';
+import type { ReleaseNote, ReleaseNoteItem } from './releaseNotesFormat';
+import { isReleaseInsideAnnouncementWindow, sortReleaseItemsByType } from './releaseNotesFormat';
 
-export interface ReleaseNoteItem {
-    visibleOnWebsite: boolean;
-    typeLabel: string;
-    typeKey: 'new' | 'improved' | 'fixed' | 'internal' | 'update';
-    text: string;
-}
-
-export interface ReleaseNoteItemGroup {
-    typeKey: ReleaseNoteItem['typeKey'];
-    typeLabel: string;
-    items: ReleaseNoteItem[];
-}
-
-export interface ReleaseNote {
-    id: string;
-    version: string;
-    title: string;
-    date: string;
-    summary: string;
-    status: ReleaseStatus;
-    publishedAt: string;
-    notifyInApp: boolean;
-    inAppHours: number;
-    items: ReleaseNoteItem[];
-    sourcePath: string;
-}
+// The full corpus: this module's eager glob bundles every release note ever
+// written. Only the updates page needs that. A consumer that renders a single
+// release imports `releaseNotesFormat.ts`, and the trip-view notice imports
+// `latestInAppRelease.ts`.
+export * from './releaseNotesFormat';
 
 const UPDATE_FILES = import.meta.glob('../content/updates/*.md', {
     eager: true,
@@ -35,14 +15,6 @@ const UPDATE_FILES = import.meta.glob('../content/updates/*.md', {
 
 const FRONTMATTER_REGEX = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/;
 const RELEASE_ITEM_REGEX = /^\s*-\s+\[(x|X| )\]\s+\[([^\]]+)\]\s+(.+)$/;
-const ITEM_TYPE_ORDER: Record<ReleaseNoteItem['typeKey'], number> = {
-    new: 0,
-    improved: 1,
-    fixed: 2,
-    update: 3,
-    internal: 4,
-};
-
 const stripQuotes = (value: string) => {
     const trimmed = value.trim();
     if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
@@ -96,18 +68,6 @@ const resolveTypeKey = (typeLabel: string): ReleaseNoteItem['typeKey'] => {
     if (normalized.includes('fix')) return 'fixed';
     if (normalized.includes('internal') || normalized.includes('infra') || normalized.includes('chore')) return 'internal';
     return 'update';
-};
-
-const sortReleaseItemsByType = (items: ReleaseNoteItem[]): ReleaseNoteItem[] => {
-    return items
-        .map((item, index) => ({ item, index }))
-        .sort((a, b) => {
-            const aOrder = ITEM_TYPE_ORDER[a.item.typeKey] ?? 99;
-            const bOrder = ITEM_TYPE_ORDER[b.item.typeKey] ?? 99;
-            if (aOrder !== bOrder) return aOrder - bOrder;
-            return a.index - b.index;
-        })
-        .map(({ item }) => item);
 };
 
 const parseReleaseItems = (body: string): ReleaseNoteItem[] => {
@@ -182,43 +142,6 @@ export const getAllReleaseNotes = (): ReleaseNote[] => allReleaseNotes;
 
 export const getPublishedReleaseNotes = (): ReleaseNote[] => {
     return allReleaseNotes.filter((note) => note.status === 'published');
-};
-
-export const getWebsiteVisibleItems = (note: ReleaseNote): ReleaseNoteItem[] => {
-    return sortReleaseItemsByType(note.items.filter((item) => item.visibleOnWebsite));
-};
-
-export const groupReleaseItemsByType = (items: ReleaseNoteItem[]): ReleaseNoteItemGroup[] => {
-    const grouped: ReleaseNoteItemGroup[] = [];
-    const groupIndexByKey = new Map<string, number>();
-
-    for (const item of items) {
-        const key = `${item.typeKey}:${item.typeLabel}`;
-        const existingIndex = groupIndexByKey.get(key);
-
-        if (existingIndex === undefined) {
-            groupIndexByKey.set(key, grouped.length);
-            grouped.push({
-                typeKey: item.typeKey,
-                typeLabel: item.typeLabel,
-                items: [item],
-            });
-            continue;
-        }
-
-        grouped[existingIndex].items.push(item);
-    }
-
-    return grouped;
-};
-
-export const isReleaseInsideAnnouncementWindow = (note: ReleaseNote, now = Date.now()): boolean => {
-    const publishedAtMs = Date.parse(note.publishedAt);
-    if (!Number.isFinite(publishedAtMs)) return false;
-    if (publishedAtMs > now) return false;
-
-    const hours = Number.isFinite(note.inAppHours) ? note.inAppHours : 24;
-    return now - publishedAtMs <= hours * 60 * 60 * 1000;
 };
 
 export const getLatestInAppRelease = (now = Date.now()): ReleaseNote | null => {

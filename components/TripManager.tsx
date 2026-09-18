@@ -37,6 +37,14 @@ interface TripManagerProps {
   currentTripId?: string;
   onUpdateTrip?: (trip: ITrip) => void;
   appLanguage?: AppLanguage;
+  /**
+   * `overlay` (default) is the slide-in panel used from the app header.
+   * `page` renders the same list as the body of the `/trips` route: no
+   * backdrop, no dialog semantics, no close affordance. That route is the
+   * installed app's start page, so it must not behave like a modal that the
+   * user can dismiss into nothing.
+   */
+  variant?: 'overlay' | 'page';
 }
 
 type TripSortMode = 'updated' | 'travelDate';
@@ -749,7 +757,9 @@ export const TripManager: React.FC<TripManagerProps> = ({
   currentTripId,
   onUpdateTrip,
   appLanguage = DEFAULT_APP_LANGUAGE,
+  variant = 'overlay',
 }) => {
+  const isPageVariant = variant === 'page';
   const { confirm } = useAppDialog();
   const { t } = useTranslation('common');
   const { isAuthenticated } = useAuth();
@@ -773,8 +783,10 @@ export const TripManager: React.FC<TripManagerProps> = ({
   const countryCacheRef = React.useRef<CountryCacheStore>({});
   const openLoadTokenRef = React.useRef(0);
 
+  // Only the overlay traps focus. On the /trips route the list is the page, so
+  // trapping would strand keyboard users inside it with no way back to the nav.
   useFocusTrap({
-    isActive: isOpen,
+    isActive: isOpen && !isPageVariant,
     containerRef: panelRef,
     initialFocusRef: closeButtonRef,
   });
@@ -1005,6 +1017,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
   }, [isOpen, enrichTripsWithCountryData, hideHoverNow, refreshTrips, startTransition]);
 
   React.useEffect(() => {
+    if (isPageVariant) return undefined;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isOpen && e.key === 'Escape') {
         onClose();
@@ -1012,7 +1025,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isPageVariant]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1232,31 +1245,42 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
   return (
     <>
-      <div
-        className={`fixed inset-0 z-[2300] transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        style={{
-          opacity: isOpen ? 1 : 0,
-          pointerEvents: isOpen ? 'auto' : 'none',
-        }}
-      >
-        <button
-          type="button"
-          className="size-full bg-black/20 backdrop-blur-sm"
-          onClick={onClose}
-          aria-label="Close My Plans panel"
-        />
-      </div>
+      {!isPageVariant && (
+        <div
+          className={`fixed inset-0 z-[2300] transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          style={{
+            opacity: isOpen ? 1 : 0,
+            pointerEvents: isOpen ? 'auto' : 'none',
+          }}
+        >
+          <button
+            type="button"
+            className="size-full bg-black/20 backdrop-blur-sm"
+            onClick={onClose}
+            aria-label="Close My Plans panel"
+          />
+        </div>
+      )}
 
       <div
         ref={panelRef}
-        className={`fixed inset-y-0 right-0 w-[380px] max-w-[94vw] bg-white shadow-2xl z-[2310] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
-        style={{ transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}
-        role="dialog"
-        aria-modal="true"
+        className={isPageVariant
+          ? 'mx-auto flex w-full max-w-xl flex-col bg-white'
+          : `fixed inset-y-0 right-0 w-[380px] max-w-[94vw] bg-white shadow-2xl z-[2310] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        style={isPageVariant ? undefined : { transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}
+        role={isPageVariant ? undefined : 'dialog'}
+        aria-modal={isPageVariant ? undefined : 'true'}
         aria-labelledby="trip-manager-title"
       >
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-          <h2 id="trip-manager-title" className="text-lg font-semibold text-gray-800">My Plans</h2>
+        <div className={`px-4 py-3 border-b border-gray-100 flex items-center ${isPageVariant ? 'justify-end' : 'justify-between'}`}>
+          {/* The /trips route supplies its own localized heading, so repeating a
+              hardcoded English one here would both duplicate it and break the
+              page's language. */}
+          {isPageVariant ? (
+            <span className="sr-only" id="trip-manager-title">{t('trips.pageTitle')}</span>
+          ) : (
+            <h2 id="trip-manager-title" className="text-lg font-semibold text-gray-800">My Plans</h2>
+          )}
           <div className="flex items-center gap-1">
             <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-0.5">
               <button
@@ -1284,9 +1308,11 @@ export const TripManager: React.FC<TripManagerProps> = ({
                 <CalendarDays size={14} />
               </button>
             </div>
-            <button ref={closeButtonRef} type="button" onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600" aria-label="Close">
-              <X size={18} />
-            </button>
+            {!isPageVariant && (
+              <button ref={closeButtonRef} type="button" onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600" aria-label="Close">
+                <X size={18} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -1295,11 +1321,11 @@ export const TripManager: React.FC<TripManagerProps> = ({
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                aria-label="Search trips or cities"
+                aria-label={t('trips.list.searchLabel')}
                 value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={hideHoverNow}
-              placeholder="Search trips or cities..."
+              placeholder={t('trips.list.searchPlaceholder')}
               className="w-full h-9 pl-8 pr-2.5 rounded-md border border-gray-200 bg-gray-50 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent focus:bg-white"
             />
           </div>
@@ -1309,9 +1335,9 @@ export const TripManager: React.FC<TripManagerProps> = ({
           {showLoadingSkeleton ? (
             <TripListSkeleton syncing={isSyncingTrips} />
           ) : trips.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 text-sm">No saved plans yet.</div>
+            <div className="text-center py-8 text-gray-400 text-sm">{t('trips.list.empty')}</div>
           ) : filteredTrips.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 text-sm">No matches for "{searchQuery}".</div>
+            <div className="text-center py-8 text-gray-400 text-sm">{t('trips.list.noMatches', { query: searchQuery })}</div>
           ) : (
             <>
               <section>

@@ -1,0 +1,83 @@
+{
+  "_generated": "Emitted by scripts/generate-latest-in-app-release.mjs — do not edit by hand.",
+  "release": {
+    "id": "rel-2026-09-18-mobile-first-load-interactivity",
+    "version": "v0.175.0",
+    "title": "The menu answers your first tap, even while the page is still loading",
+    "date": "2026-09-18",
+    "summary": "On a phone, tapping the menu before the page finished loading did nothing at all. That tap is now remembered, the menu opens as soon as it can, and there is less to download before it does.",
+    "status": "published",
+    "publishedAt": "2026-09-18T15:00:00Z",
+    "notifyInApp": true,
+    "inAppHours": 24,
+    "items": [
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Improved",
+        "typeKey": "improved",
+        "text": "📶 The homepage downloads noticeably less before it responds to you, so the wait on a slow mobile connection is shorter."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Improved",
+        "typeKey": "improved",
+        "text": "👆 A button you press before the page is ready now visibly acknowledges the press instead of sitting there looking broken."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Fixed",
+        "typeKey": "fixed",
+        "text": "🍔 Tap the menu button on a phone while the page is still loading and it now opens as soon as it is ready. Before, that first tap was simply lost — with no way into navigation or login, you had to guess and tap again."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Fixed",
+        "typeKey": "fixed",
+        "text": "🍪 The cookie notice now appears after your very first tap or scroll, even if that happened while the page was still waking up. It used to wait for a second one you had no reason to make."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "🌉 `index.html` ships an inline pre-hydration bridge that records an interaction and the intent of a press on a `data-tf-boot-intent` control; `services/bootInteractionBridge.ts` is the typed read side. Intent is consumed post-mount, not during the hydration render — opening the drawer on the first render left preact/compat hydrating it against the wrong node, inline and without `role=\"dialog\"`."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "📦 Example trip cards localize country names from a generated 4 KB table instead of `services/destinationService`, which statically pulled `data/countryTravelData.json`. That took a 424 KB chunk (~372 KB, 25% of the homepage boot JS) off the mobile critical path."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "🧩 `MobileMenu` is no longer a lazy chunk: it cost a network round trip on the one tap that matters on a phone, and adds ~11 KB to the header chunk instead."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "✂️ `data/countryTravelData.json` (678 KB) is split by `scripts/split-country-travel-data.mjs` into seasons, localized names and search aliases. It stays the source of truth on disk — the generators write it and the Node scripts read it — but no client module imports it any more, so a page pays only for the slice it reads. Profile, profile settings and the countries explorer drop from 424 KB to 132 KB; pages that genuinely need all three are unchanged."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "📰 The in-app release notice reads a generated single-release file instead of `releaseNotesService`, whose eager glob bundles all 204 notes. Opening a trip downloaded 444 KB of release history to decide whether one notice was due; it now costs ~8 KB. The updates page still gets the full corpus."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "📅 `MONTH_LABELS` moved to `data/countryMonthLabels.ts`. A component rendering a month strip was importing 678 KB of seasons, events and public holidays for a 12-string array."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "🧪 `tests/browser/bootInteractionBridge.browser.test.ts` runs the real inline script from `index.html`. `tests/unit/exampleTripCountryNames.test.ts`, `tests/unit/countryTravelDataSplit.test.ts` and `tests/unit/latestInAppRelease.test.ts` assert every derived table returns exactly what the full source returns, and fail if it is left stale."
+      }
+    ],
+    "sourcePath": "../content/updates/2026-09-18-mobile-first-load-interactivity.md"
+  }
+}

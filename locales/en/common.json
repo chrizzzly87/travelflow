@@ -711,5 +711,20 @@
     "tripsPrunedTitle": "Device storage is full",
     "tripsPrunedDescriptionOne": "Your oldest saved trip was removed from this device to free up space.",
     "tripsPrunedDescriptionMany": "Your {count} oldest saved trips were removed from this device to free up space."
+  },
+  "trips": {
+    "pageTitle": "My trips",
+    "pageSubtitle": "Everything you've planned. Available offline once loaded.",
+    "signedOut": {
+      "title": "You're signed out",
+      "body": "Sign in to see the trips saved to your account.",
+      "action": "Sign in"
+    },
+    "list": {
+      "searchLabel": "Search trips or cities",
+      "searchPlaceholder": "Search trips or cities...",
+      "empty": "No saved plans yet.",
+      "noMatches": "No matches for \"{query}\"."
+    }
   }
 }

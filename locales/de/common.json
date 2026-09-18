@@ -60,8 +60,8 @@
   },
   "networkStatus": {
     "offlineTitle": "Du bist offline.",
-    "offlineDescription": "Anmeldung und Cloud-Synchronisierung sind derzeit nicht verfügbar. Wir prüfen weiter und verbinden automatisch wieder.",
-    "offlineChecking": "Verbindung wird erneut geprüft …"
+    "offlineDescription": "Anmeldung und Cloud-Synchronisierung sind derzeit nicht verfugbar. Wir prufen weiter und verbinden automatisch wieder.",
+    "offlineChecking": "Verbindung wird erneut gepruft..."
   },
   "contact": {
     "title": "Kontakt",
@@ -711,5 +711,20 @@
     "tripsPrunedTitle": "Der Gerätespeicher ist voll",
     "tripsPrunedDescriptionOne": "Deine älteste gespeicherte Reise wurde von diesem Gerät entfernt, um Platz zu schaffen.",
     "tripsPrunedDescriptionMany": "Deine {count} ältesten gespeicherten Reisen wurden von diesem Gerät entfernt, um Platz zu schaffen."
+  },
+  "trips": {
+    "pageTitle": "Meine Reisen",
+    "pageSubtitle": "Alles, was du geplant hast. Nach dem Laden auch offline verfügbar.",
+    "signedOut": {
+      "title": "Du bist nicht angemeldet",
+      "body": "Melde dich an, um die Reisen aus deinem Konto zu sehen.",
+      "action": "Anmelden"
+    },
+    "list": {
+      "searchLabel": "Reisen oder Städte suchen",
+      "searchPlaceholder": "Reisen oder Städte suchen ...",
+      "empty": "Noch keine gespeicherten Reisen.",
+      "noMatches": "Keine Treffer für „{query}“."
+    }
   }
 }

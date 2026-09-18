@@ -60,7 +60,7 @@
   },
   "networkStatus": {
     "offlineTitle": "No tienes conexion.",
-    "offlineDescription": "El inicio de sesión y la sincronización en la nube no están disponibles ahora. Seguiremos comprobando y nos reconectaremos automáticamente.",
+    "offlineDescription": "El inicio de sesion y la sincronizacion en la nube no estan disponibles ahora. Seguiremos comprobando y nos reconectaremos automaticamente.",
     "offlineChecking": "Comprobando la conexion..."
   },
   "contact": {
@@ -711,5 +711,20 @@
     "tripsPrunedTitle": "El almacenamiento del dispositivo está lleno",
     "tripsPrunedDescriptionOne": "Tu viaje guardado más antiguo se eliminó de este dispositivo para liberar espacio.",
     "tripsPrunedDescriptionMany": "Tus {count} viajes guardados más antiguos se eliminaron de este dispositivo para liberar espacio."
+  },
+  "trips": {
+    "pageTitle": "Mis viajes",
+    "pageSubtitle": "Todo lo que has planeado. Disponible sin conexión una vez cargado.",
+    "signedOut": {
+      "title": "No has iniciado sesión",
+      "body": "Inicia sesión para ver los viajes guardados en tu cuenta.",
+      "action": "Iniciar sesión"
+    },
+    "list": {
+      "searchLabel": "Buscar viajes o ciudades",
+      "searchPlaceholder": "Buscar viajes o ciudades...",
+      "empty": "Aún no hay viajes guardados.",
+      "noMatches": "Sin resultados para «{query}»."
+    }
   }
 }

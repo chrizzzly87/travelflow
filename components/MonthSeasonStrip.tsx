@@ -1,5 +1,5 @@
 import React from 'react';
-import { MONTH_LABELS } from '../data/countryTravelData';
+import { MONTH_LABELS } from '../data/countryMonthLabels';
 
 const EMPTY_MONTHS: number[] = [];
 

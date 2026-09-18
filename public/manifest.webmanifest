@@ -1,0 +1,43 @@
+{
+  "name": "TravelFlow",
+  "short_name": "TravelFlow",
+  "description": "Plan and share travel routes with timeline and map previews in TravelFlow.",
+  "id": "/?source=pwa",
+  "start_url": "/trips?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#4f46e5",
+  "background_color": "#ffffff",
+  "categories": ["travel", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "My trips",
+      "url": "/trips?source=pwa-shortcut"
+    },
+    {
+      "name": "Plan a trip",
+      "url": "/create-trip?source=pwa-shortcut"
+    }
+  ]
+}

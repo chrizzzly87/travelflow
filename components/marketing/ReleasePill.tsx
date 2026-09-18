@@ -1,5 +1,5 @@
 import React from 'react';
-import { ReleaseNoteItem } from '../../services/releaseNotesService';
+import type { ReleaseNoteItem } from '../../services/releaseNotesFormat';
 
 interface ReleasePillProps {
     item: ReleaseNoteItem;

@@ -628,6 +628,7 @@ const AppContent: React.FC = () => {
         shareUnavailable: t('shareUnavailable.title', { ns: 'pages' }),
         createTrip: t('nav.createTrip', { ns: 'common' }),
         createTripLab: `${t('nav.createTrip', { ns: 'common' })} Labs`,
+        trips: t('trips.pageTitle', { ns: 'common' }),
         profile: 'Profile',
         profileSettings: 'Profile settings',
         profileOnboarding: 'Complete profile',

@@ -1,10 +1,10 @@
 ---
 id: rel-2026-09-18-connectivity-locale-translations
-version: v0.175.0
+version: v0.176.0
 title: "Connection and trip messages now speak your language"
 date: 2026-09-18
-published_at: 2026-09-18T10:00:00Z
-status: draft
+published_at: 2026-09-18T15:25:00Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Sync warnings, trip details and the storage notice were still showing English on every non-English page. They are now translated across all ten languages, including Persian and Urdu."
@@ -24,4 +24,5 @@ summary: "Sync warnings, trip details and the storage notice were still showing 
 - [ ] [Internal] Replaced `storageNotice.tripsPrunedDescription` with explicit `*One`/`*Many` keys in all 11 locales and moved variant selection into `app/bootstrap/useTripsPrunedNoticeBootstrap.ts`. It was the only ICU plural block in the repo, and `i18next-icu` is never registered in `i18n.ts`, so it rendered as raw pattern source.
 - [ ] [Internal] `scripts/validate-i18n.mjs` only compared namespace *files* and `{{…}}` tokens — not keys, not values. It now hard-fails on any ICU plural/select block, and warns on key-parity gaps and values identical to English, with `--strict` to escalate. Warnings stay non-fatal because `pnpm build` runs this script and ~3,000 strings in other namespaces are still untranslated.
 - [ ] [Internal] Added `scripts/i18n-identical-allowlist.json` for the values that legitimately match English (language endonyms, brand names, the support address, unit formats, and per-locale loanwords such as "Offline" in German).
+- [ ] [Internal] 🔀 Merged `main`, which had moved three commits ahead. Every `common.json` conflicted, so the resolution took `main`'s files as the base and re-applied the translation patches against the new English structure — that way the `trips` block added by the new start page (#512) is carried over intact rather than clobbered. It was already translated in all ten locales, so nothing was owed there.
 - [ ] [Internal] Added regression coverage: `tests/unit/connectivityLocaleCoverage.test.ts` (no English left in the two blocks, key and placeholder parity), `tests/unit/localeIcuPluralSyntax.test.ts` (no ICU plural in any namespace) and `tests/unit/tripsPrunedNotice.test.ts` (variant selection).
