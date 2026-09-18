@@ -2664,7 +2664,7 @@ const useTripViewRender = ({
     // Which basemap is actually drawing, as opposed to which one was asked for:
     // a missing Mapbox token falls the runtime back to Google, and the sheet
     // says so rather than offering controls that would do nothing.
-    const { runtime: mapRuntime, mapboxAccessToken } = useMapRuntime();
+    const { runtime: mapRuntime, mapboxAccessToken, setRendererChoice } = useMapRuntime();
     const activeMapRenderer = mapRuntime.effectiveSelection.renderer;
     const isMapboxRendererAvailable = mapboxAccessToken.trim().length > 0;
 
@@ -2696,6 +2696,15 @@ const useTripViewRender = ({
         markManualViewChange();
         applyMapPreferencePatch(patch);
     }, [applyMapPreferencePatch, markManualViewChange]);
+
+    /**
+     * The renderer lives above this component, in the map runtime provider, so
+     * the traveller's stored choice has to be pushed up to it — including on
+     * mount, when a trip opens carrying a basemap it was saved with.
+     */
+    useEffect(() => {
+        setRendererChoice(mapPreferences.renderer);
+    }, [mapPreferences.renderer, setRendererChoice]);
 
     const handleMapPreferenceReset = useCallback(() => {
         markManualViewChange();

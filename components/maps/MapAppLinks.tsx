@@ -19,6 +19,12 @@ export interface MapAppLinksProps extends MapDeepLinkTarget {
   source: 'map_popup' | 'details_panel' | 'stay';
   size?: 'sm' | 'md';
   className?: string;
+  /**
+   * The traveller's chosen maps app, which puts that link first. It reorders
+   * rather than hides: an iPhone that prefers Google Maps is common enough that
+   * dropping either one would be wrong as often as it is right.
+   */
+  preferredTarget?: 'google' | 'apple';
 }
 
 const BASE_LINK_CLASS = 'inline-flex items-center justify-center gap-1.5 rounded-lg border font-medium '
@@ -38,6 +44,7 @@ export const MapAppLinks: React.FC<MapAppLinksProps> = ({
   source,
   size = 'md',
   className = '',
+  preferredTarget = 'google',
 }) => {
   const { t } = useTranslation('common');
   const links = useMemo(
@@ -57,30 +64,39 @@ export const MapAppLinks: React.FC<MapAppLinksProps> = ({
   const linkClass = `${BASE_LINK_CLASS} ${SIZE_CLASS[size]}`;
   const iconSize = size === 'sm' ? 12 : 14;
 
+  const googleLink = (
+    <a
+      key="google"
+      href={links.google}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={linkClass}
+      onClick={() => handleClick('google')}
+      {...getAnalyticsDebugAttributes('trip_view__map_link--google', { source })}
+    >
+      <MapPin size={iconSize} aria-hidden="true" />
+      {t('tripView.mapLinks.google')}
+    </a>
+  );
+
+  const appleLink = (
+    <a
+      key="apple"
+      href={links.apple}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={linkClass}
+      onClick={() => handleClick('apple')}
+      {...getAnalyticsDebugAttributes('trip_view__map_link--apple', { source })}
+    >
+      <Apple size={iconSize} aria-hidden="true" />
+      {t('tripView.mapLinks.apple')}
+    </a>
+  );
+
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`.trim()}>
-      <a
-        href={links.google}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={linkClass}
-        onClick={() => handleClick('google')}
-        {...getAnalyticsDebugAttributes('trip_view__map_link--google', { source })}
-      >
-        <MapPin size={iconSize} aria-hidden="true" />
-        {t('tripView.mapLinks.google')}
-      </a>
-      <a
-        href={links.apple}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={linkClass}
-        onClick={() => handleClick('apple')}
-        {...getAnalyticsDebugAttributes('trip_view__map_link--apple', { source })}
-      >
-        <Apple size={iconSize} aria-hidden="true" />
-        {t('tripView.mapLinks.apple')}
-      </a>
+      {preferredTarget === 'apple' ? [appleLink, googleLink] : [googleLink, appleLink]}
     </div>
   );
 };

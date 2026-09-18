@@ -5,8 +5,10 @@ import { getGoogleMapsApiKey, getStoredAppLanguage, normalizeAppLanguage } from 
 import {
   getClientMapRuntimeResolution,
   getMapboxAccessToken,
+  readMapRuntimeAdminOverride,
 } from '../services/mapRuntimeService';
 import { resolveMapRuntime, type MapRuntimeResolution } from '../shared/mapRuntime';
+import type { MapRendererChoice } from '../types';
 
 type GoogleMapsWindow = Window & typeof globalThis & {
   gm_authFailure?: () => void;
@@ -20,6 +22,18 @@ interface GoogleMapsContextType {
 interface MapRuntimeContextType {
   runtime: MapRuntimeResolution;
   mapboxAccessToken: string;
+  /**
+   * The traveller's basemap choice. `auto` hands the decision back to the
+   * deploy's preset, which is the only value that follows an administrator
+   * changing the default later.
+   *
+   * Setting this re-resolves the runtime in place. No reload: Google's map is
+   * always the interaction layer, and "Mapbox" only means its tile pane is
+   * hidden and a camera-synced Mapbox canvas draws underneath, so the swap is a
+   * state change the marker rebuild already reacts to.
+   */
+  setRendererChoice: (choice: MapRendererChoice) => void;
+  rendererChoice: MapRendererChoice;
 }
 
 const createFallbackMapRuntimeResolution = (): MapRuntimeResolution => resolveMapRuntime({
@@ -34,6 +48,8 @@ const GoogleMapsContext = createContext<GoogleMapsContextType>({ isLoaded: false
 const MapRuntimeContext = createContext<MapRuntimeContextType>({
   runtime: createFallbackMapRuntimeResolution(),
   mapboxAccessToken: '',
+  setRendererChoice: () => {},
+  rendererChoice: 'auto',
 });
 
 export const useGoogleMaps = () => useContext(GoogleMapsContext);
@@ -83,7 +99,30 @@ export const MapRuntimeProvider: React.FC<MapRuntimeProviderProps> = ({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState<Error | null>(null);
-  const runtime = useMemo(() => getClientMapRuntimeResolution(), []);
+  const [rendererChoice, setRendererChoice] = useState<MapRendererChoice>('auto');
+  /**
+   * Re-resolved whenever the traveller's choice changes. The choice is passed
+   * as a `selection.renderer` partial so the existing capability gating,
+   * availability fallback and warning strings are reused rather than
+   * reimplemented — a missing Mapbox token still lands on Google, with a
+   * warning the customize sheet can show.
+   *
+   * An administrator's debug cookie is read inside `getClientMapRuntimeResolution`
+   * and still wins, because that is a one-browser override.
+   */
+  const runtime = useMemo(() => {
+    const adminOverride = readMapRuntimeAdminOverride();
+    if (adminOverride) {
+      return getClientMapRuntimeResolution({ override: adminOverride, overrideSource: 'cookie' });
+    }
+    if (rendererChoice === 'auto') {
+      return getClientMapRuntimeResolution({ override: null });
+    }
+    return getClientMapRuntimeResolution({
+      override: { selection: { renderer: rendererChoice } },
+      overrideSource: 'query',
+    });
+  }, [rendererChoice]);
   const mapboxAccessToken = useMemo(() => getMapboxAccessToken().trim(), []);
   const requestedLanguage = normalizeAppLanguage(language ?? getStoredAppLanguage());
   const requestedMapLanguage = MAPS_LANGUAGE_MAP[requestedLanguage] ?? 'en';
@@ -144,7 +183,9 @@ export const MapRuntimeProvider: React.FC<MapRuntimeProviderProps> = ({
   const runtimeContextValue = useMemo<MapRuntimeContextType>(() => ({
     runtime,
     mapboxAccessToken,
-  }), [mapboxAccessToken, runtime]);
+    rendererChoice,
+    setRendererChoice,
+  }), [mapboxAccessToken, rendererChoice, runtime]);
 
   const content = !shouldMountProvider
     ? children
