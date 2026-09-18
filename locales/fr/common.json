@@ -714,10 +714,10 @@
   "trips": {
     "pageTitle": "Mes voyages",
     "pageSubtitle": "Tout ce que vous avez planifié. Disponible hors ligne une fois chargé.",
-    "status": {
-      "offline": "Vous êtes hors ligne. Ces voyages proviennent de cet appareil.",
-      "pendingSyncOne": "{count} modification attend d'être envoyée.",
-      "pendingSyncMany": "{count} modifications attendent d'être envoyées."
+    "signedOut": {
+      "title": "Vous n'êtes pas connecté",
+      "body": "Connectez-vous pour voir les voyages enregistrés dans votre compte.",
+      "action": "Se connecter"
     }
   }
 }

@@ -714,10 +714,10 @@
   "trips": {
     "pageTitle": "My trips",
     "pageSubtitle": "Everything you've planned. Available offline once loaded.",
-    "status": {
-      "offline": "You're offline. These trips are loaded from this device.",
-      "pendingSyncOne": "{count} change is waiting to upload.",
-      "pendingSyncMany": "{count} changes are waiting to upload."
+    "signedOut": {
+      "title": "You're signed out",
+      "body": "Sign in to see the trips saved to your account.",
+      "action": "Sign in"
     }
   }
 }

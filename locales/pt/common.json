@@ -714,10 +714,10 @@
   "trips": {
     "pageTitle": "Minhas viagens",
     "pageSubtitle": "Tudo o que você planejou. Disponível offline depois de carregado.",
-    "status": {
-      "offline": "Você está offline. Estas viagens vêm deste dispositivo.",
-      "pendingSyncOne": "{count} alteração aguarda envio.",
-      "pendingSyncMany": "{count} alterações aguardam envio."
+    "signedOut": {
+      "title": "Você não está conectado",
+      "body": "Entre para ver as viagens salvas na sua conta.",
+      "action": "Entrar"
     }
   }
 }

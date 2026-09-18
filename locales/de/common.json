@@ -714,10 +714,10 @@
   "trips": {
     "pageTitle": "Meine Reisen",
     "pageSubtitle": "Alles, was du geplant hast. Nach dem Laden auch offline verfügbar.",
-    "status": {
-      "offline": "Du bist offline. Diese Reisen kommen von diesem Gerät.",
-      "pendingSyncOne": "{count} Änderung wartet auf den Upload.",
-      "pendingSyncMany": "{count} Änderungen warten auf den Upload."
+    "signedOut": {
+      "title": "Du bist nicht angemeldet",
+      "body": "Melde dich an, um die Reisen aus deinem Konto zu sehen.",
+      "action": "Anmelden"
     }
   }
 }

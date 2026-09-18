@@ -1,16 +1,21 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CloudArrowUp, WifiSlash } from '@phosphor-icons/react';
+import { SignIn } from '@phosphor-icons/react';
 
 import { SiteHeader } from '../components/navigation/SiteHeader';
+import { ConnectivityStatusBanner } from '../components/ConnectivityStatusBanner';
 import { TripManager } from '../components/TripManager';
+import { useAuth } from '../hooks/useAuth';
+import { useLoginModal } from '../hooks/useLoginModal';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 import { useDbSync } from '../hooks/useDbSync';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { buildTripUrl } from '../utils';
 import type { AppLanguage, ITrip } from '../types';
+
+const IS_DEV = import.meta.env.DEV;
 
 export interface TripsRouteProps {
     appLanguage: AppLanguage;
@@ -25,8 +30,13 @@ export interface TripsRouteProps {
  * This is the installed app's `start_url` (`/trips?source=pwa`), so it is the
  * first thing a home-screen launch renders — including offline, where the
  * service worker serves the cached shell and `TripManager` reads trips straight
- * out of local storage. It renders the same component as the header's slide-in
- * panel, in its `page` variant.
+ * out of local storage.
+ *
+ * Because it is the first screen, it has to explain itself. An empty list looks
+ * identical whether the visitor is signed out, offline, or genuinely has no
+ * trips, and on iOS the installed app has its own storage separate from Safari
+ * — so someone signed in in Safari arrives here signed out, with none of their
+ * account trips. Both states get an explicit notice rather than a blank list.
  */
 export const TripsRoute: React.FC<TripsRouteProps> = ({
     appLanguage,
@@ -37,8 +47,10 @@ export const TripsRoute: React.FC<TripsRouteProps> = ({
     const { t } = useTranslation('common');
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+    const { openLoginModal } = useLoginModal();
     const { snapshot: connectivity } = useConnectivityStatus();
-    const { snapshot: syncSnapshot } = useSyncStatus();
+    const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
 
     useDbSync(onAppLanguageLoaded);
 
@@ -55,38 +67,30 @@ export const TripsRoute: React.FC<TripsRouteProps> = ({
         navigate(buildTripUrl(trip.id));
     }, [navigate, onTripLoaded]);
 
-    const isOffline = connectivity.state === 'offline';
-    const pendingCount = syncSnapshot.pendingCount;
+    const handleSignIn = useCallback(() => {
+        trackEvent('trips__signed_out_notice--sign_in', {
+            source: launchSource || 'direct',
+        });
+        openLoginModal({ nextPath: '/trips', source: 'trips_start_page' });
+    }, [launchSource, openLoginModal]);
 
-    const statusNote = useMemo(() => {
-        if (isOffline) {
-            return {
-                key: 'offline',
-                icon: <WifiSlash size={16} weight="bold" />,
-                text: t('trips.status.offline'),
-                className: 'border-amber-200 bg-amber-50 text-amber-800',
-            };
-        }
-        if (pendingCount > 0) {
-            return {
-                key: 'pending',
-                icon: <CloudArrowUp size={16} weight="bold" />,
-                // i18next-icu is installed but never registered in i18n.ts, so
-                // ICU plural blocks would render as raw text. The codebase picks
-                // the singular/plural key explicitly instead.
-                text: t(
-                    pendingCount === 1 ? 'trips.status.pendingSyncOne' : 'trips.status.pendingSyncMany',
-                    { count: pendingCount }
-                ),
-                className: 'border-sky-200 bg-sky-50 text-sky-800',
-            };
-        }
-        return null;
-    }, [isOffline, pendingCount, t]);
+    // Wait for the auth check before claiming anything. Flashing "you're signed
+    // out" at someone who is in fact signed in would be worse than a brief gap.
+    const showSignedOutNotice = !isAuthLoading && !isAuthenticated;
 
     return (
         <div className="min-h-screen bg-slate-50" data-tf-handoff-ready="true">
             <SiteHeader variant="solid" />
+
+            {/* The same offline/sync banner the planner shows, so the reason the
+                list looks thin is stated on the screen that shows it. */}
+            <ConnectivityStatusBanner
+                isPlannerRoute
+                connectivity={connectivity}
+                sync={syncSnapshot}
+                onRetrySync={() => retrySyncNow()}
+                showDeveloperDetails={IS_DEV}
+            />
 
             <main className="mx-auto w-full max-w-xl px-4 pb-16 pt-6">
                 <header className="mb-4">
@@ -98,17 +102,30 @@ export const TripsRoute: React.FC<TripsRouteProps> = ({
                     </p>
                 </header>
 
-                {statusNote && (
+                {showSignedOutNotice && (
                     <div
-                        key={statusNote.key}
                         role="status"
-                        className={`mb-4 flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium ${statusNote.className}`}
-                        {...getAnalyticsDebugAttributes('trips__status_note', {
-                            status: statusNote.key,
+                        className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
+                        data-testid="trips-signed-out-notice"
+                        {...getAnalyticsDebugAttributes('trips__signed_out_notice', {
+                            source: launchSource || 'direct',
                         })}
                     >
-                        {statusNote.icon}
-                        <span>{statusNote.text}</span>
+                        <p className="text-sm font-semibold text-amber-900">
+                            {t('trips.signedOut.title')}
+                        </p>
+                        <p className="mt-1 text-sm text-amber-800">
+                            {t('trips.signedOut.body')}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={handleSignIn}
+                            data-testid="trips-sign-in-button"
+                            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100"
+                        >
+                            <SignIn size={16} weight="bold" />
+                            {t('trips.signedOut.action')}
+                        </button>
                     </div>
                 )}
 

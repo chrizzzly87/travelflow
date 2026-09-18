@@ -712,10 +712,10 @@
   "trips": {
     "pageTitle": "Moje podróże",
     "pageSubtitle": "Wszystko, co zaplanowałeś. Po wczytaniu dostępne offline.",
-    "status": {
-      "offline": "Jesteś offline. Te podróże pochodzą z tego urządzenia.",
-      "pendingSyncOne": "{count} zmiana czeka na wysłanie.",
-      "pendingSyncMany": "{count} zmian czeka na wysłanie."
+    "signedOut": {
+      "title": "Nie jesteś zalogowany",
+      "body": "Zaloguj się, aby zobaczyć podróże zapisane na Twoim koncie.",
+      "action": "Zaloguj się"
     }
   }
 }

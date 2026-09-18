@@ -714,10 +714,10 @@
   "trips": {
     "pageTitle": "Mis viajes",
     "pageSubtitle": "Todo lo que has planeado. Disponible sin conexión una vez cargado.",
-    "status": {
-      "offline": "Estás sin conexión. Estos viajes se cargan desde este dispositivo.",
-      "pendingSyncOne": "{count} cambio está esperando para subirse.",
-      "pendingSyncMany": "{count} cambios están esperando para subirse."
+    "signedOut": {
+      "title": "No has iniciado sesión",
+      "body": "Inicia sesión para ver los viajes guardados en tu cuenta.",
+      "action": "Iniciar sesión"
     }
   }
 }
