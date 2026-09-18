@@ -1,13 +1,13 @@
 {
   "_generated": "Emitted by scripts/generate-latest-in-app-release.mjs — do not edit by hand.",
   "release": {
-    "id": "rel-2026-09-18-connectivity-locale-translations",
-    "version": "v0.176.0",
-    "title": "Connection and trip messages now speak your language",
+    "id": "rel-2026-09-18-mobile-first-load-interactivity",
+    "version": "v0.177.0",
+    "title": "The menu answers your first tap, even while the page is still loading",
     "date": "2026-09-18",
-    "summary": "Sync warnings, trip details and the storage notice were still showing English on every non-English page. They are now translated across all ten languages, including Persian and Urdu.",
+    "summary": "On a phone, tapping the menu before the page finished loading did nothing at all. That tap is now remembered, the menu opens as soon as it can, and there is less to download before it does.",
     "status": "published",
-    "publishedAt": "2026-09-18T15:25:00Z",
+    "publishedAt": "2026-09-18T15:35:00Z",
     "notifyInApp": true,
     "inAppHours": 24,
     "items": [
@@ -15,93 +15,69 @@
         "visibleOnWebsite": true,
         "typeLabel": "Improved",
         "typeKey": "improved",
-        "text": "🇮🇷 Persian and Urdu were missing large parts of the contact form, the trip screens and several dialogs, which fell back to English. Both languages are now complete."
+        "text": "📶 The homepage downloads noticeably less before it responds to you, so the wait on a slow mobile connection is shorter."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "Improved",
         "typeKey": "improved",
-        "text": "🔤 Restored the accented characters that were stripped out of German, Spanish, French, Italian, Portuguese and Polish messages, so words like \"verfügbar\" and \"podróży\" are spelled properly again."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "Improved",
-        "typeKey": "improved",
-        "text": "☁️ Outage messages no longer name the storage provider we use behind the scenes — they just say what is happening to your edits."
+        "text": "👆 A button you press before the page is ready now visibly acknowledges the press instead of sitting there looking broken."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "Fixed",
         "typeKey": "fixed",
-        "text": "🌍 Connection and sync messages appeared in English on every non-English page. They now read in your own language, so you can tell whether your edits are safe without switching to English."
+        "text": "🍔 Tap the menu button on a phone while the page is still loading and it now opens as soon as it is ready. Before, that first tap was simply lost — with no way into navigation or login, you had to guess and tap again."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "Fixed",
         "typeKey": "fixed",
-        "text": "🧭 Trip details, the history panel, calendar export and the retry messages were also still English. All of them are translated now."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "Fixed",
-        "typeKey": "fixed",
-        "text": "🗄️ The \"device storage is full\" notice showed unreadable placeholder text instead of a sentence, in every language including English."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "Fixed",
-        "typeKey": "fixed",
-        "text": "🇵🇱 The Polish menu was missing its sign-out and admin labels."
+        "text": "🍪 The cookie notice now appears after your very first tap or scroll, even if that happened while the page was still waking up. It used to wait for a second one you had no reason to make."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "Translated the `connectivity` and `tripView` blocks of `locales/*/common.json` across `de`, `es`, `fr`, `pt`, `it`, `ru`, `pl`, `ko`, `fa` and `ur`: 210 keys per locale, previously verbatim English. English is unchanged."
+        "text": "🌉 `index.html` ships an inline pre-hydration bridge that records an interaction and the intent of a press on a `data-tf-boot-intent` control; `services/bootInteractionBridge.ts` is the typed read side. Intent is consumed post-mount, not during the hydration render — opening the drawer on the first render left preact/compat hydrating it against the wrong node, inline and without `role=\"dialog\"`."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "Brought `fa` and `ur` to full key parity on `common.json` (177 keys each were absent, covering `contact`, `appDialog`, `connectivity`, `tripView` and `networkStatus`) and dropped two dead keys that existed in no other locale and in no code path."
+        "text": "📦 Example trip cards localize country names from a generated 4 KB table instead of `services/destinationService`, which statically pulled `data/countryTravelData.json`. That took a 424 KB chunk (~372 KB, 25% of the homepage boot JS) off the mobile critical path."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "🧮 Russian and Polish only have `One`/`Many` variants available, but both languages need three plural forms. Their `Many` strings are phrased so the count is not grammatically governed by the noun (\"Изменений в очереди: {count}\"), which reads correctly for every value rather than only for 2–4."
+        "text": "🧩 `MobileMenu` is no longer a lazy chunk: it cost a network round trip on the one tap that matters on a phone, and adds ~11 KB to the header chunk instead."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "Replaced `storageNotice.tripsPrunedDescription` with explicit `*One`/`*Many` keys in all 11 locales and moved variant selection into `app/bootstrap/useTripsPrunedNoticeBootstrap.ts`. It was the only ICU plural block in the repo, and `i18next-icu` is never registered in `i18n.ts`, so it rendered as raw pattern source."
+        "text": "✂️ `data/countryTravelData.json` (678 KB) is split by `scripts/split-country-travel-data.mjs` into seasons, localized names and search aliases. It stays the source of truth on disk — the generators write it and the Node scripts read it — but no client module imports it any more, so a page pays only for the slice it reads. Profile, profile settings and the countries explorer drop from 424 KB to 132 KB; pages that genuinely need all three are unchanged."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "`scripts/validate-i18n.mjs` only compared namespace *files* and `{{…}}` tokens — not keys, not values. It now hard-fails on any ICU plural/select block, and warns on key-parity gaps and values identical to English, with `--strict` to escalate. Warnings stay non-fatal because `pnpm build` runs this script and ~3,000 strings in other namespaces are still untranslated."
+        "text": "📰 The in-app release notice reads a generated single-release file instead of `releaseNotesService`, whose eager glob bundles all 204 notes. Opening a trip downloaded 444 KB of release history to decide whether one notice was due; it now costs ~8 KB. The updates page still gets the full corpus."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "Added `scripts/i18n-identical-allowlist.json` for the values that legitimately match English (language endonyms, brand names, the support address, unit formats, and per-locale loanwords such as \"Offline\" in German)."
+        "text": "📅 `MONTH_LABELS` moved to `data/countryMonthLabels.ts`. A component rendering a month strip was importing 678 KB of seasons, events and public holidays for a 12-string array."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "🔀 Merged `main`, which had moved three commits ahead. Every `common.json` conflicted, so the resolution took `main`'s files as the base and re-applied the translation patches against the new English structure — that way the `trips` block added by the new start page (#512) is carried over intact rather than clobbered. It was already translated in all ten locales, so nothing was owed there."
-      },
-      {
-        "visibleOnWebsite": false,
-        "typeLabel": "Internal",
-        "typeKey": "internal",
-        "text": "Added regression coverage: `tests/unit/connectivityLocaleCoverage.test.ts` (no English left in the two blocks, key and placeholder parity), `tests/unit/localeIcuPluralSyntax.test.ts` (no ICU plural in any namespace) and `tests/unit/tripsPrunedNotice.test.ts` (variant selection)."
+        "text": "🧪 `tests/browser/bootInteractionBridge.browser.test.ts` runs the real inline script from `index.html`. `tests/unit/exampleTripCountryNames.test.ts`, `tests/unit/countryTravelDataSplit.test.ts` and `tests/unit/latestInAppRelease.test.ts` assert every derived table returns exactly what the full source returns, and fail if it is left stale."
       }
     ],
-    "sourcePath": "../content/updates/2026-09-18-connectivity-locale-translations.md"
+    "sourcePath": "../content/updates/2026-09-18-mobile-first-load-interactivity.md"
   }
 }
