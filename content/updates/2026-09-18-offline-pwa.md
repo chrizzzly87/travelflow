@@ -3,15 +3,15 @@ id: rel-2026-09-18-offline-pwa
 version: v0.175.0
 title: "Install TravelFlow and open your trips offline"
 date: 2026-09-18
-published_at: 2026-09-18T09:00:00Z
-status: draft
+published_at: 2026-09-18T14:32:55Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Add TravelFlow to your home screen and it opens straight to your trips — including on a plane, in a tunnel or anywhere else the signal has gone, where your saved trips still open and read exactly as they did."
 ---
 
 ## Changes
-- [x] [New feature] 📲 Add TravelFlow to your iPhone home screen and it opens like an app — its own icon, full screen, no browser bars.
+- [x] [New feature] 📲 Add TravelFlow to your home screen and it opens like an app — its own icon, full screen, no browser bars. Works on iPhone and Android.
 - [x] [New feature] ✈️ With no signal at all, your saved trips still open. Days, stops, times and notes read exactly as they did the last time you looked.
 - [x] [New feature] 🧳 The app now opens straight to your trips, so you pick the one you are on instead of starting from the front page.
 - [x] [New feature] 🗺️ The little route maps on your trip cards stay visible offline once you have seen them.
