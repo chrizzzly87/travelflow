@@ -516,32 +516,166 @@
       "popupLabel": "Detalhes da atividade"
     },
     "mapCustomize": {
-      "title": "Personalizar o mapa",
+      "activityMarkers": {
+        "description": "Os locais que planeaste visitar.",
+        "label": "Pins de atividades"
+      },
+      "arrows": {
+        "description": "Mostram em que sentido segue a viagem.",
+        "label": "Setas de direção"
+      },
+      "base": {
+        "description": "Um mapa desenhado ou imagens de satélite.",
+        "label": "Base",
+        "map": "Mapa",
+        "satellite": "Satélite"
+      },
+      "boundaries": {
+        "description": "Fronteiras dentro de um país, não apenas entre países.",
+        "label": "Fronteiras regionais"
+      },
+      "buildings": {
+        "description": "Edifícios em relevo, melhores com alguma inclinação.",
+        "label": "Edifícios 3D"
+      },
+      "cityFocus": {
+        "description": "Enquadra a cidade no teu plano e esconde o resto do percurso.",
+        "label": "Focar uma cidade ao selecionar"
+      },
+      "cityNames": {
+        "description": "Identifica cada paragem do teu percurso.",
+        "label": "Nomes das cidades"
+      },
+      "close": "Fechar",
+      "colorMode": {
+        "brand": "Destaque único",
+        "label": "Cor",
+        "trip": "Cores das cidades"
+      },
+      "colorTheme": {
+        "default": "Total",
+        "description": "Quanta cor o mapa mostra.",
+        "faded": "Suave",
+        "label": "Cor",
+        "monochrome": "Mono",
+        "satelliteNote": "As imagens de satélite têm cor própria."
+      },
+      "copied": "Copiado",
+      "copyPreset": "Copiar",
+      "dashed": {
+        "description": "Tracejado em vez de linhas contínuas.",
+        "label": "Linhas tracejadas"
+      },
       "description": "As alterações são aplicadas de imediato e ficam guardadas com esta viagem.",
-      "open": "Personalizar o mapa",
-      "tab": {
-        "basemap": "Mapa base",
-        "journey": "Percurso",
-        "places": "Locais",
-        "camera": "Câmara"
+      "dimPast": {
+        "description": "Manda para segundo plano os dias que já passaram.",
+        "label": "Esbater dias passados"
+      },
+      "globe": {
+        "description": "Curva o mundo. Ideal numa viagem longa e num mapa grande.",
+        "label": "Vista de globo"
+      },
+      "googleOnly": "Disponível com o Google Maps.",
+      "group": {
+        "features": "Elementos",
+        "labels": "Etiquetas",
+        "pins": "Os teus pins",
+        "routes": "Linhas do percurso"
+      },
+      "handoff": {
+        "apple": "Apple Maps",
+        "description": "Que app é oferecida primeiro quando abres um local.",
+        "google": "Google Maps",
+        "label": "Abrir locais em"
+      },
+      "light": {
+        "auto": "Automático",
+        "dawn": "Madrugada",
+        "day": "Dia",
+        "description": "A hora do dia que ilumina o mapa. Automático segue o teu dispositivo.",
+        "dusk": "Anoitecer",
+        "googleNote": "O Google Maps só tem dia e noite.",
+        "label": "Luz",
+        "night": "Noite"
+      },
+      "mapboxOnly": "Disponível com o Mapbox.",
+      "mapboxUnavailableHere": "Precisa do Mapbox, que não está configurado aqui.",
+      "paths": {
+        "description": "Caminhos e passeios pedonais.",
+        "label": "Caminhos pedonais"
+      },
+      "pitch": {
+        "description": "Ver o mapa de lado em vez de a direito de cima.",
+        "flat": "Plano",
+        "label": "Inclinação"
+      },
+      "placeLabels": {
+        "description": "Vilas e cidades no mapa base.",
+        "label": "Nomes de locais"
+      },
+      "poiLabels": {
+        "description": "Lojas, monumentos e locais que não planeaste.",
+        "label": "Pontos de interesse"
+      },
+      "preset": {
+        "label": "Predefinições"
       },
       "renderer": {
-        "label": "Fornecedor de mapas",
-        "description": "Que mapa a app desenha.",
         "auto": "Automático",
-        "google": "Google Maps",
+        "description": "Que mapa a app desenha.",
+        "google": "Google",
+        "label": "Fornecedor de mapas",
         "mapbox": "Mapbox",
         "mapboxUnavailable": "O Mapbox não está configurado aqui, por isso é usado o Google."
       },
-      "handoff": {
-        "label": "Abrir locais em",
-        "description": "Que app os links «abrir nos mapas» usam.",
-        "google": "Google Maps",
-        "apple": "Apple Maps",
-        "appleNote": "O Apple Maps não pode ser desenhado dentro da app, por isso abre na app Apple Maps."
+      "reset": "Repor",
+      "roadLabels": {
+        "description": "Úteis de perto, confusos ao longe.",
+        "label": "Nomes das ruas"
+      },
+      "roads": {
+        "description": "Desliga para um mapa limpo só com a tua viagem.",
+        "label": "Estradas e transportes"
+      },
+      "routeMode": {
+        "description": "Seguir as estradas ou traçar a direito entre paragens.",
+        "label": "Forma",
+        "realistic": "Seguir estradas",
+        "simple": "Direto"
+      },
+      "saveAsDefault": "Guardar como predefinição",
+      "saved": "Guardado",
+      "switchToMapbox": "Mudar para Mapbox",
+      "tab": {
+        "camera": "Câmara",
+        "detail": "Detalhe",
+        "look": "Aspeto",
+        "trip": "Viagem"
+      },
+      "terrain": {
+        "description": "Realça colinas e montanhas.",
+        "label": "Relevo"
+      },
+      "thickness": {
+        "label": "Espessura",
+        "normal": "Normal",
+        "thick": "Grossa",
+        "thin": "Fina"
+      },
+      "title": "Personalizar o mapa",
+      "traffic": {
+        "description": "Estado atual das estradas.",
+        "label": "Trânsito em direto"
+      },
+      "transitLabels": {
+        "description": "Paragens e estações com o nome.",
+        "label": "Nomes das estações"
+      },
+      "transitLines": {
+        "description": "Linhas de metro e comboio no mapa.",
+        "label": "Linhas de transporte"
       },
       "style": {
-        "label": "Estilo do mapa",
         "standard": "Padrão",
         "minimal": "Minimal",
         "clean": "Limpo",
@@ -549,70 +683,8 @@
         "cleanDark": "Limpo escuro",
         "satellite": "Satélite"
       },
-      "theme": {
-        "label": "Claro ou escuro",
-        "description": "Automático segue o teu dispositivo.",
-        "auto": "Automático",
-        "light": "Claro",
-        "dark": "Escuro"
-      },
-      "routeMode": {
-        "label": "Linhas do percurso",
-        "description": "Realista segue as estradas; simples traça uma linha direta.",
-        "simple": "Simples",
-        "realistic": "Realista"
-      },
-      "colorMode": {
-        "label": "Cor das linhas",
-        "description": "A condizer com cada cidade ou uma única cor de destaque.",
-        "trip": "Cores das cidades",
-        "brand": "Destaque único"
-      },
-      "lineWeight": {
-        "label": "Espessura das linhas"
-      },
-      "cityNames": {
-        "label": "Nomes das cidades",
-        "description": "Identifica cada paragem no mapa."
-      },
-      "activityMarkers": {
-        "label": "Pins de atividades",
-        "description": "Mostra os locais que planeaste assim que o mapa estiver perto o suficiente."
-      },
-      "poiLabels": {
-        "label": "Pontos de interesse",
-        "description": "Lojas, monumentos e outros locais que não planeaste."
-      },
-      "roads": {
-        "label": "Estradas e transportes",
-        "description": "Desliga para um mapa mais limpo só com a tua viagem."
-      },
-      "boundaries": {
-        "label": "Fronteiras regionais",
-        "description": "Fronteiras dentro de um país, não apenas entre países."
-      },
-      "cityFocus": {
-        "label": "Focar uma cidade ao selecionar",
-        "description": "Enquadra a cidade no teu plano e esconde o resto do percurso."
-      },
-      "globe": {
-        "label": "Vista de globo",
-        "description": "Curva o mundo. Ideal numa viagem longa e num mapa grande."
-      },
-      "terrain": {
-        "label": "Relevo",
-        "description": "Realça colinas e montanhas."
-      },
-      "pitch": {
-        "label": "Inclinação"
-      },
-      "mapboxOnly": "Disponível com o Mapbox.",
-      "reset": "Repor",
-      "copyPreset": "Copiar predefinição",
-      "copied": "Copiado",
-      "saveAsDefault": "Guardar como predefinição",
-      "saved": "Guardado",
-      "showWholeJourney": "Mostrar todo o percurso"
+      "showWholeJourney": "Ver todo o percurso",
+      "open": "Personalizar o mapa"
     }
   },
   "tripRouteShell": {

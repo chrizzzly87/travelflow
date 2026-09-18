@@ -1,4 +1,4 @@
-import type { MapStyle } from '../types';
+import type { MapBaseSurface, MapColorTheme, MapLightPreset, MapStyle } from '../types';
 
 export interface MapboxStyleConfigProperty {
   fragmentId: string;
@@ -446,19 +446,90 @@ export const GOOGLE_BASEMAP_HIDDEN_STYLES = [
  * override the handful of properties the sheet exposes.
  */
 export interface MapboxBasemapDetailOverrides {
+  showPlaceLabels?: boolean;
+  showRoadLabels?: boolean;
+  showTransitLabels?: boolean;
   showPoiLabels?: boolean;
   showRoadsAndTransit?: boolean;
+  showPedestrianRoads?: boolean;
   showAdminBoundaries?: boolean;
+  show3dObjects?: boolean;
 }
 
 const MAPBOX_DETAIL_OVERRIDE_PROPERTIES: Array<{
   key: keyof MapboxBasemapDetailOverrides;
   property: string;
 }> = [
+  { key: 'showPlaceLabels', property: 'showPlaceLabels' },
+  { key: 'showRoadLabels', property: 'showRoadLabels' },
+  { key: 'showTransitLabels', property: 'showTransitLabels' },
   { key: 'showPoiLabels', property: 'showPointOfInterestLabels' },
   { key: 'showRoadsAndTransit', property: 'showRoadsAndTransit' },
+  { key: 'showPedestrianRoads', property: 'showPedestrianRoads' },
   { key: 'showAdminBoundaries', property: 'showAdminBoundaries' },
+  { key: 'show3dObjects', property: 'show3dObjects' },
 ];
+
+/**
+ * A look built from its axes rather than looked up by name.
+ *
+ * The six named styles were only ever combinations of `theme` and
+ * `lightPreset` over two base styles, so this is the same surface with the
+ * combinations that had no name — dawn, and every theme at dusk — reachable.
+ */
+export const buildMapboxStyleFromAxes = ({
+  base,
+  colorTheme,
+  lightPreset,
+  overrides,
+}: {
+  base: MapBaseSurface;
+  colorTheme: MapColorTheme;
+  lightPreset: Exclude<MapLightPreset, 'auto'>;
+  overrides?: MapboxBasemapDetailOverrides;
+}): { styleUrl: string; config: MapboxStyleConfigMap } => {
+  const styleId = base === 'satellite' ? 'standard-satellite' : 'standard';
+  const isDark = lightPreset === 'dusk' || lightPreset === 'night';
+
+  const basemap: Record<string, boolean | string | number> = {
+    lightPreset,
+    // Satellite has no colour theme: the imagery *is* the colour, and setting
+    // one on `standard-satellite` is ignored rather than merely subtle.
+    ...(base === 'satellite' ? {} : { theme: colorTheme }),
+    showPlaceLabels: true,
+    showPointOfInterestLabels: false,
+    showTransitLabels: false,
+    showRoadLabels: false,
+    showAdminBoundaries: false,
+    colorAdminBoundaries: isDark || base === 'satellite'
+      ? MAPBOX_DARK_BOUNDARY_COLOR
+      : (colorTheme === 'faded' ? MAPBOX_CLEAN_LIGHT_BOUNDARY_COLOR : MAPBOX_LIGHT_BOUNDARY_COLOR),
+  };
+
+  MAPBOX_DETAIL_OVERRIDE_PROPERTIES.forEach(({ key, property }) => {
+    const value = overrides?.[key];
+    if (typeof value !== 'boolean') return;
+    basemap[property] = value;
+  });
+
+  return { styleUrl: `mapbox://styles/mapbox/${styleId}`, config: { basemap } };
+};
+
+/** The surface colour behind a look built from axes, before tiles arrive. */
+export const getMapSurfaceBackgroundColorForAxes = ({
+  base,
+  colorTheme,
+  lightPreset,
+}: {
+  base: MapBaseSurface;
+  colorTheme: MapColorTheme;
+  lightPreset: Exclude<MapLightPreset, 'auto'>;
+}): string => {
+  if (base === 'satellite') return '#4d6972';
+  if (lightPreset === 'dusk' || lightPreset === 'night') return '#0f172a';
+  if (colorTheme === 'monochrome') return '#edf2f7';
+  return '#dbe5ee';
+};
 
 export const getMapboxStyleDescriptor = (mapStyle: MapStyle): MapboxStyleDescriptor => (
   MAPBOX_STYLE_DESCRIPTORS[mapStyle] ?? MAPBOX_STYLE_DESCRIPTORS.standard

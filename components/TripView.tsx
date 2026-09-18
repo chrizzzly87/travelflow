@@ -61,7 +61,11 @@ import { useTripEditModalState } from './tripview/useTripEditModalState';
 import { useTripLayoutControlsState } from './tripview/useTripLayoutControlsState';
 import { useTripMapCustomizationState } from './tripview/useTripMapCustomizationState';
 import { useMapRuntime } from './GoogleMapsLoader';
-import { resolveEffectiveMapStyle } from '../shared/mapPreferences';
+import {
+    MAP_ROUTE_THICKNESS_MULTIPLIER,
+    resolveEffectiveLightPreset,
+    resolveMapStyleFromAxes,
+} from '../shared/mapPreferences';
 import { MapCustomizeModal } from './maps/MapCustomizeModal';
 import { useTripCityForceFill } from './tripview/useTripCityForceFill';
 import { useTripFavoriteHandler } from './tripview/useTripFavoriteHandler';
@@ -2729,17 +2733,86 @@ const useTripViewRender = ({
         () => false,
     );
 
-    const effectiveMapStyle = useMemo(() => resolveEffectiveMapStyle({
-        mapStyle: mapPreferences.mapStyle,
-        themeMode: mapPreferences.themeMode,
+    /**
+     * Google renders from the six named style arrays and has no equivalent of
+     * the axes, so every combination has to land on one of them. Mapbox takes
+     * the axes directly.
+     */
+    const effectiveMapStyle = useMemo(() => resolveMapStyleFromAxes({
+        base: mapPreferences.base,
+        colorTheme: mapPreferences.colorTheme,
+        lightPreset: mapPreferences.lightPreset,
         prefersDarkScheme,
-    }), [mapPreferences.mapStyle, mapPreferences.themeMode, prefersDarkScheme]);
+    }), [mapPreferences.base, mapPreferences.colorTheme, mapPreferences.lightPreset, prefersDarkScheme]);
+
+    /**
+     * Stable identity: these objects reach a style-reload key, so a new object
+     * every render would reload the basemap on every render.
+     */
+    const mapLookAxes = useMemo(() => ({
+        base: mapPreferences.base,
+        colorTheme: mapPreferences.colorTheme,
+        lightPreset: resolveEffectiveLightPreset(mapPreferences.lightPreset, prefersDarkScheme),
+    }), [mapPreferences.base, mapPreferences.colorTheme, mapPreferences.lightPreset, prefersDarkScheme]);
 
     const mapBasemapDetail = useMemo(() => ({
+        showPlaceLabels: mapPreferences.showPlaceLabels,
+        showRoadLabels: mapPreferences.showRoadLabels,
+        showTransitLabels: mapPreferences.showTransitLabels,
         showPoiLabels: mapPreferences.showPoiLabels,
         showRoadsAndTransit: mapPreferences.showRoadsAndTransit,
+        // Footpaths are a sub-layer of roads: with roads off they would draw a
+        // ghost path network over nothing.
+        showPedestrianRoads: mapPreferences.showRoadsAndTransit && mapPreferences.showPedestrianRoads,
         showAdminBoundaries: mapPreferences.showAdminBoundaries,
-    }), [mapPreferences.showAdminBoundaries, mapPreferences.showPoiLabels, mapPreferences.showRoadsAndTransit]);
+        show3dObjects: mapPreferences.show3dObjects,
+    }), [
+        mapPreferences.show3dObjects,
+        mapPreferences.showAdminBoundaries,
+        mapPreferences.showPedestrianRoads,
+        mapPreferences.showPlaceLabels,
+        mapPreferences.showPoiLabels,
+        mapPreferences.showRoadLabels,
+        mapPreferences.showRoadsAndTransit,
+        mapPreferences.showTransitLabels,
+    ]);
+
+    /**
+     * Which day of the trip today is. Null outside the trip's own dates: before
+     * it starts nothing is past, and after it ends everything is, either of
+     * which would make "fade past days" fade the whole map or nothing at all.
+     */
+    const todayDayOffset = useMemo<number | null>(() => {
+        const startDate = displayTrip.startDate;
+        if (!startDate) return null;
+        const start = new Date(`${startDate.slice(0, 10)}T00:00:00Z`);
+        if (Number.isNaN(start.getTime())) return null;
+
+        const now = new Date();
+        const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        const offset = Math.floor((todayUtc - start.getTime()) / 86400000);
+        if (!Number.isFinite(offset) || offset < 0) return null;
+
+        const lastDay = displayTrip.items.reduce(
+            (latest, item) => Math.max(latest, item.startDateOffset + Math.max(item.duration, 0)),
+            0,
+        );
+        return offset > lastDay ? null : offset;
+    }, [displayTrip.items, displayTrip.startDate]);
+
+    const mapTripOverlay = useMemo(() => ({
+        dimPastDays: mapPreferences.dimPastDays,
+        showRouteArrows: mapPreferences.showRouteArrows,
+        dashedRoutes: mapPreferences.dashedRoutes,
+        showTraffic: mapPreferences.showTraffic,
+        showTransitLines: mapPreferences.showTransitLines,
+    }), [
+        mapPreferences.dashedRoutes,
+        mapPreferences.dimPastDays,
+        mapPreferences.showRouteArrows,
+        mapPreferences.showTraffic,
+        mapPreferences.showTransitLines,
+    ]);
 
     const handleMapPreferenceReset = useCallback(() => {
         markManualViewChange();
@@ -3527,7 +3600,10 @@ const useTripViewRender = ({
                         showActivityMarkers={mapPreferences.showActivityMarkers}
                         onShowActivityMarkersChange={(enabled) => handleMapPreferenceChange({ showActivityMarkers: enabled })}
                         basemapDetail={mapBasemapDetail}
-                        routeLineWeight={mapPreferences.routeLineWeight}
+                        mapLookAxes={mapLookAxes}
+                        tripOverlay={mapTripOverlay}
+                        todayDayOffset={todayDayOffset}
+                        routeLineWeight={MAP_ROUTE_THICKNESS_MULTIPLIER[mapPreferences.routeThickness]}
                         useGlobeProjection={mapPreferences.useGlobeProjection}
                         showTerrain={mapPreferences.showTerrain}
                         mapPitch={mapPreferences.pitch}

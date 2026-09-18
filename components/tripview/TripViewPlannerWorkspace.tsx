@@ -50,11 +50,10 @@ interface TripViewPlannerWorkspaceProps {
     onOpenMapCustomize?: () => void;
     showActivityMarkers?: boolean;
     onShowActivityMarkersChange?: (enabled: boolean) => void;
-    basemapDetail?: {
-        showPoiLabels?: boolean;
-        showRoadsAndTransit?: boolean;
-        showAdminBoundaries?: boolean;
-    };
+    basemapDetail?: Record<string, boolean | undefined>;
+    mapLookAxes?: { base: 'map' | 'satellite'; colorTheme: 'default' | 'faded' | 'monochrome'; lightPreset: 'dawn' | 'day' | 'dusk' | 'night' };
+    tripOverlay?: Record<string, boolean | undefined>;
+    todayDayOffset?: number | null;
     useGlobeProjection?: boolean;
     showTerrain?: boolean;
     mapPitch?: number;
@@ -136,6 +135,9 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     showActivityMarkers,
     onShowActivityMarkersChange,
     basemapDetail,
+    mapLookAxes,
+    tripOverlay,
+    todayDayOffset,
     useGlobeProjection,
     showTerrain,
     mapPitch,
@@ -372,6 +374,9 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     showActivityMarkers={showActivityMarkers}
                     onShowActivityMarkersChange={onShowActivityMarkersChange}
                     basemapDetail={basemapDetail}
+                    mapLookAxes={mapLookAxes}
+                    tripOverlay={tripOverlay}
+                    todayDayOffset={todayDayOffset}
                     useGlobeProjection={useGlobeProjection}
                     showTerrain={showTerrain}
                     mapPitch={mapPitch}

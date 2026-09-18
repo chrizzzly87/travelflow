@@ -2,7 +2,18 @@ import React, { useCallback, useEffect, useLayoutEffect, useState, useMemo, useR
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type mapboxgl from 'mapbox-gl';
-import { ActivityType, ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
+import {
+    ActivityType,
+    ITimelineItem,
+    MapBaseSurface,
+    MapColorMode,
+    MapColorTheme,
+    MapLightPreset,
+    MapStyle,
+    RouteFailureReason,
+    RouteMode,
+    RouteStatus,
+} from '../types';
 import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2, Route, Tag, TagsIcon } from 'lucide-react';
 import { MapPinArea } from '@phosphor-icons/react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
@@ -14,7 +25,11 @@ import { ActivityTypeIcon } from './ActivityTypeVisuals';
 import { ActivityMapPopup } from './maps/ActivityMapPopup';
 import { useMapMarkerAnchor } from './maps/useMapMarkerAnchor';
 import { getActivityTypePaletteParts } from './ActivityTypeVisualsUtils';
-import { getMapSurfaceBackgroundColor, GOOGLE_BASEMAP_HIDDEN_STYLES } from '../services/mapRendererVisualStyleService';
+import {
+    getMapSurfaceBackgroundColor,
+    GOOGLE_BASEMAP_HIDDEN_STYLES,
+    type MapboxBasemapDetailOverrides,
+} from '../services/mapRendererVisualStyleService';
 import { MapboxBasemapSync } from './maps/MapboxBasemapSync';
 import { isMapboxStyleReadyForRuntimeMutations } from './maps/mapboxBasemapUtils';
 import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
@@ -108,10 +123,28 @@ interface ItineraryMapProps {
     showActivityMarkers?: boolean;
     onShowActivityMarkersChange?: (enabled: boolean) => void;
     /** What the customize sheet turned on or off on top of the chosen style. */
-    basemapDetail?: {
-        showPoiLabels?: boolean;
-        showRoadsAndTransit?: boolean;
-        showAdminBoundaries?: boolean;
+    basemapDetail?: MapboxBasemapDetailOverrides;
+    /**
+     * The look as its three axes. Mapbox takes these directly; `activeStyle`
+     * stays the nearest named style, which is all Google can render.
+     */
+    mapLookAxes?: {
+        base: MapBaseSurface;
+        colorTheme: MapColorTheme;
+        lightPreset: Exclude<MapLightPreset, 'auto'>;
+    };
+    /**
+     * Which day of the trip today is, as an offset from its start. Null when
+     * the trip is not running, which is what switches past-day fading off.
+     */
+    todayDayOffset?: number | null;
+    /** What the trip itself draws on top of the basemap. */
+    tripOverlay?: {
+        dimPastDays?: boolean;
+        showRouteArrows?: boolean;
+        dashedRoutes?: boolean;
+        showTraffic?: boolean;
+        showTransitLines?: boolean;
     };
     /** Globe instead of the tuning's resting projection. Mapbox only. */
     useGlobeProjection?: boolean;
@@ -981,6 +1014,8 @@ type ResolvedActivityMarker = {
     baseCoordinates: google.maps.LatLngLiteral;
     position: google.maps.LatLngLiteral;
     coordinateSource: 'activity' | 'city';
+    /** Last day of the trip this activity occupies, for past-day fading. */
+    endDayOffset: number;
 };
 
 const resolveActivityMarkerPositions = (
@@ -1002,6 +1037,7 @@ const resolveActivityMarkerPositions = (
         type: ActivityType;
         baseCoordinates: google.maps.LatLngLiteral;
         coordinateSource: 'activity' | 'city';
+        endDayOffset: number;
     }> = [];
     for (const activity of activities) {
         const activityCoordinates = isFiniteLatLngLiteral(activity.coordinates) ? activity.coordinates : null;
@@ -1015,6 +1051,7 @@ const resolveActivityMarkerPositions = (
             type: primaryType,
             baseCoordinates,
             coordinateSource: activityCoordinates ? 'activity' : 'city',
+            endDayOffset: activity.startDateOffset + Math.max(activity.duration, 0),
         });
     }
 
@@ -1454,6 +1491,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     showActivityMarkers,
     onShowActivityMarkersChange,
     basemapDetail,
+    mapLookAxes,
+    tripOverlay,
+    todayDayOffset = null,
     useGlobeProjection = false,
     showTerrain = false,
     mapPitch = 0,
@@ -1571,6 +1611,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
      * being read, so it comes off the map until the selection is let go.
      */
     const isCityFocusMode = cityFocusMode && Boolean(selectedCityId) && !selectedActivityId;
+    const showRouteArrows = tripOverlay?.showRouteArrows ?? true;
+    const dashedRoutes = tripOverlay?.dashedRoutes ?? false;
+
+    const showTrafficLayer = tripOverlay?.showTraffic ?? false;
+    /**
+     * Fading days already behind you. Only meaningful while the trip is
+     * actually running — before it starts nothing is past, and afterwards
+     * everything is, which would fade the whole map to nothing.
+     */
+    const shouldDimPastDays = Boolean(tripOverlay?.dimPastDays)
+        && typeof todayDayOffset === 'number'
+        && Number.isFinite(todayDayOffset);
+    const showTransitLinesLayer = tripOverlay?.showTransitLines ?? false;
     const selectedActivityIdRef = useRef<string | null>(selectedActivityId);
     const selectedCityIdRef = useRef<string | null>(selectedCityId);
     const selectionVersionRef = useRef(0);
@@ -1990,6 +2043,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             });
         };
 
+        /**
+         * Wraps a marker's markup so a day already behind the traveller reads as
+         * background. Done on a wrapper rather than inside each marker builder
+         * so the builders stay pure string functions with no notion of "today",
+         * and so it applies identically on both renderers.
+         */
+        const dimIfPast = (html: string, endDayOffset: number): string => {
+            if (!shouldDimPastDays || endDayOffset > (todayDayOffset as number)) return html;
+            return `<div style="opacity:0.34;filter:saturate(0.55);">${html}</div>`;
+        };
+
         const createOverlayMarker = ({
             position,
             html,
@@ -2268,17 +2332,34 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 strokeWeight: 0.1,
                 scale: 3.2 * Math.max(0.72, routeScale),
             };
+            // A dashed line is drawn as repeated dot symbols with the stroke
+            // turned off, which is the only way Google renders a dash pattern.
+            const dashSymbol = {
+                path: 'M 0,-1 0,1',
+                strokeOpacity: 0.85,
+                strokeColor: color,
+                strokeWeight: Math.max(1.2, weight * routeScale),
+                scale: 2.2,
+            };
+            const routeIcons: google.maps.IconSequence[] = [];
+            if (dashedRoutes) {
+                routeIcons.push({ icon: dashSymbol as any, offset: '0', repeat: '14px' });
+            }
+            if (showRouteArrows) {
+                routeIcons.push(
+                    { icon: arrowIcon, offset: '25%' },
+                    { icon: arrowIcon, offset: '75%' },
+                );
+            }
+
             return createRoutePolylinePair({
                 path,
                 geodesic: true,
                 strokeColor: color,
-                strokeOpacity: 0.7,
+                strokeOpacity: dashedRoutes ? 0 : 0.7,
                 strokeWeight: Math.max(1.2, weight * routeScale),
                 clickable: false,
-                icons: [
-                    { icon: arrowIcon, offset: '25%' },
-                    { icon: arrowIcon, offset: '75%' }
-                ],
+                icons: routeIcons.length > 0 ? routeIcons : undefined,
                 zIndex: 40,
             });
         };
@@ -2427,7 +2508,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 const cityMarkerImageUrl = resolveTripMapCityMarkerImageUrl(city);
                 const marker = createOverlayMarker({
                     position: markerPosition,
-                    html: buildTripMapCityMarkerHtml({
+                    html: dimIfPast(buildTripMapCityMarkerHtml({
                         provider: tripMapProvider,
                         index: cityIndex,
                         color: cityMarkerColor,
@@ -2436,7 +2517,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         profile: effectiveMarkerRenderProfile.city,
                         selectedOutlineColor: resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK),
                         selectedRingColor: resolveCssColorVar('--tf-accent-200', CITY_PIN_SELECTED_RING_FALLBACK),
-                    }),
+                    }), city.startDateOffset + Math.max(city.duration, 0)),
                     zIndex: resolveCityMarkerZIndex(isSelected, effectiveMarkerRenderProfile),
                     clickable: true,
                     onClick: () => onCityMarkerSelectRef.current?.(city.id),
@@ -2468,11 +2549,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 const isSelected = activityMarker.id === selectedActivityId;
                 const marker = createOverlayMarker({
                     position: activityMarker.position,
-                    html: buildActivityMarkerHtml(
-                        activityMarker.type,
-                        isSelected,
-                        activityMarker.title,
-                        effectiveMarkerRenderProfile,
+                    html: dimIfPast(
+                        buildActivityMarkerHtml(
+                            activityMarker.type,
+                            isSelected,
+                            activityMarker.title,
+                            effectiveMarkerRenderProfile,
+                        ),
+                        activityMarker.endDayOffset,
                     ),
                     zIndex: isSelected ? ACTIVITY_MARKER_SELECTED_Z_INDEX : ACTIVITY_MARKER_Z_INDEX,
                     clickable: true,
@@ -2951,7 +3035,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             clearRenderedMapVisuals();
         };
 
-    }, [activeStyle, effectiveMarkerRenderProfile, isCityFocusMode, isMapboxBasemapEnabled, isMapboxSurfaceReady, isPaywalled, mapInitialized, mapRenderSignature, mapboxStyleReloadNonce, routeLineWeight, routeMode, showCityNames]); 
+    }, [activeStyle, effectiveMarkerRenderProfile, isCityFocusMode, isMapboxBasemapEnabled, isMapboxSurfaceReady, isPaywalled, mapInitialized, mapRenderSignature, mapboxStyleReloadNonce, dashedRoutes, showRouteArrows, routeLineWeight, routeMode, showCityNames]); 
 
     useEffect(() => {
         if (!mapInitialized) return;
@@ -3184,6 +3268,36 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         mapboxMap.on('click', handleMapboxClick);
         return () => mapboxMap.off('click', handleMapboxClick);
     }, [isCityFocusMode, isMapboxBasemapEnabled, mapInitialized, onClearSelection]);
+
+    /**
+     * Google's own traffic and transit layers.
+     *
+     * Both are Google-only and both are attached to the Google map instance, so
+     * they are detached while Mapbox is drawing — the Google tile pane is hidden
+     * then, and a layer painted onto it would simply be invisible while still
+     * costing tiles.
+     */
+    useEffect(() => {
+        if (!mapInitialized || !window.google?.maps?.TrafficLayer) return;
+        const googleMap = googleMapRef.current;
+        if (!googleMap) return;
+        if (!showTrafficLayer || isMapboxBasemapEnabled) return;
+
+        const layer = new window.google.maps.TrafficLayer();
+        layer.setMap(googleMap);
+        return () => layer.setMap(null);
+    }, [isMapboxBasemapEnabled, mapInitialized, showTrafficLayer]);
+
+    useEffect(() => {
+        if (!mapInitialized || !window.google?.maps?.TransitLayer) return;
+        const googleMap = googleMapRef.current;
+        if (!googleMap) return;
+        if (!showTransitLinesLayer || isMapboxBasemapEnabled) return;
+
+        const layer = new window.google.maps.TransitLayer();
+        layer.setMap(googleMap);
+        return () => layer.setMap(null);
+    }, [isMapboxBasemapEnabled, mapInitialized, showTransitLinesLayer]);
 
     // Fit Bounds
     const handleFit = () => {
@@ -3421,6 +3535,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     mapDockMode={mapDockMode}
                     mapViewportSize={mapViewportSize}
                     detailOverrides={basemapDetail}
+                    lookAxes={mapLookAxes}
                     preferGlobeProjection={useGlobeProjection}
                     showTerrain={showTerrain}
                     pitch={mapPitch}

@@ -514,32 +514,166 @@
       "popupLabel": "Szczegóły aktywności"
     },
     "mapCustomize": {
-      "title": "Dostosuj mapę",
+      "activityMarkers": {
+        "description": "Miejsca, które chcesz odwiedzić.",
+        "label": "Pinezki aktywności"
+      },
+      "arrows": {
+        "description": "Pokazują, w którą stronę biegnie podróż.",
+        "label": "Strzałki kierunku"
+      },
+      "base": {
+        "description": "Rysowana mapa albo zdjęcia satelitarne.",
+        "label": "Podkład",
+        "map": "Mapa",
+        "satellite": "Satelita"
+      },
+      "boundaries": {
+        "description": "Granice wewnątrz kraju, nie tylko między krajami.",
+        "label": "Granice regionów"
+      },
+      "buildings": {
+        "description": "Bryły budynków, najlepiej widoczne przy pochyleniu.",
+        "label": "Budynki 3D"
+      },
+      "cityFocus": {
+        "description": "Kadruje miasto na twoim planie i ukrywa resztę trasy.",
+        "label": "Przybliż wybrane miasto"
+      },
+      "cityNames": {
+        "description": "Podpisuje każdy przystanek na trasie.",
+        "label": "Nazwy miast"
+      },
+      "close": "Zamknij",
+      "colorMode": {
+        "brand": "Jeden akcent",
+        "label": "Kolor",
+        "trip": "Kolory miast"
+      },
+      "colorTheme": {
+        "default": "Pełny",
+        "description": "Ile koloru niesie mapa.",
+        "faded": "Stonowany",
+        "label": "Kolor",
+        "monochrome": "Mono",
+        "satelliteNote": "Zdjęcia satelitarne mają własne kolory."
+      },
+      "copied": "Skopiowano",
+      "copyPreset": "Kopiuj",
+      "dashed": {
+        "description": "Kreski zamiast ciągłych linii.",
+        "label": "Linie przerywane"
+      },
       "description": "Zmiany działają od razu i zostają zapisane przy tej podróży.",
-      "open": "Dostosuj mapę",
-      "tab": {
-        "basemap": "Mapa bazowa",
-        "journey": "Trasa",
-        "places": "Miejsca",
-        "camera": "Kamera"
+      "dimPast": {
+        "description": "Odsuwa w tło dni, które już minęły.",
+        "label": "Przygaś minione dni"
+      },
+      "globe": {
+        "description": "Zakrzywia świat. Najlepszy przy długiej podróży i dużej mapie.",
+        "label": "Widok globusa"
+      },
+      "googleOnly": "Dostępne z Google Maps.",
+      "group": {
+        "features": "Elementy",
+        "labels": "Podpisy",
+        "pins": "Twoje pinezki",
+        "routes": "Linie trasy"
+      },
+      "handoff": {
+        "apple": "Apple Maps",
+        "description": "Aplikacja proponowana jako pierwsza, gdy otwierasz miejsce.",
+        "google": "Google Maps",
+        "label": "Otwieraj miejsca w"
+      },
+      "light": {
+        "auto": "Automatycznie",
+        "dawn": "Świt",
+        "day": "Dzień",
+        "description": "Pora dnia, którą oświetlona jest mapa. Automatycznie idzie za ustawieniem urządzenia.",
+        "dusk": "Zmierzch",
+        "googleNote": "Google Maps ma tylko dzień i noc.",
+        "label": "Światło",
+        "night": "Noc"
+      },
+      "mapboxOnly": "Dostępne z Mapbox.",
+      "mapboxUnavailableHere": "Wymaga Mapbox, który nie jest tu skonfigurowany.",
+      "paths": {
+        "description": "Ścieżki i ciągi dla pieszych.",
+        "label": "Ścieżki piesze"
+      },
+      "pitch": {
+        "description": "Patrz wzdłuż mapy zamiast prosto z góry.",
+        "flat": "Płasko",
+        "label": "Pochylenie"
+      },
+      "placeLabels": {
+        "description": "Miasta i miejscowości na mapie bazowej.",
+        "label": "Nazwy miejsc"
+      },
+      "poiLabels": {
+        "description": "Sklepy, zabytki i miejsca, których nie zaplanowałeś.",
+        "label": "Ciekawe miejsca"
+      },
+      "preset": {
+        "label": "Gotowe style"
       },
       "renderer": {
-        "label": "Dostawca map",
-        "description": "Mapa, którą rysuje aplikacja.",
         "auto": "Automatycznie",
-        "google": "Google Maps",
+        "description": "Mapa, którą rysuje aplikacja.",
+        "google": "Google",
+        "label": "Dostawca map",
         "mapbox": "Mapbox",
         "mapboxUnavailable": "Mapbox nie jest tu skonfigurowany, więc używamy Google."
       },
-      "handoff": {
-        "label": "Otwieraj miejsca w",
-        "description": "Aplikacja, z której korzystają linki „otwórz w mapach”.",
-        "google": "Google Maps",
-        "apple": "Apple Maps",
-        "appleNote": "Apple Maps nie da się narysować w aplikacji, więc otwiera się w aplikacji Apple Maps."
+      "reset": "Resetuj",
+      "roadLabels": {
+        "description": "Przydatne z bliska, zbyt gęste z daleka.",
+        "label": "Nazwy ulic"
+      },
+      "roads": {
+        "description": "Wyłącz, aby mapa pokazywała tylko twoją podróż.",
+        "label": "Drogi i transport"
+      },
+      "routeMode": {
+        "description": "Trzymaj się dróg albo rysuj wprost między przystankami.",
+        "label": "Kształt",
+        "realistic": "Wzdłuż dróg",
+        "simple": "Wprost"
+      },
+      "saveAsDefault": "Zapisz jako domyślne",
+      "saved": "Zapisano",
+      "switchToMapbox": "Przełącz na Mapbox",
+      "tab": {
+        "camera": "Kamera",
+        "detail": "Szczegóły",
+        "look": "Wygląd",
+        "trip": "Podróż"
+      },
+      "terrain": {
+        "description": "Uwypukla wzgórza i góry.",
+        "label": "Teren"
+      },
+      "thickness": {
+        "label": "Grubość",
+        "normal": "Zwykła",
+        "thick": "Gruba",
+        "thin": "Cienka"
+      },
+      "title": "Dostosuj mapę",
+      "traffic": {
+        "description": "Bieżąca sytuacja na drogach.",
+        "label": "Ruch na żywo"
+      },
+      "transitLabels": {
+        "description": "Przystanki i stacje z nazwami.",
+        "label": "Nazwy stacji"
+      },
+      "transitLines": {
+        "description": "Linie metra i kolei na mapie.",
+        "label": "Linie transportu"
       },
       "style": {
-        "label": "Styl mapy",
         "standard": "Standardowy",
         "minimal": "Minimalny",
         "clean": "Czysty",
@@ -547,70 +681,8 @@
         "cleanDark": "Czysty ciemny",
         "satellite": "Satelitarny"
       },
-      "theme": {
-        "label": "Jasny lub ciemny",
-        "description": "Automatycznie idzie za ustawieniem urządzenia.",
-        "auto": "Automatycznie",
-        "light": "Jasny",
-        "dark": "Ciemny"
-      },
-      "routeMode": {
-        "label": "Linie trasy",
-        "description": "Realistyczna trzyma się dróg, prosta rysuje linię wprost.",
-        "simple": "Prosta",
-        "realistic": "Realistyczna"
-      },
-      "colorMode": {
-        "label": "Kolor linii",
-        "description": "Dopasuj do każdego miasta albo użyj jednego koloru akcentu.",
-        "trip": "Kolory miast",
-        "brand": "Jeden akcent"
-      },
-      "lineWeight": {
-        "label": "Grubość linii"
-      },
-      "cityNames": {
-        "label": "Nazwy miast",
-        "description": "Podpisz każdy przystanek na mapie."
-      },
-      "activityMarkers": {
-        "label": "Pinezki aktywności",
-        "description": "Pokazuje zaplanowane miejsca, gdy mapa jest wystarczająco blisko."
-      },
-      "poiLabels": {
-        "label": "Ciekawe miejsca",
-        "description": "Sklepy, zabytki i inne miejsca, których nie zaplanowałeś."
-      },
-      "roads": {
-        "label": "Drogi i transport",
-        "description": "Wyłącz, aby mapa pokazywała tylko twoją podróż."
-      },
-      "boundaries": {
-        "label": "Granice regionów",
-        "description": "Granice wewnątrz kraju, nie tylko między krajami."
-      },
-      "cityFocus": {
-        "label": "Przybliż wybrane miasto",
-        "description": "Kadruje miasto na twoim planie i ukrywa resztę trasy."
-      },
-      "globe": {
-        "label": "Widok globusa",
-        "description": "Zakrzywia świat. Najlepszy przy długiej podróży i dużej mapie."
-      },
-      "terrain": {
-        "label": "Teren",
-        "description": "Uwypukla wzgórza i góry."
-      },
-      "pitch": {
-        "label": "Pochylenie"
-      },
-      "mapboxOnly": "Dostępne z Mapbox.",
-      "reset": "Resetuj",
-      "copyPreset": "Kopiuj ustawienie",
-      "copied": "Skopiowano",
-      "saveAsDefault": "Zapisz jako moje domyślne",
-      "saved": "Zapisano",
-      "showWholeJourney": "Pokaż całą trasę"
+      "showWholeJourney": "Pokaż całą trasę",
+      "open": "Dostosuj mapę"
     }
   },
   "tripRouteShell": {

@@ -2,11 +2,14 @@ import type {
   IMapCustomization,
   IUserSettings,
   IViewSettings,
+  MapBaseSurface,
   MapColorMode,
+  MapColorTheme,
   MapHandoffTarget,
+  MapLightPreset,
   MapRendererChoice,
+  MapRouteThickness,
   MapStyle,
-  MapThemeMode,
   RouteMode,
 } from '../types';
 
@@ -27,50 +30,91 @@ import type {
 export interface ResolvedMapPreferences {
   renderer: MapRendererChoice;
   handoffTarget: MapHandoffTarget;
-  themeMode: MapThemeMode;
-  mapStyle: MapStyle;
+
+  base: MapBaseSurface;
+  colorTheme: MapColorTheme;
+  lightPreset: MapLightPreset;
+
   routeMode: RouteMode;
   colorMode: MapColorMode;
-  showCityNames: boolean;
   cityFocusMode: boolean;
-  showActivityMarkers: boolean;
+
+  showCityNames: boolean;
+  showPlaceLabels: boolean;
+  showRoadLabels: boolean;
+  showTransitLabels: boolean;
   showPoiLabels: boolean;
   showRoadsAndTransit: boolean;
+  showPedestrianRoads: boolean;
   showAdminBoundaries: boolean;
+  show3dObjects: boolean;
   showTerrain: boolean;
+  showTraffic: boolean;
+  showTransitLines: boolean;
+
+  showActivityMarkers: boolean;
+  dimPastDays: boolean;
+  routeThickness: MapRouteThickness;
+  showRouteArrows: boolean;
+  dashedRoutes: boolean;
+
   useGlobeProjection: boolean;
   pitch: number;
-  routeLineWeight: number;
 }
 
 export const DEFAULT_MAP_PREFERENCES: ResolvedMapPreferences = {
   renderer: 'auto',
   handoffTarget: 'google',
-  themeMode: 'auto',
-  mapStyle: 'standard',
+
+  base: 'map',
+  colorTheme: 'default',
+  lightPreset: 'auto',
+
   routeMode: 'simple',
   colorMode: 'trip',
-  showCityNames: true,
   cityFocusMode: true,
-  showActivityMarkers: true,
+
+  showCityNames: true,
+  showPlaceLabels: true,
+  showRoadLabels: false,
+  showTransitLabels: false,
   showPoiLabels: false,
   showRoadsAndTransit: true,
+  showPedestrianRoads: true,
   showAdminBoundaries: false,
+  show3dObjects: false,
   showTerrain: false,
+  showTraffic: false,
+  showTransitLines: false,
+
+  showActivityMarkers: true,
+  dimPastDays: false,
+  routeThickness: 'normal',
+  showRouteArrows: true,
+  dashedRoutes: false,
+
   useGlobeProjection: false,
   pitch: 0,
-  routeLineWeight: 1,
 };
 
-export const MAP_PITCH_RANGE = { min: 0, max: 60 } as const;
-export const MAP_ROUTE_LINE_WEIGHT_RANGE = { min: 0.5, max: 2 } as const;
+/** Tilt steps, rather than a slider: nobody wants 37 degrees. */
+export const MAP_PITCH_STEPS = [0, 30, 45, 60] as const;
 
-const MAP_STYLES: readonly MapStyle[] = ['minimal', 'standard', 'dark', 'satellite', 'clean', 'cleanDark'];
+export const MAP_ROUTE_THICKNESS_MULTIPLIER: Record<MapRouteThickness, number> = {
+  thin: 0.7,
+  normal: 1,
+  thick: 1.5,
+};
+
+const BASE_SURFACES: readonly MapBaseSurface[] = ['map', 'satellite'];
+const COLOR_THEMES: readonly MapColorTheme[] = ['default', 'faded', 'monochrome'];
+const LIGHT_PRESETS: readonly MapLightPreset[] = ['auto', 'dawn', 'day', 'dusk', 'night'];
+const ROUTE_THICKNESSES: readonly MapRouteThickness[] = ['thin', 'normal', 'thick'];
 const RENDERER_CHOICES: readonly MapRendererChoice[] = ['auto', 'google', 'mapbox'];
 const HANDOFF_TARGETS: readonly MapHandoffTarget[] = ['google', 'apple'];
-const THEME_MODES: readonly MapThemeMode[] = ['light', 'dark', 'auto'];
 const ROUTE_MODES: readonly RouteMode[] = ['simple', 'realistic'];
 const COLOR_MODES: readonly MapColorMode[] = ['brand', 'trip'];
+const MAP_STYLES: readonly MapStyle[] = ['minimal', 'standard', 'dark', 'satellite', 'clean', 'cleanDark'];
 
 const pickFrom = <T,>(allowed: readonly T[], value: unknown): T | undefined => (
   allowed.includes(value as T) ? (value as T) : undefined
@@ -80,12 +124,66 @@ const pickBoolean = (value: unknown): boolean | undefined => (
   typeof value === 'boolean' ? value : undefined
 );
 
-const pickNumberInRange = (
-  value: unknown,
-  { min, max }: { min: number; max: number },
-): number | undefined => {
+const pickPitch = (value: unknown): number | undefined => {
   if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
-  return Math.min(max, Math.max(min, value));
+  return Math.min(60, Math.max(0, value));
+};
+
+/**
+ * The axes a legacy `MapStyle` stands for. Old trips carry only the named
+ * style, so this is how they open in the new sheet without a migration.
+ */
+export const MAP_STYLE_TO_AXES: Record<MapStyle, {
+  base: MapBaseSurface;
+  colorTheme: MapColorTheme;
+  lightPreset: MapLightPreset;
+}> = {
+  standard: { base: 'map', colorTheme: 'default', lightPreset: 'day' },
+  minimal: { base: 'map', colorTheme: 'monochrome', lightPreset: 'day' },
+  clean: { base: 'map', colorTheme: 'faded', lightPreset: 'day' },
+  dark: { base: 'map', colorTheme: 'default', lightPreset: 'dusk' },
+  cleanDark: { base: 'map', colorTheme: 'monochrome', lightPreset: 'night' },
+  satellite: { base: 'satellite', colorTheme: 'default', lightPreset: 'day' },
+};
+
+/**
+ * The nearest named style for a set of axes.
+ *
+ * Google renders from the six hand-tuned style arrays and has no equivalent of
+ * the axes, so every combination has to land on one of them. Dawn has no Google
+ * counterpart and reads closest to day; dusk and night both go dark.
+ */
+export const resolveMapStyleFromAxes = ({
+  base,
+  colorTheme,
+  lightPreset,
+  prefersDarkScheme = false,
+}: {
+  base: MapBaseSurface;
+  colorTheme: MapColorTheme;
+  lightPreset: MapLightPreset;
+  prefersDarkScheme?: boolean;
+}): MapStyle => {
+  if (base === 'satellite') return 'satellite';
+
+  const effectiveLight = lightPreset === 'auto'
+    ? (prefersDarkScheme ? 'night' : 'day')
+    : lightPreset;
+  const isDark = effectiveLight === 'dusk' || effectiveLight === 'night';
+
+  if (isDark) return colorTheme === 'default' ? 'dark' : 'cleanDark';
+  if (colorTheme === 'monochrome') return 'minimal';
+  if (colorTheme === 'faded') return 'clean';
+  return 'standard';
+};
+
+/** The light preset actually handed to Mapbox, with `auto` resolved. */
+export const resolveEffectiveLightPreset = (
+  lightPreset: MapLightPreset,
+  prefersDarkScheme: boolean,
+): Exclude<MapLightPreset, 'auto'> => {
+  if (lightPreset !== 'auto') return lightPreset;
+  return prefersDarkScheme ? 'night' : 'day';
 };
 
 /**
@@ -100,16 +198,33 @@ export const normalizeMapCustomization = (value: unknown): IMapCustomization => 
   const normalized: IMapCustomization = {
     renderer: pickFrom(RENDERER_CHOICES, raw.renderer),
     handoffTarget: pickFrom(HANDOFF_TARGETS, raw.handoffTarget),
-    themeMode: pickFrom(THEME_MODES, raw.themeMode),
+
+    base: pickFrom(BASE_SURFACES, raw.base),
+    colorTheme: pickFrom(COLOR_THEMES, raw.colorTheme),
+    lightPreset: pickFrom(LIGHT_PRESETS, raw.lightPreset),
+
     cityFocusMode: pickBoolean(raw.cityFocusMode),
-    showActivityMarkers: pickBoolean(raw.showActivityMarkers),
+
+    showPlaceLabels: pickBoolean(raw.showPlaceLabels),
+    showRoadLabels: pickBoolean(raw.showRoadLabels),
+    showTransitLabels: pickBoolean(raw.showTransitLabels),
     showPoiLabels: pickBoolean(raw.showPoiLabels),
     showRoadsAndTransit: pickBoolean(raw.showRoadsAndTransit),
+    showPedestrianRoads: pickBoolean(raw.showPedestrianRoads),
     showAdminBoundaries: pickBoolean(raw.showAdminBoundaries),
+    show3dObjects: pickBoolean(raw.show3dObjects),
     showTerrain: pickBoolean(raw.showTerrain),
+    showTraffic: pickBoolean(raw.showTraffic),
+    showTransitLines: pickBoolean(raw.showTransitLines),
+
+    showActivityMarkers: pickBoolean(raw.showActivityMarkers),
+    dimPastDays: pickBoolean(raw.dimPastDays),
+    routeThickness: pickFrom(ROUTE_THICKNESSES, raw.routeThickness),
+    showRouteArrows: pickBoolean(raw.showRouteArrows),
+    dashedRoutes: pickBoolean(raw.dashedRoutes),
+
     useGlobeProjection: pickBoolean(raw.useGlobeProjection),
-    pitch: pickNumberInRange(raw.pitch, MAP_PITCH_RANGE),
-    routeLineWeight: pickNumberInRange(raw.routeLineWeight, MAP_ROUTE_LINE_WEIGHT_RANGE),
+    pitch: pickPitch(raw.pitch),
   };
 
   // An explicit `undefined` key is not the same as an absent one once these
@@ -138,24 +253,44 @@ export const resolveMapPreferences = ({
     tripCustomization[key] ?? userCustomization[key]
   );
 
+  // A trip saved before the axes existed carries only a named style. Decomposing
+  // it here is what lets it open in the new sheet without a migration.
+  const legacyStyle = pickFrom(MAP_STYLES, viewSettings?.mapStyle)
+    ?? pickFrom(MAP_STYLES, userSettings?.mapStyle);
+  const legacyAxes = legacyStyle ? MAP_STYLE_TO_AXES[legacyStyle] : null;
+
   return {
     renderer: nested('renderer') ?? DEFAULT_MAP_PREFERENCES.renderer,
     handoffTarget: nested('handoffTarget') ?? DEFAULT_MAP_PREFERENCES.handoffTarget,
-    themeMode: nested('themeMode') ?? DEFAULT_MAP_PREFERENCES.themeMode,
+
+    base: nested('base') ?? legacyAxes?.base ?? DEFAULT_MAP_PREFERENCES.base,
+    colorTheme: nested('colorTheme') ?? legacyAxes?.colorTheme ?? DEFAULT_MAP_PREFERENCES.colorTheme,
+    lightPreset: nested('lightPreset') ?? legacyAxes?.lightPreset ?? DEFAULT_MAP_PREFERENCES.lightPreset,
+
     cityFocusMode: nested('cityFocusMode') ?? DEFAULT_MAP_PREFERENCES.cityFocusMode,
-    showActivityMarkers: nested('showActivityMarkers') ?? DEFAULT_MAP_PREFERENCES.showActivityMarkers,
+
+    showPlaceLabels: nested('showPlaceLabels') ?? DEFAULT_MAP_PREFERENCES.showPlaceLabels,
+    showRoadLabels: nested('showRoadLabels') ?? DEFAULT_MAP_PREFERENCES.showRoadLabels,
+    showTransitLabels: nested('showTransitLabels') ?? DEFAULT_MAP_PREFERENCES.showTransitLabels,
     showPoiLabels: nested('showPoiLabels') ?? DEFAULT_MAP_PREFERENCES.showPoiLabels,
     showRoadsAndTransit: nested('showRoadsAndTransit') ?? DEFAULT_MAP_PREFERENCES.showRoadsAndTransit,
+    showPedestrianRoads: nested('showPedestrianRoads') ?? DEFAULT_MAP_PREFERENCES.showPedestrianRoads,
     showAdminBoundaries: nested('showAdminBoundaries') ?? DEFAULT_MAP_PREFERENCES.showAdminBoundaries,
+    show3dObjects: nested('show3dObjects') ?? DEFAULT_MAP_PREFERENCES.show3dObjects,
     showTerrain: nested('showTerrain') ?? DEFAULT_MAP_PREFERENCES.showTerrain,
+    showTraffic: nested('showTraffic') ?? DEFAULT_MAP_PREFERENCES.showTraffic,
+    showTransitLines: nested('showTransitLines') ?? DEFAULT_MAP_PREFERENCES.showTransitLines,
+
+    showActivityMarkers: nested('showActivityMarkers') ?? DEFAULT_MAP_PREFERENCES.showActivityMarkers,
+    dimPastDays: nested('dimPastDays') ?? DEFAULT_MAP_PREFERENCES.dimPastDays,
+    routeThickness: nested('routeThickness') ?? DEFAULT_MAP_PREFERENCES.routeThickness,
+    showRouteArrows: nested('showRouteArrows') ?? DEFAULT_MAP_PREFERENCES.showRouteArrows,
+    dashedRoutes: nested('dashedRoutes') ?? DEFAULT_MAP_PREFERENCES.dashedRoutes,
+
     useGlobeProjection: nested('useGlobeProjection') ?? DEFAULT_MAP_PREFERENCES.useGlobeProjection,
     pitch: nested('pitch') ?? DEFAULT_MAP_PREFERENCES.pitch,
-    routeLineWeight: nested('routeLineWeight') ?? DEFAULT_MAP_PREFERENCES.routeLineWeight,
 
     // The flat fields keep their existing homes and their existing precedence.
-    mapStyle: pickFrom(MAP_STYLES, viewSettings?.mapStyle)
-      ?? pickFrom(MAP_STYLES, userSettings?.mapStyle)
-      ?? DEFAULT_MAP_PREFERENCES.mapStyle,
     routeMode: pickFrom(ROUTE_MODES, viewSettings?.routeMode)
       ?? pickFrom(ROUTE_MODES, userSettings?.routeMode)
       ?? DEFAULT_MAP_PREFERENCES.routeMode,
@@ -167,33 +302,45 @@ export const resolveMapPreferences = ({
 };
 
 /**
- * The customize sheet's current state as a storable object, with anything still
- * at its default left out. Storing only what was actually chosen keeps a trip
+ * Named shortcuts over the axes. The sheet keeps these as one-tap presets so
+ * nothing got harder for someone who just wants "the clean dark one".
+ */
+export const MAP_STYLE_PRESETS: Array<{
+  id: MapStyle;
+  base: MapBaseSurface;
+  colorTheme: MapColorTheme;
+  lightPreset: MapLightPreset;
+}> = (Object.keys(MAP_STYLE_TO_AXES) as MapStyle[]).map((id) => ({
+  id,
+  ...MAP_STYLE_TO_AXES[id],
+}));
+
+export const matchMapStylePreset = (
+  preferences: Pick<ResolvedMapPreferences, 'base' | 'colorTheme' | 'lightPreset'>,
+): MapStyle | null => (
+  MAP_STYLE_PRESETS.find((preset) => (
+    preset.base === preferences.base
+    && preset.colorTheme === preferences.colorTheme
+    && preset.lightPreset === preferences.lightPreset
+  ))?.id ?? null
+);
+
+/**
+ * The sheet's current state as a storable object, with anything still at its
+ * default left out. Storing only what was actually chosen keeps a trip
  * following the app's defaults as they change, rather than freezing today's.
  */
 export const toStoredMapCustomization = (
   preferences: ResolvedMapPreferences,
 ): IMapCustomization => {
   const stored: IMapCustomization = {};
-  const keys: Array<keyof IMapCustomization> = [
-    'renderer',
-    'handoffTarget',
-    'themeMode',
-    'cityFocusMode',
-    'showActivityMarkers',
-    'showPoiLabels',
-    'showRoadsAndTransit',
-    'showAdminBoundaries',
-    'showTerrain',
-    'useGlobeProjection',
-    'pitch',
-    'routeLineWeight',
-  ];
+  const keys = Object.keys(DEFAULT_MAP_PREFERENCES) as Array<keyof ResolvedMapPreferences>;
 
   keys.forEach((key) => {
-    const value = preferences[key as keyof ResolvedMapPreferences];
-    if (value === DEFAULT_MAP_PREFERENCES[key as keyof ResolvedMapPreferences]) return;
-    (stored as Record<string, unknown>)[key] = value;
+    // These three live on `IViewSettings`, not in this object.
+    if (key === 'routeMode' || key === 'colorMode' || key === 'showCityNames') return;
+    if (preferences[key] === DEFAULT_MAP_PREFERENCES[key]) return;
+    (stored as Record<string, unknown>)[key] = preferences[key];
   });
 
   return stored;
@@ -213,48 +360,4 @@ export const parseMapPreset = (value: string): IMapCustomization | null => {
   } catch {
     return null;
   }
-};
-
-/**
- * Light and dark counterparts of each style.
- *
- * Satellite is its own pair: imagery has no dark variant, and swapping it for a
- * vector style because the device is in dark mode would silently discard the
- * thing the traveller actually picked.
- */
-const MAP_STYLE_DARK_COUNTERPART: Record<MapStyle, MapStyle> = {
-  standard: 'dark',
-  minimal: 'dark',
-  clean: 'cleanDark',
-  dark: 'dark',
-  cleanDark: 'cleanDark',
-  satellite: 'satellite',
-};
-
-const MAP_STYLE_LIGHT_COUNTERPART: Record<MapStyle, MapStyle> = {
-  standard: 'standard',
-  minimal: 'minimal',
-  clean: 'clean',
-  dark: 'standard',
-  cleanDark: 'clean',
-  satellite: 'satellite',
-};
-
-/**
- * The style actually handed to the renderer, once the light/dark preference has
- * had its say. `auto` follows the device; the explicit modes override it.
- */
-export const resolveEffectiveMapStyle = ({
-  mapStyle,
-  themeMode,
-  prefersDarkScheme,
-}: {
-  mapStyle: MapStyle;
-  themeMode: MapThemeMode;
-  prefersDarkScheme: boolean;
-}): MapStyle => {
-  const wantsDark = themeMode === 'dark' || (themeMode === 'auto' && prefersDarkScheme);
-  return wantsDark
-    ? MAP_STYLE_DARK_COUNTERPART[mapStyle]
-    : MAP_STYLE_LIGHT_COUNTERPART[mapStyle];
 };

@@ -37,7 +37,24 @@ export type MapRendererChoice = 'auto' | 'google' | 'mapbox';
 
 export type MapHandoffTarget = 'google' | 'apple';
 
-export type MapThemeMode = 'light' | 'dark' | 'auto';
+/**
+ * The three axes a map look actually has. The six named `MapStyle` values were
+ * only ever combinations of these two, plus a satellite base:
+ *
+ *   standard = default + day     dark      = default + dusk
+ *   minimal  = monochrome + day  cleanDark = monochrome + night
+ *   clean    = faded + day       satellite = satellite base
+ *
+ * Exposing the axes gives dawn and dusk, which no named style reached, and
+ * removes the duplication between `minimal` and `clean`. `MapStyle` stays as
+ * the stored legacy field and as what the Google renderer understands.
+ */
+export type MapBaseSurface = 'map' | 'satellite';
+export type MapColorTheme = 'default' | 'faded' | 'monochrome';
+/** `auto` follows the device's light/dark setting. */
+export type MapLightPreset = 'auto' | 'dawn' | 'day' | 'dusk' | 'night';
+
+export type MapRouteThickness = 'thin' | 'normal' | 'thick';
 
 /**
  * Everything the map customize sheet writes that did not already have a home on
@@ -49,20 +66,46 @@ export interface IMapCustomization {
     renderer?: MapRendererChoice;
     /** Preferred "open in" app for places and for the whole trip. */
     handoffTarget?: MapHandoffTarget;
-    themeMode?: MapThemeMode;
+
+    // Look, as three axes rather than six named styles.
+    base?: MapBaseSurface;
+    colorTheme?: MapColorTheme;
+    lightPreset?: MapLightPreset;
+
     /** Frame a selected city on its own plan and drop the rest of the journey. */
     cityFocusMode?: boolean;
-    showActivityMarkers?: boolean;
+
+    // What the basemap draws.
+    showPlaceLabels?: boolean;
+    showRoadLabels?: boolean;
+    showTransitLabels?: boolean;
     showPoiLabels?: boolean;
     showRoadsAndTransit?: boolean;
+    showPedestrianRoads?: boolean;
     showAdminBoundaries?: boolean;
+    /** Extruded buildings. Mapbox only, and the reason tilt is worth having. */
+    show3dObjects?: boolean;
     showTerrain?: boolean;
+    /** Live traffic. Google only. */
+    showTraffic?: boolean;
+    /** Transit lines and stations. Google only. */
+    showTransitLines?: boolean;
+
+    // What the trip draws on top.
+    showActivityMarkers?: boolean;
+    /** Fade days already behind you so the rest of the trip reads first. */
+    dimPastDays?: boolean;
+    routeThickness?: MapRouteThickness;
+    /** Direction arrows along the connecting lines. */
+    showRouteArrows?: boolean;
+    /** Dashed rather than solid connecting lines. */
+    dashedRoutes?: boolean;
+
+    // Camera.
     /** Globe reads well on a long-haul trip and badly in a small pane. */
     useGlobeProjection?: boolean;
-    /** Degrees of camera tilt. Mapbox only; Google ignores it. */
+    /** Degrees of camera tilt. Mapbox only — a Google raster map cannot tilt. */
     pitch?: number;
-    /** Multiplier on the route line weight, 0.5–2. */
-    routeLineWeight?: number;
 }
 
 export type SystemRole = 'admin' | 'user';
