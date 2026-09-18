@@ -118,6 +118,44 @@ A shared trip opens with its author's saved look and a one-tap "use my settings"
 Tests, locale parity and the release note land after the four implementation phases, at the
 user's explicit instruction.
 
+## Follow-ups
+
+### Syncing the personal default across devices
+
+"Save as my default" writes to `localStorage`, so it follows the traveller on
+that device only. Syncing it needs a `map_customization jsonb` column on
+`user_settings`, threaded through `dbUpsertUserSettings` and `dbGetUserSettings`.
+
+This was deliberately left out. `supabase/migrations/*.sql` are never applied by
+a deploy, and an upsert naming a column that does not exist yet fails the whole
+statement — so shipping the column in the payload before the migration is
+applied would break saving *every* user setting in production, not just this
+one. The migration has to land and be verified first.
+
+### MapKit JS as a third renderer
+
+Apple ships an embeddable web map, so this is possible rather than merely
+desirable. What it costs, stated plainly so the decision has numbers on it:
+
+**Prerequisites.** An Apple Developer Program membership ($99/year). A MapKit JS
+key created from a registered Maps ID. Tokens are short-lived JWTs signed ES256
+with a private key that must never reach the browser, so it needs a Netlify edge
+function that mints them — the first server-side dependency the map has ever
+had. Free tier is 250,000 map initialisations per day.
+
+**Surface.** Today's two renderers share one shape: Google owns interaction and
+Mapbox draws underneath it. Apple fits neither half. MapKit JS owns its own
+canvas and gestures, so it cannot slot in as a basemap under Google the way
+Mapbox does — it would be a genuine third implementation of markers, polylines,
+overlays, `fitBounds`, the camera intro, projection handling and every style the
+customize sheet offers. `mapRendererVisualStyleService.ts` has no Apple
+equivalent: MapKit exposes a handful of map types, not a style config, so the
+Places tab's controls would largely be inert under it.
+
+**Recommendation.** Not worth it for a basemap that would ship with fewer
+options than the two we have. Revisit only if travellers ask for it by name, and
+scope it then as its own project rather than a fourth phase of this one.
+
 ## Out of scope
 
 - Fetching or caching city bounding boxes from any provider.
