@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, useSyncExternalStore, Suspense, lazy } from 'react';
 import { Lock, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -61,6 +61,7 @@ import { useTripEditModalState } from './tripview/useTripEditModalState';
 import { useTripLayoutControlsState } from './tripview/useTripLayoutControlsState';
 import { useTripMapCustomizationState } from './tripview/useTripMapCustomizationState';
 import { useMapRuntime } from './GoogleMapsLoader';
+import { resolveEffectiveMapStyle } from '../shared/mapPreferences';
 import { MapCustomizeModal } from './maps/MapCustomizeModal';
 import { useTripCityForceFill } from './tripview/useTripCityForceFill';
 import { useTripFavoriteHandler } from './tripview/useTripFavoriteHandler';
@@ -2706,6 +2707,40 @@ const useTripViewRender = ({
         setRendererChoice(mapPreferences.renderer);
     }, [mapPreferences.renderer, setRendererChoice]);
 
+    /**
+     * Stable identity: this object reaches a style-reload key, so a new object
+     * every render would reload the basemap on every render.
+     */
+    /**
+     * The device's own light/dark setting, watched so `auto` follows a theme
+     * change without a reload. An environment without `matchMedia` — an older
+     * embedded webview, or a server render — simply stays light.
+     */
+    const prefersDarkScheme = useSyncExternalStore(
+        useCallback((onChange: () => void) => {
+            if (typeof window === 'undefined' || !window.matchMedia) return () => {};
+            const query = window.matchMedia('(prefers-color-scheme: dark)');
+            query.addEventListener('change', onChange);
+            return () => query.removeEventListener('change', onChange);
+        }, []),
+        () => (typeof window !== 'undefined' && window.matchMedia
+            ? window.matchMedia('(prefers-color-scheme: dark)').matches
+            : false),
+        () => false,
+    );
+
+    const effectiveMapStyle = useMemo(() => resolveEffectiveMapStyle({
+        mapStyle: mapPreferences.mapStyle,
+        themeMode: mapPreferences.themeMode,
+        prefersDarkScheme,
+    }), [mapPreferences.mapStyle, mapPreferences.themeMode, prefersDarkScheme]);
+
+    const mapBasemapDetail = useMemo(() => ({
+        showPoiLabels: mapPreferences.showPoiLabels,
+        showRoadsAndTransit: mapPreferences.showRoadsAndTransit,
+        showAdminBoundaries: mapPreferences.showAdminBoundaries,
+    }), [mapPreferences.showAdminBoundaries, mapPreferences.showPoiLabels, mapPreferences.showRoadsAndTransit]);
+
     const handleMapPreferenceReset = useCallback(() => {
         markManualViewChange();
         resetMapPreferences();
@@ -3491,6 +3526,11 @@ const useTripViewRender = ({
                         onOpenMapCustomize={openMapCustomize}
                         showActivityMarkers={mapPreferences.showActivityMarkers}
                         onShowActivityMarkersChange={(enabled) => handleMapPreferenceChange({ showActivityMarkers: enabled })}
+                        basemapDetail={mapBasemapDetail}
+                        routeLineWeight={mapPreferences.routeLineWeight}
+                        useGlobeProjection={mapPreferences.useGlobeProjection}
+                        showTerrain={mapPreferences.showTerrain}
+                        mapPitch={mapPreferences.pitch}
                         isMapCustomizeOpen={isMapCustomizeOpen}
                         mapCustomizeLabel={t('tripView.mapCustomize.open', 'Customize map')}
                         layoutMode={layoutMode}
@@ -3506,7 +3546,7 @@ const useTripViewRender = ({
                             markManualViewChange();
                             setLayoutMode(mode);
                         }}
-                        mapStyle={mapStyle}
+                        mapStyle={effectiveMapStyle}
                         onMapStyleChange={(nextStyle) => {
                             if (nextStyle === mapStyle) return;
                             markManualViewChange();

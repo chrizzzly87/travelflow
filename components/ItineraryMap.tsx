@@ -107,6 +107,19 @@ interface ItineraryMapProps {
      */
     showActivityMarkers?: boolean;
     onShowActivityMarkersChange?: (enabled: boolean) => void;
+    /** What the customize sheet turned on or off on top of the chosen style. */
+    basemapDetail?: {
+        showPoiLabels?: boolean;
+        showRoadsAndTransit?: boolean;
+        showAdminBoundaries?: boolean;
+    };
+    /** Globe instead of the tuning's resting projection. Mapbox only. */
+    useGlobeProjection?: boolean;
+    showTerrain?: boolean;
+    /** Camera tilt in degrees. Mapbox only; Google ignores it. */
+    mapPitch?: number;
+    /** Multiplier on the route stroke, so a busy map can be thinned out. */
+    routeLineWeight?: number;
     /** Localised by the owner: this component has no translation context. */
     customizeLabel?: string;
 }
@@ -1440,6 +1453,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     customizeLabel = 'Customize map',
     showActivityMarkers,
     onShowActivityMarkersChange,
+    basemapDetail,
+    useGlobeProjection = false,
+    showTerrain = false,
+    mapPitch = 0,
+    routeLineWeight = 1,
     activeStyle = 'standard',
     onStyleChange,
     routeMode = 'simple',
@@ -2236,7 +2254,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
         const drawRoutePath = (path: google.maps.LatLngLiteral[], color: string, weight = 3) => {
             if (!isEffectActive()) return null;
-            const routeScale = Math.max(0.58, effectiveMarkerRenderProfile.routeStrokeScale);
+            // The traveller's thickness multiplier rides on top of the render
+            // profile's own scale rather than replacing it, so a dense map still
+            // thins its routes down at both ends of the slider.
+            const routeScale = Math.max(0.58, effectiveMarkerRenderProfile.routeStrokeScale)
+                * Math.max(0.5, Math.min(2, routeLineWeight));
             const arrowIcon = {
                 path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
                 fillColor: color,
@@ -2929,7 +2951,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             clearRenderedMapVisuals();
         };
 
-    }, [activeStyle, effectiveMarkerRenderProfile, isCityFocusMode, isMapboxBasemapEnabled, isMapboxSurfaceReady, isPaywalled, mapInitialized, mapRenderSignature, mapboxStyleReloadNonce, routeMode, showCityNames]); 
+    }, [activeStyle, effectiveMarkerRenderProfile, isCityFocusMode, isMapboxBasemapEnabled, isMapboxSurfaceReady, isPaywalled, mapInitialized, mapRenderSignature, mapboxStyleReloadNonce, routeLineWeight, routeMode, showCityNames]); 
 
     useEffect(() => {
         if (!mapInitialized) return;
@@ -3398,6 +3420,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     mapStyle={activeStyle}
                     mapDockMode={mapDockMode}
                     mapViewportSize={mapViewportSize}
+                    detailOverrides={basemapDetail}
+                    preferGlobeProjection={useGlobeProjection}
+                    showTerrain={showTerrain}
+                    pitch={mapPitch}
                     interactive
                     onLoadError={handleMapboxBasemapError}
                     onMapReadyChange={handleMapboxMapReadyChange}

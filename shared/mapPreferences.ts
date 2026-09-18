@@ -214,3 +214,47 @@ export const parseMapPreset = (value: string): IMapCustomization | null => {
     return null;
   }
 };
+
+/**
+ * Light and dark counterparts of each style.
+ *
+ * Satellite is its own pair: imagery has no dark variant, and swapping it for a
+ * vector style because the device is in dark mode would silently discard the
+ * thing the traveller actually picked.
+ */
+const MAP_STYLE_DARK_COUNTERPART: Record<MapStyle, MapStyle> = {
+  standard: 'dark',
+  minimal: 'dark',
+  clean: 'cleanDark',
+  dark: 'dark',
+  cleanDark: 'cleanDark',
+  satellite: 'satellite',
+};
+
+const MAP_STYLE_LIGHT_COUNTERPART: Record<MapStyle, MapStyle> = {
+  standard: 'standard',
+  minimal: 'minimal',
+  clean: 'clean',
+  dark: 'standard',
+  cleanDark: 'clean',
+  satellite: 'satellite',
+};
+
+/**
+ * The style actually handed to the renderer, once the light/dark preference has
+ * had its say. `auto` follows the device; the explicit modes override it.
+ */
+export const resolveEffectiveMapStyle = ({
+  mapStyle,
+  themeMode,
+  prefersDarkScheme,
+}: {
+  mapStyle: MapStyle;
+  themeMode: MapThemeMode;
+  prefersDarkScheme: boolean;
+}): MapStyle => {
+  const wantsDark = themeMode === 'dark' || (themeMode === 'auto' && prefersDarkScheme);
+  return wantsDark
+    ? MAP_STYLE_DARK_COUNTERPART[mapStyle]
+    : MAP_STYLE_LIGHT_COUNTERPART[mapStyle];
+};

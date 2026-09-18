@@ -440,20 +440,58 @@ export const GOOGLE_BASEMAP_HIDDEN_STYLES = [
   { elementType: 'labels.text.stroke', stylers: [{ visibility: 'off' }] },
 ] as const;
 
+/**
+ * What the traveller turned on or off in the customize sheet, on top of
+ * whichever style they picked. A style stays the starting point; these only
+ * override the handful of properties the sheet exposes.
+ */
+export interface MapboxBasemapDetailOverrides {
+  showPoiLabels?: boolean;
+  showRoadsAndTransit?: boolean;
+  showAdminBoundaries?: boolean;
+}
+
+const MAPBOX_DETAIL_OVERRIDE_PROPERTIES: Array<{
+  key: keyof MapboxBasemapDetailOverrides;
+  property: string;
+}> = [
+  { key: 'showPoiLabels', property: 'showPointOfInterestLabels' },
+  { key: 'showRoadsAndTransit', property: 'showRoadsAndTransit' },
+  { key: 'showAdminBoundaries', property: 'showAdminBoundaries' },
+];
+
 export const getMapboxStyleDescriptor = (mapStyle: MapStyle): MapboxStyleDescriptor => (
   MAPBOX_STYLE_DESCRIPTORS[mapStyle] ?? MAPBOX_STYLE_DESCRIPTORS.standard
 );
 
-export const buildMapboxStyleConfig = (mapStyle: MapStyle): MapboxStyleConfigMap | undefined => {
+export const buildMapboxStyleConfig = (
+  mapStyle: MapStyle,
+  overrides?: MapboxBasemapDetailOverrides,
+): MapboxStyleConfigMap | undefined => {
   const descriptor = getMapboxStyleDescriptor(mapStyle);
   if (!descriptor.configProperties?.length) return undefined;
 
-  return descriptor.configProperties.reduce<MapboxStyleConfigMap>((config, entry) => {
-    const fragmentConfig = config[entry.fragmentId] ?? {};
+  const config = descriptor.configProperties.reduce<MapboxStyleConfigMap>((accumulator, entry) => {
+    const fragmentConfig = accumulator[entry.fragmentId] ?? {};
     fragmentConfig[entry.property] = entry.value;
-    config[entry.fragmentId] = fragmentConfig;
-    return config;
+    accumulator[entry.fragmentId] = fragmentConfig;
+    return accumulator;
   }, {});
+
+  if (!overrides) return config;
+
+  const basemap = config.basemap ?? {};
+  MAPBOX_DETAIL_OVERRIDE_PROPERTIES.forEach(({ key, property }) => {
+    const value = overrides[key];
+    if (typeof value !== 'boolean') return;
+    basemap[property] = value;
+    // Pedestrian roads are a sub-layer of the road fragment: leaving them on
+    // with roads off draws a ghost street grid with no streets under it.
+    if (key === 'showRoadsAndTransit') basemap.showPedestrianRoads = value;
+  });
+  config.basemap = basemap;
+
+  return config;
 };
 
 export const shouldHideMapboxTripLabelLayer = (
@@ -572,8 +610,12 @@ const MAPBOX_TRIP_CLEAN_ROAD_HIDE_PATTERNS = [
 const shouldHideMapboxTripRoadGeometryLayer = (
   layer: MapboxStyleLayerLike,
   mapStyle: MapStyle,
+  overrides?: MapboxBasemapDetailOverrides,
 ): boolean => {
-  if (!isCleanMapStyle(mapStyle)) return false;
+  // The style config alone does not clear every road layer on every style, so
+  // an explicit "no roads" also sweeps the geometry the way a clean style does.
+  const hideRoads = overrides?.showRoadsAndTransit === false || isCleanMapStyle(mapStyle);
+  if (!hideRoads) return false;
   if (layer['source-layer'] === 'road' || layer['source-layer'] === 'motorway_junction') {
     return layer.type === 'line' || layer.type === 'fill';
   }
@@ -668,12 +710,21 @@ const hideMapboxLayer = (
 export const applyMapboxTripVisualPolish = (
   map: MapboxStyleLayerVisibilityMap,
   mapStyle: MapStyle,
+  overrides?: MapboxBasemapDetailOverrides,
 ): void => {
   const layers = (map.getStyle()?.layers ?? []) as MapboxStyleLayerLike[];
   applyMapboxCountryBoundaryOverlay(map, mapStyle, layers);
+  // Country borders are always drawn by the overlay above. This switch is about
+  // the borders *inside* a country, which the polish otherwise strips wholesale.
+  const keepRegionBoundaries = overrides?.showAdminBoundaries === true;
   layers.forEach((layer) => {
     if (!layer.id) return;
-    if (shouldHideMapboxTripBoundaryLayer(layer)) {
+    if (!keepRegionBoundaries && shouldHideMapboxTripBoundaryLayer(layer)) {
+      hideMapboxLayer(map, layer);
+      return;
+    }
+    if (keepRegionBoundaries && isMapboxTripCountryBoundaryLayer(layer)) {
+      // The overlay already draws these; the style's own copy would double them.
       hideMapboxLayer(map, layer);
       return;
     }
@@ -685,7 +736,7 @@ export const applyMapboxTripVisualPolish = (
       );
       return;
     }
-    if (shouldHideMapboxTripRoadGeometryLayer(layer, mapStyle)) {
+    if (shouldHideMapboxTripRoadGeometryLayer(layer, mapStyle, overrides)) {
       hideMapboxLayer(map, layer);
       return;
     }

@@ -50,6 +50,15 @@ interface TripViewPlannerWorkspaceProps {
     onOpenMapCustomize?: () => void;
     showActivityMarkers?: boolean;
     onShowActivityMarkersChange?: (enabled: boolean) => void;
+    basemapDetail?: {
+        showPoiLabels?: boolean;
+        showRoadsAndTransit?: boolean;
+        showAdminBoundaries?: boolean;
+    };
+    useGlobeProjection?: boolean;
+    showTerrain?: boolean;
+    mapPitch?: number;
+    routeLineWeight?: number;
     isMapCustomizeOpen?: boolean;
     mapCustomizeLabel?: string;
     layoutMode: 'vertical' | 'horizontal';
@@ -126,6 +135,11 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onOpenMapCustomize,
     showActivityMarkers,
     onShowActivityMarkersChange,
+    basemapDetail,
+    useGlobeProjection,
+    showTerrain,
+    mapPitch,
+    routeLineWeight,
     isMapCustomizeOpen,
     mapCustomizeLabel,
     layoutMode,
@@ -357,6 +371,11 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     onOpenCustomize={onOpenMapCustomize}
                     showActivityMarkers={showActivityMarkers}
                     onShowActivityMarkersChange={onShowActivityMarkersChange}
+                    basemapDetail={basemapDetail}
+                    useGlobeProjection={useGlobeProjection}
+                    showTerrain={showTerrain}
+                    mapPitch={mapPitch}
+                    routeLineWeight={routeLineWeight}
                     isCustomizeOpen={isMapCustomizeOpen}
                     customizeLabel={mapCustomizeLabel}
                     enableActivityPopup={!isMobile}
