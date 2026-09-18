@@ -24,4 +24,5 @@ summary: "Add TravelFlow to your home screen and it opens straight to your trips
 - [ ] [Internal] Account API responses and Supabase traffic are explicitly never cached; only `/api/trip-map-preview` is.
 - [ ] [Internal] Added a `playwright.pwa.config.ts` suite that verifies offline boot against a real production build.
 - [ ] [Internal] `/trips` renders the shared `ConnectivityStatusBanner` and a signed-out notice gated on `isAuthLoading`, covered by `tests/browser/tripsRouteSignedOutNotice.browser.test.ts`.
+- [ ] [Internal] `/trips` is registered in `pageTitleService`; it previously fell through to the 404 label, so the installed app's start page opened titled "404".
 - [ ] [Internal] Netlify now serves `/manifest.webmanifest` as `application/manifest+json`; it inferred `application/octet-stream`, which iOS can refuse when judging installability.

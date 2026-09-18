@@ -1273,7 +1273,14 @@ export const TripManager: React.FC<TripManagerProps> = ({
         aria-labelledby="trip-manager-title"
       >
         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-          <h2 id="trip-manager-title" className="text-lg font-semibold text-gray-800">My Plans</h2>
+          {/* The /trips route supplies its own localized heading, so repeating a
+              hardcoded English one here would both duplicate it and break the
+              page's language. */}
+          {isPageVariant ? (
+            <span className="sr-only" id="trip-manager-title">{t('trips.pageTitle')}</span>
+          ) : (
+            <h2 id="trip-manager-title" className="text-lg font-semibold text-gray-800">My Plans</h2>
+          )}
           <div className="flex items-center gap-1">
             <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-0.5">
               <button
