@@ -3,8 +3,8 @@ id: rel-2026-09-18-mobile-first-load-interactivity
 version: v0.175.0
 title: "The menu answers your first tap, even while the page is still loading"
 date: 2026-09-18
-published_at: 2026-09-18T12:00:00Z
-status: draft
+published_at: 2026-09-18T15:00:00Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "On a phone, tapping the menu before the page finished loading did nothing at all. That tap is now remembered, the menu opens as soon as it can, and there is less to download before it does."
