@@ -1,9 +1,9 @@
 import popularIslandDestinationsJson from '../data/popularIslandDestinations.json';
+import { getCountrySeasonByCode } from '../data/countryTravelData';
 import {
-    getCountrySeasonByCode,
     getLocalizedCountryNameFromData,
     getLocalizedIslandNameFromData,
-} from '../data/countryTravelData';
+} from '../data/countryLocalizedNames';
 import { DESTINATION_RECOMMENDATION_PROFILES } from '../data/destinationRecommendationProfiles';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../config/locales';
 import { COUNTRIES } from '../utils';

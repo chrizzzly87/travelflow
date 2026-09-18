@@ -1,4 +1,4 @@
-import { getCountrySearchAliasesFromData } from '../data/countryTravelData';
+import { getCountrySearchAliasesFromData } from '../data/countrySearchMetadata';
 
 const COMBINING_MARKS_REGEX = /\p{Mark}+/gu;
 const SPECIAL_SEARCH_CHARACTERS_REGEX = /[ßẞÆæǼǽŒœØøÐðÞþŁłĐđĦħıĲĳ]/g;
