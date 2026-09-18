@@ -724,7 +724,19 @@
       "searchLabel": "Cerca viaggi o città",
       "searchPlaceholder": "Cerca viaggi o città...",
       "empty": "Nessun viaggio salvato.",
-      "noMatches": "Nessun risultato per \"{query}\"."
+      "noMatches": "Nessun risultato per \"{query}\".",
+      "favorites": "Preferiti",
+      "yourTrips": "I tuoi viaggi"
+    }
+  },
+  "install": {
+    "banner": {
+      "title": "I tuoi viaggi sempre con te",
+      "body": "Aggiungi TravelFlow alla schermata Home e i tuoi viaggi si aprono anche senza segnale.",
+      "action": "Installa",
+      "dismiss": "Non ora",
+      "iosStepShare": "Tocca Condividi",
+      "iosStepAdd": "poi \"Aggiungi a Home\""
     }
   }
 }

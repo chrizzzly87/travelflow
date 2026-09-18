@@ -464,6 +464,13 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       notes: 'Debug-only key.',
     },
     {
+      name: 'tf_install_prompt_state_v1',
+      purpose: 'Remembers whether the add-to-home-screen prompt was dismissed or accepted, so it is not shown again.',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+    },
+    {
       name: 'tf_disable_sw',
       purpose: 'Opts this browser out of the offline service worker that caches the app shell.',
       duration: 'Persistent',

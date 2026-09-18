@@ -724,7 +724,19 @@
       "searchLabel": "Buscar viajes o ciudades",
       "searchPlaceholder": "Buscar viajes o ciudades...",
       "empty": "Aún no hay viajes guardados.",
-      "noMatches": "Sin resultados para «{query}»."
+      "noMatches": "Sin resultados para «{query}».",
+      "favorites": "Favoritos",
+      "yourTrips": "Tus viajes"
+    }
+  },
+  "install": {
+    "banner": {
+      "title": "Ten tus viajes a mano",
+      "body": "Añade TravelFlow a tu pantalla de inicio y tus viajes se abrirán incluso sin cobertura.",
+      "action": "Instalar",
+      "dismiss": "Ahora no",
+      "iosStepShare": "Toca Compartir",
+      "iosStepAdd": "y luego «Añadir a inicio»"
     }
   }
 }

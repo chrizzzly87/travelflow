@@ -1342,7 +1342,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
             <>
               <section>
                 <FolderHeader
-                  label="Favorites"
+                  label={t('trips.list.favorites')}
                   count={favoriteTrips.length}
                   isOpen={favoritesOpen}
                   onToggle={() => setFavoritesOpen(prev => !prev)}
@@ -1410,7 +1410,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
               <section>
                 <FolderHeader
-                  label="Your Trips"
+                  label={t('trips.list.yourTrips')}
                   count={regularTrips.length}
                   isOpen={tripsOpen}
                   onToggle={() => setTripsOpen(prev => !prev)}

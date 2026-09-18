@@ -5,6 +5,8 @@ import { APP_SHELL_NAMESPACES } from './i18n';
 import { Scales } from '@phosphor-icons/react';
 import { AppLanguage, ITrip, ITimelineItem, IViewSettings } from './types';
 import { TripManagerProvider } from './contexts/TripManagerContext';
+import { InstallAppBanner } from './components/InstallAppBanner';
+import { shouldOpenTripsAsRoute } from './services/installPromptService';
 import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
 import { saveTrip, getTripById } from './services/storageService';
 import { createTripHistorySnapshotEntry } from './services/historyService';
@@ -16,6 +18,7 @@ import { resolveTripExpiryFromEntitlements } from './config/productLimits';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/locales';
 import {
     buildLocalizedMarketingPath,
+    buildLocalizedTripsPath,
     extractLocaleFromPath,
     getBlogSlugFromPath,
     isToolRoute,
@@ -953,14 +956,24 @@ const AppContent: React.FC = () => {
         void loadTripManagerModule().catch(() => undefined);
     }, []);
 
+    // On a phone the 380px slide-in drawer is a cramped way to read a list, and
+    // /trips shows exactly the same component full width. Desktop keeps the
+    // overlay, where peeking at the list without leaving the planner is the
+    // point. This is the single place every "My Trips" entry point routes
+    // through, so both behaviours stay consistent wherever it is triggered.
     const openTripManager = useCallback(() => {
+        if (shouldOpenTripsAsRoute()) {
+            navigate(buildLocalizedTripsPath(resolvedRouteLocale));
+            return;
+        }
         prewarmTripManager();
         setIsManagerOpen(true);
-    }, [prewarmTripManager]);
+    }, [navigate, prewarmTripManager, resolvedRouteLocale]);
 
     return (
         <TripManagerProvider openTripManager={openTripManager} prewarmTripManager={prewarmTripManager}>
             <GlobalConnectivityBadge />
+            <InstallAppBanner />
             <ViewTransitionHandler enabled={isWarmupEnabled} />
             {isWarmupEnabled && (
                 <Suspense fallback={null}>

@@ -724,7 +724,19 @@
       "searchLabel": "Szukaj podróży lub miast",
       "searchPlaceholder": "Szukaj podróży lub miast...",
       "empty": "Brak zapisanych podróży.",
-      "noMatches": "Brak wyników dla „{query}”."
+      "noMatches": "Brak wyników dla „{query}”.",
+      "favorites": "Ulubione",
+      "yourTrips": "Twoje podróże"
+    }
+  },
+  "install": {
+    "banner": {
+      "title": "Miej podróże pod ręką",
+      "body": "Dodaj TravelFlow do ekranu głównego, a Twoje podróże otworzą się nawet bez zasięgu.",
+      "action": "Zainstaluj",
+      "dismiss": "Nie teraz",
+      "iosStepShare": "Dotknij Udostępnij",
+      "iosStepAdd": "potem „Do ekranu głównego”"
     }
   }
 }
