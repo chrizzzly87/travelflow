@@ -1,5 +1,5 @@
 import { COUNTRY_TRAVEL_DATA, type CountryTravelEvent } from '../data/countryTravelData';
-import { getCountryDestinationGuide } from './destinationGuideService';
+import { getCountryGuideSummary } from '../data/destinationGuideList';
 
 /**
  * The festival catalog is the curated slice of `data/countryTravelData.json`:
@@ -72,7 +72,7 @@ const buildCatalog = (): FestivalCatalogEntry[] => {
         countryCode: country.countryCode,
         countryName: country.countryName,
         regionId,
-        guideSlug: getCountryDestinationGuide(country.countryCode)?.slug,
+        guideSlug: getCountryGuideSummary(country.countryCode)?.slug,
       });
     });
   });
