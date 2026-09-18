@@ -514,6 +514,105 @@
       "openDetails": "Ouvrir les détails",
       "close": "Fermer",
       "popupLabel": "Détails de l'activité"
+    },
+    "mapCustomize": {
+      "title": "Personnaliser la carte",
+      "description": "Les changements s'appliquent aussitôt et sont conservés avec ce voyage.",
+      "open": "Personnaliser la carte",
+      "tab": {
+        "basemap": "Fond de carte",
+        "journey": "Itinéraire",
+        "places": "Lieux",
+        "camera": "Caméra"
+      },
+      "renderer": {
+        "label": "Fournisseur de cartes",
+        "description": "La carte que l'app affiche.",
+        "auto": "Automatique",
+        "google": "Google Maps",
+        "mapbox": "Mapbox",
+        "mapboxUnavailable": "Mapbox n'est pas configuré ici, Google est donc utilisé."
+      },
+      "handoff": {
+        "label": "Ouvrir les lieux dans",
+        "description": "L'app utilisée par les liens « ouvrir dans les cartes ».",
+        "google": "Google Maps",
+        "apple": "Apple Maps",
+        "appleNote": "Apple Maps ne peut pas être affiché dans l'app, il s'ouvre donc dans l'app Apple Maps."
+      },
+      "style": {
+        "label": "Style de carte",
+        "standard": "Standard",
+        "minimal": "Minimal",
+        "clean": "Épuré",
+        "dark": "Sombre",
+        "cleanDark": "Épuré sombre",
+        "satellite": "Satellite"
+      },
+      "theme": {
+        "label": "Clair ou sombre",
+        "description": "Automatique suit votre appareil.",
+        "auto": "Automatique",
+        "light": "Clair",
+        "dark": "Sombre"
+      },
+      "routeMode": {
+        "label": "Tracés d'itinéraire",
+        "description": "Réaliste suit les routes ; simple trace une ligne directe.",
+        "simple": "Simple",
+        "realistic": "Réaliste"
+      },
+      "colorMode": {
+        "label": "Couleur des tracés",
+        "description": "Assortie à chaque ville, ou une seule couleur d'accent partout.",
+        "trip": "Couleurs des villes",
+        "brand": "Accent unique"
+      },
+      "lineWeight": {
+        "label": "Épaisseur des tracés"
+      },
+      "cityNames": {
+        "label": "Noms des villes",
+        "description": "Nommer chaque étape sur la carte."
+      },
+      "activityMarkers": {
+        "label": "Repères d'activités",
+        "description": "Affiche vos lieux prévus dès que la carte est assez proche."
+      },
+      "poiLabels": {
+        "label": "Points d'intérêt",
+        "description": "Commerces, monuments et autres lieux que vous n'avez pas prévus."
+      },
+      "roads": {
+        "label": "Routes et transports",
+        "description": "Désactivez pour une carte épurée qui ne montre que votre voyage."
+      },
+      "boundaries": {
+        "label": "Frontières régionales",
+        "description": "Les limites à l'intérieur d'un pays, pas seulement entre pays."
+      },
+      "cityFocus": {
+        "label": "Cadrer une ville sélectionnée",
+        "description": "Cadre la ville sur votre propre plan et masque le reste du parcours."
+      },
+      "globe": {
+        "label": "Vue globe",
+        "description": "Courbe le monde. Idéal pour un long voyage et une grande carte."
+      },
+      "terrain": {
+        "label": "Relief",
+        "description": "Fait ressortir collines et montagnes."
+      },
+      "pitch": {
+        "label": "Inclinaison"
+      },
+      "mapboxOnly": "Disponible avec Mapbox.",
+      "reset": "Réinitialiser",
+      "copyPreset": "Copier le préréglage",
+      "copied": "Copié",
+      "saveAsDefault": "Enregistrer par défaut",
+      "saved": "Enregistré",
+      "showWholeJourney": "Afficher tout le parcours"
     }
   },
   "tripRouteShell": {

@@ -59,6 +59,9 @@ import { useTripViewSettingsSync } from './tripview/useTripViewSettingsSync';
 import { useTripAdminOverrideState } from './tripview/useTripAdminOverrideState';
 import { useTripEditModalState } from './tripview/useTripEditModalState';
 import { useTripLayoutControlsState } from './tripview/useTripLayoutControlsState';
+import { useTripMapCustomizationState } from './tripview/useTripMapCustomizationState';
+import { useMapRuntime } from './GoogleMapsLoader';
+import { MapCustomizeModal } from './maps/MapCustomizeModal';
 import { useTripCityForceFill } from './tripview/useTripCityForceFill';
 import { useTripFavoriteHandler } from './tripview/useTripFavoriteHandler';
 import { resolveTripToastUndoAction } from './tripview/tripToastUndoAction';
@@ -1710,6 +1713,8 @@ const useTripViewRender = ({
         setTimelineHeight,
         detailsWidth,
         setDetailsWidth,
+        mapCustomization,
+        setMapCustomization,
     } = useTripLayoutControlsState({
         initialViewSettings,
         defaultDetailsWidth: DEFAULT_DETAILS_WIDTH,
@@ -1925,8 +1930,9 @@ const useTripViewRender = ({
         zoomBehavior,
         sidebarWidth: Math.round(sidebarWidth),
         detailsWidth: Math.round(detailsWidth),
-        timelineHeight: Math.round(timelineHeight)
-    }), [detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, zoomBehavior, sidebarWidth, timelineHeight]);
+        timelineHeight: Math.round(timelineHeight),
+        mapCustomization,
+    }), [detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, zoomBehavior, sidebarWidth, timelineHeight, mapCustomization]);
 
     const tripInfoRetryAnalyticsAttributes = useMemo(
         () => getAnalyticsDebugAttributes('trip_generation__trip_info--retry', {
@@ -2654,6 +2660,47 @@ const useTripViewRender = ({
         safeUpdateTrip,
         scheduleCommit,
     });
+
+    // Which basemap is actually drawing, as opposed to which one was asked for:
+    // a missing Mapbox token falls the runtime back to Google, and the sheet
+    // says so rather than offering controls that would do nothing.
+    const { runtime: mapRuntime, mapboxAccessToken } = useMapRuntime();
+    const activeMapRenderer = mapRuntime.effectiveSelection.renderer;
+    const isMapboxRendererAvailable = mapboxAccessToken.trim().length > 0;
+
+    const {
+        preferences: mapPreferences,
+        applyPatch: applyMapPreferencePatch,
+        reset: resetMapPreferences,
+        saveAsDefault: saveMapPreferencesAsDefault,
+        isCustomizeOpen: isMapCustomizeOpen,
+        openCustomize: openMapCustomize,
+        closeCustomize: closeMapCustomize,
+    } = useTripMapCustomizationState({
+        initialViewSettings,
+        mapStyle,
+        setMapStyle,
+        routeMode,
+        setRouteMode,
+        showCityNames,
+        setShowCityNames,
+        colorMode: mapColorMode,
+        setColorMode: handleMapColorModeChange,
+        customization: mapCustomization,
+        setCustomization: setMapCustomization,
+    });
+
+    // Every customize change is a deliberate one, so it counts as a manual view
+    // change and is what makes the look stick to the trip.
+    const handleMapPreferenceChange = useCallback((patch: Partial<typeof mapPreferences>) => {
+        markManualViewChange();
+        applyMapPreferencePatch(patch);
+    }, [applyMapPreferencePatch, markManualViewChange]);
+
+    const handleMapPreferenceReset = useCallback(() => {
+        markManualViewChange();
+        resetMapPreferences();
+    }, [markManualViewChange, resetMapPreferences]);
 
     const {
         handleForceFill,
@@ -3431,6 +3478,12 @@ const useTripViewRender = ({
                         onMapCitySelect={handleMapCitySelect}
                         onMapActivitySelect={handleMapActivitySelect}
                         onMapClearSelection={handleMapClearSelection}
+                        cityFocusMode={mapPreferences.cityFocusMode}
+                        onOpenMapCustomize={openMapCustomize}
+                        showActivityMarkers={mapPreferences.showActivityMarkers}
+                        onShowActivityMarkersChange={(enabled) => handleMapPreferenceChange({ showActivityMarkers: enabled })}
+                        isMapCustomizeOpen={isMapCustomizeOpen}
+                        mapCustomizeLabel={t('tripView.mapCustomize.open', 'Customize map')}
                         layoutMode={layoutMode}
                         effectiveLayoutMode={effectiveLayoutMode}
                         onLayoutModeChange={(mode) => {
@@ -3481,6 +3534,18 @@ const useTripViewRender = ({
                         onTimelineResizeKeyDown={handleTimelineResizeKeyDown}
                         floatingOverlayRightInset={isTripAgentOpen && !isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
                         floatingOverlayLeftInset={isTripAgentOpen && isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
+                    />
+                    <MapCustomizeModal
+                        isOpen={isMapCustomizeOpen}
+                        onClose={closeMapCustomize}
+                        preferences={mapPreferences}
+                        onChange={handleMapPreferenceChange}
+                        onReset={handleMapPreferenceReset}
+                        onSaveAsDefault={saveMapPreferencesAsDefault}
+                        isMobile={isMobile}
+                        activeRenderer={activeMapRenderer}
+                        isMapboxAvailable={isMapboxRendererAvailable}
+                        tripId={trip.id}
                     />
                     {isTripAgentRolledOut && !isTripAgentOpen && (
                         <button

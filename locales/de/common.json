@@ -514,6 +514,105 @@
       "openDetails": "Details öffnen",
       "close": "Schließen",
       "popupLabel": "Aktivitätsdetails"
+    },
+    "mapCustomize": {
+      "title": "Karte anpassen",
+      "description": "Änderungen wirken sofort und bleiben bei dieser Reise gespeichert.",
+      "open": "Karte anpassen",
+      "tab": {
+        "basemap": "Basiskarte",
+        "journey": "Route",
+        "places": "Orte",
+        "camera": "Kamera"
+      },
+      "renderer": {
+        "label": "Kartenanbieter",
+        "description": "Welche Karte die App zeichnet.",
+        "auto": "Automatisch",
+        "google": "Google Maps",
+        "mapbox": "Mapbox",
+        "mapboxUnavailable": "Mapbox ist hier nicht eingerichtet, deshalb wird Google verwendet."
+      },
+      "handoff": {
+        "label": "Orte öffnen in",
+        "description": "Welche App die Links „In Karten öffnen“ verwenden.",
+        "google": "Google Maps",
+        "apple": "Apple Maps",
+        "appleNote": "Apple Maps kann nicht in der App gezeichnet werden und öffnet sich deshalb in der Apple Maps App."
+      },
+      "style": {
+        "label": "Kartenstil",
+        "standard": "Standard",
+        "minimal": "Minimal",
+        "clean": "Aufgeräumt",
+        "dark": "Dunkel",
+        "cleanDark": "Aufgeräumt dunkel",
+        "satellite": "Satellit"
+      },
+      "theme": {
+        "label": "Hell oder dunkel",
+        "description": "Automatisch folgt deinem Gerät.",
+        "auto": "Automatisch",
+        "light": "Hell",
+        "dark": "Dunkel"
+      },
+      "routeMode": {
+        "label": "Routenlinien",
+        "description": "Realistisch folgt Straßen, einfach zeichnet eine direkte Linie.",
+        "simple": "Einfach",
+        "realistic": "Realistisch"
+      },
+      "colorMode": {
+        "label": "Linienfarbe",
+        "description": "Passend zu jeder Stadt oder durchgehend eine Akzentfarbe.",
+        "trip": "Stadtfarben",
+        "brand": "Eine Akzentfarbe"
+      },
+      "lineWeight": {
+        "label": "Liniendicke"
+      },
+      "cityNames": {
+        "label": "Städtenamen",
+        "description": "Jeden Stopp auf der Karte beschriften."
+      },
+      "activityMarkers": {
+        "label": "Aktivitäts-Pins",
+        "description": "Zeigt deine geplanten Orte, sobald die Karte nah genug ist."
+      },
+      "poiLabels": {
+        "label": "Sehenswertes",
+        "description": "Geschäfte, Sehenswürdigkeiten und andere Orte, die du nicht geplant hast."
+      },
+      "roads": {
+        "label": "Straßen und Nahverkehr",
+        "description": "Ausschalten für eine aufgeräumte Karte nur mit deiner Reise."
+      },
+      "boundaries": {
+        "label": "Regionsgrenzen",
+        "description": "Grenzen innerhalb eines Landes, nicht nur zwischen Ländern."
+      },
+      "cityFocus": {
+        "label": "Stadt bei Auswahl fokussieren",
+        "description": "Rahmt die Stadt auf deinem eigenen Plan ein und blendet den Rest der Reise aus."
+      },
+      "globe": {
+        "label": "Globusansicht",
+        "description": "Wölbt die Welt. Am besten bei langen Reisen und großer Karte."
+      },
+      "terrain": {
+        "label": "Gelände",
+        "description": "Hebt Hügel und Berge hervor."
+      },
+      "pitch": {
+        "label": "Neigung"
+      },
+      "mapboxOnly": "Verfügbar mit Mapbox.",
+      "reset": "Zurücksetzen",
+      "copyPreset": "Voreinstellung kopieren",
+      "copied": "Kopiert",
+      "saveAsDefault": "Als meine Voreinstellung speichern",
+      "saved": "Gespeichert",
+      "showWholeJourney": "Ganze Reise zeigen"
     }
   },
   "tripRouteShell": {

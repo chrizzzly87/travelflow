@@ -514,6 +514,105 @@
       "openDetails": "Open details",
       "close": "Close",
       "popupLabel": "Activity details"
+    },
+    "mapCustomize": {
+      "title": "Customize map",
+      "description": "Changes apply straight away and are kept with this trip.",
+      "open": "Customize map",
+      "tab": {
+        "basemap": "Basemap",
+        "journey": "Journey",
+        "places": "Places",
+        "camera": "Camera"
+      },
+      "renderer": {
+        "label": "Map provider",
+        "description": "Which map the app draws.",
+        "auto": "Automatic",
+        "google": "Google Maps",
+        "mapbox": "Mapbox",
+        "mapboxUnavailable": "Mapbox is not configured here, so Google is being used."
+      },
+      "handoff": {
+        "label": "Open places in",
+        "description": "Which app the “open in maps” links use.",
+        "google": "Google Maps",
+        "apple": "Apple Maps",
+        "appleNote": "Apple Maps cannot be drawn inside the app, so it opens in the Apple Maps app."
+      },
+      "style": {
+        "label": "Map style",
+        "standard": "Standard",
+        "minimal": "Minimal",
+        "clean": "Clean",
+        "dark": "Dark",
+        "cleanDark": "Clean dark",
+        "satellite": "Satellite"
+      },
+      "theme": {
+        "label": "Light or dark",
+        "description": "Automatic follows your device.",
+        "auto": "Automatic",
+        "light": "Light",
+        "dark": "Dark"
+      },
+      "routeMode": {
+        "label": "Route lines",
+        "description": "Realistic follows roads; simple draws a direct line.",
+        "simple": "Simple",
+        "realistic": "Realistic"
+      },
+      "colorMode": {
+        "label": "Line colour",
+        "description": "Match each city, or use one accent throughout.",
+        "trip": "City colours",
+        "brand": "Single accent"
+      },
+      "lineWeight": {
+        "label": "Line thickness"
+      },
+      "cityNames": {
+        "label": "City names",
+        "description": "Label each stop on the map."
+      },
+      "activityMarkers": {
+        "label": "Activity pins",
+        "description": "Show your planned places once the map is close enough."
+      },
+      "poiLabels": {
+        "label": "Points of interest",
+        "description": "Shops, landmarks and other places you have not planned."
+      },
+      "roads": {
+        "label": "Roads and transit",
+        "description": "Turn off for a cleaner map of just your trip."
+      },
+      "boundaries": {
+        "label": "Region borders",
+        "description": "Borders within a country, not just between them."
+      },
+      "cityFocus": {
+        "label": "Focus a city when selected",
+        "description": "Frame the city on your own plan and hide the rest of the journey."
+      },
+      "globe": {
+        "label": "Globe view",
+        "description": "Curves the world. Best on a long trip and a large map."
+      },
+      "terrain": {
+        "label": "Terrain",
+        "description": "Raises hills and mountains."
+      },
+      "pitch": {
+        "label": "Tilt"
+      },
+      "mapboxOnly": "Available with Mapbox.",
+      "reset": "Reset",
+      "copyPreset": "Copy preset",
+      "copied": "Copied",
+      "saveAsDefault": "Save as my default",
+      "saved": "Saved",
+      "showWholeJourney": "Show whole journey"
     }
   },
   "tripRouteShell": {

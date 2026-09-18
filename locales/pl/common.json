@@ -512,6 +512,105 @@
       "openDetails": "Otwórz szczegóły",
       "close": "Zamknij",
       "popupLabel": "Szczegóły aktywności"
+    },
+    "mapCustomize": {
+      "title": "Dostosuj mapę",
+      "description": "Zmiany działają od razu i zostają zapisane przy tej podróży.",
+      "open": "Dostosuj mapę",
+      "tab": {
+        "basemap": "Mapa bazowa",
+        "journey": "Trasa",
+        "places": "Miejsca",
+        "camera": "Kamera"
+      },
+      "renderer": {
+        "label": "Dostawca map",
+        "description": "Mapa, którą rysuje aplikacja.",
+        "auto": "Automatycznie",
+        "google": "Google Maps",
+        "mapbox": "Mapbox",
+        "mapboxUnavailable": "Mapbox nie jest tu skonfigurowany, więc używamy Google."
+      },
+      "handoff": {
+        "label": "Otwieraj miejsca w",
+        "description": "Aplikacja, z której korzystają linki „otwórz w mapach”.",
+        "google": "Google Maps",
+        "apple": "Apple Maps",
+        "appleNote": "Apple Maps nie da się narysować w aplikacji, więc otwiera się w aplikacji Apple Maps."
+      },
+      "style": {
+        "label": "Styl mapy",
+        "standard": "Standardowy",
+        "minimal": "Minimalny",
+        "clean": "Czysty",
+        "dark": "Ciemny",
+        "cleanDark": "Czysty ciemny",
+        "satellite": "Satelitarny"
+      },
+      "theme": {
+        "label": "Jasny lub ciemny",
+        "description": "Automatycznie idzie za ustawieniem urządzenia.",
+        "auto": "Automatycznie",
+        "light": "Jasny",
+        "dark": "Ciemny"
+      },
+      "routeMode": {
+        "label": "Linie trasy",
+        "description": "Realistyczna trzyma się dróg, prosta rysuje linię wprost.",
+        "simple": "Prosta",
+        "realistic": "Realistyczna"
+      },
+      "colorMode": {
+        "label": "Kolor linii",
+        "description": "Dopasuj do każdego miasta albo użyj jednego koloru akcentu.",
+        "trip": "Kolory miast",
+        "brand": "Jeden akcent"
+      },
+      "lineWeight": {
+        "label": "Grubość linii"
+      },
+      "cityNames": {
+        "label": "Nazwy miast",
+        "description": "Podpisz każdy przystanek na mapie."
+      },
+      "activityMarkers": {
+        "label": "Pinezki aktywności",
+        "description": "Pokazuje zaplanowane miejsca, gdy mapa jest wystarczająco blisko."
+      },
+      "poiLabels": {
+        "label": "Ciekawe miejsca",
+        "description": "Sklepy, zabytki i inne miejsca, których nie zaplanowałeś."
+      },
+      "roads": {
+        "label": "Drogi i transport",
+        "description": "Wyłącz, aby mapa pokazywała tylko twoją podróż."
+      },
+      "boundaries": {
+        "label": "Granice regionów",
+        "description": "Granice wewnątrz kraju, nie tylko między krajami."
+      },
+      "cityFocus": {
+        "label": "Przybliż wybrane miasto",
+        "description": "Kadruje miasto na twoim planie i ukrywa resztę trasy."
+      },
+      "globe": {
+        "label": "Widok globusa",
+        "description": "Zakrzywia świat. Najlepszy przy długiej podróży i dużej mapie."
+      },
+      "terrain": {
+        "label": "Teren",
+        "description": "Uwypukla wzgórza i góry."
+      },
+      "pitch": {
+        "label": "Pochylenie"
+      },
+      "mapboxOnly": "Dostępne z Mapbox.",
+      "reset": "Resetuj",
+      "copyPreset": "Kopiuj ustawienie",
+      "copied": "Skopiowano",
+      "saveAsDefault": "Zapisz jako moje domyślne",
+      "saved": "Zapisano",
+      "showWholeJourney": "Pokaż całą trasę"
     }
   },
   "tripRouteShell": {

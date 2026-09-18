@@ -23,6 +23,48 @@ export type RouteFailureReason =
   | 'request_error';
 export type AppLanguage = 'en' | 'es' | 'de' | 'fr' | 'pt' | 'ru' | 'it' | 'pl' | 'ko' | 'fa' | 'ur';
 export type MapColorMode = 'brand' | 'trip';
+
+/**
+ * Which basemap the traveller wants to look at. `auto` defers to whatever the
+ * deploy's preset resolves to, which is the only value that follows an
+ * administrator changing the default later.
+ *
+ * `apple` is a handoff, not a basemap: Apple has no embeddable renderer here, so
+ * choosing it keeps the current basemap and promotes the "open in Apple Maps"
+ * action. See `docs/superpowers/specs/2026-09-18-map-provider-customization-design.md`.
+ */
+export type MapRendererChoice = 'auto' | 'google' | 'mapbox';
+
+export type MapHandoffTarget = 'google' | 'apple';
+
+export type MapThemeMode = 'light' | 'dark' | 'auto';
+
+/**
+ * Everything the map customize sheet writes that did not already have a home on
+ * `IViewSettings`. The pre-existing flat fields — `mapStyle`, `routeMode`,
+ * `showCityNames`, `zoomLevel`, `mapDockMode` — deliberately stay where they
+ * are; only `shared/mapPreferences.ts` knows about both shapes.
+ */
+export interface IMapCustomization {
+    renderer?: MapRendererChoice;
+    /** Preferred "open in" app for places and for the whole trip. */
+    handoffTarget?: MapHandoffTarget;
+    themeMode?: MapThemeMode;
+    /** Frame a selected city on its own plan and drop the rest of the journey. */
+    cityFocusMode?: boolean;
+    showActivityMarkers?: boolean;
+    showPoiLabels?: boolean;
+    showRoadsAndTransit?: boolean;
+    showAdminBoundaries?: boolean;
+    showTerrain?: boolean;
+    /** Globe reads well on a long-haul trip and badly in a small pane. */
+    useGlobeProjection?: boolean;
+    /** Degrees of camera tilt. Mapbox only; Google ignores it. */
+    pitch?: number;
+    /** Multiplier on the route line weight, 0.5–2. */
+    routeLineWeight?: number;
+}
+
 export type SystemRole = 'admin' | 'user';
 export type PlanTierKey = 'tier_free' | 'tier_mid' | 'tier_premium';
 export type TripAccessClassKey = 'free' | 'pro';
@@ -308,6 +350,7 @@ export interface IViewSettings {
     sidebarWidth?: number;
     detailsWidth?: number;
     timelineHeight?: number;
+    mapCustomization?: IMapCustomization;
 }
 
 export interface ISharedState {
@@ -342,6 +385,8 @@ export interface IUserSettings {
     sidebarWidth?: number;
     detailsWidth?: number;
     timelineHeight?: number;
+    /** The traveller's default map look, applied to trips that carry none. */
+    mapCustomization?: IMapCustomization;
 }
 
 export interface TripPrefillData {

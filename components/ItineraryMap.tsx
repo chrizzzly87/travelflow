@@ -98,6 +98,17 @@ interface ItineraryMapProps {
     cityFocusMode?: boolean;
     /** Lets go of the current selection, restoring the whole-journey view. */
     onClearSelection?: () => void;
+    /** Opens the customize sheet. Absent hides the control entirely. */
+    onOpenCustomize?: () => void;
+    isCustomizeOpen?: boolean;
+    /**
+     * Controlled by the customize sheet when given. Left uncontrolled the map
+     * keeps its own toggle, which is what the standalone print preview uses.
+     */
+    showActivityMarkers?: boolean;
+    onShowActivityMarkersChange?: (enabled: boolean) => void;
+    /** Localised by the owner: this component has no translation context. */
+    customizeLabel?: string;
 }
 
 const MAP_STYLES = {
@@ -1424,6 +1435,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     showLayoutControls = true,
     cityFocusMode = true,
     onClearSelection,
+    onOpenCustomize,
+    isCustomizeOpen = false,
+    customizeLabel = 'Customize map',
+    showActivityMarkers,
+    onShowActivityMarkersChange,
     activeStyle = 'standard',
     onStyleChange,
     routeMode = 'simple',
@@ -1479,7 +1495,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     // On by default: the zoom gate in `shouldDisplayActivityMarkers` keeps them
     // out of a country-wide view, so they only appear once the map is close
     // enough for them to mean something.
-    const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(true);
+    const [uncontrolledActivityMarkersEnabled, setUncontrolledActivityMarkersEnabled] = useState(true);
+    const activityMarkersEnabled = showActivityMarkers ?? uncontrolledActivityMarkersEnabled;
+    const toggleActivityMarkers = useCallback(() => {
+        const next = !activityMarkersEnabled;
+        if (onShowActivityMarkersChange) {
+            onShowActivityMarkersChange(next);
+            return;
+        }
+        setUncontrolledActivityMarkersEnabled(next);
+    }, [activityMarkersEnabled, onShowActivityMarkersChange]);
     const [popupActivityId, setPopupActivityId] = useState<string | null>(null);
     const [mapZoomLevel, setMapZoomLevel] = useState<number | null>(null);
     const [mapViewportSize, setMapViewportSize] = useState<{ width: number; height: number } | null>(null);
@@ -1489,7 +1514,6 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const mapZoomLevelRef = useRef<number | null>(mapZoomLevel);
     
     // Internal state for menu, but style comes from props (or defaults to standard if not provided)
-    const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
     const mapboxBasemapAvailabilityKey = `${mapboxAccessToken}::${runtime.activeSelectionKey}`;
     const mapboxBasemapAvailable = mapboxBasemapFailureKey !== mapboxBasemapAvailabilityKey;
     const shouldUseRequestedMapboxBasemap = runtime.effectiveSelection.renderer === 'mapbox' && mapboxAccessToken.length > 0;
@@ -1805,11 +1829,6 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     useEffect(() => {
         googleMixedSurfaceControllerRef.current?.apply(shouldHideGoogleCanvasInMixedMode);
     }, [shouldHideGoogleCanvasInMixedMode]);
-
-    useEffect(() => {
-        if (!mapActionsDisabled) return;
-        setIsStyleMenuOpen(false);
-    }, [mapActionsDisabled]);
 
     useEffect(() => {
         if (isMapboxBasemapEnabled) return;
@@ -3506,59 +3525,35 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         aria-label="Fit to itinerary"
                     ><Focus size={18} /></button>
                     
-                    {/* Style Switcher */}
-                    {onStyleChange && (
-                      <div className="relative">
-                          <button type="button"
-                              onClick={() => {
-                                  if (mapActionsDisabled) return;
-                                  setIsStyleMenuOpen(!isStyleMenuOpen);
-                              }}
-                              disabled={mapActionsDisabled}
-                              className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
-                                  mapActionsDisabled
-                                      ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
-                                      : isStyleMenuOpen
-                                          ? 'bg-accent-50 border-accent-300 text-accent-600'
-                                          : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'
-                              }`}
-                              aria-label="Map style"
-                          ><Layers size={18} /></button>
-                          {isStyleMenuOpen && !mapActionsDisabled && (
-                              <div className="absolute top-0 right-full mr-2 bg-white rounded-lg shadow-xl border border-gray-100 w-40 overflow-hidden flex flex-col z-20">
-                                  <button type="button" onClick={() => { onStyleChange('minimal'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'minimal' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Minimal</button>
-                                  <button type="button" onClick={() => { onStyleChange('standard'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'standard' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Standard</button>
-                                  <button type="button" onClick={() => { onStyleChange('dark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'dark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Dark</button>
-                                  <button type="button" onClick={() => { onStyleChange('clean'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'clean' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean (light)</button>
-                                  <button type="button" onClick={() => { onStyleChange('cleanDark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'cleanDark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean (dark)</button>
-                                  <button type="button" onClick={() => { onStyleChange('satellite'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'satellite' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Satellite</button>
-                                  {!isPaywalled && onRouteModeChange && (
-                                      <>
-                                          <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Routes</div>
-                                          <button type="button" onClick={() => { onRouteModeChange('simple'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'simple' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Simple</button>
-                                          <button type="button" onClick={() => { onRouteModeChange('realistic'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'realistic' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Realistic</button>
-                                      </>
-                                  )}
-                                  {onMapColorModeChange && (
-                                      <>
-                                          <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Colors</div>
-                                          <button type="button"
-                                              onClick={() => { onMapColorModeChange('trip'); setIsStyleMenuOpen(false); }}
-                                              className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${mapColorMode === 'trip' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}
-                                          >
-                                              Trip colors
-                                          </button>
-                                          <button type="button"
-                                              onClick={() => { onMapColorModeChange('brand'); setIsStyleMenuOpen(false); }}
-                                              className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${mapColorMode === 'brand' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}
-                                          >
-                                              Brand accent
-                                          </button>
-                                      </>
-                                  )}
-                              </div>
-                          )}
-                      </div>
+                    {/*
+                      * One button, one sheet. The popover this replaces was a
+                      * 40px column of 10px labels holding style, route mode and
+                      * colour — unreadable on a phone and with nowhere to put
+                      * the settings the renderers already support.
+                      */}
+                    {onOpenCustomize && (
+                        <button
+                            type="button"
+                            onClick={onOpenCustomize}
+                            disabled={mapActionsDisabled}
+                            data-testid="map-customize-button"
+                            data-floating-map-control="true"
+                            className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
+                                mapActionsDisabled
+                                    ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
+                                    : isCustomizeOpen
+                                        ? 'bg-accent-50 border-accent-300 text-accent-600'
+                                        : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'
+                            }`}
+                            aria-label={customizeLabel}
+                            aria-haspopup="dialog"
+                            aria-expanded={isCustomizeOpen}
+                            title={customizeLabel}
+                            {...getAnalyticsDebugAttributes('trip_view__map_customize--open', { surface: 'map_controls' })}
+                        >
+                            <Layers size={18} />
+                            <span className="sr-only">{customizeLabel}</span>
+                        </button>
                     )}
                     {!isPaywalled && onShowCityNamesChange && (
                         <button
@@ -3587,7 +3582,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     {!isPaywalled && (
                         <button
                             type="button"
-                            onClick={() => setActivityMarkersEnabled((current) => !current)}
+                            onClick={toggleActivityMarkers}
                             disabled={mapActionsDisabled}
                             className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
                                 mapActionsDisabled

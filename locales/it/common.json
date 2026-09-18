@@ -514,6 +514,105 @@
       "openDetails": "Apri dettagli",
       "close": "Chiudi",
       "popupLabel": "Dettagli dell'attività"
+    },
+    "mapCustomize": {
+      "title": "Personalizza la mappa",
+      "description": "Le modifiche si applicano subito e restano salvate con questo viaggio.",
+      "open": "Personalizza la mappa",
+      "tab": {
+        "basemap": "Mappa base",
+        "journey": "Percorso",
+        "places": "Luoghi",
+        "camera": "Camera"
+      },
+      "renderer": {
+        "label": "Fornitore di mappe",
+        "description": "Quale mappa disegna l'app.",
+        "auto": "Automatico",
+        "google": "Google Maps",
+        "mapbox": "Mapbox",
+        "mapboxUnavailable": "Mapbox non è configurato qui, quindi viene usato Google."
+      },
+      "handoff": {
+        "label": "Apri i luoghi in",
+        "description": "Quale app usano i link «apri nelle mappe».",
+        "google": "Google Maps",
+        "apple": "Apple Maps",
+        "appleNote": "Apple Maps non può essere disegnata nell'app, quindi si apre nell'app Apple Maps."
+      },
+      "style": {
+        "label": "Stile della mappa",
+        "standard": "Standard",
+        "minimal": "Minimale",
+        "clean": "Pulito",
+        "dark": "Scuro",
+        "cleanDark": "Pulito scuro",
+        "satellite": "Satellite"
+      },
+      "theme": {
+        "label": "Chiaro o scuro",
+        "description": "Automatico segue il tuo dispositivo.",
+        "auto": "Automatico",
+        "light": "Chiaro",
+        "dark": "Scuro"
+      },
+      "routeMode": {
+        "label": "Linee del percorso",
+        "description": "Realistico segue le strade; semplice traccia una linea diretta.",
+        "simple": "Semplice",
+        "realistic": "Realistico"
+      },
+      "colorMode": {
+        "label": "Colore delle linee",
+        "description": "Abbinato a ogni città oppure un unico colore d'accento.",
+        "trip": "Colori delle città",
+        "brand": "Accento unico"
+      },
+      "lineWeight": {
+        "label": "Spessore delle linee"
+      },
+      "cityNames": {
+        "label": "Nomi delle città",
+        "description": "Etichetta ogni tappa sulla mappa."
+      },
+      "activityMarkers": {
+        "label": "Segnaposto attività",
+        "description": "Mostra i luoghi che hai pianificato quando la mappa è abbastanza vicina."
+      },
+      "poiLabels": {
+        "label": "Punti di interesse",
+        "description": "Negozi, monumenti e altri luoghi che non hai pianificato."
+      },
+      "roads": {
+        "label": "Strade e trasporti",
+        "description": "Disattiva per una mappa più pulita con solo il tuo viaggio."
+      },
+      "boundaries": {
+        "label": "Confini regionali",
+        "description": "Confini all'interno di un paese, non solo tra paesi."
+      },
+      "cityFocus": {
+        "label": "Inquadra la città selezionata",
+        "description": "Inquadra la città sul tuo piano e nasconde il resto del viaggio."
+      },
+      "globe": {
+        "label": "Vista globo",
+        "description": "Curva il mondo. Ideale per viaggi lunghi e mappe grandi."
+      },
+      "terrain": {
+        "label": "Rilievo",
+        "description": "Mette in risalto colline e montagne."
+      },
+      "pitch": {
+        "label": "Inclinazione"
+      },
+      "mapboxOnly": "Disponibile con Mapbox.",
+      "reset": "Reimposta",
+      "copyPreset": "Copia preset",
+      "copied": "Copiato",
+      "saveAsDefault": "Salva come predefinito",
+      "saved": "Salvato",
+      "showWholeJourney": "Mostra tutto il viaggio"
     }
   },
   "tripRouteShell": {

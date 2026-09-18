@@ -1,7 +1,9 @@
 import { useState } from 'react';
 
 import { readLocalStorageItem } from '../../services/browserStorageService';
-import type { IViewSettings, MapStyle, RouteMode } from '../../types';
+import { readUserDefaultMapCustomization } from './mapCustomizationStorage';
+import { normalizeMapCustomization } from '../../shared/mapPreferences';
+import type { IMapCustomization, IViewSettings, MapStyle, RouteMode } from '../../types';
 
 interface UseTripLayoutControlsStateOptions {
     initialViewSettings?: IViewSettings;
@@ -97,6 +99,13 @@ export const useTripLayoutControlsState = ({
         initialViewSettings?.zoomBehavior === 'manual' ? 'manual' : 'fit'
     ));
 
+    // A trip's own map look wins; one that has never been customized opens on
+    // the traveller's saved default, so a new trip resembles their last.
+    const [mapCustomization, setMapCustomization] = useState<IMapCustomization>(() => {
+        const fromTrip = normalizeMapCustomization(initialViewSettings?.mapCustomization);
+        return Object.keys(fromTrip).length > 0 ? fromTrip : readUserDefaultMapCustomization();
+    });
+
     return {
         layoutMode,
         setLayoutMode,
@@ -120,5 +129,7 @@ export const useTripLayoutControlsState = ({
         setTimelineHeight,
         detailsWidth,
         setDetailsWidth,
+        mapCustomization,
+        setMapCustomization,
     };
 };

@@ -47,6 +47,11 @@ interface TripViewPlannerWorkspaceProps {
     onMapClearSelection?: () => void;
     /** Frame a selected city on its own plan and drop the rest of the journey. */
     cityFocusMode?: boolean;
+    onOpenMapCustomize?: () => void;
+    showActivityMarkers?: boolean;
+    onShowActivityMarkersChange?: (enabled: boolean) => void;
+    isMapCustomizeOpen?: boolean;
+    mapCustomizeLabel?: string;
     layoutMode: 'vertical' | 'horizontal';
     effectiveLayoutMode: 'vertical' | 'horizontal';
     onLayoutModeChange: (mode: 'vertical' | 'horizontal') => void;
@@ -118,6 +123,11 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onMapActivitySelect,
     onMapClearSelection,
     cityFocusMode,
+    onOpenMapCustomize,
+    showActivityMarkers,
+    onShowActivityMarkersChange,
+    isMapCustomizeOpen,
+    mapCustomizeLabel,
     layoutMode,
     effectiveLayoutMode,
     onLayoutModeChange,
@@ -344,6 +354,11 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     onActivityMarkerSelect={onMapActivitySelect}
                     onClearSelection={onMapClearSelection}
                     cityFocusMode={cityFocusMode}
+                    onOpenCustomize={onOpenMapCustomize}
+                    showActivityMarkers={showActivityMarkers}
+                    onShowActivityMarkersChange={onShowActivityMarkersChange}
+                    isCustomizeOpen={isMapCustomizeOpen}
+                    customizeLabel={mapCustomizeLabel}
                     enableActivityPopup={!isMobile}
                     layoutMode={mapLayoutMode}
                     onLayoutChange={showLayoutControls ? onLayoutModeChange : undefined}
