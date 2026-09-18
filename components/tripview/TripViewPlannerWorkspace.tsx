@@ -43,6 +43,10 @@ interface TripViewPlannerWorkspaceProps {
     selectedItemId: string | null;
     onMapCitySelect?: (cityId: string) => void;
     onMapActivitySelect?: (activityId: string) => void;
+    /** Lets go of the current selection, restoring the whole-journey view. */
+    onMapClearSelection?: () => void;
+    /** Frame a selected city on its own plan and drop the rest of the journey. */
+    cityFocusMode?: boolean;
     layoutMode: 'vertical' | 'horizontal';
     effectiveLayoutMode: 'vertical' | 'horizontal';
     onLayoutModeChange: (mode: 'vertical' | 'horizontal') => void;
@@ -112,6 +116,8 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     selectedItemId,
     onMapCitySelect,
     onMapActivitySelect,
+    onMapClearSelection,
+    cityFocusMode,
     layoutMode,
     effectiveLayoutMode,
     onLayoutModeChange,
@@ -336,6 +342,8 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     selectedItemId={selectedItemId}
                     onCityMarkerSelect={onMapCitySelect}
                     onActivityMarkerSelect={onMapActivitySelect}
+                    onClearSelection={onMapClearSelection}
+                    cityFocusMode={cityFocusMode}
                     enableActivityPopup={!isMobile}
                     layoutMode={mapLayoutMode}
                     onLayoutChange={showLayoutControls ? onLayoutModeChange : undefined}

@@ -2613,6 +2613,14 @@ const useTripViewRender = ({
         handleTimelineSelect(activityId, { isCity: false });
     }, [handleTimelineSelect]);
 
+    /**
+     * Letting go of a focused city. Selecting nothing is what brings the other
+     * cities, their labels and the connecting lines back onto the map.
+     */
+    const handleMapClearSelection = useCallback(() => {
+        handleTimelineSelect(null);
+    }, [handleTimelineSelect]);
+
     const {
         routeStatusById,
         handleRouteMetrics,
@@ -3422,6 +3430,7 @@ const useTripViewRender = ({
                         selectedItemId={selectedItemId}
                         onMapCitySelect={handleMapCitySelect}
                         onMapActivitySelect={handleMapActivitySelect}
+                        onMapClearSelection={handleMapClearSelection}
                         layoutMode={layoutMode}
                         effectiveLayoutMode={effectiveLayoutMode}
                         onLayoutModeChange={(mode) => {

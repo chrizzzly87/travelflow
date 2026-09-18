@@ -3,7 +3,7 @@ import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type mapboxgl from 'mapbox-gl';
 import { ActivityType, ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
-import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2, Tag, TagsIcon } from 'lucide-react';
+import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2, Route, Tag, TagsIcon } from 'lucide-react';
 import { MapPinArea } from '@phosphor-icons/react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName, pickPrimaryActivityType } from '../utils';
@@ -57,6 +57,11 @@ import {
 import { GOOGLE_ROUTES_COMPUTE_FIELDS, computeGoogleRouteLeg, loadGoogleRouteRuntime } from '../services/routeService';
 import { isFiniteLatLngLiteral } from '../shared/coordinateUtils';
 import type { MapImplementation } from '../shared/mapRuntime';
+import {
+    clampCityFocusZoom,
+    resolveActivityOwnerCity,
+    resolveCityFocusCamera,
+} from './maps/tripMapCityFraming';
 
 interface ItineraryMapProps {
     items: ITimelineItem[];
@@ -86,6 +91,13 @@ interface ItineraryMapProps {
     onMapColorModeChange?: (mode: MapColorMode) => void;
     isPaywalled?: boolean;
     viewTransitionName?: string;
+    /**
+     * Frame a selected city on its own plan and drop the rest of the journey
+     * while it is selected. Off restores the previous constant-zoom behaviour.
+     */
+    cityFocusMode?: boolean;
+    /** Lets go of the current selection, restoring the whole-journey view. */
+    onClearSelection?: () => void;
 }
 
 const MAP_STYLES = {
@@ -947,21 +959,6 @@ type ResolvedActivityMarker = {
     coordinateSource: 'activity' | 'city';
 };
 
-const resolveActivityOwnerCity = (
-    activity: ITimelineItem,
-    cityItems: ITimelineItem[],
-): ITimelineItem | null => {
-    const directOwner = cityItems.find((city) => (
-        activity.startDateOffset >= city.startDateOffset
-        && activity.startDateOffset < city.startDateOffset + Math.max(city.duration, 0)
-    ));
-    if (directOwner) return directOwner;
-
-    const previousCity = [...cityItems].reverse().find((city) => city.startDateOffset <= activity.startDateOffset);
-    if (previousCity) return previousCity;
-    return cityItems[0] || null;
-};
-
 const resolveActivityMarkerPositions = (
     items: ITimelineItem[],
 ): ResolvedActivityMarker[] => {
@@ -1425,6 +1422,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     layoutMode, 
     onLayoutChange, 
     showLayoutControls = true,
+    cityFocusMode = true,
+    onClearSelection,
     activeStyle = 'standard',
     onStyleChange,
     routeMode = 'simple',
@@ -1524,6 +1523,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         [items, selectedItemId]
     );
     const selectedItemIdRef = useRef<string | null>(selectedItemId ?? null);
+    /**
+     * Looking at one city. The rest of the journey — every other city marker,
+     * its label and all the connecting lines — is noise on top of the one place
+     * being read, so it comes off the map until the selection is let go.
+     */
+    const isCityFocusMode = cityFocusMode && Boolean(selectedCityId) && !selectedActivityId;
     const selectedActivityIdRef = useRef<string | null>(selectedActivityId);
     const selectedCityIdRef = useRef<string | null>(selectedCityId);
     const selectionVersionRef = useRef(0);
@@ -2368,7 +2373,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const brandRouteColor = '#4f46e5';
         const resolveMapColor = (colorToken: string): string =>
             mapColorMode === 'brand' ? brandRouteColor : getHexFromColorClass(colorToken);
-        const cityOverlayDescriptors = buildTripMapCityOverlayDescriptors(cities);
+        const cityOverlayDescriptors = isCityFocusMode
+            ? []
+            : buildTripMapCityOverlayDescriptors(cities);
 
         if (!isPaywalled) {
             // 2. Add Markers
@@ -2891,7 +2898,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
              }
         };
 
-        if (!isPaywalled) {
+        if (!isPaywalled && !isCityFocusMode) {
             void drawRoutes();
         }
         return () => {
@@ -2903,7 +2910,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             clearRenderedMapVisuals();
         };
 
-    }, [activeStyle, effectiveMarkerRenderProfile, isMapboxBasemapEnabled, isMapboxSurfaceReady, isPaywalled, mapInitialized, mapRenderSignature, mapboxStyleReloadNonce, routeMode, showCityNames]); 
+    }, [activeStyle, effectiveMarkerRenderProfile, isCityFocusMode, isMapboxBasemapEnabled, isMapboxSurfaceReady, isPaywalled, mapInitialized, mapRenderSignature, mapboxStyleReloadNonce, routeMode, showCityNames]); 
 
     useEffect(() => {
         if (!mapInitialized) return;
@@ -2981,9 +2988,80 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         cancelScheduledFit();
     }, [cancelResizeAutoFitTimer, cancelScheduledFit, selectedItemId]);
 
+    /**
+     * Framing a city is a fit, not a zoom, so it must not re-run on every
+     * incidental dependency change — refitting under the traveller while they
+     * pan around inside a city is the behaviour this replaces.
+     */
+    const lastCityFrameKeyRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!selectedCityId || selectedActivityId) {
+            lastCityFrameKeyRef.current = null;
+            return;
+        }
+        if (!mapInitialized || !googleMapRef.current || !window.google?.maps) return;
+
+        const frameKey = `${selectedCityId}|${mapDockMode}|${tripMapProvider}`;
+        if (lastCityFrameKeyRef.current === frameKey) return;
+
+        const city = cities.find((item) => item.id === selectedCityId);
+        if (!city) return;
+
+        const camera = resolveCityFocusCamera({
+            city,
+            items,
+            cities,
+            provider: tripMapProvider,
+        });
+        if (!camera) return;
+        lastCityFrameKeyRef.current = frameKey;
+
+        const mapInstance = googleMapRef.current;
+        if (camera.kind === 'center') {
+            mapInstance.panTo(camera.center);
+            mapInstance.setZoom(camera.zoom);
+            return;
+        }
+
+        const bounds = new window.google.maps.LatLngBounds(
+            { lat: camera.bounds.south, lng: camera.bounds.west },
+            { lat: camera.bounds.north, lng: camera.bounds.east },
+        );
+        const liveRect = mapContainerRef.current?.getBoundingClientRect();
+        mapInstance.fitBounds(bounds, resolveMapViewportPadding({
+            provider: tripMapProvider,
+            mapDockMode,
+            mapViewportSize: liveRect && liveRect.width > 0 && liveRect.height > 0
+                ? { width: liveRect.width, height: liveRect.height }
+                : mapViewportSize,
+        }));
+
+        // `fitBounds` is free to land anywhere, and a compact city will happily
+        // take it to street level. The clamp runs once the fit has settled, and
+        // is owned by this effect: a re-run or an unmount before the fit settles
+        // must not zoom a camera this effect no longer controls.
+        const idleListener = window.google.maps.event.addListenerOnce(mapInstance, 'idle', () => {
+            const clamped = clampCityFocusZoom(mapInstance.getZoom?.(), camera);
+            if (clamped !== null) mapInstance.setZoom(clamped);
+        });
+        return () => window.google?.maps?.event?.removeListener(idleListener);
+    }, [
+        cities,
+        items,
+        mapDockMode,
+        mapInitialized,
+        mapViewportSize,
+        selectedActivityId,
+        selectedCityId,
+        tripMapProvider,
+    ]);
+
     useEffect(() => {
         if (!googleMapRef.current || !window.google?.maps) return;
-        
+        // Cities are framed by the effect above; this one only chases activities.
+        if (!selectedActivityId) return;
+
         const t = setTimeout(() => {
             if (!googleMapRef.current) return;
             const focusTarget = resolveSelectedMapFocusPosition({
@@ -3035,6 +3113,36 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }, 100);
         return () => clearTimeout(t);
     }, [cityMapSignature, mapDockMode, mapInitialized, resolvedActivityMarkerPositionById, selectedActivityId, selectedCityId, tripMapProvider]);
+
+    /**
+     * Tapping empty map lets go too, which is the gesture people try first.
+     * Markers sit in `floatPane`/`overlayMouseTarget`, above the basemap, so
+     * they swallow their own clicks and this only ever fires on bare map.
+     *
+     * Both renderers need wiring: with Mapbox active the Google canvas carries
+     * `pointer-events-none`, so its click never fires and the Mapbox canvas is
+     * the one receiving the gesture.
+     */
+    useEffect(() => {
+        if (!isCityFocusMode || !onClearSelection || !mapInitialized) return;
+        const googleMap = googleMapRef.current;
+        const mapsEvent = window.google?.maps?.event;
+        if (!googleMap || !mapsEvent) return;
+
+        const listener = googleMap.addListener('click', () => onClearSelection());
+        return () => mapsEvent.removeListener(listener);
+    }, [isCityFocusMode, mapInitialized, onClearSelection]);
+
+    useEffect(() => {
+        if (!isCityFocusMode || !onClearSelection || !mapInitialized) return;
+        if (!isMapboxBasemapEnabled) return;
+        const mapboxMap = mapboxMapRef.current;
+        if (!mapboxMap) return;
+
+        const handleMapboxClick = () => onClearSelection();
+        mapboxMap.on('click', handleMapboxClick);
+        return () => mapboxMap.off('click', handleMapboxClick);
+    }, [isCityFocusMode, isMapboxBasemapEnabled, mapInitialized, onClearSelection]);
 
     // Fit Bounds
     const handleFit = () => {
@@ -3323,6 +3431,28 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 </div>
             )}
             
+            {/*
+              * The way out of a focused city. Bottom-centre rather than beside
+              * the control stack: on a phone this has to be reachable with the
+              * thumb that is already holding the device, and it sits above the
+              * itinerary sheet so a half-open sheet never buries it.
+              */}
+            {isCityFocusMode && onClearSelection && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-4 z-[41] flex justify-center px-4">
+                    <button
+                        type="button"
+                        onClick={onClearSelection}
+                        data-testid="map-clear-city-focus"
+                        data-floating-map-control="true"
+                        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/95 ps-3 pe-4 py-2 text-xs font-semibold text-gray-700 shadow-lg backdrop-blur transition-colors hover:border-accent-300 hover:bg-white hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400"
+                        {...getAnalyticsDebugAttributes('trip_view__map_city_focus--clear', { surface: 'map_canvas' })}
+                    >
+                        <Route size={15} />
+                        Show whole journey
+                    </button>
+                </div>
+            )}
+
             {/* Controls */}
             <div data-floating-map-control="true" className="absolute top-4 end-4 z-[40] flex flex-col gap-2 pointer-events-none">
                 <div className="flex flex-col gap-2 pointer-events-auto">

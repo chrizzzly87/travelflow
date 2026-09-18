@@ -80,9 +80,10 @@ result — `fitBounds` with padding on Google, `fitBounds` on Mapbox.
 `isCityFocusMode = Boolean(selectedCityId) && !selectedActivityId`, gated by a preference.
 
 While on, city markers, city labels and every connection/route polyline hide, leaving that
-city's activity and POI markers alone on the map. Four ways out, all calling one
-`clearMapSelection()`: Escape, a "Show whole journey" pill on the map, tapping empty map, and
-collapsing the mobile sheet past a new `hidden` snap.
+city's activity and POI markers alone on the map. Four ways out, all ending at a null
+selection: a "Show whole journey" pill on the map, tapping empty map, collapsing the mobile
+sheet to a new `hidden` snap, and Escape — which `useTripSelectionController` already handles,
+so it needs nothing new.
 
 **The mobile sheet is deliberately non-modal.** Seeing the map behind it is the entire point,
 so it takes `role="dialog"`, Escape, a real close control and focus restored to the trigger,
