@@ -1,5 +1,32 @@
-import countryTravelDataJson from './countryTravelData.json';
+import countrySeasonsJson from './countrySeasons.generated.json';
 import type { DestinationEvent } from '../shared/destinationGuides';
+
+/**
+ * Seasons, events and public holidays for every country.
+ *
+ * The 678 KB `data/countryTravelData.json` stays the source of truth on disk
+ * (the generators write it, the Node scripts read it), but client code reads
+ * the slices `scripts/split-country-travel-data.mjs` derives from it. A single
+ * named import used to pull all three payloads into a chunk: the localized
+ * names and the search aliases now live in `countryLocalizedNames.ts` and
+ * `countrySearchMetadata.ts`, and `MONTH_LABELS` in `countryMonthLabels.ts`.
+ */
+
+// Re-exported so the modules that legitimately need several slices (for example
+// services/destinationService.ts) keep one import site. Rollup drops the slice
+// a consumer does not reference.
+export {
+  LOCALIZED_DESTINATION_NAMES,
+  getLocalizedCountryNameFromData,
+  getLocalizedIslandNameFromData,
+} from './countryLocalizedNames';
+export {
+  COUNTRY_SEARCH_METADATA,
+  getCountrySearchAliasesFromData,
+  type CountrySearchMetadata,
+  type CountrySearchMetadataEntry,
+} from './countrySearchMetadata';
+export { MONTH_LABELS } from './countryMonthLabels';
 
 /**
  * Country events reuse the shared `DestinationEvent` model (including the
@@ -44,99 +71,9 @@ export interface CountryTravelDataDocument {
     avoid: string;
   };
   countries: CountrySeasonEntry[];
-  localizedDestinationNames?: {
-    countries: Record<string, Record<string, string>>;
-    islands: Record<string, Record<string, string>>;
-  };
-  countrySearchMetadata?: {
-    cldrVersion?: string;
-    countries: Record<string, CountrySearchMetadataEntry>;
-  };
 }
 
-export interface CountrySearchMetadataEntry {
-  aliases?: string[];
-  localizedAliases?: Record<string, string[]>;
-}
-
-export const COUNTRY_TRAVEL_DATA = countryTravelDataJson as CountryTravelDataDocument;
-
-const EMPTY_LOCALIZED_DESTINATION_NAMES = {
-  countries: {} as Record<string, Record<string, string>>,
-  islands: {} as Record<string, Record<string, string>>,
-};
-
-const EMPTY_COUNTRY_SEARCH_METADATA = {
-  countries: {} as Record<string, CountrySearchMetadataEntry>,
-};
-
-export const LOCALIZED_DESTINATION_NAMES =
-  COUNTRY_TRAVEL_DATA.localizedDestinationNames || EMPTY_LOCALIZED_DESTINATION_NAMES;
-
-export const COUNTRY_SEARCH_METADATA =
-  COUNTRY_TRAVEL_DATA.countrySearchMetadata || EMPTY_COUNTRY_SEARCH_METADATA;
-
-const normalizeLocaleKey = (locale?: string): string => {
-  if (!locale) return 'en';
-  const trimmed = locale.trim().toLowerCase();
-  if (!trimmed) return 'en';
-  const [base] = trimmed.split('-');
-  return base || 'en';
-};
-
-const getLocalizedDestinationName = (
-  source: Record<string, Record<string, string>>,
-  code: string,
-  locale?: string
-): string | undefined => {
-  const normalizedCode = code.trim();
-  if (!normalizedCode) return undefined;
-
-  const localizedByLocale =
-    source[normalizedCode]
-    || source[normalizedCode.toUpperCase()]
-    || source[normalizedCode.toLowerCase()];
-  if (!localizedByLocale) return undefined;
-
-  const localeKey = normalizeLocaleKey(locale);
-  return localizedByLocale[localeKey] || localizedByLocale.en || Object.values(localizedByLocale).find(Boolean);
-};
-
-export const getLocalizedCountryNameFromData = (countryCode: string, locale?: string): string | undefined =>
-  getLocalizedDestinationName(LOCALIZED_DESTINATION_NAMES.countries, countryCode, locale);
-
-export const getLocalizedIslandNameFromData = (islandCode: string, locale?: string): string | undefined =>
-  getLocalizedDestinationName(LOCALIZED_DESTINATION_NAMES.islands, islandCode, locale);
-
-const getCountrySearchMetadataEntry = (countryCode: string): CountrySearchMetadataEntry | undefined => {
-  const normalizedCode = countryCode.trim();
-  if (!normalizedCode) return undefined;
-
-  return (
-    COUNTRY_SEARCH_METADATA.countries[normalizedCode]
-    || COUNTRY_SEARCH_METADATA.countries[normalizedCode.toUpperCase()]
-    || COUNTRY_SEARCH_METADATA.countries[normalizedCode.toLowerCase()]
-  );
-};
-
-export const getCountrySearchAliasesFromData = (countryCode: string): string[] => {
-  const entry = getCountrySearchMetadataEntry(countryCode);
-  if (!entry) return [];
-
-  const aliases = new Set<string>();
-  (entry.aliases || []).forEach((alias) => {
-    const normalized = alias.trim();
-    if (normalized) aliases.add(normalized);
-  });
-  Object.values(entry.localizedAliases || {}).forEach((localeAliases) => {
-    localeAliases.forEach((alias) => {
-      const normalized = alias.trim();
-      if (normalized) aliases.add(normalized);
-    });
-  });
-
-  return Array.from(aliases);
-};
+export const COUNTRY_TRAVEL_DATA = countrySeasonsJson as unknown as CountryTravelDataDocument;
 
 const COUNTRY_BY_NAME = new Map<string, CountrySeasonEntry>(
   COUNTRY_TRAVEL_DATA.countries.map((entry) => [entry.countryName.toLocaleLowerCase(), entry])
@@ -145,8 +82,6 @@ const COUNTRY_BY_NAME = new Map<string, CountrySeasonEntry>(
 const COUNTRY_BY_CODE = new Map<string, CountrySeasonEntry>(
   COUNTRY_TRAVEL_DATA.countries.map((entry) => [entry.countryCode.toLocaleLowerCase(), entry])
 );
-
-export const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
 
 export const getCountrySeasonByName = (countryName: string): CountrySeasonEntry | undefined =>
   COUNTRY_BY_NAME.get(countryName.trim().toLocaleLowerCase());

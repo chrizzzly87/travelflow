@@ -13,7 +13,7 @@
 
 import type { DestinationGuideEntry, DestinationSeason } from '../shared/destinationGuides';
 import { SUPPORTED_LOCALES } from '../config/locales';
-import { getLocalizedCountryNameFromData } from '../data/countryTravelData';
+import { getLocalizedCountryNameFromData } from '../data/countryLocalizedNames';
 import { getCountryAliases } from './countryAliasService';
 import { listDestinationGuides } from './destinationGuideService';
 import {
