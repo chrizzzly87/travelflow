@@ -16,22 +16,17 @@ import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery
 import { warmRouteAssets } from '../../services/navigationPrefetch';
 import { AppBrand } from './AppBrand';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
+import { BOOT_INTENT_MOBILE_MENU, consumeBootIntent } from '../../services/bootInteractionBridge';
+// Deliberately NOT lazy. The burger is the only way into navigation on a phone,
+// and a separate chunk meant the first tap opened nothing until a round trip
+// finished (Suspense rendered null meanwhile). MobileMenu adds ~11KB to the
+// header chunk, which is far cheaper than a network hop on a tap.
+import { MobileMenu } from './MobileMenu';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
     importer: () => Promise<TModule>
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
-
-const loadMobileMenuModule = () => import('./MobileMenu').then((module) => ({ default: module.MobileMenu }));
-
-const MobileMenu = lazyWithRecovery('MobileMenu', loadMobileMenuModule);
-
-// The burger is painted by the prerendered shell long before this chunk exists,
-// so a tap used to sit dead while the chunk was fetched (Suspense renders
-// nothing). Warm it on the first hint of intent instead.
-const prewarmMobileMenu = () => {
-    void loadMobileMenuModule().catch(() => undefined);
-};
 
 const AccountMenu = lazyWithRecovery('AccountMenu', () =>
     import('./AccountMenu').then((module) => ({ default: module.AccountMenu }))
@@ -71,6 +66,19 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     hideCreateTrip = false,
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    // A tap on the burger can land seconds before this chunk exists — the
+    // prerendered header is painted long before it is interactive. The inline
+    // boot script records that tap here; open the menu once we are mounted.
+    //
+    // This has to be an effect, not lazy initial state: opening during the
+    // hydration render adds a sibling the prerendered DOM does not have, and
+    // preact/compat hydrates it against whatever node follows the header
+    // without applying attributes — the drawer came out inline in the page
+    // flow, with no role="dialog". Reconciling after mount renders it properly.
+    useEffect(() => {
+        if (consumeBootIntent(BOOT_INTENT_MOBILE_MENU)) setIsMobileMenuOpen(true);
+    }, []);
     const [pendingLocale, setPendingLocale] = useState<AppLanguage | null>(null);
     // The active-nav underline is derived after mount, not on the first render.
     // The prerendered markup has no active link, and preact/compat does NOT
@@ -282,9 +290,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                         )}
                         <button type="button"
                             onClick={() => setIsMobileMenuOpen(true)}
-                            onPointerEnter={prewarmMobileMenu}
-                            onPointerDown={prewarmMobileMenu}
-                            onFocus={prewarmMobileMenu}
+                            data-tf-boot-intent={BOOT_INTENT_MOBILE_MENU}
                             className={burgerClass}
                             aria-label={t('nav.openMenu')}
                             {...getAnalyticsDebugAttributes('mobile_nav__menu--open')}
@@ -296,14 +302,12 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
             </header>
 
             {isMobileMenuOpen && (
-                <Suspense fallback={null}>
-                    <MobileMenu
-                        isOpen={isMobileMenuOpen}
-                        onClose={() => setIsMobileMenuOpen(false)}
-                        onMyTripsClick={onMyTripsClick}
-                        onMyTripsIntent={onMyTripsIntent}
-                    />
-                </Suspense>
+                <MobileMenu
+                    isOpen={isMobileMenuOpen}
+                    onClose={() => setIsMobileMenuOpen(false)}
+                    onMyTripsClick={onMyTripsClick}
+                    onMyTripsIntent={onMyTripsIntent}
+                />
             )}
         </>
     );

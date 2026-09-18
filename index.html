@@ -592,6 +592,16 @@
           linear-gradient(180deg, rgba(248, 250, 252, 0.82), rgba(255, 255, 255, 0.98));
       }
 
+      /* A press that landed before hydration: acknowledge it while the page wakes. */
+      [data-tf-boot-pending='true'] {
+        animation: tf-boot-pending-pulse 0.9s ease-in-out infinite;
+      }
+
+      @keyframes tf-boot-pending-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.45; }
+      }
+
       @keyframes tf-boot-shimmer {
         0% { background-position: 200% 0; }
         100% { background-position: -200% 0; }
@@ -708,6 +718,11 @@
       }
 
       @media (prefers-reduced-motion: reduce) {
+        [data-tf-boot-pending='true'] {
+          animation: none;
+          opacity: 0.55;
+        }
+
         .tf-boot-line,
         .tf-boot-card,
         .tf-boot-metric,
@@ -781,6 +796,44 @@
         z-index: 99999 !important;
       }
     </style>
+    <!-- Pre-hydration interaction bridge. Kept on prerendered pages on purpose:
+         those ship a finished-looking page whose controls are inert until the
+         React tree that owns them mounts, which on a phone is seconds after
+         first paint. See services/bootInteractionBridge.ts. -->
+    <script data-tf-hydration-bridge>
+      (() => {
+        const bridge = { interacted: false, intent: null, sealed: false };
+        window.__TF_BOOT__ = bridge;
+
+        const noteInteraction = () => { bridge.interacted = true; };
+
+        // Controls that opt in carry data-tf-boot-intent in the prerendered
+        // markup. We record the intent rather than replaying the click later:
+        // the component that owns the control hydrates with its own lazy chunk,
+        // long after the React root mounts, so there is no moment at which a
+        // re-dispatched click is reliably heard. The component reads the intent
+        // on its first render instead, which cannot race.
+        const rememberIntent = (event) => {
+          noteInteraction();
+          // Sealed once a hydrated control has read the intent: from then on the
+          // page is live and React handles presses itself, so recording another
+          // intent could only make a later remount act on a stale tap.
+          if (bridge.sealed) return;
+          const target = event.target;
+          if (!target || typeof target.closest !== 'function') return;
+          const control = target.closest('[data-tf-boot-intent]:not([disabled])');
+          if (!control) return;
+          bridge.intent = control.getAttribute('data-tf-boot-intent');
+          // Visible acknowledgement: the page heard the tap, it is still waking up.
+          control.setAttribute('data-tf-boot-pending', 'true');
+        };
+
+        document.addEventListener('pointerdown', noteInteraction, { capture: true, passive: true });
+        document.addEventListener('keyup', noteInteraction, { capture: true, passive: true });
+        window.addEventListener('scroll', noteInteraction, { capture: true, passive: true });
+        document.addEventListener('click', rememberIntent, { capture: true, passive: true });
+      })();
+    </script>
     <script>
       (() => {
         const path = window.location.pathname || '/';

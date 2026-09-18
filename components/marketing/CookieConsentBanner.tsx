@@ -7,6 +7,7 @@ import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config
 import { DEFAULT_LOCALE } from '../../config/locales';
 import { APP_NAME } from '../../config/appGlobals';
 import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
+import { hasPreHydrationInteraction } from '../../services/bootInteractionBridge';
 
 export const CookieConsentBanner: React.FC = () => {
     const { t } = useTranslation('common');
@@ -20,6 +21,17 @@ export const CookieConsentBanner: React.FC = () => {
             (process.env.NODE_ENV === 'test' || typeof process.env.VITEST !== 'undefined');
 
         if (isTestEnv) {
+            setShouldRender(true);
+            return;
+        }
+
+        // A tap or scroll that happened before this tree mounted still counts:
+        // otherwise the banner waits for a second interaction the visitor has
+        // no reason to make, and it never appears on a slow first mobile load.
+        // Read it here rather than as initial state — rendering the banner on
+        // the hydration render adds a node the prerendered DOM does not have,
+        // and preact/compat hydrates that against the wrong element.
+        if (hasPreHydrationInteraction()) {
             setShouldRender(true);
             return;
         }
