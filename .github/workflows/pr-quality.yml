@@ -75,3 +75,28 @@ jobs:
         env:
           VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
           VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+
+      # The offline suite needs a real production build, which the step above
+      # has just produced in dist/ — including dist/sw.js, which only exists
+      # after prerendering. Running it here costs one browser download rather
+      # than a second full build.
+      #
+      # It earns its place: the service worker's failure modes are invisible to
+      # unit tests. A worker that ships with unsubstituted placeholders, or a
+      # precache entry that 404s, installs fine in CI logs and only surfaces
+      # when a real user is already offline.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run offline/PWA end-to-end suite
+        run: pnpm test:e2e:pwa
+
+      - name: Upload offline suite report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pwa-e2e-report
+          path: |
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore

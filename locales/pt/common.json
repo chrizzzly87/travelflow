@@ -723,7 +723,19 @@
       "searchLabel": "Buscar viagens ou cidades",
       "searchPlaceholder": "Buscar viagens ou cidades...",
       "empty": "Ainda não há viagens salvas.",
-      "noMatches": "Nenhum resultado para \"{query}\"."
+      "noMatches": "Nenhum resultado para \"{query}\".",
+      "favorites": "Favoritos",
+      "yourTrips": "Suas viagens"
+    }
+  },
+  "install": {
+    "banner": {
+      "title": "Suas viagens sempre à mão",
+      "body": "Adicione o TravelFlow à tela de início e suas viagens abrem mesmo sem sinal.",
+      "action": "Instalar",
+      "dismiss": "Agora não",
+      "iosStepShare": "Toque em Compartilhar",
+      "iosStepAdd": "e depois \"Adicionar à Tela de Início\""
     }
   }
 }

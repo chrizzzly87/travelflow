@@ -723,7 +723,19 @@
       "searchLabel": "Reisen oder Städte suchen",
       "searchPlaceholder": "Reisen oder Städte suchen ...",
       "empty": "Noch keine gespeicherten Reisen.",
-      "noMatches": "Keine Treffer für „{query}“."
+      "noMatches": "Keine Treffer für „{query}“.",
+      "favorites": "Favoriten",
+      "yourTrips": "Deine Reisen"
+    }
+  },
+  "install": {
+    "banner": {
+      "title": "Deine Reisen immer dabei",
+      "body": "Füge TravelFlow zum Home-Bildschirm hinzu — dann öffnen sich deine Reisen auch ohne Empfang.",
+      "action": "Installieren",
+      "dismiss": "Jetzt nicht",
+      "iosStepShare": "Auf Teilen tippen",
+      "iosStepAdd": "dann „Zum Home-Bildschirm“"
     }
   }
 }

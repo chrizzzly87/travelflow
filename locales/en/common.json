@@ -723,7 +723,19 @@
       "searchLabel": "Search trips or cities",
       "searchPlaceholder": "Search trips or cities...",
       "empty": "No saved plans yet.",
-      "noMatches": "No matches for \"{query}\"."
+      "noMatches": "No matches for \"{query}\".",
+      "favorites": "Favorites",
+      "yourTrips": "Your trips"
+    }
+  },
+  "install": {
+    "banner": {
+      "title": "Keep your trips on hand",
+      "body": "Add TravelFlow to your home screen and your trips open even without signal.",
+      "action": "Install",
+      "dismiss": "Not now",
+      "iosStepShare": "Tap Share",
+      "iosStepAdd": "then \"Add to Home Screen\""
     }
   }
 }

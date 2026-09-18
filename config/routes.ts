@@ -239,6 +239,12 @@ export const buildLocalizedCreateTripPath = (locale: AppLanguage): string => {
     return `/${locale}${path}`;
 };
 
+export const buildLocalizedTripsPath = (locale: AppLanguage): string => {
+    const path = buildPath('trips');
+    if (locale === DEFAULT_LOCALE) return path;
+    return `/${locale}${path}`;
+};
+
 export const extractLocaleFromPath = (pathname: string): AppLanguage | null => {
     const segments = pathname.split('/').filter(Boolean);
     if (segments.length === 0) return null;

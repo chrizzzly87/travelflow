@@ -723,7 +723,19 @@
       "searchLabel": "Rechercher des voyages ou des villes",
       "searchPlaceholder": "Rechercher des voyages ou des villes...",
       "empty": "Aucun voyage enregistré pour le moment.",
-      "noMatches": "Aucun résultat pour « {query} »."
+      "noMatches": "Aucun résultat pour « {query} ».",
+      "favorites": "Favoris",
+      "yourTrips": "Vos voyages"
+    }
+  },
+  "install": {
+    "banner": {
+      "title": "Gardez vos voyages à portée",
+      "body": "Ajoutez TravelFlow à votre écran d'accueil : vos voyages s'ouvrent même sans réseau.",
+      "action": "Installer",
+      "dismiss": "Plus tard",
+      "iosStepShare": "Touchez Partager",
+      "iosStepAdd": "puis « Sur l'écran d'accueil »"
     }
   }
 }

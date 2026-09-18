@@ -92,7 +92,9 @@ export const TripsRoute: React.FC<TripsRouteProps> = ({
                 showDeveloperDetails={IS_DEV}
             />
 
-            <main className="mx-auto w-full max-w-xl px-4 pb-16 pt-6">
+            {/* Extra bottom room on phones so the fixed install banner never covers
+                the last trip in the list. */}
+            <main className="mx-auto w-full max-w-xl px-4 pb-40 pt-6 md:pb-16">
                 <header className="mb-4">
                     <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
                         {t('trips.pageTitle')}
