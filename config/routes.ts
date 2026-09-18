@@ -28,6 +28,7 @@ export type RouteKey =
     | 'checkout'
     | 'createTripClassicLab'
     | 'createTripWizard'
+    | 'trips'
     | 'tripDetail'
     | 'tripLegacy'
     | 'exampleTrip'
@@ -85,8 +86,8 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
     /^\/cookies$/,
 ];
 
-const TOOL_ROUTE_PREFIXES = ['/create-trip', '/checkout', '/trip', '/s', '/example', '/admin', '/profile', '/u', '/api'];
-const ONBOARDING_EXEMPT_ROUTE_PREFIXES = ['/create-trip', '/trip', '/s', '/example'];
+const TOOL_ROUTE_PREFIXES = ['/create-trip', '/checkout', '/trips', '/trip', '/s', '/example', '/admin', '/profile', '/u', '/api'];
+const ONBOARDING_EXEMPT_ROUTE_PREFIXES = ['/create-trip', '/trips', '/trip', '/s', '/example'];
 
 export const LOCALIZED_MARKETING_ROUTE_KEYS: RouteKey[] = [
     'home',
@@ -169,6 +170,8 @@ export const buildPath = <K extends RouteKey>(
             return '/terms';
         case 'cookies':
             return '/cookies';
+        case 'trips':
+            return '/trips';
         case 'createTrip':
             return '/create-trip';
         case 'checkout':
@@ -303,6 +306,7 @@ export const getNamespacesForMarketingPath = (pathname: string): string[] => {
 
 export const getNamespacesForToolPath = (pathname: string): string[] => {
     const stripped = stripLocalePrefix(pathname);
+    if (stripped.startsWith('/trips')) return ['common'];
     if (stripped.startsWith('/create-trip')) return ['common', 'createTrip'];
     if (stripped.startsWith('/checkout')) return ['common', 'pricing', 'profile', 'auth'];
     if (stripped.startsWith('/profile')) return ['common', 'profile'];

@@ -9,6 +9,7 @@ import { hasRenderableHandoffNode } from './services/bootstrapHandoffService';
 import { preloadCriticalRouteModules } from './services/criticalRoutePreload';
 import { shouldHydrateReactRoot } from './services/reactRootRenderMode';
 import { AppBootstrapShell } from './components/bootstrap/AppBootstrapShell';
+import { registerServiceWorker } from './services/serviceWorkerRegistration';
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -199,3 +200,7 @@ const warmShellI18nThenMount = async () => {
 
 setupBootstrapShellHandoff(rootElement);
 void warmShellI18nThenMount();
+
+// Offline shell caching. Self-defers to idle time, so it never competes with
+// the mount above for bandwidth on a phone.
+registerServiceWorker();

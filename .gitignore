@@ -34,3 +34,4 @@ dist-ssr
 public/images/og/site/generated/
 .promptfoo/
 artifacts/promptfoo/
+test-results

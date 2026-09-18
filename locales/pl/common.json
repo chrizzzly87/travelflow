@@ -708,5 +708,14 @@
   "storageNotice": {
     "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",
     "tripsPrunedDescription": "{count, plural, one {Twoja najstarsza zapisana podroz zostala usunieta z tego urzadzenia, aby zwolnic miejsce.} few {# najstarsze zapisane podroze zostaly usuniete z tego urzadzenia, aby zwolnic miejsce.} many {# najstarszych zapisanych podrozy zostalo usunietych z tego urzadzenia, aby zwolnic miejsce.} other {# najstarszej zapisanej podrozy zostalo usunietych z tego urzadzenia, aby zwolnic miejsce.}}"
+  },
+  "trips": {
+    "pageTitle": "Moje podróże",
+    "pageSubtitle": "Wszystko, co zaplanowałeś. Po wczytaniu dostępne offline.",
+    "status": {
+      "offline": "Jesteś offline. Te podróże pochodzą z tego urządzenia.",
+      "pendingSyncOne": "{count} zmiana czeka na wysłanie.",
+      "pendingSyncMany": "{count} zmian czeka na wysłanie."
+    }
   }
 }

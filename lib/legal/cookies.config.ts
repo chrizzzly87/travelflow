@@ -464,6 +464,14 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       notes: 'Debug-only key.',
     },
     {
+      name: 'tf_disable_sw',
+      purpose: 'Opts this browser out of the offline service worker that caches the app shell.',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+      notes: 'Support escape hatch; set manually to recover a device stuck on a cached build.',
+    },
+    {
       name: 'tf_debug_browser_connectivity_override',
       purpose: 'Stores forced browser online/offline mode for network simulation in debugger testing.',
       duration: 'Persistent',

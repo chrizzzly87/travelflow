@@ -710,5 +710,14 @@
   "storageNotice": {
     "tripsPrunedTitle": "Device storage is full",
     "tripsPrunedDescription": "{count, plural, one {Your oldest saved trip was removed from this device to free up space.} other {Your # oldest saved trips were removed from this device to free up space.}}"
+  },
+  "trips": {
+    "pageTitle": "My trips",
+    "pageSubtitle": "Everything you've planned. Available offline once loaded.",
+    "status": {
+      "offline": "You're offline. These trips are loaded from this device.",
+      "pendingSyncOne": "{count} change is waiting to upload.",
+      "pendingSyncMany": "{count} changes are waiting to upload."
+    }
   }
 }

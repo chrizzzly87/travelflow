@@ -710,5 +710,14 @@
   "storageNotice": {
     "tripsPrunedTitle": "El almacenamiento del dispositivo esta lleno",
     "tripsPrunedDescription": "{count, plural, one {Tu viaje guardado mas antiguo se elimino de este dispositivo para liberar espacio.} other {Tus # viajes guardados mas antiguos se eliminaron de este dispositivo para liberar espacio.}}"
+  },
+  "trips": {
+    "pageTitle": "Mis viajes",
+    "pageSubtitle": "Todo lo que has planeado. Disponible sin conexión una vez cargado.",
+    "status": {
+      "offline": "Estás sin conexión. Estos viajes se cargan desde este dispositivo.",
+      "pendingSyncOne": "{count} cambio está esperando para subirse.",
+      "pendingSyncMany": "{count} cambios están esperando para subirse."
+    }
   }
 }

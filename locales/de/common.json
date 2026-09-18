@@ -710,5 +710,14 @@
   "storageNotice": {
     "tripsPrunedTitle": "Der Geratespeicher ist voll",
     "tripsPrunedDescription": "{count, plural, one {Deine alteste gespeicherte Reise wurde von diesem Gerat entfernt, um Platz zu schaffen.} other {Deine # altesten gespeicherten Reisen wurden von diesem Gerat entfernt, um Platz zu schaffen.}}"
+  },
+  "trips": {
+    "pageTitle": "Meine Reisen",
+    "pageSubtitle": "Alles, was du geplant hast. Nach dem Laden auch offline verfügbar.",
+    "status": {
+      "offline": "Du bist offline. Diese Reisen kommen von diesem Gerät.",
+      "pendingSyncOne": "{count} Änderung wartet auf den Upload.",
+      "pendingSyncMany": "{count} Änderungen warten auf den Upload."
+    }
   }
 }

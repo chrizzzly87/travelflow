@@ -710,5 +710,14 @@
   "storageNotice": {
     "tripsPrunedTitle": "O armazenamento do dispositivo esta cheio",
     "tripsPrunedDescription": "{count, plural, one {Sua viagem salva mais antiga foi removida deste dispositivo para liberar espaco.} other {Suas # viagens salvas mais antigas foram removidas deste dispositivo para liberar espaco.}}"
+  },
+  "trips": {
+    "pageTitle": "Minhas viagens",
+    "pageSubtitle": "Tudo o que você planejou. Disponível offline depois de carregado.",
+    "status": {
+      "offline": "Você está offline. Estas viagens vêm deste dispositivo.",
+      "pendingSyncOne": "{count} alteração aguarda envio.",
+      "pendingSyncMany": "{count} alterações aguardam envio."
+    }
   }
 }

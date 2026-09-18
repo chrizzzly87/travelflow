@@ -710,5 +710,14 @@
   "storageNotice": {
     "tripsPrunedTitle": "기기 저장 공간이 가득 찼습니다",
     "tripsPrunedDescription": "{count, plural, other {공간을 확보하기 위해 가장 오래된 저장 여행 #개가 이 기기에서 제거되었습니다.}}"
+  },
+  "trips": {
+    "pageTitle": "내 여행",
+    "pageSubtitle": "계획한 모든 일정입니다. 한 번 불러오면 오프라인에서도 볼 수 있습니다.",
+    "status": {
+      "offline": "오프라인 상태입니다. 이 기기에 저장된 여행을 보여 줍니다.",
+      "pendingSyncOne": "{count}개의 변경 사항이 업로드를 기다리고 있습니다.",
+      "pendingSyncMany": "{count}개의 변경 사항이 업로드를 기다리고 있습니다."
+    }
   }
 }
