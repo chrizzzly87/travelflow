@@ -43,8 +43,8 @@
     "test:e2e": "playwright test",
     "test:e2e:offline": "playwright test e2e/offline-resilience.spec.ts",
     "release:prepare": "pnpm build:blog-images && pnpm build",
-    "build": "pnpm runtime-env:validate && pnpm test:core && pnpm flags:sync && pnpm inspirations:images:optimize && pnpm blog:images:optimize && pnpm build:image-placeholders && pnpm og:site:build && pnpm og:site:validate && pnpm i18n:validate && pnpm routes:validate && pnpm supabase:validate && pnpm plans:validate-sync && pnpm updates:validate && pnpm toasts:validate && pnpm storage:validate && pnpm blog:validate && pnpm edge:validate && pnpm climate:validate && pnpm sitemap:generate && vite build && node scripts/prerender-routes.mjs",
-    "build:netlify": "pnpm runtime-env:validate && pnpm flags:sync && pnpm inspirations:images:optimize && pnpm blog:images:optimize && pnpm build:image-placeholders && pnpm og:site:build && pnpm og:site:validate && pnpm i18n:validate && pnpm routes:validate && pnpm supabase:validate && pnpm plans:validate-sync && pnpm updates:validate && pnpm toasts:validate && pnpm storage:validate && pnpm blog:validate && pnpm edge:validate && pnpm climate:validate && pnpm sitemap:generate && vite build && node scripts/prerender-routes.mjs",
+    "build": "pnpm runtime-env:validate && pnpm test:core && pnpm flags:sync && pnpm inspirations:images:optimize && pnpm blog:images:optimize && pnpm build:image-placeholders && pnpm pwa:icons && pnpm og:site:build && pnpm og:site:validate && pnpm i18n:validate && pnpm routes:validate && pnpm supabase:validate && pnpm plans:validate-sync && pnpm updates:validate && pnpm toasts:validate && pnpm storage:validate && pnpm blog:validate && pnpm edge:validate && pnpm climate:validate && pnpm sitemap:generate && vite build && node scripts/prerender-routes.mjs && pnpm pwa:sw",
+    "build:netlify": "pnpm runtime-env:validate && pnpm flags:sync && pnpm inspirations:images:optimize && pnpm blog:images:optimize && pnpm build:image-placeholders && pnpm pwa:icons && pnpm og:site:build && pnpm og:site:validate && pnpm i18n:validate && pnpm routes:validate && pnpm supabase:validate && pnpm plans:validate-sync && pnpm updates:validate && pnpm toasts:validate && pnpm storage:validate && pnpm blog:validate && pnpm edge:validate && pnpm climate:validate && pnpm sitemap:generate && vite build && node scripts/prerender-routes.mjs && pnpm pwa:sw",
     "preview": "vite preview",
     "maps:generate": "tsx scripts/generate-trip-maps.ts",
     "maps:routes:generate": "tsx scripts/generate-country-route-maps.ts",
@@ -65,7 +65,10 @@
     "ai:eval:security": "tsx scripts/run-ai-eval.ts --pack security",
     "ai:eval:security:ci": "tsx scripts/run-ai-eval.ts --pack security --ci",
     "doctor": "npx react-doctor@latest",
-    "trip-agent:dry-run": "tsx --env-file=.env.local scripts/trip-agent-dry-run.ts"
+    "trip-agent:dry-run": "tsx --env-file=.env.local scripts/trip-agent-dry-run.ts",
+    "pwa:icons": "tsx scripts/build-pwa-icons.ts",
+    "pwa:sw": "node scripts/build-service-worker.mjs",
+    "test:e2e:pwa": "playwright test --config playwright.pwa.config.ts"
   },
   "dependencies": {
     "@ai-sdk/mcp": "^2.0.39",

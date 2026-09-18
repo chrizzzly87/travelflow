@@ -710,5 +710,20 @@
   "storageNotice": {
     "tripsPrunedTitle": "기기 저장 공간이 가득 찼습니다",
     "tripsPrunedDescription": "{count, plural, other {공간을 확보하기 위해 가장 오래된 저장 여행 #개가 이 기기에서 제거되었습니다.}}"
+  },
+  "trips": {
+    "pageTitle": "내 여행",
+    "pageSubtitle": "계획한 모든 일정입니다. 한 번 불러오면 오프라인에서도 볼 수 있습니다.",
+    "signedOut": {
+      "title": "로그인되어 있지 않습니다",
+      "body": "계정에 저장된 여행을 보려면 로그인하세요.",
+      "action": "로그인"
+    },
+    "list": {
+      "searchLabel": "여행 또는 도시 검색",
+      "searchPlaceholder": "여행 또는 도시 검색...",
+      "empty": "저장된 여행이 아직 없습니다.",
+      "noMatches": "'{query}'에 대한 검색 결과가 없습니다."
+    }
   }
 }

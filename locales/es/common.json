@@ -710,5 +710,20 @@
   "storageNotice": {
     "tripsPrunedTitle": "El almacenamiento del dispositivo esta lleno",
     "tripsPrunedDescription": "{count, plural, one {Tu viaje guardado mas antiguo se elimino de este dispositivo para liberar espacio.} other {Tus # viajes guardados mas antiguos se eliminaron de este dispositivo para liberar espacio.}}"
+  },
+  "trips": {
+    "pageTitle": "Mis viajes",
+    "pageSubtitle": "Todo lo que has planeado. Disponible sin conexión una vez cargado.",
+    "signedOut": {
+      "title": "No has iniciado sesión",
+      "body": "Inicia sesión para ver los viajes guardados en tu cuenta.",
+      "action": "Iniciar sesión"
+    },
+    "list": {
+      "searchLabel": "Buscar viajes o ciudades",
+      "searchPlaceholder": "Buscar viajes o ciudades...",
+      "empty": "Aún no hay viajes guardados.",
+      "noMatches": "Sin resultados para «{query}»."
+    }
   }
 }

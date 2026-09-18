@@ -710,5 +710,20 @@
   "storageNotice": {
     "tripsPrunedTitle": "Le stockage de l'appareil est plein",
     "tripsPrunedDescription": "{count, plural, one {Votre voyage enregistre le plus ancien a ete supprime de cet appareil pour liberer de l'espace.} other {Vos # voyages enregistres les plus anciens ont ete supprimes de cet appareil pour liberer de l'espace.}}"
+  },
+  "trips": {
+    "pageTitle": "Mes voyages",
+    "pageSubtitle": "Tout ce que vous avez planifié. Disponible hors ligne une fois chargé.",
+    "signedOut": {
+      "title": "Vous n'êtes pas connecté",
+      "body": "Connectez-vous pour voir les voyages enregistrés dans votre compte.",
+      "action": "Se connecter"
+    },
+    "list": {
+      "searchLabel": "Rechercher des voyages ou des villes",
+      "searchPlaceholder": "Rechercher des voyages ou des villes...",
+      "empty": "Aucun voyage enregistré pour le moment.",
+      "noMatches": "Aucun résultat pour « {query} »."
+    }
   }
 }

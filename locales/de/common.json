@@ -710,5 +710,20 @@
   "storageNotice": {
     "tripsPrunedTitle": "Der Geratespeicher ist voll",
     "tripsPrunedDescription": "{count, plural, one {Deine alteste gespeicherte Reise wurde von diesem Gerat entfernt, um Platz zu schaffen.} other {Deine # altesten gespeicherten Reisen wurden von diesem Gerat entfernt, um Platz zu schaffen.}}"
+  },
+  "trips": {
+    "pageTitle": "Meine Reisen",
+    "pageSubtitle": "Alles, was du geplant hast. Nach dem Laden auch offline verfügbar.",
+    "signedOut": {
+      "title": "Du bist nicht angemeldet",
+      "body": "Melde dich an, um die Reisen aus deinem Konto zu sehen.",
+      "action": "Anmelden"
+    },
+    "list": {
+      "searchLabel": "Reisen oder Städte suchen",
+      "searchPlaceholder": "Reisen oder Städte suchen ...",
+      "empty": "Noch keine gespeicherten Reisen.",
+      "noMatches": "Keine Treffer für „{query}“."
+    }
   }
 }

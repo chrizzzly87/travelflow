@@ -708,5 +708,20 @@
   "storageNotice": {
     "tripsPrunedTitle": "Pamiec urzadzenia jest pelna",
     "tripsPrunedDescription": "{count, plural, one {Twoja najstarsza zapisana podroz zostala usunieta z tego urzadzenia, aby zwolnic miejsce.} few {# najstarsze zapisane podroze zostaly usuniete z tego urzadzenia, aby zwolnic miejsce.} many {# najstarszych zapisanych podrozy zostalo usunietych z tego urzadzenia, aby zwolnic miejsce.} other {# najstarszej zapisanej podrozy zostalo usunietych z tego urzadzenia, aby zwolnic miejsce.}}"
+  },
+  "trips": {
+    "pageTitle": "Moje podróże",
+    "pageSubtitle": "Wszystko, co zaplanowałeś. Po wczytaniu dostępne offline.",
+    "signedOut": {
+      "title": "Nie jesteś zalogowany",
+      "body": "Zaloguj się, aby zobaczyć podróże zapisane na Twoim koncie.",
+      "action": "Zaloguj się"
+    },
+    "list": {
+      "searchLabel": "Szukaj podróży lub miast",
+      "searchPlaceholder": "Szukaj podróży lub miast...",
+      "empty": "Brak zapisanych podróży.",
+      "noMatches": "Brak wyników dla „{query}”."
+    }
   }
 }

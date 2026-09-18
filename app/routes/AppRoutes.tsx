@@ -14,6 +14,7 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
     importer: () => Promise<TModule>
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
 
+const TripsRoute = lazyWithRecovery('TripsRoute', () => import('../../routes/TripsRoute').then((module) => ({ default: module.TripsRoute })));
 const TripLoaderRoute = lazyWithRecovery('TripLoaderRoute', () => import('../../routes/TripLoaderRoute').then((module) => ({ default: module.TripLoaderRoute })));
 const SharedTripLoaderRoute = lazyWithRecovery('SharedTripLoaderRoute', () => import('../../routes/SharedTripLoaderRoute').then((module) => ({ default: module.SharedTripLoaderRoute })));
 const ExampleTripLoaderRoute = lazyWithRecovery('ExampleTripLoaderRoute', () => import('../../routes/ExampleTripLoaderRoute').then((module) => ({ default: module.ExampleTripLoaderRoute })));
@@ -173,6 +174,37 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                                     onOpenManager={onOpenManager}
                                     onLanguageLoaded={onAppLanguageLoaded}
                                 />
+                            )}
+                        />
+                    ))}
+                    {/* The installed PWA's start_url. Registered before the
+                        localized variants so the default locale wins. */}
+                    <Route
+                        path="/trips"
+                        element={renderWithSuspense(
+                            <TripsRoute
+                                appLanguage={appLanguage}
+                                onAppLanguageLoaded={onAppLanguageLoaded}
+                                onTripLoaded={onTripLoaded}
+                                currentTripId={trip?.id}
+                            />,
+                            <RouteLoadingFallback />,
+                            { handoffReady: false }
+                        )}
+                    />
+                    {LOCALIZED_TOOL_LOCALES.map((locale) => (
+                        <Route
+                            key={`trips:${locale}`}
+                            path={`/${locale}/trips`}
+                            element={renderWithSuspense(
+                                <TripsRoute
+                                    appLanguage={appLanguage}
+                                    onAppLanguageLoaded={onAppLanguageLoaded}
+                                    onTripLoaded={onTripLoaded}
+                                    currentTripId={trip?.id}
+                                />,
+                                <RouteLoadingFallback />,
+                                { handoffReady: false }
                             )}
                         />
                     ))}

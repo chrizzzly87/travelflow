@@ -710,5 +710,20 @@
   "storageNotice": {
     "tripsPrunedTitle": "O armazenamento do dispositivo esta cheio",
     "tripsPrunedDescription": "{count, plural, one {Sua viagem salva mais antiga foi removida deste dispositivo para liberar espaco.} other {Suas # viagens salvas mais antigas foram removidas deste dispositivo para liberar espaco.}}"
+  },
+  "trips": {
+    "pageTitle": "Minhas viagens",
+    "pageSubtitle": "Tudo o que você planejou. Disponível offline depois de carregado.",
+    "signedOut": {
+      "title": "Você não está conectado",
+      "body": "Entre para ver as viagens salvas na sua conta.",
+      "action": "Entrar"
+    },
+    "list": {
+      "searchLabel": "Buscar viagens ou cidades",
+      "searchPlaceholder": "Buscar viagens ou cidades...",
+      "empty": "Ainda não há viagens salvas.",
+      "noMatches": "Nenhum resultado para \"{query}\"."
+    }
   }
 }
