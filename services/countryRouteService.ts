@@ -14,7 +14,7 @@ import type {
   ExampleTemplateMiniCalendarRouteLane,
 } from '../data/exampleTripTemplates';
 import { buildCreateTripUrl, getHexFromColorClass, getRandomCityColor } from '../utils';
-import { getCountryDestinationGuide } from './destinationGuideService';
+import { getCountryGuideSummary } from '../data/destinationGuideList';
 import { getDestinationOptionByCode } from './destinationService';
 
 export const COUNTRY_ROUTE_DOCUMENT = countryRoutesJson as CountryRouteDocument;
@@ -53,7 +53,7 @@ export const getCountryRoutes = (countryValue: string): CountryRoute[] => {
   const direct = routesByLookup.get(normalizeLookup(countryValue));
   if (direct) return [...direct];
 
-  const guide = getCountryDestinationGuide(countryValue);
+  const guide = getCountryGuideSummary(countryValue);
   if (!guide) return [];
   return [...(routesByLookup.get(normalizeLookup(guide.countryCode)) || [])];
 };
@@ -140,7 +140,7 @@ const toExampleCardLocalization = (
 
 export const getCountryRouteCountryName = (route: CountryRoute): string => (
   getDestinationOptionByCode(route.countryCode)?.name
-  || getCountryDestinationGuide(route.countryCode)?.name
+  || getCountryGuideSummary(route.countryCode)?.name
   || route.countryCode
 );
 

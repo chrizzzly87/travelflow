@@ -11,11 +11,14 @@
  *    climate simply means the card falls back to the curated strip.
  */
 
-import type { DestinationGuideEntry, DestinationSeason } from '../shared/destinationGuides';
+import type { DestinationSeason } from '../shared/destinationGuides';
 import { SUPPORTED_LOCALES } from '../config/locales';
 import { getLocalizedCountryNameFromData } from '../data/countryLocalizedNames';
+import {
+  listCountryGuideSummaries,
+  type DestinationGuideSummary,
+} from '../data/destinationGuideList';
 import { getCountryAliases } from './countryAliasService';
-import { listDestinationGuides } from './destinationGuideService';
 import {
   getMonthClimate,
   getRainfallLevel,
@@ -71,7 +74,7 @@ const isValidMonth = (month: unknown): month is number => (
   typeof month === 'number' && Number.isInteger(month) && month >= 1 && month <= MONTHS_IN_YEAR
 );
 
-const buildSeasonBands = (guide: DestinationGuideEntry): CountrySeasonBand[] => {
+const buildSeasonBands = (guide: DestinationGuideSummary): CountrySeasonBand[] => {
   const ideal = new Set(guide.seasonality?.idealMonths || []);
   const shoulder = new Set(guide.seasonality?.shoulderMonths || []);
   return Array.from({ length: MONTHS_IN_YEAR }, (_entry, index) => {
@@ -82,7 +85,7 @@ const buildSeasonBands = (guide: DestinationGuideEntry): CountrySeasonBand[] => 
   });
 };
 
-const buildEntryTokens = (guide: DestinationGuideEntry): NormalizedSearchToken[] => {
+const buildEntryTokens = (guide: DestinationGuideSummary): NormalizedSearchToken[] => {
   const tokens: CountrySearchToken[] = [
     { value: guide.name, kind: 'name' },
     { value: guide.slug, kind: 'name' },
@@ -100,7 +103,7 @@ const buildEntryTokens = (guide: DestinationGuideEntry): NormalizedSearchToken[]
   return buildSearchTokens(tokens);
 };
 
-export const toCountryExplorerEntry = (guide: DestinationGuideEntry): CountryExplorerEntry => ({
+export const toCountryExplorerEntry = (guide: DestinationGuideSummary): CountryExplorerEntry => ({
   id: guide.id,
   name: guide.name,
   slug: guide.slug,
@@ -122,7 +125,7 @@ let cachedEntries: CountryExplorerEntry[] | null = null;
  */
 export const listCountryExplorerEntries = (): CountryExplorerEntry[] => {
   if (!cachedEntries) {
-    cachedEntries = listDestinationGuides({ kind: 'country', limit: COUNTRY_EXPLORER_GUIDE_LIMIT })
+    cachedEntries = listCountryGuideSummaries(COUNTRY_EXPLORER_GUIDE_LIMIT)
       .map(toCountryExplorerEntry);
   }
   return cachedEntries;
