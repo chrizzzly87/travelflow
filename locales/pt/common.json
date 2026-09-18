@@ -192,80 +192,80 @@
   "connectivity": {
     "banner": {
       "offline": {
-        "title": "You are offline. Changes will be queued.",
-        "messageNone": "Planner stays usable with cached data.",
-        "messageOne": "{count} change is queued and will sync after reconnect.",
-        "messageMany": "{count} changes are queued and will sync after reconnect.",
-        "browserTitle": "You are offline. Changes stay local.",
-        "browserMessage": "Reconnect to continue cloud sync. We will retry automatically.",
-        "serviceTitle": "Cloud sync is temporarily unavailable.",
-        "serviceMessage": "Your internet works, but the sync service is not responding. Edits stay queued and safe."
+        "title": "Estás offline. As alterações ficam em fila.",
+        "messageNone": "O planeador continua a funcionar com os dados guardados.",
+        "messageOne": "{count} alteração está em fila e será sincronizada assim que voltares a ter ligação.",
+        "messageMany": "{count} alterações estão em fila e serão sincronizadas assim que voltares a ter ligação.",
+        "browserTitle": "Estás offline. As alterações ficam neste dispositivo.",
+        "browserMessage": "A sincronização na nuvem retoma assim que voltares a ligar-te. Tentamos automaticamente.",
+        "serviceTitle": "A sincronização na nuvem está temporariamente indisponível.",
+        "serviceMessage": "A tua ligação funciona, mas o serviço de sincronização não responde. As tuas alterações ficam em fila, em segurança."
       },
       "degraded": {
-        "title": "Connection is unstable. Saving in resilient mode.",
-        "messageNone": "Planner stays usable while we retry in the background.",
-        "messageOne": "{count} queued change will sync when Supabase stabilizes.",
-        "messageMany": "{count} queued changes will sync when Supabase stabilizes.",
-        "serviceMessage": "Cloud sync is unstable right now. We keep retrying in the background."
+        "title": "A ligação está instável. Estamos a guardar em modo seguro.",
+        "messageNone": "O planeador continua a funcionar enquanto tentamos novamente em segundo plano.",
+        "messageOne": "{count} alteração será sincronizada assim que a ligação estabilizar.",
+        "messageMany": "{count} alterações serão sincronizadas assim que a ligação estabilizar.",
+        "serviceMessage": "A sincronização na nuvem está instável neste momento. Continuamos a tentar em segundo plano."
       },
       "syncing": {
-        "title": "Sync in progress",
-        "messageOne": "{count} change is waiting to sync.",
-        "messageMany": "{count} changes are waiting to sync.",
-        "progressOne": "Syncing {count} queued change...",
-        "progressMany": "Syncing {count} queued changes..."
+        "title": "Sincronização em curso",
+        "messageOne": "{count} alteração está à espera de sincronizar.",
+        "messageMany": "{count} alterações estão à espera de sincronizar.",
+        "progressOne": "A sincronizar {count} alteração pendente…",
+        "progressMany": "A sincronizar {count} alterações pendentes…"
       },
-      "forcedMode": "Supabase outage simulation is currently forced in debugger mode.",
+      "forcedMode": "A simulação de falha de ligação está ativa no modo de depuração.",
       "actions": {
-        "retrySync": "Retry failed sync",
-        "dismiss": "Dismiss connectivity banner",
+        "retrySync": "Tentar sincronizar de novo",
+        "dismiss": "Ocultar o aviso de ligação",
         "contact": "Contacto",
-        "email": "Email support"
+        "email": "Escrever ao suporte"
       },
-      "retryHint": "Retrying Supabase connection every 30s while this tab stays open."
+      "retryHint": "Tentamos ligar de novo a cada 30 s enquanto este separador estiver aberto."
     },
     "tripStrip": {
       "offline": {
-        "messageNone": "Offline mode enabled. Trip data is served from local cache.",
-        "messageOne": "Offline mode enabled. {count} change is queued for sync.",
-        "messageMany": "Offline mode enabled. {count} changes are queued for sync.",
-        "browser": "Offline mode enabled. Your latest edits are saved locally until reconnect.",
-        "service": "Cloud sync is currently unavailable. Your latest edits are queued safely."
+        "messageNone": "Modo offline ativo. Os dados da viagem vêm da cópia local.",
+        "messageOne": "Modo offline ativo. {count} alteração está em fila para sincronizar.",
+        "messageMany": "Modo offline ativo. {count} alterações estão em fila para sincronizar.",
+        "browser": "Modo offline ativo. As tuas últimas alterações ficam guardadas neste dispositivo até voltares a ter ligação.",
+        "service": "A sincronização na nuvem está indisponível neste momento. As tuas últimas alterações ficam em fila, em segurança."
       },
       "degraded": {
-        "messageNone": "Connection is degraded. Edits are protected with local queue fallback.",
-        "messageOne": "Connection is degraded. {count} change is queued for replay.",
-        "messageMany": "Connection is degraded. {count} changes are queued for replay.",
-        "service": "Connection is degraded. We are retrying queued edits in the background."
+        "messageNone": "A ligação está fraca. Protegemos as tuas alterações com a fila local.",
+        "messageOne": "A ligação está fraca. {count} alteração está em fila para reenvio.",
+        "messageMany": "A ligação está fraca. {count} alterações estão em fila para reenvio.",
+        "service": "A ligação está fraca. Estamos a reenviar as alterações pendentes em segundo plano."
       },
-      "forcedSuffix": "(forced by debugger)",
-      "retry": "Retry failed sync",
-      "serverBackup": "A newer server version was backed up before replay. You can restore it if needed.",
-      "restoreServerVersion": "Restore server version",
-      "syncingOne": "Syncing {count} queued change to Supabase...",
-      "syncingMany": "Syncing {count} queued changes to Supabase...",
-      "pendingOne": "{count} queued change is waiting for replay.",
-      "pendingMany": "{count} queued changes are waiting for replay."
+      "forcedSuffix": "(forçado pelo depurador)",
+      "retry": "Tentar sincronizar de novo",
+      "serverBackup": "Havia uma versão mais recente no servidor. Guardámo-la antes do reenvio e podes restaurá-la se precisares.",
+      "restoreServerVersion": "Restaurar a versão do servidor",
+      "syncingOne": "A enviar {count} alteração pendente para a nuvem…",
+      "syncingMany": "A enviar {count} alterações pendentes para a nuvem…",
+      "pendingOne": "{count} alteração está à espera de reenvio.",
+      "pendingMany": "{count} alterações estão à espera de reenvio."
     },
     "toast": {
-      "title": "Sync status",
-      "syncCompleted": "Queued trip changes synced successfully.",
-      "serverBackupRestored": "Server backup restored for this trip.",
+      "title": "Estado da sincronização",
+      "syncCompleted": "As alterações pendentes desta viagem estão sincronizadas.",
+      "serverBackupRestored": "A cópia do servidor desta viagem foi restaurada.",
       "conflictPreserved": "O servidor tinha alterações mais recentes para esta viagem. Sua versão offline foi mantida como backup.",
-      "syncStartedOne": "Reconnect detected. Replaying {count} queued change.",
-      "syncStartedMany": "Reconnect detected. Replaying {count} queued changes.",
-      "syncPartialFailureOne": "{count} queued change still failed. You can retry.",
-      "syncPartialFailureMany": "{count} queued changes still failed. You can retry."
+      "syncStartedOne": "Ligação recuperada. A enviar {count} alteração pendente.",
+      "syncStartedMany": "Ligação recuperada. A enviar {count} alterações pendentes.",
+      "syncPartialFailureOne": "{count} alteração pendente continua sem passar. Podes tentar de novo.",
+      "syncPartialFailureMany": "{count} alterações pendentes continuam sem passar. Podes tentar de novo."
     },
     "globalBadge": {
       "offline": "Offline",
-      "syncing": "Syncing...",
+      "syncing": "A sincronizar…",
       "online": "Online",
       "details": {
-        "offlineBrowser": "You are offline. Edits are stored locally and replayed once you reconnect.",
-        "offlineService": "Your internet is up, but cloud sync appears unavailable. We will keep retrying queued edits.",
-        "syncingQueue": "Syncing queued edits now. Pending items: {count}.",
-        "online": "Connection is healthy and sync is up to date."
+        "offlineBrowser": "Estás offline. As tuas alterações ficam neste dispositivo e seguem assim que voltares a ter ligação.",
+        "offlineService": "A tua ligação funciona, mas a sincronização na nuvem está indisponível. Vamos continuar a tentar.",
+        "syncingQueue": "A enviar as alterações pendentes. Ainda faltam: {count}.",
+        "online": "A ligação está boa e está tudo sincronizado."
       }
     }
   },
@@ -312,52 +312,52 @@
     },
     "generation": {
       "strip": {
-        "failedDefault": "Trip generation failed. Check diagnostics or retry with the default model.",
-        "running": "Trip generation is running...",
-        "retry": "Retry generation",
-        "retrying": "Retrying...",
+        "failedDefault": "Não conseguimos criar a viagem. Vê o diagnóstico ou tenta de novo com o modelo predefinido.",
+        "running": "Estamos a criar a tua viagem…",
+        "retry": "Criar de novo",
+        "retrying": "A tentar de novo…",
         "slow": "Está demorando mais do que o normal.",
         "abortRetry": "Abortar e tentar novamente",
         "changeModel": "Mudar modelo"
       },
       "tripInfo": {
-        "title": "AI generation",
-        "provider": "Provider",
-        "model": "Model",
-        "providerModel": "Provider model",
-        "requestId": "Request ID",
-        "runTime": "Run time",
-        "httpStatus": "HTTP status",
-        "started": "Started",
-        "finished": "Finished",
-        "failureKind": "Failure kind",
-        "errorCode": "Error code",
-        "errorMessage": "Error message",
-        "generatedAt": "Generated at",
-        "recentAttempts": "Recent attempts",
-        "modelFallback": "Model n/a",
-        "retry": "Retry generation with default model",
-        "retrying": "Retrying with default model...",
+        "title": "Geração com IA",
+        "provider": "Fornecedor",
+        "model": "Modelo",
+        "providerModel": "Modelo do fornecedor",
+        "requestId": "ID do pedido",
+        "runTime": "Duração",
+        "httpStatus": "Estado HTTP",
+        "started": "Início",
+        "finished": "Fim",
+        "failureKind": "Tipo de falha",
+        "errorCode": "Código de erro",
+        "errorMessage": "Mensagem de erro",
+        "generatedAt": "Criado a",
+        "recentAttempts": "Tentativas recentes",
+        "modelFallback": "Modelo n/d",
+        "retry": "Criar de novo com o modelo predefinido",
+        "retrying": "A tentar de novo com o modelo predefinido…",
         "state": {
-          "failed": "failed",
-          "running": "running",
-          "queued": "queued",
-          "succeeded": "succeeded"
+          "failed": "falhou",
+          "running": "em curso",
+          "queued": "em fila",
+          "succeeded": "concluída"
         },
         "orchestration": "Modo de execução"
       },
       "retry": {
-        "readOnly": "This trip is read-only, so generation retry is unavailable.",
-        "readOnlyTitle": "Retry unavailable",
-        "missingSnapshot": "Retry requires saved generation input, but this trip has no snapshot.",
-        "missingSnapshotTitle": "Retry unavailable",
-        "queued": "Trip generation retry started and is running in the background.",
-        "queuedTitle": "Retry started",
-        "completed": "Trip generation completed with the default model.",
-        "completedTitle": "Retry completed",
-        "failed": "Trip generation failed again. Review the diagnostics and retry later.",
-        "failedTitle": "Retry failed",
-        "unexpected": "Retry failed unexpectedly."
+        "readOnly": "Esta viagem é só de leitura, por isso não dá para criar de novo.",
+        "readOnlyTitle": "Não dá para tentar de novo",
+        "missingSnapshot": "Para tentar de novo precisamos dos dados de partida guardados, e esta viagem não os tem.",
+        "missingSnapshotTitle": "Não dá para tentar de novo",
+        "queued": "A nova tentativa está a decorrer em segundo plano.",
+        "queuedTitle": "Nova tentativa iniciada",
+        "completed": "A tua viagem foi criada com o modelo predefinido.",
+        "completedTitle": "Nova tentativa concluída",
+        "failed": "A criação voltou a falhar. Vê o diagnóstico e tenta mais tarde.",
+        "failedTitle": "A nova tentativa falhou",
+        "unexpected": "A nova tentativa falhou de forma inesperada."
       }
     },
     "pendingAuth": {
@@ -380,126 +380,126 @@
       "description": "Algumas paradas incluem alertas práticos com base no seu perfil de viajante."
     },
     "header": {
-      "titleTooltipEditable": "Open trip details and edit the title",
-      "titleTooltipReadonly": "Open trip details",
-      "editTitleCta": "Edit title",
-      "openDetailsCta": "Open details",
-      "trips": "Trips",
-      "tripsTooltip": "Back to your trips",
-      "share": "Share",
-      "shareDisabled": "Activate this trip to share it"
+      "titleTooltipEditable": "Abrir os detalhes da viagem e editar o título",
+      "titleTooltipReadonly": "Abrir os detalhes da viagem",
+      "editTitleCta": "Editar o título",
+      "openDetailsCta": "Abrir detalhes",
+      "trips": "Viagens",
+      "tripsTooltip": "Voltar às tuas viagens",
+      "share": "Partilhar",
+      "shareDisabled": "Ativa esta viagem para a poderes partilhar"
     },
     "zoom": {
-      "fit": "Fit",
-      "fitAria": "Fit timeline to available space",
-      "presetAria": "Set timeline zoom to {value}"
+      "fit": "Ajustar",
+      "fitAria": "Ajustar a linha temporal ao espaço disponível",
+      "presetAria": "Definir o zoom da linha temporal para {value}"
     },
     "infoDialog": {
-      "title": "Trip details",
-      "description": "Edit core info, review history, export the trip, and check destination context.",
-      "close": "Close trip details dialog",
+      "title": "Detalhes da viagem",
+      "description": "Edita a informação principal, vê o histórico, exporta a viagem e consulta o contexto do destino.",
+      "close": "Fechar os detalhes da viagem",
       "tabs": {
-        "general": "General",
-        "history": "History",
-        "export": "Export",
-        "destination": "Destination",
-        "debug": "Debug"
+        "general": "Geral",
+        "history": "Histórico",
+        "export": "Exportar",
+        "destination": "Destino",
+        "debug": "Depuração"
       },
       "general": {
-        "titleLabel": "Trip title",
+        "titleLabel": "Título da viagem",
         "editAction": "Editar título",
         "saveAction": "Guardar título",
-        "editHint": "Click into the title to rename the trip or adjust the essentials here.",
-        "readOnlyHintExample": "Example trips stay read-only here. Copy the trip first if you want to rename it or save it as a favorite.",
-        "readOnlyHintShared": "This shared trip is read-only. You can review the details here, but editing is disabled.",
-        "favoriteAdd": "Add to favorites",
-        "favoriteRemove": "Remove from favorites",
-        "favoriteOn": "Favorite",
-        "favoriteOff": "Favorite",
-        "retryInProgress": "Retry is already in progress.",
-        "openBenchmark": "Open in AI Benchmark",
+        "editHint": "Clica no título para mudar o nome da viagem, ou ajusta aqui o essencial.",
+        "readOnlyHintExample": "As viagens de exemplo são só de leitura. Copia primeiro a viagem se quiseres mudar-lhe o nome ou guardá-la nos favoritos.",
+        "readOnlyHintShared": "Esta viagem partilhada é só de leitura. Podes ver os detalhes, mas não editá-los.",
+        "favoriteAdd": "Adicionar aos favoritos",
+        "favoriteRemove": "Remover dos favoritos",
+        "favoriteOn": "Favorita",
+        "favoriteOff": "Favorita",
+        "retryInProgress": "Já está uma tentativa a decorrer.",
+        "openBenchmark": "Abrir no AI Benchmark",
         "sections": {
-          "meta": "Trip meta",
-          "source": "Trip source"
+          "meta": "Dados da viagem",
+          "source": "Origem da viagem"
         },
         "meta": {
-          "duration": "Duration",
-          "totalDays": "Total days",
-          "totalDaysValue": "{count} days",
+          "duration": "Duração",
+          "totalDays": "Total de dias",
+          "totalDaysValue": "{count} dias",
           "tripSpan": "Dias e noites",
           "tripSpanValue": "{days} dias / {nights} noites",
-          "cities": "Cities",
-          "totalDistance": "Total distance",
-          "owner": "Owner",
-          "access": "Access"
+          "cities": "Cidades",
+          "totalDistance": "Distância total",
+          "owner": "Proprietário",
+          "access": "Acesso"
         },
-        "sourceSharedDescription": "This itinerary was copied from a shared trip snapshot.",
-        "sourceTripDescription": "This itinerary was copied from another trip in your workspace.",
-        "viewSource": "View source"
+        "sourceSharedDescription": "Este itinerário foi copiado de uma viagem partilhada.",
+        "sourceTripDescription": "Este itinerário foi copiado de outra viagem do teu espaço.",
+        "viewSource": "Ver o original"
       },
       "history": {
-        "example": "Example trips do not save history snapshots. Copy this trip first if you want to keep edits and revisit them later.",
-        "undo": "Undo",
-        "redo": "Redo",
-        "showAll": "Show all",
-        "showRecent": "Show recent",
-        "empty": "No history entries yet.",
-        "current": "Current",
-        "notSynced": "Not synced",
-        "go": "Go",
-        "pendingSyncOne": "1 latest change is saved locally and not synced yet.",
-        "pendingSyncMany": "{count} latest changes are saved locally and not synced yet.",
-        "failedSyncOne": "1 queued change still failed to sync. Retry sync to publish it.",
-        "failedSyncMany": "{count} queued changes still failed to sync. Retry sync to publish them."
+        "example": "As viagens de exemplo não guardam histórico. Copia primeiro esta viagem se quiseres manter as alterações e voltar a elas.",
+        "undo": "Anular",
+        "redo": "Refazer",
+        "showAll": "Ver tudo",
+        "showRecent": "Ver as recentes",
+        "empty": "Ainda não há entradas no histórico.",
+        "current": "Atual",
+        "notSynced": "Por sincronizar",
+        "go": "Ir",
+        "pendingSyncOne": "1 alteração recente está guardada neste dispositivo e ainda não foi sincronizada.",
+        "pendingSyncMany": "{count} alterações recentes estão guardadas neste dispositivo e ainda não foram sincronizadas.",
+        "failedSyncOne": "1 alteração pendente continua sem sincronizar. Tenta sincronizar de novo para a publicar.",
+        "failedSyncMany": "{count} alterações pendentes continuam sem sincronizar. Tenta sincronizar de novo para as publicar."
       },
       "export": {
         "activities": {
-          "title": "Activities calendar",
-          "description": "Export planned activities as an .ics file so you can drop them into your calendar app.",
-          "action": "Export activities (.ics)"
+          "title": "Calendário de atividades",
+          "description": "Exporta as atividades planeadas num ficheiro .ics para juntares ao teu calendário.",
+          "action": "Exportar atividades (.ics)"
         },
         "cities": {
-          "title": "Cities calendar",
-          "description": "Create a cleaner trip skeleton with city arrivals and stays only.",
-          "action": "Export cities (.ics)"
+          "title": "Calendário de cidades",
+          "description": "Cria um esqueleto mais limpo da viagem, só com chegadas e estadias.",
+          "action": "Exportar cidades (.ics)"
         },
         "everything": {
-          "title": "Complete calendar bundle",
-          "description": "Download one calendar file with cities, transfers, and activities together.",
-          "action": "Download everything (.ics)"
+          "title": "Calendário completo",
+          "description": "Descarrega um único ficheiro de calendário com cidades, deslocações e atividades.",
+          "action": "Descarregar tudo (.ics)"
         },
         "print": {
-          "title": "Print layout",
-          "description": "Open a print-friendly version of this trip for PDFs, handouts, or trip briefings.",
-          "action": "Open print layout"
+          "title": "Versão para impressão",
+          "description": "Abre uma versão pronta a imprimir desta viagem, ideal para PDF ou para levar em papel.",
+          "action": "Abrir a versão para impressão"
         }
       },
       "destination": {
-        "locked": "Destination details unlock once this trip is activated.",
-        "empty": "No destination information is available for this trip yet.",
-        "futureChecksTitle": "Future destination checks",
-        "futureChecksDescription": "This tab is ready for more trip-specific guidance as we add richer destination data.",
+        "locked": "Os detalhes do destino ficam disponíveis assim que ativares esta viagem.",
+        "empty": "Ainda não há informação sobre o destino desta viagem.",
+        "futureChecksTitle": "Próximas verificações do destino",
+        "futureChecksDescription": "Este separador vai receber mais dicas à medida que alargarmos os dados de destino.",
         "futureChecks": {
-          "visa": "Visa",
-          "entryRules": "Entry rules",
-          "safety": "Safety",
-          "customs": "Customs",
-          "connectivity": "Connectivity",
-          "health": "Health"
+          "visa": "Visto",
+          "entryRules": "Regras de entrada",
+          "safety": "Segurança",
+          "customs": "Alfândega",
+          "connectivity": "Ligação",
+          "health": "Saúde"
         }
       }
     },
     "claimConflict": {
-      "eyebrow": "Claim unavailable",
-      "title": "This trip draft was already claimed",
-      "descriptionLoggedOut": "Sign in with the original account or start a similar trip with the same setup.",
-      "descriptionLoggedIn": "This draft is already attached to another account. Start a similar trip with the same setup.",
-      "loginCta": "Sign in with the original account",
-      "createSimilarCta": "Create similar trip",
-      "benefitsTitle": "What we kept",
+      "eyebrow": "Não é possível reclamar",
+      "title": "Este rascunho de viagem já foi reclamado",
+      "descriptionLoggedOut": "Inicia sessão com a conta original ou começa uma viagem parecida com a mesma configuração.",
+      "descriptionLoggedIn": "Este rascunho já está ligado a outra conta. Começa uma viagem parecida com a mesma configuração.",
+      "loginCta": "Iniciar sessão com a conta original",
+      "createSimilarCta": "Criar viagem parecida",
+      "benefitsTitle": "O que guardámos",
       "benefits": {
-        "prefill": "Reuse your traveler setup, dates, and transport choices.",
-        "adjust": "Adjust the draft before starting a fresh generation."
+        "prefill": "Reaproveita o teu perfil de viagem, as datas e o transporte escolhido.",
+        "adjust": "Ajusta o rascunho antes de começar de novo."
       }
     },
     "addActivity": {
@@ -708,7 +708,8 @@
     "reapplyUnavailable": "Este conjunto não pode ser aplicado de novo aqui."
   },
   "storageNotice": {
-    "tripsPrunedTitle": "O armazenamento do dispositivo esta cheio",
-    "tripsPrunedDescription": "{count, plural, one {Sua viagem salva mais antiga foi removida deste dispositivo para liberar espaco.} other {Suas # viagens salvas mais antigas foram removidas deste dispositivo para liberar espaco.}}"
+    "tripsPrunedTitle": "O armazenamento do dispositivo está cheio",
+    "tripsPrunedDescriptionOne": "A tua viagem guardada mais antiga foi removida deste dispositivo para libertar espaço.",
+    "tripsPrunedDescriptionMany": "As tuas {count} viagens guardadas mais antigas foram removidas deste dispositivo para libertar espaço."
   }
 }

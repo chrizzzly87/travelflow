@@ -58,75 +58,215 @@
     "ctaShort": "رپورٹ",
     "dismiss": "بینر بند کریں"
   },
+  "networkStatus": {
+    "offlineTitle": "آپ آف لائن ہیں۔",
+    "offlineDescription": "لاگ اِن اور کلاؤڈ سنک فی الحال دستیاب نہیں۔ ہم کنکشن دیکھتے رہیں گے اور خود بخود دوبارہ جوڑ دیں گے۔",
+    "offlineChecking": "کنکشن دوبارہ دیکھا جا رہا ہے…"
+  },
   "contact": {
     "title": "رابطہ",
     "description": "ترجمے کی غلطیوں کی رپورٹ یا لوکلائزیشن فیڈبیک بھیجنے کے لیے یہ صفحہ استعمال کریں۔",
-    "formStatusTitle": "رابطہ فارم جلد دستیاب ہوگا",
-    "formStatusBody": "مخصوص فارم ابھی فعال نہیں ہے۔ تب تک براہِ کرم ہمیں ای میل کریں۔",
     "emailLabel": "ای میل",
     "emailValue": "support@travelflow.app",
     "responseNote": "ہم عموماً 2–3 کاروباری دنوں میں جواب دیتے ہیں۔",
-    "backHome": "ہوم پیج پر واپس جائیں"
+    "backHome": "ہوم پیج پر واپس جائیں",
+    "form": {
+      "title": "ہمیں پیغام بھیجیں",
+      "reasonLabel": "موضوع",
+      "reasonPlaceholder": "ایک موضوع چنیں",
+      "reasonOptions": {
+        "bugReport": "ویب سائٹ یا ایپ میں مسئلہ",
+        "featureRequest": "نئی سہولت کی درخواست",
+        "billingAccount": "بلنگ یا اکاؤنٹ",
+        "dataPrivacy": "ڈیٹا یا پرائیویسی کی درخواست",
+        "partnership": "شراکت داری",
+        "other": "دیگر"
+      },
+      "nameLabel": "نام (اختیاری)",
+      "namePlaceholder": "آپ کا نام",
+      "emailLabel": "ای میل",
+      "emailPlaceholder": "you@example.com",
+      "messageLabel": "پیغام",
+      "messagePlaceholder": "بتائیں ہم کیسے مدد کر سکتے ہیں۔",
+      "messageLimitHint": "زیادہ سے زیادہ {max} حروف۔",
+      "privacyNote": "یہ تفصیل صرف آپ کی درخواست پر کارروائی اور جواب کے لیے استعمال ہوتی ہے۔",
+      "submit": "پیغام بھیجیں",
+      "submitting": "بھیجا جا رہا ہے…",
+      "successTitle": "پیغام بھیج دیا گیا",
+      "successBody": "شکریہ، آپ کا پیغام کامیابی سے بھیج دیا گیا۔",
+      "errorTitle": "فارم اس وقت دستیاب نہیں",
+      "errorBody": "ہم آپ کا پیغام فارم کے ذریعے نہیں بھیج سکے۔ براہِ کرم ہمیں براہِ راست ای میل کریں۔",
+      "fallbackTitle": "براہِ راست ای میل کا متبادل",
+      "fallbackBody": "اگر فارم کی حد پوری ہو جائے یا بھیجنا ناکام ہو، تو ہم سے یہاں رابطہ کریں:",
+      "fallbackCta": "contact@wizz.art پر ای میل کریں",
+      "validationReason": "براہِ کرم ایک موضوع چنیں۔",
+      "validationEmail": "براہِ کرم درست ای میل پتہ درج کریں۔",
+      "validationMessage": "براہِ کرم پیغام لکھیں۔",
+      "validationMessageLength": "آپ کا پیغام بہت طویل ہے۔ زیادہ سے زیادہ {max} حروف ہو سکتے ہیں۔",
+      "subReasonLabel": "ذیلی موضوع (اختیاری)",
+      "subReasonPlaceholder": "ذیلی موضوع چنیں (اختیاری)",
+      "subReasonEmptyOption": "کوئی خاص ذیلی موضوع نہیں",
+      "subReasonOptions": {
+        "bugReport": {
+          "pageNotLoadingWorking": "صفحہ نہیں کھل رہا یا کام نہیں کر رہا",
+          "translationWrongMisleading": "ترجمے غلط یا گمراہ کن ہیں",
+          "actionNotWorking": "کوئی بٹن یا عمل کام نہیں کر رہا",
+          "layoutVisualIssue": "خاکے یا ظاہری شکل کا مسئلہ",
+          "mapRoutingIssue": "نقشے یا راستے کا مسئلہ",
+          "performanceIssue": "سست یا غیر مستحکم کارکردگی"
+        },
+        "featureRequest": {
+          "newFeature": "بالکل نئی سہولت",
+          "improveFeature": "موجودہ سہولت میں بہتری",
+          "workflowAutomation": "کام کے طریقے یا خودکاری میں بہتری",
+          "mobileExperience": "موبائل تجربے میں بہتری",
+          "accessibility": "رسائی میں بہتری"
+        },
+        "billingAccount": {
+          "subscriptionChange": "سبسکرپشن بدلنا یا ختم کرنا",
+          "invoiceReceipt": "انوائس یا رسید سے متعلق سوال",
+          "paymentFailed": "ادائیگی ناکام",
+          "refundQuestion": "رقم کی واپسی سے متعلق سوال",
+          "accountAccess": "اکاؤنٹ تک رسائی کا مسئلہ"
+        },
+        "dataPrivacy": {
+          "dataExport": "میرا ڈیٹا برآمد کرنے کی درخواست",
+          "dataDeletion": "ڈیٹا حذف کرنے کی درخواست",
+          "consentCookies": "کوکیز یا رضامندی سے متعلق سوال",
+          "legalQuestion": "قانونی یا پرائیویسی سوال",
+          "securityConcern": "سیکیورٹی سے متعلق تشویش"
+        },
+        "partnership": {
+          "affiliateInfluencer": "ایفیلیئٹ یا تخلیق کاروں سے اشتراک",
+          "brandCampaign": "برانڈ مہم میں شراکت",
+          "mediaPress": "میڈیا یا پریس کی درخواست",
+          "integrationPartner": "انٹیگریشن کی شراکت",
+          "educationNonProfit": "تعلیمی یا غیر منافع بخش اشتراک"
+        },
+        "other": {
+          "generalFeedback": "عمومی رائے",
+          "productQuestion": "پروڈکٹ سے متعلق سوال",
+          "careerOpportunity": "ملازمت کا موقع",
+          "responsibleDisclosure": "سیکیورٹی خامی کی اطلاع",
+          "somethingElse": "کچھ اور"
+        }
+      },
+      "requiredFieldsNote": "* لازمی خانے۔"
+    }
+  },
+  "appDialog": {
+    "tripArchive": {
+      "title": "سفر آرکائیو کریں؟",
+      "confirmLabel": "سفر آرکائیو کریں",
+      "cancelLabel": "منسوخ",
+      "messageQuestion": "کیا واقعی آپ <strong>”{title}“</strong> کو آرکائیو کرنا چاہتے ہیں؟",
+      "messageDetail": "یہ سفر آپ کی فہرست سے ہٹ جائے گا اور بعد میں بحال کیا جا سکتا ہے۔"
+    },
+    "roundTripSync": {
+      "title": "واپسی کے سفر کی آخری منزل بدلیں؟",
+      "messageLead": "یہ سفر واپسی والا لگتا ہے۔",
+      "messageQuestion": "کیا آخری شہر بھی <strong>”{title}“</strong> کر دیں؟",
+      "confirmLabel": "ہاں، آخری شہر بدل دیں",
+      "cancelLabel": "نہیں، ویسا ہی رہنے دیں"
+    },
+    "cityPaletteApply": {
+      "title": "موجودہ شہروں پر پیلیٹ لاگو کریں؟",
+      "messageAuto": "سب شہروں کے رنگ ابھی بدلنے کے لیے <strong>خودکار لاگو کریں</strong> چنیں۔",
+      "messageManual": "موجودہ رنگ برقرار رکھنے اور صرف فعال پیلیٹ بدلنے کے لیے <strong>دستی انتخاب</strong> چنیں۔",
+      "confirmLabel": "خودکار لاگو کریں",
+      "cancelLabel": "دستی انتخاب"
+    },
+    "markdownLink": {
+      "title": "لنک شامل کریں",
+      "messageLine1": "منتخب متن کے لیے ایک ویب پتہ درج کریں یا نیا لنک شامل کریں۔",
+      "messageLine2": "لنک محفوظ ترتیبات کے ساتھ نئے ٹیب میں کھلے گا۔",
+      "label": "URL",
+      "placeholder": "https://example.com",
+      "confirmLabel": "لنک شامل کریں",
+      "cancelLabel": "منسوخ",
+      "validationRequired": "براہِ کرم ایک ویب پتہ درج کریں۔",
+      "validationProtocol": "ویب پتہ http:// یا https:// سے شروع ہونا چاہیے",
+      "validationInvalid": "براہِ کرم درست ویب پتہ درج کریں۔"
+    }
   },
   "connectivity": {
     "banner": {
       "offline": {
-        "title": "You are offline. Changes will be queued.",
-        "messageNone": "Planner stays usable with cached data.",
-        "messageOne": "{count} change is queued and will sync after reconnect.",
-        "messageMany": "{count} changes are queued and will sync after reconnect."
+        "title": "آپ آف لائن ہیں۔ تبدیلیاں قطار میں رکھی جا رہی ہیں۔",
+        "messageNone": "پلانر محفوظ شدہ ڈیٹا کے ساتھ چلتا رہے گا۔",
+        "messageOne": "{count} تبدیلی قطار میں ہے اور دوبارہ جڑتے ہی سنک ہو جائے گی۔",
+        "messageMany": "{count} تبدیلیاں قطار میں ہیں اور دوبارہ جڑتے ہی سنک ہو جائیں گی۔",
+        "browserTitle": "آپ آف لائن ہیں۔ تبدیلیاں اِسی ڈیوائس پر رہیں گی۔",
+        "browserMessage": "دوبارہ جڑتے ہی کلاؤڈ سنک چل پڑے گا۔ ہم خود بخود کوشش کرتے رہیں گے۔",
+        "serviceTitle": "کلاؤڈ سنک عارضی طور پر دستیاب نہیں۔",
+        "serviceMessage": "آپ کا انٹرنیٹ چل رہا ہے، مگر سنک سروس جواب نہیں دے رہی۔ آپ کی تبدیلیاں قطار میں محفوظ ہیں۔"
       },
       "degraded": {
-        "title": "Connection is unstable. Saving in resilient mode.",
-        "messageNone": "Planner stays usable while we retry in the background.",
-        "messageOne": "{count} queued change will sync when Supabase stabilizes.",
-        "messageMany": "{count} queued changes will sync when Supabase stabilizes."
+        "title": "کنکشن غیر مستحکم ہے۔ ہم محفوظ موڈ میں محفوظ کر رہے ہیں۔",
+        "messageNone": "پس منظر میں دوبارہ کوشش کے دوران بھی پلانر چلتا رہے گا۔",
+        "messageOne": "کنکشن مستحکم ہوتے ہی {count} تبدیلی سنک ہو جائے گی۔",
+        "messageMany": "کنکشن مستحکم ہوتے ہی {count} تبدیلیاں سنک ہو جائیں گی۔",
+        "serviceMessage": "اس وقت کلاؤڈ سنک غیر مستحکم ہے۔ ہم پس منظر میں کوشش جاری رکھے ہوئے ہیں۔"
       },
       "syncing": {
-        "title": "Sync in progress",
-        "messageOne": "{count} change is waiting to sync.",
-        "messageMany": "{count} changes are waiting to sync.",
-        "progressOne": "Syncing {count} queued change...",
-        "progressMany": "Syncing {count} queued changes..."
+        "title": "سنک جاری ہے",
+        "messageOne": "{count} تبدیلی سنک ہونے کی منتظر ہے۔",
+        "messageMany": "{count} تبدیلیاں سنک ہونے کی منتظر ہیں۔",
+        "progressOne": "قطار میں موجود {count} تبدیلی سنک ہو رہی ہے…",
+        "progressMany": "قطار میں موجود {count} تبدیلیاں سنک ہو رہی ہیں…"
       },
-      "forcedMode": "Supabase outage simulation is currently forced in debugger mode.",
+      "forcedMode": "ڈیبگ موڈ میں کنکشن خرابی کی نقل چل رہی ہے۔",
       "actions": {
-        "retrySync": "Retry failed sync",
-        "dismiss": "Dismiss connectivity banner",
+        "retrySync": "سنک دوبارہ آزمائیں",
+        "dismiss": "کنکشن کا پیغام چھپائیں",
         "contact": "رابطہ",
-        "email": "Email support"
+        "email": "سپورٹ کو ای میل کریں"
       },
-      "retryHint": "Retrying Supabase connection every 30s while this tab stays open."
+      "retryHint": "یہ ٹیب کھلا رہنے تک ہم ہر 30 سیکنڈ بعد دوبارہ جڑنے کی کوشش کرتے ہیں۔"
     },
     "tripStrip": {
       "offline": {
-        "messageNone": "Offline mode enabled. Trip data is served from local cache.",
-        "messageOne": "Offline mode enabled. {count} change is queued for sync.",
-        "messageMany": "Offline mode enabled. {count} changes are queued for sync."
+        "messageNone": "آف لائن موڈ آن ہے۔ سفر کا ڈیٹا مقامی کاپی سے آ رہا ہے۔",
+        "messageOne": "آف لائن موڈ آن ہے۔ {count} تبدیلی سنک کی قطار میں ہے۔",
+        "messageMany": "آف لائن موڈ آن ہے۔ {count} تبدیلیاں سنک کی قطار میں ہیں۔",
+        "browser": "آف لائن موڈ آن ہے۔ آپ کی تازہ تبدیلیاں دوبارہ جڑنے تک اِسی ڈیوائس پر محفوظ رہیں گی۔",
+        "service": "کلاؤڈ سنک اس وقت دستیاب نہیں۔ آپ کی تازہ تبدیلیاں قطار میں محفوظ ہیں۔"
       },
       "degraded": {
-        "messageNone": "Connection is degraded. Edits are protected with local queue fallback.",
-        "messageOne": "Connection is degraded. {count} change is queued for replay.",
-        "messageMany": "Connection is degraded. {count} changes are queued for replay."
+        "messageNone": "کنکشن کمزور ہے۔ ہم آپ کی تبدیلیاں مقامی قطار میں محفوظ رکھ رہے ہیں۔",
+        "messageOne": "کنکشن کمزور ہے۔ {count} تبدیلی دوبارہ بھیجے جانے کی منتظر ہے۔",
+        "messageMany": "کنکشن کمزور ہے۔ {count} تبدیلیاں دوبارہ بھیجے جانے کی منتظر ہیں۔",
+        "service": "کنکشن کمزور ہے۔ ہم رُکی ہوئی تبدیلیاں پس منظر میں بھیج رہے ہیں۔"
       },
-      "forcedSuffix": "(forced by debugger)",
-      "retry": "Retry failed sync",
-      "serverBackup": "A newer server version was backed up before replay. You can restore it if needed.",
-      "restoreServerVersion": "Restore server version",
-      "syncingOne": "Syncing {count} queued change to Supabase...",
-      "syncingMany": "Syncing {count} queued changes to Supabase...",
-      "pendingOne": "{count} queued change is waiting for replay.",
-      "pendingMany": "{count} queued changes are waiting for replay."
+      "forcedSuffix": "(ڈیبگر سے نافذ)",
+      "retry": "سنک دوبارہ آزمائیں",
+      "serverBackup": "سرور پر زیادہ نئی نسخہ موجود تھی۔ بھیجنے سے پہلے ہم نے اسے محفوظ کر لیا، ضرورت ہو تو واپس لا سکتے ہیں۔",
+      "restoreServerVersion": "سرور والی نسخہ بحال کریں",
+      "syncingOne": "{count} تبدیلی کلاؤڈ کو بھیجی جا رہی ہے…",
+      "syncingMany": "{count} تبدیلیاں کلاؤڈ کو بھیجی جا رہی ہیں…",
+      "pendingOne": "{count} تبدیلی دوبارہ بھیجے جانے کی منتظر ہے۔",
+      "pendingMany": "{count} تبدیلیاں دوبارہ بھیجے جانے کی منتظر ہیں۔"
     },
     "toast": {
-      "title": "Sync status",
-      "syncCompleted": "Queued trip changes synced successfully.",
-      "serverBackupRestored": "Server backup restored for this trip.",
+      "title": "سنک کی صورتحال",
+      "syncCompleted": "سفر کی رُکی ہوئی تبدیلیاں سنک ہو گئیں۔",
+      "serverBackupRestored": "اس سفر کا سرور بیک اپ بحال کر دیا گیا۔",
       "conflictPreserved": "سرور پر اس سفر کے لیے نئی تبدیلیاں موجود تھیں۔ آپ کا آف لائن ورژن بیک اپ کے طور پر محفوظ رکھا گیا۔",
-      "syncStartedOne": "Reconnect detected. Replaying {count} queued change.",
-      "syncStartedMany": "Reconnect detected. Replaying {count} queued changes.",
-      "syncPartialFailureOne": "{count} queued change still failed. You can retry.",
-      "syncPartialFailureMany": "{count} queued changes still failed. You can retry."
+      "syncStartedOne": "کنکشن بحال ہو گیا۔ {count} تبدیلی بھیجی جا رہی ہے۔",
+      "syncStartedMany": "کنکشن بحال ہو گیا۔ {count} تبدیلیاں بھیجی جا رہی ہیں۔",
+      "syncPartialFailureOne": "{count} تبدیلی اب بھی نہیں بھیجی جا سکی۔ آپ دوبارہ کوشش کر سکتے ہیں۔",
+      "syncPartialFailureMany": "{count} تبدیلیاں اب بھی نہیں بھیجی جا سکیں۔ آپ دوبارہ کوشش کر سکتے ہیں۔"
+    },
+    "globalBadge": {
+      "offline": "آف لائن",
+      "syncing": "سنک ہو رہا ہے…",
+      "online": "آن لائن",
+      "details": {
+        "offlineBrowser": "آپ آف لائن ہیں۔ آپ کی تبدیلیاں اِسی ڈیوائس پر رہیں گی اور دوبارہ جڑتے ہی بھیج دی جائیں گی۔",
+        "offlineService": "آپ کا انٹرنیٹ چل رہا ہے، مگر کلاؤڈ سنک دستیاب نہیں۔ ہم کوشش جاری رکھیں گے۔",
+        "syncingQueue": "رُکی ہوئی تبدیلیاں بھیجی جا رہی ہیں۔ باقی: {count}۔",
+        "online": "کنکشن ٹھیک ہے اور سب کچھ سنک ہے۔"
+      }
     }
   },
   "tripPaywall": {
@@ -162,119 +302,204 @@
       }
     }
   },
-  "tripRouteShell": {
-    "loadingTrip": "Loading trip",
-    "preparingPlanner": "Preparing planner",
-    "loadingSharedTrip": "Loading shared trip",
-    "preparingSharedPlanner": "Preparing shared planner",
-    "loadingExampleTrip": "Loading example trip",
-    "preparingExamplePlanner": "Preparing example planner"
-  },
   "tripView": {
+    "visualHistory": {
+      "mapPreviewState": "نقشے کا پیش منظر: {from} سے {to} تک",
+      "mapPreviewStateValue": {
+        "docked": "جُڑا ہوا",
+        "floating": "تیرتا ہوا"
+      }
+    },
+    "generation": {
+      "strip": {
+        "failedDefault": "سفر نہیں بن سکا۔ تشخیصی تفصیل دیکھیں یا ڈیفالٹ ماڈل کے ساتھ دوبارہ کوشش کریں۔",
+        "running": "آپ کا سفر بنایا جا رہا ہے…",
+        "retry": "دوبارہ بنائیں",
+        "retrying": "دوبارہ کوشش جاری…",
+        "slow": "معمول سے زیادہ وقت لگ رہا ہے۔",
+        "abortRetry": "روک کر دوبارہ کوشش",
+        "changeModel": "ماڈل بدلیں"
+      },
+      "tripInfo": {
+        "title": "اے آئی سے تیاری",
+        "provider": "فراہم کنندہ",
+        "model": "ماڈل",
+        "providerModel": "فراہم کنندہ کا ماڈل",
+        "requestId": "درخواست آئی ڈی",
+        "runTime": "دورانیہ",
+        "httpStatus": "HTTP اسٹیٹس",
+        "started": "آغاز",
+        "finished": "اختتام",
+        "failureKind": "خرابی کی قسم",
+        "errorCode": "ایرر کوڈ",
+        "errorMessage": "ایرر پیغام",
+        "generatedAt": "کب بنایا گیا",
+        "recentAttempts": "حالیہ کوششیں",
+        "modelFallback": "ماڈل دستیاب نہیں",
+        "retry": "ڈیفالٹ ماڈل سے دوبارہ بنائیں",
+        "retrying": "ڈیفالٹ ماڈل سے دوبارہ کوشش جاری…",
+        "state": {
+          "failed": "ناکام",
+          "running": "جاری",
+          "queued": "قطار میں",
+          "succeeded": "مکمل"
+        },
+        "orchestration": "اجرا کا طریقہ"
+      },
+      "retry": {
+        "readOnly": "یہ سفر صرف پڑھنے کے لیے ہے، اس لیے دوبارہ نہیں بنایا جا سکتا۔",
+        "readOnlyTitle": "دوبارہ کوشش ممکن نہیں",
+        "missingSnapshot": "دوبارہ کوشش کے لیے محفوظ ابتدائی ڈیٹا چاہیے، جو اس سفر کے پاس نہیں۔",
+        "missingSnapshotTitle": "دوبارہ کوشش ممکن نہیں",
+        "queued": "نئی کوشش شروع ہو گئی اور پس منظر میں چل رہی ہے۔",
+        "queuedTitle": "نئی کوشش شروع",
+        "completed": "آپ کا سفر ڈیفالٹ ماڈل سے بن گیا۔",
+        "completedTitle": "نئی کوشش کامیاب",
+        "failed": "سفر پھر بھی نہیں بن سکا۔ تشخیصی تفصیل دیکھیں اور بعد میں کوشش کریں۔",
+        "failedTitle": "نئی کوشش ناکام",
+        "unexpected": "نئی کوشش غیر متوقع طور پر ناکام ہو گئی۔"
+      }
+    },
+    "pendingAuth": {
+      "eyebrowLoading": "سفر کی تیاری جاری",
+      "titleLoading": "آپ کا سفر تیار کیا جا رہا ہے",
+      "descriptionLoading": "ہم آپ کے انتخاب محفوظ کر رہے ہیں اور دیکھ رہے ہیں کہ منصوبہ بنانے کا بہترین طریقہ کیا ہے۔",
+      "eyebrowLocked": "اکاؤنٹ درکار",
+      "titleLocked": "سفر بنانا صرف رجسٹرڈ صارفین کے لیے ہے",
+      "descriptionLocked": "لاگ اِن کریں یا اکاؤنٹ بنائیں تاکہ یہ مسودہ آپ کے نام ہو جائے اور سفر مکمل بننا شروع ہو۔",
+      "cta": "لاگ اِن کریں یا اکاؤنٹ بنائیں",
+      "benefitsTitle": "اکاؤنٹ کیوں بنائیں",
+      "benefits": {
+        "keep": "یہ سفر محفوظ رکھیں اور بعد میں اس پر واپس آئیں۔",
+        "background": "سفر کی تیاری پس منظر میں مکمل ہونے دیں۔",
+        "sync": "ہر ڈیوائس پر ترمیم، دوبارہ کوشش اور سنک کریں۔"
+      }
+    },
+    "warningSummary": {
+      "title": "مسافروں کے لحاظ سے نکات",
+      "description": "آپ کے مسافروں کی ترتیب کے حساب سے کچھ پڑاؤ کے ساتھ عملی احتیاطیں درج ہیں۔"
+    },
     "header": {
-      "titleTooltipEditable": "Open trip details and edit the title",
-      "titleTooltipReadonly": "Open trip details",
-      "editTitleCta": "Edit title",
-      "openDetailsCta": "Open details",
-      "trips": "Trips",
-      "tripsTooltip": "Back to your trips",
-      "share": "Share",
-      "shareDisabled": "Activate this trip to share it"
+      "titleTooltipEditable": "سفر کی تفصیل کھولیں اور عنوان بدلیں",
+      "titleTooltipReadonly": "سفر کی تفصیل کھولیں",
+      "editTitleCta": "عنوان بدلیں",
+      "openDetailsCta": "تفصیل کھولیں",
+      "trips": "سفر",
+      "tripsTooltip": "اپنے سفروں پر واپس جائیں",
+      "share": "شیئر کریں",
+      "shareDisabled": "شیئر کرنے کے لیے یہ سفر فعال کریں"
     },
     "zoom": {
-      "fit": "Fit",
-      "fitAria": "Fit timeline to available space",
-      "presetAria": "Set timeline zoom to {value}"
+      "fit": "فٹ کریں",
+      "fitAria": "ٹائم لائن کو دستیاب جگہ کے مطابق کریں",
+      "presetAria": "ٹائم لائن کا زوم {value} پر رکھیں"
     },
     "infoDialog": {
-      "title": "Trip details",
-      "description": "Edit core info, review history, export the trip, and check destination context.",
-      "close": "Close trip details dialog",
+      "title": "سفر کی تفصیل",
+      "description": "بنیادی معلومات بدلیں، تاریخ دیکھیں، سفر برآمد کریں اور منزل کے بارے میں جانیں۔",
+      "close": "سفر کی تفصیل بند کریں",
       "tabs": {
-        "general": "General",
-        "history": "History",
-        "export": "Export",
-        "destination": "Destination",
-        "debug": "Debug"
+        "general": "عمومی",
+        "history": "تاریخ",
+        "export": "برآمد",
+        "destination": "منزل",
+        "debug": "ڈیبگ"
       },
       "general": {
-        "titleLabel": "Trip title",
-        "editHint": "Click into the title to rename the trip or adjust the essentials here.",
-        "readOnlyHintExample": "Example trips stay read-only here. Copy the trip first if you want to rename it or save it as a favorite.",
-        "readOnlyHintShared": "This shared trip is read-only. You can review the details here, but editing is disabled.",
-        "favoriteAdd": "Add to favorites",
-        "favoriteRemove": "Remove from favorites",
-        "favoriteOn": "Favorite",
-        "favoriteOff": "Favorite",
-        "retryInProgress": "Retry is already in progress.",
-        "openBenchmark": "Open in AI Benchmark",
+        "titleLabel": "سفر کا عنوان",
+        "editAction": "عنوان بدلیں",
+        "saveAction": "عنوان محفوظ کریں",
+        "editHint": "سفر کا نام بدلنے کے لیے عنوان پر کلک کریں، یا یہیں بنیادی تفصیل درست کریں۔",
+        "readOnlyHintExample": "نمونہ سفر صرف پڑھنے کے لیے ہیں۔ نام بدلنا ہو یا پسندیدہ میں رکھنا ہو تو پہلے اس کی کاپی بنائیں۔",
+        "readOnlyHintShared": "یہ شیئر کیا گیا سفر صرف پڑھنے کے لیے ہے۔ تفصیل دیکھ سکتے ہیں، بدل نہیں سکتے۔",
+        "favoriteAdd": "پسندیدہ میں شامل کریں",
+        "favoriteRemove": "پسندیدہ سے نکالیں",
+        "favoriteOn": "پسندیدہ",
+        "favoriteOff": "پسندیدہ",
+        "retryInProgress": "ایک کوشش پہلے ہی جاری ہے۔",
+        "openBenchmark": "AI Benchmark میں کھولیں",
         "sections": {
-          "meta": "Trip meta",
-          "source": "Trip source"
+          "meta": "سفر کی معلومات",
+          "source": "سفر کا ماخذ"
         },
         "meta": {
-          "duration": "Duration",
-          "totalDays": "Total days",
-          "totalDaysValue": "{count} days",
-          "cities": "Cities",
-          "totalDistance": "Total distance",
-          "owner": "Owner",
-          "access": "Access"
+          "duration": "دورانیہ",
+          "totalDays": "کل دن",
+          "totalDaysValue": "{count} دن",
+          "tripSpan": "دن اور راتیں",
+          "tripSpanValue": "{days} دن / {nights} راتیں",
+          "cities": "شہر",
+          "totalDistance": "کل فاصلہ",
+          "owner": "مالک",
+          "access": "رسائی"
         },
-        "sourceSharedDescription": "This itinerary was copied from a shared trip snapshot.",
-        "sourceTripDescription": "This itinerary was copied from another trip in your workspace.",
-        "viewSource": "View source"
+        "sourceSharedDescription": "یہ منصوبہ ایک شیئر کیے گئے سفر سے نقل کیا گیا ہے۔",
+        "sourceTripDescription": "یہ منصوبہ آپ کے کسی دوسرے سفر سے نقل کیا گیا ہے۔",
+        "viewSource": "اصل دیکھیں"
       },
       "history": {
-        "example": "Example trips do not save history snapshots. Copy this trip first if you want to keep edits and revisit them later.",
-        "undo": "Undo",
-        "redo": "Redo",
-        "showAll": "Show all",
-        "showRecent": "Show recent",
-        "empty": "No history entries yet.",
-        "current": "Current",
-        "notSynced": "Not synced",
-        "go": "Go",
-        "pendingSyncOne": "1 latest change is saved locally and not synced yet.",
-        "pendingSyncMany": "{count} latest changes are saved locally and not synced yet.",
-        "failedSyncOne": "1 queued change still failed to sync. Retry sync to publish it.",
-        "failedSyncMany": "{count} queued changes still failed to sync. Retry sync to publish them."
+        "example": "نمونہ سفر تاریخ محفوظ نہیں کرتے۔ تبدیلیاں رکھنی ہوں اور بعد میں دیکھنی ہوں تو پہلے اس سفر کی کاپی بنائیں۔",
+        "undo": "واپس لیں",
+        "redo": "دوبارہ کریں",
+        "showAll": "سب دکھائیں",
+        "showRecent": "حالیہ دکھائیں",
+        "empty": "تاریخ میں ابھی کچھ نہیں۔",
+        "current": "موجودہ",
+        "notSynced": "سنک نہیں ہوا",
+        "go": "جائیں",
+        "pendingSyncOne": "1 حالیہ تبدیلی اِسی ڈیوائس پر محفوظ ہے اور ابھی سنک نہیں ہوئی۔",
+        "pendingSyncMany": "{count} حالیہ تبدیلیاں اِسی ڈیوائس پر محفوظ ہیں اور ابھی سنک نہیں ہوئیں۔",
+        "failedSyncOne": "قطار میں موجود 1 تبدیلی اب بھی سنک نہیں ہوئی۔ شائع کرنے کے لیے سنک دوبارہ آزمائیں۔",
+        "failedSyncMany": "قطار میں موجود {count} تبدیلیاں اب بھی سنک نہیں ہوئیں۔ شائع کرنے کے لیے سنک دوبارہ آزمائیں۔"
       },
       "export": {
         "activities": {
-          "title": "Activities calendar",
-          "description": "Export planned activities as an .ics file so you can drop them into your calendar app.",
-          "action": "Export activities (.ics)"
+          "title": "سرگرمیوں کا کیلنڈر",
+          "description": "طے شدہ سرگرمیاں .ics فائل میں برآمد کریں اور اپنے کیلنڈر ایپ میں ڈال لیں۔",
+          "action": "سرگرمیاں برآمد کریں (.ics)"
         },
         "cities": {
-          "title": "Cities calendar",
-          "description": "Create a cleaner trip skeleton with city arrivals and stays only.",
-          "action": "Export cities (.ics)"
+          "title": "شہروں کا کیلنڈر",
+          "description": "صرف شہروں میں آمد اور قیام کے ساتھ سفر کا سادہ خاکہ بنائیں۔",
+          "action": "شہر برآمد کریں (.ics)"
         },
         "everything": {
-          "title": "Complete calendar bundle",
-          "description": "Download one calendar file with cities, transfers, and activities together.",
-          "action": "Download everything (.ics)"
+          "title": "مکمل کیلنڈر بنڈل",
+          "description": "شہر، سفر اور سرگرمیاں ایک ہی کیلنڈر فائل میں ڈاؤن لوڈ کریں۔",
+          "action": "سب ڈاؤن لوڈ کریں (.ics)"
         },
         "print": {
-          "title": "Print layout",
-          "description": "Open a print-friendly version of this trip for PDFs, handouts, or trip briefings.",
-          "action": "Open print layout"
+          "title": "پرنٹ کا خاکہ",
+          "description": "اس سفر کا پرنٹ کے لیے موزوں نسخہ کھولیں — پی ڈی ایف یا کاغذ کے لیے مفید۔",
+          "action": "پرنٹ کا خاکہ کھولیں"
         }
       },
       "destination": {
-        "locked": "Destination details unlock once this trip is activated.",
-        "empty": "No destination information is available for this trip yet.",
-        "futureChecksTitle": "Future destination checks",
-        "futureChecksDescription": "This tab is ready for more trip-specific guidance as we add richer destination data.",
+        "locked": "یہ سفر فعال ہوتے ہی منزل کی تفصیل کھل جائے گی۔",
+        "empty": "اس سفر کی منزل کے بارے میں ابھی کوئی معلومات نہیں۔",
+        "futureChecksTitle": "منزل سے متعلق آنے والی جانچ",
+        "futureChecksDescription": "جیسے جیسے منزلوں کا ڈیٹا بڑھے گا، اس ٹیب میں مزید رہنمائی آتی جائے گی۔",
         "futureChecks": {
-          "visa": "Visa",
-          "entryRules": "Entry rules",
-          "safety": "Safety",
-          "customs": "Customs",
-          "connectivity": "Connectivity",
-          "health": "Health"
+          "visa": "ویزا",
+          "entryRules": "داخلے کے قواعد",
+          "safety": "حفاظت",
+          "customs": "کسٹم",
+          "connectivity": "رابطہ",
+          "health": "صحت"
         }
+      }
+    },
+    "claimConflict": {
+      "eyebrow": "اپنے نام نہیں کر سکتے",
+      "title": "یہ سفر کا مسودہ پہلے ہی کسی نے لے لیا ہے",
+      "descriptionLoggedOut": "اصل اکاؤنٹ سے لاگ اِن کریں یا انہی ترتیبات کے ساتھ ملتا جلتا سفر شروع کریں۔",
+      "descriptionLoggedIn": "یہ مسودہ پہلے ہی کسی اور اکاؤنٹ سے جڑا ہے۔ انہی ترتیبات کے ساتھ ملتا جلتا سفر شروع کریں۔",
+      "loginCta": "اصل اکاؤنٹ سے لاگ اِن کریں",
+      "createSimilarCta": "ملتا جلتا سفر بنائیں",
+      "benefitsTitle": "ہم نے کیا محفوظ رکھا",
+      "benefits": {
+        "prefill": "آپ کے مسافروں کی ترتیب، تاریخیں اور سفر کے ذرائع دوبارہ کام آئیں گے۔",
+        "adjust": "نئی تیاری شروع ہونے سے پہلے مسودہ درست کر لیں۔"
       }
     },
     "addActivity": {
@@ -290,6 +515,14 @@
       "close": "بند کریں",
       "popupLabel": "سرگرمی کی تفصیلات"
     }
+  },
+  "tripRouteShell": {
+    "loadingTrip": "سفر لوڈ ہو رہا ہے",
+    "preparingPlanner": "پلانر تیار ہو رہا ہے",
+    "loadingSharedTrip": "شیئر کیا گیا سفر لوڈ ہو رہا ہے",
+    "preparingSharedPlanner": "شیئر کیا گیا پلانر تیار ہو رہا ہے",
+    "loadingExampleTrip": "نمونہ سفر لوڈ ہو رہا ہے",
+    "preparingExamplePlanner": "نمونہ پلانر تیار ہو رہا ہے"
   },
   "tripAgent": {
     "title": "AI کے ساتھ منصوبہ بنائیں",
@@ -476,6 +709,7 @@
   },
   "storageNotice": {
     "tripsPrunedTitle": "ڈیوائس کی اسٹوریج بھر گئی ہے",
-    "tripsPrunedDescription": "{count, plural, one {جگہ خالی کرنے کے لیے آپ کا سب سے پرانا محفوظ سفر اس ڈیوائس سے ہٹا دیا گیا۔} other {جگہ خالی کرنے کے لیے آپ کے # سب سے پرانے محفوظ سفر اس ڈیوائس سے ہٹا دیے گئے۔}}"
+    "tripsPrunedDescriptionOne": "جگہ خالی کرنے کے لیے آپ کا سب سے پرانا محفوظ سفر اس ڈیوائس سے ہٹا دیا گیا۔",
+    "tripsPrunedDescriptionMany": "جگہ خالی کرنے کے لیے آپ کے {count} سب سے پرانے محفوظ سفر اس ڈیوائس سے ہٹا دیے گئے۔"
   }
 }

@@ -23,7 +23,12 @@ export const useTripsPrunedNoticeBootstrap = (): void => {
                 id: TRIPS_PRUNED_TOAST_ID,
                 tone: 'warning',
                 title: t('storageNotice.tripsPrunedTitle'),
-                description: t('storageNotice.tripsPrunedDescription', { count: prunedCount }),
+                description: t(
+                    prunedCount === 1
+                        ? 'storageNotice.tripsPrunedDescriptionOne'
+                        : 'storageNotice.tripsPrunedDescriptionMany',
+                    { count: prunedCount },
+                ),
             });
         };
 

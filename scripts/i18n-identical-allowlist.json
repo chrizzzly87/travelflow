@@ -1,0 +1,130 @@
+{
+  "_comment": "Keys whose value legitimately matches English. 'sharedKeys' match in every locale (language endonyms, brand names, the support address, unit formats). 'perLocale' are loanwords and cognates that are natural in that language. Anything not listed is reported by scripts/validate-i18n.mjs as an untranslated-value warning; add an entry only after confirming the match is intentional.",
+  "sharedKeys": [
+    "common.json:appDialog.markdownLink.label",
+    "common.json:appDialog.markdownLink.placeholder",
+    "common.json:language.de",
+    "common.json:language.en",
+    "common.json:language.es",
+    "common.json:language.fa",
+    "common.json:language.fr",
+    "common.json:language.it",
+    "common.json:language.ko",
+    "common.json:language.pl",
+    "common.json:language.pt",
+    "common.json:language.ru",
+    "common.json:language.ur",
+    "common.json:tripAgent.activityRunningStep",
+    "common.json:tripAgent.agentName",
+    "createTrip.json:wizard.details.budgetLabel",
+    "createTrip.json:wizard.review.route",
+    "pages.json:shareUnavailable.offlineDescription",
+    "pricing.json:tiers.backpacker.name",
+    "pricing.json:tiers.explorer.name",
+    "pricing.json:tiers.globetrotter.name",
+    "profile.json:stamps.pageIndicator",
+    "profile.json:summary.usernamePrefix"
+  ],
+  "perLocale": {
+    "de": [
+      "common.json:connectivity.globalBadge.offline",
+      "common.json:connectivity.globalBadge.online",
+      "common.json:contact.emailValue",
+      "common.json:contact.form.nameLabel",
+      "common.json:footer.cookies",
+      "common.json:nav.admin",
+      "common.json:nav.blog",
+      "common.json:tripAgent.activityElapsed",
+      "common.json:tripAgent.contextGroups.travel",
+      "common.json:tripAgent.contextKinds.travel",
+      "common.json:tripAgent.routeDistance",
+      "common.json:tripView.infoDialog.tabs.debug",
+      "common.json:tripView.infoDialog.tabs.export",
+      "common.json:tripView.mapLinks.google"
+    ],
+    "es": [
+      "common.json:contact.emailValue",
+      "common.json:footer.cookies",
+      "common.json:nav.admin",
+      "common.json:nav.blog",
+      "common.json:tripAgent.activityElapsed",
+      "common.json:tripAgent.routeDistance",
+      "common.json:tripAgent.routeDuration",
+      "common.json:tripView.infoDialog.tabs.general",
+      "common.json:tripView.mapLinks.apple",
+      "common.json:tripView.mapLinks.google"
+    ],
+    "fa": [
+      "common.json:contact.form.emailPlaceholder"
+    ],
+    "fr": [
+      "common.json:connectivity.banner.actions.contact",
+      "common.json:contact.emailValue",
+      "common.json:contact.form.messageLabel",
+      "common.json:contact.title",
+      "common.json:footer.contact",
+      "common.json:footer.cookies",
+      "common.json:nav.admin",
+      "common.json:nav.blog",
+      "common.json:nav.inspirations",
+      "common.json:tripAgent.activityElapsed",
+      "common.json:tripAgent.routeDistance",
+      "common.json:tripAgent.routeDuration",
+      "common.json:tripView.infoDialog.destination.futureChecks.visa",
+      "common.json:tripView.infoDialog.tabs.destination",
+      "common.json:tripView.mapLinks.google"
+    ],
+    "it": [
+      "common.json:connectivity.globalBadge.offline",
+      "common.json:connectivity.globalBadge.online",
+      "common.json:contact.emailValue",
+      "common.json:contact.form.emailLabel",
+      "common.json:contact.form.reasonOptions.partnership",
+      "common.json:footer.privacy",
+      "common.json:nav.admin",
+      "common.json:nav.blog",
+      "common.json:tripAgent.activityElapsed",
+      "common.json:tripAgent.routeDistance",
+      "common.json:tripAgent.routeDuration",
+      "common.json:tripView.generation.tripInfo.provider",
+      "common.json:tripView.infoDialog.tabs.debug",
+      "common.json:tripView.mapLinks.google"
+    ],
+    "ko": [
+      "common.json:contact.emailValue",
+      "common.json:contact.form.emailPlaceholder",
+      "common.json:tripAgent.routeDistance"
+    ],
+    "pl": [
+      "common.json:connectivity.globalBadge.offline",
+      "common.json:connectivity.globalBadge.online",
+      "common.json:contact.emailValue",
+      "common.json:footer.cookies",
+      "common.json:nav.admin",
+      "common.json:nav.blog",
+      "common.json:tripAgent.activityElapsed",
+      "common.json:tripAgent.routeDistance",
+      "common.json:tripView.generation.tripInfo.model"
+    ],
+    "pt": [
+      "common.json:connectivity.globalBadge.offline",
+      "common.json:connectivity.globalBadge.online",
+      "common.json:contact.emailValue",
+      "common.json:contact.form.emailLabel",
+      "common.json:footer.cookies",
+      "common.json:nav.admin",
+      "common.json:nav.blog",
+      "common.json:tripAgent.activityElapsed",
+      "common.json:tripAgent.routeDistance",
+      "common.json:tripAgent.routeDuration",
+      "common.json:tripView.mapLinks.google"
+    ],
+    "ru": [
+      "common.json:contact.emailValue",
+      "common.json:contact.form.emailPlaceholder"
+    ],
+    "ur": [
+      "common.json:contact.form.emailPlaceholder"
+    ]
+  }
+}

@@ -192,80 +192,80 @@
   "connectivity": {
     "banner": {
       "offline": {
-        "title": "You are offline. Changes will be queued.",
-        "messageNone": "Planner stays usable with cached data.",
-        "messageOne": "{count} change is queued and will sync after reconnect.",
-        "messageMany": "{count} changes are queued and will sync after reconnect.",
-        "browserTitle": "You are offline. Changes stay local.",
-        "browserMessage": "Reconnect to continue cloud sync. We will retry automatically.",
-        "serviceTitle": "Cloud sync is temporarily unavailable.",
-        "serviceMessage": "Your internet works, but the sync service is not responding. Edits stay queued and safe."
+        "title": "Вы офлайн. Изменения встанут в очередь.",
+        "messageNone": "Планировщик работает на сохранённых данных.",
+        "messageOne": "{count} изменение в очереди — синхронизируем, как только связь вернётся.",
+        "messageMany": "Изменений в очереди: {count}. Синхронизируем, как только связь вернётся.",
+        "browserTitle": "Вы офлайн. Изменения остаются на этом устройстве.",
+        "browserMessage": "Синхронизация с облаком продолжится, как только связь вернётся. Мы пробуем автоматически.",
+        "serviceTitle": "Синхронизация с облаком временно недоступна.",
+        "serviceMessage": "Интернет работает, но сервис синхронизации не отвечает. Ваши правки ждут в очереди и не потеряются."
       },
       "degraded": {
-        "title": "Connection is unstable. Saving in resilient mode.",
-        "messageNone": "Planner stays usable while we retry in the background.",
-        "messageOne": "{count} queued change will sync when Supabase stabilizes.",
-        "messageMany": "{count} queued changes will sync when Supabase stabilizes.",
-        "serviceMessage": "Cloud sync is unstable right now. We keep retrying in the background."
+        "title": "Связь нестабильна. Сохраняем в защищённом режиме.",
+        "messageNone": "Планировщик работает, а мы повторяем попытки в фоне.",
+        "messageOne": "{count} изменение синхронизируется, как только связь стабилизируется.",
+        "messageMany": "Изменений в очереди: {count}. Синхронизируем, как только связь стабилизируется.",
+        "serviceMessage": "Синхронизация с облаком сейчас нестабильна. Продолжаем повторять попытки в фоне."
       },
       "syncing": {
-        "title": "Sync in progress",
-        "messageOne": "{count} change is waiting to sync.",
-        "messageMany": "{count} changes are waiting to sync.",
-        "progressOne": "Syncing {count} queued change...",
-        "progressMany": "Syncing {count} queued changes..."
+        "title": "Идёт синхронизация",
+        "messageOne": "{count} изменение ждёт синхронизации.",
+        "messageMany": "Ждут синхронизации: {count}.",
+        "progressOne": "Синхронизируем {count} изменение из очереди…",
+        "progressMany": "Синхронизируем изменения из очереди: {count}…"
       },
-      "forcedMode": "Supabase outage simulation is currently forced in debugger mode.",
+      "forcedMode": "В режиме отладки включена имитация сбоя связи.",
       "actions": {
-        "retrySync": "Retry failed sync",
-        "dismiss": "Dismiss connectivity banner",
+        "retrySync": "Повторить синхронизацию",
+        "dismiss": "Скрыть уведомление о связи",
         "contact": "Контакты",
-        "email": "Email support"
+        "email": "Написать в поддержку"
       },
-      "retryHint": "Retrying Supabase connection every 30s while this tab stays open."
+      "retryHint": "Пробуем подключиться каждые 30 с, пока эта вкладка открыта."
     },
     "tripStrip": {
       "offline": {
-        "messageNone": "Offline mode enabled. Trip data is served from local cache.",
-        "messageOne": "Offline mode enabled. {count} change is queued for sync.",
-        "messageMany": "Offline mode enabled. {count} changes are queued for sync.",
-        "browser": "Offline mode enabled. Your latest edits are saved locally until reconnect.",
-        "service": "Cloud sync is currently unavailable. Your latest edits are queued safely."
+        "messageNone": "Офлайн-режим включён. Данные поездки берём из локальной копии.",
+        "messageOne": "Офлайн-режим включён. {count} изменение ждёт синхронизации.",
+        "messageMany": "Офлайн-режим включён. Ждут синхронизации: {count}.",
+        "browser": "Офлайн-режим включён. Последние правки хранятся на этом устройстве до возвращения связи.",
+        "service": "Синхронизация с облаком сейчас недоступна. Последние правки ждут в очереди и не потеряются."
       },
       "degraded": {
-        "messageNone": "Connection is degraded. Edits are protected with local queue fallback.",
-        "messageOne": "Connection is degraded. {count} change is queued for replay.",
-        "messageMany": "Connection is degraded. {count} changes are queued for replay.",
-        "service": "Connection is degraded. We are retrying queued edits in the background."
+        "messageNone": "Связь слабая. Правки защищены локальной очередью.",
+        "messageOne": "Связь слабая. {count} изменение ждёт отправки.",
+        "messageMany": "Связь слабая. Ждут отправки: {count}.",
+        "service": "Связь слабая. Отправляем накопленные правки в фоне."
       },
-      "forcedSuffix": "(forced by debugger)",
-      "retry": "Retry failed sync",
-      "serverBackup": "A newer server version was backed up before replay. You can restore it if needed.",
-      "restoreServerVersion": "Restore server version",
-      "syncingOne": "Syncing {count} queued change to Supabase...",
-      "syncingMany": "Syncing {count} queued changes to Supabase...",
-      "pendingOne": "{count} queued change is waiting for replay.",
-      "pendingMany": "{count} queued changes are waiting for replay."
+      "forcedSuffix": "(включено из отладчика)",
+      "retry": "Повторить синхронизацию",
+      "serverBackup": "На сервере была более свежая версия. Мы сохранили её перед отправкой — при необходимости можно вернуть.",
+      "restoreServerVersion": "Восстановить версию с сервера",
+      "syncingOne": "Отправляем {count} изменение в облако…",
+      "syncingMany": "Отправляем изменения в облако: {count}…",
+      "pendingOne": "{count} изменение ждёт отправки.",
+      "pendingMany": "Ждут отправки: {count}."
     },
     "toast": {
-      "title": "Sync status",
-      "syncCompleted": "Queued trip changes synced successfully.",
-      "serverBackupRestored": "Server backup restored for this trip.",
+      "title": "Состояние синхронизации",
+      "syncCompleted": "Накопленные изменения поездки синхронизированы.",
+      "serverBackupRestored": "Резервная копия поездки с сервера восстановлена.",
       "conflictPreserved": "На сервере были более новые изменения для этой поездки. Ваша офлайн-версия сохранена как резервная копия.",
-      "syncStartedOne": "Reconnect detected. Replaying {count} queued change.",
-      "syncStartedMany": "Reconnect detected. Replaying {count} queued changes.",
-      "syncPartialFailureOne": "{count} queued change still failed. You can retry.",
-      "syncPartialFailureMany": "{count} queued changes still failed. You can retry."
+      "syncStartedOne": "Связь восстановлена. Отправляем {count} изменение.",
+      "syncStartedMany": "Связь восстановлена. Отправляем изменения: {count}.",
+      "syncPartialFailureOne": "{count} изменение всё ещё не отправлено. Можно повторить.",
+      "syncPartialFailureMany": "Всё ещё не отправлено изменений: {count}. Можно повторить."
     },
     "globalBadge": {
-      "offline": "Offline",
-      "syncing": "Syncing...",
-      "online": "Online",
+      "offline": "Офлайн",
+      "syncing": "Синхронизация…",
+      "online": "В сети",
       "details": {
-        "offlineBrowser": "You are offline. Edits are stored locally and replayed once you reconnect.",
-        "offlineService": "Your internet is up, but cloud sync appears unavailable. We will keep retrying queued edits.",
-        "syncingQueue": "Syncing queued edits now. Pending items: {count}.",
-        "online": "Connection is healthy and sync is up to date."
+        "offlineBrowser": "Вы офлайн. Правки остаются на этом устройстве и уйдут, как только связь вернётся.",
+        "offlineService": "Интернет работает, но синхронизация с облаком недоступна. Мы продолжим повторять попытки.",
+        "syncingQueue": "Отправляем накопленные правки. Осталось: {count}.",
+        "online": "Связь в порядке, всё синхронизировано."
       }
     }
   },
@@ -312,52 +312,52 @@
     },
     "generation": {
       "strip": {
-        "failedDefault": "Trip generation failed. Check diagnostics or retry with the default model.",
-        "running": "Trip generation is running...",
-        "retry": "Retry generation",
-        "retrying": "Retrying...",
+        "failedDefault": "Не удалось составить поездку. Посмотрите диагностику или повторите с моделью по умолчанию.",
+        "running": "Составляем вашу поездку…",
+        "retry": "Составить заново",
+        "retrying": "Пробуем снова…",
         "slow": "Это занимает больше времени, чем обычно.",
         "abortRetry": "Прервать и повторить",
         "changeModel": "Сменить модель"
       },
       "tripInfo": {
-        "title": "AI generation",
-        "provider": "Provider",
-        "model": "Model",
-        "providerModel": "Provider model",
-        "requestId": "Request ID",
-        "runTime": "Run time",
-        "httpStatus": "HTTP status",
-        "started": "Started",
-        "finished": "Finished",
-        "failureKind": "Failure kind",
-        "errorCode": "Error code",
-        "errorMessage": "Error message",
-        "generatedAt": "Generated at",
-        "recentAttempts": "Recent attempts",
-        "modelFallback": "Model n/a",
-        "retry": "Retry generation with default model",
-        "retrying": "Retrying with default model...",
+        "title": "Генерация ИИ",
+        "provider": "Провайдер",
+        "model": "Модель",
+        "providerModel": "Модель провайдера",
+        "requestId": "ID запроса",
+        "runTime": "Длительность",
+        "httpStatus": "HTTP-статус",
+        "started": "Начало",
+        "finished": "Завершение",
+        "failureKind": "Тип сбоя",
+        "errorCode": "Код ошибки",
+        "errorMessage": "Текст ошибки",
+        "generatedAt": "Создано",
+        "recentAttempts": "Последние попытки",
+        "modelFallback": "Модель н/д",
+        "retry": "Составить заново с моделью по умолчанию",
+        "retrying": "Пробуем снова с моделью по умолчанию…",
         "state": {
-          "failed": "failed",
-          "running": "running",
-          "queued": "queued",
-          "succeeded": "succeeded"
+          "failed": "сбой",
+          "running": "выполняется",
+          "queued": "в очереди",
+          "succeeded": "готово"
         },
         "orchestration": "Режим выполнения"
       },
       "retry": {
-        "readOnly": "This trip is read-only, so generation retry is unavailable.",
-        "readOnlyTitle": "Retry unavailable",
-        "missingSnapshot": "Retry requires saved generation input, but this trip has no snapshot.",
-        "missingSnapshotTitle": "Retry unavailable",
-        "queued": "Trip generation retry started and is running in the background.",
-        "queuedTitle": "Retry started",
-        "completed": "Trip generation completed with the default model.",
-        "completedTitle": "Retry completed",
-        "failed": "Trip generation failed again. Review the diagnostics and retry later.",
-        "failedTitle": "Retry failed",
-        "unexpected": "Retry failed unexpectedly."
+        "readOnly": "Эта поездка доступна только для чтения, поэтому составить её заново нельзя.",
+        "readOnlyTitle": "Повтор недоступен",
+        "missingSnapshot": "Для повтора нужны сохранённые исходные данные, а у этой поездки их нет.",
+        "missingSnapshotTitle": "Повтор недоступен",
+        "queued": "Новая попытка запущена и идёт в фоне.",
+        "queuedTitle": "Повтор запущен",
+        "completed": "Поездка составлена с моделью по умолчанию.",
+        "completedTitle": "Повтор удался",
+        "failed": "Составить поездку снова не удалось. Посмотрите диагностику и попробуйте позже.",
+        "failedTitle": "Повтор не удался",
+        "unexpected": "Повтор неожиданно завершился ошибкой."
       }
     },
     "pendingAuth": {
@@ -380,126 +380,126 @@
       "description": "Некоторые остановки содержат практические предупреждения с учетом вашего профиля путешественника."
     },
     "header": {
-      "titleTooltipEditable": "Open trip details and edit the title",
-      "titleTooltipReadonly": "Open trip details",
-      "editTitleCta": "Edit title",
-      "openDetailsCta": "Open details",
-      "trips": "Trips",
-      "tripsTooltip": "Back to your trips",
-      "share": "Share",
-      "shareDisabled": "Activate this trip to share it"
+      "titleTooltipEditable": "Открыть сведения о поездке и изменить название",
+      "titleTooltipReadonly": "Открыть сведения о поездке",
+      "editTitleCta": "Изменить название",
+      "openDetailsCta": "Открыть сведения",
+      "trips": "Поездки",
+      "tripsTooltip": "Назад к вашим поездкам",
+      "share": "Поделиться",
+      "shareDisabled": "Активируйте поездку, чтобы поделиться ею"
     },
     "zoom": {
-      "fit": "Fit",
-      "fitAria": "Fit timeline to available space",
-      "presetAria": "Set timeline zoom to {value}"
+      "fit": "Вместить",
+      "fitAria": "Вместить таймлайн в доступное пространство",
+      "presetAria": "Установить масштаб таймлайна на {value}"
     },
     "infoDialog": {
-      "title": "Trip details",
-      "description": "Edit core info, review history, export the trip, and check destination context.",
-      "close": "Close trip details dialog",
+      "title": "Сведения о поездке",
+      "description": "Измените основное, посмотрите историю, экспортируйте поездку и загляните в справку по направлению.",
+      "close": "Закрыть сведения о поездке",
       "tabs": {
-        "general": "General",
-        "history": "History",
-        "export": "Export",
-        "destination": "Destination",
-        "debug": "Debug"
+        "general": "Основное",
+        "history": "История",
+        "export": "Экспорт",
+        "destination": "Направление",
+        "debug": "Отладка"
       },
       "general": {
-        "titleLabel": "Trip title",
+        "titleLabel": "Название поездки",
         "editAction": "Изменить название",
         "saveAction": "Сохранить название",
-        "editHint": "Click into the title to rename the trip or adjust the essentials here.",
-        "readOnlyHintExample": "Example trips stay read-only here. Copy the trip first if you want to rename it or save it as a favorite.",
-        "readOnlyHintShared": "This shared trip is read-only. You can review the details here, but editing is disabled.",
-        "favoriteAdd": "Add to favorites",
-        "favoriteRemove": "Remove from favorites",
-        "favoriteOn": "Favorite",
-        "favoriteOff": "Favorite",
-        "retryInProgress": "Retry is already in progress.",
-        "openBenchmark": "Open in AI Benchmark",
+        "editHint": "Нажмите на название, чтобы переименовать поездку, или поправьте здесь главное.",
+        "readOnlyHintExample": "Примеры поездок доступны только для чтения. Сначала скопируйте поездку, чтобы переименовать её или добавить в избранное.",
+        "readOnlyHintShared": "Эта поездка открыта только для чтения. Сведения посмотреть можно, а редактировать — нет.",
+        "favoriteAdd": "В избранное",
+        "favoriteRemove": "Убрать из избранного",
+        "favoriteOn": "Избранное",
+        "favoriteOff": "Избранное",
+        "retryInProgress": "Повтор уже выполняется.",
+        "openBenchmark": "Открыть в AI Benchmark",
         "sections": {
-          "meta": "Trip meta",
-          "source": "Trip source"
+          "meta": "Данные поездки",
+          "source": "Источник поездки"
         },
         "meta": {
-          "duration": "Duration",
-          "totalDays": "Total days",
-          "totalDaysValue": "{count} days",
+          "duration": "Длительность",
+          "totalDays": "Всего дней",
+          "totalDaysValue": "дней: {count}",
           "tripSpan": "Дни и ночи",
           "tripSpanValue": "{days} дней / {nights} ночей",
-          "cities": "Cities",
-          "totalDistance": "Total distance",
-          "owner": "Owner",
-          "access": "Access"
+          "cities": "Города",
+          "totalDistance": "Общее расстояние",
+          "owner": "Владелец",
+          "access": "Доступ"
         },
-        "sourceSharedDescription": "This itinerary was copied from a shared trip snapshot.",
-        "sourceTripDescription": "This itinerary was copied from another trip in your workspace.",
-        "viewSource": "View source"
+        "sourceSharedDescription": "Этот маршрут скопирован из поездки, которой с вами поделились.",
+        "sourceTripDescription": "Этот маршрут скопирован из другой вашей поездки.",
+        "viewSource": "Открыть оригинал"
       },
       "history": {
-        "example": "Example trips do not save history snapshots. Copy this trip first if you want to keep edits and revisit them later.",
-        "undo": "Undo",
-        "redo": "Redo",
-        "showAll": "Show all",
-        "showRecent": "Show recent",
-        "empty": "No history entries yet.",
-        "current": "Current",
-        "notSynced": "Not synced",
-        "go": "Go",
-        "pendingSyncOne": "1 latest change is saved locally and not synced yet.",
-        "pendingSyncMany": "{count} latest changes are saved locally and not synced yet.",
-        "failedSyncOne": "1 queued change still failed to sync. Retry sync to publish it.",
-        "failedSyncMany": "{count} queued changes still failed to sync. Retry sync to publish them."
+        "example": "Примеры поездок не сохраняют историю. Сначала скопируйте поездку, чтобы сохранять правки и возвращаться к ним.",
+        "undo": "Отменить",
+        "redo": "Вернуть",
+        "showAll": "Показать всё",
+        "showRecent": "Показать недавние",
+        "empty": "В истории пока пусто.",
+        "current": "Текущее",
+        "notSynced": "Не синхронизировано",
+        "go": "Перейти",
+        "pendingSyncOne": "1 недавнее изменение сохранено на устройстве и ещё не синхронизировано.",
+        "pendingSyncMany": "Сохранено на устройстве и ещё не синхронизировано изменений: {count}.",
+        "failedSyncOne": "1 изменение из очереди так и не синхронизировалось. Повторите синхронизацию, чтобы опубликовать его.",
+        "failedSyncMany": "Не синхронизировалось изменений из очереди: {count}. Повторите синхронизацию, чтобы опубликовать их."
       },
       "export": {
         "activities": {
-          "title": "Activities calendar",
-          "description": "Export planned activities as an .ics file so you can drop them into your calendar app.",
-          "action": "Export activities (.ics)"
+          "title": "Календарь активностей",
+          "description": "Выгрузите запланированные активности в файл .ics и добавьте их в свой календарь.",
+          "action": "Выгрузить активности (.ics)"
         },
         "cities": {
-          "title": "Cities calendar",
-          "description": "Create a cleaner trip skeleton with city arrivals and stays only.",
-          "action": "Export cities (.ics)"
+          "title": "Календарь городов",
+          "description": "Получите более лаконичный каркас поездки — только приезды и проживание.",
+          "action": "Выгрузить города (.ics)"
         },
         "everything": {
-          "title": "Complete calendar bundle",
-          "description": "Download one calendar file with cities, transfers, and activities together.",
-          "action": "Download everything (.ics)"
+          "title": "Полный календарь",
+          "description": "Скачайте один файл календаря с городами, переездами и активностями.",
+          "action": "Скачать всё (.ics)"
         },
         "print": {
-          "title": "Print layout",
-          "description": "Open a print-friendly version of this trip for PDFs, handouts, or trip briefings.",
-          "action": "Open print layout"
+          "title": "Версия для печати",
+          "description": "Откройте версию поездки для печати — удобно для PDF или бумажной распечатки.",
+          "action": "Открыть версию для печати"
         }
       },
       "destination": {
-        "locked": "Destination details unlock once this trip is activated.",
-        "empty": "No destination information is available for this trip yet.",
-        "futureChecksTitle": "Future destination checks",
-        "futureChecksDescription": "This tab is ready for more trip-specific guidance as we add richer destination data.",
+        "locked": "Сведения о направлении откроются, когда вы активируете поездку.",
+        "empty": "Для этой поездки пока нет сведений о направлении.",
+        "futureChecksTitle": "Что появится о направлении",
+        "futureChecksDescription": "Здесь появятся более подробные подсказки по мере того, как мы расширяем данные о направлениях.",
         "futureChecks": {
-          "visa": "Visa",
-          "entryRules": "Entry rules",
-          "safety": "Safety",
-          "customs": "Customs",
-          "connectivity": "Connectivity",
-          "health": "Health"
+          "visa": "Виза",
+          "entryRules": "Правила въезда",
+          "safety": "Безопасность",
+          "customs": "Таможня",
+          "connectivity": "Связь",
+          "health": "Здоровье"
         }
       }
     },
     "claimConflict": {
-      "eyebrow": "Claim unavailable",
-      "title": "This trip draft was already claimed",
-      "descriptionLoggedOut": "Sign in with the original account or start a similar trip with the same setup.",
-      "descriptionLoggedIn": "This draft is already attached to another account. Start a similar trip with the same setup.",
-      "loginCta": "Sign in with the original account",
-      "createSimilarCta": "Create similar trip",
-      "benefitsTitle": "What we kept",
+      "eyebrow": "Забрать не получится",
+      "title": "Этот черновик поездки уже забрали",
+      "descriptionLoggedOut": "Войдите под исходным аккаунтом или начните похожую поездку с теми же настройками.",
+      "descriptionLoggedIn": "Черновик уже привязан к другому аккаунту. Начните похожую поездку с теми же настройками.",
+      "loginCta": "Войти под исходным аккаунтом",
+      "createSimilarCta": "Создать похожую поездку",
+      "benefitsTitle": "Что мы сохранили",
       "benefits": {
-        "prefill": "Reuse your traveler setup, dates, and transport choices.",
-        "adjust": "Adjust the draft before starting a fresh generation."
+        "prefill": "Ваш профиль путешественника, даты и выбранный транспорт останутся.",
+        "adjust": "Поправьте черновик перед новой генерацией."
       }
     },
     "addActivity": {
@@ -709,6 +709,7 @@
   },
   "storageNotice": {
     "tripsPrunedTitle": "Память устройства заполнена",
-    "tripsPrunedDescription": "{count, plural, one {Самая старая сохраненная поездка была удалена с этого устройства, чтобы освободить место.} few {# самые старые сохраненные поездки были удалены с этого устройства, чтобы освободить место.} many {# самых старых сохраненных поездок были удалены с этого устройства, чтобы освободить место.} other {# самой старой сохраненной поездки были удалены с этого устройства, чтобы освободить место.}}"
+    "tripsPrunedDescriptionOne": "Самая старая сохранённая поездка удалена с этого устройства, чтобы освободить место.",
+    "tripsPrunedDescriptionMany": "Удалено с этого устройства самых старых сохранённых поездок: {count}. Так мы освободили место."
   }
 }

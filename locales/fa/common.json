@@ -58,75 +58,215 @@
     "ctaShort": "گزارش",
     "dismiss": "بستن بنر"
   },
+  "networkStatus": {
+    "offlineTitle": "آفلاین هستید.",
+    "offlineDescription": "ورود و همگام‌سازی ابری در حال حاضر در دسترس نیست. اتصال را بررسی می‌کنیم و به‌صورت خودکار دوباره وصل می‌شویم.",
+    "offlineChecking": "در حال بررسی دوبارهٔ اتصال…"
+  },
   "contact": {
     "title": "تماس",
     "description": "از این صفحه برای گزارش خطاهای ترجمه یا ارسال بازخورد بومی‌سازی استفاده کنید.",
-    "formStatusTitle": "فرم تماس به‌زودی اضافه می‌شود",
-    "formStatusBody": "فرم اختصاصی هنوز فعال نیست. تا آن زمان لطفاً از طریق ایمیل با ما تماس بگیرید.",
     "emailLabel": "ایمیل",
     "emailValue": "support@travelflow.app",
     "responseNote": "معمولاً طی ۲ تا ۳ روز کاری پاسخ می‌دهیم.",
-    "backHome": "بازگشت به صفحه اصلی"
+    "backHome": "بازگشت به صفحه اصلی",
+    "form": {
+      "title": "برای ما پیام بفرستید",
+      "reasonLabel": "موضوع",
+      "reasonPlaceholder": "یک موضوع انتخاب کنید",
+      "reasonOptions": {
+        "bugReport": "مشکل در وب‌سایت یا برنامه",
+        "featureRequest": "درخواست قابلیت",
+        "billingAccount": "صورت‌حساب یا حساب کاربری",
+        "dataPrivacy": "درخواست دربارهٔ داده و حریم خصوصی",
+        "partnership": "همکاری",
+        "other": "موارد دیگر"
+      },
+      "nameLabel": "نام (اختیاری)",
+      "namePlaceholder": "نام شما",
+      "emailLabel": "ایمیل",
+      "emailPlaceholder": "you@example.com",
+      "messageLabel": "پیام",
+      "messagePlaceholder": "بنویسید چطور می‌توانیم کمک کنیم.",
+      "messageLimitHint": "حداکثر {max} نویسه.",
+      "privacyNote": "این اطلاعات فقط برای بررسی و پاسخ به درخواست شما استفاده می‌شود.",
+      "submit": "فرستادن پیام",
+      "submitting": "در حال فرستادن…",
+      "successTitle": "پیام فرستاده شد",
+      "successBody": "ممنون، پیام شما با موفقیت فرستاده شد.",
+      "errorTitle": "فرم الان در دسترس نیست",
+      "errorBody": "نتوانستیم پیام شما را از راه فرم بفرستیم. لطفاً مستقیم برای ما ایمیل بزنید.",
+      "fallbackTitle": "ارسال مستقیم با ایمیل",
+      "fallbackBody": "اگر ظرفیت فرم پر شده یا ارسال ناموفق بود، از این نشانی با ما تماس بگیرید:",
+      "fallbackCta": "ایمیل به contact@wizz.art",
+      "validationReason": "لطفاً یک موضوع انتخاب کنید.",
+      "validationEmail": "لطفاً یک نشانی ایمیل معتبر وارد کنید.",
+      "validationMessage": "لطفاً پیامی بنویسید.",
+      "validationMessageLength": "پیام شما خیلی بلند است. حداکثر {max} نویسه مجاز است.",
+      "subReasonLabel": "زیرموضوع (اختیاری)",
+      "subReasonPlaceholder": "یک زیرموضوع انتخاب کنید (اختیاری)",
+      "subReasonEmptyOption": "بدون زیرموضوع مشخص",
+      "subReasonOptions": {
+        "bugReport": {
+          "pageNotLoadingWorking": "صفحه بالا نمی‌آید یا کار نمی‌کند",
+          "translationWrongMisleading": "ترجمه‌ها نادرست یا گمراه‌کننده است",
+          "actionNotWorking": "یک دکمه یا عملیات کار نمی‌کند",
+          "layoutVisualIssue": "مشکل در چیدمان یا ظاهر",
+          "mapRoutingIssue": "مشکل در نقشه یا مسیر",
+          "performanceIssue": "کندی یا ناپایداری"
+        },
+        "featureRequest": {
+          "newFeature": "قابلیت کاملاً تازه",
+          "improveFeature": "بهبود یک قابلیت موجود",
+          "workflowAutomation": "بهبود روند کار یا خودکارسازی",
+          "mobileExperience": "بهبود تجربهٔ موبایل",
+          "accessibility": "بهبود دسترس‌پذیری"
+        },
+        "billingAccount": {
+          "subscriptionChange": "تغییر یا لغو اشتراک",
+          "invoiceReceipt": "پرسش دربارهٔ فاکتور یا رسید",
+          "paymentFailed": "پرداخت ناموفق",
+          "refundQuestion": "پرسش دربارهٔ بازپرداخت",
+          "accountAccess": "مشکل دسترسی به حساب"
+        },
+        "dataPrivacy": {
+          "dataExport": "درخواست خروجی داده‌هایم",
+          "dataDeletion": "درخواست حذف داده‌ها",
+          "consentCookies": "پرسش دربارهٔ کوکی و رضایت",
+          "legalQuestion": "پرسش حقوقی یا حریم خصوصی",
+          "securityConcern": "نگرانی امنیتی"
+        },
+        "partnership": {
+          "affiliateInfluencer": "همکاری با افیلیت یا سازندگان محتوا",
+          "brandCampaign": "همکاری در کمپین برند",
+          "mediaPress": "درخواست رسانه یا مطبوعات",
+          "integrationPartner": "همکاری برای یکپارچه‌سازی",
+          "educationNonProfit": "همکاری آموزشی یا غیرانتفاعی"
+        },
+        "other": {
+          "generalFeedback": "بازخورد کلی",
+          "productQuestion": "پرسش دربارهٔ محصول",
+          "careerOpportunity": "فرصت شغلی",
+          "responsibleDisclosure": "گزارش آسیب‌پذیری امنیتی",
+          "somethingElse": "چیز دیگری"
+        }
+      },
+      "requiredFieldsNote": "* فیلدهای الزامی."
+    }
+  },
+  "appDialog": {
+    "tripArchive": {
+      "title": "سفر بایگانی شود؟",
+      "confirmLabel": "بایگانی سفر",
+      "cancelLabel": "انصراف",
+      "messageQuestion": "مطمئنید می‌خواهید <strong>«{title}»</strong> را بایگانی کنید؟",
+      "messageDetail": "این سفر از فهرست شما برداشته می‌شود و بعداً می‌توانید برش گردانید."
+    },
+    "roundTripSync": {
+      "title": "مقصد پایانی سفر رفت‌وبرگشت به‌روز شود؟",
+      "messageLead": "این سفر رفت‌وبرگشت به نظر می‌رسد.",
+      "messageQuestion": "شهر پایانی هم به <strong>«{title}»</strong> تغییر کند؟",
+      "confirmLabel": "بله، شهر پایانی را عوض کن",
+      "cancelLabel": "نه، همین‌طور بماند"
+    },
+    "cityPaletteApply": {
+      "title": "پالت روی شهرهای فعلی اعمال شود؟",
+      "messageAuto": "<strong>اعمال خودکار</strong> را بزنید تا رنگ همهٔ شهرها همین حالا عوض شود.",
+      "messageManual": "<strong>انتخاب دستی</strong> را بزنید تا رنگ شهرهای فعلی بماند و فقط پالت فعال عوض شود.",
+      "confirmLabel": "اعمال خودکار",
+      "cancelLabel": "انتخاب دستی"
+    },
+    "markdownLink": {
+      "title": "درج پیوند",
+      "messageLine1": "برای متن انتخاب‌شده نشانی وارد کنید یا پیوند تازه‌ای درج کنید.",
+      "messageLine2": "پیوند با تنظیمات امن در برگهٔ تازه باز می‌شود.",
+      "label": "URL",
+      "placeholder": "https://example.com",
+      "confirmLabel": "درج پیوند",
+      "cancelLabel": "انصراف",
+      "validationRequired": "لطفاً یک نشانی وارد کنید.",
+      "validationProtocol": "نشانی باید با http:// یا https:// شروع شود",
+      "validationInvalid": "لطفاً یک نشانی معتبر وارد کنید."
+    }
   },
   "connectivity": {
     "banner": {
       "offline": {
-        "title": "You are offline. Changes will be queued.",
-        "messageNone": "Planner stays usable with cached data.",
-        "messageOne": "{count} change is queued and will sync after reconnect.",
-        "messageMany": "{count} changes are queued and will sync after reconnect."
+        "title": "آفلاین هستید. تغییرها در صف می‌مانند.",
+        "messageNone": "برنامه‌ریز با داده‌های ذخیره‌شده کار می‌کند.",
+        "messageOne": "{count} تغییر در صف است و پس از برقراری اتصال همگام می‌شود.",
+        "messageMany": "{count} تغییر در صف است و پس از برقراری اتصال همگام می‌شود.",
+        "browserTitle": "آفلاین هستید. تغییرها روی همین دستگاه می‌مانند.",
+        "browserMessage": "به‌محض برقراری اتصال، همگام‌سازی ابری ادامه پیدا می‌کند. خودکار تلاش می‌کنیم.",
+        "serviceTitle": "همگام‌سازی ابری موقتاً در دسترس نیست.",
+        "serviceMessage": "اینترنت شما کار می‌کند، اما سرویس همگام‌سازی پاسخ نمی‌دهد. تغییرهای شما در صف و در امان است."
       },
       "degraded": {
-        "title": "Connection is unstable. Saving in resilient mode.",
-        "messageNone": "Planner stays usable while we retry in the background.",
-        "messageOne": "{count} queued change will sync when Supabase stabilizes.",
-        "messageMany": "{count} queued changes will sync when Supabase stabilizes."
+        "title": "اتصال ناپایدار است. در حالت امن ذخیره می‌کنیم.",
+        "messageNone": "برنامه‌ریز کار می‌کند و ما در پس‌زمینه دوباره تلاش می‌کنیم.",
+        "messageOne": "{count} تغییر به‌محض پایدار شدن اتصال همگام می‌شود.",
+        "messageMany": "{count} تغییر به‌محض پایدار شدن اتصال همگام می‌شود.",
+        "serviceMessage": "همگام‌سازی ابری الان ناپایدار است. در پس‌زمینه تلاش را ادامه می‌دهیم."
       },
       "syncing": {
-        "title": "Sync in progress",
-        "messageOne": "{count} change is waiting to sync.",
-        "messageMany": "{count} changes are waiting to sync.",
-        "progressOne": "Syncing {count} queued change...",
-        "progressMany": "Syncing {count} queued changes..."
+        "title": "همگام‌سازی در جریان است",
+        "messageOne": "{count} تغییر منتظر همگام‌سازی است.",
+        "messageMany": "{count} تغییر منتظر همگام‌سازی است.",
+        "progressOne": "در حال همگام‌سازی {count} تغییر در صف…",
+        "progressMany": "در حال همگام‌سازی {count} تغییر در صف…"
       },
-      "forcedMode": "Supabase outage simulation is currently forced in debugger mode.",
+      "forcedMode": "شبیه‌سازی قطعی اتصال در حالت اشکال‌زدایی فعال است.",
       "actions": {
-        "retrySync": "Retry failed sync",
-        "dismiss": "Dismiss connectivity banner",
+        "retrySync": "تلاش دوباره برای همگام‌سازی",
+        "dismiss": "پنهان کردن پیام اتصال",
         "contact": "تماس",
-        "email": "Email support"
+        "email": "ایمیل به پشتیبانی"
       },
-      "retryHint": "Retrying Supabase connection every 30s while this tab stays open."
+      "retryHint": "تا وقتی این برگه باز است، هر 30 ثانیه دوباره تلاش می‌کنیم وصل شویم."
     },
     "tripStrip": {
       "offline": {
-        "messageNone": "Offline mode enabled. Trip data is served from local cache.",
-        "messageOne": "Offline mode enabled. {count} change is queued for sync.",
-        "messageMany": "Offline mode enabled. {count} changes are queued for sync."
+        "messageNone": "حالت آفلاین فعال است. داده‌های سفر از نسخهٔ محلی خوانده می‌شود.",
+        "messageOne": "حالت آفلاین فعال است. {count} تغییر در صف همگام‌سازی است.",
+        "messageMany": "حالت آفلاین فعال است. {count} تغییر در صف همگام‌سازی است.",
+        "browser": "حالت آفلاین فعال است. آخرین تغییرهای شما تا برقراری اتصال روی همین دستگاه ذخیره می‌شود.",
+        "service": "همگام‌سازی ابری الان در دسترس نیست. آخرین تغییرهای شما در صف و در امان است."
       },
       "degraded": {
-        "messageNone": "Connection is degraded. Edits are protected with local queue fallback.",
-        "messageOne": "Connection is degraded. {count} change is queued for replay.",
-        "messageMany": "Connection is degraded. {count} changes are queued for replay."
+        "messageNone": "اتصال ضعیف است. تغییرهای شما را با صف محلی نگه می‌داریم.",
+        "messageOne": "اتصال ضعیف است. {count} تغییر منتظر ارسال دوباره است.",
+        "messageMany": "اتصال ضعیف است. {count} تغییر منتظر ارسال دوباره است.",
+        "service": "اتصال ضعیف است. تغییرهای در صف را در پس‌زمینه دوباره می‌فرستیم."
       },
-      "forcedSuffix": "(forced by debugger)",
-      "retry": "Retry failed sync",
-      "serverBackup": "A newer server version was backed up before replay. You can restore it if needed.",
-      "restoreServerVersion": "Restore server version",
-      "syncingOne": "Syncing {count} queued change to Supabase...",
-      "syncingMany": "Syncing {count} queued changes to Supabase...",
-      "pendingOne": "{count} queued change is waiting for replay.",
-      "pendingMany": "{count} queued changes are waiting for replay."
+      "forcedSuffix": "(اعمال‌شده از اشکال‌زدا)",
+      "retry": "تلاش دوباره برای همگام‌سازی",
+      "serverBackup": "روی سرور نسخهٔ تازه‌تری بود. پیش از ارسال آن را نگه داشتیم و در صورت نیاز می‌توانید برش گردانید.",
+      "restoreServerVersion": "بازگرداندن نسخهٔ سرور",
+      "syncingOne": "در حال فرستادن {count} تغییر به فضای ابری…",
+      "syncingMany": "در حال فرستادن {count} تغییر به فضای ابری…",
+      "pendingOne": "{count} تغییر منتظر ارسال دوباره است.",
+      "pendingMany": "{count} تغییر منتظر ارسال دوباره است."
     },
     "toast": {
-      "title": "Sync status",
-      "syncCompleted": "Queued trip changes synced successfully.",
-      "serverBackupRestored": "Server backup restored for this trip.",
+      "title": "وضعیت همگام‌سازی",
+      "syncCompleted": "تغییرهای در صف این سفر همگام شد.",
+      "serverBackupRestored": "نسخهٔ پشتیبان سرور برای این سفر بازگردانده شد.",
       "conflictPreserved": "سرور تغییرات جدیدتری برای این سفر داشت. نسخه آفلاین شما به‌عنوان پشتیبان نگه داشته شد.",
-      "syncStartedOne": "Reconnect detected. Replaying {count} queued change.",
-      "syncStartedMany": "Reconnect detected. Replaying {count} queued changes.",
-      "syncPartialFailureOne": "{count} queued change still failed. You can retry.",
-      "syncPartialFailureMany": "{count} queued changes still failed. You can retry."
+      "syncStartedOne": "اتصال برقرار شد. {count} تغییر در حال ارسال است.",
+      "syncStartedMany": "اتصال برقرار شد. {count} تغییر در حال ارسال است.",
+      "syncPartialFailureOne": "{count} تغییر هنوز فرستاده نشد. می‌توانید دوباره تلاش کنید.",
+      "syncPartialFailureMany": "{count} تغییر هنوز فرستاده نشد. می‌توانید دوباره تلاش کنید."
+    },
+    "globalBadge": {
+      "offline": "آفلاین",
+      "syncing": "در حال همگام‌سازی…",
+      "online": "آنلاین",
+      "details": {
+        "offlineBrowser": "آفلاین هستید. تغییرهای شما روی همین دستگاه می‌ماند و به‌محض برقراری اتصال فرستاده می‌شود.",
+        "offlineService": "اینترنت شما وصل است، اما همگام‌سازی ابری در دسترس نیست. تلاش را ادامه می‌دهیم.",
+        "syncingQueue": "در حال فرستادن تغییرهای در صف. باقی‌مانده: {count}.",
+        "online": "اتصال برقرار است و همه‌چیز همگام شده."
+      }
     }
   },
   "tripPaywall": {
@@ -162,119 +302,204 @@
       }
     }
   },
-  "tripRouteShell": {
-    "loadingTrip": "Loading trip",
-    "preparingPlanner": "Preparing planner",
-    "loadingSharedTrip": "Loading shared trip",
-    "preparingSharedPlanner": "Preparing shared planner",
-    "loadingExampleTrip": "Loading example trip",
-    "preparingExamplePlanner": "Preparing example planner"
-  },
   "tripView": {
+    "visualHistory": {
+      "mapPreviewState": "پیش‌نمای نقشه: از {from} به {to}",
+      "mapPreviewStateValue": {
+        "docked": "چسبیده",
+        "floating": "شناور"
+      }
+    },
+    "generation": {
+      "strip": {
+        "failedDefault": "ساخت سفر ناموفق بود. اطلاعات خطا را ببینید یا با مدل پیش‌فرض دوباره تلاش کنید.",
+        "running": "در حال ساختن سفر شما…",
+        "retry": "ساخت دوباره",
+        "retrying": "در حال تلاش دوباره…",
+        "slow": "بیشتر از همیشه طول کشیده است.",
+        "abortRetry": "لغو و تلاش دوباره",
+        "changeModel": "تغییر مدل"
+      },
+      "tripInfo": {
+        "title": "ساخت با هوش مصنوعی",
+        "provider": "ارائه‌دهنده",
+        "model": "مدل",
+        "providerModel": "مدل ارائه‌دهنده",
+        "requestId": "شناسهٔ درخواست",
+        "runTime": "مدت اجرا",
+        "httpStatus": "وضعیت HTTP",
+        "started": "شروع",
+        "finished": "پایان",
+        "failureKind": "نوع خطا",
+        "errorCode": "کد خطا",
+        "errorMessage": "پیام خطا",
+        "generatedAt": "ساخته‌شده در",
+        "recentAttempts": "تلاش‌های اخیر",
+        "modelFallback": "مدل نامشخص",
+        "retry": "ساخت دوباره با مدل پیش‌فرض",
+        "retrying": "در حال تلاش دوباره با مدل پیش‌فرض…",
+        "state": {
+          "failed": "ناموفق",
+          "running": "در حال اجرا",
+          "queued": "در صف",
+          "succeeded": "موفق"
+        },
+        "orchestration": "حالت اجرا"
+      },
+      "retry": {
+        "readOnly": "این سفر فقط‌خواندنی است، پس ساخت دوباره ممکن نیست.",
+        "readOnlyTitle": "تلاش دوباره ممکن نیست",
+        "missingSnapshot": "برای تلاش دوباره به داده‌های اولیهٔ ذخیره‌شده نیاز داریم و این سفر آن را ندارد.",
+        "missingSnapshotTitle": "تلاش دوباره ممکن نیست",
+        "queued": "تلاش دوباره شروع شد و در پس‌زمینه اجرا می‌شود.",
+        "queuedTitle": "تلاش دوباره شروع شد",
+        "completed": "سفر شما با مدل پیش‌فرض ساخته شد.",
+        "completedTitle": "تلاش دوباره موفق بود",
+        "failed": "ساخت سفر باز هم ناموفق بود. اطلاعات خطا را ببینید و بعداً دوباره تلاش کنید.",
+        "failedTitle": "تلاش دوباره ناموفق بود",
+        "unexpected": "تلاش دوباره به‌طور غیرمنتظره ناموفق ماند."
+      }
+    },
+    "pendingAuth": {
+      "eyebrowLoading": "آماده‌سازی سفر",
+      "titleLoading": "در حال آماده کردن سفر شما",
+      "descriptionLoading": "انتخاب‌های شما را ذخیره می‌کنیم و بهترین راه ساخت برنامه را می‌سنجیم.",
+      "eyebrowLocked": "نیاز به حساب کاربری",
+      "titleLocked": "ساخت سفر فقط برای کاربران ثبت‌نام‌شده است",
+      "descriptionLocked": "وارد شوید یا حساب بسازید تا این پیش‌نویس به نام شما ثبت شود و ساخت کامل سفر آغاز شود.",
+      "cta": "ورود یا ساخت حساب",
+      "benefitsTitle": "چرا حساب بسازید",
+      "benefits": {
+        "keep": "این سفر را نگه دارید و بعداً به آن برگردید.",
+        "background": "بگذارید ساخت سفر در پس‌زمینه کامل شود.",
+        "sync": "روی همهٔ دستگاه‌ها ویرایش، تلاش دوباره و همگام‌سازی کنید."
+      }
+    },
+    "warningSummary": {
+      "title": "نکته‌های متناسب با مسافران",
+      "description": "بعضی توقف‌ها بر پایهٔ ترکیب مسافران شما نکته‌های عملی دارند."
+    },
     "header": {
-      "titleTooltipEditable": "Open trip details and edit the title",
-      "titleTooltipReadonly": "Open trip details",
-      "editTitleCta": "Edit title",
-      "openDetailsCta": "Open details",
-      "trips": "Trips",
-      "tripsTooltip": "Back to your trips",
-      "share": "Share",
-      "shareDisabled": "Activate this trip to share it"
+      "titleTooltipEditable": "باز کردن جزئیات سفر و ویرایش عنوان",
+      "titleTooltipReadonly": "باز کردن جزئیات سفر",
+      "editTitleCta": "ویرایش عنوان",
+      "openDetailsCta": "باز کردن جزئیات",
+      "trips": "سفرها",
+      "tripsTooltip": "بازگشت به سفرهای شما",
+      "share": "هم‌رسانی",
+      "shareDisabled": "برای هم‌رسانی، این سفر را فعال کنید"
     },
     "zoom": {
-      "fit": "Fit",
-      "fitAria": "Fit timeline to available space",
-      "presetAria": "Set timeline zoom to {value}"
+      "fit": "اندازه‌کردن",
+      "fitAria": "اندازه کردن خط زمانی به فضای موجود",
+      "presetAria": "تنظیم بزرگ‌نمایی خط زمانی روی {value}"
     },
     "infoDialog": {
-      "title": "Trip details",
-      "description": "Edit core info, review history, export the trip, and check destination context.",
-      "close": "Close trip details dialog",
+      "title": "جزئیات سفر",
+      "description": "اطلاعات اصلی را ویرایش کنید، تاریخچه را ببینید، سفر را خروجی بگیرید و زمینهٔ مقصد را بررسی کنید.",
+      "close": "بستن جزئیات سفر",
       "tabs": {
-        "general": "General",
-        "history": "History",
-        "export": "Export",
-        "destination": "Destination",
-        "debug": "Debug"
+        "general": "عمومی",
+        "history": "تاریخچه",
+        "export": "خروجی",
+        "destination": "مقصد",
+        "debug": "اشکال‌زدایی"
       },
       "general": {
-        "titleLabel": "Trip title",
-        "editHint": "Click into the title to rename the trip or adjust the essentials here.",
-        "readOnlyHintExample": "Example trips stay read-only here. Copy the trip first if you want to rename it or save it as a favorite.",
-        "readOnlyHintShared": "This shared trip is read-only. You can review the details here, but editing is disabled.",
-        "favoriteAdd": "Add to favorites",
-        "favoriteRemove": "Remove from favorites",
-        "favoriteOn": "Favorite",
-        "favoriteOff": "Favorite",
-        "retryInProgress": "Retry is already in progress.",
-        "openBenchmark": "Open in AI Benchmark",
+        "titleLabel": "عنوان سفر",
+        "editAction": "ویرایش عنوان",
+        "saveAction": "ذخیرهٔ عنوان",
+        "editHint": "روی عنوان بزنید تا نام سفر را عوض کنید، یا همین‌جا موارد اصلی را تنظیم کنید.",
+        "readOnlyHintExample": "سفرهای نمونه فقط‌خواندنی‌اند. اگر می‌خواهید نامش را عوض کنید یا در علاقه‌مندی‌ها ذخیره کنید، اول آن را رونوشت بگیرید.",
+        "readOnlyHintShared": "این سفر هم‌رسانی‌شده فقط‌خواندنی است. جزئیات را می‌بینید، اما ویرایش ممکن نیست.",
+        "favoriteAdd": "افزودن به علاقه‌مندی‌ها",
+        "favoriteRemove": "برداشتن از علاقه‌مندی‌ها",
+        "favoriteOn": "علاقه‌مندی",
+        "favoriteOff": "علاقه‌مندی",
+        "retryInProgress": "یک تلاش دوباره همین حالا در جریان است.",
+        "openBenchmark": "باز کردن در AI Benchmark",
         "sections": {
-          "meta": "Trip meta",
-          "source": "Trip source"
+          "meta": "مشخصات سفر",
+          "source": "منبع سفر"
         },
         "meta": {
-          "duration": "Duration",
-          "totalDays": "Total days",
-          "totalDaysValue": "{count} days",
-          "cities": "Cities",
-          "totalDistance": "Total distance",
-          "owner": "Owner",
-          "access": "Access"
+          "duration": "مدت",
+          "totalDays": "کل روزها",
+          "totalDaysValue": "{count} روز",
+          "tripSpan": "روزها و شب‌ها",
+          "tripSpanValue": "{days} روز / {nights} شب",
+          "cities": "شهرها",
+          "totalDistance": "مسافت کل",
+          "owner": "مالک",
+          "access": "دسترسی"
         },
-        "sourceSharedDescription": "This itinerary was copied from a shared trip snapshot.",
-        "sourceTripDescription": "This itinerary was copied from another trip in your workspace.",
-        "viewSource": "View source"
+        "sourceSharedDescription": "این برنامه از یک سفر هم‌رسانی‌شده رونوشت گرفته شده است.",
+        "sourceTripDescription": "این برنامه از سفر دیگری در فضای کاری شما رونوشت گرفته شده است.",
+        "viewSource": "دیدن نسخهٔ اصلی"
       },
       "history": {
-        "example": "Example trips do not save history snapshots. Copy this trip first if you want to keep edits and revisit them later.",
-        "undo": "Undo",
-        "redo": "Redo",
-        "showAll": "Show all",
-        "showRecent": "Show recent",
-        "empty": "No history entries yet.",
-        "current": "Current",
-        "notSynced": "Not synced",
-        "go": "Go",
-        "pendingSyncOne": "1 latest change is saved locally and not synced yet.",
-        "pendingSyncMany": "{count} latest changes are saved locally and not synced yet.",
-        "failedSyncOne": "1 queued change still failed to sync. Retry sync to publish it.",
-        "failedSyncMany": "{count} queued changes still failed to sync. Retry sync to publish them."
+        "example": "سفرهای نمونه تاریخچه ذخیره نمی‌کنند. اگر می‌خواهید تغییرها بماند و بعداً سراغشان بروید، اول این سفر را رونوشت بگیرید.",
+        "undo": "واگرد",
+        "redo": "ازنو",
+        "showAll": "نمایش همه",
+        "showRecent": "نمایش موارد اخیر",
+        "empty": "هنوز چیزی در تاریخچه نیست.",
+        "current": "فعلی",
+        "notSynced": "همگام‌نشده",
+        "go": "برو",
+        "pendingSyncOne": "1 تغییر اخیر روی این دستگاه ذخیره شده و هنوز همگام نشده است.",
+        "pendingSyncMany": "{count} تغییر اخیر روی این دستگاه ذخیره شده و هنوز همگام نشده است.",
+        "failedSyncOne": "1 تغییر در صف هنوز همگام نشده است. برای انتشار آن، همگام‌سازی را دوباره اجرا کنید.",
+        "failedSyncMany": "{count} تغییر در صف هنوز همگام نشده است. برای انتشار آن‌ها، همگام‌سازی را دوباره اجرا کنید."
       },
       "export": {
         "activities": {
-          "title": "Activities calendar",
-          "description": "Export planned activities as an .ics file so you can drop them into your calendar app.",
-          "action": "Export activities (.ics)"
+          "title": "تقویم برنامه‌ها",
+          "description": "برنامه‌های سفر را در قالب فایل .ics خروجی بگیرید تا در تقویم خود بگذارید.",
+          "action": "خروجی برنامه‌ها (.ics)"
         },
         "cities": {
-          "title": "Cities calendar",
-          "description": "Create a cleaner trip skeleton with city arrivals and stays only.",
-          "action": "Export cities (.ics)"
+          "title": "تقویم شهرها",
+          "description": "یک اسکلت ساده‌تر از سفر بسازید که فقط ورود به شهرها و اقامت‌ها را دارد.",
+          "action": "خروجی شهرها (.ics)"
         },
         "everything": {
-          "title": "Complete calendar bundle",
-          "description": "Download one calendar file with cities, transfers, and activities together.",
-          "action": "Download everything (.ics)"
+          "title": "بستهٔ کامل تقویم",
+          "description": "یک فایل تقویم با شهرها، جابه‌جایی‌ها و برنامه‌ها را با هم دانلود کنید.",
+          "action": "دانلود همه‌چیز (.ics)"
         },
         "print": {
-          "title": "Print layout",
-          "description": "Open a print-friendly version of this trip for PDFs, handouts, or trip briefings.",
-          "action": "Open print layout"
+          "title": "نسخهٔ چاپی",
+          "description": "نسخهٔ مناسب چاپ این سفر را باز کنید؛ خوب برای PDF یا کاغذ.",
+          "action": "باز کردن نسخهٔ چاپی"
         }
       },
       "destination": {
-        "locked": "Destination details unlock once this trip is activated.",
-        "empty": "No destination information is available for this trip yet.",
-        "futureChecksTitle": "Future destination checks",
-        "futureChecksDescription": "This tab is ready for more trip-specific guidance as we add richer destination data.",
+        "locked": "جزئیات مقصد پس از فعال شدن این سفر باز می‌شود.",
+        "empty": "هنوز اطلاعاتی دربارهٔ مقصد این سفر نداریم.",
+        "futureChecksTitle": "بررسی‌های بعدی مقصد",
+        "futureChecksDescription": "هرچه داده‌های مقصد کامل‌تر شود، راهنمایی‌های بیشتری در این برگه می‌آید.",
         "futureChecks": {
-          "visa": "Visa",
-          "entryRules": "Entry rules",
-          "safety": "Safety",
-          "customs": "Customs",
-          "connectivity": "Connectivity",
-          "health": "Health"
+          "visa": "ویزا",
+          "entryRules": "قوانین ورود",
+          "safety": "ایمنی",
+          "customs": "گمرک",
+          "connectivity": "ارتباطات",
+          "health": "سلامت"
         }
+      }
+    },
+    "claimConflict": {
+      "eyebrow": "ثبت به نام شما ممکن نیست",
+      "title": "این پیش‌نویس سفر قبلاً ثبت شده است",
+      "descriptionLoggedOut": "با حساب اصلی وارد شوید یا سفری مشابه با همان تنظیمات شروع کنید.",
+      "descriptionLoggedIn": "این پیش‌نویس به حساب دیگری وصل است. سفری مشابه با همان تنظیمات شروع کنید.",
+      "loginCta": "ورود با حساب اصلی",
+      "createSimilarCta": "ساخت سفر مشابه",
+      "benefitsTitle": "چه چیزی نگه داشتیم",
+      "benefits": {
+        "prefill": "ترکیب مسافران، تاریخ‌ها و انتخاب‌های حمل‌ونقل شما دوباره به کار می‌رود.",
+        "adjust": "پیش از شروع ساخت تازه، پیش‌نویس را تنظیم کنید."
       }
     },
     "addActivity": {
@@ -290,6 +515,14 @@
       "close": "بستن",
       "popupLabel": "جزئیات فعالیت"
     }
+  },
+  "tripRouteShell": {
+    "loadingTrip": "در حال بارگذاری سفر",
+    "preparingPlanner": "در حال آماده‌سازی برنامه‌ریز",
+    "loadingSharedTrip": "در حال بارگذاری سفر هم‌رسانی‌شده",
+    "preparingSharedPlanner": "در حال آماده‌سازی برنامه‌ریز هم‌رسانی‌شده",
+    "loadingExampleTrip": "در حال بارگذاری سفر نمونه",
+    "preparingExamplePlanner": "در حال آماده‌سازی برنامه‌ریز نمونه"
   },
   "tripAgent": {
     "title": "برنامه‌ریزی با هوش مصنوعی",
@@ -475,7 +708,8 @@
     "reapplyUnavailable": "این مجموعه اینجا دوباره اعمال نمی‌شود."
   },
   "storageNotice": {
-    "tripsPrunedTitle": "حافظه دستگاه پر است",
-    "tripsPrunedDescription": "{count, plural, one {قدیمی‌ترین سفر ذخیره‌شده شما برای آزاد کردن فضا از این دستگاه حذف شد.} other {# سفر قدیمی‌تر ذخیره‌شده شما برای آزاد کردن فضا از این دستگاه حذف شدند.}}"
+    "tripsPrunedTitle": "حافظهٔ دستگاه پر است",
+    "tripsPrunedDescriptionOne": "قدیمی‌ترین سفر ذخیره‌شدهٔ شما برای آزاد کردن فضا از این دستگاه حذف شد.",
+    "tripsPrunedDescriptionMany": "{count} سفر قدیمی ذخیره‌شدهٔ شما برای آزاد کردن فضا از این دستگاه حذف شد."
   }
 }

@@ -13,7 +13,7 @@
     "logout": "로그아웃"
   },
   "footer": {
-    "rightsReserved": "© {year} {appName}. All rights reserved.",
+    "rightsReserved": "© {year} {appName}. 모든 권리 보유.",
     "contact": "문의",
     "imprint": "사업자 정보",
     "privacy": "개인정보 처리방침",
@@ -192,80 +192,80 @@
   "connectivity": {
     "banner": {
       "offline": {
-        "title": "You are offline. Changes will be queued.",
-        "messageNone": "Planner stays usable with cached data.",
-        "messageOne": "{count} change is queued and will sync after reconnect.",
-        "messageMany": "{count} changes are queued and will sync after reconnect.",
-        "browserTitle": "You are offline. Changes stay local.",
-        "browserMessage": "Reconnect to continue cloud sync. We will retry automatically.",
-        "serviceTitle": "Cloud sync is temporarily unavailable.",
-        "serviceMessage": "Your internet works, but the sync service is not responding. Edits stay queued and safe."
+        "title": "오프라인 상태예요. 변경사항은 대기열에 담아 둘게요.",
+        "messageNone": "저장해 둔 데이터로 플래너를 계속 쓸 수 있어요.",
+        "messageOne": "변경사항 {count}건이 대기 중이고, 다시 연결되면 동기화됩니다.",
+        "messageMany": "변경사항 {count}건이 대기 중이고, 다시 연결되면 동기화됩니다.",
+        "browserTitle": "오프라인 상태예요. 변경사항은 이 기기에 남습니다.",
+        "browserMessage": "다시 연결되면 클라우드 동기화가 이어집니다. 자동으로 다시 시도할게요.",
+        "serviceTitle": "클라우드 동기화를 잠시 사용할 수 없어요.",
+        "serviceMessage": "인터넷은 되지만 동기화 서비스가 응답하지 않아요. 수정한 내용은 대기열에 안전하게 남아 있습니다."
       },
       "degraded": {
-        "title": "Connection is unstable. Saving in resilient mode.",
-        "messageNone": "Planner stays usable while we retry in the background.",
-        "messageOne": "{count} queued change will sync when Supabase stabilizes.",
-        "messageMany": "{count} queued changes will sync when Supabase stabilizes.",
-        "serviceMessage": "Cloud sync is unstable right now. We keep retrying in the background."
+        "title": "연결이 불안정해요. 안전 모드로 저장 중입니다.",
+        "messageNone": "백그라운드에서 다시 시도하는 동안에도 플래너는 그대로 쓸 수 있어요.",
+        "messageOne": "연결이 안정되면 변경사항 {count}건을 동기화합니다.",
+        "messageMany": "연결이 안정되면 변경사항 {count}건을 동기화합니다.",
+        "serviceMessage": "지금은 클라우드 동기화가 불안정해요. 백그라운드에서 계속 다시 시도합니다."
       },
       "syncing": {
-        "title": "Sync in progress",
-        "messageOne": "{count} change is waiting to sync.",
-        "messageMany": "{count} changes are waiting to sync.",
-        "progressOne": "Syncing {count} queued change...",
-        "progressMany": "Syncing {count} queued changes..."
+        "title": "동기화 중",
+        "messageOne": "변경사항 {count}건이 동기화를 기다리고 있어요.",
+        "messageMany": "변경사항 {count}건이 동기화를 기다리고 있어요.",
+        "progressOne": "대기 중인 변경사항 {count}건을 동기화하는 중…",
+        "progressMany": "대기 중인 변경사항 {count}건을 동기화하는 중…"
       },
-      "forcedMode": "Supabase outage simulation is currently forced in debugger mode.",
+      "forcedMode": "디버그 모드에서 연결 장애 시뮬레이션이 켜져 있어요.",
       "actions": {
-        "retrySync": "Retry failed sync",
-        "dismiss": "Dismiss connectivity banner",
+        "retrySync": "동기화 다시 시도",
+        "dismiss": "연결 알림 숨기기",
         "contact": "문의",
-        "email": "Email support"
+        "email": "이메일로 문의하기"
       },
-      "retryHint": "Retrying Supabase connection every 30s while this tab stays open."
+      "retryHint": "이 탭이 열려 있는 동안 30초마다 다시 연결을 시도해요."
     },
     "tripStrip": {
       "offline": {
-        "messageNone": "Offline mode enabled. Trip data is served from local cache.",
-        "messageOne": "Offline mode enabled. {count} change is queued for sync.",
-        "messageMany": "Offline mode enabled. {count} changes are queued for sync.",
-        "browser": "Offline mode enabled. Your latest edits are saved locally until reconnect.",
-        "service": "Cloud sync is currently unavailable. Your latest edits are queued safely."
+        "messageNone": "오프라인 모드예요. 여행 데이터는 기기에 저장된 사본에서 불러옵니다.",
+        "messageOne": "오프라인 모드예요. 변경사항 {count}건이 동기화를 기다리고 있어요.",
+        "messageMany": "오프라인 모드예요. 변경사항 {count}건이 동기화를 기다리고 있어요.",
+        "browser": "오프라인 모드예요. 최근 수정한 내용은 다시 연결될 때까지 이 기기에 저장됩니다.",
+        "service": "지금은 클라우드 동기화를 쓸 수 없어요. 최근 수정한 내용은 안전하게 대기 중입니다."
       },
       "degraded": {
-        "messageNone": "Connection is degraded. Edits are protected with local queue fallback.",
-        "messageOne": "Connection is degraded. {count} change is queued for replay.",
-        "messageMany": "Connection is degraded. {count} changes are queued for replay.",
-        "service": "Connection is degraded. We are retrying queued edits in the background."
+        "messageNone": "연결이 약해요. 로컬 대기열로 수정 내용을 지켜 둡니다.",
+        "messageOne": "연결이 약해요. 변경사항 {count}건이 재전송을 기다리고 있어요.",
+        "messageMany": "연결이 약해요. 변경사항 {count}건이 재전송을 기다리고 있어요.",
+        "service": "연결이 약해요. 대기 중인 수정 내용을 백그라운드에서 다시 보내고 있습니다."
       },
-      "forcedSuffix": "(forced by debugger)",
-      "retry": "Retry failed sync",
-      "serverBackup": "A newer server version was backed up before replay. You can restore it if needed.",
-      "restoreServerVersion": "Restore server version",
-      "syncingOne": "Syncing {count} queued change to Supabase...",
-      "syncingMany": "Syncing {count} queued changes to Supabase...",
-      "pendingOne": "{count} queued change is waiting for replay.",
-      "pendingMany": "{count} queued changes are waiting for replay."
+      "forcedSuffix": "(디버거에서 강제 설정)",
+      "retry": "동기화 다시 시도",
+      "serverBackup": "서버에 더 최신 버전이 있어서 전송 전에 백업해 뒀어요. 필요하면 되돌릴 수 있습니다.",
+      "restoreServerVersion": "서버 버전 복원",
+      "syncingOne": "대기 중인 변경사항 {count}건을 클라우드로 보내는 중…",
+      "syncingMany": "대기 중인 변경사항 {count}건을 클라우드로 보내는 중…",
+      "pendingOne": "변경사항 {count}건이 재전송을 기다리고 있어요.",
+      "pendingMany": "변경사항 {count}건이 재전송을 기다리고 있어요."
     },
     "toast": {
-      "title": "Sync status",
-      "syncCompleted": "Queued trip changes synced successfully.",
-      "serverBackupRestored": "Server backup restored for this trip.",
+      "title": "동기화 상태",
+      "syncCompleted": "대기 중이던 여행 변경사항을 모두 동기화했어요.",
+      "serverBackupRestored": "이 여행의 서버 백업을 복원했어요.",
       "conflictPreserved": "서버에 이 여행의 더 최신 변경 사항이 있었습니다. 오프라인 버전은 백업으로 보관되었습니다.",
-      "syncStartedOne": "Reconnect detected. Replaying {count} queued change.",
-      "syncStartedMany": "Reconnect detected. Replaying {count} queued changes.",
-      "syncPartialFailureOne": "{count} queued change still failed. You can retry.",
-      "syncPartialFailureMany": "{count} queued changes still failed. You can retry."
+      "syncStartedOne": "다시 연결됐어요. 대기 중인 변경사항 {count}건을 보냅니다.",
+      "syncStartedMany": "다시 연결됐어요. 대기 중인 변경사항 {count}건을 보냅니다.",
+      "syncPartialFailureOne": "변경사항 {count}건이 아직 전송되지 않았어요. 다시 시도할 수 있습니다.",
+      "syncPartialFailureMany": "변경사항 {count}건이 아직 전송되지 않았어요. 다시 시도할 수 있습니다."
     },
     "globalBadge": {
-      "offline": "Offline",
-      "syncing": "Syncing...",
-      "online": "Online",
+      "offline": "오프라인",
+      "syncing": "동기화 중…",
+      "online": "온라인",
       "details": {
-        "offlineBrowser": "You are offline. Edits are stored locally and replayed once you reconnect.",
-        "offlineService": "Your internet is up, but cloud sync appears unavailable. We will keep retrying queued edits.",
-        "syncingQueue": "Syncing queued edits now. Pending items: {count}.",
-        "online": "Connection is healthy and sync is up to date."
+        "offlineBrowser": "오프라인 상태예요. 수정한 내용은 이 기기에 남았다가 다시 연결되면 전송됩니다.",
+        "offlineService": "인터넷은 되지만 클라우드 동기화를 쓸 수 없어요. 계속 다시 시도할게요.",
+        "syncingQueue": "대기 중인 수정 내용을 보내는 중이에요. 남은 항목: {count}개.",
+        "online": "연결이 원활하고 모두 동기화됐어요."
       }
     }
   },
@@ -304,60 +304,60 @@
   },
   "tripView": {
     "visualHistory": {
-      "mapPreviewState": "Map preview: {from} -> {to}",
+      "mapPreviewState": "지도 미리보기: {from} -> {to}",
       "mapPreviewStateValue": {
-        "docked": "docked",
-        "floating": "floating"
+        "docked": "고정",
+        "floating": "플로팅"
       }
     },
     "generation": {
       "strip": {
-        "failedDefault": "Trip generation failed. Check diagnostics or retry with the default model.",
-        "running": "Trip generation is running...",
-        "retry": "Retry generation",
-        "retrying": "Retrying...",
+        "failedDefault": "여행을 만들지 못했어요. 진단 정보를 보거나 기본 모델로 다시 시도해 보세요.",
+        "running": "여행을 만드는 중이에요…",
+        "retry": "다시 만들기",
+        "retrying": "다시 시도하는 중…",
         "slow": "평소보다 오래 걸리고 있습니다.",
         "abortRetry": "중단 후 재시도",
         "changeModel": "모델 변경"
       },
       "tripInfo": {
-        "title": "AI generation",
-        "provider": "Provider",
-        "model": "Model",
-        "providerModel": "Provider model",
-        "requestId": "Request ID",
-        "runTime": "Run time",
-        "httpStatus": "HTTP status",
-        "started": "Started",
-        "finished": "Finished",
-        "failureKind": "Failure kind",
-        "errorCode": "Error code",
-        "errorMessage": "Error message",
-        "generatedAt": "Generated at",
-        "recentAttempts": "Recent attempts",
-        "modelFallback": "Model n/a",
-        "retry": "Retry generation with default model",
-        "retrying": "Retrying with default model...",
+        "title": "AI 생성",
+        "provider": "제공업체",
+        "model": "모델",
+        "providerModel": "제공업체 모델",
+        "requestId": "요청 ID",
+        "runTime": "소요 시간",
+        "httpStatus": "HTTP 상태",
+        "started": "시작",
+        "finished": "완료",
+        "failureKind": "실패 유형",
+        "errorCode": "오류 코드",
+        "errorMessage": "오류 메시지",
+        "generatedAt": "생성 시각",
+        "recentAttempts": "최근 시도",
+        "modelFallback": "모델 정보 없음",
+        "retry": "기본 모델로 다시 만들기",
+        "retrying": "기본 모델로 다시 시도하는 중…",
         "state": {
-          "failed": "failed",
-          "running": "running",
-          "queued": "queued",
-          "succeeded": "succeeded"
+          "failed": "실패",
+          "running": "진행 중",
+          "queued": "대기 중",
+          "succeeded": "완료"
         },
         "orchestration": "실행 모드"
       },
       "retry": {
-        "readOnly": "This trip is read-only, so generation retry is unavailable.",
-        "readOnlyTitle": "Retry unavailable",
-        "missingSnapshot": "Retry requires saved generation input, but this trip has no snapshot.",
-        "missingSnapshotTitle": "Retry unavailable",
-        "queued": "Trip generation retry started and is running in the background.",
-        "queuedTitle": "Retry started",
-        "completed": "Trip generation completed with the default model.",
-        "completedTitle": "Retry completed",
-        "failed": "Trip generation failed again. Review the diagnostics and retry later.",
-        "failedTitle": "Retry failed",
-        "unexpected": "Retry failed unexpectedly."
+        "readOnly": "이 여행은 읽기 전용이라 다시 만들 수 없어요.",
+        "readOnlyTitle": "다시 시도할 수 없음",
+        "missingSnapshot": "다시 만들려면 저장된 입력값이 필요한데, 이 여행에는 없어요.",
+        "missingSnapshotTitle": "다시 시도할 수 없음",
+        "queued": "다시 만들기가 백그라운드에서 진행 중이에요.",
+        "queuedTitle": "다시 시도 시작",
+        "completed": "기본 모델로 여행을 완성했어요.",
+        "completedTitle": "다시 시도 완료",
+        "failed": "이번에도 만들지 못했어요. 진단 정보를 확인하고 나중에 다시 시도해 주세요.",
+        "failedTitle": "다시 시도 실패",
+        "unexpected": "다시 시도하다가 예기치 않게 실패했어요."
       }
     },
     "pendingAuth": {
@@ -380,126 +380,126 @@
       "description": "일부 경유지에는 여행자 설정에 따른 실용적인 주의사항이 포함됩니다."
     },
     "header": {
-      "titleTooltipEditable": "Open trip details and edit the title",
-      "titleTooltipReadonly": "Open trip details",
-      "editTitleCta": "Edit title",
-      "openDetailsCta": "Open details",
-      "trips": "Trips",
-      "tripsTooltip": "Back to your trips",
-      "share": "Share",
-      "shareDisabled": "Activate this trip to share it"
+      "titleTooltipEditable": "여행 상세를 열고 제목 수정하기",
+      "titleTooltipReadonly": "여행 상세 열기",
+      "editTitleCta": "제목 수정",
+      "openDetailsCta": "상세 열기",
+      "trips": "여행",
+      "tripsTooltip": "내 여행으로 돌아가기",
+      "share": "공유",
+      "shareDisabled": "이 여행을 활성화해야 공유할 수 있어요"
     },
     "zoom": {
-      "fit": "Fit",
-      "fitAria": "Fit timeline to available space",
-      "presetAria": "Set timeline zoom to {value}"
+      "fit": "맞추기",
+      "fitAria": "타임라인을 화면 폭에 맞추기",
+      "presetAria": "타임라인 확대 수준을 {value}(으)로 설정"
     },
     "infoDialog": {
-      "title": "Trip details",
-      "description": "Edit core info, review history, export the trip, and check destination context.",
-      "close": "Close trip details dialog",
+      "title": "여행 상세",
+      "description": "기본 정보를 수정하고, 기록을 살펴보고, 여행을 내보내고, 여행지 정보를 확인하세요.",
+      "close": "여행 상세 닫기",
       "tabs": {
-        "general": "General",
-        "history": "History",
-        "export": "Export",
-        "destination": "Destination",
-        "debug": "Debug"
+        "general": "일반",
+        "history": "기록",
+        "export": "내보내기",
+        "destination": "여행지",
+        "debug": "디버그"
       },
       "general": {
-        "titleLabel": "Trip title",
+        "titleLabel": "여행 제목",
         "editAction": "제목 편집",
         "saveAction": "제목 저장",
-        "editHint": "Click into the title to rename the trip or adjust the essentials here.",
-        "readOnlyHintExample": "Example trips stay read-only here. Copy the trip first if you want to rename it or save it as a favorite.",
-        "readOnlyHintShared": "This shared trip is read-only. You can review the details here, but editing is disabled.",
-        "favoriteAdd": "Add to favorites",
-        "favoriteRemove": "Remove from favorites",
-        "favoriteOn": "Favorite",
-        "favoriteOff": "Favorite",
-        "retryInProgress": "Retry is already in progress.",
-        "openBenchmark": "Open in AI Benchmark",
+        "editHint": "제목을 눌러 여행 이름을 바꾸거나, 여기서 기본 정보를 정리하세요.",
+        "readOnlyHintExample": "예시 여행은 읽기 전용이에요. 이름을 바꾸거나 즐겨찾기에 담으려면 먼저 복사하세요.",
+        "readOnlyHintShared": "공유받은 이 여행은 읽기 전용이에요. 상세는 볼 수 있지만 수정은 안 됩니다.",
+        "favoriteAdd": "즐겨찾기에 추가",
+        "favoriteRemove": "즐겨찾기에서 제거",
+        "favoriteOn": "즐겨찾기",
+        "favoriteOff": "즐겨찾기",
+        "retryInProgress": "이미 다시 시도하는 중이에요.",
+        "openBenchmark": "AI Benchmark에서 열기",
         "sections": {
-          "meta": "Trip meta",
-          "source": "Trip source"
+          "meta": "여행 정보",
+          "source": "여행 출처"
         },
         "meta": {
-          "duration": "Duration",
-          "totalDays": "Total days",
-          "totalDaysValue": "{count} days",
+          "duration": "기간",
+          "totalDays": "총 일수",
+          "totalDaysValue": "{count}일",
           "tripSpan": "일수와 숙박",
           "tripSpanValue": "{days}일 / {nights}박",
-          "cities": "Cities",
-          "totalDistance": "Total distance",
-          "owner": "Owner",
-          "access": "Access"
+          "cities": "도시",
+          "totalDistance": "총 이동 거리",
+          "owner": "소유자",
+          "access": "접근 권한"
         },
-        "sourceSharedDescription": "This itinerary was copied from a shared trip snapshot.",
-        "sourceTripDescription": "This itinerary was copied from another trip in your workspace.",
-        "viewSource": "View source"
+        "sourceSharedDescription": "이 일정은 공유받은 여행에서 복사했어요.",
+        "sourceTripDescription": "이 일정은 내 다른 여행에서 복사했어요.",
+        "viewSource": "원본 보기"
       },
       "history": {
-        "example": "Example trips do not save history snapshots. Copy this trip first if you want to keep edits and revisit them later.",
-        "undo": "Undo",
-        "redo": "Redo",
-        "showAll": "Show all",
-        "showRecent": "Show recent",
-        "empty": "No history entries yet.",
-        "current": "Current",
-        "notSynced": "Not synced",
-        "go": "Go",
-        "pendingSyncOne": "1 latest change is saved locally and not synced yet.",
-        "pendingSyncMany": "{count} latest changes are saved locally and not synced yet.",
-        "failedSyncOne": "1 queued change still failed to sync. Retry sync to publish it.",
-        "failedSyncMany": "{count} queued changes still failed to sync. Retry sync to publish them."
+        "example": "예시 여행은 기록을 저장하지 않아요. 수정 내용을 남기고 다시 보려면 먼저 이 여행을 복사하세요.",
+        "undo": "실행 취소",
+        "redo": "다시 실행",
+        "showAll": "전체 보기",
+        "showRecent": "최근 항목 보기",
+        "empty": "아직 기록이 없어요.",
+        "current": "현재",
+        "notSynced": "동기화 안 됨",
+        "go": "이동",
+        "pendingSyncOne": "최근 변경 1건이 이 기기에만 저장되어 있고 아직 동기화되지 않았어요.",
+        "pendingSyncMany": "최근 변경 {count}건이 이 기기에만 저장되어 있고 아직 동기화되지 않았어요.",
+        "failedSyncOne": "대기 중인 변경 1건이 아직 동기화되지 않았어요. 동기화를 다시 시도해 반영하세요.",
+        "failedSyncMany": "대기 중인 변경 {count}건이 아직 동기화되지 않았어요. 동기화를 다시 시도해 반영하세요."
       },
       "export": {
         "activities": {
-          "title": "Activities calendar",
-          "description": "Export planned activities as an .ics file so you can drop them into your calendar app.",
-          "action": "Export activities (.ics)"
+          "title": "일정 캘린더",
+          "description": "계획한 일정을 .ics 파일로 내보내 캘린더 앱에 바로 넣으세요.",
+          "action": "일정 내보내기 (.ics)"
         },
         "cities": {
-          "title": "Cities calendar",
-          "description": "Create a cleaner trip skeleton with city arrivals and stays only.",
-          "action": "Export cities (.ics)"
+          "title": "도시 캘린더",
+          "description": "도착과 숙박만 담은 간결한 여행 뼈대를 만들어요.",
+          "action": "도시 내보내기 (.ics)"
         },
         "everything": {
-          "title": "Complete calendar bundle",
-          "description": "Download one calendar file with cities, transfers, and activities together.",
-          "action": "Download everything (.ics)"
+          "title": "전체 캘린더 묶음",
+          "description": "도시, 이동, 일정을 한 캘린더 파일로 내려받으세요.",
+          "action": "전체 내려받기 (.ics)"
         },
         "print": {
-          "title": "Print layout",
-          "description": "Open a print-friendly version of this trip for PDFs, handouts, or trip briefings.",
-          "action": "Open print layout"
+          "title": "인쇄용 보기",
+          "description": "PDF나 종이로 쓰기 좋은 인쇄용 버전을 열어요.",
+          "action": "인쇄용 보기 열기"
         }
       },
       "destination": {
-        "locked": "Destination details unlock once this trip is activated.",
-        "empty": "No destination information is available for this trip yet.",
-        "futureChecksTitle": "Future destination checks",
-        "futureChecksDescription": "This tab is ready for more trip-specific guidance as we add richer destination data.",
+        "locked": "이 여행을 활성화하면 여행지 정보가 열려요.",
+        "empty": "이 여행에 대한 여행지 정보가 아직 없어요.",
+        "futureChecksTitle": "앞으로 추가될 여행지 정보",
+        "futureChecksDescription": "여행지 데이터가 늘어나면 이 탭에 더 자세한 안내를 담을 거예요.",
         "futureChecks": {
-          "visa": "Visa",
-          "entryRules": "Entry rules",
-          "safety": "Safety",
-          "customs": "Customs",
-          "connectivity": "Connectivity",
-          "health": "Health"
+          "visa": "비자",
+          "entryRules": "입국 규정",
+          "safety": "안전",
+          "customs": "세관",
+          "connectivity": "통신",
+          "health": "건강"
         }
       }
     },
     "claimConflict": {
-      "eyebrow": "Claim unavailable",
-      "title": "This trip draft was already claimed",
-      "descriptionLoggedOut": "Sign in with the original account or start a similar trip with the same setup.",
-      "descriptionLoggedIn": "This draft is already attached to another account. Start a similar trip with the same setup.",
-      "loginCta": "Sign in with the original account",
-      "createSimilarCta": "Create similar trip",
-      "benefitsTitle": "What we kept",
+      "eyebrow": "가져올 수 없음",
+      "title": "이 여행 초안은 이미 다른 계정이 가져갔어요",
+      "descriptionLoggedOut": "원래 계정으로 로그인하거나, 같은 설정으로 비슷한 여행을 새로 시작하세요.",
+      "descriptionLoggedIn": "이 초안은 이미 다른 계정에 연결돼 있어요. 같은 설정으로 비슷한 여행을 시작해 보세요.",
+      "loginCta": "원래 계정으로 로그인",
+      "createSimilarCta": "비슷한 여행 만들기",
+      "benefitsTitle": "그대로 남는 것",
       "benefits": {
-        "prefill": "Reuse your traveler setup, dates, and transport choices.",
-        "adjust": "Adjust the draft before starting a fresh generation."
+        "prefill": "여행자 설정, 날짜, 교통수단 선택을 그대로 씁니다.",
+        "adjust": "새로 만들기 전에 초안을 다듬을 수 있어요."
       }
     },
     "addActivity": {
@@ -709,6 +709,7 @@
   },
   "storageNotice": {
     "tripsPrunedTitle": "기기 저장 공간이 가득 찼습니다",
-    "tripsPrunedDescription": "{count, plural, other {공간을 확보하기 위해 가장 오래된 저장 여행 #개가 이 기기에서 제거되었습니다.}}"
+    "tripsPrunedDescriptionOne": "공간을 확보하려고 가장 오래된 저장 여행 1개를 이 기기에서 지웠어요.",
+    "tripsPrunedDescriptionMany": "공간을 확보하려고 가장 오래된 저장 여행 {count}개를 이 기기에서 지웠어요."
   }
 }
