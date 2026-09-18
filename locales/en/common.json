@@ -718,6 +718,12 @@
       "title": "You're signed out",
       "body": "Sign in to see the trips saved to your account.",
       "action": "Sign in"
+    },
+    "list": {
+      "searchLabel": "Search trips or cities",
+      "searchPlaceholder": "Search trips or cities...",
+      "empty": "No saved plans yet.",
+      "noMatches": "No matches for \"{query}\"."
     }
   }
 }

@@ -718,6 +718,12 @@
       "title": "Du bist nicht angemeldet",
       "body": "Melde dich an, um die Reisen aus deinem Konto zu sehen.",
       "action": "Anmelden"
+    },
+    "list": {
+      "searchLabel": "Reisen oder Städte suchen",
+      "searchPlaceholder": "Reisen oder Städte suchen ...",
+      "empty": "Noch keine gespeicherten Reisen.",
+      "noMatches": "Keine Treffer für „{query}“."
     }
   }
 }

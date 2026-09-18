@@ -718,6 +718,12 @@
       "title": "Non hai effettuato l'accesso",
       "body": "Accedi per vedere i viaggi salvati nel tuo account.",
       "action": "Accedi"
+    },
+    "list": {
+      "searchLabel": "Cerca viaggi o città",
+      "searchPlaceholder": "Cerca viaggi o città...",
+      "empty": "Nessun viaggio salvato.",
+      "noMatches": "Nessun risultato per \"{query}\"."
     }
   }
 }

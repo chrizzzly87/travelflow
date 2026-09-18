@@ -718,6 +718,12 @@
       "title": "Você não está conectado",
       "body": "Entre para ver as viagens salvas na sua conta.",
       "action": "Entrar"
+    },
+    "list": {
+      "searchLabel": "Buscar viagens ou cidades",
+      "searchPlaceholder": "Buscar viagens ou cidades...",
+      "empty": "Ainda não há viagens salvas.",
+      "noMatches": "Nenhum resultado para \"{query}\"."
     }
   }
 }

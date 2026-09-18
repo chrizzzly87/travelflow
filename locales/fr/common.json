@@ -718,6 +718,12 @@
       "title": "Vous n'êtes pas connecté",
       "body": "Connectez-vous pour voir les voyages enregistrés dans votre compte.",
       "action": "Se connecter"
+    },
+    "list": {
+      "searchLabel": "Rechercher des voyages ou des villes",
+      "searchPlaceholder": "Rechercher des voyages ou des villes...",
+      "empty": "Aucun voyage enregistré pour le moment.",
+      "noMatches": "Aucun résultat pour « {query} »."
     }
   }
 }

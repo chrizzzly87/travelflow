@@ -1272,7 +1272,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
         aria-modal={isPageVariant ? undefined : 'true'}
         aria-labelledby="trip-manager-title"
       >
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+        <div className={`px-4 py-3 border-b border-gray-100 flex items-center ${isPageVariant ? 'justify-end' : 'justify-between'}`}>
           {/* The /trips route supplies its own localized heading, so repeating a
               hardcoded English one here would both duplicate it and break the
               page's language. */}
@@ -1321,11 +1321,11 @@ export const TripManager: React.FC<TripManagerProps> = ({
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                aria-label="Search trips or cities"
+                aria-label={t('trips.list.searchLabel')}
                 value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={hideHoverNow}
-              placeholder="Search trips or cities..."
+              placeholder={t('trips.list.searchPlaceholder')}
               className="w-full h-9 pl-8 pr-2.5 rounded-md border border-gray-200 bg-gray-50 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent focus:bg-white"
             />
           </div>
@@ -1335,9 +1335,9 @@ export const TripManager: React.FC<TripManagerProps> = ({
           {showLoadingSkeleton ? (
             <TripListSkeleton syncing={isSyncingTrips} />
           ) : trips.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 text-sm">No saved plans yet.</div>
+            <div className="text-center py-8 text-gray-400 text-sm">{t('trips.list.empty')}</div>
           ) : filteredTrips.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 text-sm">No matches for "{searchQuery}".</div>
+            <div className="text-center py-8 text-gray-400 text-sm">{t('trips.list.noMatches', { query: searchQuery })}</div>
           ) : (
             <>
               <section>

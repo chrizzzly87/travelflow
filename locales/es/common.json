@@ -718,6 +718,12 @@
       "title": "No has iniciado sesión",
       "body": "Inicia sesión para ver los viajes guardados en tu cuenta.",
       "action": "Iniciar sesión"
+    },
+    "list": {
+      "searchLabel": "Buscar viajes o ciudades",
+      "searchPlaceholder": "Buscar viajes o ciudades...",
+      "empty": "Aún no hay viajes guardados.",
+      "noMatches": "Sin resultados para «{query}»."
     }
   }
 }

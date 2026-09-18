@@ -716,6 +716,12 @@
       "title": "Nie jesteś zalogowany",
       "body": "Zaloguj się, aby zobaczyć podróże zapisane na Twoim koncie.",
       "action": "Zaloguj się"
+    },
+    "list": {
+      "searchLabel": "Szukaj podróży lub miast",
+      "searchPlaceholder": "Szukaj podróży lub miast...",
+      "empty": "Brak zapisanych podróży.",
+      "noMatches": "Brak wyników dla „{query}”."
     }
   }
 }
