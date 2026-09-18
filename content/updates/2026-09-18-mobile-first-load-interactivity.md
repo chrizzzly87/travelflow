@@ -1,9 +1,9 @@
 ---
 id: rel-2026-09-18-mobile-first-load-interactivity
-version: v0.175.0
+version: v0.177.0
 title: "The menu answers your first tap, even while the page is still loading"
 date: 2026-09-18
-published_at: 2026-09-18T15:00:00Z
+published_at: 2026-09-18T15:35:00Z
 status: published
 notify_in_app: true
 in_app_hours: 24
