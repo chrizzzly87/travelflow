@@ -709,8 +709,8 @@
   },
   "storageNotice": {
     "tripsPrunedTitle": "Device storage is full",
-    "tripsPrunedDescriptionOne": "Your oldest saved trip was removed from this device to free up space.",
-    "tripsPrunedDescriptionMany": "Your {count} oldest saved trips were removed from this device to free up space."
+    "tripsPrunedDescription_one": "Your oldest saved trip was removed from this device to free up space.",
+    "tripsPrunedDescription_other": "Your {count} oldest saved trips were removed from this device to free up space."
   },
   "trips": {
     "pageTitle": "My trips",

@@ -17,7 +17,7 @@
 - For user-facing copy edits, ask the user for EN/DE style sign-off unless they explicitly opt out.
 - Release notes in `content/updates/*.md` are always written in English and do not require EN/DE translation prompts or style sign-off unless explicitly requested.
 - For clickable marketing/planner UI updates, add `trackEvent(...)` + `getAnalyticsDebugAttributes(...)` in the standard format unless explicitly excluded.
-- For locale changes, run `pnpm i18n:validate` to enforce locale namespace parity and ICU placeholder syntax.
+- For locale changes, run `pnpm i18n:validate` to enforce locale namespace parity and single-brace placeholder syntax.
 - For behavioral code changes (business logic/service flow/data transforms), add or update Vitest coverage in the same PR.
 - For bug fixes, add a regression test that fails before the fix and passes after.
 - Docs-only, copy-only, and style-only edits are exempt from mandatory test additions.

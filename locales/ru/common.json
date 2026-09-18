@@ -709,8 +709,10 @@
   },
   "storageNotice": {
     "tripsPrunedTitle": "Память устройства заполнена",
-    "tripsPrunedDescriptionOne": "Самая старая сохранённая поездка удалена с этого устройства, чтобы освободить место.",
-    "tripsPrunedDescriptionMany": "Удалено с этого устройства самых старых сохранённых поездок: {count}. Так мы освободили место."
+    "tripsPrunedDescription_one": "Удалена {count} самая старая сохранённая поездка, чтобы освободить место.",
+    "tripsPrunedDescription_few": "Удалены {count} самые старые сохранённые поездки, чтобы освободить место.",
+    "tripsPrunedDescription_many": "Удалено {count} самых старых сохранённых поездок, чтобы освободить место.",
+    "tripsPrunedDescription_other": "Удалено {count} самых старых сохранённых поездок, чтобы освободить место."
   },
   "trips": {
     "pageTitle": "Мои поездки",

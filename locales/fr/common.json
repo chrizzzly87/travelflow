@@ -709,8 +709,9 @@
   },
   "storageNotice": {
     "tripsPrunedTitle": "Le stockage de l'appareil est plein",
-    "tripsPrunedDescriptionOne": "Ton voyage enregistré le plus ancien a été supprimé de cet appareil pour libérer de l'espace.",
-    "tripsPrunedDescriptionMany": "Tes {count} voyages enregistrés les plus anciens ont été supprimés de cet appareil pour libérer de l'espace."
+    "tripsPrunedDescription_one": "Ton voyage enregistré le plus ancien a été supprimé de cet appareil pour libérer de l'espace.",
+    "tripsPrunedDescription_many": "Tes {count} voyages enregistrés les plus anciens ont été supprimés de cet appareil pour libérer de l'espace.",
+    "tripsPrunedDescription_other": "Tes {count} voyages enregistrés les plus anciens ont été supprimés de cet appareil pour libérer de l'espace."
   },
   "trips": {
     "pageTitle": "Mes voyages",

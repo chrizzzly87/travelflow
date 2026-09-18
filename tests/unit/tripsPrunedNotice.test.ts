@@ -8,8 +8,11 @@ import { TRIPS_PRUNED_EVENT } from '../../services/storageService';
 /**
  * The pruned-storage toast used a single key holding an ICU plural block. With
  * `i18next-icu` unregistered, that reached the user as raw `{count, plural, …}`
- * source. The copy now lives in explicit `*One` / `*Many` keys, and the hook
- * picks the variant itself.
+ * source. The copy now uses i18next native plural suffix keys, so the hook
+ * passes `count` and i18next resolves the CLDR category via Intl.PluralRules.
+ *
+ * Which form each locale actually renders is covered by
+ * tests/unit/storageNoticePlurals.test.ts against the real locale files.
  */
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -40,32 +43,31 @@ afterEach(() => {
 });
 
 describe('useTripsPrunedNoticeBootstrap', () => {
-  it('uses the singular key when exactly one trip was pruned', () => {
+  it('passes count to the base key so i18next can pick the plural form', () => {
     render(React.createElement(Harness));
     emitPruned(1);
 
     expect(showAppToastMock).toHaveBeenCalledTimes(1);
     expect(showAppToastMock.mock.calls[0][0].description).toBe(
-      'storageNotice.tripsPrunedDescriptionOne|{"count":1}',
+      'storageNotice.tripsPrunedDescription|{"count":1}',
     );
   });
 
-  it('uses the plural key when several trips were pruned', () => {
+  it('passes the real count through for several pruned trips', () => {
     render(React.createElement(Harness));
     emitPruned(4);
 
     expect(showAppToastMock.mock.calls[0][0].description).toBe(
-      'storageNotice.tripsPrunedDescriptionMany|{"count":4}',
+      'storageNotice.tripsPrunedDescription|{"count":4}',
     );
   });
 
-  it('never references the removed ICU plural key', () => {
+  it('does not hand-pick a plural variant in the caller', () => {
     render(React.createElement(Harness));
     emitPruned(3);
 
-    expect(showAppToastMock.mock.calls[0][0].description).not.toContain(
-      'storageNotice.tripsPrunedDescription|',
-    );
+    const description = showAppToastMock.mock.calls[0][0].description as string;
+    expect(description).not.toMatch(/tripsPrunedDescription(One|Many|_)/);
   });
 
   it('stays quiet when nothing was pruned', () => {

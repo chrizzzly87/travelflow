@@ -16,7 +16,7 @@
 4. For user-facing copy updates (marketing, CTA, planner), follow `docs/UX_COPY_GUIDELINES.md`.
 5. Before building any UI layout by hand, check `docs/DESIGN_SYSTEM_COMPONENTS.md` for an existing shared component in `components/ui/`; the admin visual contract is `docs/DESIGN.md`.
 6. For analytics updates, follow `docs/ANALYTICS_CONVENTION.md`.
-7. For localized copy placeholders, use ICU syntax (`{name}`), never `{{name}}`. Note: `i18next-icu` ships but is not registered in `i18n.ts`, so ICU plural/select blocks render as raw text — use plain interpolation.
+7. For localized copy placeholders, use single-brace syntax (`{name}`), never `{{name}}`. Note: `i18next-icu` ships but is not registered in `i18n.ts`, so ICU plural/select blocks render as raw text — use plain interpolation. For plurals use i18next native plural suffix keys (`key_one`, `key_other`, plus `key_few`/`key_many` where the locale needs them) with a `count` option.
 8. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
 
 ## Skill usage policy
@@ -55,7 +55,7 @@ When a user-facing feature, fix, or behavior change is completed, you must updat
 
 ## Runtime traps in this repo
 - The app renders through `preact/compat`. A plain function component never receives `ref`; anything used with Radix `asChild`, or focused/measured by a library, must be a real `forwardRef`. Symptoms: `getBoundingClientRect is not a function`, `focus is not a function`, popovers anchored at the origin. Libraries that require React 19 do not work here.
-- `i18next-icu` is installed but never registered in `i18n.ts`. ICU **placeholders** (`{name}`) work; ICU **plural/select syntax** renders as raw text. See `tests/unit/festivalLocaleKeys.test.ts`.
+- `i18next-icu` is installed but never registered in `i18n.ts`. Single-brace **placeholders** (`{name}`) work; ICU **plural/select syntax** renders as raw text. For plurals use i18next native plural suffix keys (`key_one`, `key_other`, plus `key_few`/`key_many` where the locale needs them) with a `count` option. See `tests/unit/festivalLocaleKeys.test.ts` and `tests/unit/storageNoticePlurals.test.ts`.
 - `supabase/migrations/*.sql` are never applied by a deploy. Write and verify them locally (`supabase/tests/`), then follow `docs/SUPABASE_RUNBOOK.md`; say plainly that a migration is pending.
 - Postgres has no autonomous transactions: `UPDATE` then `RAISE` in one function rolls the update back. Return the status and let the caller raise.
 

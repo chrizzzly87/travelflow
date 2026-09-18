@@ -709,8 +709,9 @@
   },
   "storageNotice": {
     "tripsPrunedTitle": "El almacenamiento del dispositivo está lleno",
-    "tripsPrunedDescriptionOne": "Tu viaje guardado más antiguo se eliminó de este dispositivo para liberar espacio.",
-    "tripsPrunedDescriptionMany": "Tus {count} viajes guardados más antiguos se eliminaron de este dispositivo para liberar espacio."
+    "tripsPrunedDescription_one": "Tu viaje guardado más antiguo se eliminó de este dispositivo para liberar espacio.",
+    "tripsPrunedDescription_many": "Tus {count} viajes guardados más antiguos se eliminaron de este dispositivo para liberar espacio.",
+    "tripsPrunedDescription_other": "Tus {count} viajes guardados más antiguos se eliminaron de este dispositivo para liberar espacio."
   },
   "trips": {
     "pageTitle": "Mis viajes",

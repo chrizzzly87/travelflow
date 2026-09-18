@@ -46,6 +46,12 @@ const flattenLeaves = (value, currentPath = '', out = {}) => {
   return out;
 };
 
+// i18next native plurals: a locale carries exactly the CLDR categories
+// Intl.PluralRules resolves for it, so `key_few` existing in pl but not in en
+// is correct, not a parity gap. Compare the base key instead.
+const PLURAL_SUFFIX_PATTERN = /_(zero|one|two|few|many|other)$/;
+const basePluralKey = (key) => key.replace(PLURAL_SUFFIX_PATTERN, '');
+
 const readAllowlist = async () => {
   try {
     return JSON.parse(await fs.readFile(ALLOWLIST_PATH, 'utf8'));
@@ -158,8 +164,10 @@ const main = async () => {
         continue; // unreadable/invalid JSON is already a hard failure above
       }
 
-      const missing = Object.keys(defaultLeaves).filter((key) => !(key in localeLeaves));
-      const extra = Object.keys(localeLeaves).filter((key) => !(key in defaultLeaves));
+      const defaultBases = new Set(Object.keys(defaultLeaves).map(basePluralKey));
+      const localeBases = new Set(Object.keys(localeLeaves).map(basePluralKey));
+      const missing = [...defaultBases].filter((key) => !localeBases.has(key));
+      const extra = [...localeBases].filter((key) => !defaultBases.has(key));
       if (missing.length > 0) {
         warnings.push(`locales/${locale}/${file}: ${missing.length} key(s) missing vs ${DEFAULT_LOCALE} (e.g. ${missing.slice(0, 3).join(', ')})`);
       }

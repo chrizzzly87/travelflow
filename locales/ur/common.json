@@ -709,8 +709,8 @@
   },
   "storageNotice": {
     "tripsPrunedTitle": "ڈیوائس کی اسٹوریج بھر گئی ہے",
-    "tripsPrunedDescriptionOne": "جگہ خالی کرنے کے لیے آپ کا سب سے پرانا محفوظ سفر اس ڈیوائس سے ہٹا دیا گیا۔",
-    "tripsPrunedDescriptionMany": "جگہ خالی کرنے کے لیے آپ کے {count} سب سے پرانے محفوظ سفر اس ڈیوائس سے ہٹا دیے گئے۔"
+    "tripsPrunedDescription_one": "جگہ خالی کرنے کے لیے آپ کا سب سے پرانا محفوظ سفر اس ڈیوائس سے ہٹا دیا گیا۔",
+    "tripsPrunedDescription_other": "جگہ خالی کرنے کے لیے آپ کے {count} سب سے پرانے محفوظ سفر اس ڈیوائس سے ہٹا دیے گئے۔"
   },
   "trips": {
     "pageTitle": "میرے سفر",

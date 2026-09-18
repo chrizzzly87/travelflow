@@ -709,8 +709,10 @@
   },
   "storageNotice": {
     "tripsPrunedTitle": "Pamięć urządzenia jest pełna",
-    "tripsPrunedDescriptionOne": "Twoja najstarsza zapisana podróż została usunięta z tego urządzenia, żeby zwolnić miejsce.",
-    "tripsPrunedDescriptionMany": "Usuniętych z tego urządzenia najstarszych zapisanych podróży: {count}. Zrobiliśmy miejsce."
+    "tripsPrunedDescription_one": "Twoja najstarsza zapisana podróż została usunięta z tego urządzenia, żeby zwolnić miejsce.",
+    "tripsPrunedDescription_few": "{count} najstarsze zapisane podróże zostały usunięte z tego urządzenia, żeby zwolnić miejsce.",
+    "tripsPrunedDescription_many": "{count} najstarszych zapisanych podróży zostało usuniętych z tego urządzenia, żeby zwolnić miejsce.",
+    "tripsPrunedDescription_other": "{count} najstarszych zapisanych podróży zostało usuniętych z tego urządzenia, żeby zwolnić miejsce."
   },
   "trips": {
     "pageTitle": "Moje podróże",
