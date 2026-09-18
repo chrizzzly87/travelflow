@@ -984,6 +984,27 @@ exit 1
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# Netlify infers application/octet-stream for .webmanifest, which iOS can refuse
+# when deciding whether a site is installable. Serve the spec type explicitly.
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json; charset=utf-8"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# The service worker must never be served stale, or a device can pin itself to a
+# retired build and stop receiving updates entirely.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    Service-Worker-Allowed = "/"
+
+[[headers]]
+  for = "/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
 [[headers]]
   for = "/flags/*"
   [headers.values]
