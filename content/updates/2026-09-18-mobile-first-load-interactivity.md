@@ -7,7 +7,7 @@ published_at: 2026-09-18T12:00:00Z
 status: draft
 notify_in_app: true
 in_app_hours: 24
-summary: "On a phone, tapping the menu before the page finished loading did nothing at all. That tap is now remembered and the menu opens as soon as it can."
+summary: "On a phone, tapping the menu before the page finished loading did nothing at all. That tap is now remembered, the menu opens as soon as it can, and there is less to download before it does."
 ---
 
 ## Changes
@@ -19,5 +19,6 @@ summary: "On a phone, tapping the menu before the page finished loading did noth
 - [ ] [Internal] 📦 Example trip cards localize country names from a generated 4 KB table instead of `services/destinationService`, which statically pulled `data/countryTravelData.json`. That took a 424 KB chunk (~372 KB, 25% of the homepage boot JS) off the mobile critical path.
 - [ ] [Internal] 🧩 `MobileMenu` is no longer a lazy chunk: it cost a network round trip on the one tap that matters on a phone, and adds ~11 KB to the header chunk instead.
 - [ ] [Internal] ✂️ `data/countryTravelData.json` (678 KB) is split by `scripts/split-country-travel-data.mjs` into seasons, localized names and search aliases. It stays the source of truth on disk — the generators write it and the Node scripts read it — but no client module imports it any more, so a page pays only for the slice it reads. Profile, profile settings and the countries explorer drop from 424 KB to 132 KB; pages that genuinely need all three are unchanged.
+- [ ] [Internal] 📰 The in-app release notice reads a generated single-release file instead of `releaseNotesService`, whose eager glob bundles all 204 notes. Opening a trip downloaded 444 KB of release history to decide whether one notice was due; it now costs ~8 KB. The updates page still gets the full corpus.
 - [ ] [Internal] 📅 `MONTH_LABELS` moved to `data/countryMonthLabels.ts`. A component rendering a month strip was importing 678 KB of seasons, events and public holidays for a 12-string array.
-- [ ] [Internal] 🧪 `tests/browser/bootInteractionBridge.browser.test.ts` runs the real inline script from `index.html`. `tests/unit/exampleTripCountryNames.test.ts` and `tests/unit/countryTravelDataSplit.test.ts` assert every derived table returns exactly what the monolith returns, and fail if a generator run leaves them stale.
+- [ ] [Internal] 🧪 `tests/browser/bootInteractionBridge.browser.test.ts` runs the real inline script from `index.html`. `tests/unit/exampleTripCountryNames.test.ts`, `tests/unit/countryTravelDataSplit.test.ts` and `tests/unit/latestInAppRelease.test.ts` assert every derived table returns exactly what the full source returns, and fail if it is left stale.

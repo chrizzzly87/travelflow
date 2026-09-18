@@ -2,7 +2,10 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { getLatestInAppRelease, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
+// Not `releaseNotesService`: that module's eager glob bundles every release note
+// ever written (444 KB) and the trip view mounts this dialog on every visit.
+import { getLatestInAppRelease } from '../services/latestInAppRelease';
+import { getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesFormat';
 import { ReleasePill } from './marketing/ReleasePill';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import {

@@ -43,6 +43,8 @@ export default defineConfig({
         'services/festivalCatalogService.ts',
         'services/tripPrefillDecoder.ts',
         'services/releaseNotesService.ts',
+        'services/releaseNotesFormat.ts',
+        'services/latestInAppRelease.ts',
         'services/blogService.ts',
         'data/countryTravelData.ts',
         'data/countryLocalizedNames.ts',
