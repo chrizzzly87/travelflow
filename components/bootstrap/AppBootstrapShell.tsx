@@ -6,6 +6,7 @@ import {
   registerShellMounted,
   registerShellUnmounted,
 } from '../../services/appBootstrapShellEpoch';
+import type { TripRouteShellPreviewDay } from '../../services/tripRouteShellPreview';
 
 type AppBootstrapShellVariant = 'marketing' | 'trip';
 type AppBootstrapShellChromeMode = 'skeleton' | 'ghost';
@@ -25,6 +26,8 @@ interface AppBootstrapShellProps {
   sidebarWidth?: number;
   /** Height of the timeline pane in the vertical layout, in pixels. */
   timelineHeight?: number;
+  /** Real trip dates for the phone day strip, when this device already knows them. */
+  previewDays?: TripRouteShellPreviewDay[] | null;
 }
 
 /** One day column in the timeline ruler, in pixels, at the default zoom. */
@@ -36,11 +39,86 @@ const TIMELINE_DAYS = Array.from({ length: 26 }, (_, index) => index);
 /** Stay lengths in days, so the city row reads as a real itinerary. */
 const TIMELINE_CITY_SPANS = [3, 2, 4, 3, 3, 2];
 
+/** Day bubbles to draw when the dates are not known yet. */
+const SHEET_PLACEHOLDER_DAYS = Array.from({ length: 8 }, (_, index) => index);
+
+/** Rows in the sheet's day panel, as fractions of its width. */
+const SHEET_CONTENT_ROWS = [
+  { title: '62%', meta: '38%' },
+  { title: '48%', meta: '54%' },
+  { title: '70%', meta: '32%' },
+];
+
+/**
+ * The phone planner is a bottom sheet over the map, not the desktop split, so
+ * the placeholder carries both and lets the stylesheet choose. Rendering both
+ * avoids measuring the viewport in JS, which would either block the first paint
+ * or show the wrong one for a frame.
+ */
+const TripPlannerSheetSkeleton: React.FC<{
+  previewDays?: TripRouteShellPreviewDay[] | null;
+}> = ({ previewDays }) => (
+  <section className="tf-boot-sheet" aria-hidden="true">
+    <span className="tf-boot-sheet-grip" />
+    <div className="tf-boot-sheet-head">
+      <span className="tf-boot-sheet-segmented">
+        <span className="tf-bone tf-boot-sheet-segment tf-boot-sheet-segment--active" />
+        <span className="tf-bone tf-boot-sheet-segment" style={{ '--tf-bone-phase': 1 } as React.CSSProperties} />
+      </span>
+      <span className="tf-bone tf-boot-sheet-toggle" style={{ '--tf-bone-phase': 2 } as React.CSSProperties} />
+    </div>
+    <div className="tf-boot-sheet-strip">
+      {previewDays && previewDays.length > 0
+        ? previewDays.map((day, index) => (
+          <span key={`day-${index}`} className="tf-boot-sheet-day">
+            <span className="tf-boot-sheet-day-month">{day.isMonthStart ? day.monthLabel : ''}</span>
+            <span className="tf-boot-sheet-day-bubble tf-boot-sheet-day-bubble--dated">
+              <span className="tf-boot-sheet-day-weekday">{day.weekdayLabel}</span>
+              <span className="tf-boot-sheet-day-number">{day.dayOfMonthLabel}</span>
+            </span>
+            <span className="tf-boot-sheet-day-foot" />
+          </span>
+        ))
+        : SHEET_PLACEHOLDER_DAYS.map((index) => (
+          <span key={`day-${index}`} className="tf-boot-sheet-day">
+            <span className="tf-boot-sheet-day-month" />
+            <span
+              className="tf-bone tf-boot-sheet-day-bubble"
+              style={{ '--tf-bone-phase': index } as React.CSSProperties}
+            />
+            <span className="tf-boot-sheet-day-foot" />
+          </span>
+        ))}
+    </div>
+    <div className="tf-boot-sheet-content">
+      {SHEET_CONTENT_ROWS.map((row, index) => (
+        <span key={`row-${index}`} className="tf-boot-sheet-row">
+          <span
+            className="tf-bone tf-boot-sheet-row-icon"
+            style={{ '--tf-bone-phase': index } as React.CSSProperties}
+          />
+          <span className="tf-boot-sheet-row-copy">
+            <span
+              className="tf-bone tf-boot-sheet-row-line"
+              style={{ width: row.title, '--tf-bone-phase': index } as React.CSSProperties}
+            />
+            <span
+              className="tf-bone tf-boot-sheet-row-line tf-boot-sheet-row-line--meta"
+              style={{ width: row.meta, '--tf-bone-phase': index + 1 } as React.CSSProperties}
+            />
+          </span>
+        </span>
+      ))}
+    </div>
+  </section>
+);
+
 const TripPlannerSkeleton: React.FC<{
   plannerLayout: AppBootstrapShellPlannerLayout;
   sidebarWidth?: number;
   timelineHeight?: number;
-}> = ({ plannerLayout, sidebarWidth, timelineHeight }) => {
+  previewDays?: TripRouteShellPreviewDay[] | null;
+}> = ({ plannerLayout, sidebarWidth, timelineHeight, previewDays }) => {
   const plannerStyle = {
     ...(typeof sidebarWidth === 'number' ? { '--tf-boot-sidebar-width': `${sidebarWidth}px` } : {}),
     ...(typeof timelineHeight === 'number' ? { '--tf-boot-timeline-height': `${timelineHeight}px` } : {}),
@@ -103,6 +181,7 @@ const TripPlannerSkeleton: React.FC<{
           <span className="tf-boot-map-control tf-boot-map-control--accent" />
         </div>
       </section>
+      <TripPlannerSheetSkeleton previewDays={previewDays} />
     </main>
   );
 };
@@ -117,6 +196,7 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
   plannerLayout = 'horizontal',
   sidebarWidth,
   timelineHeight,
+  previewDays,
 }) => {
   // Read before the effect registers this mount: on the first shell of an
   // episode the epoch is 0, on the remounts that follow it is however long the
@@ -243,6 +323,7 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
         plannerLayout={plannerLayout}
         sidebarWidth={sidebarWidth}
         timelineHeight={timelineHeight}
+        previewDays={previewDays}
       />
     ) : null}
   </div>

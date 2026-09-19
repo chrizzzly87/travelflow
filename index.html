@@ -670,6 +670,179 @@
         background-color: var(--tf-bone-accent);
       }
 
+      /* ---- phone sheet: mirrors components/tripview/TripMobilePlannerShell ----
+         Hidden on desktop; the planner panes above are hidden on phones. The
+         height matches the sheet's own `half` snap — 58% of the planner, with
+         the same 168px floor — and the map is pulled up under the rounded lip
+         by the same 28px underlap, so the handoff does not jump. */
+
+      .tf-boot-sheet {
+        display: none;
+        position: absolute;
+        inset-inline: 0;
+        bottom: 0;
+        z-index: 3;
+        height: max(168px, 58%);
+        flex-direction: column;
+        overflow: hidden;
+        border-top: 1px solid #e2e8f0;
+        border-start-start-radius: 24px;
+        border-start-end-radius: 24px;
+        background: #ffffff;
+        box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.18);
+      }
+
+      .tf-boot-sheet-grip {
+        align-self: center;
+        margin-top: 10px;
+        height: 6px;
+        width: 44px;
+        border-radius: 999px;
+        background: #cbd5e1;
+      }
+
+      .tf-boot-sheet-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        height: 36px;
+        padding-inline: 8px;
+        margin-top: 2px;
+      }
+
+      .tf-boot-sheet-segmented {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 2px;
+        border-radius: 999px;
+        background: #f1f5f9;
+      }
+
+      .tf-boot-sheet-segment {
+        height: 32px;
+        width: 32px;
+        border-radius: 999px;
+      }
+
+      .tf-boot-sheet-segment--active {
+        background-color: var(--tf-bone-accent);
+      }
+
+      .tf-boot-sheet-toggle {
+        height: 36px;
+        width: 36px;
+        border-radius: 999px;
+      }
+
+      .tf-boot-sheet-strip {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: stretch;
+        gap: 0;
+        overflow: hidden;
+        padding: 4px 24px 8px;
+      }
+
+      .tf-boot-sheet-day {
+        display: flex;
+        flex: 0 0 auto;
+        width: 4.25rem;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .tf-boot-sheet-day-month {
+        height: 16px;
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 16px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #94a3b8;
+      }
+
+      .tf-boot-sheet-day-bubble {
+        height: 48px;
+        width: 48px;
+        border-radius: 999px;
+        margin-block: 4px;
+      }
+
+      /* The dated bubble is a ring around real text, the way the strip draws a
+         day once its trip is loaded. */
+      .tf-boot-sheet-day-bubble--dated {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--tf-bone-edge);
+        background: #ffffff;
+      }
+
+      .tf-boot-sheet-day-weekday {
+        font-size: 9px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #94a3b8;
+      }
+
+      .tf-boot-sheet-day-number {
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.25;
+        font-variant-numeric: tabular-nums;
+        color: #334155;
+      }
+
+      .tf-boot-sheet-day-foot {
+        height: 28px;
+      }
+
+      .tf-boot-sheet-content {
+        display: flex;
+        min-height: 0;
+        flex: 1 1 auto;
+        flex-direction: column;
+        gap: 14px;
+        overflow: hidden;
+        border-top: 1px solid #f1f5f9;
+        padding: 14px 16px;
+      }
+
+      .tf-boot-sheet-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .tf-boot-sheet-row-icon {
+        height: 36px;
+        width: 36px;
+        border-radius: 10px;
+        flex: 0 0 auto;
+      }
+
+      .tf-boot-sheet-row-copy {
+        display: flex;
+        min-width: 0;
+        flex: 1 1 auto;
+        flex-direction: column;
+        gap: 7px;
+      }
+
+      .tf-boot-sheet-row-line {
+        height: 12px;
+      }
+
+      .tf-boot-sheet-row-line--meta {
+        height: 10px;
+        background-color: var(--tf-bone-quiet);
+      }
+
       /* A press that landed before hydration: acknowledge it while the page wakes. */
       [data-tf-boot-pending='true'] {
         animation: tf-boot-pending-pulse 0.9s ease-in-out infinite;
@@ -756,32 +929,28 @@
           display: none;
         }
 
-        .tf-boot-planner > .tf-boot-planner-map {
-          flex: 0 0 auto;
-          height: clamp(180px, 26vh, 280px);
+        /* The phone planner is a sheet over a full-bleed map, so the split
+           panes step aside entirely. */
+        .tf-boot-planner {
+          position: relative;
+          display: block;
         }
 
         .tf-boot-planner > .tf-boot-planner-timeline {
-          width: 100%;
-          height: auto;
-          flex: 1 1 auto;
-          max-height: none;
-          min-width: 0;
-          border-inline-end: 0;
-          border-top: 1px solid #e5e7eb;
-        }
-
-        .tf-boot-tl-track {
-          padding-inline-start: 16px;
-        }
-
-        .tf-boot-tl-controls {
-          inset-inline: 16px auto;
-          top: 13px;
-        }
-
-        .tf-boot-tl-control-readout {
           display: none;
+        }
+
+        .tf-boot-planner > .tf-boot-planner-map {
+          position: absolute;
+          inset-inline: 0;
+          top: 0;
+          /* 28px of underlap, matching MAP_UNDERLAP_PX in the real shell. */
+          bottom: calc(max(168px, 58%) - 28px);
+          height: auto;
+        }
+
+        .tf-boot-sheet {
+          display: flex;
         }
 
         .tf-boot-map-controls {

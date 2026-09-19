@@ -5,10 +5,20 @@ import { render } from '@testing-library/react';
 
 const mocks = vi.hoisted(() => ({
   persistedViewSettings: undefined as Record<string, unknown> | undefined,
+  previewDays: null as Array<Record<string, unknown>> | null,
+  routeParams: {} as Record<string, string | undefined>,
 }));
 
 vi.mock('../../../services/tripViewSettingsService', () => ({
   readPersistedTripViewSettings: () => mocks.persistedViewSettings,
+}));
+
+vi.mock('../../../services/tripRouteShellPreview', () => ({
+  readTripRouteShellPreviewDays: () => mocks.previewDays,
+}));
+
+vi.mock('react-router-dom', () => ({
+  useParams: () => mocks.routeParams,
 }));
 
 import { TripRouteLoadingShell } from '../../../components/tripview/TripRouteLoadingShell';
@@ -16,6 +26,8 @@ import { TripRouteLoadingShell } from '../../../components/tripview/TripRouteLoa
 // RTL cleanup is global in test/setupTests.ts; only the mock needs resetting.
 afterEach(() => {
   mocks.persistedViewSettings = undefined;
+  mocks.previewDays = null;
+  mocks.routeParams = {};
 });
 
 const renderShell = () => render(React.createElement(TripRouteLoadingShell));
@@ -75,6 +87,43 @@ describe('TripRouteLoadingShell', () => {
 
     expect(planner.style.getPropertyValue('--tf-boot-sidebar-width')).toBe('');
     expect(planner.style.getPropertyValue('--tf-boot-timeline-height')).toBe('');
+  });
+
+  it('draws placeholder day bubbles when this device knows nothing about the trip', () => {
+    const view = renderShell();
+
+    expect(view.container.querySelectorAll('.tf-boot-sheet-day-bubble').length).toBeGreaterThan(1);
+    expect(view.container.querySelector('.tf-boot-sheet-day-bubble--dated')).toBeNull();
+  });
+
+  it('shows the real dates in the phone day strip when the trip is already on this device', () => {
+    mocks.routeParams = { tripId: 'trip-1' };
+    mocks.previewDays = [
+      { weekdayLabel: 'Sat', dayOfMonthLabel: '19', monthLabel: 'Sep', isMonthStart: true },
+      { weekdayLabel: 'Sun', dayOfMonthLabel: '20', monthLabel: 'Sep', isMonthStart: false },
+    ];
+
+    const view = renderShell();
+    const bubbles = view.container.querySelectorAll('.tf-boot-sheet-day-bubble--dated');
+
+    expect(bubbles).toHaveLength(2);
+    expect(bubbles[0].textContent).toContain('Sat');
+    expect(bubbles[0].textContent).toContain('19');
+    expect(bubbles[1].textContent).toContain('20');
+    // The month is labelled once, on the day that starts it.
+    const months = [...view.container.querySelectorAll('.tf-boot-sheet-day-month')].map((el) => el.textContent);
+    expect(months).toEqual(['Sep', '']);
+  });
+
+  it('mirrors the phone sheet the planner opens with', () => {
+    const view = renderShell();
+    const sheet = view.container.querySelector('.tf-boot-sheet');
+
+    expect(sheet).toBeTruthy();
+    expect(sheet?.querySelector('.tf-boot-sheet-grip')).toBeTruthy();
+    expect(sheet?.querySelectorAll('.tf-boot-sheet-segment')).toHaveLength(2);
+    expect(sheet?.querySelector('.tf-boot-sheet-toggle')).toBeTruthy();
+    expect(sheet?.querySelectorAll('.tf-boot-sheet-row').length).toBeGreaterThan(1);
   });
 
   it('keeps the placeholder out of the accessibility tree', () => {
