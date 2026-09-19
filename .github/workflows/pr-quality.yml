@@ -2,14 +2,23 @@ name: PR Quality
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, edited]
+    # No `edited`: nothing below reads the PR description, so retitling a PR
+    # should not cost a full pipeline. The checklist gate that *does* read it
+    # lives in pr-checklist.yml and runs on `edited` by itself.
+    types: [opened, synchronize, reopened]
+
+# A PR that is pushed to (or edited) several times in a row should only keep the
+# newest run. Without this, three edits 20 seconds apart cost three full
+# ~14-minute pipelines and queue behind each other.
+concurrency:
+  group: pr-quality-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   pr-quality:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,41 +46,15 @@ jobs:
       - name: Validate toast usage conventions
         run: pnpm toasts:validate
 
-      - name: New module guard (services/config => tests checklist entry)
-        env:
-          BASE_REF: ${{ github.base_ref }}
-          PR_BODY: ${{ github.event.pull_request.body || '' }}
-        run: |
-          set -euo pipefail
-
-          git fetch --no-tags --prune --depth=1 origin "${BASE_REF}"
-
-          added_modules="$(git diff --name-only --diff-filter=A "origin/${BASE_REF}...HEAD" | grep -E '^(services|config)/' || true)"
-          if [ -z "${added_modules}" ]; then
-            echo "No new files added in services/ or config/."
-            exit 0
-          fi
-
-          echo "New services/config files detected:"
-          echo "${added_modules}"
-
-          if ! printf '%s\n' "${PR_BODY}" | grep -Eq -- '- \[[xX]\] New module guard completed'; then
-            echo "PR checklist requirement missing: check '- [x] New module guard completed'."
-            exit 1
-          fi
-
-          if ! printf '%s\n' "${PR_BODY}" | grep -Eq -- 'tests/'; then
-            echo "PR description must include at least one corresponding tests/** path."
-            exit 1
-          fi
-
-          echo "New module guard checklist entry verified."
-
       - name: Run core regression tests
         run: pnpm test:core
 
+      # `pnpm build` re-runs `pnpm test:core` internally, which the step above has
+      # already done — that duplicate cost ~4.5 minutes of every run. `build:netlify`
+      # is byte-for-byte `build` minus `test:core`, and it is also what Netlify
+      # actually runs, so the gate now validates the real deploy command.
       - name: Run build gate
-        run: pnpm build
+        run: pnpm build:netlify
         env:
           VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
           VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
