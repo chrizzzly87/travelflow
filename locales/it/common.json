@@ -566,7 +566,7 @@
         "description": "Tratteggio invece di linee continue.",
         "label": "Linee tratteggiate"
       },
-      "description": "Le modifiche si applicano subito e restano salvate con questo viaggio.",
+      "description": "Si salva con questo viaggio mentre lo modifichi.",
       "dimPast": {
         "description": "Manda sullo sfondo i giorni già trascorsi.",
         "label": "Sfuma i giorni passati"
@@ -643,7 +643,7 @@
         "realistic": "Segui le strade",
         "simple": "Diretta"
       },
-      "saveAsDefault": "Salva come predefinito",
+      "saveAsDefault": "Salva come mia preimpostazione",
       "saved": "Salvato",
       "switchToMapbox": "Passa a Mapbox",
       "tab": {
@@ -684,7 +684,15 @@
         "satellite": "Satellite"
       },
       "showWholeJourney": "Mostra tutto il viaggio",
-      "open": "Personalizza la mappa"
+      "open": "Personalizza la mappa",
+      "presetSet": {
+        "label": "Parti da",
+        "default": "Predefinito",
+        "detailed": "Dettagliato",
+        "minimalistic": "Minimo",
+        "mine": "Mio",
+        "customNote": "La tua combinazione di impostazioni."
+      }
     }
   },
   "tripRouteShell": {

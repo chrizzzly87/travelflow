@@ -564,7 +564,7 @@
         "description": "Kreski zamiast ciągłych linii.",
         "label": "Linie przerywane"
       },
-      "description": "Zmiany działają od razu i zostają zapisane przy tej podróży.",
+      "description": "Zapisuje się przy tej podróży, gdy coś zmieniasz.",
       "dimPast": {
         "description": "Odsuwa w tło dni, które już minęły.",
         "label": "Przygaś minione dni"
@@ -641,7 +641,7 @@
         "realistic": "Wzdłuż dróg",
         "simple": "Wprost"
       },
-      "saveAsDefault": "Zapisz jako domyślne",
+      "saveAsDefault": "Zapisz jako mój styl",
       "saved": "Zapisano",
       "switchToMapbox": "Przełącz na Mapbox",
       "tab": {
@@ -682,7 +682,15 @@
         "satellite": "Satelitarny"
       },
       "showWholeJourney": "Pokaż całą trasę",
-      "open": "Dostosuj mapę"
+      "open": "Dostosuj mapę",
+      "presetSet": {
+        "label": "Zacznij od",
+        "default": "Domyślny",
+        "detailed": "Szczegółowy",
+        "minimalistic": "Minimalny",
+        "mine": "Mój",
+        "customNote": "Twoje własne połączenie ustawień."
+      }
     }
   },
   "tripRouteShell": {

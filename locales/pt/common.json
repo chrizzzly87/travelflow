@@ -566,7 +566,7 @@
         "description": "Tracejado em vez de linhas contínuas.",
         "label": "Linhas tracejadas"
       },
-      "description": "As alterações são aplicadas de imediato e ficam guardadas com esta viagem.",
+      "description": "Fica guardado com esta viagem à medida que a mudas.",
       "dimPast": {
         "description": "Manda para segundo plano os dias que já passaram.",
         "label": "Esbater dias passados"
@@ -643,7 +643,7 @@
         "realistic": "Seguir estradas",
         "simple": "Direto"
       },
-      "saveAsDefault": "Guardar como predefinição",
+      "saveAsDefault": "Guardar a minha predefinição",
       "saved": "Guardado",
       "switchToMapbox": "Mudar para Mapbox",
       "tab": {
@@ -684,7 +684,15 @@
         "satellite": "Satélite"
       },
       "showWholeJourney": "Ver todo o percurso",
-      "open": "Personalizar o mapa"
+      "open": "Personalizar o mapa",
+      "presetSet": {
+        "label": "Começar por",
+        "default": "Padrão",
+        "detailed": "Detalhado",
+        "minimalistic": "Mínimo",
+        "mine": "Meu",
+        "customNote": "A tua própria combinação de definições."
+      }
     }
   },
   "tripRouteShell": {

@@ -566,7 +566,7 @@
         "description": "실선 대신 점선으로 표시합니다.",
         "label": "점선"
       },
-      "description": "변경 사항은 즉시 적용되며 이 여행에 저장됩니다.",
+      "description": "변경하는 대로 이 여행에 저장됩니다.",
       "dimPast": {
         "description": "이미 지난 날짜를 뒤로 물러나게 합니다.",
         "label": "지난 날짜 흐리게"
@@ -643,7 +643,7 @@
         "realistic": "도로 따라",
         "simple": "직선"
       },
-      "saveAsDefault": "기본값으로 저장",
+      "saveAsDefault": "내 프리셋으로 저장",
       "saved": "저장됨",
       "switchToMapbox": "Mapbox로 전환",
       "tab": {
@@ -684,7 +684,15 @@
         "satellite": "위성"
       },
       "showWholeJourney": "전체 여정 보기",
-      "open": "지도 맞춤 설정"
+      "open": "지도 맞춤 설정",
+      "presetSet": {
+        "label": "시작 설정",
+        "default": "기본",
+        "detailed": "상세",
+        "minimalistic": "미니멀",
+        "mine": "내 설정",
+        "customNote": "직접 조합한 설정입니다."
+      }
     }
   },
   "tripRouteShell": {

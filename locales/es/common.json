@@ -566,7 +566,7 @@
         "description": "Trazos en vez de líneas continuas.",
         "label": "Líneas discontinuas"
       },
-      "description": "Los cambios se aplican al instante y se guardan con este viaje.",
+      "description": "Se guarda con este viaje a medida que lo cambias.",
       "dimPast": {
         "description": "Manda a un segundo plano los días que ya pasaste.",
         "label": "Atenuar días pasados"
@@ -643,7 +643,7 @@
         "realistic": "Seguir carreteras",
         "simple": "Directo"
       },
-      "saveAsDefault": "Guardar por defecto",
+      "saveAsDefault": "Guardar como mi preajuste",
       "saved": "Guardado",
       "switchToMapbox": "Cambiar a Mapbox",
       "tab": {
@@ -684,7 +684,15 @@
         "satellite": "Satélite"
       },
       "showWholeJourney": "Ver todo el recorrido",
-      "open": "Personalizar el mapa"
+      "open": "Personalizar el mapa",
+      "presetSet": {
+        "label": "Empezar con",
+        "default": "Normal",
+        "detailed": "Detallado",
+        "minimalistic": "Mínimo",
+        "mine": "Mío",
+        "customNote": "Tu propia combinación de ajustes."
+      }
     }
   },
   "tripRouteShell": {

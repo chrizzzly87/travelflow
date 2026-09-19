@@ -566,7 +566,7 @@
         "description": "Des tirets plutôt que des traits pleins.",
         "label": "Traits pointillés"
       },
-      "description": "Les changements s'appliquent aussitôt et sont conservés avec ce voyage.",
+      "description": "Enregistré avec ce voyage au fil de vos réglages.",
       "dimPast": {
         "description": "Renvoie à l'arrière-plan les jours déjà passés.",
         "label": "Estomper les jours passés"
@@ -643,7 +643,7 @@
         "realistic": "Suivre les routes",
         "simple": "Direct"
       },
-      "saveAsDefault": "Définir par défaut",
+      "saveAsDefault": "Enregistrer comme mon préréglage",
       "saved": "Enregistré",
       "switchToMapbox": "Passer à Mapbox",
       "tab": {
@@ -684,7 +684,15 @@
         "satellite": "Satellite"
       },
       "showWholeJourney": "Voir tout le parcours",
-      "open": "Personnaliser la carte"
+      "open": "Personnaliser la carte",
+      "presetSet": {
+        "label": "Partir de",
+        "default": "Défaut",
+        "detailed": "Détaillé",
+        "minimalistic": "Minimal",
+        "mine": "Le mien",
+        "customNote": "Votre propre combinaison de réglages."
+      }
     }
   },
   "tripRouteShell": {

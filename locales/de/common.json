@@ -566,7 +566,7 @@
         "description": "Gestrichelt statt durchgezogen.",
         "label": "Gestrichelte Linien"
       },
-      "description": "Änderungen wirken sofort und bleiben bei dieser Reise gespeichert.",
+      "description": "Wird bei dieser Reise gespeichert, während du sie änderst.",
       "dimPast": {
         "description": "Rückt bereits vergangene Tage in den Hintergrund.",
         "label": "Vergangene Tage abschwächen"
@@ -643,7 +643,7 @@
         "realistic": "Straßen folgen",
         "simple": "Direkt"
       },
-      "saveAsDefault": "Als Standard speichern",
+      "saveAsDefault": "Als meine Voreinstellung speichern",
       "saved": "Gespeichert",
       "switchToMapbox": "Zu Mapbox wechseln",
       "tab": {
@@ -684,7 +684,15 @@
         "satellite": "Satellit"
       },
       "showWholeJourney": "Ganze Reise zeigen",
-      "open": "Karte anpassen"
+      "open": "Karte anpassen",
+      "presetSet": {
+        "label": "Starte mit",
+        "default": "Standard",
+        "detailed": "Detailliert",
+        "minimalistic": "Minimal",
+        "mine": "Meins",
+        "customNote": "Deine eigene Mischung aus Einstellungen."
+      }
     }
   },
   "tripRouteShell": {
