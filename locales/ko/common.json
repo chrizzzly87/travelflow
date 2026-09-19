@@ -9,6 +9,8 @@
     "createTrip": "여행 만들기",
     "myTrips": "내 여행",
     "openMenu": "메뉴 열기",
+    "themeToDark": "다크 모드로 전환",
+    "themeToLight": "라이트 모드로 전환",
     "admin": "관리자",
     "logout": "로그아웃"
   },

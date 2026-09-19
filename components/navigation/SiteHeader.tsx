@@ -22,6 +22,7 @@ import { BOOT_INTENT_MOBILE_MENU, consumeBootIntent } from '../../services/bootI
 // finished (Suspense rendered null meanwhile). MobileMenu adds ~11KB to the
 // header chunk, which is far cheaper than a network hop on a tap.
 import { MobileMenu } from './MobileMenu';
+import { ThemeToggle } from '../ui/ThemeToggle';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -288,6 +289,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 {t('nav.createTrip')}
                             </NavLink>
                         )}
+                        <ThemeToggle analyticsSurface="nav" className="hidden lg:inline-flex" />
                         <button type="button"
                             onClick={() => setIsMobileMenuOpen(true)}
                             data-tf-boot-intent={BOOT_INTENT_MOBILE_MENU}

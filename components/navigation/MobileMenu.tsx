@@ -4,6 +4,7 @@ import { X, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { NAV_ITEMS } from '../../config/navigation';
 import { LanguageSelect } from './LanguageSelect';
+import { ThemeToggle } from '../ui/ThemeToggle';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocaleFromPath, getNamespacesForMarketingPath, getNamespacesForToolPath, isToolRoute } from '../../config/routes';
@@ -231,7 +232,11 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                         </button>
                     </div>
 
-                    <div className="border-b border-slate-100 px-4 py-3">
+                    {/* The plane window on the homepage is desktop-only, so its
+                        shade drag never reaches phones — this is the only theme
+                        control mobile users have. It gets the same weight as the
+                        language switcher for that reason. */}
+                    <div className="space-y-2 border-b border-slate-100 px-4 py-3">
                         <LanguageSelect
                             ariaLabel={t('language.label')}
                             value={selectedLocale}
@@ -239,6 +244,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                             triggerClassName="h-10 w-full rounded-xl border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm"
                             contentAlign="start"
                         />
+                        <ThemeToggle variant="row" analyticsSurface="mobile_nav" className="h-10" />
                     </div>
 
                     <nav className="flex-1 overflow-y-auto border-t border-slate-100 p-4">

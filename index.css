@@ -1218,38 +1218,94 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   animation: blog-card-fade-in 180ms ease-out 40ms both;
 }
 
+/* Dark mode.
+ *
+ * The shadcn scaffold that used to live here was stock achromatic neutral, and
+ * it flipped --primary to near-white — which erased TravelFlow's indigo, so the
+ * brand read as generic. These values keep the accent.
+ *
+ * Two tones are authored. `warm` is the default; `slate` is selected with
+ * data-dark-tone="slate" on the document element. They differ only in surface
+ * and text colour — every accent value below is shared — so switching the
+ * default is a one-line change in the theme store, not a repaint.
+ *
+ * The accent INVERTS DIRECTION between themes, deliberately. Light mode is
+ * indigo-600 fill with white text; dark mode is indigo-400 fill with dark ink.
+ * Please do not "fix" this by making the dark button darker — both alternatives
+ * fail WCAG AA:
+ *   indigo-500 + white -> label 4.47 (needs 4.5)
+ *   indigo-600 + white -> label 6.29, but fill is 2.77 against the page
+ *                         (non-text contrast needs 3.0)
+ * Only indigo-400 + dark ink clears both, at 5.94/5.94.
+ *
+ * Measured ratios, warm / slate:
+ *   body text      15.45 / 15.38
+ *   muted on page   8.95 /  7.09
+ *   muted on card   7.92 /  6.33
+ *   link            5.94 /  5.83
+ */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  /* Surfaces — warm near-black (default tone). */
+  --background: oklch(0.210 0.003 68);
+  --foreground: oklch(0.953 0.009 85);
+  --card: oklch(0.257 0.002 68);
+  --card-foreground: oklch(0.953 0.009 85);
+  --popover: oklch(0.257 0.002 68);
+  --popover-foreground: oklch(0.953 0.009 85);
+  --secondary: oklch(0.283 0.003 49);
+  --secondary-foreground: oklch(0.953 0.009 85);
+  --muted: oklch(0.283 0.003 49);
+  --muted-foreground: oklch(0.783 0.003 85);
+  --accent: oklch(0.283 0.003 49);
+  --accent-foreground: oklch(0.953 0.009 85);
+  --border: oklch(1 0 0 / 13%);
+  --input: oklch(1 0 0 / 16%);
+  --sidebar: oklch(0.257 0.002 68);
+  --sidebar-foreground: oklch(0.953 0.009 85);
+  --sidebar-accent: oklch(0.283 0.003 49);
+  --sidebar-accent-foreground: oklch(0.953 0.009 85);
+  --sidebar-border: oklch(1 0 0 / 13%);
+
+  /* Accent and state — shared by both tones. */
+  --primary: var(--tf-accent-400);
+  --primary-foreground: var(--background);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --sidebar-primary: var(--tf-accent-400);
+  --sidebar-primary-foreground: var(--background);
+
+  /* Focus rings do NOT inherit --border: at 13% white it resolves to roughly
+   * 1.33 against the page, which is invisible as a focus indicator. */
+  --ring: var(--tf-accent-400);
+  --sidebar-ring: var(--tf-accent-400);
+
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* Cool slate tone. Surfaces and text only — accents come from .dark above. */
+.dark[data-dark-tone='slate'] {
+  --background: oklch(0.218 0.021 268);
+  --foreground: oklch(0.958 0.010 267);
+  --card: oklch(0.261 0.028 266);
+  --card-foreground: oklch(0.958 0.010 267);
+  --popover: oklch(0.261 0.028 266);
+  --popover-foreground: oklch(0.958 0.010 267);
+  --secondary: oklch(0.294 0.031 266);
+  --secondary-foreground: oklch(0.958 0.010 267);
+  --muted: oklch(0.294 0.031 266);
+  --muted-foreground: oklch(0.723 0.036 264);
+  --accent: oklch(0.294 0.031 266);
+  --accent-foreground: oklch(0.958 0.010 267);
+  --border: oklch(0.75 0.05 265 / 16%);
+  --input: oklch(0.75 0.05 265 / 20%);
+  --sidebar: oklch(0.261 0.028 266);
+  --sidebar-foreground: oklch(0.958 0.010 267);
+  --sidebar-accent: oklch(0.294 0.031 266);
+  --sidebar-accent-foreground: oklch(0.958 0.010 267);
+  --sidebar-border: oklch(0.75 0.05 265 / 16%);
 }
 
 @layer base {
