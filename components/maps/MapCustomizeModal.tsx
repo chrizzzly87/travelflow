@@ -223,14 +223,8 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
     </div>
   );
 
-  const body = (
-    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabKey)}>
-      <TabsList className="w-full">
-        {TAB_ORDER.map((tab) => (
-          <TabsTrigger key={tab} value={tab} className="flex-1">{tabLabels[tab]}</TabsTrigger>
-        ))}
-      </TabsList>
-
+  const tabPanels = (
+    <>
       <TabsContent value="look">
         <SettingsPanel>
           <SettingsSection>
@@ -591,6 +585,41 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
           </SettingsSection>
         </SettingsPanel>
       </TabsContent>
+    </>
+  );
+
+  /**
+   * The tab bar and the preset row are pinned; only the panels scroll.
+   *
+   * They used to sit inside the one scrolling area, so adding the preset row
+   * above them and capping the panel height meant the tab bar scrolled off the
+   * top as soon as you reached for a control — the tabs looked like they had
+   * been removed. A row of tabs you cannot see is a row of tabs that does not
+   * exist.
+   *
+   * `SettingsRow`'s inline layout reserves an 18rem control track at the `sm:`
+   * breakpoint, which is a *viewport* query — inside a 380px panel on a desktop
+   * screen it still applies, leaving the caption about 60px and wrapping every
+   * label one word per line. Narrowing the track to the control's own width
+   * gives the text the rest, without changing the row anywhere else.
+   */
+  const SCROLL_AREA_CLASS = 'min-h-0 flex-1 overflow-y-auto [&_[data-slot=settings-row][data-layout=inline]]:sm:grid-cols-[minmax(0,1fr)_auto] [&_[data-slot=settings-row][data-layout=inline]]:sm:gap-x-3';
+
+  const tabbedBody = (
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => setActiveTab(value as TabKey)}
+      className="flex min-h-0 flex-1 flex-col gap-0"
+    >
+      <div className="shrink-0 border-b border-slate-100 px-4 pb-3 pt-3">
+        {presetRow}
+        <TabsList className="w-full">
+          {TAB_ORDER.map((tab) => (
+            <TabsTrigger key={tab} value={tab} className="flex-1">{tabLabels[tab]}</TabsTrigger>
+          ))}
+        </TabsList>
+      </div>
+      <div className={`${SCROLL_AREA_CLASS} px-4 py-3`}>{tabPanels}</div>
     </Tabs>
   );
 
@@ -625,10 +654,9 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
           className="max-h-[64vh]"
           data-testid="map-customize-sheet"
         >
-          <div className="flex max-h-[58vh] flex-col overflow-y-auto px-4 pb-4 pt-2">
-            <h2 className="pb-2 text-base font-semibold text-slate-900">{title}</h2>
-            {presetRow}
-            {body}
+          <div className="flex max-h-[58vh] min-h-0 flex-col">
+            <h2 className="shrink-0 px-4 pb-1 pt-2 text-base font-semibold text-slate-900">{title}</h2>
+            {tabbedBody}
           </div>
           <div className="border-t border-slate-200 px-4 py-3">{footer}</div>
         </DrawerContent>
@@ -650,8 +678,9 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
   /*
    * `bottom-24` stops the panel short of the floating "plan with AI" launcher,
    * which sits at `bottom-4` on a higher layer and was being covered by the
-   * panel's footer. The height cap keeps it from becoming a full-height wall of
-   * switches on a tall screen.
+   * panel's footer. Those insets bound the height on their own; an extra cap
+   * only shortened the scroll area and pushed the pinned tabs harder against
+   * the content below them.
    */
   return (
     <div
@@ -663,7 +692,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
         event.stopPropagation();
         onClose();
       }}
-      className="fixed bottom-24 end-4 top-20 z-[1400] flex max-h-[min(70vh,620px)] w-[min(92vw,380px)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
+      className="fixed bottom-24 end-4 top-20 z-[1400] flex w-[min(92vw,380px)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
     >
       <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
         <div className="min-w-0">
@@ -679,18 +708,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
           <X size={16} />
         </button>
       </div>
-      {/*
-        * `SettingsRow`'s inline layout reserves an 18rem control track at the
-        * `sm:` breakpoint, which is a *viewport* query — inside a 380px panel on
-        * a desktop screen it still applies, leaving the caption about 60px and
-        * wrapping every label one word per line. Narrowing the track to the
-        * control's own width gives the text the rest, without changing the row
-        * anywhere else it is used.
-        */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 [&_[data-slot=settings-row][data-layout=inline]]:sm:grid-cols-[minmax(0,1fr)_auto] [&_[data-slot=settings-row][data-layout=inline]]:sm:gap-x-3">
-        {presetRow}
-        {body}
-      </div>
+      {tabbedBody}
       <div className="border-t border-slate-200 px-4 py-3">{footer}</div>
     </div>
   );
