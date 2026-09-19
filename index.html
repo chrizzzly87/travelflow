@@ -1098,9 +1098,30 @@
       (() => {
         const path = window.location.pathname || '/';
         const isTripLikeRoute = /^\/(?:[a-z]{2}(?:-[A-Z]{2})?\/)?(?:trip|s|example)(?:\/|$)/.test(path);
-        if (isTripLikeRoute) {
-          document.documentElement.setAttribute('data-tf-boot-route', 'trip');
-        }
+        if (!isTripLikeRoute) return;
+
+        document.documentElement.setAttribute('data-tf-boot-route', 'trip');
+
+        // Warm the map hosts' DNS and TLS while the app boots. Only the
+        // connection is opened — nothing is fetched, and the map script itself
+        // still waits for `useDeferredMapBootstrap`, so this does not undo the
+        // deferral. Measured on a trip page: api.mapbox.com carries the bulk of
+        // the bytes (styles, tiles, glyphs), maps.googleapis.com the script.
+        // Scoped to trip-like routes so marketing pages, which never show a
+        // map, do not open connections they will not use.
+        [
+          ['https://maps.googleapis.com', false],
+          ['https://api.mapbox.com', true],
+          ['https://maps.gstatic.com', false],
+        ].forEach(([href, isCors]) => {
+          const link = document.createElement('link');
+          link.rel = 'preconnect';
+          link.href = href;
+          // Only the CORS host needs the second, credentialed connection; adding
+          // it to the others would open a connection nothing then uses.
+          if (isCors) link.crossOrigin = 'anonymous';
+          document.head.appendChild(link);
+        });
       })();
     </script>
 </head>
