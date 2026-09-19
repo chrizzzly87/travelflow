@@ -11,9 +11,12 @@ import { MapSegmentedControl } from './MapSegmentedControl';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
   MAP_PITCH_STEPS,
+  MAP_PREFERENCE_PRESETS,
   MAP_STYLE_PRESETS,
+  matchMapPreferencePreset,
   matchMapStylePreset,
   serializeMapPreset,
+  type MapPreferencePresetId,
   type ResolvedMapPreferences,
 } from '../../shared/mapPreferences';
 import type { MapStyle } from '../../types';
@@ -35,7 +38,11 @@ export interface MapCustomizeModalProps {
   preferences: ResolvedMapPreferences;
   onChange: (patch: Partial<ResolvedMapPreferences>) => void;
   onReset: () => void;
+  /** Promotes the current look to the traveller's own starting point. */
   onSaveAsDefault?: () => void;
+  /** True once a personal preset has been saved, which offers it back. */
+  hasSavedPreset?: boolean;
+  onApplySavedPreset?: () => void;
   isMobile?: boolean;
   /** What is drawing now, which is not always what was asked for. */
   activeRenderer: 'google' | 'mapbox';
@@ -72,6 +79,8 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
   onChange,
   onReset,
   onSaveAsDefault,
+  hasSavedPreset = false,
+  onApplySavedPreset,
   isMobile = false,
   activeRenderer,
   isMapboxAvailable = true,
@@ -85,6 +94,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
   const isMapboxActive = activeRenderer === 'mapbox';
   const isGoogleActive = activeRenderer === 'google';
   const activePreset = matchMapStylePreset(preferences);
+  const activePreferencePreset = matchMapPreferencePreset(preferences);
 
   const key = useCallback(
     (suffix: string, fallback: string) => t(`tripView.mapCustomize.${suffix}`, fallback),
@@ -172,7 +182,46 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
   };
 
   const title = key('title', 'Customize map');
-  const description = key('description', 'Changes apply straight away and are kept with this trip.');
+  const description = key('description', 'Saved with this trip as you change it.');
+
+  /**
+   * Whole-panel presets, above the tabs rather than inside one: they cut across
+   * every tab, so putting them in "Look" would suggest they only change colour.
+   */
+  const presetRow = (
+    <div className="pb-3">
+      <span className="mb-1.5 block text-xs font-medium text-slate-600">
+        {key('presetSet.label', 'Start from')}
+      </span>
+      <MapSegmentedControl
+        name="map-preference-preset"
+        label={key('presetSet.label', 'Start from')}
+        value={activePreferencePreset ?? ('custom' as MapPreferencePresetId | 'custom')}
+        options={[
+          ...MAP_PREFERENCE_PRESETS.map((preset) => ({
+            value: preset.id as MapPreferencePresetId | 'custom',
+            label: key(`presetSet.${preset.id}`, preset.id),
+          })),
+          ...(hasSavedPreset && onApplySavedPreset
+            ? [{ value: 'custom' as const, label: key('presetSet.mine', 'Mine') }]
+            : []),
+        ]}
+        onChange={(presetId) => {
+          if (presetId === 'custom') {
+            onApplySavedPreset?.();
+            return;
+          }
+          const preset = MAP_PREFERENCE_PRESETS.find((entry) => entry.id === presetId);
+          if (preset) handleChange(preset.values);
+        }}
+      />
+      {activePreferencePreset === null && (
+        <span className="mt-1.5 block text-xs text-slate-500">
+          {key('presetSet.customNote', 'Your own mix of settings.')}
+        </span>
+      )}
+    </div>
+  );
 
   const body = (
     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabKey)}>
@@ -559,7 +608,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
         {onSaveAsDefault && (
           <Button type="button" variant="default" size="sm" onClick={handleSaveAsDefault}>
             {didSaveDefault ? <Check size={15} /> : <Star size={15} />}
-            {didSaveDefault ? key('saved', 'Saved') : key('saveAsDefault', 'Save as default')}
+            {didSaveDefault ? key('saved', 'Saved') : key('saveAsDefault', 'Save as my preset')}
           </Button>
         )}
       </div>
@@ -578,6 +627,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
         >
           <div className="flex max-h-[58vh] flex-col overflow-y-auto px-4 pb-4 pt-2">
             <h2 className="pb-2 text-base font-semibold text-slate-900">{title}</h2>
+            {presetRow}
             {body}
           </div>
           <div className="border-t border-slate-200 px-4 py-3">{footer}</div>
@@ -597,6 +647,12 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
    * Escape, but no focus trap and no `aria-modal` — trapping focus would be
    * wrong for a panel you are meant to use alongside the map.
    */
+  /*
+   * `bottom-24` stops the panel short of the floating "plan with AI" launcher,
+   * which sits at `bottom-4` on a higher layer and was being covered by the
+   * panel's footer. The height cap keeps it from becoming a full-height wall of
+   * switches on a tall screen.
+   */
   return (
     <div
       role="dialog"
@@ -607,7 +663,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
         event.stopPropagation();
         onClose();
       }}
-      className="fixed bottom-4 end-4 top-20 z-[1400] flex w-[min(92vw,380px)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
+      className="fixed bottom-24 end-4 top-20 z-[1400] flex max-h-[min(70vh,620px)] w-[min(92vw,380px)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
     >
       <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
         <div className="min-w-0">
@@ -623,7 +679,18 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
           <X size={16} />
         </button>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">{body}</div>
+      {/*
+        * `SettingsRow`'s inline layout reserves an 18rem control track at the
+        * `sm:` breakpoint, which is a *viewport* query — inside a 380px panel on
+        * a desktop screen it still applies, leaving the caption about 60px and
+        * wrapping every label one word per line. Narrowing the track to the
+        * control's own width gives the text the rest, without changing the row
+        * anywhere else it is used.
+        */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 [&_[data-slot=settings-row][data-layout=inline]]:sm:grid-cols-[minmax(0,1fr)_auto] [&_[data-slot=settings-row][data-layout=inline]]:sm:gap-x-3">
+        {presetRow}
+        {body}
+      </div>
       <div className="border-t border-slate-200 px-4 py-3">{footer}</div>
     </div>
   );

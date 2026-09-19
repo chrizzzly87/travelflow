@@ -1,11 +1,14 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { APIProvider, useApiIsLoaded } from '@vis.gl/react-google-maps';
 import { AppLanguage } from '../types';
 import { getGoogleMapsApiKey, getStoredAppLanguage, normalizeAppLanguage } from '../utils';
 import {
   getClientMapRuntimeResolution,
+  getMapRendererChoice,
   getMapboxAccessToken,
   readMapRuntimeAdminOverride,
+  setMapRendererChoice,
+  subscribeToMapRendererChoice,
 } from '../services/mapRuntimeService';
 import { resolveMapRuntime, type MapRuntimeResolution } from '../shared/mapRuntime';
 import type { MapRendererChoice } from '../types';
@@ -48,7 +51,7 @@ const GoogleMapsContext = createContext<GoogleMapsContextType>({ isLoaded: false
 const MapRuntimeContext = createContext<MapRuntimeContextType>({
   runtime: createFallbackMapRuntimeResolution(),
   mapboxAccessToken: '',
-  setRendererChoice: () => {},
+  setRendererChoice: setMapRendererChoice,
   rendererChoice: 'auto',
 });
 
@@ -99,7 +102,16 @@ export const MapRuntimeProvider: React.FC<MapRuntimeProviderProps> = ({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState<Error | null>(null);
-  const [rendererChoice, setRendererChoice] = useState<MapRendererChoice>('auto');
+  /**
+   * Read from the module store rather than from local state, so a component
+   * that renders this provider inside its own JSX still sees the choice it
+   * makes. See the note on the store in `mapRuntimeService`.
+   */
+  const rendererChoice = useSyncExternalStore(
+    subscribeToMapRendererChoice,
+    getMapRendererChoice,
+    () => 'auto' as MapRendererChoice,
+  );
   /**
    * Re-resolved whenever the traveller's choice changes. The choice is passed
    * as a `selection.renderer` partial so the existing capability gating,
@@ -184,7 +196,7 @@ export const MapRuntimeProvider: React.FC<MapRuntimeProviderProps> = ({
     runtime,
     mapboxAccessToken,
     rendererChoice,
-    setRendererChoice,
+    setRendererChoice: setMapRendererChoice,
   }), [mapboxAccessToken, rendererChoice, runtime]);
 
   const content = !shouldMountProvider

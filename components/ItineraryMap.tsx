@@ -1701,13 +1701,35 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }),
         [zoomEnhancedCityProfile, markerRenderTier, mapZoomLevel, nearestMarkerGapPx, tripMapProvider],
     );
-    const effectiveMarkerRenderProfile = useMemo(() => {
+    const rawMarkerRenderProfile = useMemo(() => {
         if (crowdedCityProfile === markerRenderProfile.city) return markerRenderProfile;
         return {
             ...markerRenderProfile,
             city: crowdedCityProfile,
         };
     }, [crowdedCityProfile, markerRenderProfile]);
+
+    /**
+     * Stabilised by value, not by identity.
+     *
+     * The profile is derived from the live zoom and from the gap between the
+     * nearest markers on screen, so panning and zooming produced a brand new
+     * object on almost every frame. That object is a dependency of the marker
+     * and route rebuild, which therefore tore every marker and polyline off the
+     * map and built them again — and re-ran the async route draw — while the
+     * traveller was still moving. That is the flicker where routes vanish and
+     * come back a moment later.
+     *
+     * The underlying numbers only change at the tier and zoom-band boundaries,
+     * so keying on the serialised value collapses the churn to the handful of
+     * genuine transitions.
+     */
+    const markerRenderProfileKey = JSON.stringify(rawMarkerRenderProfile);
+    const effectiveMarkerRenderProfile = useMemo(
+        () => rawMarkerRenderProfile,
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by value on purpose
+        [markerRenderProfileKey],
+    );
     const activityMarkerStylesById = useMemo(() => {
         const styles = new Map<string, { type: ActivityType; title: string }>();
         items.forEach((item) => {

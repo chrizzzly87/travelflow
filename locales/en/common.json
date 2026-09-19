@@ -566,7 +566,7 @@
         "description": "Dashes rather than solid lines.",
         "label": "Dashed lines"
       },
-      "description": "Changes apply straight away and are kept with this trip.",
+      "description": "Saved with this trip as you change it.",
       "dimPast": {
         "description": "Push days you have already had into the background.",
         "label": "Fade past days"
@@ -643,7 +643,7 @@
         "realistic": "Follow roads",
         "simple": "Direct"
       },
-      "saveAsDefault": "Save as default",
+      "saveAsDefault": "Save as my preset",
       "saved": "Saved",
       "switchToMapbox": "Switch to Mapbox",
       "tab": {
@@ -684,7 +684,15 @@
         "satellite": "Satellite"
       },
       "showWholeJourney": "Show whole journey",
-      "open": "Customize map"
+      "open": "Customize map",
+      "presetSet": {
+        "label": "Start from",
+        "default": "Default",
+        "detailed": "Detailed",
+        "minimalistic": "Minimal",
+        "mine": "Mine",
+        "customNote": "Your own mix of settings."
+      }
     }
   },
   "tripRouteShell": {

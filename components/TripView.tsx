@@ -62,6 +62,13 @@ import { useTripLayoutControlsState } from './tripview/useTripLayoutControlsStat
 import { useTripMapCustomizationState } from './tripview/useTripMapCustomizationState';
 import { useMapRuntime } from './GoogleMapsLoader';
 import {
+    getClientMapRuntimeResolution,
+    getMapRendererChoice,
+    readMapRuntimeAdminOverride,
+    setMapRendererChoice,
+    subscribeToMapRendererChoice,
+} from '../services/mapRuntimeService';
+import {
     MAP_ROUTE_THICKNESS_MULTIPLIER,
     resolveEffectiveLightPreset,
     resolveMapStyleFromAxes,
@@ -2669,8 +2676,26 @@ const useTripViewRender = ({
     // Which basemap is actually drawing, as opposed to which one was asked for:
     // a missing Mapbox token falls the runtime back to Google, and the sheet
     // says so rather than offering controls that would do nothing.
-    const { runtime: mapRuntime, mapboxAccessToken, setRendererChoice } = useMapRuntime();
-    const activeMapRenderer = mapRuntime.effectiveSelection.renderer;
+    const { mapboxAccessToken } = useMapRuntime();
+    /**
+     * Resolved from the module store rather than from the context: this
+     * component renders `<GoogleMapsLoader>` inside its own JSX, so its own
+     * `useMapRuntime()` call sits outside the provider and would always read
+     * the fallback.
+     */
+    const activeRendererChoice = useSyncExternalStore(
+        subscribeToMapRendererChoice,
+        getMapRendererChoice,
+        () => 'auto' as const,
+    );
+    const activeMapRenderer = useMemo(() => getClientMapRuntimeResolution(
+        activeRendererChoice === 'auto'
+            ? { override: readMapRuntimeAdminOverride() }
+            : {
+                override: { selection: { renderer: activeRendererChoice } },
+                overrideSource: 'query',
+            },
+    ).effectiveSelection.renderer, [activeRendererChoice]);
     const isMapboxRendererAvailable = mapboxAccessToken.trim().length > 0;
 
     const {
@@ -2678,6 +2703,8 @@ const useTripViewRender = ({
         applyPatch: applyMapPreferencePatch,
         reset: resetMapPreferences,
         saveAsDefault: saveMapPreferencesAsDefault,
+        applySavedPreset: applySavedMapPreset,
+        hasSavedPreset: hasSavedMapPreset,
         isCustomizeOpen: isMapCustomizeOpen,
         openCustomize: openMapCustomize,
         closeCustomize: closeMapCustomize,
@@ -2708,8 +2735,9 @@ const useTripViewRender = ({
      * mount, when a trip opens carrying a basemap it was saved with.
      */
     useEffect(() => {
-        setRendererChoice(mapPreferences.renderer);
-    }, [mapPreferences.renderer, setRendererChoice]);
+        setMapRendererChoice(mapPreferences.renderer);
+    }, [mapPreferences.renderer]);
+
 
     /**
      * Stable identity: this object reaches a style-reload key, so a new object
@@ -2754,6 +2782,17 @@ const useTripViewRender = ({
         colorTheme: mapPreferences.colorTheme,
         lightPreset: resolveEffectiveLightPreset(mapPreferences.lightPreset, prefersDarkScheme),
     }), [mapPreferences.base, mapPreferences.colorTheme, mapPreferences.lightPreset, prefersDarkScheme]);
+
+/**
+     * The look is edited as axes, but a trip still stores a named `mapStyle`:
+     * it is what Google renders from and what every reader written before the
+     * axes existed understands. Kept in step here rather than in the customize
+     * hook so the flat field keeps its own setter, persistence and sync.
+     */
+    useEffect(() => {
+        if (effectiveMapStyle === mapStyle) return;
+        setMapStyle(effectiveMapStyle);
+    }, [effectiveMapStyle, mapStyle, setMapStyle]);
 
     const mapBasemapDetail = useMemo(() => ({
         showPlaceLabels: mapPreferences.showPlaceLabels,
@@ -3667,6 +3706,8 @@ const useTripViewRender = ({
                         onChange={handleMapPreferenceChange}
                         onReset={handleMapPreferenceReset}
                         onSaveAsDefault={saveMapPreferencesAsDefault}
+                        hasSavedPreset={hasSavedMapPreset}
+                        onApplySavedPreset={applySavedMapPreset}
                         isMobile={isMobile}
                         activeRenderer={activeMapRenderer}
                         isMapboxAvailable={isMapboxRendererAvailable}

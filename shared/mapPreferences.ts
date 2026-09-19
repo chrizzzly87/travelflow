@@ -361,3 +361,107 @@ export const parseMapPreset = (value: string): IMapCustomization | null => {
     return null;
   }
 };
+
+/**
+ * Whole-panel presets.
+ *
+ * `MAP_STYLE_PRESETS` above is only the look's three axes. These are complete
+ * preference sets — how much of the world the map draws, not just how it is
+ * coloured — which is what someone means when they ask for "minimal".
+ *
+ * Only the fields a preset deliberately takes a position on are listed. Anything
+ * absent stays at whatever the traveller already had, so switching presets does
+ * not silently undo an unrelated choice such as the provider or the handoff app.
+ */
+export type MapPreferencePresetId = 'default' | 'detailed' | 'minimalistic';
+
+export const MAP_PREFERENCE_PRESETS: Array<{
+  id: MapPreferencePresetId;
+  values: Partial<ResolvedMapPreferences>;
+}> = [
+  {
+    id: 'default',
+    values: {
+      colorTheme: 'default',
+      showPlaceLabels: true,
+      showRoadLabels: false,
+      showTransitLabels: false,
+      showPoiLabels: false,
+      showRoadsAndTransit: true,
+      showPedestrianRoads: true,
+      showAdminBoundaries: false,
+      show3dObjects: false,
+      showTerrain: false,
+      showTraffic: false,
+      showTransitLines: false,
+      showCityNames: true,
+      showActivityMarkers: true,
+      routeThickness: 'normal',
+      showRouteArrows: true,
+      dashedRoutes: false,
+      pitch: 0,
+      useGlobeProjection: false,
+    },
+  },
+  {
+    id: 'detailed',
+    values: {
+      colorTheme: 'default',
+      showPlaceLabels: true,
+      showRoadLabels: true,
+      showTransitLabels: true,
+      showPoiLabels: true,
+      showRoadsAndTransit: true,
+      showPedestrianRoads: true,
+      showAdminBoundaries: true,
+      show3dObjects: true,
+      showTerrain: true,
+      showTraffic: false,
+      showTransitLines: true,
+      showCityNames: true,
+      showActivityMarkers: true,
+      routeThickness: 'normal',
+      showRouteArrows: true,
+      dashedRoutes: false,
+      pitch: 45,
+      useGlobeProjection: false,
+    },
+  },
+  {
+    id: 'minimalistic',
+    values: {
+      colorTheme: 'monochrome',
+      showPlaceLabels: true,
+      showRoadLabels: false,
+      showTransitLabels: false,
+      showPoiLabels: false,
+      showRoadsAndTransit: false,
+      showPedestrianRoads: false,
+      showAdminBoundaries: false,
+      show3dObjects: false,
+      showTerrain: false,
+      showTraffic: false,
+      showTransitLines: false,
+      showCityNames: true,
+      showActivityMarkers: true,
+      routeThickness: 'thin',
+      showRouteArrows: false,
+      dashedRoutes: false,
+      pitch: 0,
+      useGlobeProjection: false,
+    },
+  },
+];
+
+/**
+ * Which preset the current settings match exactly, or null for "custom" — the
+ * state you are in the moment you change one switch away from a preset.
+ */
+export const matchMapPreferencePreset = (
+  preferences: ResolvedMapPreferences,
+): MapPreferencePresetId | null => (
+  MAP_PREFERENCE_PRESETS.find(({ values }) => (
+    (Object.keys(values) as Array<keyof ResolvedMapPreferences>)
+      .every((field) => preferences[field] === values[field])
+  ))?.id ?? null
+);

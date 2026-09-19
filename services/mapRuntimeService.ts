@@ -9,6 +9,7 @@ import {
   type MapRuntimePreset,
   type MapRuntimeResolution,
 } from '../shared/mapRuntime';
+import type { MapRendererChoice } from '../types';
 import { readCookieItem, removeCookieItem, writeCookieItem } from './cookieStorageService';
 
 export const isMapRuntimePreset = (value: unknown): value is MapRuntimePreset => (
@@ -107,4 +108,40 @@ export const getClientMapRuntimeResolution = ({
       mapboxAccessTokenAvailable: Boolean(getMapboxAccessToken().trim()),
     },
   });
+};
+
+/**
+ * The traveller's basemap choice, held outside React.
+ *
+ * It cannot live in the map runtime context: `TripView` *renders*
+ * `<GoogleMapsLoader>` inside its own JSX while also reading the runtime in its
+ * own body, and a component cannot consume a context it provides further down
+ * its own tree. It silently got the default context value, whose setter is a
+ * no-op — which is why choosing a provider in the customize sheet did nothing
+ * at all. A module-level store is read the same way from either side of that
+ * boundary, and matches how `runtimeMapPreset` above already works.
+ */
+let rendererChoice: MapRendererChoice = 'auto';
+const rendererChoiceListeners = new Set<() => void>();
+
+export const getMapRendererChoice = (): MapRendererChoice => rendererChoice;
+
+export const setMapRendererChoice = (choice: MapRendererChoice): void => {
+  const next: MapRendererChoice = choice === 'google' || choice === 'mapbox' ? choice : 'auto';
+  if (next === rendererChoice) return;
+  rendererChoice = next;
+  rendererChoiceListeners.forEach((listener) => listener());
+};
+
+export const subscribeToMapRendererChoice = (listener: () => void): (() => void) => {
+  rendererChoiceListeners.add(listener);
+  return () => {
+    rendererChoiceListeners.delete(listener);
+  };
+};
+
+/** Test seam: resets the module store between cases. */
+export const resetMapRendererChoiceForTests = (): void => {
+  rendererChoice = 'auto';
+  rendererChoiceListeners.clear();
 };

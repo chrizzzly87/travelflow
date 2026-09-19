@@ -43,6 +43,13 @@ const buildMapboxStyleDescriptor = (
 const MAPBOX_LIGHT_BOUNDARY_COLOR = '#1f2937';
 const MAPBOX_CLEAN_LIGHT_BOUNDARY_COLOR = '#64748b';
 const MAPBOX_DARK_BOUNDARY_COLOR = '#ffffff';
+/**
+ * Satellite gets a warm border rather than a white or grey one. Over imagery a
+ * neutral line reads as haze or as a road — it disappears into the terrain it
+ * is supposed to divide. Amber is not a colour satellite imagery produces at
+ * line width, so the border stays legible over green, rock and water alike.
+ */
+const MAPBOX_SATELLITE_BOUNDARY_COLOR = '#fbbf24';
 
 const buildMapboxStandardVisualConfig = ({
   boundaryColor,
@@ -250,10 +257,12 @@ const resolveMapboxCountryBoundaryPaint = (mapStyle: MapStyle): {
 } => {
   if (mapStyle === 'satellite') {
     return {
-      lineColor: 'rgba(255, 255, 255, 0.99)',
-      lineOpacity: 0.98,
-      glowColor: 'rgba(255, 255, 255, 0.72)',
-      glowOpacity: 0.34,
+      lineColor: 'rgba(251, 191, 36, 0.95)',
+      lineOpacity: 0.95,
+      // A dark glow rather than a white one: the job over imagery is to lift the
+      // line off a busy background, which a light halo cannot do.
+      glowColor: 'rgba(23, 23, 23, 0.55)',
+      glowOpacity: 0.42,
     };
   }
   if (mapStyle === 'clean') {
@@ -501,9 +510,11 @@ export const buildMapboxStyleFromAxes = ({
     showTransitLabels: false,
     showRoadLabels: false,
     showAdminBoundaries: false,
-    colorAdminBoundaries: isDark || base === 'satellite'
-      ? MAPBOX_DARK_BOUNDARY_COLOR
-      : (colorTheme === 'faded' ? MAPBOX_CLEAN_LIGHT_BOUNDARY_COLOR : MAPBOX_LIGHT_BOUNDARY_COLOR),
+    colorAdminBoundaries: base === 'satellite'
+      ? MAPBOX_SATELLITE_BOUNDARY_COLOR
+      : isDark
+        ? MAPBOX_DARK_BOUNDARY_COLOR
+        : (colorTheme === 'faded' ? MAPBOX_CLEAN_LIGHT_BOUNDARY_COLOR : MAPBOX_LIGHT_BOUNDARY_COLOR),
   };
 
   MAPBOX_DETAIL_OVERRIDE_PROPERTIES.forEach(({ key, property }) => {
@@ -778,6 +789,38 @@ const hideMapboxLayer = (
   }
 };
 
+/**
+ * Roads over satellite imagery.
+ *
+ * The satellite style draws its road network in a pale neutral grey meant to sit
+ * on a light vector basemap. Over imagery that grey has nothing to contrast
+ * with: on rock and sand it vanishes, and on forest and water it reads as haze
+ * rather than as a road. Warming it and giving it a dark casing makes the
+ * network legible without competing with the trip's own route lines.
+ */
+const applyMapboxSatelliteRoadPolish = (
+  map: MapboxStyleLayerVisibilityMap,
+  layers: MapboxStyleLayerLike[],
+): void => {
+  layers.forEach((layer) => {
+    if (!layer.id || layer.type !== 'line') return;
+    if (layer['source-layer'] !== 'road') return;
+    if (!map.getLayer(layer.id)) return;
+
+    const isCasing = /casing|bg$|-bg-/i.test(layer.id);
+    try {
+      map.setPaintProperty(
+        layer.id,
+        'line-color',
+        isCasing ? 'rgba(28, 25, 23, 0.72)' : 'rgba(253, 230, 190, 0.92)',
+      );
+    } catch {
+      // A layer whose colour is data-driven rejects a flat value. Leaving it at
+      // the style's own colour is a worse-looking road, not a broken map.
+    }
+  });
+};
+
 export const applyMapboxTripVisualPolish = (
   map: MapboxStyleLayerVisibilityMap,
   mapStyle: MapStyle,
@@ -785,6 +828,9 @@ export const applyMapboxTripVisualPolish = (
 ): void => {
   const layers = (map.getStyle()?.layers ?? []) as MapboxStyleLayerLike[];
   applyMapboxCountryBoundaryOverlay(map, mapStyle, layers);
+  if (mapStyle === 'satellite') {
+    applyMapboxSatelliteRoadPolish(map, layers);
+  }
   // Country borders are always drawn by the overlay above. This switch is about
   // the borders *inside* a country, which the polish otherwise strips wholesale.
   const keepRegionBoundaries = overrides?.showAdminBoundaries === true;

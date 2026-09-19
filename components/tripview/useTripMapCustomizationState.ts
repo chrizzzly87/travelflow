@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 
-import { writeUserDefaultMapCustomization } from './mapCustomizationStorage';
+import { readUserDefaultMapCustomization, writeUserDefaultMapCustomization } from './mapCustomizationStorage';
 import {
   DEFAULT_MAP_PREFERENCES,
   normalizeMapCustomization,
@@ -69,20 +69,22 @@ export const useTripMapCustomizationState = ({
     }),
     // The flat fields are read from live state rather than from the settings
     // snapshot: they change through their own setters and must not be stale.
-    mapStyle,
     routeMode,
     showCityNames,
     colorMode,
   }), [colorMode, customization, initialViewSettings, mapStyle, routeMode, showCityNames, userSettings]);
+  // `mapStyle` stays in the dependency list because `resolveMapPreferences`
+  // decomposes it into axes for a trip saved before the axes existed.
 
   const applyPatch = useCallback((patch: Partial<ResolvedMapPreferences>) => {
-    if (patch.mapStyle !== undefined) setMapStyle(patch.mapStyle);
+    // `mapStyle` is no longer edited directly — it is derived from the look's
+    // axes and pushed back into the flat field by the owner, so a trip keeps a
+    // named style that Google and older readers still understand.
     if (patch.routeMode !== undefined) setRouteMode(patch.routeMode);
     if (patch.showCityNames !== undefined) setShowCityNames(patch.showCityNames);
     if (patch.colorMode !== undefined) setColorMode(patch.colorMode);
 
     const {
-      mapStyle: _style,
       routeMode: _route,
       showCityNames: _names,
       colorMode: _colors,
@@ -93,25 +95,39 @@ export const useTripMapCustomizationState = ({
     // Trip-level only: experimenting on one trip must not silently rewrite the
     // look every other trip opens with. That is what the explicit save is for.
     setCustomization((current) => normalizeMapCustomization({ ...current, ...nested }));
-  }, [setColorMode, setCustomization, setMapStyle, setRouteMode, setShowCityNames]);
+  }, [setColorMode, setCustomization, setRouteMode, setShowCityNames]);
 
   const reset = useCallback(() => {
     setCustomization({});
-    setMapStyle(DEFAULT_MAP_PREFERENCES.mapStyle);
     setRouteMode(DEFAULT_MAP_PREFERENCES.routeMode);
     setShowCityNames(DEFAULT_MAP_PREFERENCES.showCityNames);
     setColorMode(DEFAULT_MAP_PREFERENCES.colorMode);
-  }, [setColorMode, setCustomization, setMapStyle, setRouteMode, setShowCityNames]);
+  }, [setColorMode, setCustomization, setRouteMode, setShowCityNames]);
+
+  const [savedPreset, setSavedPreset] = useState<IMapCustomization>(() => readUserDefaultMapCustomization());
 
   const saveAsDefault = useCallback(() => {
-    writeUserDefaultMapCustomization(toStoredMapCustomization(preferences));
+    const stored = toStoredMapCustomization(preferences);
+    writeUserDefaultMapCustomization(stored);
+    setSavedPreset(stored);
   }, [preferences]);
+
+  /**
+   * Puts the traveller's own saved preset back onto this trip. Only the nested
+   * fields are restored — the flat ones are applied through their own setters
+   * so their existing persistence and view-settings sync still run.
+   */
+  const applySavedPreset = useCallback(() => {
+    setCustomization(normalizeMapCustomization(savedPreset));
+  }, [savedPreset, setCustomization]);
 
   return {
     preferences,
     applyPatch,
     reset,
     saveAsDefault,
+    applySavedPreset,
+    hasSavedPreset: Object.keys(savedPreset).length > 0,
     isCustomizeOpen,
     openCustomize: useCallback(() => setIsCustomizeOpen(true), []),
     closeCustomize: useCallback(() => setIsCustomizeOpen(false), []),
