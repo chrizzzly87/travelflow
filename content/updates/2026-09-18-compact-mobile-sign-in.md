@@ -1,9 +1,9 @@
 ---
 id: rel-2026-09-18-compact-mobile-sign-in
-version: v0.175.0
+version: v0.179.0
 title: "The sign-in window fits on a phone screen — and now speaks your language"
 date: 2026-09-18
-published_at: 2026-09-18T07:20:00Z
+published_at: 2026-09-19T12:00:00Z
 status: draft
 notify_in_app: true
 in_app_hours: 24
