@@ -26,6 +26,22 @@ export const readUserDefaultMapCustomization = (): IMapCustomization => {
   }
 };
 
-export const writeUserDefaultMapCustomization = (customization: IMapCustomization): void => {
-  writeLocalStorageItem(MAP_CUSTOMIZATION_DEFAULT_KEY, JSON.stringify(customization));
+/**
+ * Whether a preset has been saved at all.
+ *
+ * Distinct from "the preset has any fields in it": a preset that matches every
+ * app default serialises to `{}`, and reading that back as "nothing saved"
+ * would hide the traveller's own entry after the button said it had saved.
+ */
+export const hasUserDefaultMapCustomization = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  try {
+    return readLocalStorageItem(MAP_CUSTOMIZATION_DEFAULT_KEY) !== null;
+  } catch {
+    return false;
+  }
 };
+
+export const writeUserDefaultMapCustomization = (customization: IMapCustomization): boolean => (
+  writeLocalStorageItem(MAP_CUSTOMIZATION_DEFAULT_KEY, JSON.stringify(customization))
+);

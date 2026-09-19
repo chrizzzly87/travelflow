@@ -29,6 +29,20 @@ type MapboxStyleLayerVisibilityMap = Pick<
   'addLayer' | 'addSource' | 'getLayer' | 'getSource' | 'getStyle' | 'setFilter' | 'setLayoutProperty' | 'setPaintProperty'
 >;
 
+/**
+ * A map torn down by `Map.remove()` has no `style`, and every accessor here
+ * reaches through it. Polish can be asked to run during that window — a style
+ * reload racing a provider switch — so it checks before touching anything.
+ */
+const canMutateMapboxStyle = (map: MapboxStyleLayerVisibilityMap): boolean => {
+  if ((map as unknown as { _removed?: boolean })._removed === true) return false;
+  try {
+    return Boolean(map.getStyle());
+  } catch {
+    return false;
+  }
+};
+
 const buildMapboxStyleDescriptor = (
   owner: string,
   styleId: string,
@@ -826,6 +840,7 @@ export const applyMapboxTripVisualPolish = (
   mapStyle: MapStyle,
   overrides?: MapboxBasemapDetailOverrides,
 ): void => {
+  if (!canMutateMapboxStyle(map)) return;
   const layers = (map.getStyle()?.layers ?? []) as MapboxStyleLayerLike[];
   applyMapboxCountryBoundaryOverlay(map, mapStyle, layers);
   if (mapStyle === 'satellite') {

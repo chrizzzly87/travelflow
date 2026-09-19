@@ -1,6 +1,10 @@
 import React, { useCallback, useMemo, useState } from 'react';
 
-import { readUserDefaultMapCustomization, writeUserDefaultMapCustomization } from './mapCustomizationStorage';
+import {
+  hasUserDefaultMapCustomization,
+  readUserDefaultMapCustomization,
+  writeUserDefaultMapCustomization,
+} from './mapCustomizationStorage';
 import {
   DEFAULT_MAP_PREFERENCES,
   normalizeMapCustomization,
@@ -105,11 +109,16 @@ export const useTripMapCustomizationState = ({
   }, [setColorMode, setCustomization, setRouteMode, setShowCityNames]);
 
   const [savedPreset, setSavedPreset] = useState<IMapCustomization>(() => readUserDefaultMapCustomization());
+  const [hasSavedPreset, setHasSavedPreset] = useState(() => hasUserDefaultMapCustomization());
 
   const saveAsDefault = useCallback(() => {
     const stored = toStoredMapCustomization(preferences);
-    writeUserDefaultMapCustomization(stored);
+    // The write can be refused — an unregistered key, a full or blocked store —
+    // and offering the traveller a preset that was never written back is worse
+    // than not offering one.
+    if (!writeUserDefaultMapCustomization(stored)) return;
     setSavedPreset(stored);
+    setHasSavedPreset(true);
   }, [preferences]);
 
   /**
@@ -127,7 +136,7 @@ export const useTripMapCustomizationState = ({
     reset,
     saveAsDefault,
     applySavedPreset,
-    hasSavedPreset: Object.keys(savedPreset).length > 0,
+    hasSavedPreset,
     isCustomizeOpen,
     openCustomize: useCallback(() => setIsCustomizeOpen(true), []),
     closeCustomize: useCallback(() => setIsCustomizeOpen(false), []),

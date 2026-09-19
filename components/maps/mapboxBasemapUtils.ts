@@ -157,6 +157,33 @@ export const resolveMapboxEffectiveProjection = ({
   }) ?? 'mercator';
 };
 
+/**
+ * Whether a Mapbox map is still usable, as opposed to torn down.
+ *
+ * `Map.remove()` drops the map's `style`, and almost every accessor reaches
+ * through it — `getLayer` calls `style.getOwnLayer`, which is where switching
+ * back to Google threw `Cannot read properties of undefined (reading
+ * 'getOwnLayer')`. React deletes the child that owns the Mapbox map before it
+ * runs the parent effect cleanup that detaches the overlays drawn onto it, so
+ * the overlays are always asked to clean up against a map that has just gone.
+ *
+ * Nothing needs cleaning up in that case: the layers and sources went with the
+ * map. This is the check that says so.
+ */
+export const isMapboxMapUsable = (
+  mapboxMap: Pick<mapboxgl.Map, 'getStyle'> | null | undefined,
+): boolean => {
+  if (!mapboxMap) return false;
+  // `_removed` is mapbox-gl's own teardown flag. It is private, so the style
+  // probe below stands on its own if a future version drops it.
+  if ((mapboxMap as unknown as { _removed?: boolean })._removed === true) return false;
+  try {
+    return typeof mapboxMap.getStyle === 'function' && Boolean(mapboxMap.getStyle());
+  } catch {
+    return false;
+  }
+};
+
 export const isMapboxStyleReadyForRuntimeMutations = (
   mapboxMap: Pick<mapboxgl.Map, 'isStyleLoaded'> | null | undefined,
 ): boolean => {

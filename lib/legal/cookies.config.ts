@@ -241,6 +241,13 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'localStorage',
     },
     {
+      name: 'tf_map_customization_default_v1',
+      purpose: "Stores the traveller's saved map preset, applied to trips that carry no look of their own.",
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+    },
+    {
       name: 'tf_route_mode',
       purpose: 'Persists selected route rendering mode.',
       duration: 'Persistent',
