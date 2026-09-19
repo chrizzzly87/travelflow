@@ -10,6 +10,7 @@ import { ProfileTripTabs } from '../components/profile/ProfileTripTabs';
 import { ProfileTripCard } from '../components/profile/ProfileTripCard';
 import { ProfileTripCardSkeleton } from '../components/profile/ProfileTripCardSkeleton';
 import { ProfilePassportDialog } from '../components/profile/ProfilePassportDialog';
+import { PASSPORT_FEATURE_ENABLED } from '../services/passportService';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { Switch } from '../components/ui/switch';
 import {
@@ -1272,26 +1273,28 @@ export const ProfilePage: React.FC = () => {
                     )}
                 </section>
 
-                <ProfilePassportDialog
-                    open={isPassportDialogOpen}
-                    onOpenChange={(nextOpen) => handlePassportDialogOpenChange(nextOpen)}
-                    title={t('stamps.title')}
-                    description={t('stamps.description', { name: displayName })}
-                    stamps={stampProgress}
-                    locale={appLocale}
-                    labels={{
-                        pageIndicator: t('stamps.pageIndicator'),
-                        previousPage: t('stamps.previousPage'),
-                        nextPage: t('stamps.nextPage'),
-                        emptySlot: t('stamps.emptySlot'),
-                    }}
-                    resolveGroupLabel={(group) => t(`stamps.group.${group}`)}
-                    onPageChange={(page) => {
-                        trackEvent('profile__stamps_page--change', { page });
-                    }}
-                    countryCode={profile?.country}
-                    triggerRect={passportTriggerRect}
-                />
+                {PASSPORT_FEATURE_ENABLED ? (
+                    <ProfilePassportDialog
+                        open={isPassportDialogOpen}
+                        onOpenChange={(nextOpen) => handlePassportDialogOpenChange(nextOpen)}
+                        title={t('stamps.title')}
+                        description={t('stamps.description', { name: displayName })}
+                        stamps={stampProgress}
+                        locale={appLocale}
+                        labels={{
+                            pageIndicator: t('stamps.pageIndicator'),
+                            previousPage: t('stamps.previousPage'),
+                            nextPage: t('stamps.nextPage'),
+                            emptySlot: t('stamps.emptySlot'),
+                        }}
+                        resolveGroupLabel={(group) => t(`stamps.group.${group}`)}
+                        onPageChange={(page) => {
+                            trackEvent('profile__stamps_page--change', { page });
+                        }}
+                        countryCode={profile?.country}
+                        triggerRect={passportTriggerRect}
+                    />
+                ) : null}
             </main>
             <SiteFooter />
         </div>

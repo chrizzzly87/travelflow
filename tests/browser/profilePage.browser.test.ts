@@ -340,17 +340,17 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     }
   });
 
-  it('opens the passport dialog via query state without leaving the profile route', async () => {
-    const user = userEvent.setup();
+  // The passport is switched off via PASSPORT_FEATURE_ENABLED until it is
+  // redesigned, so the profile must not offer a way into it. When the flag goes
+  // back to true this test fails, which is the cue to restore the interaction
+  // test that used to live here (see git history for this file).
+  it('does not offer the passport while PASSPORT_FEATURE_ENABLED is off', async () => {
     renderProfilePage('/profile');
 
-    const openPassportButton = await screen.findByRole('button', { name: /summary\.stampsOpen/i });
-    await user.click(openPassportButton);
+    await screen.findByTestId('location-probe');
 
-    await waitFor(() => {
-      expect(screen.getByTestId('location-probe').textContent).toContain('passport=open');
-    });
-    expect(screen.getByText('stamps.title')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /summary\.stampsOpen/i })).toBeNull();
+    expect(screen.queryByText('stamps.title')).toBeNull();
   });
 
   it('archives a single trip from profile cards after confirmation', async () => {

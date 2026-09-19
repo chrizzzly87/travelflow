@@ -7,6 +7,7 @@ import { ProfileVisitorSummary } from '../components/profile/ProfileVisitorSumma
 import { ProfileTripCard } from '../components/profile/ProfileTripCard';
 import { ProfileTripCardSkeleton } from '../components/profile/ProfileTripCardSkeleton';
 import { ProfilePassportDialog } from '../components/profile/ProfilePassportDialog';
+import { PASSPORT_FEATURE_ENABLED } from '../services/passportService';
 import { collectVisitedCountries } from '../components/profile/profileCountryUtils';
 import { getPinnedTrips, getTripSourceLabelKey, sortTripsByUpdatedDesc } from '../components/profile/profileTripState';
 import { resolveProfileStatusByTripCount } from '../components/profile/profileStatus';
@@ -602,7 +603,7 @@ export const PublicProfilePage: React.FC = () => {
                     </>
                 )}
 
-                {state.status === 'found' && (
+                {PASSPORT_FEATURE_ENABLED && state.status === 'found' && (
                     <ProfilePassportDialog
                         open={searchParams.get(PUBLIC_PROFILE_PASSPORT_QUERY_KEY) === PUBLIC_PROFILE_PASSPORT_QUERY_VALUE}
                         onOpenChange={(nextOpen) => handlePassportDialogOpenChange(nextOpen)}
