@@ -3,8 +3,8 @@ id: rel-2026-09-19-trip-page-loading-skeleton
 version: v0.182.0
 title: "Opening a trip no longer starts with a blank page"
 date: 2026-09-19
-published_at: 2026-09-19T16:00:00Z
-status: draft
+published_at: 2026-09-19T15:40:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "The placeholder you see while a trip opens now has the shape of the trip page itself — on a phone, down to the day circles and their real dates — and loading placeholders across the app no longer flash or replay their animation before the page appears."
