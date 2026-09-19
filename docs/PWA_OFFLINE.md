@@ -59,7 +59,7 @@ that file.
 | Navigations | Network-first, 3s timeout, falling back to precached `/spa.html` |
 | `/assets/**` (`.js`, `.mjs`, `.css`) | Cache-first, written on first fetch |
 | `/fonts/**`, `/flags/**`, `/icons/**`, `/images/**` | Cache-first, LRU-capped at 200 |
-| `/api/trip-map-preview?*` | Stale-while-revalidate, LRU-capped at 60 |
+| `/api/trip-map-preview?*` | Stale-while-revalidate, LRU-capped at 60. Storable only because the endpoint returns the image bytes from our own origin: it used to redirect to the provider, and a cross-origin redirect followed from a no-cors `<img>` yields an opaque response, which `isStorableResponse` rejects. See `docs/TRIP_MAP_PREVIEW_CACHING.md`. |
 | Every other `/api/*`, and all Supabase traffic | **Network-only, never cached** |
 | Cross-origin (Google, Mapbox, Umami) | Not intercepted |
 

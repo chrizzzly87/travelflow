@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import handler from '../../netlify/edge-functions/trip-map-preview.ts';
+import handler, { resolvePreviewUpstreamUrl } from '../../netlify/edge-functions/trip-map-preview.ts';
 
 let ipCounter = 0;
 const nextIp = (): string => {
@@ -17,6 +17,37 @@ const callPreview = (
     headers: { 'x-nf-client-connection-ip': ip },
   });
   return Promise.resolve(handler(request));
+};
+
+/** Resolves the provider URL a request would render, without the image fetch. */
+const upstreamUrlFor = async (query: string): Promise<string> => {
+  const resolution = await resolvePreviewUpstreamUrl(
+    new Request(`https://travelflow.example/api/trip-map-preview?${query}`),
+  );
+  return resolution.ok ? resolution.url : '';
+};
+
+const PREVIEW_IMAGE_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+
+/**
+ * Stubs the provider: static image requests succeed, everything else (the
+ * Directions lookups) fails the way an unconfigured upstream would.
+ */
+const stubImageUpstream = (
+  onOther: (url: string) => Response = () => new Response('{}', { status: 500 }),
+): ReturnType<typeof vi.fn> => {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const requestUrl = typeof input === 'string' ? input : input.toString();
+    if (requestUrl.includes('/staticmap') || requestUrl.includes('api.mapbox.com/styles/')) {
+      return new Response(PREVIEW_IMAGE_BYTES, {
+        status: 200,
+        headers: { 'Content-Type': 'image/webp' },
+      });
+    }
+    return onOther(requestUrl);
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
 };
 
 describe('trip-map-preview edge function hardening', () => {
@@ -60,15 +91,51 @@ describe('trip-map-preview edge function hardening', () => {
   });
 
   describe('caching', () => {
-    it('serves valid requests as CDN-cacheable redirects', async () => {
+    it('serves the rendered image itself so the CDN can cache the bytes', async () => {
+      stubImageUpstream();
+
       const response = await callPreview('coords=35.68,139.65|34.69,135.50&style=clean');
-      expect(response.status).toBe(302);
-      expect(response.headers.get('Location')).toContain('maps.googleapis.com/maps/api/staticmap');
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('Content-Type')).toContain('image/');
+      expect(new Uint8Array(await response.arrayBuffer())).toEqual(PREVIEW_IMAGE_BYTES);
       expect(response.headers.get('Cache-Control')).toContain('public');
-      expect(response.headers.get('Cache-Control')).toContain('s-maxage');
       expect(response.headers.get('Netlify-CDN-Cache-Control')).toContain('durable');
+      expect(response.headers.get('Netlify-CDN-Cache-Control')).toContain('s-maxage');
       expect(response.headers.get('Netlify-Vary')).toContain('query=');
       expect(response.headers.get('Netlify-Vary')).toContain('coords');
+    });
+
+    it('keeps the provider key out of the response (regression: the redirect published it)', async () => {
+      stubImageUpstream();
+
+      const response = await callPreview('coords=35.68,139.65|34.69,135.50&style=clean');
+
+      expect(response.headers.get('Location')).toBeNull();
+      expect(JSON.stringify([...response.headers])).not.toContain('test-google-key');
+    });
+
+    it('falls back to an uncacheable redirect when the render cannot be fetched', async () => {
+      vi.stubGlobal('fetch', vi.fn(async () => {
+        throw new Error('upstream timeout');
+      }));
+
+      const response = await callPreview('coords=35.68,139.65|34.69,135.50&style=clean');
+
+      expect(response.status).toBe(302);
+      expect(response.headers.get('Location')).toContain('maps.googleapis.com/maps/api/staticmap');
+      // A degraded render must never become the cached copy of the trip.
+      expect(response.headers.get('Cache-Control')).toBe('no-store');
+      expect(response.headers.get('Netlify-CDN-Cache-Control')).toBeNull();
+    });
+
+    it('does not cache a provider error as the trip picture', async () => {
+      vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 500 })));
+
+      const response = await callPreview('coords=35.68,139.65|34.69,135.50&style=clean');
+
+      expect(response.status).toBe(302);
+      expect(response.headers.get('Cache-Control')).toBe('no-store');
     });
 
     it('does not mark rate-limit or validation errors as cacheable', async () => {
@@ -79,6 +146,7 @@ describe('trip-map-preview edge function hardening', () => {
 
   describe('rate limiting', () => {
     it('returns 429 with Retry-After once a single IP exhausts its budget', async () => {
+      stubImageUpstream();
       const ip = nextIp();
       let lastStatus = 0;
       let rejected: Response | null = null;
@@ -89,7 +157,7 @@ describe('trip-map-preview edge function hardening', () => {
           rejected = response;
           break;
         }
-        expect(response.status).toBe(302);
+        expect(response.status).toBe(200);
       }
       expect(lastStatus).toBe(429);
       expect(Number(rejected?.headers.get('Retry-After'))).toBeGreaterThanOrEqual(1);
@@ -97,22 +165,24 @@ describe('trip-map-preview edge function hardening', () => {
     });
 
     it('does not throttle other client IPs', async () => {
+      stubImageUpstream();
       const throttledIp = nextIp();
       for (let index = 0; index < 200; index += 1) {
         await callPreview('coords=35.68,139.65|34.69,135.50', { ip: throttledIp });
       }
       const other = await callPreview('coords=35.68,139.65|34.69,135.50');
-      expect(other.status).toBe(302);
+      expect(other.status).toBe(200);
     });
 
     it('charges realistic-route requests a higher cost (regression: Directions fan-out abuse)', async () => {
+      stubImageUpstream();
       const simpleIp = nextIp();
       const realisticIp = nextIp();
 
       let simpleAllowed = 0;
       for (let index = 0; index < 200; index += 1) {
         const response = await callPreview('coords=35.68,139.65|34.69,135.50', { ip: simpleIp });
-        if (response.status !== 302) break;
+        if (response.status !== 200) break;
         simpleAllowed += 1;
       }
 
@@ -122,7 +192,7 @@ describe('trip-map-preview edge function hardening', () => {
           'coords=35.68,139.65|34.69,135.50&routeMode=realistic',
           { ip: realisticIp },
         );
-        if (response.status !== 302) break;
+        if (response.status !== 200) break;
         realisticAllowed += 1;
       }
 
@@ -133,28 +203,23 @@ describe('trip-map-preview edge function hardening', () => {
 
   describe('flight legs', () => {
     it('draws a curved arc for a plane leg instead of a straight line', async () => {
-      const fetchMock = vi.fn(async () => new Response('{}', { status: 500 }));
-      vi.stubGlobal('fetch', fetchMock);
+      vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 500 })));
 
-      const straight = await callPreview('coords=-12.046,-77.043|-13.532,-71.967&routeMode=realistic');
-      const flight = await callPreview(
+      const straight = await upstreamUrlFor('coords=-12.046,-77.043|-13.532,-71.967&routeMode=realistic');
+      const flight = await upstreamUrlFor(
         'coords=-12.046,-77.043|-13.532,-71.967&routeMode=realistic&legModes=plane',
       );
 
-      const straightLocation = decodeURIComponent(straight.headers.get('Location') || '');
-      const flightLocation = decodeURIComponent(flight.headers.get('Location') || '');
-
-      expect(flight.status).toBe(302);
-      expect(flightLocation).toContain('path=color:');
-      expect(flightLocation).toContain('|enc:');
-      expect(flightLocation).not.toBe(straightLocation);
+      expect(decodeURIComponent(flight)).toContain('path=color:');
+      expect(decodeURIComponent(flight)).toContain('|enc:');
+      expect(flight).not.toBe(straight);
     });
 
     it('does not spend a Directions call on a plane leg (regression: flights fell back to straight lines)', async () => {
       const fetchMock = vi.fn(async () => new Response('{}', { status: 500 }));
       vi.stubGlobal('fetch', fetchMock);
 
-      await callPreview('coords=-12.046,-77.043|-13.532,-71.967&routeMode=realistic&legModes=plane');
+      await upstreamUrlFor('coords=-12.046,-77.043|-13.532,-71.967&routeMode=realistic&legModes=plane');
 
       const directionsCalls = fetchMock.mock.calls.filter(([input]) =>
         String(input).includes('/maps/api/directions'));
@@ -165,7 +230,7 @@ describe('trip-map-preview edge function hardening', () => {
       const fetchMock = vi.fn(async () => new Response('{}', { status: 500 }));
       vi.stubGlobal('fetch', fetchMock);
 
-      await callPreview(
+      await upstreamUrlFor(
         'coords=-12.046,-77.043|-13.532,-71.967|-13.163,-72.545&routeMode=realistic&legModes=plane|car',
       );
 
@@ -184,15 +249,14 @@ describe('trip-map-preview edge function hardening', () => {
       const fetchMock = vi.fn(async () => new Response('{}', { status: 500 }));
       vi.stubGlobal('fetch', fetchMock);
 
-      const straight = await callPreview('coords=-12.046,-77.043|-13.532,-71.967&routeMode=realistic');
+      const straight = await upstreamUrlFor('coords=-12.046,-77.043|-13.532,-71.967&routeMode=realistic');
       fetchMock.mockClear();
-      const flight = await callPreview(
+      const flight = await upstreamUrlFor(
         'coords=-12.046,-77.043|-13.532,-71.967&routeMode=realistic&legModes=plane',
       );
 
-      expect(flight.status).toBe(302);
-      expect(decodeURIComponent(flight.headers.get('Location') || '')).toContain('path-4+');
-      expect(flight.headers.get('Location')).not.toBe(straight.headers.get('Location'));
+      expect(decodeURIComponent(flight)).toContain('path-4+');
+      expect(flight).not.toBe(straight);
       expect(fetchMock.mock.calls.filter(([input]) =>
         String(input).includes('api.mapbox.com/directions')).length).toBe(0);
     });
@@ -224,10 +288,8 @@ describe('trip-map-preview edge function hardening', () => {
       });
       vi.stubGlobal('fetch', fetchMock);
 
-      const response = await callPreview('coords=35.68,139.65|34.69,135.50&routeMode=realistic');
-      expect(response.status).toBe(302);
+      const location = await upstreamUrlFor('coords=35.68,139.65|34.69,135.50&routeMode=realistic');
 
-      const location = response.headers.get('Location') || '';
       expect(location).toContain('api.mapbox.com/styles/v1/');
       expect(decodeURIComponent(location)).toContain(MAPBOX_DIRECTIONS_POLYLINE);
 
@@ -240,13 +302,66 @@ describe('trip-map-preview edge function hardening', () => {
     it('falls back to the straight-line overlay when Mapbox has no route for a leg', async () => {
       vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 500 })));
 
-      const response = await callPreview('coords=35.68,139.65|34.69,135.50&routeMode=realistic');
-      expect(response.status).toBe(302);
-
-      const location = decodeURIComponent(response.headers.get('Location') || '');
+      const location = decodeURIComponent(
+        await upstreamUrlFor('coords=35.68,139.65|34.69,135.50&routeMode=realistic'),
+      );
       expect(location).toContain('api.mapbox.com/styles/v1/');
       expect(location).toContain('path-4+');
       expect(location).not.toContain(MAPBOX_DIRECTIONS_POLYLINE);
+    });
+
+    it('fans out Directions in parallel (regression: a cold five-stop card waited for four round trips)', async () => {
+      let inFlight = 0;
+      let peakInFlight = 0;
+
+      const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+        const requestUrl = typeof input === 'string' ? input : input.toString();
+        if (!requestUrl.includes('api.mapbox.com/directions')) {
+          return new Response('{}', { status: 500 });
+        }
+        inFlight += 1;
+        peakInFlight = Math.max(peakInFlight, inFlight);
+        // Yield so a sequential implementation would resolve each call before
+        // starting the next, leaving the peak at 1.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        inFlight -= 1;
+        return new Response(JSON.stringify({ routes: [{ geometry: MAPBOX_DIRECTIONS_POLYLINE }] }), { status: 200 });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await upstreamUrlFor(
+        'coords=35.68,139.65|34.69,135.50|33.59,130.40|43.06,141.35|35.01,135.76&routeMode=realistic',
+      );
+
+      expect(fetchMock.mock.calls.filter(([input]) =>
+        String(input).includes('api.mapbox.com/directions')).length).toBe(4);
+      expect(peakInFlight).toBe(4);
+    });
+
+    it('keeps the Directions budget capped once the fan-out is parallel', async () => {
+      const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+        const requestUrl = typeof input === 'string' ? input : input.toString();
+        if (!requestUrl.includes('api.mapbox.com/directions')) {
+          return new Response('{}', { status: 500 });
+        }
+        return new Response(JSON.stringify({ routes: [{ geometry: MAPBOX_DIRECTIONS_POLYLINE }] }), { status: 200 });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      // 12 stops = 11 legs, but only MAX_REALISTIC_DIRECTION_LEGS may be routed.
+      const coords = Array.from({ length: 12 }, (_, index) => `${35 + index * 0.4},${139 - index * 0.4}`).join('|');
+      await upstreamUrlFor(`coords=${coords}&routeMode=realistic`);
+
+      expect(fetchMock.mock.calls.filter(([input]) =>
+        String(input).includes('api.mapbox.com/directions')).length).toBe(8);
+    });
+
+    it('asks Mapbox for WebP so the cached card image is not a 256 KB PNG', async () => {
+      vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 500 })));
+
+      const location = await upstreamUrlFor('coords=35.68,139.65|34.69,135.50&w=640&h=360&scale=2');
+
+      expect(location).toContain('/640x360@2x.webp');
     });
   });
 });

@@ -6,6 +6,17 @@ import {
   buildDirectStaticMapPreviewUrlWithKey,
   buildMiniMapUrl,
 } from '../../components/profile/tripPreviewUtils';
+import { getClientMapRuntimeResolution } from '../../services/mapRuntimeService';
+
+/**
+ * Only the Google renderer honours a map language; on Mapbox the parameter
+ * would split the preview cache per locale without changing the picture. The
+ * active provider comes from the environment, so the expectation follows it
+ * rather than assuming one.
+ */
+const expectedMapLanguage = (locale: string): string | null => (
+  getClientMapRuntimeResolution().effectiveSelection.staticMaps === 'mapbox' ? null : locale
+);
 
 describe('components/profile/tripPreviewUtils buildMiniMapUrl', () => {
   it('uses city colors for markers and route legs when color data is available', () => {
@@ -53,7 +64,7 @@ describe('components/profile/tripPreviewUtils buildMiniMapUrl', () => {
     expect(params.get('startMarkerColor')).toBe('16a34a');
     expect(params.get('endMarkerColor')).toBe('2563eb');
     expect(params.get('waypointColor')).toBe('f97316');
-    expect(params.get('language')).toBe('en');
+    expect(params.get('language')).toBe(expectedMapLanguage('en'));
   });
 
   it('falls back to orange-red map colors when trip city colors are unavailable', () => {
@@ -119,7 +130,7 @@ describe('components/profile/tripPreviewUtils buildMiniMapUrl', () => {
     expect(params.get('pathColor')).toBe('2563eb');
     expect(params.get('startMarkerColor')).toBe('2563eb');
     expect(params.get('endMarkerColor')).toBe('2563eb');
-    expect(params.get('language')).toBe('de');
+    expect(params.get('language')).toBe(expectedMapLanguage('de'));
   });
 
   it('builds a valid direct Static Maps URL with paths and markers for local fallback', () => {

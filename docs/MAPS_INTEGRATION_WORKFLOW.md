@@ -51,6 +51,8 @@ Use this guide whenever you add or change maps in planner, profile/admin cards, 
 1. Reuse `buildRouteCacheKey(...)` for leg-level cache identity.
 2. Keep cache usage mode-aware and coordinate-aware.
 3. Avoid unnecessary recomputation by preserving no-op guards in update handlers.
+4. `/api/trip-map-preview` returns the rendered image itself, never a redirect to the provider. See `docs/TRIP_MAP_PREVIEW_CACHING.md` before touching that endpoint or the URL builder that feeds it.
+5. A preview URL is a cache key. Never add a parameter to it that does not change the picture — one wasted parameter multiplies the number of renders we pay for by the number of values it takes.
 
 ## Committed static previews
 1. Homepage example trip cards (`pnpm maps:generate`) and featured country route cards (`pnpm maps:routes:generate`) ship pre-rendered PNGs under `public/images/trip-maps/`. The build must never call the Static Maps API.

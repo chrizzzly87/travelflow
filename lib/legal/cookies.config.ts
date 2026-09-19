@@ -55,6 +55,14 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       notes: 'Needed for shared and example trips, which cannot be written back to an account.',
     },
     {
+      name: 'tf_trip_map_preview_settle_v1',
+      purpose: 'Remembers which map picture each trip card is already showing, so a trip you are still editing is not redrawn on every change.',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+      notes: 'Holds only trip ids and preview image URLs for trips seen on this device.',
+    },
+    {
       name: 'sb-*-auth-token',
       purpose: 'Supabase auth session token for signed-in users.',
       duration: 'Session lifecycle (rotating)',

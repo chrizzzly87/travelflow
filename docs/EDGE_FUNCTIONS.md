@@ -45,7 +45,7 @@ The 2026-08-18 outage: an edge function began importing `config/aiModelCatalog.t
 | `trip-og-meta.ts` | `/s/*`, `/trip/*` | Injects OG meta tags for shared and private trip pages | Middleware |
 | `trip-og-image.tsx` | `/api/og/trip` | Generates dynamic OG images showing trip route, duration, distance | Image generator |
 | `trip-og-playground.ts` | `/api/og/playground` | Dev tool — interactive UI to preview trip/site OG image endpoints directly | Dev tool |
-| `trip-map-preview.ts` | `/api/trip-map-preview` | Proxies Google Static Maps API; returns 302 redirect to styled map | API proxy |
+| `trip-map-preview.ts` | `/api/trip-map-preview` | Renders a trip's static map and returns the image bytes under our own origin, cached durably at the CDN so one render serves every viewer until the trip changes. Falls back to an uncacheable redirect when the provider render cannot be fetched. See `docs/TRIP_MAP_PREVIEW_CACHING.md`. | API proxy |
 | `trip-share-resolve.ts` | `/api/trip-share-resolve` | Resolves active share token by trip id for non-owner route handoff | API |
 | `runtime-location.ts` | `/api/runtime/location` | Returns the current request’s normalized Netlify GeoIP snapshot for client bootstrap and debugger diagnostics | API |
 | `place-photo.ts` | `/api/place-photo` | Resolves a Google Places photo resource name to its hosted image with a 302, keeping the Maps key server-side. The `ref` allowlist pattern is what prevents an open redirect into any Google path — photo ids are opaque and long, so the pattern bounds the character set, not a guessed length. | API proxy |
@@ -74,14 +74,15 @@ Trip/share pages ──▶ trip-og-meta.ts ──context.next()──▶ SPA ind
                          ▼ (OG image URL points to)
                     trip-og-image.tsx
 
-/api/trip-map-preview ──▶ trip-map-preview.ts ──302──▶ Google Static Maps
+/api/trip-map-preview ──▶ trip-map-preview.ts ──fetch──▶ Mapbox / Google Static Maps
+                                    └──image bytes + durable CDN cache──▶ browser
 /api/trip-share-resolve ──▶ trip-share-resolve.ts ──JSON──▶ share token + canonical /s path
 /api/runtime/location ──▶ runtime-location.ts ──JSON──▶ normalized Netlify geo snapshot
 ```
 
 - **Middleware functions** (`*-meta.ts`) call `context.next()` to get the SPA HTML, then rewrite `<head>` tags before returning the response.
 - **Image generators** (`*-image.tsx`) return standalone `ImageResponse` objects (server-rendered React → PNG).
-- **API proxies** (`trip-map-preview.ts`) return redirects or direct responses; no middleware chaining.
+- **API proxies** (`trip-map-preview.ts`, `place-photo.ts`) return direct responses or redirects; no middleware chaining. Where we are allowed to hold the bytes, prefer returning them: a redirect moves the request to the provider's origin, where our CDN cannot cache it and every visitor is billed again.
 
 ## Configuration rules
 
