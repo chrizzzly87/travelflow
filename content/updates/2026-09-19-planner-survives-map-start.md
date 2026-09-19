@@ -3,8 +3,8 @@ id: rel-2026-09-19-planner-survives-map-start
 version: v0.183.0
 title: "Your place in a trip survives the map starting up"
 date: 2026-09-19
-published_at: 2026-09-19T18:00:00Z
-status: draft
+published_at: 2026-09-19T16:30:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Opening a trip and touching it straight away no longer loses what you did: the planner used to be rebuilt from scratch a few seconds in, when the map finished starting."
