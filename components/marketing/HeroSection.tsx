@@ -4,7 +4,7 @@ import { Sparkle, ShareNetwork, LinkSimple, RocketLaunch } from '@phosphor-icons
 import { useTranslation } from 'react-i18next';
 import { GradientShimmer, type GradientStop } from 'gradient-shimmer';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { PlaneWindowAnimation } from './PlaneWindowAnimation';
+import { PlaneWindow } from './PlaneWindow/PlaneWindow';
 import { buildPath } from '../../config/routes';
 import { warmRouteAssets } from '../../services/navigationPrefetch';
 
@@ -192,7 +192,7 @@ export const HeroSection: React.FC = () => {
                 </div>
 
                 <div className="hidden lg:block w-[280px] xl:w-[320px] shrink-0 animate-hero-stagger" style={{ '--stagger': '400ms' } as React.CSSProperties}>
-                    {showPlaneWindow ? <PlaneWindowAnimation /> : null}
+                    {showPlaneWindow ? <PlaneWindow /> : null}
                 </div>
             </div>
         </section>

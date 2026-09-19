@@ -214,6 +214,9 @@
 }
 
 :root {
+  --tf-veil-light: #ffffff;
+  --tf-veil-dark: #191817;
+  --tf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --tf-font-heading: "Bricolage Grotesque", "Space Grotesk", "TravelFlow Global Fallback", "Noto Sans", "Avenir Next", "Segoe UI", sans-serif;
   --tf-font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "TravelFlow Global Fallback", "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
   --tf-layer-cookie-consent: 12000;
@@ -968,17 +971,103 @@ h6,
 
 /* ── Plane window clouds animation ── */
 
+/* Static cloud drift, used before the WebGL scene mounts and whenever it is
+ * declined (reduced motion, save-data, software renderer, narrow viewport).
+ *
+ * The old version put two images in a flex row and animated translateX(0) to
+ * translateX(-50%). The flex container was width:100% of the MASK, not of the
+ * two-image strip, so -50% was half the window rather than half the content and
+ * the strip jumped on every cycle. This uses a repeating background instead and
+ * translates by exactly one tile width, which is seamless by construction.
+ *
+ * Three layers at different sizes, speeds and offsets: they share no common
+ * period, so nothing resynchronises into a visible loop. */
 @keyframes clouds-scroll {
   from {
-    transform: translateX(0);
+    background-position: 0 var(--cloud-y, 50%);
   }
   to {
-    transform: translateX(-50%);
+    background-position: var(--cloud-tile, 200px) var(--cloud-y, 50%);
   }
 }
 
 @utility animate-clouds-scroll {
   animation: clouds-scroll 25s linear infinite;
+}
+
+.plane-window-static-clouds {
+  --cloud-puff: radial-gradient(
+    ellipse 38% 26% at 50% 60%,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.72) 42%,
+    rgba(255, 255, 255, 0) 72%
+  );
+  background-image: var(--cloud-puff), var(--cloud-puff), var(--cloud-puff);
+  background-repeat: repeat-x, repeat-x, repeat-x;
+  background-size: 180px 70px, 260px 110px, 340px 150px;
+  background-position: 0 62%, 40px 74%, 90px 86%;
+  animation:
+    clouds-scroll 19s linear infinite,
+    clouds-scroll 31s linear infinite,
+    clouds-scroll 47s linear infinite;
+}
+
+/* The drawn shade. There is no shutter artwork for this window, so it is a
+   panel the colour of the cabin interior with a lit leading edge. */
+.plane-window-shade {
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.22) 0 2px, transparent 2px),
+    linear-gradient(to bottom, #d9d6d1 0%, #cbc7c1 42%, #bdb9b3 100%);
+  box-shadow:
+    inset 0 -14px 22px -14px rgba(28, 25, 22, 0.55),
+    0 6px 14px -6px rgba(28, 25, 22, 0.4);
+  will-change: transform;
+}
+
+/* The grab target, shaped to the glass opening. */
+.plane-window-grip {
+  inset: 15% 15% 14% 15%;
+  border-radius: 46% / 40%;
+  background: none;
+  border: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.plane-window-grip:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+
+/* The theme swap, when the shade commits one. Only colour-ish properties move,
+   and never the window itself — transitioning the frame smears it. */
+.is-recolouring body,
+.is-recolouring body *,
+.is-recolouring body *::before,
+.is-recolouring body *::after {
+  transition-property: color, background-color, border-color, fill, stroke;
+  transition-duration: 520ms;
+  transition-timing-function: var(--tf-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+
+.is-recolouring .plane-window-wrapper,
+.is-recolouring .plane-window-wrapper * {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plane-window-static-clouds {
+    animation: none;
+  }
+
+  .plane-window-shade {
+    transition: none !important;
+  }
+
+  .is-recolouring body,
+  .is-recolouring body * {
+    transition-duration: 120ms;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
