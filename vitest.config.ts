@@ -20,6 +20,10 @@ export default defineConfig({
       },
     },
     setupFiles: ['tests/setup.ts', './test/setupTests.ts'],
+    // The default `forks` pool gives every test file its own process, so the
+    // whole module graph is re-imported per file — `import` was 226s of a 273s
+    // run. Worker threads share a module registry, which is where the time goes.
+    pool: 'threads',
     clearMocks: true,
     restoreMocks: true,
     unstubEnvs: true,
