@@ -1,4 +1,11 @@
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
+
+import {
+  readDocumentTimeMs,
+  readShellEpochMs,
+  registerShellMounted,
+  registerShellUnmounted,
+} from '../../services/appBootstrapShellEpoch';
 
 type AppBootstrapShellVariant = 'marketing' | 'trip';
 type AppBootstrapShellChromeMode = 'skeleton' | 'ghost';
@@ -28,19 +35,6 @@ const TIMELINE_DAYS = Array.from({ length: 26 }, (_, index) => index);
 
 /** Stay lengths in days, so the city row reads as a real itinerary. */
 const TIMELINE_CITY_SPANS = [3, 2, 4, 3, 3, 2];
-
-/** Day offsets where one city hands over to the next. */
-const TIMELINE_TRANSFER_DAYS = [3, 5, 9, 12, 15];
-
-/** Day offset plus card height for the activity columns. */
-const TIMELINE_ACTIVITIES: ReadonlyArray<readonly [number, number]> = [
-  [0, 160],
-  [3, 112],
-  [6, 160],
-  [7, 96],
-  [11, 136],
-  [15, 120],
-];
 
 const TripPlannerSkeleton: React.FC<{
   plannerLayout: AppBootstrapShellPlannerLayout;
@@ -74,36 +68,6 @@ const TripPlannerSkeleton: React.FC<{
                   className="tf-bone tf-boot-tl-city"
                   style={{
                     width: span * TIMELINE_DAY_WIDTH - 2,
-                    '--tf-bone-phase': index,
-                  } as React.CSSProperties}
-                />
-              ))}
-            </div>
-            <div
-              className="tf-bone tf-boot-tl-label tf-boot-tl-label--transfer"
-              style={{ '--tf-bone-phase': 2 } as React.CSSProperties}
-            />
-            <div className="tf-boot-tl-transfers">
-              {TIMELINE_TRANSFER_DAYS.map((day) => (
-                <span
-                  key={`transfer-${day}`}
-                  className="tf-boot-tl-transfer"
-                  style={{ insetInlineStart: day * TIMELINE_DAY_WIDTH - 27 }}
-                />
-              ))}
-            </div>
-            <div
-              className="tf-bone tf-boot-tl-label tf-boot-tl-label--activities"
-              style={{ '--tf-bone-phase': 4 } as React.CSSProperties}
-            />
-            <div className="tf-boot-tl-activities">
-              {TIMELINE_ACTIVITIES.map(([day, height], index) => (
-                <span
-                  key={`activity-${day}`}
-                  className="tf-bone tf-boot-tl-activity"
-                  style={{
-                    insetInlineStart: day * TIMELINE_DAY_WIDTH + 1,
-                    height,
                     '--tf-bone-phase': index,
                   } as React.CSSProperties}
                 />
@@ -153,7 +117,22 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
   plannerLayout = 'horizontal',
   sidebarWidth,
   timelineHeight,
-}) => (
+}) => {
+  // Read before the effect registers this mount: on the first shell of an
+  // episode the epoch is 0, on the remounts that follow it is however long the
+  // placeholder has already been on screen. See services/appBootstrapShellEpoch.
+  const epochMs = Math.round(readShellEpochMs());
+  // The sweep is a loop, so anchoring it to document time keeps every shell —
+  // including the static one in index.html — in the same phase. Only the
+  // entrance fade needs the per-episode clock.
+  const documentTimeMs = Math.round(readDocumentTimeMs());
+
+  useLayoutEffect(() => {
+    registerShellMounted();
+    return registerShellUnmounted;
+  }, []);
+
+  return (
   <div
     className="tf-boot-shell"
     data-testid={testId}
@@ -162,6 +141,10 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
     data-tf-chrome-mode={chromeMode}
     data-tf-surface-mode={surfaceMode}
     data-tf-handoff-ready={handoffReady ? 'true' : undefined}
+    style={{
+      '--tf-boot-epoch': `${epochMs}ms`,
+      '--tf-boot-sweep-epoch': `${documentTimeMs}ms`,
+    } as React.CSSProperties}
     aria-hidden="true"
   >
     {variant === 'trip' ? (
@@ -263,4 +246,5 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
       />
     ) : null}
   </div>
-);
+  );
+};

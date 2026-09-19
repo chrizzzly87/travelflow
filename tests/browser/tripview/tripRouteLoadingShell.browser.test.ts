@@ -31,7 +31,7 @@ describe('TripRouteLoadingShell', () => {
     expect(planner?.querySelector('.tf-boot-planner-map')).toBeTruthy();
   });
 
-  it('mirrors the timeline sections the planner renders', () => {
+  it('shows the day grid, the city row and the control clusters', () => {
     const view = renderShell();
     const timeline = view.container.querySelector('.tf-boot-planner-timeline');
 
@@ -39,11 +39,14 @@ describe('TripRouteLoadingShell', () => {
     expect(timeline?.querySelectorAll('.tf-boot-tl-day').length).toBeGreaterThan(12);
     expect(timeline?.querySelector('.tf-boot-tl-label--cities')).toBeTruthy();
     expect(timeline?.querySelectorAll('.tf-boot-tl-city').length).toBeGreaterThan(1);
-    expect(timeline?.querySelector('.tf-boot-tl-label--transfer')).toBeTruthy();
-    expect(timeline?.querySelectorAll('.tf-boot-tl-transfer').length).toBeGreaterThan(1);
-    expect(timeline?.querySelector('.tf-boot-tl-label--activities')).toBeTruthy();
-    expect(timeline?.querySelectorAll('.tf-boot-tl-activity').length).toBeGreaterThan(1);
     expect(timeline?.querySelectorAll('.tf-boot-tl-control-group').length).toBe(3);
+  });
+
+  it('leaves the transfer chips and activity columns out of the placeholder', () => {
+    const view = renderShell();
+
+    expect(view.container.querySelector('.tf-boot-tl-transfer')).toBeNull();
+    expect(view.container.querySelector('.tf-boot-tl-activity')).toBeNull();
   });
 
   it('opens in the horizontal layout when nothing has been persisted', () => {

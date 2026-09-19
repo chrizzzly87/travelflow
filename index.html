@@ -152,7 +152,14 @@
         );
         transform: translate3d(-160%, 0, 0);
         animation: tf-boot-sweep 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-        animation-delay: calc(var(--tf-bone-phase, 0) * -200ms);
+        /* --tf-boot-sweep-epoch is how long this document has been open. The
+           shell is remounted two or three times per navigation, and without
+           this every placeholder would snap back to the start of the sweep on
+           each remount. A negative delay offsets an infinite animation's phase,
+           so the loop simply carries on. */
+        animation-delay: calc(
+          var(--tf-bone-phase, 0) * -200ms - var(--tf-boot-sweep-epoch, 0ms)
+        );
       }
 
       /* The hold at the end is the point: one short pass, then a beat of
@@ -452,8 +459,15 @@
         height: calc(100dvh - 76px);
         background: #ffffff;
         /* `both` holds the placeholders invisible through the delay, so a load
-           that resolves inside ~150ms never flashes a skeleton at all. */
-        animation: tf-boot-bones-in 280ms ease-out 150ms both;
+           that resolves inside ~150ms never flashes a skeleton at all.
+           --tf-boot-epoch discounts the time an earlier shell in the same
+           loading episode was already on screen, so a remount resumes the fade
+           instead of replaying it. */
+        animation-name: tf-boot-bones-in;
+        animation-duration: 280ms;
+        animation-timing-function: ease-out;
+        animation-delay: calc(150ms - var(--tf-boot-epoch, 0ms));
+        animation-fill-mode: both;
       }
 
       @keyframes tf-boot-bones-in {
@@ -604,14 +618,11 @@
       }
 
       .tf-boot-tl-label--cities { width: 118px; margin-bottom: 22px; }
-      .tf-boot-tl-label--transfer { width: 82px; margin-bottom: 18px; }
-      .tf-boot-tl-label--activities { width: 88px; }
 
       .tf-boot-tl-cities {
         display: flex;
         gap: 2px;
         height: 60px;
-        margin-bottom: 22px;
       }
 
       .tf-boot-tl-city {
@@ -619,51 +630,6 @@
         height: 60px;
         border-radius: 8px;
         border: 2px solid var(--tf-bone-edge);
-      }
-
-      .tf-boot-tl-transfers {
-        position: relative;
-        height: 40px;
-        margin-bottom: 25px;
-        border-bottom: 1px solid var(--tf-bone-hairline);
-      }
-
-      .tf-boot-tl-transfer {
-        position: absolute;
-        top: 0;
-        height: 40px;
-        width: 54px;
-        border-radius: 999px;
-        border: 1px solid var(--tf-bone-edge);
-        background-color: #ffffff;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
-      }
-
-      /* The leg line runs from the city block above down to its transfer chip,
-         the way the planner draws a handover between two stays. */
-      .tf-boot-tl-transfer::before {
-        content: '';
-        position: absolute;
-        top: -52px;
-        inset-inline-start: 50%;
-        height: 52px;
-        width: 1px;
-        background: var(--tf-bone-edge);
-      }
-
-      .tf-boot-tl-activities {
-        position: relative;
-        height: 200px;
-        margin-top: 69px;
-      }
-
-      .tf-boot-tl-activity {
-        position: absolute;
-        top: 0;
-        width: 48px;
-        border-radius: 10px;
-        border: 1px solid var(--tf-bone-edge);
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
       }
 
       .tf-boot-tl-controls {
