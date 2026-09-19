@@ -160,7 +160,7 @@ export const HeroSection: React.FC = () => {
                             onMouseEnter={prewarmCreateTripRoute}
                             onFocus={prewarmCreateTripRoute}
                             onTouchStart={prewarmCreateTripRoute}
-                            className="group relative rounded-2xl bg-accent-600 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-accent-200 transition-[scale,background-color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-300 active:scale-[0.96]"
+                            className="group relative rounded-2xl bg-accent-600 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-accent-200 transition-[scale,background-color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-300 active:scale-[0.96] dark:bg-accent-400 dark:text-background dark:shadow-none dark:hover:bg-accent-300 dark:hover:shadow-none"
                             {...heroCtaDebugAttributes('start_planning')}
                         >
                             {t('common:buttons.startPlanning')}

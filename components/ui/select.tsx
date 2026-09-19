@@ -13,8 +13,8 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={[
-      'flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900',
-      'outline-none ring-offset-white placeholder:text-slate-500 focus-visible:border-accent-400',
+      'flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-border dark:bg-card dark:text-foreground',
+      'outline-none ring-offset-white placeholder:text-slate-500 focus-visible:border-accent-400 dark:placeholder:text-muted-foreground',
       'disabled:cursor-not-allowed disabled:opacity-50',
       className || '',
     ].join(' ')}
@@ -24,7 +24,7 @@ const SelectTrigger = React.forwardRef<
         trigger otherwise pushes the caret past the trigger's edge. */}
     <span className="min-w-0 flex-1 truncate text-start">{children}</span>
     <SelectPrimitive.Icon asChild>
-      <CaretDown weight="bold" className="size-4 shrink-0 text-slate-500" />
+      <CaretDown weight="bold" className="size-4 shrink-0 text-slate-500 dark:text-muted-foreground" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
@@ -37,7 +37,7 @@ const SelectScrollUpButton = React.forwardRef<
   <SelectPrimitive.ScrollUpButton
     ref={ref}
     className={[
-      'flex cursor-pointer items-center justify-center py-1 text-slate-600',
+      'flex cursor-pointer items-center justify-center py-1 text-slate-600 dark:text-muted-foreground',
       className || '',
     ].join(' ')}
     {...props}
@@ -54,7 +54,7 @@ const SelectScrollDownButton = React.forwardRef<
   <SelectPrimitive.ScrollDownButton
     ref={ref}
     className={[
-      'flex cursor-pointer items-center justify-center py-1 text-slate-600',
+      'flex cursor-pointer items-center justify-center py-1 text-slate-600 dark:text-muted-foreground',
       className || '',
     ].join(' ')}
     {...props}
@@ -72,7 +72,7 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={[
-        'relative z-[1755] max-h-80 min-w-[10rem] overflow-hidden rounded-md border border-slate-200 bg-white text-slate-900 shadow-lg',
+        'relative z-[1755] max-h-80 min-w-[10rem] overflow-hidden rounded-md border border-slate-200 bg-white text-slate-900 shadow-lg dark:border-border dark:bg-card dark:text-foreground',
         'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
         position === 'popper'
           ? 'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1'
@@ -106,7 +106,7 @@ const SelectLabel = React.forwardRef<
   <SelectPrimitive.Label
     ref={ref}
     className={[
-      'px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500',
+      'px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-muted-foreground',
       className || '',
     ].join(' ')}
     {...props}
@@ -125,7 +125,7 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={[
-      'relative flex w-full cursor-pointer select-none items-center rounded-sm py-2 text-sm text-slate-800 outline-none',
+      'relative flex w-full cursor-pointer select-none items-center rounded-sm py-2 text-sm text-slate-800 outline-none dark:text-foreground',
       indicatorPosition === 'right' ? 'pl-2 pr-8' : 'pl-8 pr-2',
       'data-[highlighted]:bg-accent-50 data-[highlighted]:text-accent-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className || '',
@@ -155,7 +155,7 @@ const SelectSeparator = React.forwardRef<
   <SelectPrimitive.Separator
     ref={ref}
     className={[
-      '-mx-1 my-1 h-px bg-slate-100',
+      '-mx-1 my-1 h-px bg-slate-100 dark:bg-secondary',
       className || '',
     ].join(' ')}
     {...props}

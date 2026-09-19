@@ -259,7 +259,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                         onMouseEnter={onMyTripsIntent}
                                         onFocus={onMyTripsIntent}
                                         onTouchStart={onMyTripsIntent}
-                                        className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-[scale,background-color] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96]"
+                                        className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-[scale,background-color] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96] dark:bg-accent-400 dark:text-background dark:shadow-none dark:hover:bg-accent-300"
                                         {...mobileNavDebugAttributes('my_trips')}
                                     >
                                         {t('nav.myTrips')}
@@ -268,7 +268,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                     <NavLink
                                         to={buildLocalizedCreateTripPath(activeLocale)}
                                         onClick={() => handleNavClick('create_trip')}
-                                        className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-[scale,background-color] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96]"
+                                        className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-[scale,background-color] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96] dark:bg-accent-400 dark:text-background dark:shadow-none dark:hover:bg-accent-300"
                                         {...mobileNavDebugAttributes('create_trip')}
                                     >
                                         {t('nav.createTrip')}

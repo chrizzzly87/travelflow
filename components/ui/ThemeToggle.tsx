@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Moon, Sun } from 'lucide-react';
 
@@ -26,7 +26,25 @@ export const ThemeToggle = forwardRef<HTMLButtonElement, ThemeToggleProps>(
     ({ variant = 'bar', className, analyticsSurface = 'nav' }, ref) => {
         const { t } = useTranslation('common');
         const { resolvedTheme, toggle } = useTheme();
-        const isDark = resolvedTheme === 'dark';
+
+        // Two-pass render, the same pattern SiteHeader uses for its active-link
+        // underline, and for the same reason.
+        //
+        // Marketing routes are prerendered, and preact's hydrate() does not patch
+        // attributes or text on DOM that already exists — it only diffs structure.
+        // So a first client render that disagrees with the prerendered markup is
+        // silently ignored: the button keeps the build-time label, icon and
+        // aria-pressed, and only corrects itself once something else forces a real
+        // re-render (resizing the window, for instance).
+        //
+        // Prerender has no window, so it always emits the light state. Rendering
+        // that same light state on the first client pass and flipping afterwards
+        // turns the correction into a genuine post-hydration update, which preact
+        // does apply.
+        const [hydrated, setHydrated] = useState(false);
+        useEffect(() => { setHydrated(true); }, []);
+
+        const isDark = hydrated && resolvedTheme === 'dark';
 
         const label = isDark ? t('nav.themeToLight') : t('nav.themeToDark');
 
