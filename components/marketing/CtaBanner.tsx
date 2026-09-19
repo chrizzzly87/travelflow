@@ -21,7 +21,7 @@ export const CtaBanner: React.FC = () => {
                     onClick={() =>
                         trackEvent('home__bottom_cta')
                     }
-                    className="relative mt-8 inline-block rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-[scale,background-color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:bg-accent-50 hover:shadow-xl active:scale-[0.96]"
+                    className="relative mt-8 inline-block rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-[scale,background-color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:bg-accent-50 hover:shadow-xl active:scale-[0.96] dark:bg-card dark:text-accent-300 dark:hover:bg-accent-400/15"
                     {...getAnalyticsDebugAttributes('home__bottom_cta')}
                 >
                     {t('common:buttons.startPlanningFree')}

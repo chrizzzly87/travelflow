@@ -35,3 +35,6 @@ public/images/og/site/generated/
 .promptfoo/
 artifacts/promptfoo/
 test-results
+
+# Superpowers brainstorming scratch
+.superpowers/

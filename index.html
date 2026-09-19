@@ -32,6 +32,46 @@
     <!-- Default Latin fonts: static preloads start during HTML parse (JS-injected ones start after). -->
     <link rel="preload" href="/fonts/bricolage-grotesque/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/space-grotesk/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <script data-tf-theme-boot>
+      (() => {
+        // Restore the chosen theme before the first paint.
+        //
+        // This has to be inline and synchronous. The marketing routes are
+        // prerendered by scripts/prerender-routes.mjs, so the served HTML is
+        // already painted markup; doing this from the bundle would mean every
+        // prerendered page comes up light and snaps to dark after hydration.
+        //
+        // No stored value means "follow the device", which is also the default
+        // for someone who has never touched the toggle.
+        //
+        // These three literals are duplicated from THEME_BOOT_KEYS in
+        // contexts/theme/themeStore.ts. tests/unit/themeBootScript.test.ts reads
+        // this file and asserts they still match, so the pair cannot drift.
+        try {
+          let stored = null;
+          try {
+            stored = window.localStorage.getItem('tf_theme_preference_v1');
+          } catch (e) {
+            // Private mode, blocked storage, or a locked-down embed.
+          }
+          const dark =
+            stored === 'dark' ||
+            (stored !== 'light' &&
+              typeof window.matchMedia === 'function' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          const root = document.documentElement;
+          root.setAttribute('data-dark-tone', 'warm');
+          if (dark) {
+            root.classList.add('dark');
+            root.style.colorScheme = 'dark';
+          } else {
+            root.style.colorScheme = 'light';
+          }
+        } catch (e) {
+          // Never let the theme stop the page from rendering.
+        }
+      })();
+    </script>
     <script>
       (() => {
         // The default Latin fonts are statically preloaded above; this script only

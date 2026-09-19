@@ -24,7 +24,7 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
   const isPlain = variant === 'plain';
 
   return (
-    <div className={isPlain ? '' : 'rounded-2xl border border-slate-200 bg-white'}>
+    <div className={isPlain ? '' : 'rounded-2xl border border-slate-200 bg-white dark:border-border dark:bg-card'}>
       {items.map((item, index) => {
         const isOpen = openItemIds.includes(item.id);
         const panelId = `faq-panel-${item.id}`;
@@ -43,14 +43,14 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
               aria-controls={panelId}
               onClick={() => onToggle(item, !isOpen)}
               className={`flex w-full items-center justify-between gap-3 text-left text-slate-900 transition-colors ${
-                isPlain ? 'hover:text-slate-700' : 'hover:bg-slate-50'
+                isPlain ? 'hover:text-slate-700 dark:hover:text-foreground' : 'hover:bg-slate-50 dark:hover:bg-secondary'
               } ${
                 compact ? 'py-3' : 'py-4'
               }`}
               style={isPlain ? { paddingInline: 0 } : undefined}
               {...(getItemButtonProps ? getItemButtonProps(item, isOpen) : {})}
             >
-              <span className={`max-w-[100ch] font-semibold ${isOpen ? 'text-accent-700' : ''} ${compact ? 'text-sm' : 'text-[1.02rem]'}`}>
+              <span className={`max-w-[100ch] font-semibold ${isOpen ? 'text-accent-700 dark:text-accent-300' : ''} ${compact ? 'text-sm' : 'text-[1.02rem]'}`}>
                 {item.question}
               </span>
               <CaretDown

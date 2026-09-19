@@ -88,7 +88,7 @@ export const TranslationNoticeBanner: React.FC = () => {
                         sub_reason: CONTACT_PREFILL_SUB_REASON,
                         source: CONTACT_PREFILL_SOURCE,
                     })}
-                    className="inline-flex min-h-10 shrink-0 items-center rounded-lg border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 sm:px-2.5"
+                    className="inline-flex min-h-10 shrink-0 items-center rounded-lg border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 sm:px-2.5 dark:bg-card"
                     {...getAnalyticsDebugAttributes('i18n_notice__contact', {
                         locale: activeLocale,
                         reason: CONTACT_PREFILL_REASON,
