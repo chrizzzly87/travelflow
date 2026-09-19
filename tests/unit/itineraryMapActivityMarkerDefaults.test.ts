@@ -12,9 +12,12 @@ const readComponent = (file: string): string => readFileSync(
 describe('itinerary map activity markers', () => {
   it('shows activity markers by default', () => {
     const source = readComponent('ItineraryMap.tsx');
-    expect(source).toContain('useState(true);');
-    expect(source).not.toContain('const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(false)');
-    expect(source).toContain('const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(true)');
+    // The map takes the setting from the customize sheet when it is given one
+    // and otherwise keeps its own, so the default lives on the uncontrolled
+    // state and the controlled value falls back to it.
+    expect(source).toContain('const [uncontrolledActivityMarkersEnabled, setUncontrolledActivityMarkersEnabled] = useState(true)');
+    expect(source).toContain('const activityMarkersEnabled = showActivityMarkers ?? uncontrolledActivityMarkersEnabled;');
+    expect(source).not.toContain('useState(false);\n    const activityMarkersEnabled');
   });
 
   it('keeps the marker zoom gate above a country-wide view but below city focus', () => {

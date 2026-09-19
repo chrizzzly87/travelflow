@@ -514,6 +514,185 @@
       "openDetails": "Details öffnen",
       "close": "Schließen",
       "popupLabel": "Aktivitätsdetails"
+    },
+    "mapCustomize": {
+      "activityMarkers": {
+        "description": "Die Orte, die du besuchen wolltest.",
+        "label": "Aktivitäts-Pins"
+      },
+      "arrows": {
+        "description": "Zeigt, in welche Richtung die Reise läuft.",
+        "label": "Richtungspfeile"
+      },
+      "base": {
+        "description": "Eine gezeichnete Karte oder Satellitenbilder.",
+        "label": "Basis",
+        "map": "Karte",
+        "satellite": "Satellit"
+      },
+      "boundaries": {
+        "description": "Grenzen innerhalb eines Landes, nicht nur dazwischen.",
+        "label": "Regionsgrenzen"
+      },
+      "buildings": {
+        "description": "Erhöhte Gebäude, am besten mit etwas Neigung.",
+        "label": "3D-Gebäude"
+      },
+      "cityFocus": {
+        "description": "Rahmt die Stadt auf deinem eigenen Plan ein und blendet den Rest der Reise aus.",
+        "label": "Stadt bei Auswahl fokussieren"
+      },
+      "cityNames": {
+        "description": "Beschriftet jeden Stopp deiner Route.",
+        "label": "Städtenamen"
+      },
+      "close": "Schließen",
+      "colorMode": {
+        "brand": "Ein Akzent",
+        "label": "Farbe",
+        "trip": "Stadtfarben"
+      },
+      "colorTheme": {
+        "default": "Voll",
+        "description": "Wie viel Farbe die Karte trägt.",
+        "faded": "Gedämpft",
+        "label": "Farbe",
+        "monochrome": "Mono",
+        "satelliteNote": "Satellitenbilder haben ihre eigene Farbe."
+      },
+      "copied": "Kopiert",
+      "copyPreset": "Kopieren",
+      "dashed": {
+        "description": "Gestrichelt statt durchgezogen.",
+        "label": "Gestrichelte Linien"
+      },
+      "description": "Wird bei dieser Reise gespeichert, während du sie änderst.",
+      "dimPast": {
+        "description": "Rückt bereits vergangene Tage in den Hintergrund.",
+        "label": "Vergangene Tage abschwächen"
+      },
+      "globe": {
+        "description": "Wölbt die Welt. Am besten bei langer Reise und großer Karte.",
+        "label": "Globusansicht"
+      },
+      "googleOnly": "Verfügbar mit Google Maps.",
+      "group": {
+        "features": "Elemente",
+        "labels": "Beschriftungen",
+        "pins": "Deine Pins",
+        "routes": "Routenlinien"
+      },
+      "handoff": {
+        "apple": "Apple Maps",
+        "description": "Welche App zuerst angeboten wird, wenn du einen Ort öffnest.",
+        "google": "Google Maps",
+        "label": "Orte öffnen in"
+      },
+      "light": {
+        "auto": "Automatisch",
+        "dawn": "Morgengrauen",
+        "day": "Tag",
+        "description": "Tageszeit, für die die Karte beleuchtet ist. Automatisch folgt deinem Gerät.",
+        "dusk": "Dämmerung",
+        "googleNote": "Google Maps kennt nur Tag und Nacht.",
+        "label": "Licht",
+        "night": "Nacht"
+      },
+      "mapboxOnly": "Verfügbar mit Mapbox.",
+      "mapboxUnavailableHere": "Braucht Mapbox, das hier nicht eingerichtet ist.",
+      "paths": {
+        "description": "Fuß- und Gehwege.",
+        "label": "Fußwege"
+      },
+      "pitch": {
+        "description": "Über die Karte blicken statt senkrecht darauf.",
+        "flat": "Flach",
+        "label": "Neigung"
+      },
+      "placeLabels": {
+        "description": "Orte und Städte auf der Basiskarte.",
+        "label": "Ortsnamen"
+      },
+      "poiLabels": {
+        "description": "Geschäfte, Sehenswürdigkeiten und Orte, die du nicht geplant hast.",
+        "label": "Sehenswertes"
+      },
+      "preset": {
+        "label": "Voreinstellungen"
+      },
+      "renderer": {
+        "auto": "Automatisch",
+        "description": "Welche Karte die App zeichnet.",
+        "google": "Google",
+        "label": "Kartenanbieter",
+        "mapbox": "Mapbox",
+        "mapboxUnavailable": "Mapbox ist hier nicht eingerichtet, deshalb wird Google verwendet."
+      },
+      "reset": "Zurücksetzen",
+      "roadLabels": {
+        "description": "Nah nützlich, aus der Ferne unruhig.",
+        "label": "Straßennamen"
+      },
+      "roads": {
+        "description": "Ausschalten für eine aufgeräumte Karte nur mit deiner Reise.",
+        "label": "Straßen und Nahverkehr"
+      },
+      "routeMode": {
+        "description": "Den Straßen folgen oder direkt zwischen den Stopps zeichnen.",
+        "label": "Form",
+        "realistic": "Straßen folgen",
+        "simple": "Direkt"
+      },
+      "saveAsDefault": "Als meine Voreinstellung speichern",
+      "saved": "Gespeichert",
+      "switchToMapbox": "Zu Mapbox wechseln",
+      "tab": {
+        "camera": "Kamera",
+        "detail": "Details",
+        "look": "Optik",
+        "trip": "Reise"
+      },
+      "terrain": {
+        "description": "Hebt Hügel und Berge hervor.",
+        "label": "Gelände"
+      },
+      "thickness": {
+        "label": "Dicke",
+        "normal": "Normal",
+        "thick": "Dick",
+        "thin": "Dünn"
+      },
+      "title": "Karte anpassen",
+      "traffic": {
+        "description": "Aktuelle Lage auf den Straßen.",
+        "label": "Live-Verkehr"
+      },
+      "transitLabels": {
+        "description": "Haltestellen und Bahnhöfe mit Namen.",
+        "label": "Haltestellennamen"
+      },
+      "transitLines": {
+        "description": "U-Bahn- und Bahnlinien auf der Karte.",
+        "label": "Nahverkehrslinien"
+      },
+      "style": {
+        "standard": "Standard",
+        "minimal": "Minimal",
+        "clean": "Aufgeräumt",
+        "dark": "Dunkel",
+        "cleanDark": "Aufgeräumt dunkel",
+        "satellite": "Satellit"
+      },
+      "showWholeJourney": "Ganze Reise zeigen",
+      "open": "Karte anpassen",
+      "presetSet": {
+        "label": "Starte mit",
+        "default": "Standard",
+        "detailed": "Detailliert",
+        "minimalistic": "Minimal",
+        "mine": "Meins",
+        "customNote": "Deine eigene Mischung aus Einstellungen."
+      }
     }
   },
   "tripRouteShell": {

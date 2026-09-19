@@ -514,6 +514,185 @@
       "openDetails": "세부정보 열기",
       "close": "닫기",
       "popupLabel": "액티비티 세부정보"
+    },
+    "mapCustomize": {
+      "activityMarkers": {
+        "description": "방문하려고 계획한 장소입니다.",
+        "label": "액티비티 핀"
+      },
+      "arrows": {
+        "description": "여정이 어느 방향으로 이어지는지 보여줍니다.",
+        "label": "방향 화살표"
+      },
+      "base": {
+        "description": "그린 지도 또는 위성 이미지입니다.",
+        "label": "기본",
+        "map": "지도",
+        "satellite": "위성"
+      },
+      "boundaries": {
+        "description": "국가 간 경계뿐 아니라 국가 내부의 경계도 표시합니다.",
+        "label": "지역 경계"
+      },
+      "buildings": {
+        "description": "입체 건물로, 조금 기울이면 잘 보입니다.",
+        "label": "3D 건물"
+      },
+      "cityFocus": {
+        "description": "내 계획에 맞춰 도시를 화면에 담고 나머지 여정은 숨깁니다.",
+        "label": "선택한 도시에 집중"
+      },
+      "cityNames": {
+        "description": "경로의 각 방문지에 이름을 표시합니다.",
+        "label": "도시 이름"
+      },
+      "close": "닫기",
+      "colorMode": {
+        "brand": "단일 강조 색",
+        "label": "색상",
+        "trip": "도시 색상"
+      },
+      "colorTheme": {
+        "default": "가득",
+        "description": "지도에 담기는 색의 양입니다.",
+        "faded": "옅게",
+        "label": "색상",
+        "monochrome": "흑백",
+        "satelliteNote": "위성 이미지는 고유한 색을 사용합니다."
+      },
+      "copied": "복사됨",
+      "copyPreset": "복사",
+      "dashed": {
+        "description": "실선 대신 점선으로 표시합니다.",
+        "label": "점선"
+      },
+      "description": "변경하는 대로 이 여행에 저장됩니다.",
+      "dimPast": {
+        "description": "이미 지난 날짜를 뒤로 물러나게 합니다.",
+        "label": "지난 날짜 흐리게"
+      },
+      "globe": {
+        "description": "지구를 둥글게 보여줍니다. 긴 여행과 큰 지도에 적합합니다.",
+        "label": "지구본 보기"
+      },
+      "googleOnly": "Google Maps에서 사용할 수 있습니다.",
+      "group": {
+        "features": "요소",
+        "labels": "라벨",
+        "pins": "내 핀",
+        "routes": "경로 선"
+      },
+      "handoff": {
+        "apple": "Apple Maps",
+        "description": "장소를 열 때 먼저 제안되는 앱입니다.",
+        "google": "Google Maps",
+        "label": "장소를 열 앱"
+      },
+      "light": {
+        "auto": "자동",
+        "dawn": "새벽",
+        "day": "낮",
+        "description": "지도를 비추는 시간대입니다. 자동은 기기 설정을 따릅니다.",
+        "dusk": "황혼",
+        "googleNote": "Google Maps는 낮과 밤만 지원합니다.",
+        "label": "조명",
+        "night": "밤"
+      },
+      "mapboxOnly": "Mapbox에서 사용할 수 있습니다.",
+      "mapboxUnavailableHere": "Mapbox가 필요하지만 여기에서는 설정되지 않았습니다.",
+      "paths": {
+        "description": "보행로와 산책로입니다.",
+        "label": "보행로"
+      },
+      "pitch": {
+        "description": "위에서 내려다보는 대신 비스듬히 봅니다.",
+        "flat": "평평하게",
+        "label": "기울기"
+      },
+      "placeLabels": {
+        "description": "기본 지도의 도시와 마을입니다.",
+        "label": "지명"
+      },
+      "poiLabels": {
+        "description": "계획하지 않은 상점, 명소 등의 장소입니다.",
+        "label": "관심 지점"
+      },
+      "preset": {
+        "label": "프리셋"
+      },
+      "renderer": {
+        "auto": "자동",
+        "description": "앱이 그리는 지도입니다.",
+        "google": "Google",
+        "label": "지도 제공자",
+        "mapbox": "Mapbox",
+        "mapboxUnavailable": "여기에서는 Mapbox가 설정되지 않아 Google을 사용합니다."
+      },
+      "reset": "초기화",
+      "roadLabels": {
+        "description": "가까이서는 유용하고 멀리서는 번잡합니다.",
+        "label": "도로 이름"
+      },
+      "roads": {
+        "description": "끄면 여행 경로만 보이는 깔끔한 지도가 됩니다.",
+        "label": "도로와 대중교통"
+      },
+      "routeMode": {
+        "description": "도로를 따라가거나 방문지 사이를 직선으로 잇습니다.",
+        "label": "모양",
+        "realistic": "도로 따라",
+        "simple": "직선"
+      },
+      "saveAsDefault": "내 프리셋으로 저장",
+      "saved": "저장됨",
+      "switchToMapbox": "Mapbox로 전환",
+      "tab": {
+        "camera": "카메라",
+        "detail": "세부",
+        "look": "모양",
+        "trip": "여행"
+      },
+      "terrain": {
+        "description": "언덕과 산을 입체적으로 표현합니다.",
+        "label": "지형"
+      },
+      "thickness": {
+        "label": "두께",
+        "normal": "보통",
+        "thick": "굵게",
+        "thin": "얇게"
+      },
+      "title": "지도 맞춤 설정",
+      "traffic": {
+        "description": "현재 도로 상황입니다.",
+        "label": "실시간 교통"
+      },
+      "transitLabels": {
+        "description": "정류장과 역의 이름입니다.",
+        "label": "역 이름"
+      },
+      "transitLines": {
+        "description": "지도 위의 지하철과 철도 노선입니다.",
+        "label": "대중교통 노선"
+      },
+      "style": {
+        "standard": "표준",
+        "minimal": "미니멀",
+        "clean": "깔끔",
+        "dark": "다크",
+        "cleanDark": "깔끔 다크",
+        "satellite": "위성"
+      },
+      "showWholeJourney": "전체 여정 보기",
+      "open": "지도 맞춤 설정",
+      "presetSet": {
+        "label": "시작 설정",
+        "default": "기본",
+        "detailed": "상세",
+        "minimalistic": "미니멀",
+        "mine": "내 설정",
+        "customNote": "직접 조합한 설정입니다."
+      }
     }
   },
   "tripRouteShell": {

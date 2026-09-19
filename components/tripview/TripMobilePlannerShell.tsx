@@ -14,9 +14,14 @@ import { TripMobileDayStrip } from './TripMobileDayStrip';
 import { TripMobileTransportModal } from './TripMobileTransportModal';
 import type { ITimelineItem, ITrip } from '../../types';
 
-export type TripMobileSheetSnap = 'peek' | 'half' | 'full';
+/**
+ * `hidden` is the snap that gives the map back. Without it the sheet floors at
+ * `peek`, so a traveller who wants to see their whole journey has nowhere to
+ * put the itinerary — and collapsing it kept the city selected anyway.
+ */
+export type TripMobileSheetSnap = 'hidden' | 'peek' | 'half' | 'full';
 
-const SNAP_ORDER: TripMobileSheetSnap[] = ['peek', 'half', 'full'];
+const SNAP_ORDER: TripMobileSheetSnap[] = ['hidden', 'peek', 'half', 'full'];
 
 /** How far the map slides under the sheet's rounded top edge. */
 const MAP_UNDERLAP_PX = 28;
@@ -27,6 +32,7 @@ const MAP_UNDERLAP_PX = 28;
  * sheet would overshoot them.
  */
 const SNAP_FRACTION: Record<TripMobileSheetSnap, number> = {
+    hidden: 0,
     peek: 0,
     half: 0.58,
     full: 1,
@@ -35,13 +41,18 @@ const SNAP_FRACTION: Record<TripMobileSheetSnap, number> = {
 /** Floor for the smallest snap, which has to fit the handle and the day strip. */
 const PEEK_HEIGHT_PX = 168;
 
+/** Just the drag handle, so the sheet can always be pulled back up. */
+const HIDDEN_HEIGHT_PX = 34;
+
 const SNAP_LABEL: Record<TripMobileSheetSnap, string> = {
+    hidden: 'Map only',
     peek: 'Days only',
     half: 'Half screen',
     full: 'Full screen',
 };
 
 const resolveSnapHeightPx = (snap: TripMobileSheetSnap, containerHeight: number): number => {
+    if (snap === 'hidden') return HIDDEN_HEIGHT_PX;
     if (containerHeight <= 0) return PEEK_HEIGHT_PX;
     return Math.max(PEEK_HEIGHT_PX, Math.round(containerHeight * SNAP_FRACTION[snap]));
 };
@@ -135,6 +146,13 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
         if (index >= 0) setManualSegmentIndex(index);
     }, [activeSegment, segments, selectedItemId]);
 
+    // Picking something on the map while the sheet is out of the way should
+    // bring the sheet back, otherwise the tap looks like it did nothing.
+    useEffect(() => {
+        if (!selectedItemId) return;
+        setSnap((current) => (current === 'hidden' ? 'half' : current));
+    }, [selectedItemId]);
+
     useEffect(() => {
         const container = containerRef.current;
         if (!container || typeof ResizeObserver === 'undefined') return;
@@ -165,13 +183,21 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
             trackEvent('trip_view__mobile_sheet--snap', { trip_id: tripId, snap: next });
             return next;
         });
-    }, [tripId]);
+        // Getting the sheet out of the way means wanting the whole journey back,
+        // so the selection goes with it. Leaving a city selected here was what
+        // made a collapsed sheet feel stuck on one place.
+        if (next === 'hidden') onSelect(null);
+    }, [onSelect, tripId]);
 
     // One control, because the sheet only ever has one useful next state: grow
     // while there is room, and collapse straight back once it is full.
     const isFullyExpanded = snap === 'full';
     const toggleSheet = useCallback(() => {
-        applySnap(isFullyExpanded ? 'peek' : (snap === 'peek' ? 'half' : 'full'));
+        if (isFullyExpanded) {
+            applySnap('peek');
+            return;
+        }
+        applySnap(snap === 'peek' ? 'half' : 'full');
     }, [applySnap, isFullyExpanded, snap]);
 
     const dragRef = useRef<{ pointerId: number; startY: number; startHeight: number; moved: boolean } | null>(null);

@@ -41,7 +41,11 @@ export interface TripMapProviderTuning {
   };
   selection: {
     activityFocusZoom: number;
+    /** Fallback only: a city with no pinned places of its own has nothing to fit. */
     cityFocusZoom: number;
+    /** Band a city `fitBounds` is clamped into, so neither a sprawling nor a tiny city breaks the frame. */
+    cityFitMinZoom: number;
+    cityFitMaxZoom: number;
     queryFocusZoom: number;
     safeInsetRatio: number;
     floatingSafeInsetRatio: number;
@@ -138,9 +142,10 @@ const GOOGLE_TRIP_MAP_TUNING: TripMapProviderTuning = {
   },
   selection: {
     activityFocusZoom: 15.4,
-    // Street level: a selected city should land on the place itself, not on the
-    // region around it, so the map answers "where am I today" at a glance.
-    cityFocusZoom: 14,
+    // Only reached when the city holds no pinned activity to frame.
+    cityFocusZoom: 12.6,
+    cityFitMinZoom: 9.6,
+    cityFitMaxZoom: 14.6,
     queryFocusZoom: 5,
     safeInsetRatio: 0.28,
     floatingSafeInsetRatio: 0.24,
@@ -242,7 +247,9 @@ const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
   },
   selection: {
     activityFocusZoom: 15.2,
-    cityFocusZoom: 13.8,
+    cityFocusZoom: 12.4,
+    cityFitMinZoom: 9.4,
+    cityFitMaxZoom: 14.4,
     queryFocusZoom: 4.7,
     safeInsetRatio: 0.24,
     floatingSafeInsetRatio: 0.16,

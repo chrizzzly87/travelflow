@@ -2,8 +2,19 @@ import React, { useCallback, useEffect, useLayoutEffect, useState, useMemo, useR
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type mapboxgl from 'mapbox-gl';
-import { ActivityType, ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
-import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2, Tag, TagsIcon } from 'lucide-react';
+import {
+    ActivityType,
+    ITimelineItem,
+    MapBaseSurface,
+    MapColorMode,
+    MapColorTheme,
+    MapLightPreset,
+    MapStyle,
+    RouteFailureReason,
+    RouteMode,
+    RouteStatus,
+} from '../types';
+import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2, Route, Tag, TagsIcon } from 'lucide-react';
 import { MapPinArea } from '@phosphor-icons/react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName, pickPrimaryActivityType } from '../utils';
@@ -14,7 +25,11 @@ import { ActivityTypeIcon } from './ActivityTypeVisuals';
 import { ActivityMapPopup } from './maps/ActivityMapPopup';
 import { useMapMarkerAnchor } from './maps/useMapMarkerAnchor';
 import { getActivityTypePaletteParts } from './ActivityTypeVisualsUtils';
-import { getMapSurfaceBackgroundColor, GOOGLE_BASEMAP_HIDDEN_STYLES } from '../services/mapRendererVisualStyleService';
+import {
+    getMapSurfaceBackgroundColor,
+    GOOGLE_BASEMAP_HIDDEN_STYLES,
+    type MapboxBasemapDetailOverrides,
+} from '../services/mapRendererVisualStyleService';
 import { MapboxBasemapSync } from './maps/MapboxBasemapSync';
 import { isMapboxStyleReadyForRuntimeMutations } from './maps/mapboxBasemapUtils';
 import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
@@ -57,6 +72,11 @@ import {
 import { GOOGLE_ROUTES_COMPUTE_FIELDS, computeGoogleRouteLeg, loadGoogleRouteRuntime } from '../services/routeService';
 import { isFiniteLatLngLiteral } from '../shared/coordinateUtils';
 import type { MapImplementation } from '../shared/mapRuntime';
+import {
+    clampCityFocusZoom,
+    resolveActivityOwnerCity,
+    resolveCityFocusCamera,
+} from './maps/tripMapCityFraming';
 
 interface ItineraryMapProps {
     items: ITimelineItem[];
@@ -86,6 +106,55 @@ interface ItineraryMapProps {
     onMapColorModeChange?: (mode: MapColorMode) => void;
     isPaywalled?: boolean;
     viewTransitionName?: string;
+    /**
+     * Frame a selected city on its own plan and drop the rest of the journey
+     * while it is selected. Off restores the previous constant-zoom behaviour.
+     */
+    cityFocusMode?: boolean;
+    /** Lets go of the current selection, restoring the whole-journey view. */
+    onClearSelection?: () => void;
+    /** Opens the customize sheet. Absent hides the control entirely. */
+    onOpenCustomize?: () => void;
+    isCustomizeOpen?: boolean;
+    /**
+     * Controlled by the customize sheet when given. Left uncontrolled the map
+     * keeps its own toggle, which is what the standalone print preview uses.
+     */
+    showActivityMarkers?: boolean;
+    onShowActivityMarkersChange?: (enabled: boolean) => void;
+    /** What the customize sheet turned on or off on top of the chosen style. */
+    basemapDetail?: MapboxBasemapDetailOverrides;
+    /**
+     * The look as its three axes. Mapbox takes these directly; `activeStyle`
+     * stays the nearest named style, which is all Google can render.
+     */
+    mapLookAxes?: {
+        base: MapBaseSurface;
+        colorTheme: MapColorTheme;
+        lightPreset: Exclude<MapLightPreset, 'auto'>;
+    };
+    /**
+     * Which day of the trip today is, as an offset from its start. Null when
+     * the trip is not running, which is what switches past-day fading off.
+     */
+    todayDayOffset?: number | null;
+    /** What the trip itself draws on top of the basemap. */
+    tripOverlay?: {
+        dimPastDays?: boolean;
+        showRouteArrows?: boolean;
+        dashedRoutes?: boolean;
+        showTraffic?: boolean;
+        showTransitLines?: boolean;
+    };
+    /** Globe instead of the tuning's resting projection. Mapbox only. */
+    useGlobeProjection?: boolean;
+    showTerrain?: boolean;
+    /** Camera tilt in degrees. Mapbox only; Google ignores it. */
+    mapPitch?: number;
+    /** Multiplier on the route stroke, so a busy map can be thinned out. */
+    routeLineWeight?: number;
+    /** Localised by the owner: this component has no translation context. */
+    customizeLabel?: string;
 }
 
 const MAP_STYLES = {
@@ -945,21 +1014,8 @@ type ResolvedActivityMarker = {
     baseCoordinates: google.maps.LatLngLiteral;
     position: google.maps.LatLngLiteral;
     coordinateSource: 'activity' | 'city';
-};
-
-const resolveActivityOwnerCity = (
-    activity: ITimelineItem,
-    cityItems: ITimelineItem[],
-): ITimelineItem | null => {
-    const directOwner = cityItems.find((city) => (
-        activity.startDateOffset >= city.startDateOffset
-        && activity.startDateOffset < city.startDateOffset + Math.max(city.duration, 0)
-    ));
-    if (directOwner) return directOwner;
-
-    const previousCity = [...cityItems].reverse().find((city) => city.startDateOffset <= activity.startDateOffset);
-    if (previousCity) return previousCity;
-    return cityItems[0] || null;
+    /** Last day of the trip this activity occupies, for past-day fading. */
+    endDayOffset: number;
 };
 
 const resolveActivityMarkerPositions = (
@@ -981,6 +1037,7 @@ const resolveActivityMarkerPositions = (
         type: ActivityType;
         baseCoordinates: google.maps.LatLngLiteral;
         coordinateSource: 'activity' | 'city';
+        endDayOffset: number;
     }> = [];
     for (const activity of activities) {
         const activityCoordinates = isFiniteLatLngLiteral(activity.coordinates) ? activity.coordinates : null;
@@ -994,6 +1051,7 @@ const resolveActivityMarkerPositions = (
             type: primaryType,
             baseCoordinates,
             coordinateSource: activityCoordinates ? 'activity' : 'city',
+            endDayOffset: activity.startDateOffset + Math.max(activity.duration, 0),
         });
     }
 
@@ -1425,6 +1483,21 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     layoutMode, 
     onLayoutChange, 
     showLayoutControls = true,
+    cityFocusMode = true,
+    onClearSelection,
+    onOpenCustomize,
+    isCustomizeOpen = false,
+    customizeLabel = 'Customize map',
+    showActivityMarkers,
+    onShowActivityMarkersChange,
+    basemapDetail,
+    mapLookAxes,
+    tripOverlay,
+    todayDayOffset = null,
+    useGlobeProjection = false,
+    showTerrain = false,
+    mapPitch = 0,
+    routeLineWeight = 1,
     activeStyle = 'standard',
     onStyleChange,
     routeMode = 'simple',
@@ -1480,7 +1553,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     // On by default: the zoom gate in `shouldDisplayActivityMarkers` keeps them
     // out of a country-wide view, so they only appear once the map is close
     // enough for them to mean something.
-    const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(true);
+    const [uncontrolledActivityMarkersEnabled, setUncontrolledActivityMarkersEnabled] = useState(true);
+    const activityMarkersEnabled = showActivityMarkers ?? uncontrolledActivityMarkersEnabled;
+    const toggleActivityMarkers = useCallback(() => {
+        const next = !activityMarkersEnabled;
+        if (onShowActivityMarkersChange) {
+            onShowActivityMarkersChange(next);
+            return;
+        }
+        setUncontrolledActivityMarkersEnabled(next);
+    }, [activityMarkersEnabled, onShowActivityMarkersChange]);
     const [popupActivityId, setPopupActivityId] = useState<string | null>(null);
     const [mapZoomLevel, setMapZoomLevel] = useState<number | null>(null);
     const [mapViewportSize, setMapViewportSize] = useState<{ width: number; height: number } | null>(null);
@@ -1490,7 +1572,6 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const mapZoomLevelRef = useRef<number | null>(mapZoomLevel);
     
     // Internal state for menu, but style comes from props (or defaults to standard if not provided)
-    const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
     const mapboxBasemapAvailabilityKey = `${mapboxAccessToken}::${runtime.activeSelectionKey}`;
     const mapboxBasemapAvailable = mapboxBasemapFailureKey !== mapboxBasemapAvailabilityKey;
     const shouldUseRequestedMapboxBasemap = runtime.effectiveSelection.renderer === 'mapbox' && mapboxAccessToken.length > 0;
@@ -1524,6 +1605,25 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         [items, selectedItemId]
     );
     const selectedItemIdRef = useRef<string | null>(selectedItemId ?? null);
+    /**
+     * Looking at one city. The rest of the journey — every other city marker,
+     * its label and all the connecting lines — is noise on top of the one place
+     * being read, so it comes off the map until the selection is let go.
+     */
+    const isCityFocusMode = cityFocusMode && Boolean(selectedCityId) && !selectedActivityId;
+    const showRouteArrows = tripOverlay?.showRouteArrows ?? true;
+    const dashedRoutes = tripOverlay?.dashedRoutes ?? false;
+
+    const showTrafficLayer = tripOverlay?.showTraffic ?? false;
+    /**
+     * Fading days already behind you. Only meaningful while the trip is
+     * actually running — before it starts nothing is past, and afterwards
+     * everything is, which would fade the whole map to nothing.
+     */
+    const shouldDimPastDays = Boolean(tripOverlay?.dimPastDays)
+        && typeof todayDayOffset === 'number'
+        && Number.isFinite(todayDayOffset);
+    const showTransitLinesLayer = tripOverlay?.showTransitLines ?? false;
     const selectedActivityIdRef = useRef<string | null>(selectedActivityId);
     const selectedCityIdRef = useRef<string | null>(selectedCityId);
     const selectionVersionRef = useRef(0);
@@ -1601,13 +1701,35 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }),
         [zoomEnhancedCityProfile, markerRenderTier, mapZoomLevel, nearestMarkerGapPx, tripMapProvider],
     );
-    const effectiveMarkerRenderProfile = useMemo(() => {
+    const rawMarkerRenderProfile = useMemo(() => {
         if (crowdedCityProfile === markerRenderProfile.city) return markerRenderProfile;
         return {
             ...markerRenderProfile,
             city: crowdedCityProfile,
         };
     }, [crowdedCityProfile, markerRenderProfile]);
+
+    /**
+     * Stabilised by value, not by identity.
+     *
+     * The profile is derived from the live zoom and from the gap between the
+     * nearest markers on screen, so panning and zooming produced a brand new
+     * object on almost every frame. That object is a dependency of the marker
+     * and route rebuild, which therefore tore every marker and polyline off the
+     * map and built them again — and re-ran the async route draw — while the
+     * traveller was still moving. That is the flicker where routes vanish and
+     * come back a moment later.
+     *
+     * The underlying numbers only change at the tier and zoom-band boundaries,
+     * so keying on the serialised value collapses the churn to the handful of
+     * genuine transitions.
+     */
+    const markerRenderProfileKey = JSON.stringify(rawMarkerRenderProfile);
+    const effectiveMarkerRenderProfile = useMemo(
+        () => rawMarkerRenderProfile,
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by value on purpose
+        [markerRenderProfileKey],
+    );
     const activityMarkerStylesById = useMemo(() => {
         const styles = new Map<string, { type: ActivityType; title: string }>();
         items.forEach((item) => {
@@ -1802,11 +1924,6 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [shouldHideGoogleCanvasInMixedMode]);
 
     useEffect(() => {
-        if (!mapActionsDisabled) return;
-        setIsStyleMenuOpen(false);
-    }, [mapActionsDisabled]);
-
-    useEffect(() => {
         if (isMapboxBasemapEnabled) return;
         setIsMapboxSurfaceReady(false);
     }, [isMapboxBasemapEnabled]);
@@ -1946,6 +2063,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 entry.target.removeEventListener(entry.type, entry.listener);
                 return false;
             });
+        };
+
+        /**
+         * Wraps a marker's markup so a day already behind the traveller reads as
+         * background. Done on a wrapper rather than inside each marker builder
+         * so the builders stay pure string functions with no notion of "today",
+         * and so it applies identically on both renderers.
+         */
+        const dimIfPast = (html: string, endDayOffset: number): string => {
+            if (!shouldDimPastDays || endDayOffset > (todayDayOffset as number)) return html;
+            return `<div style="opacity:0.34;filter:saturate(0.55);">${html}</div>`;
         };
 
         const createOverlayMarker = ({
@@ -2212,7 +2340,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
         const drawRoutePath = (path: google.maps.LatLngLiteral[], color: string, weight = 3) => {
             if (!isEffectActive()) return null;
-            const routeScale = Math.max(0.58, effectiveMarkerRenderProfile.routeStrokeScale);
+            // The traveller's thickness multiplier rides on top of the render
+            // profile's own scale rather than replacing it, so a dense map still
+            // thins its routes down at both ends of the slider.
+            const routeScale = Math.max(0.58, effectiveMarkerRenderProfile.routeStrokeScale)
+                * Math.max(0.5, Math.min(2, routeLineWeight));
             const arrowIcon = {
                 path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
                 fillColor: color,
@@ -2222,17 +2354,34 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 strokeWeight: 0.1,
                 scale: 3.2 * Math.max(0.72, routeScale),
             };
+            // A dashed line is drawn as repeated dot symbols with the stroke
+            // turned off, which is the only way Google renders a dash pattern.
+            const dashSymbol = {
+                path: 'M 0,-1 0,1',
+                strokeOpacity: 0.85,
+                strokeColor: color,
+                strokeWeight: Math.max(1.2, weight * routeScale),
+                scale: 2.2,
+            };
+            const routeIcons: google.maps.IconSequence[] = [];
+            if (dashedRoutes) {
+                routeIcons.push({ icon: dashSymbol as any, offset: '0', repeat: '14px' });
+            }
+            if (showRouteArrows) {
+                routeIcons.push(
+                    { icon: arrowIcon, offset: '25%' },
+                    { icon: arrowIcon, offset: '75%' },
+                );
+            }
+
             return createRoutePolylinePair({
                 path,
                 geodesic: true,
                 strokeColor: color,
-                strokeOpacity: 0.7,
+                strokeOpacity: dashedRoutes ? 0 : 0.7,
                 strokeWeight: Math.max(1.2, weight * routeScale),
                 clickable: false,
-                icons: [
-                    { icon: arrowIcon, offset: '25%' },
-                    { icon: arrowIcon, offset: '75%' }
-                ],
+                icons: routeIcons.length > 0 ? routeIcons : undefined,
                 zIndex: 40,
             });
         };
@@ -2368,7 +2517,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const brandRouteColor = '#4f46e5';
         const resolveMapColor = (colorToken: string): string =>
             mapColorMode === 'brand' ? brandRouteColor : getHexFromColorClass(colorToken);
-        const cityOverlayDescriptors = buildTripMapCityOverlayDescriptors(cities);
+        const cityOverlayDescriptors = isCityFocusMode
+            ? []
+            : buildTripMapCityOverlayDescriptors(cities);
 
         if (!isPaywalled) {
             // 2. Add Markers
@@ -2379,7 +2530,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 const cityMarkerImageUrl = resolveTripMapCityMarkerImageUrl(city);
                 const marker = createOverlayMarker({
                     position: markerPosition,
-                    html: buildTripMapCityMarkerHtml({
+                    html: dimIfPast(buildTripMapCityMarkerHtml({
                         provider: tripMapProvider,
                         index: cityIndex,
                         color: cityMarkerColor,
@@ -2388,7 +2539,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         profile: effectiveMarkerRenderProfile.city,
                         selectedOutlineColor: resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK),
                         selectedRingColor: resolveCssColorVar('--tf-accent-200', CITY_PIN_SELECTED_RING_FALLBACK),
-                    }),
+                    }), city.startDateOffset + Math.max(city.duration, 0)),
                     zIndex: resolveCityMarkerZIndex(isSelected, effectiveMarkerRenderProfile),
                     clickable: true,
                     onClick: () => onCityMarkerSelectRef.current?.(city.id),
@@ -2420,11 +2571,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 const isSelected = activityMarker.id === selectedActivityId;
                 const marker = createOverlayMarker({
                     position: activityMarker.position,
-                    html: buildActivityMarkerHtml(
-                        activityMarker.type,
-                        isSelected,
-                        activityMarker.title,
-                        effectiveMarkerRenderProfile,
+                    html: dimIfPast(
+                        buildActivityMarkerHtml(
+                            activityMarker.type,
+                            isSelected,
+                            activityMarker.title,
+                            effectiveMarkerRenderProfile,
+                        ),
+                        activityMarker.endDayOffset,
                     ),
                     zIndex: isSelected ? ACTIVITY_MARKER_SELECTED_Z_INDEX : ACTIVITY_MARKER_Z_INDEX,
                     clickable: true,
@@ -2891,7 +3045,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
              }
         };
 
-        if (!isPaywalled) {
+        if (!isPaywalled && !isCityFocusMode) {
             void drawRoutes();
         }
         return () => {
@@ -2903,7 +3057,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             clearRenderedMapVisuals();
         };
 
-    }, [activeStyle, effectiveMarkerRenderProfile, isMapboxBasemapEnabled, isMapboxSurfaceReady, isPaywalled, mapInitialized, mapRenderSignature, mapboxStyleReloadNonce, routeMode, showCityNames]); 
+    }, [activeStyle, effectiveMarkerRenderProfile, isCityFocusMode, isMapboxBasemapEnabled, isMapboxSurfaceReady, isPaywalled, mapInitialized, mapRenderSignature, mapboxStyleReloadNonce, dashedRoutes, showRouteArrows, routeLineWeight, routeMode, showCityNames]); 
 
     useEffect(() => {
         if (!mapInitialized) return;
@@ -2981,9 +3135,80 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         cancelScheduledFit();
     }, [cancelResizeAutoFitTimer, cancelScheduledFit, selectedItemId]);
 
+    /**
+     * Framing a city is a fit, not a zoom, so it must not re-run on every
+     * incidental dependency change — refitting under the traveller while they
+     * pan around inside a city is the behaviour this replaces.
+     */
+    const lastCityFrameKeyRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!selectedCityId || selectedActivityId) {
+            lastCityFrameKeyRef.current = null;
+            return;
+        }
+        if (!mapInitialized || !googleMapRef.current || !window.google?.maps) return;
+
+        const frameKey = `${selectedCityId}|${mapDockMode}|${tripMapProvider}`;
+        if (lastCityFrameKeyRef.current === frameKey) return;
+
+        const city = cities.find((item) => item.id === selectedCityId);
+        if (!city) return;
+
+        const camera = resolveCityFocusCamera({
+            city,
+            items,
+            cities,
+            provider: tripMapProvider,
+        });
+        if (!camera) return;
+        lastCityFrameKeyRef.current = frameKey;
+
+        const mapInstance = googleMapRef.current;
+        if (camera.kind === 'center') {
+            mapInstance.panTo(camera.center);
+            mapInstance.setZoom(camera.zoom);
+            return;
+        }
+
+        const bounds = new window.google.maps.LatLngBounds(
+            { lat: camera.bounds.south, lng: camera.bounds.west },
+            { lat: camera.bounds.north, lng: camera.bounds.east },
+        );
+        const liveRect = mapContainerRef.current?.getBoundingClientRect();
+        mapInstance.fitBounds(bounds, resolveMapViewportPadding({
+            provider: tripMapProvider,
+            mapDockMode,
+            mapViewportSize: liveRect && liveRect.width > 0 && liveRect.height > 0
+                ? { width: liveRect.width, height: liveRect.height }
+                : mapViewportSize,
+        }));
+
+        // `fitBounds` is free to land anywhere, and a compact city will happily
+        // take it to street level. The clamp runs once the fit has settled, and
+        // is owned by this effect: a re-run or an unmount before the fit settles
+        // must not zoom a camera this effect no longer controls.
+        const idleListener = window.google.maps.event.addListenerOnce(mapInstance, 'idle', () => {
+            const clamped = clampCityFocusZoom(mapInstance.getZoom?.(), camera);
+            if (clamped !== null) mapInstance.setZoom(clamped);
+        });
+        return () => window.google?.maps?.event?.removeListener(idleListener);
+    }, [
+        cities,
+        items,
+        mapDockMode,
+        mapInitialized,
+        mapViewportSize,
+        selectedActivityId,
+        selectedCityId,
+        tripMapProvider,
+    ]);
+
     useEffect(() => {
         if (!googleMapRef.current || !window.google?.maps) return;
-        
+        // Cities are framed by the effect above; this one only chases activities.
+        if (!selectedActivityId) return;
+
         const t = setTimeout(() => {
             if (!googleMapRef.current) return;
             const focusTarget = resolveSelectedMapFocusPosition({
@@ -3035,6 +3260,66 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }, 100);
         return () => clearTimeout(t);
     }, [cityMapSignature, mapDockMode, mapInitialized, resolvedActivityMarkerPositionById, selectedActivityId, selectedCityId, tripMapProvider]);
+
+    /**
+     * Tapping empty map lets go too, which is the gesture people try first.
+     * Markers sit in `floatPane`/`overlayMouseTarget`, above the basemap, so
+     * they swallow their own clicks and this only ever fires on bare map.
+     *
+     * Both renderers need wiring: with Mapbox active the Google canvas carries
+     * `pointer-events-none`, so its click never fires and the Mapbox canvas is
+     * the one receiving the gesture.
+     */
+    useEffect(() => {
+        if (!isCityFocusMode || !onClearSelection || !mapInitialized) return;
+        const googleMap = googleMapRef.current;
+        const mapsEvent = window.google?.maps?.event;
+        if (!googleMap || !mapsEvent) return;
+
+        const listener = googleMap.addListener('click', () => onClearSelection());
+        return () => mapsEvent.removeListener(listener);
+    }, [isCityFocusMode, mapInitialized, onClearSelection]);
+
+    useEffect(() => {
+        if (!isCityFocusMode || !onClearSelection || !mapInitialized) return;
+        if (!isMapboxBasemapEnabled) return;
+        const mapboxMap = mapboxMapRef.current;
+        if (!mapboxMap) return;
+
+        const handleMapboxClick = () => onClearSelection();
+        mapboxMap.on('click', handleMapboxClick);
+        return () => mapboxMap.off('click', handleMapboxClick);
+    }, [isCityFocusMode, isMapboxBasemapEnabled, mapInitialized, onClearSelection]);
+
+    /**
+     * Google's own traffic and transit layers.
+     *
+     * Both are Google-only and both are attached to the Google map instance, so
+     * they are detached while Mapbox is drawing — the Google tile pane is hidden
+     * then, and a layer painted onto it would simply be invisible while still
+     * costing tiles.
+     */
+    useEffect(() => {
+        if (!mapInitialized || !window.google?.maps?.TrafficLayer) return;
+        const googleMap = googleMapRef.current;
+        if (!googleMap) return;
+        if (!showTrafficLayer || isMapboxBasemapEnabled) return;
+
+        const layer = new window.google.maps.TrafficLayer();
+        layer.setMap(googleMap);
+        return () => layer.setMap(null);
+    }, [isMapboxBasemapEnabled, mapInitialized, showTrafficLayer]);
+
+    useEffect(() => {
+        if (!mapInitialized || !window.google?.maps?.TransitLayer) return;
+        const googleMap = googleMapRef.current;
+        if (!googleMap) return;
+        if (!showTransitLinesLayer || isMapboxBasemapEnabled) return;
+
+        const layer = new window.google.maps.TransitLayer();
+        layer.setMap(googleMap);
+        return () => layer.setMap(null);
+    }, [isMapboxBasemapEnabled, mapInitialized, showTransitLinesLayer]);
 
     // Fit Bounds
     const handleFit = () => {
@@ -3271,6 +3556,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     mapStyle={activeStyle}
                     mapDockMode={mapDockMode}
                     mapViewportSize={mapViewportSize}
+                    detailOverrides={basemapDetail}
+                    lookAxes={mapLookAxes}
+                    preferGlobeProjection={useGlobeProjection}
+                    showTerrain={showTerrain}
+                    pitch={mapPitch}
                     interactive
                     onLoadError={handleMapboxBasemapError}
                     onMapReadyChange={handleMapboxMapReadyChange}
@@ -3323,6 +3613,28 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 </div>
             )}
             
+            {/*
+              * The way out of a focused city. Bottom-centre rather than beside
+              * the control stack: on a phone this has to be reachable with the
+              * thumb that is already holding the device, and it sits above the
+              * itinerary sheet so a half-open sheet never buries it.
+              */}
+            {isCityFocusMode && onClearSelection && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-4 z-[41] flex justify-center px-4">
+                    <button
+                        type="button"
+                        onClick={onClearSelection}
+                        data-testid="map-clear-city-focus"
+                        data-floating-map-control="true"
+                        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/95 ps-3 pe-4 py-2 text-xs font-semibold text-gray-700 shadow-lg backdrop-blur transition-colors hover:border-accent-300 hover:bg-white hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400"
+                        {...getAnalyticsDebugAttributes('trip_view__map_city_focus--clear', { surface: 'map_canvas' })}
+                    >
+                        <Route size={15} />
+                        Show whole journey
+                    </button>
+                </div>
+            )}
+
             {/* Controls */}
             <div data-floating-map-control="true" className="absolute top-4 end-4 z-[40] flex flex-col gap-2 pointer-events-none">
                 <div className="flex flex-col gap-2 pointer-events-auto">
@@ -3376,59 +3688,35 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         aria-label="Fit to itinerary"
                     ><Focus size={18} /></button>
                     
-                    {/* Style Switcher */}
-                    {onStyleChange && (
-                      <div className="relative">
-                          <button type="button"
-                              onClick={() => {
-                                  if (mapActionsDisabled) return;
-                                  setIsStyleMenuOpen(!isStyleMenuOpen);
-                              }}
-                              disabled={mapActionsDisabled}
-                              className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
-                                  mapActionsDisabled
-                                      ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
-                                      : isStyleMenuOpen
-                                          ? 'bg-accent-50 border-accent-300 text-accent-600'
-                                          : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'
-                              }`}
-                              aria-label="Map style"
-                          ><Layers size={18} /></button>
-                          {isStyleMenuOpen && !mapActionsDisabled && (
-                              <div className="absolute top-0 right-full mr-2 bg-white rounded-lg shadow-xl border border-gray-100 w-40 overflow-hidden flex flex-col z-20">
-                                  <button type="button" onClick={() => { onStyleChange('minimal'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'minimal' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Minimal</button>
-                                  <button type="button" onClick={() => { onStyleChange('standard'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'standard' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Standard</button>
-                                  <button type="button" onClick={() => { onStyleChange('dark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'dark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Dark</button>
-                                  <button type="button" onClick={() => { onStyleChange('clean'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'clean' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean (light)</button>
-                                  <button type="button" onClick={() => { onStyleChange('cleanDark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'cleanDark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean (dark)</button>
-                                  <button type="button" onClick={() => { onStyleChange('satellite'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'satellite' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Satellite</button>
-                                  {!isPaywalled && onRouteModeChange && (
-                                      <>
-                                          <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Routes</div>
-                                          <button type="button" onClick={() => { onRouteModeChange('simple'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'simple' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Simple</button>
-                                          <button type="button" onClick={() => { onRouteModeChange('realistic'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'realistic' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Realistic</button>
-                                      </>
-                                  )}
-                                  {onMapColorModeChange && (
-                                      <>
-                                          <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Colors</div>
-                                          <button type="button"
-                                              onClick={() => { onMapColorModeChange('trip'); setIsStyleMenuOpen(false); }}
-                                              className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${mapColorMode === 'trip' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}
-                                          >
-                                              Trip colors
-                                          </button>
-                                          <button type="button"
-                                              onClick={() => { onMapColorModeChange('brand'); setIsStyleMenuOpen(false); }}
-                                              className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${mapColorMode === 'brand' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}
-                                          >
-                                              Brand accent
-                                          </button>
-                                      </>
-                                  )}
-                              </div>
-                          )}
-                      </div>
+                    {/*
+                      * One button, one sheet. The popover this replaces was a
+                      * 40px column of 10px labels holding style, route mode and
+                      * colour — unreadable on a phone and with nowhere to put
+                      * the settings the renderers already support.
+                      */}
+                    {onOpenCustomize && (
+                        <button
+                            type="button"
+                            onClick={onOpenCustomize}
+                            disabled={mapActionsDisabled}
+                            data-testid="map-customize-button"
+                            data-floating-map-control="true"
+                            className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
+                                mapActionsDisabled
+                                    ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
+                                    : isCustomizeOpen
+                                        ? 'bg-accent-50 border-accent-300 text-accent-600'
+                                        : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'
+                            }`}
+                            aria-label={customizeLabel}
+                            aria-haspopup="dialog"
+                            aria-expanded={isCustomizeOpen}
+                            title={customizeLabel}
+                            {...getAnalyticsDebugAttributes('trip_view__map_customize--open', { surface: 'map_controls' })}
+                        >
+                            <Layers size={18} />
+                            <span className="sr-only">{customizeLabel}</span>
+                        </button>
                     )}
                     {!isPaywalled && onShowCityNamesChange && (
                         <button
@@ -3457,7 +3745,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     {!isPaywalled && (
                         <button
                             type="button"
-                            onClick={() => setActivityMarkersEnabled((current) => !current)}
+                            onClick={toggleActivityMarkers}
                             disabled={mapActionsDisabled}
                             className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
                                 mapActionsDisabled
