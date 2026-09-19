@@ -347,6 +347,40 @@ const buildSimpleSegmentPaths = (
   return paths;
 };
 
+interface RealisticLegPlan {
+  from: { lat: number; lng: number };
+  to: { lat: number; lng: number };
+  isFlight: boolean;
+  /** True when this leg gets one of the limited Directions calls. */
+  routable: boolean;
+}
+
+/**
+ * Assigns the Directions budget before any request goes out.
+ *
+ * The budget used to be spent inside the request loop, which forced the calls
+ * to run one after another: a five-stop card waited for four sequential round
+ * trips to the routing provider, and a cold render took seconds. Deciding up
+ * front keeps the same deterministic cap (the first
+ * MAX_REALISTIC_DIRECTION_LEGS routable legs, flights never spending one) while
+ * letting the fan-out happen in parallel.
+ */
+const planRealisticLegs = (
+  coords: Array<{ lat: number; lng: number }>,
+  legModes: TransportMode[],
+): RealisticLegPlan[] => {
+  let budget = MAX_REALISTIC_DIRECTION_LEGS;
+  return coords.slice(0, -1).map((from, index) => {
+    // Directions have no answer for a flight, so asking would only buy a
+    // straight-line fallback. Draw the arc and keep the paid call for a leg
+    // that can actually be routed.
+    const isFlight = isFlightLeg(legModes, index);
+    const routable = !isFlight && budget > 0;
+    if (routable) budget -= 1;
+    return { from, to: coords[index + 1], isFlight, routable };
+  });
+};
+
 const buildRealisticPaths = async (
   coords: Array<{ lat: number; lng: number }>,
   legColors: string[],
@@ -355,38 +389,26 @@ const buildRealisticPaths = async (
   legModes: TransportMode[] = [],
 ): Promise<string[]> => {
   if (coords.length < 2) return [];
-  const paths: string[] = [];
-  let calls = 0;
 
-  for (let index = 0; index < coords.length - 1; index += 1) {
-    const from = coords[index];
-    const to = coords[index + 1];
+  const plans = planRealisticLegs(coords, legModes);
+  const geometries = await Promise.all(plans.map(async (plan) => {
+    if (plan.isFlight) {
+      return { encoded: encodePolyline(buildLegGeometry(plan.from, plan.to, true)), routed: true };
+    }
+    const encodedPolyline = plan.routable
+      ? await fetchDirectionsPolyline(plan.from, plan.to, apiKey)
+      : null;
+    return encodedPolyline ? { encoded: encodedPolyline, routed: true } : { encoded: null, routed: false };
+  }));
+
+  return geometries.flatMap((geometry, index) => {
     const color = resolveLegColor(legColors, index, fallbackColor);
-
-    // Directions have no answer for a flight, so asking would only buy a
-    // straight-line fallback. Draw the arc and keep the paid call for a leg
-    // that can actually be routed.
-    if (isFlightLeg(legModes, index)) {
-      paths.push(`color:0x${color}|weight:4|enc:${encodePolyline(buildLegGeometry(from, to, true))}`);
-      continue;
+    if (geometry.routed && geometry.encoded) {
+      return [`color:0x${color}|weight:4|enc:${geometry.encoded}`];
     }
-
-    let encodedPolyline: string | null = null;
-    if (calls < MAX_REALISTIC_DIRECTION_LEGS) {
-      encodedPolyline = await fetchDirectionsPolyline(from, to, apiKey);
-      calls += 1;
-    }
-
-    if (encodedPolyline) {
-      paths.push(`color:0x${color}|weight:4|enc:${encodedPolyline}`);
-      continue;
-    }
-
-    const fallbackSegment = buildSimplePath([from, to], color);
-    if (fallbackSegment) paths.push(fallbackSegment);
-  }
-
-  return paths;
+    const fallbackSegment = buildSimplePath([plans[index].from, plans[index].to], color);
+    return fallbackSegment ? [fallbackSegment] : [];
+  });
 };
 
 const buildMapboxSimpleSegmentOverlays = (
@@ -428,34 +450,26 @@ const buildMapboxRealisticOverlays = async (
   legModes: TransportMode[] = [],
 ): Promise<string[]> => {
   if (coords.length < 2) return [];
-  const overlays: string[] = [];
-  let calls = 0;
 
-  for (let index = 0; index < coords.length - 1; index += 1) {
-    const from = coords[index];
-    const to = coords[index + 1];
-    const color = resolveLegColor(legColors, index, fallbackColor);
-
-    if (isFlightLeg(legModes, index)) {
-      overlays.push(buildMapboxPathOverlay(encodePolyline(buildLegGeometry(from, to, true)), color));
-      continue;
-    }
+  const plans = planRealisticLegs(coords, legModes);
+  const geometries = await Promise.all(plans.map(async (plan) => {
+    if (plan.isFlight) return encodePolyline(buildLegGeometry(plan.from, plan.to, true));
+    if (!plan.routable) return encodePolyline([plan.from, plan.to]);
 
     let encodedPolyline: string | null = null;
-    if (calls < MAX_REALISTIC_DIRECTION_LEGS) {
-      calls += 1;
-      if (mapboxToken) {
-        encodedPolyline = await fetchMapboxDirectionsPolyline(from, to, mapboxToken);
-      }
-      if (!encodedPolyline && googleApiKey) {
-        encodedPolyline = await fetchDirectionsPolyline(from, to, googleApiKey);
-      }
+    if (mapboxToken) {
+      encodedPolyline = await fetchMapboxDirectionsPolyline(plan.from, plan.to, mapboxToken);
     }
+    if (!encodedPolyline && googleApiKey) {
+      encodedPolyline = await fetchDirectionsPolyline(plan.from, plan.to, googleApiKey);
+    }
+    return encodedPolyline || encodePolyline([plan.from, plan.to]);
+  }));
 
-    overlays.push(buildMapboxPathOverlay(encodedPolyline || encodePolyline([from, to]), color));
-  }
-
-  return overlays;
+  return geometries.map((geometry, index) => buildMapboxPathOverlay(
+    geometry,
+    resolveLegColor(legColors, index, fallbackColor),
+  ));
 };
 
 const buildMapboxMarkerOverlays = (

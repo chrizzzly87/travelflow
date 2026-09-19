@@ -112,6 +112,26 @@ Netlify CDN  ── hit ──▶ cached WebP, no provider call, no render cost
                      └─ return the bytes with a durable cache header
 ```
 
+### What a cold render costs
+
+Measured on a Deploy Preview, five-stop trip, `routeMode=realistic`:
+
+| | Time |
+| --- | --- |
+| Cold (nothing cached for this trip state) | 1.9 – 3.5 s |
+| Warm (CDN hit) | 70 – 250 ms |
+
+The cold number is almost entirely the Directions fan-out, which is why
+`planRealisticLegs` assigns the whole budget before any request goes out and
+the calls run through one `Promise.all`. Spending the budget inside the loop
+made a five-stop card wait for four sequential round trips.
+
+A first visit to a profile whose trips have never been rendered still pays one
+cold render per card — there is no way around rendering a picture that does not
+exist yet. Every later visit, by anyone, is the warm number. If cards look slow
+on a freshly deployed preview, that is the cold column; reload and compare
+before looking for a bug.
+
 Cache headers on a successful render (`SUCCESS_CACHE_HEADERS`):
 
 | Header | Value | Why |

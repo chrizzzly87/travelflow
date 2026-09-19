@@ -310,6 +310,52 @@ describe('trip-map-preview edge function hardening', () => {
       expect(location).not.toContain(MAPBOX_DIRECTIONS_POLYLINE);
     });
 
+    it('fans out Directions in parallel (regression: a cold five-stop card waited for four round trips)', async () => {
+      let inFlight = 0;
+      let peakInFlight = 0;
+
+      const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+        const requestUrl = typeof input === 'string' ? input : input.toString();
+        if (!requestUrl.includes('api.mapbox.com/directions')) {
+          return new Response('{}', { status: 500 });
+        }
+        inFlight += 1;
+        peakInFlight = Math.max(peakInFlight, inFlight);
+        // Yield so a sequential implementation would resolve each call before
+        // starting the next, leaving the peak at 1.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        inFlight -= 1;
+        return new Response(JSON.stringify({ routes: [{ geometry: MAPBOX_DIRECTIONS_POLYLINE }] }), { status: 200 });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await upstreamUrlFor(
+        'coords=35.68,139.65|34.69,135.50|33.59,130.40|43.06,141.35|35.01,135.76&routeMode=realistic',
+      );
+
+      expect(fetchMock.mock.calls.filter(([input]) =>
+        String(input).includes('api.mapbox.com/directions')).length).toBe(4);
+      expect(peakInFlight).toBe(4);
+    });
+
+    it('keeps the Directions budget capped once the fan-out is parallel', async () => {
+      const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+        const requestUrl = typeof input === 'string' ? input : input.toString();
+        if (!requestUrl.includes('api.mapbox.com/directions')) {
+          return new Response('{}', { status: 500 });
+        }
+        return new Response(JSON.stringify({ routes: [{ geometry: MAPBOX_DIRECTIONS_POLYLINE }] }), { status: 200 });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      // 12 stops = 11 legs, but only MAX_REALISTIC_DIRECTION_LEGS may be routed.
+      const coords = Array.from({ length: 12 }, (_, index) => `${35 + index * 0.4},${139 - index * 0.4}`).join('|');
+      await upstreamUrlFor(`coords=${coords}&routeMode=realistic`);
+
+      expect(fetchMock.mock.calls.filter(([input]) =>
+        String(input).includes('api.mapbox.com/directions')).length).toBe(8);
+    });
+
     it('asks Mapbox for WebP so the cached card image is not a 256 KB PNG', async () => {
       vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 500 })));
 
