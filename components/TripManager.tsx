@@ -16,7 +16,7 @@ import { trackEvent } from '../services/analyticsService';
 import { getTripGenerationState } from '../services/tripGenerationDiagnosticsService';
 import { showAppToast } from './ui/appToast';
 import {
-  buildMiniMapUrl,
+  buildSettledMiniMapUrl,
   formatTripDateRange,
   formatTripSummaryLine,
   getTripCityItems,
@@ -558,7 +558,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
 
   const mapUrl = React.useMemo(() => {
     if (!shouldLoadMap) return null;
-    return buildMiniMapUrl(displayTrip, locale);
+    return buildSettledMiniMapUrl(displayTrip, locale);
   }, [shouldLoadMap, displayTrip, locale]);
 
   const cityStops = React.useMemo(() => getTripCityStops(displayTrip), [displayTrip]);

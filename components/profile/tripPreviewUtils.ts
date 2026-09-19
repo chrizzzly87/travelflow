@@ -14,6 +14,7 @@ import {
 } from '../../shared/mapPreviewLegModes';
 import { normalizeTransportMode, type TransportMode } from '../../shared/transportModes';
 import { getClientMapRuntimeResolution, getMapboxAccessToken } from '../../services/mapRuntimeService';
+import { resolveSettledTripMapPreviewUrl } from '../../services/tripMapPreviewSettleService';
 import { MAP_RUNTIME_CACHE_KEY_QUERY_PARAM } from '../../shared/mapRuntime';
 import { getMapboxStyleDescriptor } from '../../services/mapRendererVisualStyleService';
 import {
@@ -539,7 +540,13 @@ export const buildMiniMapUrl = (
   params.set('w', '640');
   params.set('h', '360');
   params.set('scale', '2');
-  params.set('language', mapLanguage);
+  // The preview URL is the CDN cache key, so a parameter that does not change
+  // the picture still splits the cache. Mapbox static renders ignore the
+  // language entirely; sending it anyway gave every locale its own render of
+  // the same map.
+  if (runtime.effectiveSelection.staticMaps !== 'mapbox') {
+    params.set('language', mapLanguage);
+  }
   params.set(MAP_RUNTIME_CACHE_KEY_QUERY_PARAM, runtime.activeSelectionKey);
 
   if (legColors.length > 0) {
@@ -561,3 +568,26 @@ export const buildMiniMapUrl = (
   }
   return previewPath;
 };
+
+/**
+ * The preview URL a trip card should load.
+ *
+ * `buildMiniMapUrl` answers "what does this trip look like right now", which
+ * changes with every edit. A card asks a different question: "what should I
+ * show", and the answer holds the previous picture while the trip is still
+ * moving, so a burst of edits costs one render instead of one per state. See
+ * `services/tripMapPreviewSettleService.ts` and
+ * `docs/TRIP_MAP_PREVIEW_CACHING.md`.
+ *
+ * Admin surfaces deliberately keep calling `buildMiniMapUrl`: someone
+ * inspecting a trip needs its current state, not a settled one.
+ */
+export const buildSettledMiniMapUrl = (
+  trip: ITrip,
+  mapLanguage: AppLanguage,
+  options?: MiniMapOptions
+): string | null => resolveSettledTripMapPreviewUrl({
+  tripId: trip.id,
+  updatedAt: trip.updatedAt,
+  freshUrl: buildMiniMapUrl(trip, mapLanguage, options),
+}).url;

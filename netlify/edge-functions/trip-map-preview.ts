@@ -1,6 +1,14 @@
 /**
- * Edge function that proxies Google Static Maps API requests.
- * Returns a 302 redirect to a styled map image.
+ * Edge function that renders a trip's static map preview.
+ *
+ * The rendered image is fetched here and returned as bytes, not handed to the
+ * browser as a redirect. Every parameter that changes the picture is part of
+ * the URL, so the response is a pure function of that URL and Netlify's durable
+ * CDN cache can hold it: one render per trip state, shared by every viewer,
+ * regenerated only when the trip itself changes. The redirect this replaced put
+ * the image on the provider's origin instead, which meant a fresh billed static
+ * render — and, in "realistic" mode, a fresh fan-out of Directions calls — for
+ * every visitor whose browser cache was cold.
  *
  * Query params:
  *   coords     — pipe-separated lat,lng pairs (e.g. "35.68,139.65|34.69,135.50")
@@ -160,6 +168,25 @@ const encodePolyline = (coords: Array<{ lat: number; lng: number }>): string => 
   return encoded;
 };
 
+/**
+ * Upstream budgets. A synchronous Netlify function is terminated at 60s, and a
+ * slow third-party upstream held open at the edge is how this site has taken
+ * outages before (docs/incidents/2026-02-24-edge-timeout-site-outage.md), so
+ * every call out of this function is bounded.
+ */
+const DIRECTIONS_TIMEOUT_MS = 2500;
+const UPSTREAM_IMAGE_TIMEOUT_MS = 6000;
+
+const fetchWithTimeout = async (url: string, timeoutMs: number): Promise<Response> => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
 const isFlightLeg = (legModes: TransportMode[], index: number): boolean => legModes[index] === "plane";
 
 /**
@@ -247,7 +274,7 @@ const fetchDirectionsPolyline = async (
   directionsUrl.searchParams.set("key", apiKey);
 
   try {
-    const response = await fetch(directionsUrl.toString());
+    const response = await fetchWithTimeout(directionsUrl.toString(), DIRECTIONS_TIMEOUT_MS);
     if (!response.ok) return null;
     const data = await response.json();
     const encoded = data?.routes?.[0]?.overview_polyline?.points;
@@ -271,7 +298,7 @@ const fetchMapboxDirectionsPolyline = async (
   directionsUrl.searchParams.set("access_token", mapboxToken);
 
   try {
-    const response = await fetch(directionsUrl.toString());
+    const response = await fetchWithTimeout(directionsUrl.toString(), DIRECTIONS_TIMEOUT_MS);
     if (!response.ok) return null;
     const data = await response.json();
     const encoded = data?.routes?.[0]?.geometry;
@@ -519,13 +546,17 @@ const buildMapboxStaticPreviewUrl = async ({
     overlaySegment = encodeOverlays([...straightOverlays, ...markerOverlays]);
   }
   const scaleSuffix = scale === 2 ? "@2x" : "";
+  // WebP is ~35% smaller than the PNG Mapbox returns by default, at the same
+  // pixel density: ~146 KB in place of ~256 KB for a 640x360@2x card. Mapbox
+  // static renders come in PNG or WebP only; the .jpg variants 404.
+  const formatSuffix = ".webp";
   // `auto` fits the overlays, which for a single pin means the tightest frame
   // Mapbox can draw — a rooftop with no surroundings. An explicit camera is
   // what lets one place be shown in its neighbourhood.
   const camera = zoom !== null && coords.length === 1
     ? `${coords[0].lng.toFixed(6)},${coords[0].lat.toFixed(6)},${zoom},0`
     : "auto";
-  const url = new URL(`https://api.mapbox.com/styles/v1/${styleDescriptor.owner}/${styleDescriptor.styleId}/static/${overlaySegment}/${camera}/${width}x${height}${scaleSuffix}`);
+  const url = new URL(`https://api.mapbox.com/styles/v1/${styleDescriptor.owner}/${styleDescriptor.styleId}/static/${overlaySegment}/${camera}/${width}x${height}${scaleSuffix}${formatSuffix}`);
   if (camera === "auto") url.searchParams.set("padding", "32,32,32,32");
   url.searchParams.set("access_token", mapboxToken);
   return url.toString();
@@ -546,10 +577,26 @@ const previewRateLimiter = createTokenBucketLimiter({
   refillPerSecond: RATE_LIMIT_REFILL_PER_SECOND,
 });
 
+/**
+ * A preview URL describes one picture and nothing else, so a hit stays fresh
+ * for a month at the CDN and is then served stale while it re-renders in the
+ * background. A trip edit produces a different URL rather than invalidating
+ * this one, so nothing here has to be purged.
+ */
 const SUCCESS_CACHE_HEADERS: Record<string, string> = {
-  "Cache-Control": "public, max-age=86400, s-maxage=86400",
-  "Netlify-CDN-Cache-Control": "public, durable, s-maxage=604800",
+  "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+  "Netlify-CDN-Cache-Control": "public, durable, s-maxage=2592000, stale-while-revalidate=31536000",
   "Netlify-Vary": buildPreviewNetlifyVaryValue(),
+};
+
+/**
+ * The redirect the proxy replaced, kept as the degraded path. When the render
+ * cannot be fetched here the browser can still load it from the provider, so a
+ * slow upstream costs the card its cache entry rather than its image. It is
+ * deliberately uncacheable: the next request should try the proxy again.
+ */
+const UNCACHED_REDIRECT_HEADERS: Record<string, string> = {
+  "Cache-Control": "no-store",
 };
 
 const badRequest = (message: string): Response =>
@@ -558,36 +605,34 @@ const badRequest = (message: string): Response =>
     headers: { "Cache-Control": "no-store" },
   });
 
-export default async (request: Request, context?: { ip?: string }) => {
+export type PreviewUpstreamResolution =
+  | { ok: true; url: string }
+  | { ok: false; status: number; message: string };
+
+/**
+ * Resolves the provider URL for a preview request: everything the picture
+ * depends on, and nothing about how the response is delivered. Exported so the
+ * geometry can be asserted without going through the image fetch.
+ */
+export const resolvePreviewUpstreamUrl = async (
+  request: Request,
+): Promise<PreviewUpstreamResolution> => {
   const url = new URL(request.url);
   const mapRuntime = await resolveEdgeMapRuntimeAsync(request);
   const coordsParam = url.searchParams.get("coords");
 
   if (!coordsParam) {
-    return badRequest("Missing 'coords' query parameter");
+    return { ok: false, status: 400, message: "Missing 'coords' query parameter" };
   }
 
   const parsedCoords = parsePreviewCoords(coordsParam);
   if (!parsedCoords.ok) {
-    return badRequest(parsedCoords.error);
+    return { ok: false, status: 400, message: parsedCoords.error };
   }
   const coords = parsedCoords.coords;
 
   const routeMode = parseRouteMode(url.searchParams.get("routeMode"));
   const legModes = parseMapPreviewLegModes(url.searchParams.get("legModes"));
-
-  const clientIp = resolvePreviewClientIp(request, context);
-  const requestCost = routeMode === "realistic" ? REALISTIC_ROUTE_REQUEST_COST : 1;
-  const rateDecision = previewRateLimiter.consume(clientIp, requestCost);
-  if (!rateDecision.allowed) {
-    return new Response("Too many map preview requests, slow down", {
-      status: 429,
-      headers: {
-        "Cache-Control": "no-store",
-        "Retry-After": String(rateDecision.retryAfterSeconds),
-      },
-    });
-  }
 
   const w = clampInt(Number.parseInt(url.searchParams.get("w") || "680", 10), 240, 1280);
   const h = clampInt(Number.parseInt(url.searchParams.get("h") || "288", 10), 160, 960);
@@ -637,17 +682,11 @@ export default async (request: Request, context?: { ip?: string }) => {
       googleApiKey,
     });
 
-    return new Response(null, {
-      status: 302,
-      headers: {
-        Location: mapUrl,
-        ...SUCCESS_CACHE_HEADERS,
-      },
-    });
+    return { ok: true, url: mapUrl };
   }
 
   if (!googleApiKey) {
-    return new Response("Maps API key not configured", { status: 500 });
+    return { ok: false, status: 500, message: "Maps API key not configured" };
   }
 
   const params = new URLSearchParams();
@@ -697,13 +736,78 @@ export default async (request: Request, context?: { ip?: string }) => {
 
   params.set("key", googleApiKey);
 
-  const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
+  return { ok: true, url: `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}` };
+};
 
-  return new Response(null, {
-    status: 302,
-    headers: {
-      Location: mapUrl,
-      ...SUCCESS_CACHE_HEADERS,
-    },
-  });
+/**
+ * Streams the rendered image back under our own origin. The bytes become a CDN
+ * object instead of a per-visitor call to the provider, the browser saves a
+ * redirect round trip, and the provider token stays server-side — except on the
+ * degraded path, where handing the browser the URL is the only way to show the
+ * card at all.
+ */
+const proxyPreviewImage = async (upstreamUrl: string): Promise<Response> => {
+  let upstream: Response;
+  try {
+    upstream = await fetchWithTimeout(upstreamUrl, UPSTREAM_IMAGE_TIMEOUT_MS);
+  } catch {
+    return new Response(null, {
+      status: 302,
+      headers: { Location: upstreamUrl, ...UNCACHED_REDIRECT_HEADERS },
+    });
+  }
+
+  if (!upstream.ok || !upstream.body) {
+    // A provider error must not be cached as if it were the trip's picture.
+    return new Response(null, {
+      status: 302,
+      headers: { Location: upstreamUrl, ...UNCACHED_REDIRECT_HEADERS },
+    });
+  }
+
+  const headers = new Headers(SUCCESS_CACHE_HEADERS);
+  headers.set("Content-Type", upstream.headers.get("Content-Type") || "image/png");
+  const etag = upstream.headers.get("ETag");
+  if (etag) headers.set("ETag", etag);
+
+  return new Response(upstream.body, { status: 200, headers });
+};
+
+export default async (request: Request, context?: { ip?: string }) => {
+  const url = new URL(request.url);
+  const coordsParam = url.searchParams.get("coords");
+
+  if (!coordsParam) {
+    return badRequest("Missing 'coords' query parameter");
+  }
+
+  const parsedCoords = parsePreviewCoords(coordsParam);
+  if (!parsedCoords.ok) {
+    return badRequest(parsedCoords.error);
+  }
+
+  const routeMode = parseRouteMode(url.searchParams.get("routeMode"));
+
+  const clientIp = resolvePreviewClientIp(request, context);
+  const requestCost = routeMode === "realistic" ? REALISTIC_ROUTE_REQUEST_COST : 1;
+  const rateDecision = previewRateLimiter.consume(clientIp, requestCost);
+  if (!rateDecision.allowed) {
+    return new Response("Too many map preview requests, slow down", {
+      status: 429,
+      headers: {
+        "Cache-Control": "no-store",
+        "Retry-After": String(rateDecision.retryAfterSeconds),
+      },
+    });
+  }
+
+  const upstream = await resolvePreviewUpstreamUrl(request);
+  if (!upstream.ok) {
+    return new Response(upstream.message, {
+      status: upstream.status,
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
+
+  return proxyPreviewImage(upstream.url);
 };

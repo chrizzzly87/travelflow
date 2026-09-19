@@ -79,6 +79,35 @@ describe('components/profile/tripPreviewUtils map runtime support', () => {
     expect(params.get('mr')).toBe('mggm');
   });
 
+  it('omits the map language on Mapbox so every locale shares one cached render', () => {
+    const trip = makeTrip({
+      items: [
+        makeCityItem({
+          id: 'city-1',
+          title: 'Berlin',
+          startDateOffset: 0,
+          duration: 2,
+          color: '#2563eb',
+          coordinates: { lat: 52.52, lng: 13.405 },
+        }),
+        makeCityItem({
+          id: 'city-2',
+          title: 'Prague',
+          startDateOffset: 2,
+          duration: 2,
+          color: '#16a34a',
+          coordinates: { lat: 50.0755, lng: 14.4378 },
+        }),
+      ],
+    });
+
+    const german = new URL(buildMiniMapUrl(trip, 'de')!, 'https://travelflow.local');
+    const english = new URL(buildMiniMapUrl(trip, 'en')!, 'https://travelflow.local');
+
+    expect(german.searchParams.get('language')).toBeNull();
+    expect(german.search).toBe(english.search);
+  });
+
   it('builds a direct Mapbox static preview URL when Mapbox static maps are active', () => {
     const params = new URLSearchParams();
     params.set('coords', '52.520000,13.405000|50.075500,14.437800');

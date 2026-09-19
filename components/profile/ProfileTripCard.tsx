@@ -19,7 +19,7 @@ import { getTripSpan } from '../../shared/tripSpan';
 import { Checkbox } from '../ui/checkbox';
 import { getTripGenerationState } from '../../services/tripGenerationDiagnosticsService';
 import {
-  buildMiniMapUrl,
+  buildSettledMiniMapUrl,
   formatTripDateRange,
   formatTripSummaryLine,
   getTripCityItems,
@@ -137,8 +137,11 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
 
   const cityStops = React.useMemo(() => getTripCityStops(trip), [trip]);
   const cityItems = React.useMemo(() => getTripCityItems(trip), [trip]);
+  // Resolved during render rather than in an effect: the settle decision is a
+  // read of what this device already shows for the trip, keyed by the same
+  // inputs as the URL itself.
   const mapUrl = React.useMemo(
-    () => (isNearViewport ? buildMiniMapUrl(trip, locale) : null),
+    () => (isNearViewport ? buildSettledMiniMapUrl(trip, locale) : null),
     [isNearViewport, trip, locale]
   );
   const [mapStatus, setMapStatus] = React.useState<{
