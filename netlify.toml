@@ -4,7 +4,10 @@
   edge_functions = "netlify/edge-functions"
 
 [context.production]
-  command = "pnpm build"
+  # `pnpm build` differs from `build:netlify` only by a leading `pnpm test:core`.
+  # PR Quality already runs that suite against the exact head commit Netlify
+  # deploys, so running it a third time here only delays production by ~4.5min.
+  command = "pnpm build:netlify"
 
 [context.deploy-preview]
   # Temporarily skip deploy previews for this split PR stack to preserve Netlify minutes.
