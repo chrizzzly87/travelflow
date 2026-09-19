@@ -22,16 +22,52 @@ const ICU_COMPLEX_SYNTAX = /\{\s*\w+\s*,\s*(plural|select|selectordinal)\s*,/;
 const ALLOWED_IDENTICAL = new Set([
   'tripView.mapLinks.google',
   'tripView.mapLinks.apple',
+  // Product names. Translating these would name a thing that does not exist.
+  'tripView.mapCustomize.handoff.google',
+  'tripView.mapCustomize.handoff.apple',
+  'tripView.mapCustomize.renderer.google',
+  'tripView.mapCustomize.renderer.mapbox',
 ]);
 
 /** Loanwords and cognates that are the natural word in that specific language. */
 const ALLOWED_IDENTICAL_PER_LOCALE: Partial<Record<string, string[]>> = {
-  de: ['connectivity.globalBadge.offline', 'connectivity.globalBadge.online', 'tripView.infoDialog.tabs.debug', 'tripView.infoDialog.tabs.export'],
-  es: ['tripView.infoDialog.tabs.general'],
-  fr: ['connectivity.banner.actions.contact', 'tripView.infoDialog.tabs.destination', 'tripView.infoDialog.destination.futureChecks.visa'],
-  it: ['connectivity.globalBadge.offline', 'connectivity.globalBadge.online', 'tripView.infoDialog.tabs.debug', 'tripView.generation.tripInfo.provider'],
-  pl: ['connectivity.globalBadge.offline', 'connectivity.globalBadge.online', 'tripView.generation.tripInfo.model'],
-  pt: ['connectivity.globalBadge.offline', 'connectivity.globalBadge.online'],
+  de: [
+    'connectivity.globalBadge.offline', 'connectivity.globalBadge.online',
+    'tripView.infoDialog.tabs.debug', 'tripView.infoDialog.tabs.export',
+    'tripView.mapCustomize.colorTheme.monochrome', 'tripView.mapCustomize.presetSet.minimalistic',
+    'tripView.mapCustomize.style.minimal', 'tripView.mapCustomize.style.standard',
+    'tripView.mapCustomize.thickness.normal',
+  ],
+  es: [
+    'tripView.infoDialog.tabs.general',
+    'tripView.mapCustomize.base.label', 'tripView.mapCustomize.colorTheme.monochrome',
+    'tripView.mapCustomize.thickness.normal',
+  ],
+  fr: [
+    'connectivity.banner.actions.contact', 'tripView.infoDialog.tabs.destination',
+    'tripView.infoDialog.destination.futureChecks.visa',
+    'tripView.mapCustomize.base.satellite', 'tripView.mapCustomize.colorTheme.monochrome',
+    'tripView.mapCustomize.presetSet.minimalistic', 'tripView.mapCustomize.routeMode.simple',
+    'tripView.mapCustomize.style.minimal', 'tripView.mapCustomize.style.satellite',
+    'tripView.mapCustomize.style.standard',
+  ],
+  it: [
+    'connectivity.globalBadge.offline', 'connectivity.globalBadge.online',
+    'tripView.infoDialog.tabs.debug', 'tripView.generation.tripInfo.provider',
+    'tripView.mapCustomize.base.label', 'tripView.mapCustomize.base.satellite',
+    'tripView.mapCustomize.colorTheme.monochrome', 'tripView.mapCustomize.style.satellite',
+    'tripView.mapCustomize.style.standard',
+  ],
+  pl: [
+    'connectivity.globalBadge.offline', 'connectivity.globalBadge.online',
+    'tripView.generation.tripInfo.model',
+    'tripView.mapCustomize.colorTheme.monochrome',
+  ],
+  pt: [
+    'connectivity.globalBadge.offline', 'connectivity.globalBadge.online',
+    'tripView.mapCustomize.base.label', 'tripView.mapCustomize.colorTheme.monochrome',
+    'tripView.mapCustomize.style.minimal', 'tripView.mapCustomize.thickness.normal',
+  ],
 };
 
 const readCommon = (locale: string): Record<string, unknown> =>

@@ -1,83 +1,203 @@
 {
   "_generated": "Emitted by scripts/generate-latest-in-app-release.mjs — do not edit by hand.",
   "release": {
-    "id": "rel-2026-09-18-mobile-first-load-interactivity",
-    "version": "v0.177.0",
-    "title": "The menu answers your first tap, even while the page is still loading",
-    "date": "2026-09-18",
-    "summary": "On a phone, tapping the menu before the page finished loading did nothing at all. That tap is now remembered, the menu opens as soon as it can, and there is less to download before it does.",
+    "id": "rel-2026-09-18-map-customization",
+    "version": "v0.181.0",
+    "title": "Make the map yours",
+    "date": "2026-09-19",
+    "summary": "Pick the map you want to look at, tune what it shows, and tap a city to see that city — framed on your own plans, with the rest of the journey out of the way until you want it back.",
     "status": "published",
-    "publishedAt": "2026-09-18T15:35:00Z",
+    "publishedAt": "2026-09-19T13:38:17Z",
     "notifyInApp": true,
     "inAppHours": 24,
     "items": [
       {
         "visibleOnWebsite": true,
-        "typeLabel": "Improved",
-        "typeKey": "improved",
-        "text": "📶 The homepage downloads noticeably less before it responds to you, so the wait on a slow mobile connection is shorter."
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "🗺️ Choose which map you look at. Switch between Google Maps and Mapbox and the map changes under you, with no reload and nothing lost."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "🎛️ A proper customize panel, on your phone as well as your desktop. It never covers the map, so you change something and watch the map answer."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "🧭 Tell us whether you prefer Google Maps or Apple Maps and your favourite goes first everywhere we offer to open a place."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "🌅 Set the map's base, its colour and its light separately — including dawn and dusk, which the old fixed styles could never give you. The six named looks are still there as one-tap shortcuts."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "🏔️ Turn on a curved globe, raised terrain, 3D buildings or a tilted camera when you want the trip to feel like a journey rather than a diagram."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "🏷️ Decide what the map shows you: place names, street names, station names, points of interest, roads, footpaths, region borders, city names and activity pins."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "🚦 Live traffic and transit lines, for working out whether a city day actually holds together."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "🎨 Route lines can be thin, normal or thick, solid or dashed, with or without direction arrows."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "🕰️ Fade the days you have already had, so the rest of the trip reads first."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "Improved",
         "typeKey": "improved",
-        "text": "👆 A button you press before the page is ready now visibly acknowledges the press instead of sitting there looking broken."
+        "text": "🔍 Tapping a city now frames that city around the places you actually planned there, instead of dropping you at one fixed zoom that was too close for a big city and too far for a small one."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Improved",
+        "typeKey": "improved",
+        "text": "🧹 While you are looking at one city, the other pins and the lines between them step out of the way, so you can read that city's activities without the whole journey drawn on top."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Improved",
+        "typeKey": "improved",
+        "text": "↩️ One tap on \"Show whole journey\" brings everything back. Tapping empty map, pressing Escape or pulling the day panel down does the same."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Improved",
+        "typeKey": "improved",
+        "text": "📋 The day panel on your phone now slides all the way down, so you can see your whole route without closing anything."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Improved",
+        "typeKey": "improved",
+        "text": "🔀 Controls that need a particular map provider now offer to switch you to it, instead of just telling you they are unavailable."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Improved",
+        "typeKey": "improved",
+        "text": "💾 Each trip remembers how you set its map up, so a trip someone shares with you opens looking the way they left it. Save a setup as your own default and new trips start there."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Improved",
+        "typeKey": "improved",
+        "text": "📤 Copy a map setup to your clipboard to reuse it or pass it on."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "Fixed",
         "typeKey": "fixed",
-        "text": "🍔 Tap the menu button on a phone while the page is still loading and it now opens as soon as it is ready. Before, that first tap was simply lost — with no way into navigation or login, you had to guess and tap again."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "Fixed",
-        "typeKey": "fixed",
-        "text": "🍪 The cookie notice now appears after your very first tap or scroll, even if that happened while the page was still waking up. It used to wait for a second one you had no reason to make."
+        "text": "🎚️ Tilt and line thickness were sliders whose handle was invisible against the panel. They are now labelled steps you can actually see and hit."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "🌉 `index.html` ships an inline pre-hydration bridge that records an interaction and the intent of a press on a `data-tf-boot-intent` control; `services/bootInteractionBridge.ts` is the typed read side. Intent is consumed post-mount, not during the hydration render — opening the drawer on the first render left preact/compat hydrating it against the wrong node, inline and without `role=\"dialog\"`."
+        "text": "`shared/mapPreferences.ts` resolves trip settings, the user default and app defaults into one `ResolvedMapPreferences`; the pre-existing flat `IViewSettings` fields keep their homes and readers, and everything new lives in a nested `mapCustomization` object. Nothing migrates."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "📦 Example trip cards localize country names from a generated 4 KB table instead of `services/destinationService`, which statically pulled `data/countryTravelData.json`. That took a 424 KB chunk (~372 KB, 25% of the homepage boot JS) off the mobile critical path."
+        "text": "`MapRuntimeProvider` no longer freezes its resolution in `useMemo(…, [])`; the renderer choice is fed to `resolveMapRuntime` as a `selection.renderer` partial so existing capability gating, availability fallback and warnings are reused. The admin cookie override still wins."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "🧩 `MobileMenu` is no longer a lazy chunk: it cost a network round trip on the one tap that matters on a phone, and adds ~11 KB to the header chunk instead."
+        "text": "`components/maps/tripMapCityFraming.ts` replaces the constant `selection.cityFocusZoom` with a pure bounds resolver — minimum span, zoom clamp, and a 75km cut-off that keeps day trips out of a city's frame."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "✂️ `data/countryTravelData.json` (678 KB) is split by `scripts/split-country-travel-data.mjs` into seasons, localized names and search aliases. It stays the source of truth on disk — the generators write it and the Node scripts read it — but no client module imports it any more, so a page pays only for the slice it reads. Profile, profile settings and the countries explorer drop from 424 KB to 132 KB; pages that genuinely need all three are unchanged."
+        "text": "`TripMobileSheetSnap` gains a `hidden` snap; collapsing to it clears the selection, which is what made a collapsed sheet feel stuck on one city."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "📰 The in-app release notice reads a generated single-release file instead of `releaseNotesService`, whose eager glob bundles all 204 notes. Opening a trip downloaded 444 KB of release history to decide whether one notice was due; it now costs ~8 KB. The updates page still gets the full corpus."
+        "text": "The six `MapStyle` values were only ever `theme` × `lightPreset` over two base styles; `buildMapboxStyleFromAxes` builds from the axes directly and `resolveMapStyleFromAxes` maps them back to the nearest named style for Google, which renders from six inline style arrays and has no axis equivalent. Legacy trips are decomposed on read via `MAP_STYLE_TO_AXES`, so nothing migrates."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "📅 `MONTH_LABELS` moved to `data/countryMonthLabels.ts`. A component rendering a month strip was importing 678 KB of seasons, events and public holidays for a 12-string array."
+        "text": "Google cannot tilt here at all: tilt needs a vector map with a Cloud `mapId`, and this map is raster-styled by the inline `MAP_STYLES` arrays. The disabled controls now carry an inline provider switch rather than a passive note."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "🧪 `tests/browser/bootInteractionBridge.browser.test.ts` runs the real inline script from `index.html`. `tests/unit/exampleTripCountryNames.test.ts`, `tests/unit/countryTravelDataSplit.test.ts` and `tests/unit/latestInAppRelease.test.ts` assert every derived table returns exactly what the full source returns, and fail if it is left stale."
+        "text": "Both sliders replaced by `MapSegmentedControl` (real radios, so arrow keys and screen readers work). The shared `ui/slider.tsx` thumb was a 16px white disc with a 1px border — invisible at a minimum value on a white panel, worse at the 50% disabled opacity; enlarged and given a solid ring for its remaining callers."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "Preset chips are CSS gradients, not Static Images renders: the Static Images API cannot apply a Standard style's `theme`/`lightPreset`, so a thumbnail would depict a different map from the preset it labels."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "Stay pins were cut rather than shipped inert — `hotels` is never rendered as map markers, so the toggle would have controlled nothing."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "`buildMapboxStyleConfig` and `applyMapboxTripVisualPolish` take detail overrides; turning roads off also drops pedestrian roads and sweeps road geometry, and keeping region borders suppresses the style's own country borders since the tileset overlay draws them."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "Terrain uses a lazily added `raster-dem` source; tilt is applied with `setPitch` rather than a style reload, which would flash the basemap on every slider drag."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "The personal default is device-level. Syncing it needs a `map_customization` column on `user_settings`; adding it to the upsert before the column exists would break saving every other user setting in production."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "Apple is a deep-link handoff, not a renderer. MapKit JS is written up as a follow-up with its credential cost in `docs/superpowers/specs/2026-09-18-map-provider-customization-design.md`."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "Copy added to all nine active locales under `tripView.mapCustomize`."
       }
     ],
-    "sourcePath": "../content/updates/2026-09-18-mobile-first-load-interactivity.md"
+    "sourcePath": "../content/updates/2026-09-18-map-customization.md"
   }
 }
