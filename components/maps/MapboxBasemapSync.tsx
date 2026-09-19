@@ -5,9 +5,37 @@ import type mapboxgl from 'mapbox-gl';
 import {
   applyMapboxTripVisualPolish,
   buildMapboxStyleConfig,
+  buildMapboxStyleFromAxes,
   getMapboxStyleDescriptor,
+  type MapboxBasemapDetailOverrides,
 } from '../../services/mapRendererVisualStyleService';
-import type { MapStyle } from '../../types';
+import type { MapBaseSurface, MapColorTheme, MapLightPreset, MapStyle } from '../../types';
+
+export interface MapboxLookAxes {
+  base: MapBaseSurface;
+  colorTheme: MapColorTheme;
+  lightPreset: Exclude<MapLightPreset, 'auto'>;
+}
+
+/**
+ * The style and config to apply. The axes are authoritative when present — they
+ * reach combinations no named style had, such as dawn, or a faded map at dusk.
+ * The named style stays the fallback for callers that have no axes, such as the
+ * print preview.
+ */
+const resolveMapboxStyleAndConfig = (
+  mapStyle: MapStyle,
+  overrides: MapboxBasemapDetailOverrides | undefined,
+  lookAxes: MapboxLookAxes | undefined,
+): { styleUrl: string; config?: Record<string, Record<string, boolean | string | number>> } => {
+  if (lookAxes) {
+    return buildMapboxStyleFromAxes({ ...lookAxes, overrides });
+  }
+  return {
+    styleUrl: getMapboxStyleDescriptor(mapStyle).styleUrl,
+    config: buildMapboxStyleConfig(mapStyle, overrides),
+  };
+};
 import {
   getTripMapProviderTuning,
   shouldUseTripMapGlobeIntro,
@@ -35,6 +63,15 @@ interface MapboxBasemapSyncProps {
   mapDockMode: TripMapDockMode;
   mapViewportSize: { width: number; height: number } | null;
   interactive?: boolean;
+  /** What the customize sheet turned on or off on top of the chosen style. */
+  detailOverrides?: MapboxBasemapDetailOverrides;
+  /** The look as its three axes, which outrank `mapStyle` when given. */
+  lookAxes?: MapboxLookAxes;
+  /** Globe instead of the tuning's resting projection. */
+  preferGlobeProjection?: boolean;
+  showTerrain?: boolean;
+  /** Camera tilt in degrees. */
+  pitch?: number;
   onLoadError?: (error: MapboxBasemapLoadError) => void;
   onMapReadyChange?: (map: mapboxgl.Map | null) => void;
   onModuleReadyChange?: (mapboxModule: typeof import('mapbox-gl').default | null) => void;
@@ -118,9 +155,45 @@ const applyMapboxProjectionState = (
   }
 };
 
-const buildMapboxStyleKey = (mapStyle: MapStyle): string => {
-  const descriptor = getMapboxStyleDescriptor(mapStyle);
-  return `${descriptor.styleUrl}::${JSON.stringify(buildMapboxStyleConfig(mapStyle) ?? {})}`;
+const buildMapboxStyleKey = (
+  mapStyle: MapStyle,
+  overrides?: MapboxBasemapDetailOverrides,
+  lookAxes?: MapboxLookAxes,
+): string => {
+  const { styleUrl, config } = resolveMapboxStyleAndConfig(mapStyle, overrides, lookAxes);
+  return `${styleUrl}::${JSON.stringify(config ?? {})}`;
+};
+
+const MAPBOX_TERRAIN_SOURCE_ID = 'tf-mapbox-terrain';
+
+/**
+ * Raised terrain needs its own DEM source. It is added lazily and left in place
+ * once added: removing a source a style is still referencing throws, and an
+ * unused DEM source costs nothing until `setTerrain` points at it.
+ */
+const applyMapboxTerrainState = (mapboxMap: mapboxgl.Map, showTerrain: boolean): void => {
+  if (!isMapboxStyleReadyForRuntimeMutations(mapboxMap)) return;
+  if (typeof mapboxMap.setTerrain !== 'function') return;
+
+  try {
+    if (!showTerrain) {
+      mapboxMap.setTerrain(null);
+      return;
+    }
+    if (!mapboxMap.getSource(MAPBOX_TERRAIN_SOURCE_ID)) {
+      mapboxMap.addSource(MAPBOX_TERRAIN_SOURCE_ID, {
+        type: 'raster-dem',
+        url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+        tileSize: 512,
+        maxzoom: 14,
+      } as any);
+    }
+    mapboxMap.setTerrain({ source: MAPBOX_TERRAIN_SOURCE_ID, exaggeration: 1.2 } as any);
+  } catch (error) {
+    // Terrain is decoration: a style that will not take it should not take the
+    // basemap down with it.
+    console.warn('Failed to apply Mapbox terrain', error);
+  }
 };
 
 export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
@@ -130,6 +203,11 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
   mapDockMode,
   mapViewportSize,
   interactive = false,
+  detailOverrides,
+  lookAxes,
+  preferGlobeProjection = false,
+  showTerrain = false,
+  pitch = 0,
   onLoadError,
   onMapReadyChange,
   onModuleReadyChange,
@@ -139,6 +217,8 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapboxMapRef = useRef<mapboxgl.Map | null>(null);
   const mapStyleRef = useRef<MapStyle>(mapStyle);
+  const detailOverridesRef = useRef<MapboxBasemapDetailOverrides | undefined>(detailOverrides);
+  const lookAxesRef = useRef<MapboxLookAxes | undefined>(lookAxes);
   const syncFrameRef = useRef<number | null>(null);
   const mapboxToGoogleFrameRef = useRef<number | null>(null);
   const lastViewportSizeRef = useRef<{ width: number; height: number } | null>(null);
@@ -157,6 +237,8 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
   const reportSurfaceReadyRef = useRef<(isReady: boolean) => void>(() => {});
 
   mapStyleRef.current = mapStyle;
+  detailOverridesRef.current = detailOverrides;
+  lookAxesRef.current = lookAxes;
   mapDockModeRef.current = mapDockMode;
   mapViewportSizeRef.current = mapViewportSize;
 
@@ -263,7 +345,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         mapboxMap.once('idle', notifyStyleReloadWhenReady);
         return;
       }
-      applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current);
+      applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current, detailOverridesRef.current);
       onStyleReload();
     };
 
@@ -282,7 +364,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
           mapboxMap.once('idle', run);
           return;
         }
-        applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current);
+        applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current, detailOverridesRef.current);
         if (notifyReload) {
           onStyleReload?.();
         }
@@ -520,12 +602,22 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         onModuleReadyChange?.(mapboxModule);
 
         const initialStyle = mapStyleRef.current;
-        const descriptor = getMapboxStyleDescriptor(initialStyle);
-        const styleConfig = buildMapboxStyleConfig(initialStyle);
-        appliedStyleKeyRef.current = buildMapboxStyleKey(initialStyle);
+        const { styleUrl: initialStyleUrl, config: styleConfig } = resolveMapboxStyleAndConfig(
+          initialStyle,
+          detailOverridesRef.current,
+          lookAxesRef.current,
+        );
+        // The key has to carry the overrides and axes too, or the style-sync
+        // effect below sees a mismatch on the first render and reloads a style
+        // that was already correct.
+        appliedStyleKeyRef.current = buildMapboxStyleKey(
+          initialStyle,
+          detailOverridesRef.current,
+          lookAxesRef.current,
+        );
         const mapboxMap = new mapboxModule.Map({
           container: containerRef.current,
-          style: descriptor.styleUrl,
+          style: initialStyleUrl,
           config: styleConfig,
           center: MAPBOX_GLOBE_INTRO_CAMERA.center,
           zoom: MAPBOX_GLOBE_INTRO_CAMERA.zoom,
@@ -580,7 +672,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
             }),
             force: true,
           });
-          applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current);
+          applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current, detailOverridesRef.current);
           scheduleMapboxVisualPolish();
           scheduleMapboxVisualPolish({ delayMs: 180 });
           scheduleMapboxVisualPolish({ delayMs: 520 });
@@ -604,7 +696,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
             introActive: introActiveRef.current,
             force: true,
           });
-          applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current);
+          applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current, detailOverridesRef.current);
           scheduleMapboxVisualPolish();
           scheduleMapboxVisualPolish({ delayMs: 180 });
           scheduleMapboxVisualPolish({ delayMs: 520 });
@@ -733,11 +825,15 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       fallbackViewportSize: lastViewportSizeRef.current,
       container: containerRef.current,
     });
-    const nextProjection = resolveMapboxEffectiveProjection({
-      mapDockMode,
-      mapViewportSize: effectiveViewportSize,
-      introActive: introActiveRef.current,
-    });
+    // An explicit globe choice outranks the tuning's resting projection, which
+    // only ever picks mercator to keep a small pane readable.
+    const nextProjection = preferGlobeProjection
+      ? 'globe'
+      : resolveMapboxEffectiveProjection({
+        mapDockMode,
+        mapViewportSize: effectiveViewportSize,
+        introActive: introActiveRef.current,
+      });
     if (
       introActiveRef.current
       && nextProjection !== 'globe'
@@ -749,26 +845,41 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       appliedProjectionRef.current = nextProjection;
       applyMapboxProjectionState(mapboxMap, nextProjection);
     }
-  }, [mapDockMode, mapViewportSize?.height, mapViewportSize?.width]);
+  }, [mapDockMode, mapViewportSize?.height, mapViewportSize?.width, preferGlobeProjection]);
 
   useEffect(() => {
     const mapboxMap = mapboxMapRef.current;
     if (!mapboxMap) return;
 
-    const descriptor = getMapboxStyleDescriptor(mapStyle);
-    const config = buildMapboxStyleConfig(mapStyle);
-    const styleKey = buildMapboxStyleKey(mapStyle);
+    const { styleUrl, config } = resolveMapboxStyleAndConfig(mapStyle, detailOverrides, lookAxes);
+    const styleKey = buildMapboxStyleKey(mapStyle, detailOverrides, lookAxes);
     if (appliedStyleKeyRef.current === styleKey) return;
 
     appliedStyleKeyRef.current = styleKey;
     reportSurfaceReadyRef.current(false);
     try {
-      mapboxMap.setStyle(descriptor.styleUrl, config ? { config } : undefined);
+      mapboxMap.setStyle(styleUrl, config ? { config } : undefined);
     } catch (error) {
       reportSurfaceReadyRef.current(true);
       console.warn('Failed to switch Mapbox basemap style', error);
     }
-  }, [mapStyle]);
+  }, [detailOverrides, lookAxes, mapStyle]);
+
+  // Terrain and tilt are applied in place: neither needs the style reloading,
+  // and reloading for a tilt drag would flash the whole basemap.
+  useEffect(() => {
+    const mapboxMap = mapboxMapRef.current;
+    if (!mapboxMap) return;
+    applyMapboxTerrainState(mapboxMap, showTerrain);
+  }, [showTerrain]);
+
+  useEffect(() => {
+    const mapboxMap = mapboxMapRef.current;
+    if (!mapboxMap || typeof mapboxMap.setPitch !== 'function') return;
+    const nextPitch = Math.max(0, Math.min(60, pitch));
+    if (Math.abs((mapboxMap.getPitch?.() ?? 0) - nextPitch) < 0.5) return;
+    mapboxMap.setPitch(nextPitch);
+  }, [pitch]);
 
   return (
     <div

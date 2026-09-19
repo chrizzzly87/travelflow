@@ -1,5 +1,7 @@
 import type mapboxgl from 'mapbox-gl';
 
+import { isMapboxMapUsable } from './mapboxBasemapUtils';
+
 export type MapCoordinates = {
   lat: number;
   lng: number;
@@ -49,12 +51,14 @@ type MapboxLineHandleOptions = {
 };
 
 const clearMapboxLayer = (map: mapboxgl.Map, layerId: string): void => {
+  if (!isMapboxMapUsable(map)) return;
   if (map.getLayer(layerId)) {
     map.removeLayer(layerId);
   }
 };
 
 const clearMapboxSource = (map: mapboxgl.Map, sourceId: string): void => {
+  if (!isMapboxMapUsable(map)) return;
   if (map.getSource(sourceId)) {
     map.removeSource(sourceId);
   }
@@ -117,16 +121,16 @@ export const createMapboxOverlayMarker = ({
   return {
     setMap(nextMap) {
       if (nextMap) {
-        if (!isAttached) {
+        if (!isAttached && isMapboxMapUsable(map)) {
           marker.addTo(map);
           isAttached = true;
         }
         return;
       }
-      if (isAttached) {
-        marker.remove();
-        isAttached = false;
-      }
+      if (!isAttached) return;
+      isAttached = false;
+      if (!isMapboxMapUsable(map)) return;
+      marker.remove();
     },
     update(updates) {
       if (updates.position) {
@@ -196,9 +200,11 @@ export const createMapboxLineHandle = ({
       if (!isAttached) {
         return;
       }
+      // Marked detached first: a map that has already gone took its layers and
+      // sources with it, so the handle is spent either way.
+      isAttached = false;
       layerIds.forEach((layerId) => clearMapboxLayer(map, layerId));
       clearMapboxSource(map, sourceId);
-      isAttached = false;
     },
   };
 };

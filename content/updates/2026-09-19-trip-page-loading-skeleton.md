@@ -1,6 +1,6 @@
 ---
 id: rel-2026-09-19-trip-page-loading-skeleton
-version: v0.181.0
+version: v0.182.0
 title: "Opening a trip no longer starts with a blank page"
 date: 2026-09-19
 published_at: 2026-09-19T16:00:00Z

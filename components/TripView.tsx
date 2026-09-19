@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, useSyncExternalStore, Suspense, lazy } from 'react';
 import { Lock, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -59,6 +59,21 @@ import { useTripViewSettingsSync } from './tripview/useTripViewSettingsSync';
 import { useTripAdminOverrideState } from './tripview/useTripAdminOverrideState';
 import { useTripEditModalState } from './tripview/useTripEditModalState';
 import { useTripLayoutControlsState } from './tripview/useTripLayoutControlsState';
+import { useTripMapCustomizationState } from './tripview/useTripMapCustomizationState';
+import { useMapRuntime } from './GoogleMapsLoader';
+import {
+    getClientMapRuntimeResolution,
+    getMapRendererChoice,
+    readMapRuntimeAdminOverride,
+    setMapRendererChoice,
+    subscribeToMapRendererChoice,
+} from '../services/mapRuntimeService';
+import {
+    MAP_ROUTE_THICKNESS_MULTIPLIER,
+    resolveEffectiveLightPreset,
+    resolveMapStyleFromAxes,
+} from '../shared/mapPreferences';
+import { MapCustomizeModal } from './maps/MapCustomizeModal';
 import { useTripCityForceFill } from './tripview/useTripCityForceFill';
 import { useTripFavoriteHandler } from './tripview/useTripFavoriteHandler';
 import { resolveTripToastUndoAction } from './tripview/tripToastUndoAction';
@@ -1710,6 +1725,8 @@ const useTripViewRender = ({
         setTimelineHeight,
         detailsWidth,
         setDetailsWidth,
+        mapCustomization,
+        setMapCustomization,
     } = useTripLayoutControlsState({
         initialViewSettings,
         defaultDetailsWidth: DEFAULT_DETAILS_WIDTH,
@@ -1925,8 +1942,9 @@ const useTripViewRender = ({
         zoomBehavior,
         sidebarWidth: Math.round(sidebarWidth),
         detailsWidth: Math.round(detailsWidth),
-        timelineHeight: Math.round(timelineHeight)
-    }), [detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, zoomBehavior, sidebarWidth, timelineHeight]);
+        timelineHeight: Math.round(timelineHeight),
+        mapCustomization,
+    }), [detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, zoomBehavior, sidebarWidth, timelineHeight, mapCustomization]);
 
     const tripInfoRetryAnalyticsAttributes = useMemo(
         () => getAnalyticsDebugAttributes('trip_generation__trip_info--retry', {
@@ -2613,6 +2631,14 @@ const useTripViewRender = ({
         handleTimelineSelect(activityId, { isCity: false });
     }, [handleTimelineSelect]);
 
+    /**
+     * Letting go of a focused city. Selecting nothing is what brings the other
+     * cities, their labels and the connecting lines back onto the map.
+     */
+    const handleMapClearSelection = useCallback(() => {
+        handleTimelineSelect(null);
+    }, [handleTimelineSelect]);
+
     const {
         routeStatusById,
         handleRouteMetrics,
@@ -2646,6 +2672,191 @@ const useTripViewRender = ({
         safeUpdateTrip,
         scheduleCommit,
     });
+
+    // Which basemap is actually drawing, as opposed to which one was asked for:
+    // a missing Mapbox token falls the runtime back to Google, and the sheet
+    // says so rather than offering controls that would do nothing.
+    const { mapboxAccessToken } = useMapRuntime();
+    /**
+     * Resolved from the module store rather than from the context: this
+     * component renders `<GoogleMapsLoader>` inside its own JSX, so its own
+     * `useMapRuntime()` call sits outside the provider and would always read
+     * the fallback.
+     */
+    const activeRendererChoice = useSyncExternalStore(
+        subscribeToMapRendererChoice,
+        getMapRendererChoice,
+        () => 'auto' as const,
+    );
+    const activeMapRenderer = useMemo(() => getClientMapRuntimeResolution(
+        activeRendererChoice === 'auto'
+            ? { override: readMapRuntimeAdminOverride() }
+            : {
+                override: { selection: { renderer: activeRendererChoice } },
+                overrideSource: 'query',
+            },
+    ).effectiveSelection.renderer, [activeRendererChoice]);
+    const isMapboxRendererAvailable = mapboxAccessToken.trim().length > 0;
+
+    const {
+        preferences: mapPreferences,
+        applyPatch: applyMapPreferencePatch,
+        reset: resetMapPreferences,
+        saveAsDefault: saveMapPreferencesAsDefault,
+        applySavedPreset: applySavedMapPreset,
+        hasSavedPreset: hasSavedMapPreset,
+        isCustomizeOpen: isMapCustomizeOpen,
+        openCustomize: openMapCustomize,
+        closeCustomize: closeMapCustomize,
+    } = useTripMapCustomizationState({
+        initialViewSettings,
+        mapStyle,
+        setMapStyle,
+        routeMode,
+        setRouteMode,
+        showCityNames,
+        setShowCityNames,
+        colorMode: mapColorMode,
+        setColorMode: handleMapColorModeChange,
+        customization: mapCustomization,
+        setCustomization: setMapCustomization,
+    });
+
+    // Every customize change is a deliberate one, so it counts as a manual view
+    // change and is what makes the look stick to the trip.
+    const handleMapPreferenceChange = useCallback((patch: Partial<typeof mapPreferences>) => {
+        markManualViewChange();
+        applyMapPreferencePatch(patch);
+    }, [applyMapPreferencePatch, markManualViewChange]);
+
+    /**
+     * The renderer lives above this component, in the map runtime provider, so
+     * the traveller's stored choice has to be pushed up to it — including on
+     * mount, when a trip opens carrying a basemap it was saved with.
+     */
+    useEffect(() => {
+        setMapRendererChoice(mapPreferences.renderer);
+    }, [mapPreferences.renderer]);
+
+
+    /**
+     * Stable identity: this object reaches a style-reload key, so a new object
+     * every render would reload the basemap on every render.
+     */
+    /**
+     * The device's own light/dark setting, watched so `auto` follows a theme
+     * change without a reload. An environment without `matchMedia` — an older
+     * embedded webview, or a server render — simply stays light.
+     */
+    const prefersDarkScheme = useSyncExternalStore(
+        useCallback((onChange: () => void) => {
+            if (typeof window === 'undefined' || !window.matchMedia) return () => {};
+            const query = window.matchMedia('(prefers-color-scheme: dark)');
+            query.addEventListener('change', onChange);
+            return () => query.removeEventListener('change', onChange);
+        }, []),
+        () => (typeof window !== 'undefined' && window.matchMedia
+            ? window.matchMedia('(prefers-color-scheme: dark)').matches
+            : false),
+        () => false,
+    );
+
+    /**
+     * Google renders from the six named style arrays and has no equivalent of
+     * the axes, so every combination has to land on one of them. Mapbox takes
+     * the axes directly.
+     */
+    const effectiveMapStyle = useMemo(() => resolveMapStyleFromAxes({
+        base: mapPreferences.base,
+        colorTheme: mapPreferences.colorTheme,
+        lightPreset: mapPreferences.lightPreset,
+        prefersDarkScheme,
+    }), [mapPreferences.base, mapPreferences.colorTheme, mapPreferences.lightPreset, prefersDarkScheme]);
+
+    /**
+     * Stable identity: these objects reach a style-reload key, so a new object
+     * every render would reload the basemap on every render.
+     */
+    const mapLookAxes = useMemo(() => ({
+        base: mapPreferences.base,
+        colorTheme: mapPreferences.colorTheme,
+        lightPreset: resolveEffectiveLightPreset(mapPreferences.lightPreset, prefersDarkScheme),
+    }), [mapPreferences.base, mapPreferences.colorTheme, mapPreferences.lightPreset, prefersDarkScheme]);
+
+/**
+     * The look is edited as axes, but a trip still stores a named `mapStyle`:
+     * it is what Google renders from and what every reader written before the
+     * axes existed understands. Kept in step here rather than in the customize
+     * hook so the flat field keeps its own setter, persistence and sync.
+     */
+    useEffect(() => {
+        if (effectiveMapStyle === mapStyle) return;
+        setMapStyle(effectiveMapStyle);
+    }, [effectiveMapStyle, mapStyle, setMapStyle]);
+
+    const mapBasemapDetail = useMemo(() => ({
+        showPlaceLabels: mapPreferences.showPlaceLabels,
+        showRoadLabels: mapPreferences.showRoadLabels,
+        showTransitLabels: mapPreferences.showTransitLabels,
+        showPoiLabels: mapPreferences.showPoiLabels,
+        showRoadsAndTransit: mapPreferences.showRoadsAndTransit,
+        // Footpaths are a sub-layer of roads: with roads off they would draw a
+        // ghost path network over nothing.
+        showPedestrianRoads: mapPreferences.showRoadsAndTransit && mapPreferences.showPedestrianRoads,
+        showAdminBoundaries: mapPreferences.showAdminBoundaries,
+        show3dObjects: mapPreferences.show3dObjects,
+    }), [
+        mapPreferences.show3dObjects,
+        mapPreferences.showAdminBoundaries,
+        mapPreferences.showPedestrianRoads,
+        mapPreferences.showPlaceLabels,
+        mapPreferences.showPoiLabels,
+        mapPreferences.showRoadLabels,
+        mapPreferences.showRoadsAndTransit,
+        mapPreferences.showTransitLabels,
+    ]);
+
+    /**
+     * Which day of the trip today is. Null outside the trip's own dates: before
+     * it starts nothing is past, and after it ends everything is, either of
+     * which would make "fade past days" fade the whole map or nothing at all.
+     */
+    const todayDayOffset = useMemo<number | null>(() => {
+        const startDate = displayTrip.startDate;
+        if (!startDate) return null;
+        const start = new Date(`${startDate.slice(0, 10)}T00:00:00Z`);
+        if (Number.isNaN(start.getTime())) return null;
+
+        const now = new Date();
+        const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        const offset = Math.floor((todayUtc - start.getTime()) / 86400000);
+        if (!Number.isFinite(offset) || offset < 0) return null;
+
+        const lastDay = displayTrip.items.reduce(
+            (latest, item) => Math.max(latest, item.startDateOffset + Math.max(item.duration, 0)),
+            0,
+        );
+        return offset > lastDay ? null : offset;
+    }, [displayTrip.items, displayTrip.startDate]);
+
+    const mapTripOverlay = useMemo(() => ({
+        dimPastDays: mapPreferences.dimPastDays,
+        showRouteArrows: mapPreferences.showRouteArrows,
+        dashedRoutes: mapPreferences.dashedRoutes,
+        showTraffic: mapPreferences.showTraffic,
+        showTransitLines: mapPreferences.showTransitLines,
+    }), [
+        mapPreferences.dashedRoutes,
+        mapPreferences.dimPastDays,
+        mapPreferences.showRouteArrows,
+        mapPreferences.showTraffic,
+        mapPreferences.showTransitLines,
+    ]);
+
+    const handleMapPreferenceReset = useCallback(() => {
+        markManualViewChange();
+        resetMapPreferences();
+    }, [markManualViewChange, resetMapPreferences]);
 
     const {
         handleForceFill,
@@ -3422,6 +3633,21 @@ const useTripViewRender = ({
                         selectedItemId={selectedItemId}
                         onMapCitySelect={handleMapCitySelect}
                         onMapActivitySelect={handleMapActivitySelect}
+                        onMapClearSelection={handleMapClearSelection}
+                        cityFocusMode={mapPreferences.cityFocusMode}
+                        onOpenMapCustomize={openMapCustomize}
+                        showActivityMarkers={mapPreferences.showActivityMarkers}
+                        onShowActivityMarkersChange={(enabled) => handleMapPreferenceChange({ showActivityMarkers: enabled })}
+                        basemapDetail={mapBasemapDetail}
+                        mapLookAxes={mapLookAxes}
+                        tripOverlay={mapTripOverlay}
+                        todayDayOffset={todayDayOffset}
+                        routeLineWeight={MAP_ROUTE_THICKNESS_MULTIPLIER[mapPreferences.routeThickness]}
+                        useGlobeProjection={mapPreferences.useGlobeProjection}
+                        showTerrain={mapPreferences.showTerrain}
+                        mapPitch={mapPreferences.pitch}
+                        isMapCustomizeOpen={isMapCustomizeOpen}
+                        mapCustomizeLabel={t('tripView.mapCustomize.open', 'Customize map')}
                         layoutMode={layoutMode}
                         effectiveLayoutMode={effectiveLayoutMode}
                         onLayoutModeChange={(mode) => {
@@ -3435,7 +3661,7 @@ const useTripViewRender = ({
                             markManualViewChange();
                             setLayoutMode(mode);
                         }}
-                        mapStyle={mapStyle}
+                        mapStyle={effectiveMapStyle}
                         onMapStyleChange={(nextStyle) => {
                             if (nextStyle === mapStyle) return;
                             markManualViewChange();
@@ -3472,6 +3698,20 @@ const useTripViewRender = ({
                         onTimelineResizeKeyDown={handleTimelineResizeKeyDown}
                         floatingOverlayRightInset={isTripAgentOpen && !isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
                         floatingOverlayLeftInset={isTripAgentOpen && isRtlAppLanguage ? TRIP_AGENT_PANEL_INSET_PX : 0}
+                    />
+                    <MapCustomizeModal
+                        isOpen={isMapCustomizeOpen}
+                        onClose={closeMapCustomize}
+                        preferences={mapPreferences}
+                        onChange={handleMapPreferenceChange}
+                        onReset={handleMapPreferenceReset}
+                        onSaveAsDefault={saveMapPreferencesAsDefault}
+                        hasSavedPreset={hasSavedMapPreset}
+                        onApplySavedPreset={applySavedMapPreset}
+                        isMobile={isMobile}
+                        activeRenderer={activeMapRenderer}
+                        isMapboxAvailable={isMapboxRendererAvailable}
+                        tripId={trip.id}
                     />
                     {isTripAgentRolledOut && !isTripAgentOpen && (
                         <button

@@ -23,6 +23,91 @@ export type RouteFailureReason =
   | 'request_error';
 export type AppLanguage = 'en' | 'es' | 'de' | 'fr' | 'pt' | 'ru' | 'it' | 'pl' | 'ko' | 'fa' | 'ur';
 export type MapColorMode = 'brand' | 'trip';
+
+/**
+ * Which basemap the traveller wants to look at. `auto` defers to whatever the
+ * deploy's preset resolves to, which is the only value that follows an
+ * administrator changing the default later.
+ *
+ * `apple` is a handoff, not a basemap: Apple has no embeddable renderer here, so
+ * choosing it keeps the current basemap and promotes the "open in Apple Maps"
+ * action. See `docs/superpowers/specs/2026-09-18-map-provider-customization-design.md`.
+ */
+export type MapRendererChoice = 'auto' | 'google' | 'mapbox';
+
+export type MapHandoffTarget = 'google' | 'apple';
+
+/**
+ * The three axes a map look actually has. The six named `MapStyle` values were
+ * only ever combinations of these two, plus a satellite base:
+ *
+ *   standard = default + day     dark      = default + dusk
+ *   minimal  = monochrome + day  cleanDark = monochrome + night
+ *   clean    = faded + day       satellite = satellite base
+ *
+ * Exposing the axes gives dawn and dusk, which no named style reached, and
+ * removes the duplication between `minimal` and `clean`. `MapStyle` stays as
+ * the stored legacy field and as what the Google renderer understands.
+ */
+export type MapBaseSurface = 'map' | 'satellite';
+export type MapColorTheme = 'default' | 'faded' | 'monochrome';
+/** `auto` follows the device's light/dark setting. */
+export type MapLightPreset = 'auto' | 'dawn' | 'day' | 'dusk' | 'night';
+
+export type MapRouteThickness = 'thin' | 'normal' | 'thick';
+
+/**
+ * Everything the map customize sheet writes that did not already have a home on
+ * `IViewSettings`. The pre-existing flat fields — `mapStyle`, `routeMode`,
+ * `showCityNames`, `zoomLevel`, `mapDockMode` — deliberately stay where they
+ * are; only `shared/mapPreferences.ts` knows about both shapes.
+ */
+export interface IMapCustomization {
+    renderer?: MapRendererChoice;
+    /** Preferred "open in" app for places and for the whole trip. */
+    handoffTarget?: MapHandoffTarget;
+
+    // Look, as three axes rather than six named styles.
+    base?: MapBaseSurface;
+    colorTheme?: MapColorTheme;
+    lightPreset?: MapLightPreset;
+
+    /** Frame a selected city on its own plan and drop the rest of the journey. */
+    cityFocusMode?: boolean;
+
+    // What the basemap draws.
+    showPlaceLabels?: boolean;
+    showRoadLabels?: boolean;
+    showTransitLabels?: boolean;
+    showPoiLabels?: boolean;
+    showRoadsAndTransit?: boolean;
+    showPedestrianRoads?: boolean;
+    showAdminBoundaries?: boolean;
+    /** Extruded buildings. Mapbox only, and the reason tilt is worth having. */
+    show3dObjects?: boolean;
+    showTerrain?: boolean;
+    /** Live traffic. Google only. */
+    showTraffic?: boolean;
+    /** Transit lines and stations. Google only. */
+    showTransitLines?: boolean;
+
+    // What the trip draws on top.
+    showActivityMarkers?: boolean;
+    /** Fade days already behind you so the rest of the trip reads first. */
+    dimPastDays?: boolean;
+    routeThickness?: MapRouteThickness;
+    /** Direction arrows along the connecting lines. */
+    showRouteArrows?: boolean;
+    /** Dashed rather than solid connecting lines. */
+    dashedRoutes?: boolean;
+
+    // Camera.
+    /** Globe reads well on a long-haul trip and badly in a small pane. */
+    useGlobeProjection?: boolean;
+    /** Degrees of camera tilt. Mapbox only — a Google raster map cannot tilt. */
+    pitch?: number;
+}
+
 export type SystemRole = 'admin' | 'user';
 export type PlanTierKey = 'tier_free' | 'tier_mid' | 'tier_premium';
 export type TripAccessClassKey = 'free' | 'pro';
@@ -308,6 +393,7 @@ export interface IViewSettings {
     sidebarWidth?: number;
     detailsWidth?: number;
     timelineHeight?: number;
+    mapCustomization?: IMapCustomization;
 }
 
 export interface ISharedState {
@@ -342,6 +428,8 @@ export interface IUserSettings {
     sidebarWidth?: number;
     detailsWidth?: number;
     timelineHeight?: number;
+    /** The traveller's default map look, applied to trips that carry none. */
+    mapCustomization?: IMapCustomization;
 }
 
 export interface TripPrefillData {

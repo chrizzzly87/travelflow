@@ -13,9 +13,13 @@ describe('components/maps/tripMapProviderTuning', () => {
     const googleTuning = getTripMapProviderTuning('google');
     const mapboxTuning = getTripMapProviderTuning('mapbox');
 
-    // Street level: a selected city lands on the place itself, and an activity
-    // inside it closer still.
-    expect(googleTuning.selection.cityFocusZoom).toBe(14);
+    // `cityFocusZoom` is now only the fallback for a city with no pinned
+    // activity to frame; a city that has one is fitted into the band below.
+    // An activity inside a city still lands closer than the city itself.
+    expect(googleTuning.selection.cityFocusZoom).toBe(12.6);
+    expect(googleTuning.selection.cityFitMinZoom).toBeLessThan(googleTuning.selection.cityFocusZoom);
+    expect(googleTuning.selection.cityFitMaxZoom).toBeGreaterThan(googleTuning.selection.cityFocusZoom);
+    expect(mapboxTuning.selection.cityFitMinZoom).toBeLessThan(mapboxTuning.selection.cityFitMaxZoom);
     expect(mapboxTuning.selection.cityFocusZoom).toBeLessThan(googleTuning.selection.cityFocusZoom);
     expect(googleTuning.selection.activityFocusZoom).toBeGreaterThan(googleTuning.selection.cityFocusZoom);
     expect(mapboxTuning.selection.activityFocusZoom).toBeGreaterThan(mapboxTuning.selection.cityFocusZoom);

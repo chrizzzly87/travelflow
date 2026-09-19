@@ -43,6 +43,23 @@ interface TripViewPlannerWorkspaceProps {
     selectedItemId: string | null;
     onMapCitySelect?: (cityId: string) => void;
     onMapActivitySelect?: (activityId: string) => void;
+    /** Lets go of the current selection, restoring the whole-journey view. */
+    onMapClearSelection?: () => void;
+    /** Frame a selected city on its own plan and drop the rest of the journey. */
+    cityFocusMode?: boolean;
+    onOpenMapCustomize?: () => void;
+    showActivityMarkers?: boolean;
+    onShowActivityMarkersChange?: (enabled: boolean) => void;
+    basemapDetail?: Record<string, boolean | undefined>;
+    mapLookAxes?: { base: 'map' | 'satellite'; colorTheme: 'default' | 'faded' | 'monochrome'; lightPreset: 'dawn' | 'day' | 'dusk' | 'night' };
+    tripOverlay?: Record<string, boolean | undefined>;
+    todayDayOffset?: number | null;
+    useGlobeProjection?: boolean;
+    showTerrain?: boolean;
+    mapPitch?: number;
+    routeLineWeight?: number;
+    isMapCustomizeOpen?: boolean;
+    mapCustomizeLabel?: string;
     layoutMode: 'vertical' | 'horizontal';
     effectiveLayoutMode: 'vertical' | 'horizontal';
     onLayoutModeChange: (mode: 'vertical' | 'horizontal') => void;
@@ -112,6 +129,21 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     selectedItemId,
     onMapCitySelect,
     onMapActivitySelect,
+    onMapClearSelection,
+    cityFocusMode,
+    onOpenMapCustomize,
+    showActivityMarkers,
+    onShowActivityMarkersChange,
+    basemapDetail,
+    mapLookAxes,
+    tripOverlay,
+    todayDayOffset,
+    useGlobeProjection,
+    showTerrain,
+    mapPitch,
+    routeLineWeight,
+    isMapCustomizeOpen,
+    mapCustomizeLabel,
     layoutMode,
     effectiveLayoutMode,
     onLayoutModeChange,
@@ -336,6 +368,21 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     selectedItemId={selectedItemId}
                     onCityMarkerSelect={onMapCitySelect}
                     onActivityMarkerSelect={onMapActivitySelect}
+                    onClearSelection={onMapClearSelection}
+                    cityFocusMode={cityFocusMode}
+                    onOpenCustomize={onOpenMapCustomize}
+                    showActivityMarkers={showActivityMarkers}
+                    onShowActivityMarkersChange={onShowActivityMarkersChange}
+                    basemapDetail={basemapDetail}
+                    mapLookAxes={mapLookAxes}
+                    tripOverlay={tripOverlay}
+                    todayDayOffset={todayDayOffset}
+                    useGlobeProjection={useGlobeProjection}
+                    showTerrain={showTerrain}
+                    mapPitch={mapPitch}
+                    routeLineWeight={routeLineWeight}
+                    isCustomizeOpen={isMapCustomizeOpen}
+                    customizeLabel={mapCustomizeLabel}
                     enableActivityPopup={!isMobile}
                     layoutMode={mapLayoutMode}
                     onLayoutChange={showLayoutControls ? onLayoutModeChange : undefined}

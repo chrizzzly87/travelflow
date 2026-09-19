@@ -514,6 +514,185 @@
       "openDetails": "Ouvrir les détails",
       "close": "Fermer",
       "popupLabel": "Détails de l'activité"
+    },
+    "mapCustomize": {
+      "activityMarkers": {
+        "description": "Les lieux que vous avez prévu de visiter.",
+        "label": "Repères d'activités"
+      },
+      "arrows": {
+        "description": "Montrent le sens du voyage.",
+        "label": "Flèches de direction"
+      },
+      "base": {
+        "description": "Une carte dessinée ou des images satellite.",
+        "label": "Fond",
+        "map": "Carte",
+        "satellite": "Satellite"
+      },
+      "boundaries": {
+        "description": "Les limites à l'intérieur d'un pays, pas seulement entre pays.",
+        "label": "Frontières régionales"
+      },
+      "buildings": {
+        "description": "Bâtiments en relief, plus visibles avec un peu d'inclinaison.",
+        "label": "Bâtiments 3D"
+      },
+      "cityFocus": {
+        "description": "Cadre la ville sur votre propre plan et masque le reste du parcours.",
+        "label": "Cadrer une ville sélectionnée"
+      },
+      "cityNames": {
+        "description": "Nomme chaque étape de votre itinéraire.",
+        "label": "Noms des villes"
+      },
+      "close": "Fermer",
+      "colorMode": {
+        "brand": "Accent unique",
+        "label": "Couleur",
+        "trip": "Couleurs des villes"
+      },
+      "colorTheme": {
+        "default": "Complet",
+        "description": "La quantité de couleur sur la carte.",
+        "faded": "Atténué",
+        "label": "Couleur",
+        "monochrome": "Mono",
+        "satelliteNote": "Les images satellite ont leurs propres couleurs."
+      },
+      "copied": "Copié",
+      "copyPreset": "Copier",
+      "dashed": {
+        "description": "Des tirets plutôt que des traits pleins.",
+        "label": "Traits pointillés"
+      },
+      "description": "Enregistré avec ce voyage au fil de vos réglages.",
+      "dimPast": {
+        "description": "Renvoie à l'arrière-plan les jours déjà passés.",
+        "label": "Estomper les jours passés"
+      },
+      "globe": {
+        "description": "Courbe le monde. Idéal pour un long voyage et une grande carte.",
+        "label": "Vue globe"
+      },
+      "googleOnly": "Disponible avec Google Maps.",
+      "group": {
+        "features": "Éléments",
+        "labels": "Étiquettes",
+        "pins": "Vos repères",
+        "routes": "Tracés d'itinéraire"
+      },
+      "handoff": {
+        "apple": "Apple Maps",
+        "description": "L'app proposée en premier quand vous ouvrez un lieu.",
+        "google": "Google Maps",
+        "label": "Ouvrir les lieux dans"
+      },
+      "light": {
+        "auto": "Automatique",
+        "dawn": "Aube",
+        "day": "Jour",
+        "description": "Le moment de la journée qui éclaire la carte. Automatique suit votre appareil.",
+        "dusk": "Crépuscule",
+        "googleNote": "Google Maps ne propose que jour et nuit.",
+        "label": "Lumière",
+        "night": "Nuit"
+      },
+      "mapboxOnly": "Disponible avec Mapbox.",
+      "mapboxUnavailableHere": "Nécessite Mapbox, qui n'est pas configuré ici.",
+      "paths": {
+        "description": "Chemins et voies piétonnes.",
+        "label": "Chemins piétons"
+      },
+      "pitch": {
+        "description": "Regarder la carte de biais plutôt que d'en haut.",
+        "flat": "À plat",
+        "label": "Inclinaison"
+      },
+      "placeLabels": {
+        "description": "Villes et villages du fond de carte.",
+        "label": "Noms des lieux"
+      },
+      "poiLabels": {
+        "description": "Commerces, monuments et lieux que vous n'avez pas prévus.",
+        "label": "Points d'intérêt"
+      },
+      "preset": {
+        "label": "Préréglages"
+      },
+      "renderer": {
+        "auto": "Automatique",
+        "description": "La carte que l'app affiche.",
+        "google": "Google",
+        "label": "Fournisseur de cartes",
+        "mapbox": "Mapbox",
+        "mapboxUnavailable": "Mapbox n'est pas configuré ici, Google est donc utilisé."
+      },
+      "reset": "Réinitialiser",
+      "roadLabels": {
+        "description": "Utiles de près, encombrants de loin.",
+        "label": "Noms des rues"
+      },
+      "roads": {
+        "description": "Désactivez pour une carte épurée qui ne montre que votre voyage.",
+        "label": "Routes et transports"
+      },
+      "routeMode": {
+        "description": "Suivre les routes, ou relier les étapes en ligne droite.",
+        "label": "Forme",
+        "realistic": "Suivre les routes",
+        "simple": "Direct"
+      },
+      "saveAsDefault": "Enregistrer comme mon préréglage",
+      "saved": "Enregistré",
+      "switchToMapbox": "Passer à Mapbox",
+      "tab": {
+        "camera": "Caméra",
+        "detail": "Détail",
+        "look": "Allure",
+        "trip": "Voyage"
+      },
+      "terrain": {
+        "description": "Fait ressortir collines et montagnes.",
+        "label": "Relief"
+      },
+      "thickness": {
+        "label": "Épaisseur",
+        "normal": "Normale",
+        "thick": "Épaisse",
+        "thin": "Fine"
+      },
+      "title": "Personnaliser la carte",
+      "traffic": {
+        "description": "État actuel des routes.",
+        "label": "Trafic en direct"
+      },
+      "transitLabels": {
+        "description": "Arrêts et gares avec leur nom.",
+        "label": "Noms des stations"
+      },
+      "transitLines": {
+        "description": "Lignes de métro et de train sur la carte.",
+        "label": "Lignes de transport"
+      },
+      "style": {
+        "standard": "Standard",
+        "minimal": "Minimal",
+        "clean": "Épuré",
+        "dark": "Sombre",
+        "cleanDark": "Épuré sombre",
+        "satellite": "Satellite"
+      },
+      "showWholeJourney": "Voir tout le parcours",
+      "open": "Personnaliser la carte",
+      "presetSet": {
+        "label": "Partir de",
+        "default": "Défaut",
+        "detailed": "Détaillé",
+        "minimalistic": "Minimal",
+        "mine": "Le mien",
+        "customNote": "Votre propre combinaison de réglages."
+      }
     }
   },
   "tripRouteShell": {

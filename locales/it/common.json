@@ -514,6 +514,185 @@
       "openDetails": "Apri dettagli",
       "close": "Chiudi",
       "popupLabel": "Dettagli dell'attività"
+    },
+    "mapCustomize": {
+      "activityMarkers": {
+        "description": "I luoghi che hai pianificato di visitare.",
+        "label": "Segnaposto attività"
+      },
+      "arrows": {
+        "description": "Mostrano in che verso procede il viaggio.",
+        "label": "Frecce di direzione"
+      },
+      "base": {
+        "description": "Una mappa disegnata oppure immagini satellitari.",
+        "label": "Base",
+        "map": "Mappa",
+        "satellite": "Satellite"
+      },
+      "boundaries": {
+        "description": "Confini all'interno di un paese, non solo tra paesi.",
+        "label": "Confini regionali"
+      },
+      "buildings": {
+        "description": "Edifici in rilievo, si vedono meglio con un po' di inclinazione.",
+        "label": "Edifici 3D"
+      },
+      "cityFocus": {
+        "description": "Inquadra la città sul tuo piano e nasconde il resto del viaggio.",
+        "label": "Inquadra la città selezionata"
+      },
+      "cityNames": {
+        "description": "Etichetta ogni tappa del percorso.",
+        "label": "Nomi delle città"
+      },
+      "close": "Chiudi",
+      "colorMode": {
+        "brand": "Accento unico",
+        "label": "Colore",
+        "trip": "Colori delle città"
+      },
+      "colorTheme": {
+        "default": "Pieno",
+        "description": "Quanto colore porta la mappa.",
+        "faded": "Attenuato",
+        "label": "Colore",
+        "monochrome": "Mono",
+        "satelliteNote": "Le immagini satellitari hanno i loro colori."
+      },
+      "copied": "Copiato",
+      "copyPreset": "Copia",
+      "dashed": {
+        "description": "Tratteggio invece di linee continue.",
+        "label": "Linee tratteggiate"
+      },
+      "description": "Si salva con questo viaggio mentre lo modifichi.",
+      "dimPast": {
+        "description": "Manda sullo sfondo i giorni già trascorsi.",
+        "label": "Sfuma i giorni passati"
+      },
+      "globe": {
+        "description": "Curva il mondo. Ideale per viaggi lunghi e mappe grandi.",
+        "label": "Vista globo"
+      },
+      "googleOnly": "Disponibile con Google Maps.",
+      "group": {
+        "features": "Elementi",
+        "labels": "Etichette",
+        "pins": "I tuoi segnaposto",
+        "routes": "Linee del percorso"
+      },
+      "handoff": {
+        "apple": "Apple Maps",
+        "description": "Quale app viene proposta per prima quando apri un luogo.",
+        "google": "Google Maps",
+        "label": "Apri i luoghi in"
+      },
+      "light": {
+        "auto": "Automatico",
+        "dawn": "Alba",
+        "day": "Giorno",
+        "description": "L'ora del giorno che illumina la mappa. Automatico segue il tuo dispositivo.",
+        "dusk": "Tramonto",
+        "googleNote": "Google Maps ha solo giorno e notte.",
+        "label": "Luce",
+        "night": "Notte"
+      },
+      "mapboxOnly": "Disponibile con Mapbox.",
+      "mapboxUnavailableHere": "Richiede Mapbox, che qui non è configurato.",
+      "paths": {
+        "description": "Sentieri e percorsi pedonali.",
+        "label": "Percorsi pedonali"
+      },
+      "pitch": {
+        "description": "Guarda la mappa di sbieco invece che dall'alto.",
+        "flat": "Piatta",
+        "label": "Inclinazione"
+      },
+      "placeLabels": {
+        "description": "Paesi e città sulla mappa base.",
+        "label": "Nomi dei luoghi"
+      },
+      "poiLabels": {
+        "description": "Negozi, monumenti e luoghi che non hai pianificato.",
+        "label": "Punti di interesse"
+      },
+      "preset": {
+        "label": "Preimpostazioni"
+      },
+      "renderer": {
+        "auto": "Automatico",
+        "description": "Quale mappa disegna l'app.",
+        "google": "Google",
+        "label": "Fornitore di mappe",
+        "mapbox": "Mapbox",
+        "mapboxUnavailable": "Mapbox non è configurato qui, quindi viene usato Google."
+      },
+      "reset": "Reimposta",
+      "roadLabels": {
+        "description": "Utili da vicino, confusi da lontano.",
+        "label": "Nomi delle strade"
+      },
+      "roads": {
+        "description": "Disattiva per una mappa pulita con solo il tuo viaggio.",
+        "label": "Strade e trasporti"
+      },
+      "routeMode": {
+        "description": "Segui le strade oppure collega le tappe in linea retta.",
+        "label": "Forma",
+        "realistic": "Segui le strade",
+        "simple": "Diretta"
+      },
+      "saveAsDefault": "Salva come mia preimpostazione",
+      "saved": "Salvato",
+      "switchToMapbox": "Passa a Mapbox",
+      "tab": {
+        "camera": "Vista",
+        "detail": "Dettaglio",
+        "look": "Aspetto",
+        "trip": "Viaggio"
+      },
+      "terrain": {
+        "description": "Mette in risalto colline e montagne.",
+        "label": "Rilievo"
+      },
+      "thickness": {
+        "label": "Spessore",
+        "normal": "Normale",
+        "thick": "Spesso",
+        "thin": "Sottile"
+      },
+      "title": "Personalizza la mappa",
+      "traffic": {
+        "description": "Condizioni attuali sulle strade.",
+        "label": "Traffico in tempo reale"
+      },
+      "transitLabels": {
+        "description": "Fermate e stazioni con il loro nome.",
+        "label": "Nomi delle stazioni"
+      },
+      "transitLines": {
+        "description": "Linee di metro e treno sulla mappa.",
+        "label": "Linee di trasporto"
+      },
+      "style": {
+        "standard": "Standard",
+        "minimal": "Minimale",
+        "clean": "Pulito",
+        "dark": "Scuro",
+        "cleanDark": "Pulito scuro",
+        "satellite": "Satellite"
+      },
+      "showWholeJourney": "Mostra tutto il viaggio",
+      "open": "Personalizza la mappa",
+      "presetSet": {
+        "label": "Parti da",
+        "default": "Predefinito",
+        "detailed": "Dettagliato",
+        "minimalistic": "Minimo",
+        "mine": "Mio",
+        "customNote": "La tua combinazione di impostazioni."
+      }
     }
   },
   "tripRouteShell": {
