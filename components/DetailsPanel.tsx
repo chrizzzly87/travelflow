@@ -1670,7 +1670,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
           {/* Body */}
           <div className="p-4 sm:p-6 space-y-6 flex-1 overflow-y-auto min-w-0">
              {isActivity && isDurationEditorOpen && (
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+                <div className="bg-white rounded-2xl p-5 shadow-[var(--tf-shadow-surface)] space-y-4">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Schedule</h3>
                         <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded">
@@ -1684,11 +1684,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 {isValidDate ? formatDate(itemStartDate) : '—'}
                             </span>
                         </div>
-                        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
+                        <div className="flex items-center gap-1 bg-gray-50 rounded-[calc(var(--radius)+2px)] p-1">
                             <button type="button"
                                 onClick={() => updateActivityDayDraft(-1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-[color,background-color,border-color,box-shadow,opacity] duration-150 ease-out motion-reduce:transition-none text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                                 aria-label="Move activity one day earlier"
                             >
                                 <Minus size={14} />
@@ -1697,7 +1697,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button type="button"
                                 onClick={() => updateActivityDayDraft(1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-[color,background-color,border-color,box-shadow,opacity] duration-150 ease-out motion-reduce:transition-none text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                                 aria-label="Move activity one day later"
                             >
                                 <Plus size={14} />
@@ -1751,7 +1751,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isActivity && isActivityLocationEditorOpen && (
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+                <div className="bg-white rounded-2xl p-5 shadow-[var(--tf-shadow-surface)] space-y-4">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Location</h3>
                         <div className="text-xs text-gray-500">Search with Google Places</div>
@@ -1814,7 +1814,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isCity && isValidDate && isDurationEditorOpen && (
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+                <div className="bg-white rounded-2xl p-5 shadow-[var(--tf-shadow-surface)] space-y-4">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Schedule</h3>
                         <div className="flex items-center gap-2">
@@ -1837,11 +1837,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <span className="text-[10px] font-bold text-gray-400 uppercase">Arrival</span>
                             <span className="text-sm font-bold text-gray-800">{formatDate(itemStartDate)}</span>
                         </div>
-                        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
+                        <div className="flex items-center gap-1 bg-gray-50 rounded-[calc(var(--radius)+2px)] p-1">
                             <button type="button"
                                 onClick={() => updateDurationStartDraft(-1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-[color,background-color,border-color,box-shadow,opacity] duration-150 ease-out motion-reduce:transition-none text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Minus size={14} />
                             </button>
@@ -1849,7 +1849,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button type="button"
                                 onClick={() => updateDurationStartDraft(1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-[color,background-color,border-color,box-shadow,opacity] duration-150 ease-out motion-reduce:transition-none text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Plus size={14} />
                             </button>
@@ -1860,11 +1860,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <span className="text-[10px] font-bold text-gray-400 uppercase">Departure</span>
                             <span className="text-sm font-bold text-gray-800">{formatDate(itemEndDate)}</span>
                         </div>
-                        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
+                        <div className="flex items-center gap-1 bg-gray-50 rounded-[calc(var(--radius)+2px)] p-1">
                             <button type="button"
                                 onClick={() => updateDurationEndDraft(-1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-[color,background-color,border-color,box-shadow,opacity] duration-150 ease-out motion-reduce:transition-none text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Minus size={14} />
                             </button>
@@ -1872,7 +1872,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button type="button"
                                 onClick={() => updateDurationEndDraft(1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-[color,background-color,border-color,box-shadow,opacity] duration-150 ease-out motion-reduce:transition-none text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Plus size={14} />
                             </button>
@@ -1902,7 +1902,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isCity && isCityEditorOpen && (
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+                <div className="bg-white rounded-2xl p-5 shadow-[var(--tf-shadow-surface)] space-y-4">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">City</h3>
                         <div className="text-xs text-gray-500">Search with Google Places</div>
@@ -1967,7 +1967,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isCity && (
-                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                 <div className="bg-white p-5 rounded-2xl shadow-[var(--tf-shadow-surface)]">
                      <div className="flex justify-between items-center mb-4">
                          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5"><Hotel size={14} /> Accomodation</h3>
                          <button type="button"
@@ -2016,7 +2016,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                                 type="button"
                                                 onClick={() => selectHotelResult(result)}
                                                 disabled={!canEdit}
-                                                className={`w-full text-left bg-gray-50 border border-gray-200 rounded-lg p-2 transition-all ${canEdit ? 'hover:bg-accent-50 hover:border-accent-200 cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
+                                                className={`w-full text-left bg-gray-50 border border-gray-200 rounded-lg p-2 transition-[color,background-color,border-color,box-shadow,opacity] duration-150 ease-out motion-reduce:transition-none ${canEdit ? 'hover:bg-accent-50 hover:border-accent-200 cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
                                             >
                                                 <div className="font-bold text-sm text-gray-800">{result.name}</div>
                                                 <div className="text-xs text-gray-500 truncate">{result.address}</div>
@@ -2095,7 +2095,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                  key={mode}
                                  onClick={() => handleTransportConvert(mode)}
                                  disabled={!canEdit || normalizedTransportMode === mode}
-                                 className={`flex flex-col items-center justify-center w-full h-20 rounded-xl border-2 transition-all ${
+                                 className={`flex flex-col items-center justify-center w-full h-20 rounded-xl border-2 transition-[color,background-color,border-color,box-shadow,opacity] duration-150 ease-out motion-reduce:transition-none ${
                                     normalizedTransportMode === mode
                                         ? (mode === 'na' ? 'bg-gray-50 border-gray-300 text-gray-500' : 'bg-accent-50 border-accent-500 text-accent-700')
                                         : (mode === 'na' ? 'bg-gray-50 border-gray-200 text-gray-400' : 'bg-gray-50 border-gray-100 text-gray-400')
@@ -2110,7 +2110,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isActivity && (
-                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                 <div className="bg-white p-5 rounded-2xl shadow-[var(--tf-shadow-surface)]">
                      <div className="mb-4 flex justify-end">
                          <button
                              type="button"
@@ -2138,7 +2138,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                     key={type}
                                     onClick={() => toggleActivityType(type)}
                                     disabled={!canEdit}
-                                    className={`flex items-center px-3 py-2 rounded-lg border transition-all text-xs font-bold uppercase tracking-wide ${getActivityTypeButtonClass(type, isSelectedType)} ${canEdit ? '' : 'opacity-60 cursor-not-allowed'}`}
+                                    className={`flex items-center px-3 py-2 rounded-lg border transition-[color,background-color,border-color,box-shadow,opacity] duration-150 ease-out motion-reduce:transition-none text-xs font-bold uppercase tracking-wide ${getActivityTypeButtonClass(type, isSelectedType)} ${canEdit ? '' : 'opacity-60 cursor-not-allowed'}`}
                                 >
                                     <ActivityTypeIcon type={type} size={13} className="mr-1.5" />
                                     <span>{formatActivityTypeLabel(type)}</span>
@@ -2151,7 +2151,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                  </div>
              )}
 
-             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex-1">
+             <div className="bg-white p-5 rounded-2xl shadow-[var(--tf-shadow-surface)] flex-1">
                 <div className="flex justify-between items-center mb-2"><h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Notes</h3></div>
                 <Suspense
                     fallback={<div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">Loading notes editor…</div>}
