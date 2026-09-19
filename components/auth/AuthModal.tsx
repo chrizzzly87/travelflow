@@ -597,16 +597,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             />
             <div
                 ref={dialogRef}
-                className="relative z-10 w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl"
+                className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl sm:max-h-[calc(100dvh-3rem)]"
                 role="dialog"
                 aria-modal="true"
                 aria-label="Authentication modal"
             >
-                <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+                <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-3 sm:py-4">
                     <div className="min-w-0">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">{t('hero.eyebrow')}</p>
-                        <h2 className="mt-1 text-lg font-semibold text-slate-900">{t('hero.title')}</h2>
-                        <p className="mt-1 text-sm text-slate-600">{t('hero.description')}</p>
+                        <p className="hidden text-xs font-semibold uppercase tracking-wide text-accent-600 sm:block">{t('hero.eyebrow')}</p>
+                        <h2 className="text-base font-semibold text-slate-900 sm:mt-1 sm:text-lg">{t('hero.title')}</h2>
+                        <p className="mt-1 hidden text-sm text-slate-600 sm:block">{t('hero.description')}</p>
                     </div>
                     <button
                         ref={closeButtonRef}
@@ -624,7 +624,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </button>
                 </div>
 
-                <div className="px-5 py-4">
+                <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                     {!isOnline && (
                         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" aria-live="polite">
                             <p className="font-semibold">{t('states.offlineNoticeTitle')}</p>
@@ -752,7 +752,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                                 {t('actions.setPasswordSocial')}
                                             </button>
                                         </div>
-                                        <p className="text-xs text-slate-500">{t('copy.passwordResetHint')}</p>
                                     </div>
                                 )}
                                 {mode === 'register' && (

@@ -166,6 +166,27 @@ describe('components/auth/AuthModal', () => {
     expect(screen.queryByText('states.alreadyAuthenticated')).not.toBeInTheDocument();
   });
 
+  it('keeps the dialog inside the viewport and drops the password-reset hint', () => {
+    renderModal();
+
+    expect(screen.queryByText('copy.passwordResetHint')).not.toBeInTheDocument();
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.className).toContain('max-h-[calc(100dvh-2rem)]');
+
+    const scrollArea = dialog.querySelector('.overflow-y-auto');
+    expect(scrollArea).not.toBeNull();
+    expect(scrollArea).toContainElement(screen.getByLabelText('labels.email'));
+  });
+
+  it('hides the header intro lines on small screens and keeps the title', () => {
+    renderModal();
+
+    expect(screen.getByRole('heading', { name: 'hero.title' })).toBeInTheDocument();
+    expect(screen.getByText('hero.eyebrow').className).toContain('hidden');
+    expect(screen.getByText('hero.description').className).toContain('hidden');
+  });
+
   it('submits browser-autofilled credentials even when React state was not updated by input events', async () => {
     const user = userEvent.setup();
     renderModal();

@@ -552,7 +552,6 @@ export const LoginPage: React.FC = () => {
                                         {t('actions.setPasswordSocial')}
                                     </button>
                                 </div>
-                                <p className="text-xs text-slate-500">{t('copy.passwordResetHint')}</p>
                             </div>
                         )}
                         {mode === 'register' && (
