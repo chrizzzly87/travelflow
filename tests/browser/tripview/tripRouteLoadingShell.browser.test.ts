@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render } from '@testing-library/react';
+import { render } from '@testing-library/react';
 
 const mocks = vi.hoisted(() => ({
   persistedViewSettings: undefined as Record<string, unknown> | undefined,
@@ -13,8 +13,8 @@ vi.mock('../../../services/tripViewSettingsService', () => ({
 
 import { TripRouteLoadingShell } from '../../../components/tripview/TripRouteLoadingShell';
 
+// RTL cleanup is global in test/setupTests.ts; only the mock needs resetting.
 afterEach(() => {
-  cleanup();
   mocks.persistedViewSettings = undefined;
 });
 
