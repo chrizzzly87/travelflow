@@ -1,10 +1,10 @@
 ---
-id: rel-2026-09-18-trip-card-map-caching
+id: rel-2026-09-19-trip-card-map-caching
 version: v0.179.0
 title: "Trip card maps appear instead of loading"
-date: 2026-09-18
-published_at: 2026-09-18T21:00:00Z
-status: draft
+date: 2026-09-19
+published_at: 2026-09-19T10:09:49Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "The little route map on every trip card used to be drawn from scratch each time you opened your trips. Now it is drawn once and kept, so your cards come up with their maps already on them and only redraw once a trip has actually changed and settled."
