@@ -24,6 +24,14 @@ export default defineConfig({
     // whole module graph is re-imported per file — `import` was 226s of a 273s
     // run. Worker threads share a module registry, which is where the time goes.
     pool: 'threads',
+    // Threads share one process, so a test file can no longer pick its own
+    // timezone: `process.env.TZ = ...` at the top of a file worked under
+    // `forks` only because that file owned the process. Node reads TZ once at
+    // startup, so it is set on the vitest scripts in package.json instead —
+    // setting it here, or via `test.env`, or inside a worker, is already too
+    // late. Europe/Berlin and not UTC on purpose: tests like
+    // tests/unit/defaultTripDates.test.ts exist to catch local-midnight-vs-UTC
+    // bugs, and under UTC that scenario cannot be reproduced at all.
     clearMocks: true,
     restoreMocks: true,
     unstubEnvs: true,

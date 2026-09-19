@@ -1,6 +1,12 @@
-// Force a UTC+ timezone (UTC+1/UTC+2 with DST) before any Date usage so the
-// regression scenario — local midnight serializing as the previous UTC day —
-// is actually reproduced. Node picks up process.env.TZ for subsequent Date calls.
+// This suite needs a UTC+ timezone (UTC+1/UTC+2 with DST) so the regression
+// scenario — local midnight serializing as the previous UTC day — is actually
+// reproduced. The `isUtcPlusTimezone` guard below asserts it took effect.
+//
+// The timezone comes from the vitest scripts in package.json, not from here.
+// Under the old `forks` pool each file owned its process and this assignment
+// worked; on `threads` the process TZ is already fixed by the time any file
+// runs, so it has to be set before Node starts. Kept for a direct
+// `npx vitest run` without the script wrapper.
 process.env.TZ = 'Europe/Berlin';
 
 import { describe, expect, it } from 'vitest';
