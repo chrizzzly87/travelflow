@@ -3,6 +3,7 @@ import React from 'react';
 type AppBootstrapShellVariant = 'marketing' | 'trip';
 type AppBootstrapShellChromeMode = 'skeleton' | 'ghost';
 type AppBootstrapShellSurfaceMode = 'default' | 'neutral';
+type AppBootstrapShellPlannerLayout = 'horizontal' | 'vertical';
 
 interface AppBootstrapShellProps {
   variant?: AppBootstrapShellVariant;
@@ -11,10 +12,136 @@ interface AppBootstrapShellProps {
   handoffReady?: boolean;
   chromeMode?: AppBootstrapShellChromeMode;
   surfaceMode?: AppBootstrapShellSurfaceMode;
+  /** Mirrors the planner orientation the traveller last used. */
+  plannerLayout?: AppBootstrapShellPlannerLayout;
+  /** Width of the timeline pane in the horizontal layout, in pixels. */
+  sidebarWidth?: number;
+  /** Height of the timeline pane in the vertical layout, in pixels. */
+  timelineHeight?: number;
 }
 
-const TRIP_DAYS = [0, 1, 2, 3, 4];
-const TRIP_BLOCKS = [0, 1, 2];
+/** One day column in the timeline ruler, in pixels, at the default zoom. */
+const TIMELINE_DAY_WIDTH = 48;
+
+/** Enough columns to run past the widest pane the skeleton is shown in. */
+const TIMELINE_DAYS = Array.from({ length: 26 }, (_, index) => index);
+
+/** Stay lengths in days, so the city row reads as a real itinerary. */
+const TIMELINE_CITY_SPANS = [3, 2, 4, 3, 3, 2];
+
+/** Day offsets where one city hands over to the next. */
+const TIMELINE_TRANSFER_DAYS = [3, 5, 9, 12, 15];
+
+/** Day offset plus card height for the activity columns. */
+const TIMELINE_ACTIVITIES: ReadonlyArray<readonly [number, number]> = [
+  [0, 160],
+  [3, 112],
+  [6, 160],
+  [7, 96],
+  [11, 136],
+  [15, 120],
+];
+
+const TripPlannerSkeleton: React.FC<{
+  plannerLayout: AppBootstrapShellPlannerLayout;
+  sidebarWidth?: number;
+  timelineHeight?: number;
+}> = ({ plannerLayout, sidebarWidth, timelineHeight }) => {
+  const plannerStyle = {
+    ...(typeof sidebarWidth === 'number' ? { '--tf-boot-sidebar-width': `${sidebarWidth}px` } : {}),
+    ...(typeof timelineHeight === 'number' ? { '--tf-boot-timeline-height': `${timelineHeight}px` } : {}),
+  } as React.CSSProperties;
+
+  return (
+    <main className="tf-boot-planner" data-tf-boot-layout={plannerLayout} style={plannerStyle}>
+      <section className="tf-boot-planner-timeline">
+        <div className="tf-boot-tl-track">
+          <div className="tf-boot-tl-months">
+            <div className="tf-boot-tl-month" style={{ width: 12 * TIMELINE_DAY_WIDTH }}><span /></div>
+            <div className="tf-boot-tl-month" style={{ width: 14 * TIMELINE_DAY_WIDTH }}><span /></div>
+          </div>
+          <div className="tf-boot-tl-days">
+            {TIMELINE_DAYS.map((day) => (
+              <span key={day} className="tf-boot-tl-day"><span /></span>
+            ))}
+          </div>
+          <div className="tf-boot-tl-body">
+            <div className="tf-bone tf-boot-tl-label tf-boot-tl-label--cities" />
+            <div className="tf-boot-tl-cities">
+              {TIMELINE_CITY_SPANS.map((span, index) => (
+                <span
+                  key={`city-${index}`}
+                  className="tf-bone tf-boot-tl-city"
+                  style={{
+                    width: span * TIMELINE_DAY_WIDTH - 2,
+                    '--tf-bone-phase': index,
+                  } as React.CSSProperties}
+                />
+              ))}
+            </div>
+            <div
+              className="tf-bone tf-boot-tl-label tf-boot-tl-label--transfer"
+              style={{ '--tf-bone-phase': 2 } as React.CSSProperties}
+            />
+            <div className="tf-boot-tl-transfers">
+              {TIMELINE_TRANSFER_DAYS.map((day) => (
+                <span
+                  key={`transfer-${day}`}
+                  className="tf-boot-tl-transfer"
+                  style={{ insetInlineStart: day * TIMELINE_DAY_WIDTH - 27 }}
+                />
+              ))}
+            </div>
+            <div
+              className="tf-bone tf-boot-tl-label tf-boot-tl-label--activities"
+              style={{ '--tf-bone-phase': 4 } as React.CSSProperties}
+            />
+            <div className="tf-boot-tl-activities">
+              {TIMELINE_ACTIVITIES.map(([day, height], index) => (
+                <span
+                  key={`activity-${day}`}
+                  className="tf-bone tf-boot-tl-activity"
+                  style={{
+                    insetInlineStart: day * TIMELINE_DAY_WIDTH + 1,
+                    height,
+                    '--tf-bone-phase': index,
+                  } as React.CSSProperties}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="tf-boot-tl-controls">
+          <span className="tf-boot-tl-control-group">
+            <span className="tf-bone tf-boot-tl-control tf-boot-tl-control--accent" />
+            <span className="tf-bone tf-boot-tl-control" style={{ '--tf-bone-phase': 1 } as React.CSSProperties} />
+          </span>
+          <span className="tf-boot-tl-control-group">
+            <span className="tf-bone tf-boot-tl-control" style={{ '--tf-bone-phase': 2 } as React.CSSProperties} />
+            <span className="tf-bone tf-boot-tl-control-readout" />
+            <span className="tf-bone tf-boot-tl-control" style={{ '--tf-bone-phase': 3 } as React.CSSProperties} />
+          </span>
+          <span className="tf-boot-tl-control-group">
+            <span
+              className="tf-bone tf-boot-tl-control tf-boot-tl-control--accent"
+              style={{ '--tf-bone-phase': 4 } as React.CSSProperties}
+            />
+            <span className="tf-bone tf-boot-tl-control" style={{ '--tf-bone-phase': 5 } as React.CSSProperties} />
+          </span>
+        </div>
+      </section>
+      <div className="tf-boot-planner-grip" />
+      <section className="tf-boot-planner-map">
+        <div className="tf-boot-map-controls">
+          <span className="tf-boot-map-control" />
+          <span className="tf-boot-map-control" />
+          <span className="tf-boot-map-control" />
+          <span className="tf-boot-map-control tf-boot-map-control--accent" />
+        </div>
+      </section>
+    </main>
+  );
+};
 
 export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
   variant = 'marketing',
@@ -23,6 +150,9 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
   handoffReady = false,
   chromeMode = 'skeleton',
   surfaceMode = 'default',
+  plannerLayout = 'horizontal',
+  sidebarWidth,
+  timelineHeight,
 }) => (
   <div
     className="tf-boot-shell"
@@ -46,16 +176,22 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
             </div>
             <div className="tf-boot-trip-divider" aria-hidden="true" />
             <div className="tf-boot-trip-copy" aria-hidden="true">
-              <div className="tf-boot-line tf-boot-line--trip-title" />
-              <div className="tf-boot-line tf-boot-line--trip-meta" />
+              <div className="tf-bone tf-boot-line tf-boot-line--trip-title" />
+              <div
+                className="tf-bone tf-boot-line tf-boot-line--trip-meta"
+                style={{ '--tf-bone-phase': 1 } as React.CSSProperties}
+              />
             </div>
           </div>
           <div className="tf-boot-trip-header-actions" aria-hidden="true">
-            <span className="tf-boot-trip-action-pill" />
-            <span className="tf-boot-trip-action-square" />
-            <span className="tf-boot-trip-action-square" />
-            <span className="tf-boot-trip-action-square" />
-            <span className="tf-boot-trip-action-primary" />
+            <span
+              className="tf-bone tf-boot-trip-action-pill"
+              style={{ '--tf-bone-phase': 2 } as React.CSSProperties}
+            />
+            <span
+              className="tf-bone tf-boot-trip-action-primary"
+              style={{ '--tf-bone-phase': 3 } as React.CSSProperties}
+            />
           </div>
         </div>
       </header>
@@ -71,11 +207,11 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
           <nav className="tf-boot-nav" aria-hidden="true">
             {chromeMode === 'skeleton' ? (
               <>
-                <span className="tf-boot-nav-link"><span className="tf-boot-nav-skeleton tf-boot-nav-skeleton--features"></span></span>
-                <span className="tf-boot-nav-link"><span className="tf-boot-nav-skeleton tf-boot-nav-skeleton--inspirations"></span></span>
-                <span className="tf-boot-nav-link"><span className="tf-boot-nav-skeleton tf-boot-nav-skeleton--updates"></span></span>
-                <span className="tf-boot-nav-link"><span className="tf-boot-nav-skeleton tf-boot-nav-skeleton--blog"></span></span>
-                <span className="tf-boot-nav-link"><span className="tf-boot-nav-skeleton tf-boot-nav-skeleton--pricing"></span></span>
+                <span className="tf-boot-nav-link"><span className="tf-bone tf-boot-nav-skeleton tf-boot-nav-skeleton--features"></span></span>
+                <span className="tf-boot-nav-link"><span className="tf-bone tf-boot-nav-skeleton tf-boot-nav-skeleton--inspirations"></span></span>
+                <span className="tf-boot-nav-link"><span className="tf-bone tf-boot-nav-skeleton tf-boot-nav-skeleton--updates"></span></span>
+                <span className="tf-boot-nav-link"><span className="tf-bone tf-boot-nav-skeleton tf-boot-nav-skeleton--blog"></span></span>
+                <span className="tf-boot-nav-link"><span className="tf-bone tf-boot-nav-skeleton tf-boot-nav-skeleton--pricing"></span></span>
               </>
             ) : chromeMode === 'ghost' ? (
               <>
@@ -91,14 +227,14 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
             {chromeMode === 'skeleton' ? (
               <>
                 <span className="tf-boot-action-chip tf-boot-action-chip--locale">
-                  <span className="tf-boot-control-flag" aria-hidden="true"></span>
-                  <span className="tf-boot-control-skeleton tf-boot-control-skeleton--locale"></span>
+                  <span className="tf-bone tf-boot-control-flag" aria-hidden="true"></span>
+                  <span className="tf-bone tf-boot-control-skeleton tf-boot-control-skeleton--locale"></span>
                 </span>
                 <span className="tf-boot-action-chip tf-boot-action-chip--login">
-                  <span className="tf-boot-control-skeleton tf-boot-control-skeleton--login"></span>
+                  <span className="tf-bone tf-boot-control-skeleton tf-boot-control-skeleton--login"></span>
                 </span>
                 <span className="tf-boot-action-button">
-                  <span className="tf-boot-control-skeleton tf-boot-control-skeleton--cta"></span>
+                  <span className="tf-bone tf-boot-control-skeleton tf-boot-control-skeleton--cta"></span>
                 </span>
               </>
             ) : chromeMode === 'ghost' ? (
@@ -120,46 +256,11 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
       </header>
     )}
     {variant === 'trip' ? (
-      <main className="tf-boot-main">
-        <section className="tf-boot-page tf-boot-page--trip tf-boot-page--trip-react">
-          <div className="tf-boot-trip-status" />
-          <div className="tf-boot-trip-summary">
-            <div className="tf-boot-trip-summary-copy">
-              <div className="tf-boot-line tf-boot-line--headline" style={{ width: 'min(420px,72%)' }} />
-              <div className="tf-boot-line tf-boot-line--body-md" style={{ width: 'min(300px,56%)' }} />
-            </div>
-            <div className="tf-boot-trip-toolbar" aria-hidden="true">
-              <span className="tf-boot-trip-toolbar-pill" />
-              <span className="tf-boot-trip-toolbar-pill" />
-              <span className="tf-boot-trip-toolbar-pill" />
-            </div>
-          </div>
-          <div className="tf-boot-trip-layout">
-            <section className="tf-boot-trip-canvas" aria-hidden="true">
-              <div className="tf-boot-trip-grid">
-                {TRIP_DAYS.map((day) => (
-                  <div key={day} className="tf-boot-trip-day" />
-                ))}
-              </div>
-              <div className="tf-boot-trip-body">
-                {TRIP_BLOCKS.map((block) => (
-                  <div
-                    key={block}
-                    className={`tf-boot-trip-block${block === 1 ? ' tf-boot-trip-block--thin' : ''}`}
-                  />
-                ))}
-              </div>
-            </section>
-            <aside className="tf-boot-trip-sidebar" aria-hidden="true">
-              <div className="tf-boot-trip-side-card tf-boot-trip-side-card--map" />
-              <div className="tf-boot-metrics">
-                <div className="tf-boot-metric" />
-                <div className="tf-boot-metric" />
-              </div>
-            </aside>
-          </div>
-        </section>
-      </main>
+      <TripPlannerSkeleton
+        plannerLayout={plannerLayout}
+        sidebarWidth={sidebarWidth}
+        timelineHeight={timelineHeight}
+      />
     ) : null}
   </div>
 );
