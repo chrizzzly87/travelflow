@@ -208,7 +208,7 @@ export const FeaturesAirportBentoVisual: React.FC<{
                     className="tracking-[0.08em] drop-shadow-[0_10px_18px_rgba(15,23,42,0.12)]"
                     {...ORIGIN_SPLIT_FLAP_PROPS}
                 />
-                <span className="flex shrink-0 items-center justify-center text-slate-400" aria-hidden="true">
+                <span className="flex shrink-0 items-center justify-center text-slate-400 dark:text-muted-foreground" aria-hidden="true">
                     <ArrowIcon size={24} weight="regular" />
                 </span>
                 <SplitFlap

@@ -127,7 +127,7 @@ const SelectItem = React.forwardRef<
     className={[
       'relative flex w-full cursor-pointer select-none items-center rounded-sm py-2 text-sm text-slate-800 outline-none dark:text-foreground',
       indicatorPosition === 'right' ? 'pl-2 pr-8' : 'pl-8 pr-2',
-      'data-[highlighted]:bg-accent-50 data-[highlighted]:text-accent-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'data-[highlighted]:bg-accent-50 data-[highlighted]:text-accent-900 dark:data-[highlighted]:bg-accent-400/15 dark:data-[highlighted]:text-accent-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className || '',
     ].join(' ')}
     {...props}

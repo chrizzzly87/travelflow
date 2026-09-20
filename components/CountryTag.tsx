@@ -26,7 +26,7 @@ export const CountryTag: React.FC<CountryTagProps> = ({
     return (
         <span
             className={[
-                'inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white text-gray-800 shadow-sm',
+                'inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white text-gray-800 shadow-sm dark:bg-card',
                 isSmall ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-sm font-medium',
                 className,
             ].join(' ').trim()}

@@ -556,7 +556,7 @@ const buildPreviewTrip = (params: {
             title: params.stopTitle(index + 1),
             startDateOffset: offset,
             duration,
-            color: 'bg-slate-100 border-slate-200 text-slate-400',
+            color: 'bg-slate-100 border-slate-200 text-slate-400 dark:bg-secondary dark:border-border dark:text-muted-foreground',
             description: params.stopDescription,
             location: params.focusLocation || params.destination || params.locationFallback,
             loading: true,
@@ -582,23 +582,23 @@ const NumberStepper: React.FC<{
     max: number;
     onChange: (next: number) => void;
 }> = ({ label, value, min, max, onChange }) => (
-    <div className="rounded-2xl border border-slate-200 bg-white p-3">
-        <div className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{label}</div>
+    <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-border dark:bg-card">
+        <div className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{label}</div>
         <div className="mt-3 flex items-center justify-between gap-3">
             <button
                 type="button"
                 onClick={() => onChange(clampNumber(value - 1, min, max))}
                 disabled={value <= min}
-                className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-secondary dark:text-muted-foreground dark:hover:text-accent-300"
             >
                 -
             </button>
-            <span className="min-w-[2ch] text-center text-lg font-semibold text-slate-900">{value}</span>
+            <span className="min-w-[2ch] text-center text-lg font-semibold text-slate-900 dark:text-foreground">{value}</span>
             <button
                 type="button"
                 onClick={() => onChange(clampNumber(value + 1, min, max))}
                 disabled={value >= max}
-                className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-secondary dark:text-muted-foreground dark:hover:text-accent-300"
             >
                 +
             </button>
@@ -623,7 +623,7 @@ const StepDots: React.FC<{
                     disabled={index > currentStep}
                     className={[
                         'h-2.5 rounded-full transition-all',
-                        isActive ? 'w-8 bg-accent-600' : isCompleted ? 'w-3 bg-accent-300 hover:bg-accent-400' : 'w-3 bg-slate-200',
+                        isActive ? 'w-8 bg-accent-600 dark:bg-accent-400' : isCompleted ? 'w-3 bg-accent-300 hover:bg-accent-400' : 'w-3 bg-slate-200 dark:bg-secondary',
                         index > currentStep ? 'cursor-default' : '',
                     ].join(' ')}
                     aria-label={`${index + 1}/${totalSteps}`}
@@ -1515,20 +1515,20 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     initialMapFocusQuery={generationSummary.mapFocus || generationSummary.destination}
                 />
                 <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
-                    <div className="w-full max-w-xl rounded-3xl border border-accent-100 bg-white/95 px-5 py-4 shadow-xl backdrop-blur-sm">
+                    <div className="w-full max-w-xl rounded-3xl border border-accent-100 bg-white/95 px-5 py-4 shadow-xl backdrop-blur-sm dark:bg-card/95">
                         <div className="flex items-center gap-3">
-                            <div className="flex size-10 items-center justify-center rounded-full bg-accent-100 text-accent-600">
+                            <div className="flex size-10 items-center justify-center rounded-full bg-accent-100 text-accent-600 dark:text-accent-300">
                                 <Loader2 size={18} className="animate-spin" />
                             </div>
                             <div className="min-w-0">
                                 <div className="truncate text-sm font-semibold text-accent-900">{t('wizard.loading.title')}</div>
-                                <div className="truncate text-xs text-slate-600">{t('wizard.loading.message')}</div>
+                                <div className="truncate text-xs text-slate-600 dark:text-muted-foreground">{t('wizard.loading.message')}</div>
                             </div>
                         </div>
-                        <div className="mt-3 text-xs text-slate-500">
+                        <div className="mt-3 text-xs text-slate-500 dark:text-muted-foreground">
                             {generationSummary.destination} • {generationSummary.startDate} - {generationSummary.endDate}
                         </div>
-                        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-secondary">
                             <div className="h-full w-1/2 animate-pulse rounded-full bg-gradient-to-r from-accent-500 to-accent-600" />
                         </div>
                     </div>
@@ -1546,9 +1546,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="grid gap-3 md:grid-cols-3">
                     <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('traveler.settings.gender')}</label>
+                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('traveler.settings.gender')}</label>
                         <Select value={soloGender || 'unspecified'} onValueChange={(value) => setSoloGender(value === 'unspecified' ? '' : value as TravelerGender)}>
-                            <SelectTrigger className="h-11 rounded-2xl border-slate-200">
+                            <SelectTrigger className="h-11 rounded-2xl border-slate-200 dark:border-border">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1559,23 +1559,23 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('traveler.settings.age')}</label>
+                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('traveler.settings.age')}</label>
 	                        <input
 	                            type="text"
 	                            aria-label={t('traveler.settings.age')}
 	                            value={soloAge}
                             onChange={(event) => setSoloAge(event.target.value)}
                             placeholder={t('traveler.settings.agePlaceholder')}
-                            className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                            className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 dark:border-border dark:bg-card dark:text-foreground"
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('traveler.settings.comfortMode')}</label>
+                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('traveler.settings.comfortMode')}</label>
                         <Select
                             value={soloComfort}
                             onValueChange={(value) => setSoloComfort(value as TravelerComfort)}
                         >
-                            <SelectTrigger className="h-11 rounded-2xl border-slate-200">
+                            <SelectTrigger className="h-11 rounded-2xl border-slate-200 dark:border-border">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1593,9 +1593,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="grid gap-3 md:grid-cols-3">
                     <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('traveler.settings.travelerA')}</label>
+                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('traveler.settings.travelerA')}</label>
                         <Select value={coupleTravelerA || 'unspecified'} onValueChange={(value) => setCoupleTravelerA(value === 'unspecified' ? '' : value as TravelerGender)}>
-                            <SelectTrigger className="h-11 rounded-2xl border-slate-200">
+                            <SelectTrigger className="h-11 rounded-2xl border-slate-200 dark:border-border">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1606,9 +1606,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('traveler.settings.travelerB')}</label>
+                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('traveler.settings.travelerB')}</label>
                         <Select value={coupleTravelerB || 'unspecified'} onValueChange={(value) => setCoupleTravelerB(value === 'unspecified' ? '' : value as TravelerGender)}>
-                            <SelectTrigger className="h-11 rounded-2xl border-slate-200">
+                            <SelectTrigger className="h-11 rounded-2xl border-slate-200 dark:border-border">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1619,9 +1619,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('traveler.settings.occasion')}</label>
+                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('traveler.settings.occasion')}</label>
                         <Select value={coupleOccasion} onValueChange={(value) => setCoupleOccasion(value as CoupleOccasion)}>
-                            <SelectTrigger className="h-11 rounded-2xl border-slate-200">
+                            <SelectTrigger className="h-11 rounded-2xl border-slate-200 dark:border-border">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1646,9 +1646,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                         onChange={setFriendsCount}
                     />
                     <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('traveler.settings.groupEnergy')}</label>
+                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('traveler.settings.groupEnergy')}</label>
                         <Select value={friendsEnergy} onValueChange={(value) => setFriendsEnergy(value as FriendsEnergy)}>
-                            <SelectTrigger className="h-11 rounded-2xl border-slate-200">
+                            <SelectTrigger className="h-11 rounded-2xl border-slate-200 dark:border-border">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1694,9 +1694,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="space-y-6">
                     <div className="text-center">
-                        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-600">{t('wizard.intent.eyebrow')}</div>
-                        <h1 className="mt-2 text-3xl font-semibold text-slate-950 sm:text-4xl">{t('wizard.intent.title')}</h1>
-                        <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-600 sm:text-base">{t('wizard.intent.description')}</p>
+                        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-600 dark:text-accent-300">{t('wizard.intent.eyebrow')}</div>
+                        <h1 className="mt-2 text-3xl font-semibold text-slate-950 sm:text-4xl dark:text-foreground">{t('wizard.intent.title')}</h1>
+                        <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-600 sm:text-base dark:text-muted-foreground">{t('wizard.intent.description')}</p>
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -1711,23 +1711,23 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                     className={[
                                         'rounded-3xl border p-4 text-start transition-all',
                                         active
-                                            ? 'border-accent-500 bg-accent-50 shadow-sm shadow-accent-100'
-                                            : 'border-slate-200 bg-white hover:border-accent-300 hover:bg-accent-50/60',
+                                            ? 'border-accent-500 bg-accent-50 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none'
+                                            : 'border-slate-200 bg-white hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:hover:bg-accent-400/15',
                                     ].join(' ')}
                                     {...getAnalyticsDebugAttributes('create_trip_wizard__branch--select', { branch: option.id })}
                                 >
                                     <div className="flex items-start justify-between gap-3">
-                                        <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                                        <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 dark:bg-secondary dark:text-foreground">
                                             <Icon size={20} weight="duotone" />
                                         </span>
                                         {active && (
-                                            <span className="inline-flex size-6 items-center justify-center rounded-full bg-accent-600 text-white">
+                                            <span className="inline-flex size-6 items-center justify-center rounded-full bg-accent-600 text-white dark:bg-accent-400 dark:text-background">
                                                 <Check size={12} />
                                             </span>
                                         )}
                                     </div>
-                                    <div className="mt-4 text-base font-semibold text-slate-950">{t(option.titleKey)}</div>
-                                    <div className="mt-1 text-sm text-slate-600">{t(option.descriptionKey)}</div>
+                                    <div className="mt-4 text-base font-semibold text-slate-950 dark:text-foreground">{t(option.titleKey)}</div>
+                                    <div className="mt-1 text-sm text-slate-600 dark:text-muted-foreground">{t(option.descriptionKey)}</div>
                                 </button>
                             );
                         })}
@@ -1740,8 +1740,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="space-y-6">
                     <div className="text-center">
-                        <h2 className="text-3xl font-semibold text-slate-950">{t('wizard.destination.title')}</h2>
-                        <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">
+                        <h2 className="text-3xl font-semibold text-slate-950 dark:text-foreground">{t('wizard.destination.title')}</h2>
+                        <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600 dark:text-muted-foreground">
                             {wizardBranch === 'known_destinations_exact_dates' || wizardBranch === 'known_destinations_flexible_dates'
                                 ? t('wizard.destination.knownDescription')
                                 : t('wizard.destination.helpDescription')}
@@ -1765,7 +1765,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     />
 
                     <div>
-                        <div className="mb-3 text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('wizard.destination.quickPicks')}</div>
+                        <div className="mb-3 text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('wizard.destination.quickPicks')}</div>
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                             {POPULAR_PICKS.map((pick) => {
                                 const option = getDestinationOptionByName(pick);
@@ -1778,14 +1778,14 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         className={[
                                             'rounded-2xl border p-3 text-center transition-all',
                                             active
-                                                ? 'border-accent-500 bg-accent-50 shadow-sm shadow-accent-100'
-                                                : 'border-slate-200 bg-white hover:border-accent-300 hover:bg-accent-50/60',
+                                                ? 'border-accent-500 bg-accent-50 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none'
+                                                : 'border-slate-200 bg-white hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:hover:bg-accent-400/15',
                                         ].join(' ')}
                                     >
                                         <div className="mb-1 flex justify-center">
                                             <FlagIcon value={option?.flag || '🌍'} size="2xl" />
                                         </div>
-                                        <div className="text-sm font-semibold text-slate-900">{getLocalizedDestinationLabel(pick)}</div>
+                                        <div className="text-sm font-semibold text-slate-900 dark:text-foreground">{getLocalizedDestinationLabel(pick)}</div>
                                     </button>
                                 );
                             })}
@@ -1793,11 +1793,11 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     </div>
 
                     {selectedCountries.length > 1 && (
-                        <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 lg:grid-cols-2">
+                        <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 lg:grid-cols-2 dark:border-border dark:bg-secondary">
                             <div className="space-y-2">
-                                <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('wizard.destination.startLabel')}</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('wizard.destination.startLabel')}</label>
                                 <Select value={startDestination} onValueChange={setStartDestination}>
-                                    <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-white">
+                                    <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-white dark:border-border dark:bg-card">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -1806,20 +1806,20 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                <p className="text-xs text-slate-500">{t('wizard.destination.selectionHint')}</p>
+                                <p className="text-xs text-slate-500 dark:text-muted-foreground">{t('wizard.destination.selectionHint')}</p>
                             </div>
                             <div className="space-y-3">
-                                <div className="flex items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3">
+                                <div className="flex items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 dark:border-border dark:bg-card">
                                     <div>
-                                        <div className="text-sm font-semibold text-slate-900">{t('wizard.details.roundTripTitle')}</div>
-                                        <div className="mt-1 text-xs text-slate-500">{t('wizard.details.roundTripDescription')}</div>
+                                        <div className="text-sm font-semibold text-slate-900 dark:text-foreground">{t('wizard.details.roundTripTitle')}</div>
+                                        <div className="mt-1 text-xs text-slate-500 dark:text-muted-foreground">{t('wizard.details.roundTripDescription')}</div>
                                     </div>
                                     <Switch checked={isRoundTrip} onCheckedChange={(value) => setIsRoundTrip(Boolean(value))} />
                                 </div>
-                                <div className="flex items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3">
+                                <div className="flex items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 dark:border-border dark:bg-card">
                                     <div>
-                                        <div className="text-sm font-semibold text-slate-900">{t('wizard.details.routeLockTitle')}</div>
-                                        <div className="mt-1 text-xs text-slate-500">{t('wizard.details.routeLockDescription')}</div>
+                                        <div className="text-sm font-semibold text-slate-900 dark:text-foreground">{t('wizard.details.routeLockTitle')}</div>
+                                        <div className="mt-1 text-xs text-slate-500 dark:text-muted-foreground">{t('wizard.details.routeLockDescription')}</div>
                                     </div>
                                     <Switch checked={routeLock} onCheckedChange={(value) => setRouteLock(Boolean(value))} />
                                 </div>
@@ -1834,8 +1834,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="space-y-6">
                     <div className="text-center">
-                        <h2 className="text-3xl font-semibold text-slate-950">{t('wizard.dates.title')}</h2>
-                        <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">
+                        <h2 className="text-3xl font-semibold text-slate-950 dark:text-foreground">{t('wizard.dates.title')}</h2>
+                        <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600 dark:text-muted-foreground">
                             {dateModeLocked === 'exact'
                                 ? t('wizard.dates.exactDescription')
                                 : dateModeLocked === 'flex'
@@ -1846,7 +1846,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
                     {!dateModeLocked && (
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('wizard.dates.modeLabel')}</label>
+                            <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('wizard.dates.modeLabel')}</label>
                             <Select
                                 value={dateInputMode}
                                 onValueChange={(value) => {
@@ -1854,7 +1854,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                     trackEvent('create_trip_wizard__date_mode--select', { mode: value });
                                 }}
                             >
-                                <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-white">
+                                <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-white dark:border-border dark:bg-card">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1892,9 +1892,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                 onChange={setFlexWeeks}
                             />
                             <div className="space-y-2">
-                                <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('dates.flexWindow.rangeLabel')}</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('dates.flexWindow.rangeLabel')}</label>
                                 <Select value={flexWindow} onValueChange={(value) => setFlexWindow(value as FlexWindow)}>
-                                    <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-white">
+                                    <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-white dark:border-border dark:bg-card">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -1908,13 +1908,13 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     )}
 
                     <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
-                        <span className="inline-flex items-center rounded-full border border-accent-200 bg-accent-50 px-3 py-1 font-medium text-accent-700">
+                        <span className="inline-flex items-center rounded-full border border-accent-200 bg-accent-50 px-3 py-1 font-medium text-accent-700 dark:bg-accent-400/15 dark:text-accent-300">
                             {dateInputMode === 'exact'
                                 ? t('wizard.dates.exactLength', { days: exactTripSpan?.days ?? totalDays, nights: exactTripSpan?.nights ?? totalNights })
                                 : t('wizard.dates.flexLength', { weeks: flexWeeks, days: totalDays })}
                         </span>
                         {seasonQuality && (
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-600">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-600 dark:border-border dark:bg-card dark:text-muted-foreground">
                                 <span
                                     className={[
                                         'inline-block size-2.5 rounded-full',
@@ -1941,12 +1941,12 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="space-y-6">
                     <div className="text-center">
-                        <h2 className="text-3xl font-semibold text-slate-950">{t('wizard.preferences.title')}</h2>
-                        <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">{t('wizard.preferences.description')}</p>
+                        <h2 className="text-3xl font-semibold text-slate-950 dark:text-foreground">{t('wizard.preferences.title')}</h2>
+                        <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600 dark:text-muted-foreground">{t('wizard.preferences.description')}</p>
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('wizard.preferences.travelerLabel')}</label>
+                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('wizard.preferences.travelerLabel')}</label>
                         <Select
                             value={travelerType}
                             onValueChange={(value) => {
@@ -1954,7 +1954,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                 trackEvent('create_trip_wizard__traveler--select', { traveler_type: value });
                             }}
                         >
-                            <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-white">
+                            <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-white dark:border-border dark:bg-card">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1965,13 +1965,13 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                         </Select>
                     </div>
 
-                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                        <div className="mb-3 text-sm font-semibold text-slate-900">{travelerSummary}</div>
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-border dark:bg-secondary">
+                        <div className="mb-3 text-sm font-semibold text-slate-900 dark:text-foreground">{travelerSummary}</div>
                         {travelerDetailsContent}
                     </div>
 
                     <div className="space-y-3">
-                        <div className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('wizard.preferences.stylesLabel')}</div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('wizard.preferences.stylesLabel')}</div>
                         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                             {STYLE_CHOICES.map((entry) => {
                                 const Icon = entry.icon;
@@ -1984,8 +1984,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         className={[
                                             'rounded-2xl border p-3 text-start transition-all',
                                             active
-                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100'
-                                                : 'border-slate-200 bg-white text-slate-700 hover:border-accent-300 hover:bg-accent-50/60',
+                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none'
+                                                : 'border-slate-200 bg-white text-slate-700 hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-accent-400/15',
                                         ].join(' ')}
                                     >
                                         <div className="flex items-center gap-2 text-sm font-semibold">
@@ -1999,7 +1999,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     </div>
 
                     <div className="space-y-3">
-                        <div className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('wizard.preferences.vibesLabel')}</div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('wizard.preferences.vibesLabel')}</div>
                         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                             {VIBE_CHOICES.map((entry) => {
                                 const Icon = entry.icon;
@@ -2012,8 +2012,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         className={[
                                             'rounded-2xl border p-3 text-start transition-all',
                                             active
-                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100'
-                                                : 'border-slate-200 bg-white text-slate-700 hover:border-accent-300 hover:bg-accent-50/60',
+                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none'
+                                                : 'border-slate-200 bg-white text-slate-700 hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-accent-400/15',
                                         ].join(' ')}
                                     >
                                         <div className="flex items-center gap-2 text-sm font-semibold">
@@ -2027,7 +2027,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     </div>
 
                     <div className="space-y-3">
-                        <div className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('wizard.preferences.transportLabel')}</div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('wizard.preferences.transportLabel')}</div>
                         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                             {TRANSPORT_OPTIONS.map((entry) => {
                                 const Icon = entry.icon;
@@ -2040,8 +2040,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         className={[
                                             'rounded-2xl border p-3 text-start transition-all',
                                             active
-                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100'
-                                                : 'border-slate-200 bg-white text-slate-700 hover:border-accent-300 hover:bg-accent-50/60',
+                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none'
+                                                : 'border-slate-200 bg-white text-slate-700 hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-accent-400/15',
                                         ].join(' ')}
                                     >
                                         <div className="flex items-center gap-2 text-sm font-semibold">
@@ -2052,7 +2052,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                 );
                             })}
                         </div>
-                        <p className="text-xs text-slate-500">{t('wizard.preferences.transportHint')}</p>
+                        <p className="text-xs text-slate-500 dark:text-muted-foreground">{t('wizard.preferences.transportHint')}</p>
                     </div>
                 </div>
             );
@@ -2062,15 +2062,15 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="space-y-6">
                     <div className="text-center">
-                        <h2 className="text-3xl font-semibold text-slate-950">{t('wizard.details.title')}</h2>
-                        <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">{t('wizard.details.description')}</p>
+                        <h2 className="text-3xl font-semibold text-slate-950 dark:text-foreground">{t('wizard.details.title')}</h2>
+                        <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600 dark:text-muted-foreground">{t('wizard.details.description')}</p>
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('wizard.details.budgetLabel')}</label>
+                            <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('wizard.details.budgetLabel')}</label>
                             <Select value={budget} onValueChange={(value) => setBudget(value as BudgetType)}>
-                                <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-white">
+                                <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-white dark:border-border dark:bg-card">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -2081,9 +2081,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('wizard.details.paceLabel')}</label>
+                            <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('wizard.details.paceLabel')}</label>
                             <Select value={pace} onValueChange={(value) => setPace(value as PaceType)}>
-                                <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-white">
+                                <SelectTrigger className="h-11 rounded-2xl border-slate-200 bg-white dark:border-border dark:bg-card">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -2096,49 +2096,49 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('wizard.details.specificCitiesLabel')}</label>
+                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('wizard.details.specificCitiesLabel')}</label>
 	                        <input
 	                            type="text"
 	                            aria-label={t('wizard.details.specificCitiesLabel')}
 	                            value={specificCities}
                             onChange={(event) => setSpecificCities(event.target.value)}
                             placeholder={t('wizard.details.specificCitiesPlaceholder')}
-                            className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                            className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 dark:border-border dark:bg-card dark:text-foreground"
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('wizard.details.notesLabel')}</label>
+                        <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">{t('wizard.details.notesLabel')}</label>
 	                        <textarea
 	                            aria-label={t('wizard.details.notesLabel')}
 	                            value={notes}
                             onChange={(event) => setNotes(event.target.value)}
                             rows={4}
                             placeholder={t('wizard.details.notesPlaceholder')}
-                            className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 dark:border-border dark:bg-card dark:text-foreground"
                         />
                     </div>
 
                     <div className="grid gap-3">
-                        <div className="flex items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+                        <div className="flex items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-border dark:bg-card">
                             <div>
-                                <div className="text-sm font-semibold text-slate-900">{t('wizard.details.roundTripTitle')}</div>
-                                <div className="mt-1 text-xs text-slate-500">{t('wizard.details.roundTripDescription')}</div>
+                                <div className="text-sm font-semibold text-slate-900 dark:text-foreground">{t('wizard.details.roundTripTitle')}</div>
+                                <div className="mt-1 text-xs text-slate-500 dark:text-muted-foreground">{t('wizard.details.roundTripDescription')}</div>
                             </div>
                             <Switch checked={isRoundTrip} onCheckedChange={(value) => setIsRoundTrip(Boolean(value))} />
                         </div>
-                        <div className="flex items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+                        <div className="flex items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-border dark:bg-card">
                             <div>
-                                <div className="text-sm font-semibold text-slate-900">{t('wizard.details.routeLockTitle')}</div>
-                                <div className="mt-1 text-xs text-slate-500">{t('wizard.details.routeLockDescription')}</div>
+                                <div className="text-sm font-semibold text-slate-900 dark:text-foreground">{t('wizard.details.routeLockTitle')}</div>
+                                <div className="mt-1 text-xs text-slate-500 dark:text-muted-foreground">{t('wizard.details.routeLockDescription')}</div>
                             </div>
                             <Switch checked={routeLock} onCheckedChange={(value) => setRouteLock(Boolean(value))} />
                         </div>
                         {hasIslandSelection && (
-                            <div className="flex items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+                            <div className="flex items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-border dark:bg-card">
                                 <div>
-                                    <div className="text-sm font-semibold text-slate-900">{t('wizard.details.islandOnly')}</div>
-                                    <div className="mt-1 text-xs text-slate-500">{selectedIslandNames.map((name) => getLocalizedDestinationLabel(name)).join(', ')}</div>
+                                    <div className="text-sm font-semibold text-slate-900 dark:text-foreground">{t('wizard.details.islandOnly')}</div>
+                                    <div className="mt-1 text-xs text-slate-500 dark:text-muted-foreground">{selectedIslandNames.map((name) => getLocalizedDestinationLabel(name)).join(', ')}</div>
                                 </div>
                                 <Switch checked={enforceIslandOnly} onCheckedChange={(value) => setEnforceIslandOnly(Boolean(value))} />
                             </div>
@@ -2151,66 +2151,66 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         return (
             <div className="space-y-6">
                 <div className="text-center">
-                    <h2 className="text-3xl font-semibold text-slate-950">{t('wizard.review.title')}</h2>
-                    <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">{t('wizard.review.description')}</p>
+                    <h2 className="text-3xl font-semibold text-slate-950 dark:text-foreground">{t('wizard.review.title')}</h2>
+                    <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600 dark:text-muted-foreground">{t('wizard.review.description')}</p>
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-2">
-                    <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <div className="rounded-3xl border border-slate-200 bg-white p-4 dark:border-border dark:bg-card">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-foreground">
                             <Globe size={16} weight="duotone" />
                             {t('destination.title')}
                         </div>
-                        <div className="mt-2 text-sm text-slate-600">{formatDestinationList(orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination)))}</div>
+                        <div className="mt-2 text-sm text-slate-600 dark:text-muted-foreground">{formatDestinationList(orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination)))}</div>
                     </div>
-                    <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <div className="rounded-3xl border border-slate-200 bg-white p-4 dark:border-border dark:bg-card">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-foreground">
                             <CalendarBlank size={16} weight="duotone" />
                             {t('dates.title')}
                         </div>
-                        <div className="mt-2 text-sm text-slate-600">{dateSummary}</div>
+                        <div className="mt-2 text-sm text-slate-600 dark:text-muted-foreground">{dateSummary}</div>
                     </div>
-                    <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <div className="rounded-3xl border border-slate-200 bg-white p-4 dark:border-border dark:bg-card">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-foreground">
                             <UsersThree size={16} weight="duotone" />
                             {t('traveler.title')}
                         </div>
-                        <div className="mt-2 text-sm text-slate-600">{travelerSummary}</div>
+                        <div className="mt-2 text-sm text-slate-600 dark:text-muted-foreground">{travelerSummary}</div>
                     </div>
-                    <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <div className="rounded-3xl border border-slate-200 bg-white p-4 dark:border-border dark:bg-card">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-foreground">
                             <Compass size={16} weight="duotone" />
                             {t('wizard.review.route')}
                         </div>
-                        <div className="mt-2 text-sm text-slate-600">{routeSummary}</div>
+                        <div className="mt-2 text-sm text-slate-600 dark:text-muted-foreground">{routeSummary}</div>
                     </div>
-                    <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <div className="rounded-3xl border border-slate-200 bg-white p-4 dark:border-border dark:bg-card">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-foreground">
                             <Sparkles size={16} weight="duotone" />
                             {t('wizard.review.styles')}
                         </div>
-                        <div className="mt-2 text-sm text-slate-600">{styleSummary || t('style.empty')}</div>
+                        <div className="mt-2 text-sm text-slate-600 dark:text-muted-foreground">{styleSummary || t('style.empty')}</div>
                     </div>
-                    <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <div className="rounded-3xl border border-slate-200 bg-white p-4 dark:border-border dark:bg-card">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-foreground">
                             <MapPin size={16} weight="duotone" />
                             {t('wizard.review.vibes')}
                         </div>
-                        <div className="mt-2 text-sm text-slate-600">{vibeSummary || '—'}</div>
+                        <div className="mt-2 text-sm text-slate-600 dark:text-muted-foreground">{vibeSummary || '—'}</div>
                     </div>
-                    <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <div className="rounded-3xl border border-slate-200 bg-white p-4 dark:border-border dark:bg-card">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-foreground">
                             <Train size={16} weight="duotone" />
                             {t('transport.title')}
                         </div>
-                        <div className="mt-2 text-sm text-slate-600">{transportSummary}</div>
+                        <div className="mt-2 text-sm text-slate-600 dark:text-muted-foreground">{transportSummary}</div>
                     </div>
-                    <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <div className="rounded-3xl border border-slate-200 bg-white p-4 dark:border-border dark:bg-card">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-foreground">
                             <AlignLeft size={16} weight="duotone" />
                             {t('notes.title')}
                         </div>
-                        <div className="mt-2 text-sm text-slate-600">{notes || t('wizard.review.notesFallback')}</div>
+                        <div className="mt-2 text-sm text-slate-600 dark:text-muted-foreground">{notes || t('wizard.review.notesFallback')}</div>
                     </div>
                 </div>
 
@@ -2227,37 +2227,37 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     const stepContent = renderStepContent();
 
     return (
-        <div className="relative isolate flex min-h-screen w-full flex-col overflow-hidden bg-slate-50">
+        <div className="relative isolate flex min-h-screen w-full flex-col overflow-hidden bg-slate-50 dark:bg-secondary">
             <HeroWebGLBackground className="z-0" />
-            <div className="pointer-events-none absolute inset-0 z-[1] bg-white/35" />
+            <div className="pointer-events-none absolute inset-0 z-[1] bg-white/35 dark:bg-card/35" />
             <div className="relative z-20">
                 <SiteHeader variant="glass" hideCreateTrip onMyTripsClick={onOpenManager} />
             </div>
 
             <div className="relative z-10 flex flex-1 flex-col items-center px-4 pb-16 pt-8">
-                <div className="mb-4 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
+                <div className="mb-4 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500 dark:text-muted-foreground">
                     <span>{t('wizard.flowLabel')}</span>
                     <span className="text-slate-300">•</span>
-                    <Link to={buildVariantUrl('/create-trip')} className="font-medium text-accent-700 transition-colors hover:text-accent-900">
+                    <Link to={buildVariantUrl('/create-trip')} className="font-medium text-accent-700 transition-colors hover:text-accent-900 dark:text-accent-300">
                         {t('labsBanner.links.classicCard')}
                     </Link>
                 </div>
 
                 <StepDots currentStep={currentStepIndex} totalSteps={steps.length} onStepClick={goToStep} />
 
-                <div className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">
+                <div className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.11em] text-slate-500 dark:text-muted-foreground">
                     {t('wizard.stepBadge', { current: currentStepIndex + 1, total: steps.length })}
                 </div>
 
-                <div className="w-full max-w-5xl rounded-[2rem] border border-white/70 bg-white/90 p-5 shadow-[0_30px_90px_rgba(15,23,42,0.12)] backdrop-blur md:p-8">
+                <div className="w-full max-w-5xl rounded-[2rem] border border-white/70 bg-white/90 p-5 shadow-[0_30px_90px_rgba(15,23,42,0.12)] backdrop-blur md:p-8 dark:bg-card/90">
                     {stepContent}
 
                     {currentStepId !== 'intent' && (
-                        <div className="mt-8 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="mt-8 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between dark:border-border">
                             <button
                                 type="button"
                                 onClick={() => goToStep(Math.max(0, currentStepIndex - 1))}
-                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-accent-300 hover:text-accent-900"
+                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-accent-300 hover:text-accent-900 dark:border-border dark:bg-card dark:text-foreground"
                             >
                                 {t('wizard.actions.back')}
                             </button>
@@ -2267,7 +2267,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                     type="button"
                                     onClick={() => goToStep(Math.min(steps.length - 1, currentStepIndex + 1))}
                                     disabled={!canContinue}
-                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-accent-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent-200/60 transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-accent-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent-200/60 transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-accent-400 dark:hover:bg-accent-500 dark:shadow-none dark:text-background"
                                 >
                                     {t('wizard.actions.continue')}
                                     <ArrowRight size={16} />
@@ -2278,7 +2278,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         type="button"
                                         onClick={handleCreateBlank}
                                         disabled={selectedCountries.length === 0}
-                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-accent-300 hover:text-accent-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-accent-300 hover:text-accent-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-border dark:bg-card dark:text-foreground"
                                     >
                                         <FilePlus size={16} weight="duotone" />
                                         {t('wizard.actions.blank')}
@@ -2287,7 +2287,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         type="button"
                                         onClick={handleGenerate}
                                         disabled={!canGenerate}
-                                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-accent-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent-200/60 transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-accent-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent-200/60 transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-accent-400 dark:hover:bg-accent-500 dark:shadow-none dark:text-background"
                                         {...getAnalyticsDebugAttributes('create_trip_wizard__cta--generate', {
                                             branch: wizardBranch || 'unknown',
                                             destination_count: orderedDestinations.length,

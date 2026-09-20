@@ -89,7 +89,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
 
     return (
         <div className="relative" ref={wrapperRef}>
-             <label htmlFor={searchInputId} className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+             <label htmlFor={searchInputId} className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5 mb-1.5 dark:text-muted-foreground">
                 <MapPin size={14} className="text-accent-500"/> {labels?.fieldLabel || 'Destination(s)'}
             </label>
             
@@ -111,8 +111,8 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
                                 onRemove={() => removeCountry(countryName)}
                             />
                             {season && (
-                                <div className="pointer-events-none absolute left-0 top-[calc(100%+8px)] z-[80] hidden w-[280px] rounded-xl border border-gray-200 bg-white p-3 shadow-xl group-hover:block">
-                                    <div className="text-xs font-semibold text-gray-900">{labels?.idealTravelTime || 'Ideal travel time'}</div>
+                                <div className="pointer-events-none absolute left-0 top-[calc(100%+8px)] z-[80] hidden w-[280px] rounded-xl border border-gray-200 bg-white p-3 shadow-xl group-hover:block dark:bg-card dark:border-border">
+                                    <div className="text-xs font-semibold text-gray-900 dark:text-foreground">{labels?.idealTravelTime || 'Ideal travel time'}</div>
                                     <IdealTravelTimeline idealMonths={season.bestMonths} shoulderMonths={season.shoulderMonths} />
                                 </div>
                             )}
@@ -122,7 +122,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
 
                 {/* Input */}
                 <div className="tf-ios-zoom-safe-shell flex-1 min-w-[120px] flex items-center gap-2">
-                    {selectedCountries.length === 0 && <Search size={16} className="text-gray-400" />}
+                    {selectedCountries.length === 0 && <Search size={16} className="text-gray-400 dark:text-muted-foreground" />}
                     <input 
                         id={searchInputId}
                         ref={searchInputRef}
@@ -136,7 +136,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
                         placeholder={selectedCountries.length === 0
                             ? (labels?.placeholder || 'Search countries or islands...')
                             : (labels?.addAnotherPlaceholder || 'Add another destination...')}
-                        className="tf-ios-zoom-safe-field bg-transparent border-none outline-none w-full text-gray-800 font-medium placeholder-gray-400 text-sm h-8"
+                        className="tf-ios-zoom-safe-field bg-transparent border-none outline-none w-full text-gray-800 font-medium placeholder-gray-400 text-sm h-8 dark:text-foreground"
                         onFocus={openDropdown}
                     />
                 </div>
@@ -145,13 +145,13 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
             {/* Dropdown */}
             {isOpen && (normalizedSearch || filtered.length > 0) && (
                 <div
-                    className="absolute inset-x-0 top-[calc(100%+8px)] z-50 max-h-60 overflow-y-auto rounded-xl border border-gray-100 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-200"
+                    className="absolute inset-x-0 top-[calc(100%+8px)] z-50 max-h-60 overflow-y-auto rounded-xl border border-gray-100 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 dark:bg-card dark:border-border"
                 >
                     {filtered.length > 0 ? filtered.map((country) => (
                         <button
                             key={country.code}
                             type="button"
-                            className="w-full px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between transition-colors group text-left"
+                            className="w-full px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between transition-colors group text-left dark:hover:bg-secondary"
                             onClick={() => {
                                 if (!normalizedSearch && analyticsEventName) {
                                     trackEvent(analyticsEventName, {
@@ -177,9 +177,9 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
                             <div className="flex items-start gap-3 min-w-0">
                                 <FlagIcon value={country.flag} size="xl" />
                                 <div className="min-w-0">
-                                    <div className="font-medium text-gray-700 truncate">{country.name}</div>
+                                    <div className="font-medium text-gray-700 truncate dark:text-foreground">{country.name}</div>
                                     {country.kind === 'island' && country.parentCountryName && (
-                                        <div className="text-xs text-gray-500 truncate">
+                                        <div className="text-xs text-gray-500 truncate dark:text-muted-foreground">
                                             {labels?.islandOf ? labels.islandOf(country.parentCountryName) : `Island of ${country.parentCountryName}`}
                                         </div>
                                     )}
@@ -188,7 +188,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
                             <Plus size={16} className="text-gray-300 group-hover:text-accent-500" />
                         </button>
                     )) : (
-                        <div className="p-4 text-center text-gray-400 text-sm">
+                        <div className="p-4 text-center text-gray-400 text-sm dark:text-muted-foreground">
                             {search ? (labels?.noMatches || 'No matching destinations') : (labels?.typeToSearch || 'Type to search')}
                         </div>
                     )}

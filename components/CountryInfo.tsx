@@ -75,10 +75,10 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
             : amount / exchangeRate;
 
     return (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm dark:bg-card">
             <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
                 <h3 className="font-semibold text-gray-800 text-sm uppercase tracking-wider flex items-center gap-2">
-                    <Globe size={16} className="text-accent-600"/> Destination Info
+                    <Globe size={16} className="text-accent-600 dark:text-accent-300"/> Destination Info
                 </h3>
             </div>
             <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
@@ -105,7 +105,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                         <button type="button"
                             onClick={() => setDirection(direction === 'eurToLocal' ? 'localToEur' : 'eurToLocal')}
                             disabled={!converterEnabled}
-                            className={`p-1.5 bg-white shadow-sm border border-gray-200 rounded-full flex-shrink-0 ${converterEnabled ? 'hover:bg-gray-100 text-accent-600' : 'text-gray-400 cursor-not-allowed'}`} aria-label="Swap conversion direction"
+                            className={`p-1.5 bg-white shadow-sm border border-gray-200 rounded-full flex-shrink-0 ${converterEnabled ? 'hover:bg-gray-100 text-accent-600 dark:text-accent-300' : 'text-gray-400 cursor-not-allowed'}`} aria-label="Swap conversion direction"
                         >
                             <ArrowRightLeft size={14} />
                         </button>
@@ -136,7 +136,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                     </p>
                     <div className="flex flex-wrap gap-1">
                         {languages.map((lang) => (
-                            <span key={lang} className="px-2 py-1 bg-accent-50 text-accent-700 text-xs font-medium rounded-md border border-accent-100 whitespace-nowrap">
+                            <span key={lang} className="px-2 py-1 bg-accent-50 text-accent-700 text-xs font-medium rounded-md border border-accent-100 whitespace-nowrap dark:bg-accent-400/15 dark:text-accent-300">
                                 {lang}
                             </span>
                         ))}
@@ -163,12 +163,12 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                     </p>
                     <div className="flex flex-col gap-2">
                         {visaInfoUrl && (
-                            <a href={visaInfoUrl} target="_blank" rel="noreferrer" className="text-xs text-accent-600 hover:underline flex items-center gap-1 truncate">
+                            <a href={visaInfoUrl} target="_blank" rel="noreferrer" className="text-xs text-accent-600 hover:underline flex items-center gap-1 truncate dark:text-accent-300">
                                 <ExternalLink size={10} className="flex-shrink-0" /> Visa Information
                             </a>
                         )}
                         {auswaertigesAmtUrl && (
-                            <a href={auswaertigesAmtUrl} target="_blank" rel="noreferrer" className="text-xs text-accent-600 hover:underline flex items-center gap-1 truncate">
+                            <a href={auswaertigesAmtUrl} target="_blank" rel="noreferrer" className="text-xs text-accent-600 hover:underline flex items-center gap-1 truncate dark:text-accent-300">
                                 <ExternalLink size={10} className="flex-shrink-0" /> Auswärtiges Amt (DE)
                             </a>
                         )}

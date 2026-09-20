@@ -64,6 +64,13 @@
           if (dark) {
             root.classList.add('dark');
             root.style.colorScheme = 'dark';
+            // Seed the two variables the boot-shell CSS above reads. That CSS
+            // runs before index.css has loaded, so without this the shell paints
+            // its light fallback for a frame and the page flashes white before
+            // the real tokens arrive. Keep these in step with the warm tone in
+            // the .dark block of index.css.
+            root.style.setProperty('--background', 'oklch(0.210 0.003 68)');
+            root.style.setProperty('--foreground', 'oklch(0.953 0.009 85)');
           } else {
             root.style.colorScheme = 'light';
           }
@@ -130,8 +137,8 @@
       body {
         overscroll-behavior-y: none;
         margin: 0;
-        background: #ffffff;
-        color: #0f172a;
+        background: var(--background, #ffffff);
+        color: var(--foreground, #0f172a);
       }
 
       #root {
@@ -144,15 +151,15 @@
         position: fixed;
         inset: 0;
         z-index: 2147483000;
-        background: #ffffff;
+        background: var(--background, #ffffff);
         overflow: hidden;
       }
 
       .tf-boot-shell {
         min-height: 100vh;
         width: 100%;
-        background: #ffffff;
-        color: #0f172a;
+        background: var(--background, #ffffff);
+        color: var(--foreground, #0f172a);
         font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
       }
 
@@ -364,7 +371,7 @@
 
       .tf-boot-main {
         min-height: calc(100vh - 68px);
-        background: #ffffff;
+        background: var(--background, #ffffff);
       }
 
       .tf-boot-page {
@@ -430,8 +437,8 @@
       }
 
       .tf-boot-trip-header {
-        border-bottom: 1px solid #e5e7eb;
-        background: #ffffff;
+        border-bottom: 1px solid var(--border, #e5e7eb);
+        background: var(--card, #ffffff);
       }
 
       .tf-boot-trip-header-inner {
