@@ -65,7 +65,11 @@ const isHomePathname = (): boolean => {
 export const PlaneWindow: React.FC = () => {
     const { t } = useTranslation('home');
     const { shade, dragging, isDark, handlers, shadeElRef, frameElRef } = useWindowShade();
-    const hostRef = useRef<HTMLDivElement | null>(null);
+    // The host is held in STATE, not a ref: attaching it has to wake the effect
+    // that builds the scene. A ref does not re-render, and this component renders
+    // null until mounted, so with a ref the effect's first (and only) run happened
+    // while the host did not exist yet and the clouds never appeared at all.
+    const [hostNode, setHostNode] = useState<HTMLDivElement | null>(null);
     const sceneRef = useRef<CloudSceneHandle | null>(null);
     const [sceneReady, setSceneReady] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -92,32 +96,33 @@ export const PlaneWindow: React.FC = () => {
     // bails. With an empty dependency array it then never ran again and the cloud
     // scene never mounted at all — the window kept its static fallback forever.
     useEffect(() => {
-        if (!mounted) return;
-        if (!hostRef.current || !shouldRenderScene()) return;
+        if (!hostNode || !shouldRenderScene()) return;
 
         let cancelled = false;
         let handle: CloudSceneHandle | null = null;
 
         void import('./cloudScene')
             .then(({ createCloudScene }) => {
-                if (cancelled || !hostRef.current) return;
-                const rect = hostRef.current.getBoundingClientRect();
+                if (cancelled || !hostNode.isConnected) return;
+                const rect = hostNode.getBoundingClientRect();
                 handle = createCloudScene(Math.max(rect.width, 1), Math.max(rect.height, 1));
                 sceneRef.current = handle;
                 handle.canvas.style.cssText = 'display:block;width:100%;height:100%';
-                hostRef.current.appendChild(handle.canvas);
+                hostNode.appendChild(handle.canvas);
                 handle.setPaused(document.hidden);
                 setSceneReady(true);
             })
             .catch((error) => {
-                // The static layer stays, so this is not fatal — but swallowing it
-                // entirely once cost real debugging time, so leave a trace.
-                if (import.meta.env.DEV) console.warn('[PlaneWindow] cloud scene failed to load', error);
+                // Warn in production too. The static layer stays either way, so
+                // this is never fatal — but gating the warning on DEV meant a
+                // silent failure on a deployed build looked identical to the
+                // scene simply being declined, and cost real debugging time.
+                console.warn('[PlaneWindow] cloud scene failed to load', error);
             });
 
         const onResize = () => {
-            const rect = hostRef.current?.getBoundingClientRect();
-            if (rect && handle) handle.resize(Math.max(rect.width, 1), Math.max(rect.height, 1));
+            const rect = hostNode.getBoundingClientRect();
+            if (handle) handle.resize(Math.max(rect.width, 1), Math.max(rect.height, 1));
         };
         const onVisibility = () => handle?.setPaused(document.hidden);
 
@@ -131,7 +136,7 @@ export const PlaneWindow: React.FC = () => {
             handle?.dispose();
             sceneRef.current = null;
         };
-    }, [mounted]);
+    }, [hostNode]);
 
     // Nothing to animate behind a closed shade, or in a tab nobody is looking at.
     useEffect(() => {
@@ -169,7 +174,7 @@ export const PlaneWindow: React.FC = () => {
                     style={{ background: 'linear-gradient(to bottom, #5CADF4 0%, #94CCFB 33%, #C8E6FB 45%, #FFFFFF 62%)' }}
                 />
                 {!sceneReady && <div className="plane-window-static-clouds absolute inset-0" aria-hidden="true" />}
-                <div ref={hostRef} className="absolute inset-0" aria-hidden="true" />
+                <div ref={setHostNode} className="absolute inset-0" aria-hidden="true" />
 
                 {/* The shade itself. There is no shutter artwork for this window,
                     so it is drawn: a panel the colour of the cabin interior that

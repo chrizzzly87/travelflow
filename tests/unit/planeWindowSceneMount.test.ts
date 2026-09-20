@@ -17,6 +17,10 @@ const source = fs.readFileSync(
  * and the window kept its static fallback forever — shipped and live before it
  * was noticed.
  *
+ * The fix keeps the host element in state rather than a ref, so attaching it
+ * wakes the effect. A ref does not re-render, which is what made the timing
+ * fragile in the first place.
+ *
  * This cannot be covered behaviourally here: the effect also requires a WebGL
  * context, and jsdom has none, so a rendering test would bail for the same
  * reason whether or not the bug is present and would pass either way. Asserting
@@ -27,7 +31,7 @@ describe('PlaneWindow cloud scene mount', () => {
         expect(source).toContain('if (!mounted || !isHomePathname()) return null;');
     });
 
-    it('re-runs the scene effect once the host element exists', () => {
+    it('drives the scene effect off the host node, not render ordering', () => {
         const effectStart = source.indexOf("void import('./cloudScene')");
         expect(effectStart, 'cloud scene import not found').toBeGreaterThan(-1);
 
@@ -36,7 +40,7 @@ describe('PlaneWindow cloud scene mount', () => {
         expect(deps, 'could not find the scene effect dependency array').not.toBeNull();
         expect(
             deps?.[1],
-            'the scene effect must depend on `mounted`, or it runs once while the host is still null and the clouds never appear',
-        ).toContain('mounted');
+            'the scene effect must depend on the host node, or it runs once while the host does not exist yet and the clouds never appear',
+        ).toContain('hostNode');
     });
 });
