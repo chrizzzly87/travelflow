@@ -1,13 +1,13 @@
 {
   "_generated": "Emitted by scripts/generate-latest-in-app-release.mjs — do not edit by hand.",
   "release": {
-    "id": "rel-2026-09-18-map-customization",
-    "version": "v0.181.0",
-    "title": "Make the map yours",
-    "date": "2026-09-19",
-    "summary": "Pick the map you want to look at, tune what it shows, and tap a city to see that city — framed on your own plans, with the rest of the journey out of the way until you want it back.",
+    "id": "rel-2026-09-20-dark-mode-and-plane-window",
+    "version": "v0.185.0",
+    "title": "Dark mode, and a window seat on the homepage",
+    "date": "2026-09-20",
+    "summary": "TravelFlow now has a full dark mode you can switch from any page, and the homepage window looks out over drifting clouds you can shut the blind on.",
     "status": "published",
-    "publishedAt": "2026-09-19T13:38:17Z",
+    "publishedAt": "2026-09-20T15:47:41Z",
     "notifyInApp": true,
     "inAppHours": 24,
     "items": [
@@ -15,189 +15,87 @@
         "visibleOnWebsite": true,
         "typeLabel": "New feature",
         "typeKey": "new",
-        "text": "🗺️ Choose which map you look at. Switch between Google Maps and Mapbox and the map changes under you, with no reload and nothing lost."
+        "text": "🌙 Dark mode across the whole app, with a switch in the menu on desktop and mobile. Your choice is remembered, and leaving it alone simply follows your device."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "New feature",
         "typeKey": "new",
-        "text": "🎛️ A proper customize panel, on your phone as well as your desktop. It never covers the map, so you change something and watch the map answer."
+        "text": "☁️ The homepage window now looks out over clouds that drift past at different depths, so the view never repeats."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "New feature",
         "typeKey": "new",
-        "text": "🧭 Tell us whether you prefer Google Maps or Apple Maps and your favourite goes first everywhere we offer to open a place."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "New feature",
-        "typeKey": "new",
-        "text": "🌅 Set the map's base, its colour and its light separately — including dawn and dusk, which the old fixed styles could never give you. The six named looks are still there as one-tap shortcuts."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "New feature",
-        "typeKey": "new",
-        "text": "🏔️ Turn on a curved globe, raised terrain, 3D buildings or a tilted camera when you want the trip to feel like a journey rather than a diagram."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "New feature",
-        "typeKey": "new",
-        "text": "🏷️ Decide what the map shows you: place names, street names, station names, points of interest, roads, footpaths, region borders, city names and activity pins."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "New feature",
-        "typeKey": "new",
-        "text": "🚦 Live traffic and transit lines, for working out whether a city day actually holds together."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "New feature",
-        "typeKey": "new",
-        "text": "🎨 Route lines can be thin, normal or thick, solid or dashed, with or without direction arrows."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "New feature",
-        "typeKey": "new",
-        "text": "🕰️ Fade the days you have already had, so the rest of the trip reads first."
+        "text": "🪟 Pull the window blind down to bring on dark mode, and slide it back up for light. The page dims with your hand as you drag."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "Improved",
         "typeKey": "improved",
-        "text": "🔍 Tapping a city now frames that city around the places you actually planned there, instead of dropping you at one fixed zoom that was too close for a big city and too far for a small one."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "Improved",
-        "typeKey": "improved",
-        "text": "🧹 While you are looking at one city, the other pins and the lines between them step out of the way, so you can read that city's activities without the whole journey drawn on top."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "Improved",
-        "typeKey": "improved",
-        "text": "↩️ One tap on \"Show whole journey\" brings everything back. Tapping empty map, pressing Escape or pulling the day panel down does the same."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "Improved",
-        "typeKey": "improved",
-        "text": "📋 The day panel on your phone now slides all the way down, so you can see your whole route without closing anything."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "Improved",
-        "typeKey": "improved",
-        "text": "🔀 Controls that need a particular map provider now offer to switch you to it, instead of just telling you they are unavailable."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "Improved",
-        "typeKey": "improved",
-        "text": "💾 Each trip remembers how you set its map up, so a trip someone shares with you opens looking the way they left it. Save a setup as your own default and new trips start there."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "Improved",
-        "typeKey": "improved",
-        "text": "📤 Copy a map setup to your clipboard to reuse it or pass it on."
+        "text": "🎨 A more saturated accent colour throughout, and colours chosen to stay readable in both themes."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "Fixed",
         "typeKey": "fixed",
-        "text": "🎚️ Tilt and line thickness were sliders whose handle was invisible against the panel. They are now labelled steps you can actually see and hit."
+        "text": "🔁 The clouds behind the window no longer jump every few seconds."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Fixed",
+        "typeKey": "fixed",
+        "text": "⚡ Opening a page directly no longer briefly shows pieces of the homepage, which could leave headings off-centre until everything finished loading."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Fixed",
+        "typeKey": "fixed",
+        "text": "🔆 The logo no longer flashes while a page loads."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Fixed",
+        "typeKey": "fixed",
+        "text": "🗺️ The country map, the activity badges and the release notes all stay legible in dark mode instead of washing out."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "`shared/mapPreferences.ts` resolves trip settings, the user default and app defaults into one `ResolvedMapPreferences`; the pre-existing flat `IViewSettings` fields keep their homes and readers, and everything new lives in a nested `mapCustomization` object. Nothing migrates."
+        "text": "Replaced the scrolling cloud strip with an imperative three.js scene ported from drei's instanced cloud billboards. react-three-fiber cannot be used here: React is aliased to preact/compat, which has no react-reconciler, so R3F mounts a canvas and silently never attaches a renderer."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "`MapRuntimeProvider` no longer freezes its resolution in `useMemo(…, [])`; the renderer choice is fed to `resolveMapRuntime` as a `selection.renderer` partial so existing capability gating, availability fallback and warnings are reused. The admin cookie override still wins."
+        "text": "Converted light-only utilities to semantic tokens across ~190 files, including families earlier passes could not see: arbitrary variant prefixes, gradient stops, `divide-*`, tinted callouts, Tailwind Typography and class strings held in `.ts` files."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "`components/maps/tripMapCityFraming.ts` replaces the constant `selection.cityFocusZoom` with a pure bounds resolver — minimum span, zoom clamp, and a 75km cut-off that keeps day trips out of a city's frame."
+        "text": "Activity-type colours are now named palette tokens defined once for both themes, with solid values so overlapping badges do not darken where they stack."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "`TripMobileSheetSnap` gains a `hidden` snap; collapsing to it clears the selection, which is what made a collapsed sheet feel stuck on one city."
+        "text": "Prerenderer no longer writes the homepage into dist/index.html mid-run, which had made it the SPA fallback for every later route and contaminated their HTML."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "The six `MapStyle` values were only ever `theme` × `lightPreset` over two base styles; `buildMapboxStyleFromAxes` builds from the axes directly and `resolveMapStyleFromAxes` maps them back to the nearest named style for Google, which renders from six inline style arrays and has no axis equivalent. Legacy trips are decomposed on read via `MAP_STYLE_TO_AXES`, so nothing migrates."
+        "text": "Added `pnpm darkmode:audit`, which crawls the built app and fails on light surfaces or text below WCAG AA."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "Google cannot tilt here at all: tilt needs a vector map with a Cloud `mapId`, and this map is raster-styled by the inline `MAP_STYLES` arrays. The disabled controls now carry an inline provider switch rather than a passive note."
-      },
-      {
-        "visibleOnWebsite": false,
-        "typeLabel": "Internal",
-        "typeKey": "internal",
-        "text": "Both sliders replaced by `MapSegmentedControl` (real radios, so arrow keys and screen readers work). The shared `ui/slider.tsx` thumb was a 16px white disc with a 1px border — invisible at a minimum value on a white panel, worse at the 50% disabled opacity; enlarged and given a solid ring for its remaining callers."
-      },
-      {
-        "visibleOnWebsite": false,
-        "typeLabel": "Internal",
-        "typeKey": "internal",
-        "text": "Preset chips are CSS gradients, not Static Images renders: the Static Images API cannot apply a Standard style's `theme`/`lightPreset`, so a thumbnail would depict a different map from the preset it labels."
-      },
-      {
-        "visibleOnWebsite": false,
-        "typeLabel": "Internal",
-        "typeKey": "internal",
-        "text": "Stay pins were cut rather than shipped inert — `hotels` is never rendered as map markers, so the toggle would have controlled nothing."
-      },
-      {
-        "visibleOnWebsite": false,
-        "typeLabel": "Internal",
-        "typeKey": "internal",
-        "text": "`buildMapboxStyleConfig` and `applyMapboxTripVisualPolish` take detail overrides; turning roads off also drops pedestrian roads and sweeps road geometry, and keeping region borders suppresses the style's own country borders since the tileset overlay draws them."
-      },
-      {
-        "visibleOnWebsite": false,
-        "typeLabel": "Internal",
-        "typeKey": "internal",
-        "text": "Terrain uses a lazily added `raster-dem` source; tilt is applied with `setPitch` rather than a style reload, which would flash the basemap on every slider drag."
-      },
-      {
-        "visibleOnWebsite": false,
-        "typeLabel": "Internal",
-        "typeKey": "internal",
-        "text": "The personal default is device-level. Syncing it needs a `map_customization` column on `user_settings`; adding it to the upsert before the column exists would break saving every other user setting in production."
-      },
-      {
-        "visibleOnWebsite": false,
-        "typeLabel": "Internal",
-        "typeKey": "internal",
-        "text": "Apple is a deep-link handoff, not a renderer. MapKit JS is written up as a follow-up with its credential cost in `docs/superpowers/specs/2026-09-18-map-provider-customization-design.md`."
-      },
-      {
-        "visibleOnWebsite": false,
-        "typeLabel": "Internal",
-        "typeKey": "internal",
-        "text": "Copy added to all nine active locales under `tripView.mapCustomize`."
+        "text": "Theme state reads through useSyncExternalStore; an inline pre-paint script applies the theme before prerendered markup is shown."
       }
     ],
-    "sourcePath": "../content/updates/2026-09-18-map-customization.md"
+    "sourcePath": "../content/updates/2026-09-20-dark-mode-and-plane-window.md"
   }
 }
