@@ -1,10 +1,10 @@
 ---
 id: rel-2026-09-18-map-customization
-version: v0.176.0
+version: v0.181.0
 title: "Make the map yours"
-date: 2026-09-18
-published_at: 2026-09-18T10:00:00Z
-status: draft
+date: 2026-09-19
+published_at: 2026-09-19T13:38:17Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Pick the map you want to look at, tune what it shows, and tap a city to see that city — framed on your own plans, with the rest of the journey out of the way until you want it back."

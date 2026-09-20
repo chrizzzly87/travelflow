@@ -41,6 +41,7 @@
     "test:watch": "TZ=Europe/Berlin vitest",
     "test:run": "TZ=Europe/Berlin vitest run",
     "test:core": "TZ=Europe/Berlin vitest run --coverage --reporter=default",
+    "ci:local": "node scripts/ci-local.mjs",
     "test:e2e": "playwright test",
     "test:e2e:offline": "playwright test e2e/offline-resilience.spec.ts",
     "release:prepare": "pnpm build:blog-images && pnpm build",

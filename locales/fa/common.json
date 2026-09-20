@@ -514,6 +514,185 @@
       "openDetails": "باز کردن جزئیات",
       "close": "بستن",
       "popupLabel": "جزئیات فعالیت"
+    },
+    "mapCustomize": {
+      "activityMarkers": {
+        "description": "جاهایی که برای بازدید برنامه‌ریزی کرده‌اید.",
+        "label": "پین‌های فعالیت"
+      },
+      "arrows": {
+        "description": "نشان می‌دهد سفر در چه جهتی پیش می‌رود.",
+        "label": "فلش‌های جهت"
+      },
+      "base": {
+        "description": "یک نقشهٔ ترسیمی یا تصاویر ماهواره‌ای.",
+        "label": "پایه",
+        "map": "نقشه",
+        "satellite": "ماهواره"
+      },
+      "boundaries": {
+        "description": "مرزهای درون یک کشور، نه فقط میان کشورها.",
+        "label": "مرزهای منطقه‌ای"
+      },
+      "buildings": {
+        "description": "ساختمان‌های برجسته؛ با کمی شیب بهتر دیده می‌شوند.",
+        "label": "ساختمان‌های سه‌بعدی"
+      },
+      "cityFocus": {
+        "description": "شهر را در برنامهٔ خودتان قاب می‌گیرد و بقیهٔ سفر را پنهان می‌کند.",
+        "label": "تمرکز روی شهر انتخاب‌شده"
+      },
+      "cityNames": {
+        "description": "هر توقف مسیر شما را برچسب می‌زند.",
+        "label": "نام شهرها"
+      },
+      "close": "بستن",
+      "colorMode": {
+        "brand": "یک رنگ تأکیدی",
+        "label": "رنگ",
+        "trip": "رنگ شهرها"
+      },
+      "colorTheme": {
+        "default": "کامل",
+        "description": "نقشه چقدر رنگ داشته باشد.",
+        "faded": "کم‌رنگ",
+        "label": "رنگ",
+        "monochrome": "تک‌رنگ",
+        "satelliteNote": "تصاویر ماهواره‌ای رنگ خودشان را دارند."
+      },
+      "copied": "کپی شد",
+      "copyPreset": "کپی",
+      "dashed": {
+        "description": "خط‌چین به جای خط پیوسته.",
+        "label": "خط‌چین"
+      },
+      "description": "همزمان با تغییر، در همین سفر ذخیره می‌شود.",
+      "dimPast": {
+        "description": "روزهایی را که گذشته‌اند به پس‌زمینه می‌برد.",
+        "label": "کم‌رنگ کردن روزهای گذشته"
+      },
+      "globe": {
+        "description": "جهان را کروی نشان می‌دهد. برای سفر طولانی و نقشهٔ بزرگ بهترین است.",
+        "label": "نمای کره"
+      },
+      "googleOnly": "با Google Maps در دسترس است.",
+      "group": {
+        "features": "عناصر",
+        "labels": "برچسب‌ها",
+        "pins": "پین‌های شما",
+        "routes": "خطوط مسیر"
+      },
+      "handoff": {
+        "apple": "Apple Maps",
+        "description": "وقتی مکانی را باز می‌کنید، کدام برنامه اول پیشنهاد شود.",
+        "google": "Google Maps",
+        "label": "باز کردن مکان‌ها در"
+      },
+      "light": {
+        "auto": "خودکار",
+        "dawn": "سپیده‌دم",
+        "day": "روز",
+        "description": "نقشه برای چه زمانی از شبانه‌روز روشن شود. خودکار از دستگاه شما پیروی می‌کند.",
+        "dusk": "غروب",
+        "googleNote": "Google Maps فقط روز و شب دارد.",
+        "label": "نور",
+        "night": "شب"
+      },
+      "mapboxOnly": "با Mapbox در دسترس است.",
+      "mapboxUnavailableHere": "به Mapbox نیاز دارد که اینجا پیکربندی نشده است.",
+      "paths": {
+        "description": "مسیرها و پیاده‌روهای عابر پیاده.",
+        "label": "پیاده‌راه‌ها"
+      },
+      "pitch": {
+        "description": "به جای نگاه از بالا، از روی نقشه به جلو نگاه کنید.",
+        "flat": "تخت",
+        "label": "شیب"
+      },
+      "placeLabels": {
+        "description": "شهرها و شهرک‌ها روی نقشهٔ پایه.",
+        "label": "نام مکان‌ها"
+      },
+      "poiLabels": {
+        "description": "فروشگاه‌ها، دیدنی‌ها و جاهایی که برنامه‌ریزی نکرده‌اید.",
+        "label": "نقاط دیدنی"
+      },
+      "preset": {
+        "label": "پیش‌تنظیم‌ها"
+      },
+      "renderer": {
+        "auto": "خودکار",
+        "description": "نقشه را کدام سرویس می‌کشد.",
+        "google": "Google",
+        "label": "ارائه‌دهندهٔ نقشه",
+        "mapbox": "Mapbox",
+        "mapboxUnavailable": "Mapbox اینجا پیکربندی نشده است، بنابراین از Google استفاده می‌شود."
+      },
+      "reset": "بازنشانی",
+      "roadLabels": {
+        "description": "از نزدیک مفید، از دور شلوغ.",
+        "label": "نام خیابان‌ها"
+      },
+      "roads": {
+        "description": "برای نقشه‌ای تمیز فقط از سفرتان، آن را خاموش کنید.",
+        "label": "خیابان‌ها و حمل‌ونقل"
+      },
+      "routeMode": {
+        "description": "از جاده‌ها پیروی کنید یا مستقیم بین توقف‌ها خط بکشید.",
+        "label": "شکل",
+        "realistic": "پیروی از جاده",
+        "simple": "مستقیم"
+      },
+      "saveAsDefault": "ذخیره به عنوان پیش‌تنظیم من",
+      "saved": "ذخیره شد",
+      "switchToMapbox": "تغییر به Mapbox",
+      "tab": {
+        "camera": "نما",
+        "detail": "جزئیات",
+        "look": "ظاهر",
+        "trip": "سفر"
+      },
+      "terrain": {
+        "description": "تپه‌ها و کوه‌ها را برجسته می‌کند.",
+        "label": "عوارض زمین"
+      },
+      "thickness": {
+        "label": "ضخامت",
+        "normal": "معمولی",
+        "thick": "ضخیم",
+        "thin": "نازک"
+      },
+      "title": "شخصی‌سازی نقشه",
+      "traffic": {
+        "description": "وضعیت کنونی جاده‌ها.",
+        "label": "ترافیک زنده"
+      },
+      "transitLabels": {
+        "description": "نام ایستگاه‌ها و توقفگاه‌ها.",
+        "label": "نام ایستگاه‌ها"
+      },
+      "transitLines": {
+        "description": "خطوط مترو و راه‌آهن روی نقشه.",
+        "label": "خطوط حمل‌ونقل"
+      },
+      "style": {
+        "standard": "استاندارد",
+        "minimal": "مینیمال",
+        "clean": "تمیز",
+        "dark": "تیره",
+        "cleanDark": "تیرهٔ تمیز",
+        "satellite": "ماهواره"
+      },
+      "showWholeJourney": "نمایش کل سفر",
+      "open": "شخصی‌سازی نقشه",
+      "presetSet": {
+        "label": "شروع از",
+        "default": "پیش‌فرض",
+        "detailed": "با جزئیات",
+        "minimalistic": "مینیمال",
+        "mine": "مال من",
+        "customNote": "ترکیب تنظیمات خودتان."
+      }
     }
   },
   "tripRouteShell": {

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, ChevronDown, ChevronUp, List, Sparkles } from 'lucide-react';
 
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -122,6 +122,10 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
     const [panelMode, setPanelMode] = useState<'days' | 'timeline'>('days');
     const [manualSegmentIndex, setManualSegmentIndex] = useState<number | null>(null);
     const [containerHeight, setContainerHeight] = useState(0);
+    // Off until the container has been measured, so the sheet's first real
+    // height is painted rather than slid into place.
+    const [isHeightAnimated, setIsHeightAnimated] = useState(false);
+    const lastContainerHeightRef = useRef(0);
     const [dragHeightPx, setDragHeightPx] = useState<number | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const contentRef = useRef<HTMLDivElement | null>(null);
@@ -153,15 +157,44 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
         setSnap((current) => (current === 'hidden' ? 'half' : current));
     }, [selectedItemId]);
 
-    useEffect(() => {
+    /**
+     * Measured before paint, and never animated.
+     *
+     * The sheet's height is a fraction of this container, so until it has been
+     * measured every snap resolves to the PEEK floor. Measuring in a passive
+     * effect therefore painted a 168px sheet and then transitioned it up to its
+     * real height — an opening slide the traveller never asked for. It then
+     * played a second time whenever the planner was remounted underneath it.
+     *
+     * `useLayoutEffect` gets the measurement in before the first paint, and
+     * `isHeightAnimated` keeps the transition off across any layout-driven
+     * resize, so only a snap or a drag animates the sheet.
+     */
+    useLayoutEffect(() => {
         const container = containerRef.current;
         if (!container || typeof ResizeObserver === 'undefined') return;
-        const measure = () => setContainerHeight(Math.round(container.getBoundingClientRect().height));
+
+        let restoreFrame: number | null = null;
+        const measure = () => {
+            const next = Math.round(container.getBoundingClientRect().height);
+            if (next === lastContainerHeightRef.current) return;
+            lastContainerHeightRef.current = next;
+            setIsHeightAnimated(false);
+            setContainerHeight(next);
+            if (typeof requestAnimationFrame !== 'function') return;
+            if (restoreFrame !== null) cancelAnimationFrame(restoreFrame);
+            restoreFrame = requestAnimationFrame(() => {
+                restoreFrame = null;
+                setIsHeightAnimated(true);
+            });
+        };
+
         const observer = new ResizeObserver(measure);
         observer.observe(container);
         measure();
         return () => {
             observer.disconnect();
+            if (restoreFrame !== null) cancelAnimationFrame(restoreFrame);
         };
     }, []);
 
@@ -280,7 +313,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
             <div
                 ref={mapViewportRef}
                 data-testid="planner-mobile-map-pane"
-                className={`absolute inset-x-0 top-0 bg-secondary ${dragHeightPx === null ? 'transition-[bottom] duration-300 ease-out motion-reduce:transition-none' : ''}`}
+                className={`absolute inset-x-0 top-0 bg-secondary ${dragHeightPx === null && isHeightAnimated ? 'transition-[bottom] duration-300 ease-out motion-reduce:transition-none' : ''}`}
                 style={{ bottom: Math.max(0, sheetHeight - MAP_UNDERLAP_PX) }}
             >
                 {mapNode}
@@ -290,7 +323,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                 data-testid="planner-mobile-sheet"
                 data-snap={snap}
                 aria-label="Trip days"
-                className={`absolute inset-x-0 bottom-0 z-[60] flex touch-manipulation flex-col overflow-hidden rounded-t-3xl border-t border-border bg-card shadow-[0_-12px_40px_rgba(15,23,42,0.18)] ${dragHeightPx === null ? 'transition-[height] duration-300 ease-out motion-reduce:transition-none' : ''}`}
+                className={`absolute inset-x-0 bottom-0 z-[60] flex touch-manipulation flex-col overflow-hidden rounded-t-3xl border-t border-border bg-card shadow-[0_-12px_40px_rgba(15,23,42,0.18)] dark:shadow-[0_-12px_40px_rgba(0,0,0,0.5)] ${dragHeightPx === null && isHeightAnimated ? 'transition-[height] duration-300 ease-out motion-reduce:transition-none' : ''}`}
                 style={{ height: sheetHeight }}
             >
                 <div

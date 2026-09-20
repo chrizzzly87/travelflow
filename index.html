@@ -36,17 +36,21 @@
       (() => {
         // Restore the chosen theme before the first paint.
         //
-        // This has to be inline and synchronous. The marketing routes are
-        // prerendered by scripts/prerender-routes.mjs, so the served HTML is
-        // already painted markup; doing this from the bundle would mean every
-        // prerendered page comes up light and snaps to dark after hydration.
+        // Inline and synchronous by necessity: marketing routes are prerendered,
+        // so the served HTML is already painted markup and doing this from the
+        // bundle would flash light on every one of them.
         //
         // No stored value means "follow the device", which is also the default
         // for someone who has never touched the toggle.
         //
-        // These three literals are duplicated from THEME_BOOT_KEYS in
-        // contexts/theme/themeStore.ts. tests/unit/themeBootScript.test.ts reads
-        // this file and asserts they still match, so the pair cannot drift.
+        // Deliberately does NOT seed --background and friends inline. index.css
+        // is a render-blocking <link> in this same <head>, so :root and .dark are
+        // already applied on frame one. Seeding them inline broke light mode
+        // outright once: an inline style outranks every rule, so the dark values
+        // kept winning after `.dark` came off and the page stayed dark forever.
+        //
+        // These literals are duplicated from THEME_BOOT_KEYS in
+        // contexts/theme/themeStore.ts; the unit test asserts they still match.
         try {
           let stored = null;
           try {
@@ -64,15 +68,6 @@
           if (dark) {
             root.classList.add('dark');
             root.style.colorScheme = 'dark';
-            // Deliberately NOT seeding --background and friends inline here.
-            // index.css is a render-blocking <link> in this same <head>, so its
-            // :root and .dark blocks are already applied before the first paint;
-            // the boot-shell CSS below resolves them fine on frame one.
-            //
-            // Seeding them inline looked harmless and broke light mode outright:
-            // an inline style outranks every rule, so once the dark values were
-            // written they kept winning after `.dark` came off, and the page
-            // stayed dark forever. Setting the class is enough.
           } else {
             root.style.colorScheme = 'light';
           }
@@ -126,24 +121,21 @@
       })();
     </script>
     <style>
-      /* Custom scrollbar for the timeline.
-         Hardcoded light greys here meant a pale track and thumb on every dark
-         surface. Reads the tokens with the original values as fallback. */
+      /* Custom scrollbar for the timeline */
       .timeline-scroll::-webkit-scrollbar {
         height: 8px;
         width: 8px;
-        background-color: var(--secondary, #f3f4f6);
+        background-color: #f3f4f6;
       }
       .timeline-scroll::-webkit-scrollbar-thumb {
-        background-color: var(--muted-foreground, #d1d5db);
+        background-color: #d1d5db;
         border-radius: 4px;
-      }
-      .timeline-scroll::-webkit-scrollbar-thumb:hover {
-        background-color: var(--foreground, #9ca3af);
       }
       body {
         overscroll-behavior-y: none;
         margin: 0;
+        /* Unlayered inline CSS outranks Tailwind's @layer base, so hardcoding
+           white here made body white in dark mode on every route. */
         background: var(--background, #ffffff);
         color: var(--foreground, #0f172a);
       }
@@ -168,10 +160,71 @@
         background: var(--background, #ffffff);
         color: var(--foreground, #0f172a);
         font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+
+        --tf-bone: #e4eaf2;
+        --tf-bone-quiet: #edf1f7;
+        --tf-bone-edge: #d7e0ec;
+        --tf-bone-hairline: #eef2f7;
+        --tf-bone-accent: rgba(79, 70, 229, 0.14);
+      }
+
+      /* The skeleton palette in dark. Named values like the light set above,
+         not alpha arithmetic — and deliberately close together so the loader
+         reads as quiet shapes rather than a set of outlined boxes. */
+      .dark .tf-boot-shell {
+        --tf-bone-sweep: rgba(255, 255, 255, 0.06);
+        --tf-bone: #302e2c;
+        --tf-bone-quiet: #2a2827;
+        --tf-bone-edge: #383533;
+        --tf-bone-hairline: #2c2a29;
+        --tf-bone-accent: rgba(123, 131, 255, 0.18);
       }
 
       .tf-boot-shell[data-tf-surface-mode="neutral"] {
         background: var(--secondary, #f8fafc);
+      }
+
+      /*
+       * A bone is a flat fill; the highlight rides a pseudo-element on a
+       * transform, so it animates on the compositor instead of repainting a
+       * gradient every frame the way `background-position` does. Each bone can
+       * be offset into the cycle with --tf-bone-phase, which turns a row of
+       * placeholders into a soft wave rather than one synchronised flash.
+       */
+      .tf-bone {
+        position: relative;
+        overflow: hidden;
+        border-radius: 999px;
+        background-color: var(--tf-bone);
+      }
+
+      .tf-bone::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0) 0%,
+          var(--tf-bone-sweep, rgba(255, 255, 255, 0.72)) 50%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        transform: translate3d(-160%, 0, 0);
+        animation: tf-boot-sweep 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        /* --tf-boot-sweep-epoch is how long this document has been open. The
+           shell is remounted two or three times per navigation, and without
+           this every placeholder would snap back to the start of the sweep on
+           each remount. A negative delay offsets an infinite animation's phase,
+           so the loop simply carries on. */
+        animation-delay: calc(
+          var(--tf-bone-phase, 0) * -200ms - var(--tf-boot-sweep-epoch, 0ms)
+        );
+      }
+
+      /* The hold at the end is the point: one short pass, then a beat of
+         stillness, instead of a placeholder that strobes without pause. */
+      @keyframes tf-boot-sweep {
+        0%        { transform: translate3d(-160%, 0, 0); }
+        58%, 100% { transform: translate3d(160%, 0, 0); }
       }
 
       .tf-boot-header {
@@ -207,7 +260,7 @@
         height: 28px;
         width: 28px;
         border-radius: 6px;
-        background: var(--tf-accent-600, #4b3df0);
+        background: #4f46e5;
       }
 
       .tf-boot-logo-image {
@@ -221,10 +274,7 @@
         line-height: 1.75rem;
         font-weight: 800;
         letter-spacing: -0.025em;
-        /* Hardcoded near-black here meant the wordmark was invisible against the
-           dark boot shell and then snapped to white once the app rendered —
-           the logo "flash" on every page load. */
-        color: var(--foreground, #0f172a);
+        color: #0f172a;
       }
 
       .tf-boot-nav {
@@ -237,20 +287,6 @@
         margin-inline: auto;
       }
 
-      .tf-boot-line,
-      .tf-boot-card,
-      .tf-boot-metric,
-      .tf-boot-trip-day,
-      .tf-boot-trip-block,
-      .tf-boot-trip-side-card,
-      .tf-boot-trip-status,
-      .tf-boot-trip-toolbar-pill {
-        border-radius: 999px;
-        background: linear-gradient(90deg, var(--secondary, #e2e8f0) 0%, var(--muted, #f8fafc) 45%, var(--secondary, #e2e8f0) 100%);
-        background-size: 200% 100%;
-        animation: tf-boot-shimmer 1.4s linear infinite;
-      }
-
       .tf-boot-nav-link {
         display: inline-flex;
         align-items: center;
@@ -260,14 +296,9 @@
         pointer-events: none;
       }
 
-      .tf-boot-nav-skeleton,
-      .tf-boot-nav-ghost,
-      .tf-boot-control-skeleton,
-      .tf-boot-control-flag {
+      .tf-boot-nav-ghost {
         border-radius: 999px;
-        background: linear-gradient(90deg, var(--secondary, #e2e8f0) 0%, var(--muted, #f8fafc) 45%, var(--secondary, #e2e8f0) 100%);
-        background-size: 200% 100%;
-        animation: tf-boot-shimmer 1.4s linear infinite;
+        background-color: var(--tf-bone);
       }
 
       .tf-boot-nav-skeleton--features,
@@ -300,7 +331,10 @@
       .tf-boot-control-skeleton--cta {
         width: 68px;
         height: 12px;
-        background: color-mix(in oklab, var(--card, #fff) 72%, transparent);
+        background-color: color-mix(in oklab, var(--card, #fff) 72%, transparent);
+      }
+
+      .tf-boot-control-skeleton--cta::after {
         animation: none;
       }
 
@@ -379,18 +413,6 @@
         color: transparent;
       }
 
-      .tf-boot-main {
-        min-height: calc(100vh - 68px);
-        background: var(--background, #ffffff);
-      }
-
-      .tf-boot-page {
-        max-width: 1280px;
-        margin: 0 auto;
-        padding-inline: 20px;
-        padding-block: 28px 40px;
-      }
-
       .tf-boot-header--trip {
         display: none;
       }
@@ -403,52 +425,11 @@
         display: block;
       }
 
-      .tf-boot-page--trip {
-        display: none;
-      }
-
-      .tf-boot-page--trip-react {
-        display: block;
-      }
-
-      .tf-boot-page--marketing-react {
-        display: block;
-      }
-
-      .tf-boot-page--marketing,
-      .tf-boot-page--marketing-react {
-        min-height: calc(100vh - 68px);
-        padding: 0;
-      }
-
-      .tf-boot-line {
-        height: 14px;
-        border-radius: 999px;
-        background: linear-gradient(90deg, var(--secondary, #e2e8f0) 0%, var(--muted, #f8fafc) 45%, var(--secondary, #e2e8f0) 100%);
-        background-size: 200% 100%;
-        animation: tf-boot-shimmer 1.4s linear infinite;
-      }
-
-      .tf-boot-line--headline {
-        width: min(540px, 100%);
-        height: 24px;
-      }
-
-      .tf-boot-line--body-lg {
-        width: min(640px, 100%);
-      }
-
-      .tf-boot-line--body-md {
-        width: min(520px, 85%);
-      }
-
-      .tf-boot-line--body-sm {
-        width: min(360px, 62%);
-      }
+      /* ---- trip header: mirrors components/tripview/TripViewHeader ---- */
 
       .tf-boot-trip-header {
-        border-bottom: 1px solid var(--border, #e5e7eb);
-        background: var(--card, #ffffff);
+        border-bottom: 1px solid #e5e7eb;
+        background: var(--background, #ffffff);
       }
 
       .tf-boot-trip-header-inner {
@@ -456,13 +437,14 @@
         align-items: center;
         justify-content: space-between;
         gap: 16px;
-        padding: 16px;
+        min-height: 75px;
+        padding: 10px 24px;
       }
 
       .tf-boot-trip-header-start {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
         min-width: 0;
         flex: 1 1 auto;
       }
@@ -470,7 +452,7 @@
       .tf-boot-trip-brand {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 4px;
         flex: 0 0 auto;
       }
 
@@ -478,25 +460,31 @@
         height: 24px;
         width: 1px;
         background: #e5e7eb;
-        margin-inline: 8px;
+        margin-inline: 6px;
         flex: 0 0 auto;
       }
 
       .tf-boot-trip-copy {
         display: grid;
-        gap: 8px;
+        gap: 7px;
         min-width: 0;
         flex: 1 1 auto;
+        padding-block: 4px;
+      }
+
+      .tf-boot-line {
+        height: 14px;
       }
 
       .tf-boot-line--trip-title {
-        width: min(320px, 52vw);
-        height: 18px;
+        width: min(320px, 46vw);
+        height: 20px;
       }
 
       .tf-boot-line--trip-meta {
-        width: min(260px, 42vw);
-        height: 12px;
+        width: min(240px, 34vw);
+        height: 13px;
+        background-color: var(--tf-bone-quiet);
       }
 
       .tf-boot-trip-header-actions {
@@ -509,151 +497,408 @@
       .tf-boot-trip-action-pill,
       .tf-boot-trip-action-square,
       .tf-boot-trip-action-primary {
-        border-radius: 8px;
-        border: 1px solid #e5e7eb;
-        background: var(--secondary, #f8fafc);
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        border-radius: 6px;
+        height: 40px;
       }
 
-      .tf-boot-trip-action-pill {
-        width: 80px;
-        height: 36px;
-      }
-
-      .tf-boot-trip-action-square {
-        width: 36px;
-        height: 36px;
-      }
+      .tf-boot-trip-action-pill { width: 104px; }
+      .tf-boot-trip-action-square { width: 40px; }
 
       .tf-boot-trip-action-primary {
-        width: 108px;
-        height: 36px;
-        background: linear-gradient(135deg, rgba(79, 70, 229, 0.92) 0%, rgba(99, 102, 241, 0.92) 100%);
-        border-color: rgba(99, 102, 241, 0.36);
+        width: 96px;
+        background-color: var(--tf-bone-accent);
       }
 
-      .tf-boot-trip-status {
-        height: 14px;
-        width: min(280px, 46vw);
-        margin-bottom: 18px;
+      /* ---- planner: mirrors components/tripview/TripViewPlannerWorkspace ---- */
+
+      .tf-boot-planner {
+        display: flex;
+        height: calc(100vh - 76px);
+        height: calc(100dvh - 76px);
+        background: var(--background, #ffffff);
+        /* `both` holds the placeholders invisible through the delay, so a load
+           that resolves inside ~150ms never flashes a skeleton at all.
+           --tf-boot-epoch discounts the time an earlier shell in the same
+           loading episode was already on screen, so a remount resumes the fade
+           instead of replaying it. */
+        animation-name: tf-boot-bones-in;
+        animation-duration: 280ms;
+        animation-timing-function: ease-out;
+        animation-delay: calc(150ms - var(--tf-boot-epoch, 0ms));
+        animation-fill-mode: both;
       }
 
-      .tf-boot-trip-summary {
+      @keyframes tf-boot-bones-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      /* Map above, timeline below — the source order is reversed so the
+         timeline stays first for anything reading the document. */
+      .tf-boot-planner[data-tf-boot-layout="vertical"] {
+        flex-direction: column-reverse;
+      }
+
+      .tf-boot-planner-grip {
+        flex: 0 0 auto;
+        background: #f3f4f6;
+      }
+
+      .tf-boot-planner:not([data-tf-boot-layout="vertical"]) > .tf-boot-planner-grip {
+        width: 8px;
+      }
+
+      .tf-boot-planner[data-tf-boot-layout="vertical"] > .tf-boot-planner-grip {
+        height: 8px;
+      }
+
+      /* The real map paints as one flat field until its tiles arrive, so the
+         placeholder does too: a shimmer across half the viewport would be the
+         loudest thing on the page. */
+      .tf-boot-planner-map {
+        position: relative;
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 0;
+        background-color: #f1f5f9;
+        background-image: linear-gradient(170deg, rgba(255, 255, 255, 0.5) 0%, rgba(241, 245, 249, 0) 58%);
+      }
+
+      .tf-boot-map-controls {
+        position: absolute;
+        top: 16px;
+        inset-inline-end: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .tf-boot-map-control {
+        height: 40px;
+        width: 40px;
+        border-radius: 8px;
+        border: 1px solid var(--tf-bone-edge);
+        background: var(--background, #ffffff);
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07);
+      }
+
+      .tf-boot-map-control--accent {
+        background: var(--tf-bone-accent);
+        border-color: rgba(79, 70, 229, 0.16);
+      }
+
+      .tf-boot-planner-timeline {
+        position: relative;
+        flex: 0 0 auto;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+        background: var(--background, #ffffff);
+        border-inline-end: 1px solid #e5e7eb;
+      }
+
+      .tf-boot-planner:not([data-tf-boot-layout="vertical"]) > .tf-boot-planner-timeline {
+        width: var(--tf-boot-sidebar-width, 560px);
+        max-width: 62%;
+        min-width: 340px;
+        height: 100%;
+      }
+
+      .tf-boot-planner[data-tf-boot-layout="vertical"] > .tf-boot-planner-timeline {
+        width: 100%;
+        height: var(--tf-boot-timeline-height, 400px);
+        max-height: 62%;
+        border-inline-end: 0;
+        border-top: 1px solid #e5e7eb;
+      }
+
+      /* 32px matches the timeline's own left gutter, so the day grid lands
+         where the real one does and the handoff does not shift sideways. */
+      .tf-boot-tl-track {
+        padding-inline-start: 32px;
+        height: 100%;
+      }
+
+      .tf-boot-tl-months {
+        display: flex;
+        height: 31px;
+      }
+
+      .tf-boot-tl-month {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #eef2ff;
+        border-inline-end: 1px solid #e0e7ff;
+      }
+
+      .tf-boot-tl-month > span {
+        height: 10px;
+        width: 86px;
+        border-radius: 999px;
+        background-color: rgba(99, 102, 241, 0.16);
+      }
+
+      .tf-boot-tl-days {
+        display: flex;
+        height: 47px;
+        border-bottom: 1px solid var(--tf-bone-hairline);
+      }
+
+      .tf-boot-tl-day {
+        flex: 0 0 auto;
+        width: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-inline-end: 1px solid #f1f5f9;
+        background: rgba(248, 250, 252, 0.7);
+      }
+
+      .tf-boot-tl-day > span {
+        height: 11px;
+        width: 18px;
+        border-radius: 999px;
+        background-color: var(--tf-bone-quiet);
+      }
+
+      .tf-boot-tl-body {
+        position: relative;
+        height: calc(100% - 78px);
+        padding-top: 26px;
+        background-image: repeating-linear-gradient(90deg, transparent 0 47px, #f3f6fa 47px 48px);
+      }
+
+      .tf-boot-tl-label {
+        height: 12px;
+        background-color: var(--tf-bone-quiet);
+      }
+
+      .tf-boot-tl-label--cities { width: 118px; margin-bottom: 22px; }
+
+      .tf-boot-tl-cities {
+        display: flex;
+        gap: 2px;
+        height: 60px;
+      }
+
+      .tf-boot-tl-city {
+        flex: 0 0 auto;
+        height: 60px;
+        border-radius: 8px;
+        border: 2px solid var(--tf-bone-edge);
+      }
+
+      .tf-boot-tl-controls {
+        position: absolute;
+        top: 16px;
+        inset-inline-end: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .tf-boot-tl-control-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 50px;
+        padding: 5px;
+        border-radius: 8px;
+        border: 1px solid var(--tf-bone-edge);
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+      }
+
+      .tf-boot-tl-control {
+        height: 40px;
+        width: 40px;
+        border-radius: 8px;
+      }
+
+      .tf-boot-tl-control-readout {
+        height: 12px;
+        width: 30px;
+        margin-inline: 2px;
+        background-color: var(--tf-bone-quiet);
+      }
+
+      .tf-boot-tl-control--accent {
+        background-color: var(--tf-bone-accent);
+      }
+
+      /* ---- phone sheet: mirrors components/tripview/TripMobilePlannerShell ----
+         Hidden on desktop; the planner panes above are hidden on phones. The
+         height matches the sheet's own `half` snap — 58% of the planner, with
+         the same 168px floor — and the map is pulled up under the rounded lip
+         by the same 28px underlap, so the handoff does not jump. */
+
+      .tf-boot-sheet {
+        display: none;
+        position: absolute;
+        inset-inline: 0;
+        bottom: 0;
+        z-index: 3;
+        height: max(168px, 58%);
+        flex-direction: column;
+        overflow: hidden;
+        border-top: 1px solid #e2e8f0;
+        border-start-start-radius: 24px;
+        border-start-end-radius: 24px;
+        background: var(--background, #ffffff);
+        box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.18);
+      }
+
+      .tf-boot-sheet-grip {
+        align-self: center;
+        margin-top: 10px;
+        height: 6px;
+        width: 44px;
+        border-radius: 999px;
+        background: #cbd5e1;
+      }
+
+      .tf-boot-sheet-head {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 16px;
+        gap: 8px;
+        height: 36px;
+        padding-inline: 8px;
+        margin-top: 2px;
       }
 
-      .tf-boot-trip-summary-copy {
-        display: grid;
-        gap: 12px;
-        flex: 1 1 auto;
-        min-width: 0;
+      .tf-boot-sheet-segmented {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 2px;
+        border-radius: 999px;
+        background: #f1f5f9;
       }
 
-      .tf-boot-trip-toolbar {
+      .tf-boot-sheet-segment {
+        height: 32px;
+        width: 32px;
+        border-radius: 999px;
+      }
+
+      .tf-boot-sheet-segment--active {
+        background-color: var(--tf-bone-accent);
+      }
+
+      .tf-boot-sheet-toggle {
+        height: 36px;
+        width: 36px;
+        border-radius: 999px;
+      }
+
+      .tf-boot-sheet-strip {
         display: flex;
-        gap: 10px;
+        flex: 0 0 auto;
+        align-items: stretch;
+        gap: 0;
+        overflow: hidden;
+        padding: 4px 24px 8px;
+      }
+
+      .tf-boot-sheet-day {
+        display: flex;
+        flex: 0 0 auto;
+        width: 4.25rem;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .tf-boot-sheet-day-month {
+        height: 16px;
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 16px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #94a3b8;
+      }
+
+      .tf-boot-sheet-day-bubble {
+        height: 48px;
+        width: 48px;
+        border-radius: 999px;
+        margin-block: 4px;
+      }
+
+      /* The dated bubble is a ring around real text, the way the strip draws a
+         day once its trip is loaded. */
+      .tf-boot-sheet-day-bubble--dated {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--tf-bone-edge);
+        background: var(--background, #ffffff);
+      }
+
+      .tf-boot-sheet-day-weekday {
+        font-size: 9px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #94a3b8;
+      }
+
+      .tf-boot-sheet-day-number {
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.25;
+        font-variant-numeric: tabular-nums;
+        color: #334155;
+      }
+
+      .tf-boot-sheet-day-foot {
+        height: 28px;
+      }
+
+      .tf-boot-sheet-content {
+        display: flex;
+        min-height: 0;
+        flex: 1 1 auto;
+        flex-direction: column;
+        gap: 14px;
+        overflow: hidden;
+        border-top: 1px solid #f1f5f9;
+        padding: 14px 16px;
+      }
+
+      .tf-boot-sheet-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .tf-boot-sheet-row-icon {
+        height: 36px;
+        width: 36px;
+        border-radius: 10px;
         flex: 0 0 auto;
       }
 
-      .tf-boot-trip-toolbar-pill {
-        height: 42px;
-        width: 42px;
-        border: 1px solid #e2e8f0;
-        background-color: #ffffff;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+      .tf-boot-sheet-row-copy {
+        display: flex;
+        min-width: 0;
+        flex: 1 1 auto;
+        flex-direction: column;
+        gap: 7px;
       }
 
-      .tf-boot-trip-layout {
-        display: grid;
-        gap: 18px;
-        grid-template-columns: minmax(0, 1fr) 290px;
+      .tf-boot-sheet-row-line {
+        height: 12px;
       }
 
-      .tf-boot-trip-canvas {
-        min-height: 460px;
-        border: 1px solid #e2e8f0;
-        border-radius: 30px;
-        background:
-          linear-gradient(180deg, rgba(248, 250, 252, 0.82), rgba(255, 255, 255, 0.98));
-        overflow: hidden;
-      }
-
-      .tf-boot-trip-grid {
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        border-bottom: 1px solid #e2e8f0;
-      }
-
-      .tf-boot-trip-day {
-        height: 76px;
-        border-right: 1px solid #eef2f7;
-        background-color: rgba(255, 255, 255, 0.64);
-      }
-
-      .tf-boot-trip-day:last-child {
-        border-right: 0;
-      }
-
-      .tf-boot-trip-body {
-        padding: 22px 18px;
-      }
-
-      .tf-boot-trip-block {
-        height: 74px;
-        border-radius: 22px;
-        border: 1px solid #e2e8f0;
-        background-color: rgba(255, 255, 255, 0.94);
-      }
-
-      .tf-boot-trip-block + .tf-boot-trip-block {
-        margin-top: 14px;
-      }
-
-      .tf-boot-trip-block--thin {
-        height: 56px;
-      }
-
-      .tf-boot-trip-sidebar {
-        display: grid;
-        gap: 14px;
-      }
-
-      .tf-boot-trip-side-card {
-        min-height: 180px;
-        border-radius: 26px;
-        border: 1px solid #e2e8f0;
-        background-color: #ffffff;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-      }
-
-      .tf-boot-trip-side-card--map {
-        min-height: 280px;
-      }
-
-      .tf-boot-metrics {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-      }
-
-      .tf-boot-metric {
-        height: 86px;
-        border-radius: 22px;
-        border: 1px solid #e2e8f0;
-        background-color: #ffffff;
-      }
-
-      .tf-boot-surface {
-        margin-top: 22px;
-        min-height: 220px;
-        border: 1px solid #e2e8f0;
-        border-radius: 28px;
-        background:
-          linear-gradient(180deg, rgba(248, 250, 252, 0.82), rgba(255, 255, 255, 0.98));
+      .tf-boot-sheet-row-line--meta {
+        height: 10px;
+        background-color: var(--tf-bone-quiet);
       }
 
       /* A press that landed before hydration: acknowledge it while the page wakes. */
@@ -666,18 +911,15 @@
         50% { opacity: 0.45; }
       }
 
-      @keyframes tf-boot-shimmer {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
-      }
-
       @media (max-width: 1200px) {
         .tf-boot-header-inner {
           gap: 18px;
         }
+      }
 
-        .tf-boot-trip-layout {
-          grid-template-columns: minmax(0, 1fr);
+      @media (max-width: 1024px) {
+        .tf-boot-planner:not([data-tf-boot-layout="vertical"]) > .tf-boot-planner-timeline {
+          max-width: 58%;
         }
       }
 
@@ -707,32 +949,78 @@
         }
       }
 
+      /* Below `sm` the planner stacks map over timeline and the header drops
+         the wordmark and the trip summary, exactly as TripViewHeader does. */
+      @media (max-width: 767px) {
+        .tf-boot-trip-header-inner {
+          min-height: 60px;
+          padding: 10px 16px;
+          gap: 12px;
+        }
+
+        .tf-boot-trip-header .tf-boot-wordmark,
+        .tf-boot-trip-divider,
+        .tf-boot-line--trip-meta {
+          display: none;
+        }
+
+        .tf-boot-line--trip-title {
+          height: 18px;
+          width: min(220px, 48vw);
+        }
+
+        .tf-boot-trip-action-pill {
+          display: none;
+        }
+
+        .tf-boot-trip-action-primary {
+          width: 40px;
+        }
+
+        .tf-boot-planner {
+          height: calc(100vh - 61px);
+          height: calc(100dvh - 61px);
+          flex-direction: column-reverse;
+        }
+
+        .tf-boot-planner > .tf-boot-planner-grip {
+          display: none;
+        }
+
+        /* The phone planner is a sheet over a full-bleed map, so the split
+           panes step aside entirely. */
+        .tf-boot-planner {
+          position: relative;
+          display: block;
+        }
+
+        .tf-boot-planner > .tf-boot-planner-timeline {
+          display: none;
+        }
+
+        .tf-boot-planner > .tf-boot-planner-map {
+          position: absolute;
+          inset-inline: 0;
+          top: 0;
+          /* 28px of underlap, matching MAP_UNDERLAP_PX in the real shell. */
+          bottom: calc(max(168px, 58%) - 28px);
+          height: auto;
+        }
+
+        .tf-boot-sheet {
+          display: flex;
+        }
+
+        .tf-boot-map-controls {
+          gap: 6px;
+        }
+      }
+
       @media (max-width: 640px) {
         .tf-boot-header-inner {
           padding-inline: 14px;
           padding-block: 14px;
           gap: 12px;
-        }
-
-        .tf-boot-logo-frame {
-          height: 28px;
-          width: 28px;
-          border-radius: 6px;
-        }
-
-        .tf-boot-logo-image {
-          height: 16px;
-          width: 16px;
-        }
-
-        .tf-boot-wordmark {
-          font-size: 1.125rem;
-          line-height: 1.75rem;
-        }
-
-        .tf-boot-page {
-          padding-inline: 14px;
-          padding-block: 18px 24px;
         }
 
         .tf-boot-action-chip--locale,
@@ -747,38 +1035,6 @@
         .tf-boot-action-burger {
           display: inline-flex;
         }
-
-        .tf-boot-trip-grid {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-
-        .tf-boot-trip-grid .tf-boot-trip-day:nth-child(n+4) {
-          display: none;
-        }
-
-        .tf-boot-trip-summary {
-          flex-direction: column;
-          align-items: stretch;
-        }
-
-        .tf-boot-trip-toolbar {
-          justify-content: flex-start;
-        }
-
-        .tf-boot-trip-header-inner {
-          padding-inline: 14px;
-          gap: 12px;
-        }
-
-        .tf-boot-trip-divider,
-        .tf-boot-trip-copy,
-        .tf-boot-trip-action-pill {
-          display: none;
-        }
-
-        .tf-boot-trip-action-primary {
-          width: 44px;
-        }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -787,15 +1043,13 @@
           opacity: 0.55;
         }
 
-        .tf-boot-line,
-        .tf-boot-card,
-        .tf-boot-metric,
-        .tf-boot-trip-day,
-        .tf-boot-trip-block,
-        .tf-boot-trip-side-card,
-        .tf-boot-trip-status,
-        .tf-boot-trip-toolbar-pill {
+        .tf-boot-planner {
           animation: none;
+        }
+
+        .tf-bone::after {
+          animation: none;
+          opacity: 0;
         }
       }
     </style>
@@ -902,9 +1156,38 @@
       (() => {
         const path = window.location.pathname || '/';
         const isTripLikeRoute = /^\/(?:[a-z]{2}(?:-[A-Z]{2})?\/)?(?:trip|s|example)(?:\/|$)/.test(path);
-        if (isTripLikeRoute) {
-          document.documentElement.setAttribute('data-tf-boot-route', 'trip');
-        }
+        if (!isTripLikeRoute) return;
+
+        document.documentElement.setAttribute('data-tf-boot-route', 'trip');
+
+        // Warm the map hosts' DNS and TLS while the app boots. Only the
+        // connection is opened — nothing is fetched, and the map script itself
+        // still waits for `useDeferredMapBootstrap`, so this does not undo the
+        // deferral. Scoped to trip-like routes (`/trip/:id`, `/s/:token`,
+        // `/example/:id`, and their locale-prefixed forms) so marketing pages,
+        // which never show a map, do not open connections they will not use.
+        //
+        // Ordered by what the map actually costs, measured on a trip page
+        // rather than assumed: Mapbox draws the basemap and carries nearly all
+        // of the bytes (api.mapbox.com, 24 requests, ~328KB of style, tiles and
+        // glyphs), so it gets the first connection. Google follows because it
+        // is still the interaction layer, and its script is small and usually
+        // already cached. events.mapbox.com is deliberately absent: it is
+        // telemetry, off the critical path, and would spend a connection slot
+        // the basemap wants.
+        [
+          ['https://api.mapbox.com', true],
+          ['https://maps.googleapis.com', false],
+          ['https://maps.gstatic.com', false],
+        ].forEach(([href, isCors]) => {
+          const link = document.createElement('link');
+          link.rel = 'preconnect';
+          link.href = href;
+          // Only the CORS host needs the second, credentialed connection; adding
+          // it to the others would open a connection nothing then uses.
+          if (isCors) link.crossOrigin = 'anonymous';
+          document.head.appendChild(link);
+        });
       })();
     </script>
 </head>
@@ -920,22 +1203,22 @@
                 <span class="tf-boot-wordmark">TravelFlow</span>
               </div>
               <nav class="tf-boot-nav" aria-hidden="true">
-                <span class="tf-boot-nav-link"><span class="tf-boot-nav-skeleton tf-boot-nav-skeleton--features"></span></span>
-                <span class="tf-boot-nav-link"><span class="tf-boot-nav-skeleton tf-boot-nav-skeleton--inspirations"></span></span>
-                <span class="tf-boot-nav-link"><span class="tf-boot-nav-skeleton tf-boot-nav-skeleton--updates"></span></span>
-                <span class="tf-boot-nav-link"><span class="tf-boot-nav-skeleton tf-boot-nav-skeleton--blog"></span></span>
-                <span class="tf-boot-nav-link"><span class="tf-boot-nav-skeleton tf-boot-nav-skeleton--pricing"></span></span>
+                <span class="tf-boot-nav-link"><span class="tf-bone tf-boot-nav-skeleton tf-boot-nav-skeleton--features"></span></span>
+                <span class="tf-boot-nav-link"><span class="tf-bone tf-boot-nav-skeleton tf-boot-nav-skeleton--inspirations"></span></span>
+                <span class="tf-boot-nav-link"><span class="tf-bone tf-boot-nav-skeleton tf-boot-nav-skeleton--updates"></span></span>
+                <span class="tf-boot-nav-link"><span class="tf-bone tf-boot-nav-skeleton tf-boot-nav-skeleton--blog"></span></span>
+                <span class="tf-boot-nav-link"><span class="tf-bone tf-boot-nav-skeleton tf-boot-nav-skeleton--pricing"></span></span>
               </nav>
               <div class="tf-boot-actions">
                 <span class="tf-boot-action-chip tf-boot-action-chip--locale">
-                  <span class="tf-boot-control-flag" aria-hidden="true"></span>
-                  <span class="tf-boot-control-skeleton tf-boot-control-skeleton--locale"></span>
+                  <span class="tf-bone tf-boot-control-flag" aria-hidden="true"></span>
+                  <span class="tf-bone tf-boot-control-skeleton tf-boot-control-skeleton--locale"></span>
                 </span>
                 <span class="tf-boot-action-chip tf-boot-action-chip--login">
-                  <span class="tf-boot-control-skeleton tf-boot-control-skeleton--login"></span>
+                  <span class="tf-bone tf-boot-control-skeleton tf-boot-control-skeleton--login"></span>
                 </span>
                 <span class="tf-boot-action-button">
-                  <span class="tf-boot-control-skeleton tf-boot-control-skeleton--cta"></span>
+                  <span class="tf-bone tf-boot-control-skeleton tf-boot-control-skeleton--cta"></span>
                 </span>
                 <span class="tf-boot-action-burger" aria-hidden="true">
                   <svg class="tf-boot-action-burger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
@@ -958,16 +1241,13 @@
                 </div>
                 <div class="tf-boot-trip-divider" aria-hidden="true"></div>
                 <div class="tf-boot-trip-copy" aria-hidden="true">
-                  <div class="tf-boot-line tf-boot-line--trip-title"></div>
-                  <div class="tf-boot-line tf-boot-line--trip-meta"></div>
+                  <div class="tf-bone tf-boot-line tf-boot-line--trip-title"></div>
+                  <div class="tf-bone tf-boot-line tf-boot-line--trip-meta" style="--tf-bone-phase:1"></div>
                 </div>
               </div>
               <div class="tf-boot-trip-header-actions" aria-hidden="true">
-                <span class="tf-boot-trip-action-pill"></span>
-                <span class="tf-boot-trip-action-square"></span>
-                <span class="tf-boot-trip-action-square"></span>
-                <span class="tf-boot-trip-action-square"></span>
-                <span class="tf-boot-trip-action-primary"></span>
+                <span class="tf-bone tf-boot-trip-action-pill" style="--tf-bone-phase:2"></span>
+                <span class="tf-bone tf-boot-trip-action-primary" style="--tf-bone-phase:3"></span>
               </div>
             </div>
           </header>

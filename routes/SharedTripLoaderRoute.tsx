@@ -355,7 +355,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                     <div className="rounded-xl border border-accent-200 bg-accent-50/70 p-4 dark:bg-accent-400/12 dark:border-accent-400/30">
                         <div className="flex items-end justify-between gap-3">
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-300 dark:text-accent-200">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-200">
                                     {upgradeTier.publicName}
                                 </p>
                                 <p className="mt-1 text-sm font-semibold text-foreground">

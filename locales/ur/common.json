@@ -514,6 +514,185 @@
       "openDetails": "تفصیلات کھولیں",
       "close": "بند کریں",
       "popupLabel": "سرگرمی کی تفصیلات"
+    },
+    "mapCustomize": {
+      "activityMarkers": {
+        "description": "وہ جگہیں جہاں جانے کا آپ نے منصوبہ بنایا تھا۔",
+        "label": "سرگرمی پن"
+      },
+      "arrows": {
+        "description": "دکھاتا ہے کہ سفر کس سمت چلتا ہے۔",
+        "label": "سمت کے تیر"
+      },
+      "base": {
+        "description": "کھینچا ہوا نقشہ، یا سیٹلائٹ تصاویر۔",
+        "label": "بنیاد",
+        "map": "نقشہ",
+        "satellite": "سیٹلائٹ"
+      },
+      "boundaries": {
+        "description": "ملک کے اندر کی حدود، صرف ملکوں کے درمیان نہیں۔",
+        "label": "علاقائی حدود"
+      },
+      "buildings": {
+        "description": "ابھری ہوئی عمارتیں، تھوڑے جھکاؤ کے ساتھ بہتر لگتی ہیں۔",
+        "label": "تھری ڈی عمارتیں"
+      },
+      "cityFocus": {
+        "description": "آپ کے اپنے منصوبے میں شہر کو نمایاں کرتا ہے اور باقی سفر چھپا دیتا ہے۔",
+        "label": "منتخب شہر پر توجہ"
+      },
+      "cityNames": {
+        "description": "آپ کے راستے کے ہر پڑاؤ پر نام لگاتا ہے۔",
+        "label": "شہروں کے نام"
+      },
+      "close": "بند کریں",
+      "colorMode": {
+        "brand": "ایک نمایاں رنگ",
+        "label": "رنگ",
+        "trip": "شہروں کے رنگ"
+      },
+      "colorTheme": {
+        "default": "مکمل",
+        "description": "نقشے میں کتنا رنگ ہو۔",
+        "faded": "ہلکا",
+        "label": "رنگ",
+        "monochrome": "یک رنگ",
+        "satelliteNote": "سیٹلائٹ تصاویر کا اپنا رنگ ہوتا ہے۔"
+      },
+      "copied": "نقل ہو گیا",
+      "copyPreset": "نقل",
+      "dashed": {
+        "description": "ٹھوس لکیروں کے بجائے وقفے دار۔",
+        "label": "وقفے دار لکیریں"
+      },
+      "description": "آپ کی تبدیلیوں کے ساتھ اسی سفر میں محفوظ ہوتا ہے۔",
+      "dimPast": {
+        "description": "گزر چکے دنوں کو پس منظر میں لے جاتا ہے۔",
+        "label": "گزرے دن مدھم کریں"
+      },
+      "globe": {
+        "description": "دنیا کو کروی دکھاتا ہے۔ لمبے سفر اور بڑے نقشے پر بہترین۔",
+        "label": "کرہ نما"
+      },
+      "googleOnly": "Google Maps کے ساتھ دستیاب ہے۔",
+      "group": {
+        "features": "خصوصیات",
+        "labels": "لیبل",
+        "pins": "آپ کے پن",
+        "routes": "راستے کی لکیریں"
+      },
+      "handoff": {
+        "apple": "Apple Maps",
+        "description": "کوئی جگہ کھولنے پر پہلے کون سی ایپ پیش کی جائے۔",
+        "google": "Google Maps",
+        "label": "جگہیں کھولیں"
+      },
+      "light": {
+        "auto": "خودکار",
+        "dawn": "سحر",
+        "day": "دن",
+        "description": "نقشہ دن کے کس وقت کی روشنی میں ہو۔ خودکار آپ کے آلے کی پیروی کرتا ہے۔",
+        "dusk": "شام",
+        "googleNote": "Google Maps میں صرف دن اور رات ہیں۔",
+        "label": "روشنی",
+        "night": "رات"
+      },
+      "mapboxOnly": "Mapbox کے ساتھ دستیاب ہے۔",
+      "mapboxUnavailableHere": "اس کے لیے Mapbox چاہیے، جو یہاں ترتیب نہیں دیا گیا۔",
+      "paths": {
+        "description": "پیدل چلنے کے راستے اور گزرگاہیں۔",
+        "label": "پیدل راستے"
+      },
+      "pitch": {
+        "description": "سیدھا اوپر سے دیکھنے کے بجائے نقشے پر سے دیکھیں۔",
+        "flat": "ہموار",
+        "label": "جھکاؤ"
+      },
+      "placeLabels": {
+        "description": "بنیادی نقشے پر قصبے اور شہر۔",
+        "label": "مقامات کے نام"
+      },
+      "poiLabels": {
+        "description": "دکانیں، مشہور مقامات اور وہ جگہیں جن کا منصوبہ نہیں بنایا۔",
+        "label": "دلچسپ مقامات"
+      },
+      "preset": {
+        "label": "پیش ترتیبات"
+      },
+      "renderer": {
+        "auto": "خودکار",
+        "description": "ایپ کون سا نقشہ بناتی ہے۔",
+        "google": "Google",
+        "label": "نقشہ فراہم کنندہ",
+        "mapbox": "Mapbox",
+        "mapboxUnavailable": "Mapbox یہاں ترتیب نہیں دیا گیا، اس لیے Google استعمال ہو رہا ہے۔"
+      },
+      "reset": "دوبارہ ترتیب دیں",
+      "roadLabels": {
+        "description": "قریب سے مفید، دور سے بھرا بھرا۔",
+        "label": "گلیوں کے نام"
+      },
+      "roads": {
+        "description": "صرف اپنے سفر کا صاف نقشہ دیکھنے کے لیے بند کر دیں۔",
+        "label": "سڑکیں اور ٹرانسپورٹ"
+      },
+      "routeMode": {
+        "description": "سڑکوں کی پیروی کریں، یا پڑاؤ کے درمیان سیدھی لکیر کھینچیں۔",
+        "label": "شکل",
+        "realistic": "سڑکوں پر",
+        "simple": "براہِ راست"
+      },
+      "saveAsDefault": "میری پیش ترتیب کے طور پر محفوظ کریں",
+      "saved": "محفوظ ہو گیا",
+      "switchToMapbox": "Mapbox پر جائیں",
+      "tab": {
+        "camera": "منظر",
+        "detail": "تفصیل",
+        "look": "ظاہری",
+        "trip": "سفر"
+      },
+      "terrain": {
+        "description": "پہاڑیوں اور پہاڑوں کو ابھارتا ہے۔",
+        "label": "خطہ"
+      },
+      "thickness": {
+        "label": "موٹائی",
+        "normal": "عام",
+        "thick": "موٹی",
+        "thin": "باریک"
+      },
+      "title": "نقشہ اپنی مرضی سے بنائیں",
+      "traffic": {
+        "description": "سڑکوں کی موجودہ صورتحال۔",
+        "label": "براہِ راست ٹریفک"
+      },
+      "transitLabels": {
+        "description": "اسٹاپ اور اسٹیشن نام کے ساتھ۔",
+        "label": "اسٹیشنوں کے نام"
+      },
+      "transitLines": {
+        "description": "نقشے پر میٹرو اور ریل لائنیں۔",
+        "label": "ٹرانزٹ لائنیں"
+      },
+      "style": {
+        "standard": "معیاری",
+        "minimal": "کم سے کم",
+        "clean": "صاف",
+        "dark": "گہرا",
+        "cleanDark": "صاف گہرا",
+        "satellite": "سیٹلائٹ"
+      },
+      "showWholeJourney": "پورا سفر دکھائیں",
+      "open": "نقشہ اپنی مرضی سے بنائیں",
+      "presetSet": {
+        "label": "شروعات",
+        "default": "طے شدہ",
+        "detailed": "تفصیلی",
+        "minimalistic": "کم سے کم",
+        "mine": "میرا",
+        "customNote": "آپ کی اپنی ترتیبات کا امتزاج۔"
+      }
     }
   },
   "tripRouteShell": {

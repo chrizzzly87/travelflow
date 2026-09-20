@@ -1,6 +1,7 @@
 import React, { Suspense, useCallback, useRef } from 'react';
 import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react';
 import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
+import { GoogleMapsApiGate } from '../GoogleMapsLoader';
 import { TripFloatingMapPreview } from './TripFloatingMapPreview';
 import { TripMobilePlannerShell } from './TripMobilePlannerShell';
 
@@ -360,8 +361,15 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                 </div>
             );
         }
+        /*
+         * The gate goes here and nowhere higher. It is the one boundary whose
+         * children are re-parented when the Google Maps script mounts, and the
+         * map is the only thing under it — so nothing that holds state is
+         * remounted. It used to sit above the whole planner.
+         */
         return (
-            <Suspense fallback={mapLoadingFallback}>
+            <GoogleMapsApiGate>
+              <Suspense fallback={mapLoadingFallback}>
                 <ItineraryMapComponent
                     key={tripId}
                     items={displayItems}
@@ -404,7 +412,8 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     isPaywalled={isPaywallLocked}
                     viewTransitionName={effectiveMapViewTransitionName}
                 />
-            </Suspense>
+              </Suspense>
+            </GoogleMapsApiGate>
         );
     };
 

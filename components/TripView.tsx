@@ -6,7 +6,7 @@ import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenera
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import { buildLocalizedCreateTripPath, extractLocaleFromPath } from '../config/routes';
 import { DB_ENABLED } from '../config/db';
-import { GoogleMapsLoader } from './GoogleMapsLoader';
+import { GoogleMapsLoader, MapRuntimeProvider } from './GoogleMapsLoader';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, TRAVEL_COLOR, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
 import { buildTripMapLocationContextQueries } from '../shared/tripMapCityResolution';
 import { getTripSpan } from '../shared/tripSpan';
@@ -3447,8 +3447,15 @@ const useTripViewRender = ({
         );
     }
 
+    /*
+     * The runtime provider, not the loader: the planner must never be
+     * re-parented. The Google Maps script is mounted by `GoogleMapsApiGate`
+     * around the map itself, which `isMapBootstrapEnabled` already defers, so
+     * the deferral is unchanged and nothing above the map is remounted when it
+     * finally starts.
+     */
     return (
-        <GoogleMapsLoader language={appLanguage} enabled={isMapBootstrapEnabled}>
+        <MapRuntimeProvider language={appLanguage}>
             <div
                 className="relative h-screen w-screen flex flex-col bg-secondary overflow-hidden text-foreground font-sans selection:bg-accent-100 selection:text-accent-900 dark:selection:bg-accent-400/12 dark:selection:text-accent-200"
                 data-tf-handoff-ready="true"
@@ -3894,7 +3901,7 @@ const useTripViewRender = ({
 
                 </main>
             </div>
-        </GoogleMapsLoader>
+        </MapRuntimeProvider>
     );
 };
 
