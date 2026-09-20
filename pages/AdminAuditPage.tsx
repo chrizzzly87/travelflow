@@ -1904,7 +1904,7 @@ export const AdminAuditPage: React.FC = () => {
                                                                 });
                                                             }}
                                                             title="Open actor details"
-                                                            className="block w-full truncate text-left text-sm font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                                            className="block w-full truncate text-left text-sm font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
                                                         >
                                                             {actorEmail || 'Unknown actor'}
                                                         </button>
@@ -1978,7 +1978,7 @@ export const AdminAuditPage: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => openTargetDrawer(log)}
-                                                        className="inline-flex h-6 items-center gap-1 rounded-md border border-border bg-card px-2 text-[11px] font-semibold text-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300"
+                                                        className="inline-flex h-6 items-center gap-1 rounded-md border border-border bg-card px-2 text-[11px] font-semibold text-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
                                                         title={`Open ${targetLabel.toLowerCase()} drawer`}
                                                     >
                                                         Open

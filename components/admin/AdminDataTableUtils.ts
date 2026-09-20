@@ -13,7 +13,7 @@ const ADMIN_TABLE_STICKY_TRAILING_EDGE_CLASS = [
     'border-r border-border',
     'before:pointer-events-none before:absolute before:inset-y-0 before:right-0 before:w-px before:bg-slate-300',
 ].join(' ');
-export const ADMIN_TABLE_SORTED_HEADER_CLASS = 'bg-accent-50 text-accent-900 dark:text-accent-300 dark:bg-accent-400/12 dark:text-accent-200';
+export const ADMIN_TABLE_SORTED_HEADER_CLASS = 'bg-accent-50 text-accent-900 dark:bg-accent-400/12 dark:text-accent-200';
 export const ADMIN_TABLE_SORTED_CELL_CLASS = 'bg-accent-50/50 group-hover:bg-accent-50/50 group-data-[state=selected]:bg-accent-50/50 dark:bg-accent-400/12 dark:group-hover:bg-accent-400/12';
 
 const ADMIN_TABLE_STICKY_TRAILING_SHADOW_CLASS = [

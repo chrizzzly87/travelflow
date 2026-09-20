@@ -139,7 +139,7 @@ export const ActivityMapPopup: React.FC<ActivityMapPopupProps> = ({
       <button
         type="button"
         onClick={() => onOpenDetails(item.id)}
-        className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-accent-600 transition-colors hover:text-accent-700 dark:hover:text-accent-200 dark:text-accent-300 dark:hover:text-accent-300"
+        className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-accent-600 transition-colors hover:text-accent-700 dark:hover:text-accent-200 dark:text-accent-300"
       >
         {t('tripView.mapLinks.openDetails')}
         <ArrowRight size={12} aria-hidden="true" />

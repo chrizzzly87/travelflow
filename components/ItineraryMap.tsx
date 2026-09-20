@@ -3626,7 +3626,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         onClick={onClearSelection}
                         data-testid="map-clear-city-focus"
                         data-floating-map-control="true"
-                        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-border bg-card/95 ps-3 pe-4 py-2 text-xs font-semibold text-foreground shadow-lg backdrop-blur transition-colors hover:border-accent-300 hover:bg-card hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300 dark:shadow-none"
+                        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-border bg-card/95 ps-3 pe-4 py-2 text-xs font-semibold text-foreground shadow-lg backdrop-blur transition-colors hover:border-accent-300 hover:bg-card hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:shadow-none"
                         {...getAnalyticsDebugAttributes('trip_view__map_city_focus--clear', { surface: 'map_canvas' })}
                     >
                         <Route size={15} />

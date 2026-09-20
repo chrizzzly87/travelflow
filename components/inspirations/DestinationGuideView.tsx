@@ -89,14 +89,14 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData }} />
       <section className="pt-8 pb-8 md:pt-14 md:pb-12 animate-hero-entrance">
         <nav aria-label={t('inspirations.subpages.guide.breadcrumbLabel')} className="mb-6 flex flex-wrap items-center gap-2 text-sm font-medium text-muted-foreground">
-          <Link to={countriesPath} className="inline-flex items-center gap-1.5 transition-colors hover:text-accent-700 dark:hover:text-accent-200 dark:hover:text-accent-300">
+          <Link to={countriesPath} className="inline-flex items-center gap-1.5 transition-colors hover:text-accent-700 dark:hover:text-accent-200">
             <ArrowLeft className="rtl:rotate-180" size={14} weight="bold" />
             {t('inspirations.subpages.guide.backToCountries')}
           </Link>
           {!isCountry ? (
             <>
               <span aria-hidden="true">/</span>
-              <Link to={countryPath} className="transition-colors hover:text-accent-700 dark:hover:text-accent-200 dark:hover:text-accent-300">{country.name}</Link>
+              <Link to={countryPath} className="transition-colors hover:text-accent-700 dark:hover:text-accent-200">{country.name}</Link>
             </>
           ) : null}
         </nav>

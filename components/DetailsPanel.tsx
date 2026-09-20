@@ -1973,7 +1973,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                          <button type="button"
                              onClick={addHotel}
                              disabled={!canEdit}
-                             className={`text-accent-600 p-1 rounded transition-colors text-xs font-medium ${canEdit ? 'hover:text-accent-800 hover:bg-accent-50 dark:hover:bg-accent-400/12 dark:hover:text-accent-200 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
+                             className={`text-accent-600 p-1 rounded transition-colors text-xs font-medium ${canEdit ? 'hover:text-accent-800 hover:bg-accent-50 dark:hover:bg-accent-400/12 dark:hover:text-accent-200' : 'opacity-50 cursor-not-allowed'}`}
                          >
                              + Manual
                          </button>

@@ -3206,7 +3206,7 @@ export const AdminUsersPage: React.FC = () => {
                                                     type="button"
                                                     onClick={() => openUserDetail(user.user_id)}
                                                     title="Open details drawer"
-                                                    className="group block w-full min-w-0 cursor-pointer text-left hover:text-accent-700 dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                                    className="group block w-full min-w-0 cursor-pointer text-left hover:text-accent-700 dark:hover:text-accent-200"
                                                 >
                                                     <div className="truncate text-sm font-semibold text-foreground group-hover:underline group-hover:decoration-slate-400">{userName}</div>
                                                     <div className="truncate text-xs text-muted-foreground">{user.email || 'No email address'}</div>
@@ -3255,7 +3255,7 @@ export const AdminUsersPage: React.FC = () => {
                                         )}
                                         {isUserColumnVisible('trips') && (
                                             <TableCell className={`px-4 py-3 text-xs text-muted-foreground ${isUserSortedColumn('total_trips') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <div className="font-semibold text-foreground hover:text-accent-700 dark:hover:text-accent-200 dark:hover:text-accent-300">
+                                                <div className="font-semibold text-foreground hover:text-accent-700 dark:hover:text-accent-200">
                                                     {getUserTotalTrips(user)} total
                                                 </div>
                                                 <div className="text-[11px] text-muted-foreground">
@@ -3977,7 +3977,7 @@ export const AdminUsersPage: React.FC = () => {
                                                                 target="_blank"
                                                                 rel="noreferrer"
                                                                 title="Open trip in a new tab"
-                                                                className="block text-sm font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                                                className="block text-sm font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
                                                             >
                                                                 {trip.title || trip.trip_id}
                                                             </a>

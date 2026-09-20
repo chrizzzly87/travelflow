@@ -866,7 +866,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-5 pb-14 pt-8 md:px-8 md:pt-10">
                 <section className="space-y-2">
                     <nav className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        <NavLink to={buildPath('profile')} className="transition-colors hover:text-accent-700 dark:hover:text-accent-200 dark:hover:text-accent-300">
+                        <NavLink to={buildPath('profile')} className="transition-colors hover:text-accent-700 dark:hover:text-accent-200">
                             {t('settings.breadcrumb.profile')}
                         </NavLink>
                         <CaretRight size={12} weight="bold" aria-hidden="true" />
@@ -960,7 +960,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                                 className={`text-[11px] font-semibold normal-case tracking-normal text-accent-700 transition-colors ${
                                                     isUsernameEditBlocked
                                                         ? 'cursor-not-allowed opacity-50'
-                                                        : 'hover:text-accent-800 dark:hover:text-accent-200 dark:hover:text-accent-300'
+                                                        : 'hover:text-accent-800 dark:hover:text-accent-200'
                                                 } disabled:cursor-not-allowed disabled:opacity-50`}
                                                 {...getAnalyticsDebugAttributes('profile_settings__username_edit--open')}
                                             >

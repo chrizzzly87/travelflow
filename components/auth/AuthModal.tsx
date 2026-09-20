@@ -728,7 +728,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                                 type="button"
                                                 onClick={() => void handlePasswordResetRequest('forgot_password')}
                                                 disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200"
                                                 {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'forgot_password' })}
                                             >
                                                 {t('actions.forgotPassword')}
@@ -737,7 +737,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                                 type="button"
                                                 onClick={() => void handlePasswordResetRequest('set_password')}
                                                 disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200"
                                                 {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'set_password' })}
                                             >
                                                 {t('actions.setPasswordSocial')}

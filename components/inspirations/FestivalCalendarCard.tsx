@@ -78,7 +78,7 @@ const FestivalCalendarCardComponent: React.FC<FestivalCalendarCardProps> = ({ en
           <Link
             to={guidePath}
             onClick={() => trackEvent('inspirations__festival_card--guide', payload)}
-            className="transition-colors hover:text-accent-700 focus-visible:text-accent-700 dark:hover:text-accent-200 dark:focus-visible:text-accent-200 dark:hover:text-accent-300 dark:focus-visible:text-accent-300"
+            className="transition-colors hover:text-accent-700 focus-visible:text-accent-700 dark:hover:text-accent-200 dark:focus-visible:text-accent-200"
             {...getAnalyticsDebugAttributes('inspirations__festival_card--guide', payload)}
           >
             {event.name}
@@ -112,7 +112,7 @@ const FestivalCalendarCardComponent: React.FC<FestivalCalendarCardProps> = ({ en
         <Link
           to={planUrl}
           onClick={() => trackEvent('inspirations__festival_plan', payload)}
-          className="inline-flex items-center gap-1 text-accent-700 transition-colors hover:text-accent-900 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
+          className="inline-flex items-center gap-1 text-accent-700 transition-colors hover:text-accent-900 dark:text-accent-200 dark:hover:text-accent-200"
           {...getAnalyticsDebugAttributes('inspirations__festival_plan', payload)}
         >
           {t('inspirations.subpages.festivals.planCta')}
@@ -122,7 +122,7 @@ const FestivalCalendarCardComponent: React.FC<FestivalCalendarCardProps> = ({ en
           <Link
             to={guidePath}
             onClick={() => trackEvent('inspirations__festival_card--guide', payload)}
-            className="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-accent-700 dark:hover:text-accent-200 dark:hover:text-accent-300"
+            className="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-accent-700 dark:hover:text-accent-200"
             {...getAnalyticsDebugAttributes('inspirations__festival_card--guide', payload)}
           >
             <Compass size={14} weight="duotone" />

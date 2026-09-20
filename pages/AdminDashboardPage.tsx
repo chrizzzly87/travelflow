@@ -258,7 +258,7 @@ export const AdminDashboardPage: React.FC = () => {
                                     </span>
                                 </span>
                                 <div className="ml-4 space-y-1 w-full max-w-[200px] sm:max-w-none">
-                                    <p className="text-sm font-medium leading-none truncate group-hover:text-accent-700 transition-colors dark:group-hover:text-accent-200 dark:group-hover:text-accent-300">{getUserName(user)}</p>
+                                    <p className="text-sm font-medium leading-none truncate group-hover:text-accent-700 transition-colors dark:group-hover:text-accent-200">{getUserName(user)}</p>
                                     <p className="text-sm text-muted-foreground truncate">{user.email || 'No email'}</p>
                                 </div>
                                 <div className="ml-auto flex items-end flex-col gap-1 shrink-0 text-right font-medium">

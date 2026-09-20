@@ -152,7 +152,7 @@ export const CountriesPage: React.FC = () => {
       <section className="pt-8 pb-6 md:pt-14 md:pb-8 animate-hero-entrance">
         <Link
           to={buildLocalizedMarketingPath('inspirations', locale)}
-          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-accent-700 dark:hover:text-accent-200 dark:hover:text-accent-300"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-accent-700 dark:hover:text-accent-200"
         >
           <ArrowLeft className="rtl:rotate-180" size={14} weight="bold" />
           {t('inspirations.subpages.backToInspirations')}

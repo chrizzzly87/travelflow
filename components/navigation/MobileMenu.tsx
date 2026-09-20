@@ -29,7 +29,7 @@ interface MobileMenuProps {
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `block rounded-xl px-4 py-3 text-base font-semibold transition-colors ${
         isActive
-            ? 'bg-accent-50 text-accent-700 dark:bg-accent-400/15 dark:text-accent-200 dark:bg-accent-400/12'
+            ? 'bg-accent-50 text-accent-700 dark:bg-accent-400/15 dark:text-accent-200'
             : 'text-foreground hover:bg-secondary dark:text-foreground dark:hover:bg-secondary'
     }`;
 

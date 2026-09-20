@@ -263,7 +263,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                                 href={inspectResult.resolvedOgImageUrl}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="text-xs font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                                className="text-xs font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
                                             >
                                                 Open image
                                             </a>

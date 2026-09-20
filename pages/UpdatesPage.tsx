@@ -203,7 +203,7 @@ export const UpdatesPage: React.FC = () => {
                                         components={{
                                             p: ({ node, ...props }) => <p {...props} className="m-0" />,
                                             a: ({ node, children, ...props }) => (
-                                                <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300">{children}</a>
+                                                <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200">{children}</a>
                                             ),
                                             code: ({ node, ...props }) => (
                                                 <code {...props} className="rounded bg-secondary px-1 py-0.5 text-[0.92em] text-foreground" />
@@ -232,7 +232,7 @@ export const UpdatesPage: React.FC = () => {
                                                                 components={{
                                                                     p: ({ node, ...props }) => <p {...props} className="m-0" />,
                                                                     a: ({ node, children, ...props }) => (
-                                                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300">{children}</a>
+                                                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200">{children}</a>
                                                                     ),
                                                                     code: ({ node, ...props }) => (
                                                                         <code {...props} className="rounded bg-secondary px-1 py-0.5 text-[0.92em] text-foreground" />

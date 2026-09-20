@@ -78,7 +78,7 @@ export const FeatureShowcase: React.FC = () => {
                                 !isEven ? 'md:flex-row-reverse' : ''
                             }`}
                         >
-                            <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl bg-accent-50 text-accent-600 shadow-sm ring-1 ring-accent-100 transition-transform duration-300 hover:scale-110 hover:shadow-md md:size-24 dark:bg-accent-400/12 dark:text-accent-400 dark:shadow-none dark:hover:shadow-none dark:ring-0 dark:text-accent-300">
+                            <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl bg-accent-50 text-accent-600 shadow-sm ring-1 ring-accent-100 transition-transform duration-300 hover:scale-110 hover:shadow-md md:size-24 dark:bg-accent-400/12 dark:shadow-none dark:hover:shadow-none dark:ring-0 dark:text-accent-300">
                                 <IconComponent size={40} weight="duotone" />
                             </div>
 

@@ -680,7 +680,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                             </button>
                             <button
                                 type="button"
-                                className="inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-bold text-foreground shadow-sm transition-all hover:border-accent-300 hover:text-accent-700 hover:shadow-md dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300 dark:shadow-none"
+                                className="inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-bold text-foreground shadow-sm transition-all hover:border-accent-300 hover:text-accent-700 hover:shadow-md dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:shadow-none"
                             >
                                 Inspirations section action
                             </button>

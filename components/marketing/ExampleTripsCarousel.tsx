@@ -571,7 +571,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                 <Link
                     to={INSPIRATIONS_LINK}
                     onClick={() => trackEvent('home__carousel_cta--inspirations')}
-                    className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800 dark:text-accent-300 dark:hover:text-accent-200 dark:hover:text-accent-300"
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800 dark:text-accent-300 dark:hover:text-accent-200"
                     {...getAnalyticsDebugAttributes('home__carousel_cta--inspirations')}
                 >
                     {uiCopy.moreInspirationsCta}

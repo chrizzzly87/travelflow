@@ -586,7 +586,7 @@ const NumberStepper: React.FC<{
                 type="button"
                 onClick={() => onChange(clampNumber(value - 1, min, max))}
                 disabled={value <= min}
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:text-accent-300 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
             >
                 <Minus size={14} />
             </button>
@@ -595,7 +595,7 @@ const NumberStepper: React.FC<{
                 type="button"
                 onClick={() => onChange(clampNumber(value + 1, min, max))}
                 disabled={value >= max}
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:text-accent-300 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
             >
                 <Plus size={14} />
             </button>
@@ -1468,7 +1468,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     className={[
                                         'rounded-xl border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors',
                                         soloComfort === value
-                                            ? 'border-accent-300 bg-accent-50 text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30 dark:bg-accent-400/12'
+                                            ? 'border-accent-300 bg-accent-50 text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30'
                                             : 'border-border bg-card text-muted-foreground hover:border-border dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:border-border',
                                     ].join(' ')}
                                 >
@@ -1603,7 +1603,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     className={[
                                         'rounded-xl border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors',
                                         friendsEnergy === value
-                                            ? 'border-accent-300 bg-accent-50 text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30 dark:bg-accent-400/12'
+                                            ? 'border-accent-300 bg-accent-50 text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30'
                                             : 'border-border bg-card text-muted-foreground hover:border-border dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:border-border',
                                     ].join(' ')}
                                 >
@@ -2066,7 +2066,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
                 <main className="mx-auto w-full max-w-[1260px] px-4 pb-28 pt-8 sm:px-6 sm:pb-32 lg:px-8 lg:pb-14">
                     {prefillMeta?.label && (
-                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-medium text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30 dark:bg-accent-400/12">
+                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-medium text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30">
                             <Sparkle size={13} weight="duotone" />
                             <span>{t('prefillBadge', { label: prefillMeta.label })}</span>
                         </div>
@@ -2203,7 +2203,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         className={[
                                                             'inline-flex items-center gap-2 rounded-lg border bg-card px-2.5 py-1 text-sm font-medium text-foreground shadow-sm dark:bg-card dark:text-foreground dark:shadow-none',
                                                             isStartStop
-                                                                ? 'border-accent-400 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200 dark:bg-accent-400/12'
+                                                                ? 'border-accent-400 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200'
                                                                 : 'border-border dark:border-border',
                                                             routeLock ? 'cursor-grab active:cursor-grabbing' : '',
                                                             dragActive ? 'ring-2 ring-accent-200 dark:ring-0' : '',
@@ -2464,7 +2464,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         className={[
                                                             'group relative rounded-xl border p-3 text-left transition-colors',
                                                             active
-                                                                ? 'border-accent-400 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200 dark:bg-accent-400/12'
+                                                                ? 'border-accent-400 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200'
                                                                 : 'border-border bg-secondary text-foreground hover:border-border dark:border-border dark:bg-secondary dark:text-foreground dark:hover:border-border',
                                                         ].join(' ')}
                                                     >
@@ -2531,7 +2531,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         className={[
                                                             'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
                                                             active
-                                                                ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30 dark:bg-accent-400/12'
+                                                                ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30'
                                                                 : 'border-border bg-card text-muted-foreground hover:border-border dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:border-border',
                                                         ].join(' ')}
                                                     >
@@ -2578,7 +2578,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         className={[
                                                             'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
                                                             active
-                                                                ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30 dark:bg-accent-400/12'
+                                                                ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30'
                                                                 : 'border-border bg-card text-muted-foreground hover:border-border dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:border-border',
                                                         ].join(' ')}
                                                     >

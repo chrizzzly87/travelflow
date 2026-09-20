@@ -53,7 +53,7 @@ const MARKDOWN_COMPONENTS: Components = {
     li: ({ children }) => <li>{children}</li>,
     strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
     a: ({ href, children }) => (
-        <a className="font-semibold text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300" href={href || '#'} target="_blank" rel="noreferrer">
+        <a className="font-semibold text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200" href={href || '#'} target="_blank" rel="noreferrer">
             {children}
         </a>
     ),

@@ -134,7 +134,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
         <button
           type="button"
           onClick={switchToMapbox}
-          className="font-semibold text-accent-700 underline underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
+          className="font-semibold text-accent-700 underline underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
           {...getAnalyticsDebugAttributes('trip_view__map_customize--switch_mapbox', { surface: 'map_customize' })}
         >
           {key('switchToMapbox', 'Switch to Mapbox')}

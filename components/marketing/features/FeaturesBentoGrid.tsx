@@ -95,7 +95,7 @@ const ItineraryVisual: React.FC<BentoVisualProps> = ({ item }) => (
                         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground dark:text-muted-foreground">Trip rhythm</p>
                         <p className="mt-2 text-lg font-bold text-foreground dark:text-foreground">Slow mornings, packed evenings</p>
                     </div>
-                    <div className="rounded-[12px] border border-accent-200 bg-accent-50 p-3 text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30 dark:bg-accent-400/12">
+                    <div className="rounded-[12px] border border-accent-200 bg-accent-50 p-3 text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30">
                         <p className="text-xs uppercase tracking-[0.18em] text-accent-700 dark:text-accent-200">Ready in</p>
                         <p className="mt-2 text-3xl font-black">26s</p>
                     </div>

@@ -139,7 +139,7 @@ const modalSecondaryButtonClassName = 'inline-flex h-10 items-center justify-cen
 const modalPrimaryButtonClassName = 'inline-flex h-10 items-center justify-center gap-2 rounded-md bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 const modalSectionClassName = 'space-y-4 border-t border-border pt-6';
 const modalSubtlePanelClassName = 'rounded-md bg-secondary px-4 py-3 text-sm leading-6 text-muted-foreground dark:text-foreground';
-const modalTextButtonClassName = 'inline-flex items-center text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300';
+const modalTextButtonClassName = 'inline-flex items-center text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:text-accent-200 dark:hover:text-accent-200';
 const tabClassName = 'relative flex-none gap-2 px-0 data-[state=active]:[&_svg]:text-accent-600 [&_svg]:text-muted-foreground';
 
 const SummaryCard: React.FC<SummaryCardProps> = ({ label, value, wide = false }) => (
@@ -622,7 +622,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                 {forkMeta.url && (
                                     <a
                                         href={forkMeta.url}
-                                        className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                        className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-200 dark:hover:text-accent-200"
                                     >
                                         <ExternalLink size={14} />
                                         <span>{t('tripView.infoDialog.general.viewSource')}</span>

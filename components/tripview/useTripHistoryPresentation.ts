@@ -85,10 +85,10 @@ export const getToneMeta = (tone: ChangeTone): ToneMeta => {
         case 'update':
             return {
                 label: 'Updated',
-                iconClass: 'bg-accent-100 text-accent-700 dark:text-accent-300 dark:bg-accent-400/12 dark:text-accent-200',
-                badgeClass: 'bg-accent-100 text-accent-700 dark:text-accent-300 dark:bg-accent-400/12 dark:text-accent-200',
+                iconClass: 'bg-accent-100 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200',
+                badgeClass: 'bg-accent-100 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200',
                 toastBorderClass: 'border-accent-200 dark:border-accent-400/30',
-                toastTitleClass: 'text-accent-700 dark:text-accent-300 dark:text-accent-200',
+                toastTitleClass: 'text-accent-700 dark:text-accent-200',
                 Icon: Pencil,
             };
         case 'neutral':

@@ -220,7 +220,7 @@ export const ResetPasswordPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => navigate('/login')}
-                            className="text-sm font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
+                            className="text-sm font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
                             {...getAnalyticsDebugAttributes('auth__password_reset--back_login')}
                         >
                             {t('actions.backToLogin')}

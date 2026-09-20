@@ -93,7 +93,7 @@ export const ProfileStampsPage: React.FC = () => {
           <CaretLeft size={14} weight="bold" className="text-muted-foreground" />
           <NavLink
             to={buildPath('profile')}
-            className="transition-colors hover:text-accent-700 dark:hover:text-accent-200 dark:hover:text-accent-300"
+            className="transition-colors hover:text-accent-700 dark:hover:text-accent-200"
             onClick={() => trackEvent('profile__stamps_back--profile')}
             {...getAnalyticsDebugAttributes('profile__stamps_back--profile')}
           >

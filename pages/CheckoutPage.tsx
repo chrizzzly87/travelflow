@@ -1806,7 +1806,7 @@ export const CheckoutPage: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={handleEditTravelerDetails}
-                                                className="inline-flex items-center gap-1 text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                                className="inline-flex items-center gap-1 text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:text-accent-200 dark:hover:text-accent-200"
                                                 {...getAnalyticsDebugAttributes('checkout__traveler_details--edit')}
                                             >
                                                 <NotePencil size={16} weight="duotone" />

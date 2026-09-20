@@ -294,7 +294,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
           <Link
             to={tripDetailPath}
             onClick={() => onOpen(trip)}
-            className="inline cursor-pointer transition-colors hover:text-accent-700 dark:hover:text-accent-200 dark:hover:text-accent-300"
+            className="inline cursor-pointer transition-colors hover:text-accent-700 dark:hover:text-accent-200"
             {...(analyticsAttrs ? analyticsAttrs('open') : {})}
           >
             {displayTitle}
@@ -389,7 +389,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
                   trip_id: trip.id,
                 });
               }}
-              className="font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200 dark:hover:text-accent-300"
+              className="font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
               {...(analyticsAttrs ? analyticsAttrs('creator') : {})}
             >
               @{creatorHandle}

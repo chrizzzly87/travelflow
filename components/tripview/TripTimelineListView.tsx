@@ -100,7 +100,7 @@ const buildMarkdownComponents = (
     a: ({ node, children, ...props }: any) => (
         <a
             {...props}
-            className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
+            className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
             target="_blank"
             rel="noopener noreferrer"
         >{children}</a>
@@ -519,7 +519,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                 transfer.itemId
                                                     ? transferSelected
                                                         ? 'border-accent-500 text-accent-700 ring-2 ring-accent-200 dark:text-accent-200 dark:ring-0'
-                                                        : 'border-border text-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300'
+                                                        : 'border-border text-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30'
                                                     : 'border-border text-muted-foreground'
                                             }`}
                                             {...getAnalyticsDebugAttributes('trip_view__timeline_transfer--open', {
@@ -735,7 +735,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                                                         key={`${activity.item.id}-${type}`}
                                                                                         title={label}
                                                                                         aria-label={label}
-                                                                                        className={`relative inline-flex h-8 items-center overflow-hidden rounded-full border pe-0 opacity-85 transition-[margin,opacity] duration-200 ease-out [z-index:calc(sibling-count()-sibling-index())] ${getActivityTypePaletteClass(type)} ${index > 0 ? '-ms-2 group-hover/pills:ms-2 group-focus-visible:ms-2' : ''} group-hover/pills:opacity-100 group-focus-visible:opacity-100`}
+                                                                                        className={`relative inline-flex h-8 items-center overflow-hidden rounded-full border pe-0 ring-2 ring-card transition-[margin] duration-200 ease-out [z-index:calc(sibling-count()-sibling-index())] ${getActivityTypePaletteClass(type)} ${index > 0 ? '-ms-2 group-hover/pills:ms-2 group-focus-visible:ms-2' : ''}`}
                                                                                     >
                                                                                         <span className="inline-flex size-8 shrink-0 items-center justify-center">
                                                                                             <ActivityTypeIcon type={type} size={12} />

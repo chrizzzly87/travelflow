@@ -537,7 +537,7 @@ export const LoginPage: React.FC = () => {
                                         type="button"
                                         onClick={() => void handlePasswordResetRequest('forgot_password')}
                                         disabled={isSubmitting || isPostAuthProcessing}
-                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200"
                                         {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'page', intent: 'forgot_password' })}
                                     >
                                         {t('actions.forgotPassword')}
@@ -546,7 +546,7 @@ export const LoginPage: React.FC = () => {
                                         type="button"
                                         onClick={() => void handlePasswordResetRequest('set_password')}
                                         disabled={isSubmitting || isPostAuthProcessing}
-                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200"
                                         {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'page', intent: 'set_password' })}
                                     >
                                         {t('actions.setPasswordSocial')}
@@ -630,7 +630,7 @@ export const LoginPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => handleModeChange('register')}
-                                className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
                             >
                                 {t('copy.switchToRegister')}
                             </button>
@@ -638,7 +638,7 @@ export const LoginPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => handleModeChange('login')}
-                                className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
                             >
                                 {t('copy.switchToLogin')}
                             </button>

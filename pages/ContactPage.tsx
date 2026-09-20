@@ -524,7 +524,7 @@ export const ContactPage: React.FC = () => {
                         </p>
                         <a
                             href={`mailto:${t('contact.emailValue')}`}
-                            className="inline-flex items-center gap-2 text-base font-semibold text-accent-700 transition-colors hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
+                            className="inline-flex items-center gap-2 text-base font-semibold text-accent-700 transition-colors hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
                         >
                             <EnvelopeSimple size={18} weight="duotone" />
                             {t('contact.emailValue')}
@@ -540,7 +540,7 @@ export const ContactPage: React.FC = () => {
                                     type="button"
                                     disabled
                                     aria-label={label}
-                                    className="inline-flex size-10 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-accent-50 hover:text-accent-700 disabled:cursor-not-allowed dark:hover:bg-accent-400/12 dark:hover:text-accent-200 dark:ring-0 dark:hover:text-accent-300 dark:shadow-none"
+                                    className="inline-flex size-10 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-accent-50 hover:text-accent-700 disabled:cursor-not-allowed dark:hover:bg-accent-400/12 dark:hover:text-accent-200 dark:ring-0 dark:shadow-none"
                                 >
                                     <Icon size={18} weight="duotone" />
                                 </button>
@@ -807,7 +807,7 @@ export const ContactPage: React.FC = () => {
                                     section_id: item.sectionId,
                                     source: 'contact_page',
                                 })}
-                                className="inline-flex text-xs font-semibold text-accent-700 underline decoration-accent-400/70 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                className="inline-flex text-xs font-semibold text-accent-700 underline decoration-accent-400/70 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
                                 {...getAnalyticsDebugAttributes(CONTACT_FAQ_LINK_ITEM_EVENT, {
                                     item_id: item.id,
                                     section_id: item.sectionId,

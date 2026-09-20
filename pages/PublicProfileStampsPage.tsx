@@ -184,7 +184,7 @@ export const PublicProfileStampsPage: React.FC = () => {
           <CaretLeft size={14} weight="bold" className="text-muted-foreground" />
           <NavLink
             to={publicProfilePath}
-            className="transition-colors hover:text-accent-700 dark:hover:text-accent-200 dark:hover:text-accent-300"
+            className="transition-colors hover:text-accent-700 dark:hover:text-accent-200"
             onClick={() => trackEvent('public_profile__stamps_back--profile')}
             {...getAnalyticsDebugAttributes('public_profile__stamps_back--profile')}
           >

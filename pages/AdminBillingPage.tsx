@@ -607,7 +607,7 @@ export const AdminBillingPage: React.FC = () => {
                                                     {record.user_id ? (
                                                         <Link
                                                             to={`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`}
-                                                            className="block truncate font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                                            className="block truncate font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
                                                         >
                                                             {record.email || 'Unknown user'}
                                                         </Link>
@@ -687,7 +687,7 @@ export const AdminBillingPage: React.FC = () => {
                                             {record.user_email && record.user_id ? (
                                                 <Link
                                                     to={`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`}
-                                                    className="font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                                    className="font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
                                                 >
                                                     {record.user_email}
                                                 </Link>

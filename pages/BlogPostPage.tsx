@@ -535,7 +535,7 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                     {config.categories.map((category) => (
                         <AccordionItem key={category.id} value={category.id} className="border-b border-border last:border-b-0">
                             <AccordionTrigger
-                                className="cursor-pointer px-4 py-3 text-sm font-semibold text-foreground hover:no-underline hover:text-accent-700 data-[state=open]:text-accent-700 dark:hover:text-accent-200 dark:hover:text-accent-300"
+                                className="cursor-pointer px-4 py-3 text-sm font-semibold text-foreground hover:no-underline hover:text-accent-700 data-[state=open]:text-accent-700 dark:hover:text-accent-200"
                                 {...getAnalyticsDebugAttributes('blog__map_card--category', {
                                     slug: postSlug,
                                     category: category.id,
@@ -575,7 +575,7 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                                                         {spotIndex + 1}
                                                     </span>
                                                     <span className="min-w-0">
-                                                        <span className="block min-w-0 break-words text-sm font-semibold text-foreground transition-colors group-hover:text-accent-800 dark:group-hover:text-accent-200 dark:group-hover:text-accent-300">
+                                                        <span className="block min-w-0 break-words text-sm font-semibold text-foreground transition-colors group-hover:text-accent-800 dark:group-hover:text-accent-200">
                                                             {spot.name}
                                                         </span>
                                                         {spot.note && (
@@ -648,14 +648,14 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
 
         if (resolvedHref && isInternalPath(resolvedHref)) {
             return (
-                <Link to={resolvedHref} className="text-accent-600 underline decoration-accent-300 hover:text-accent-800 transition-colors dark:hover:text-accent-200 dark:text-accent-300 dark:hover:text-accent-300">
+                <Link to={resolvedHref} className="text-accent-600 underline decoration-accent-300 hover:text-accent-800 transition-colors dark:hover:text-accent-200 dark:text-accent-300">
                     {children}
                 </Link>
             );
         }
 
         return (
-            <a href={resolvedHref} className="text-accent-600 underline decoration-accent-300 hover:text-accent-800 transition-colors dark:hover:text-accent-200 dark:text-accent-300 dark:hover:text-accent-300" target="_blank" rel="noopener noreferrer">
+            <a href={resolvedHref} className="text-accent-600 underline decoration-accent-300 hover:text-accent-800 transition-colors dark:hover:text-accent-200 dark:text-accent-300" target="_blank" rel="noopener noreferrer">
                 {children}
             </a>
         );
@@ -1007,7 +1007,7 @@ export const BlogPostPage: React.FC = () => {
                         onClick={handleBackToBlogClick}
                         onFocus={prefetchBlogListRoute}
                         onPointerEnter={prefetchBlogListRoute}
-                        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-accent-700 transition-colors dark:hover:text-accent-200 dark:hover:text-accent-300"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-accent-700 transition-colors dark:hover:text-accent-200"
                     >
                         <ArrowLeft size={14} weight="bold" />
                         {t('common:buttons.backToBlog')}
@@ -1165,7 +1165,7 @@ export const BlogPostPage: React.FC = () => {
                                                         <Article size={12} weight="duotone" className="text-muted-foreground" />
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <p className="text-sm font-medium text-foreground group-hover:text-accent-700 transition-colors line-clamp-2 leading-snug dark:group-hover:text-accent-200 dark:group-hover:text-accent-300">
+                                                        <p className="text-sm font-medium text-foreground group-hover:text-accent-700 transition-colors line-clamp-2 leading-snug dark:group-hover:text-accent-200">
                                                             {related.title}
                                                         </p>
                                                         <p className="mt-0.5 text-xs text-muted-foreground">{t('index.readTime', { minutes: related.readingTimeMin })}</p>
@@ -1197,11 +1197,11 @@ export const BlogPostPage: React.FC = () => {
                             <div>
                                 <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">{t('post.explore')}</h4>
                                 <div className="space-y-2">
-                                    <Link to={buildLocalizedMarketingPath('blog', locale)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent-700 transition-colors dark:hover:text-accent-200 dark:hover:text-accent-300">
+                                    <Link to={buildLocalizedMarketingPath('blog', locale)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent-700 transition-colors dark:hover:text-accent-200">
                                         <Article size={14} weight="duotone" className="text-muted-foreground" />
                                         {t('post.allArticles')}
                                     </Link>
-                                    <Link to={buildLocalizedMarketingPath('inspirations', locale)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent-700 transition-colors dark:hover:text-accent-200 dark:hover:text-accent-300">
+                                    <Link to={buildLocalizedMarketingPath('inspirations', locale)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent-700 transition-colors dark:hover:text-accent-200">
                                         <Compass size={14} weight="duotone" className="text-muted-foreground" />
                                         {t('post.tripInspirations')}
                                     </Link>
@@ -1233,7 +1233,7 @@ export const BlogPostPage: React.FC = () => {
                                         <ArrowRight size={16} weight="bold" className="text-muted-foreground group-hover:text-accent-600 transition-colors dark:group-hover:text-accent-300" />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <h3 className="text-sm font-semibold text-foreground group-hover:text-accent-700 transition-colors line-clamp-2 dark:group-hover:text-accent-200 dark:group-hover:text-accent-300">
+                                        <h3 className="text-sm font-semibold text-foreground group-hover:text-accent-700 transition-colors line-clamp-2 dark:group-hover:text-accent-200">
                                             {related.title}
                                         </h3>
                                         <p className="mt-1 text-xs text-muted-foreground">

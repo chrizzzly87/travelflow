@@ -139,7 +139,7 @@ const SelectItem = React.forwardRef<
       ].join(' ')}
     >
       <SelectPrimitive.ItemIndicator>
-        <Check weight="bold" className="size-4 text-accent-600 dark:text-accent-400 dark:text-accent-300" />
+        <Check weight="bold" className="size-4 text-accent-600 dark:text-accent-300" />
       </SelectPrimitive.ItemIndicator>
     </span>
 
