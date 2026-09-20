@@ -73,7 +73,7 @@ describe('services/adminUserChangeLog', () => {
 
     expect(presentation).toEqual({
       label: 'Updated profile',
-      className: 'border-indigo-300 bg-indigo-50 text-indigo-800',
+      className: 'border-indigo-300 bg-indigo-50 text-indigo-800 dark:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30',
     });
   });
 

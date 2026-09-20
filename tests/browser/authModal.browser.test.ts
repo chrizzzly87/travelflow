@@ -207,7 +207,7 @@ describe('components/auth/AuthModal', () => {
     const user = userEvent.setup();
     renderModal();
 
-    await user.click(screen.getByRole('button', { name: 'tabs.register' }));
+    await user.click(screen.getByRole('radio', { name: 'tabs.register' }));
     await user.type(screen.getByLabelText('labels.email'), 'new-user@example.com');
     await user.type(screen.getByLabelText('labels.password'), 'password123');
     await user.click(screen.getByRole('button', { name: 'actions.submitRegister' }));
@@ -232,7 +232,7 @@ describe('components/auth/AuthModal', () => {
 
     renderModal();
 
-    await user.click(screen.getByRole('button', { name: 'tabs.register' }));
+    await user.click(screen.getByRole('radio', { name: 'tabs.register' }));
     await user.type(screen.getByLabelText('labels.email'), 'accepted@example.com');
     await user.type(screen.getByLabelText('labels.password'), 'password123');
     await user.click(screen.getByRole('checkbox'));
