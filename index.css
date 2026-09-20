@@ -214,6 +214,55 @@
 }
 
 :root {
+
+  /* Activity-type palette.
+   *
+   * Named tokens, not values computed at the call site. Every one is a SOLID
+   * colour in both themes: the badges stack on a timeline entry, and anything
+   * with alpha visibly darkens where they overlap, which reads as a rendering
+   * bug. The dark values are precomputed blends of the hue against the card, so
+   * nothing is mixed at runtime either.
+   */
+  --tf-activity-general-bg: #f1f5f9;
+  --tf-activity-general-border: #cbd5e1;
+  --tf-activity-general-text: #1e293b;
+  --tf-activity-sightseeing-bg: #e0f2fe;
+  --tf-activity-sightseeing-border: #7dd3fc;
+  --tf-activity-sightseeing-text: #075985;
+  --tf-activity-food-bg: #fef3c7;
+  --tf-activity-food-border: #fcd34d;
+  --tf-activity-food-text: #92400e;
+  --tf-activity-culture-bg: #ede9fe;
+  --tf-activity-culture-border: #c4b5fd;
+  --tf-activity-culture-text: #5b21b6;
+  --tf-activity-relaxation-bg: #ccfbf1;
+  --tf-activity-relaxation-border: #5eead4;
+  --tf-activity-relaxation-text: #115e59;
+  --tf-activity-nightlife-bg: #fae8ff;
+  --tf-activity-nightlife-border: #f0abfc;
+  --tf-activity-nightlife-text: #86198f;
+  --tf-activity-sports-bg: #fee2e2;
+  --tf-activity-sports-border: #fca5a5;
+  --tf-activity-sports-text: #991b1b;
+  --tf-activity-hiking-bg: #d1fae5;
+  --tf-activity-hiking-border: #6ee7b7;
+  --tf-activity-hiking-text: #065f46;
+  --tf-activity-wildlife-bg: #ecfccb;
+  --tf-activity-wildlife-border: #bef264;
+  --tf-activity-wildlife-text: #3f6212;
+  --tf-activity-nature-bg: #dcfce7;
+  --tf-activity-nature-border: #86efac;
+  --tf-activity-nature-text: #166534;
+  --tf-activity-shopping-bg: #fce7f3;
+  --tf-activity-shopping-border: #f9a8d4;
+  --tf-activity-shopping-text: #9d174d;
+  --tf-activity-adventure-bg: #ffedd5;
+  --tf-activity-adventure-border: #fdba74;
+  --tf-activity-adventure-text: #9a3412;
+  --tf-activity-beach-bg: #cffafe;
+  --tf-activity-beach-border: #67e8f9;
+  --tf-activity-beach-text: #155e75;
+
   --tf-veil-light: #ffffff;
   --tf-veil-dark: #191817;
   --tf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -286,6 +335,46 @@ html[lang^="ur-"] {
 }
 
 @theme inline {
+  --color-activity-general-bg: var(--tf-activity-general-bg);
+  --color-activity-general-border: var(--tf-activity-general-border);
+  --color-activity-general-text: var(--tf-activity-general-text);
+  --color-activity-sightseeing-bg: var(--tf-activity-sightseeing-bg);
+  --color-activity-sightseeing-border: var(--tf-activity-sightseeing-border);
+  --color-activity-sightseeing-text: var(--tf-activity-sightseeing-text);
+  --color-activity-food-bg: var(--tf-activity-food-bg);
+  --color-activity-food-border: var(--tf-activity-food-border);
+  --color-activity-food-text: var(--tf-activity-food-text);
+  --color-activity-culture-bg: var(--tf-activity-culture-bg);
+  --color-activity-culture-border: var(--tf-activity-culture-border);
+  --color-activity-culture-text: var(--tf-activity-culture-text);
+  --color-activity-relaxation-bg: var(--tf-activity-relaxation-bg);
+  --color-activity-relaxation-border: var(--tf-activity-relaxation-border);
+  --color-activity-relaxation-text: var(--tf-activity-relaxation-text);
+  --color-activity-nightlife-bg: var(--tf-activity-nightlife-bg);
+  --color-activity-nightlife-border: var(--tf-activity-nightlife-border);
+  --color-activity-nightlife-text: var(--tf-activity-nightlife-text);
+  --color-activity-sports-bg: var(--tf-activity-sports-bg);
+  --color-activity-sports-border: var(--tf-activity-sports-border);
+  --color-activity-sports-text: var(--tf-activity-sports-text);
+  --color-activity-hiking-bg: var(--tf-activity-hiking-bg);
+  --color-activity-hiking-border: var(--tf-activity-hiking-border);
+  --color-activity-hiking-text: var(--tf-activity-hiking-text);
+  --color-activity-wildlife-bg: var(--tf-activity-wildlife-bg);
+  --color-activity-wildlife-border: var(--tf-activity-wildlife-border);
+  --color-activity-wildlife-text: var(--tf-activity-wildlife-text);
+  --color-activity-nature-bg: var(--tf-activity-nature-bg);
+  --color-activity-nature-border: var(--tf-activity-nature-border);
+  --color-activity-nature-text: var(--tf-activity-nature-text);
+  --color-activity-shopping-bg: var(--tf-activity-shopping-bg);
+  --color-activity-shopping-border: var(--tf-activity-shopping-border);
+  --color-activity-shopping-text: var(--tf-activity-shopping-text);
+  --color-activity-adventure-bg: var(--tf-activity-adventure-bg);
+  --color-activity-adventure-border: var(--tf-activity-adventure-border);
+  --color-activity-adventure-text: var(--tf-activity-adventure-text);
+  --color-activity-beach-bg: var(--tf-activity-beach-bg);
+  --color-activity-beach-border: var(--tf-activity-beach-border);
+  --color-activity-beach-text: var(--tf-activity-beach-text);
+
   --color-accent-50: var(--tf-accent-50);
   --color-accent-100: var(--tf-accent-100);
   --color-accent-200: var(--tf-accent-200);
@@ -1084,6 +1173,44 @@ h6,
   border-radius: 42%;
 }
 
+
+/* Scrollbars follow the theme.
+ *
+ * Without this the browser paints its default light track and thumb on every
+ * scrollable dark surface — most visible on the trip page, where the timeline
+ * and the panels both scroll. color-scheme already tells the UA which set of
+ * default controls to use; these rules cover the webkit track explicitly so the
+ * thumb sits on the app's own surfaces rather than the UA's.
+ */
+* {
+  scrollbar-color: var(--muted-foreground) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted-foreground);
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 @utility scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -1360,6 +1487,47 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   --sidebar-accent: oklch(0.283 0.003 49);
   --sidebar-accent-foreground: oklch(0.953 0.009 85);
   --sidebar-border: oklch(1 0 0 / 13%);
+
+  /* Activity-type palette, dark. Solid values, see :root for why. */
+  --tf-activity-general-bg: #3a3c3f;
+  --tf-activity-general-border: #545a62;
+  --tf-activity-general-text: #e2e8f0;
+  --tf-activity-sightseeing-bg: #29404a;
+  --tf-activity-sightseeing-border: #2e657d;
+  --tf-activity-sightseeing-text: #bae6fd;
+  --tf-activity-food-bg: #4c4124;
+  --tf-activity-food-border: #7f6624;
+  --tf-activity-food-text: #fde68a;
+  --tf-activity-culture-bg: #3d374b;
+  --tf-activity-culture-border: #5c507e;
+  --tf-activity-culture-text: #ddd6fe;
+  --tf-activity-relaxation-bg: #274440;
+  --tf-activity-relaxation-border: #296e65;
+  --tf-activity-relaxation-text: #99f6e4;
+  --tf-activity-nightlife-bg: #49344a;
+  --tf-activity-nightlife-border: #77487d;
+  --tf-activity-nightlife-text: #f5d0fe;
+  --tf-activity-sports-bg: #4c3332;
+  --tf-activity-sports-border: #7e4544;
+  --tf-activity-sports-text: #fecaca;
+  --tf-activity-hiking-bg: #294439;
+  --tf-activity-hiking-border: #2c6e55;
+  --tf-activity-hiking-text: #a7f3d0;
+  --tf-activity-wildlife-bg: #3c4827;
+  --tf-activity-wildlife-border: #5a762b;
+  --tf-activity-wildlife-text: #d9f99d;
+  --tf-activity-nature-bg: #2c4635;
+  --tf-activity-nature-border: #35734b;
+  --tf-activity-nature-text: #bbf7d0;
+  --tf-activity-shopping-bg: #4b333e;
+  --tf-activity-shopping-border: #7d4561;
+  --tf-activity-shopping-text: #fbcfe8;
+  --tf-activity-adventure-bg: #4c3928;
+  --tf-activity-adventure-border: #7f532e;
+  --tf-activity-adventure-text: #fed7aa;
+  --tf-activity-beach-bg: #254448;
+  --tf-activity-beach-border: #246e79;
+  --tf-activity-beach-text: #a5f3fc;
 
   /* Accent and state — shared by both tones. */
   --primary: var(--tf-accent-400);

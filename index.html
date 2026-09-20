@@ -126,15 +126,20 @@
       })();
     </script>
     <style>
-      /* Custom scrollbar for the timeline */
+      /* Custom scrollbar for the timeline.
+         Hardcoded light greys here meant a pale track and thumb on every dark
+         surface. Reads the tokens with the original values as fallback. */
       .timeline-scroll::-webkit-scrollbar {
         height: 8px;
         width: 8px;
-        background-color: #f3f4f6;
+        background-color: var(--secondary, #f3f4f6);
       }
       .timeline-scroll::-webkit-scrollbar-thumb {
-        background-color: #d1d5db;
+        background-color: var(--muted-foreground, #d1d5db);
         border-radius: 4px;
+      }
+      .timeline-scroll::-webkit-scrollbar-thumb:hover {
+        background-color: var(--foreground, #9ca3af);
       }
       body {
         overscroll-behavior-y: none;

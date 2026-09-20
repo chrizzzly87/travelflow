@@ -61,20 +61,24 @@ const ACTIVITY_TYPE_ALIASES: Record<string, ActivityType[]> = {
     beach: ['beach'],
 };
 
+// Named palette tokens rather than hue/step utilities, so the colours live in
+// one place (index.css :root + .dark + @theme) and both themes are defined
+// together. Solid colours in both: these badges overlap on a timeline entry and
+// any transparency darkens where they stack.
 export const ACTIVITY_TYPE_COLORS: Record<ActivityType, string> = {
-    general: 'bg-slate-100 border-slate-300 text-slate-800',
-    sightseeing: 'bg-sky-100 border-sky-300 text-sky-800',
-    food: 'bg-amber-100 border-amber-300 text-amber-800',
-    culture: 'bg-violet-100 border-violet-300 text-violet-800',
-    relaxation: 'bg-teal-100 border-teal-300 text-teal-800',
-    nightlife: 'bg-fuchsia-100 border-fuchsia-300 text-fuchsia-800',
-    sports: 'bg-red-100 border-red-300 text-red-800',
-    hiking: 'bg-emerald-100 border-emerald-300 text-emerald-800',
-    wildlife: 'bg-lime-100 border-lime-300 text-lime-800',
-    nature: 'bg-green-100 border-green-300 text-green-800',
-    shopping: 'bg-pink-100 border-pink-300 text-pink-800',
-    adventure: 'bg-orange-100 border-orange-300 text-orange-800',
-    beach: 'bg-cyan-100 border-cyan-300 text-cyan-800',
+    general: 'bg-activity-general-bg border-activity-general-border text-activity-general-text',
+    sightseeing: 'bg-activity-sightseeing-bg border-activity-sightseeing-border text-activity-sightseeing-text',
+    food: 'bg-activity-food-bg border-activity-food-border text-activity-food-text',
+    culture: 'bg-activity-culture-bg border-activity-culture-border text-activity-culture-text',
+    relaxation: 'bg-activity-relaxation-bg border-activity-relaxation-border text-activity-relaxation-text',
+    nightlife: 'bg-activity-nightlife-bg border-activity-nightlife-border text-activity-nightlife-text',
+    sports: 'bg-activity-sports-bg border-activity-sports-border text-activity-sports-text',
+    hiking: 'bg-activity-hiking-bg border-activity-hiking-border text-activity-hiking-text',
+    wildlife: 'bg-activity-wildlife-bg border-activity-wildlife-border text-activity-wildlife-text',
+    nature: 'bg-activity-nature-bg border-activity-nature-border text-activity-nature-text',
+    shopping: 'bg-activity-shopping-bg border-activity-shopping-border text-activity-shopping-text',
+    adventure: 'bg-activity-adventure-bg border-activity-adventure-border text-activity-adventure-text',
+    beach: 'bg-activity-beach-bg border-activity-beach-border text-activity-beach-text',
 };
 
 // Multi-type activities use a deterministic priority, so timeline color remains stable.
