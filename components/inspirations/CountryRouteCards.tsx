@@ -77,7 +77,7 @@ export const CountryRouteCards: React.FC<CountryRouteCardsProps> = ({ countryVal
     <section className="pb-10 animate-hero-stagger" style={{ '--stagger': '170ms' } as React.CSSProperties}>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-accent-700">
+          <p className="text-xs font-bold uppercase tracking-wider text-accent-700 dark:text-accent-200">
             {t('inspirations.subpages.guide.routes.eyebrow')}
           </p>
           <h2 className="mt-1 text-2xl font-black text-foreground">

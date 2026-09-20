@@ -563,7 +563,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 <button type="button"
                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onSwapSelectedCities(); }}
                     disabled={!canEdit}
-                    className={`bg-card text-accent-600 shadow-md border border-border p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-accent-50 hover:scale-110' : 'cursor-not-allowed opacity-60'}`}
+                    className={`bg-card text-accent-600 shadow-md border border-border p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-accent-50 hover:scale-110 dark:hover:bg-accent-400/12' : 'cursor-not-allowed opacity-60'}`}
                     title={swapSelectedLabel || 'Reverse selected cities'}
                 >
                     {vertical ? <ArrowUpDown size={12} strokeWidth={3} /> : <ArrowLeftRight size={12} strokeWidth={3} />}
@@ -573,7 +573,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 <button type="button"
                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onForceFill(item.id); }}
                     disabled={!canEdit}
-                    className={`bg-card text-accent-600 shadow-md border border-border p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-accent-50 hover:scale-110' : 'cursor-not-allowed opacity-60'}`}
+                    className={`bg-card text-accent-600 shadow-md border border-border p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-accent-50 hover:scale-110 dark:hover:bg-accent-400/12' : 'cursor-not-allowed opacity-60'}`}
                     title={forceFillLabel || 'Occupy available space'}
                 >
                     {(forceFillMode === 'shrink') ? <Minimize size={12} strokeWidth={3} /> : <Maximize size={12} strokeWidth={3} />}
@@ -596,7 +596,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         >
             <div className={`rounded-full transition-colors shadow-sm flex items-center justify-center
                 ${vertical ? 'w-8 h-1.5' : 'h-8 w-1.5'}
-                ${isSelected ? 'bg-card border border-accent-300 text-accent-500 group-hover/handle:bg-accent-500 group-hover/handle:text-white group-hover/handle:border-accent-600' : 'bg-card/80 border border-border group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600 group-hover/handle:text-white'}
+                ${isSelected ? 'bg-card border border-accent-300 text-accent-500 group-hover/handle:bg-accent-500 group-hover/handle:text-white group-hover/handle:border-accent-600 dark:border-accent-400/30' : 'bg-card/80 border border-border group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600 group-hover/handle:text-white'}
             `}>
                <div className={`flex gap-[2px] opacity-50 ${vertical ? 'flex-row' : 'flex-col'}`}>
                  <div className="size-0.5 bg-current rounded-full"></div>
@@ -621,7 +621,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         >
             <div className={`rounded-full transition-colors shadow-sm flex items-center justify-center
                 ${vertical ? 'w-8 h-1.5' : 'h-8 w-1.5'}
-                ${isSelected ? 'bg-card border border-accent-300 text-accent-500 group-hover/handle:bg-accent-500 group-hover/handle:text-white group-hover/handle:border-accent-600' : 'bg-card/80 border border-border group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600 group-hover/handle:text-white'}
+                ${isSelected ? 'bg-card border border-accent-300 text-accent-500 group-hover/handle:bg-accent-500 group-hover/handle:text-white group-hover/handle:border-accent-600 dark:border-accent-400/30' : 'bg-card/80 border border-border group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600 group-hover/handle:text-white'}
             `}>
                <div className={`flex gap-[2px] opacity-50 ${vertical ? 'flex-row' : 'flex-col'}`}>
                  <div className="size-0.5 bg-current rounded-full"></div>

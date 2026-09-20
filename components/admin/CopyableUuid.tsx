@@ -113,7 +113,7 @@ export const CopyableUuid: React.FC<CopyableUuidProps> = ({
                 aria-hidden="true"
                 className={mergeClasses(
                     'text-[10px] font-semibold text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100',
-                    copied && 'opacity-100 text-emerald-700',
+                    copied && 'opacity-100 text-emerald-700 dark:text-emerald-200',
                     hintClassName
                 )}
             >

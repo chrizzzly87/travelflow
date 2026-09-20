@@ -64,7 +64,7 @@ export const TripAgentMentionMenu: React.FC<{
                                 onSelect(index);
                             }}
                             className={`flex cursor-pointer items-center gap-2 px-3 py-1.5 ${
-                                isActive ? 'bg-accent-50 text-accent-900' : 'text-foreground'
+                                isActive ? 'bg-accent-50 text-accent-900 dark:bg-accent-400/12 dark:text-accent-200' : 'text-foreground'
                             }`}
                         >
                             {item.icon}

@@ -49,7 +49,7 @@ export const FeaturesPage: React.FC = () => {
                                 style={{ fontFamily: 'var(--tf-font-heading)' }}
                             >
                                 {t('hero.titleBefore')}{' '}
-                                <span className="text-accent-700 dark:text-accent-300">{t('hero.titleHighlight')}</span>
+                                <span className="text-accent-700 dark:text-accent-300 dark:text-accent-200">{t('hero.titleHighlight')}</span>
                             </h1>
                         </div>
 
@@ -129,7 +129,7 @@ export const FeaturesPage: React.FC = () => {
                                     >
                                         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                                             <div className="flex items-center gap-3">
-                                                <div className="flex size-11 items-center justify-center rounded-lg border border-border bg-secondary text-accent-700 dark:border-border dark:bg-secondary dark:text-accent-300">
+                                                <div className="flex size-11 items-center justify-center rounded-lg border border-border bg-secondary text-accent-700 dark:border-border dark:bg-secondary dark:text-accent-300 dark:text-accent-200">
                                                     <IconComponent size={18} weight="duotone" />
                                                 </div>
                                             </div>

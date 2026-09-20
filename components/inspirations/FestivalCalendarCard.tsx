@@ -56,14 +56,14 @@ const FestivalCalendarCardComponent: React.FC<FestivalCalendarCardProps> = ({ en
   };
 
   return (
-    <article className="group flex h-full min-h-52 flex-col rounded-3xl border border-border bg-card p-5 shadow-sm transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-1 hover:border-accent-200 hover:shadow-lg">
+    <article className="group flex h-full min-h-52 flex-col rounded-3xl border border-border bg-card p-5 shadow-sm transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-1 hover:border-accent-200 hover:shadow-lg dark:hover:border-accent-400/30">
       <div className="flex items-start justify-between gap-3">
         <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-secondary">
           <FlagIcon code={entry.countryCode} size="2xl" label={entry.countryName} />
         </span>
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${
-            occurrence.kind === 'exact' ? 'bg-accent-50 text-accent-700' : 'bg-secondary text-muted-foreground'
+            occurrence.kind === 'exact' ? 'bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200' : 'bg-secondary text-muted-foreground'
           }`}
         >
           <CalendarDots size={13} weight="duotone" />
@@ -78,7 +78,7 @@ const FestivalCalendarCardComponent: React.FC<FestivalCalendarCardProps> = ({ en
           <Link
             to={guidePath}
             onClick={() => trackEvent('inspirations__festival_card--guide', payload)}
-            className="transition-colors hover:text-accent-700 focus-visible:text-accent-700"
+            className="transition-colors hover:text-accent-700 focus-visible:text-accent-700 dark:hover:text-accent-200 dark:focus-visible:text-accent-200"
             {...getAnalyticsDebugAttributes('inspirations__festival_card--guide', payload)}
           >
             {event.name}
@@ -93,12 +93,12 @@ const FestivalCalendarCardComponent: React.FC<FestivalCalendarCardProps> = ({ en
           <MapPin size={13} />
           {entry.countryName}
         </span>
-        <span className="rounded-full bg-accent-50 px-2.5 py-1 font-bold capitalize text-accent-700">
+        <span className="rounded-full bg-accent-50 px-2.5 py-1 font-bold capitalize text-accent-700 dark:bg-accent-400/12 dark:text-accent-200">
           {t(`inspirations.subpages.festivals.regions.${entry.regionId}`)}
         </span>
       </div>
 
-      <p className="mt-4 text-sm font-black text-accent-700">{dateLabel}</p>
+      <p className="mt-4 text-sm font-black text-accent-700 dark:text-accent-200">{dateLabel}</p>
       {recurrenceHint ? (
         <p className="mt-1 flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground">
           <Info className="mt-0.5 shrink-0" size={13} weight="duotone" />
@@ -112,7 +112,7 @@ const FestivalCalendarCardComponent: React.FC<FestivalCalendarCardProps> = ({ en
         <Link
           to={planUrl}
           onClick={() => trackEvent('inspirations__festival_plan', payload)}
-          className="inline-flex items-center gap-1 text-accent-700 transition-colors hover:text-accent-900"
+          className="inline-flex items-center gap-1 text-accent-700 transition-colors hover:text-accent-900 dark:text-accent-200 dark:hover:text-accent-200"
           {...getAnalyticsDebugAttributes('inspirations__festival_plan', payload)}
         >
           {t('inspirations.subpages.festivals.planCta')}
@@ -122,7 +122,7 @@ const FestivalCalendarCardComponent: React.FC<FestivalCalendarCardProps> = ({ en
           <Link
             to={guidePath}
             onClick={() => trackEvent('inspirations__festival_card--guide', payload)}
-            className="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-accent-700"
+            className="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-accent-700 dark:hover:text-accent-200"
             {...getAnalyticsDebugAttributes('inspirations__festival_card--guide', payload)}
           >
             <Compass size={14} weight="duotone" />

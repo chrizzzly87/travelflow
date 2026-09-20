@@ -1412,7 +1412,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                                     type="button"
                                                     onClick={() => { void handlePaletteSelection(palette.id); }}
                                                     disabled={!canEdit}
-                                                    className={`rounded-lg border p-1 transition-colors ${cityColorPaletteId === palette.id ? 'border-accent-400 bg-accent-50' : 'border-border hover:border-border'} ${canEdit ? '' : 'opacity-50 cursor-not-allowed'}`}
+                                                    className={`rounded-lg border p-1 transition-colors ${cityColorPaletteId === palette.id ? 'border-accent-400 bg-accent-50 dark:bg-accent-400/12' : 'border-border hover:border-border'} ${canEdit ? '' : 'opacity-50 cursor-not-allowed'}`}
                                                     title={palette.name}
                                                 >
                                                     <div className="flex h-5 w-full gap-[2px]">
@@ -1496,7 +1496,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                           <button type="button"
                               onClick={() => { if (!canEdit) return; handleDeleteItem(displayItem.id); handleClosePanel(); }}
                               disabled={!canEdit}
-                              className={`p-2 bg-red-50 text-red-500 rounded-full transition-colors sm:hidden ${canEdit ? 'hover:bg-red-100' : 'opacity-50 cursor-not-allowed'}`}
+                              className={`p-2 bg-red-50 text-red-500 rounded-full transition-colors sm:hidden ${canEdit ? 'hover:bg-red-100 dark:hover:bg-red-400/12' : 'opacity-50 cursor-not-allowed'}`}
                               aria-label="Delete item"
                           >
                               <Trash2 size={20} />
@@ -1516,7 +1516,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                           <button type="button"
                               onClick={() => { if (!canEdit) return; handleDeleteItem(displayItem.id); handleClosePanel(); }}
                               disabled={!canEdit}
-                              className={`p-2 bg-red-50 text-red-500 rounded-full transition-colors ${canEdit ? 'hover:bg-red-100' : 'opacity-50 cursor-not-allowed'}`}
+                              className={`p-2 bg-red-50 text-red-500 rounded-full transition-colors ${canEdit ? 'hover:bg-red-100 dark:hover:bg-red-400/12' : 'opacity-50 cursor-not-allowed'}`}
                               aria-label="Delete item"
                               title="Delete"
                           >
@@ -1673,7 +1673,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                 <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Schedule</h3>
-                        <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded">
+                        <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded dark:bg-accent-400/12">
                             {formatActivityDuration(previewDuration)}
                         </div>
                     </div>
@@ -1818,7 +1818,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Schedule</h3>
                         <div className="flex items-center gap-2">
-                            <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded">{Number(previewDuration.toFixed(1))} Nights</div>
+                            <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded dark:bg-accent-400/12">{Number(previewDuration.toFixed(1))} Nights</div>
                             {onForceFill && forceFillLabel && (
                                 <button type="button"
                                     onClick={() => { if (!canEdit) return; handleForceFillDraft(); }}
@@ -1908,7 +1908,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                         <div className="text-xs text-muted-foreground">Search with Google Places</div>
                     </div>
                     {citySearchError && (
-                        <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-700 flex items-start gap-2">
+                        <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-700 flex items-start gap-2 dark:bg-amber-400/12 dark:text-amber-200">
                             <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
                             <div>{citySearchError}</div>
                         </div>
@@ -1973,13 +1973,13 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                          <button type="button"
                              onClick={addHotel}
                              disabled={!canEdit}
-                             className={`text-accent-600 p-1 rounded transition-colors text-xs font-medium ${canEdit ? 'hover:text-accent-800 hover:bg-accent-50' : 'opacity-50 cursor-not-allowed'}`}
+                             className={`text-accent-600 p-1 rounded transition-colors text-xs font-medium ${canEdit ? 'hover:text-accent-800 hover:bg-accent-50 dark:hover:bg-accent-400/12 dark:hover:text-accent-200' : 'opacity-50 cursor-not-allowed'}`}
                          >
                              + Manual
                          </button>
                      </div>
                      <div className="mb-4 relative">
-                        {hotelSearchUnavailable ? <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 flex items-start gap-2"><AlertTriangle size={14} className="mt-0.5 flex-shrink-0" /><div><strong>Maps Search Unavailable</strong><br/>Try again in a moment or add hotels manually.</div></div> : (
+                        {hotelSearchUnavailable ? <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 flex items-start gap-2 dark:bg-red-400/12"><AlertTriangle size={14} className="mt-0.5 flex-shrink-0" /><div><strong>Maps Search Unavailable</strong><br/>Try again in a moment or add hotels manually.</div></div> : (
                             <>
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
@@ -2016,7 +2016,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                                 type="button"
                                                 onClick={() => selectHotelResult(result)}
                                                 disabled={!canEdit}
-                                                className={`w-full text-left bg-secondary border border-border rounded-lg p-2 transition-all ${canEdit ? 'hover:bg-accent-50 hover:border-accent-200 cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
+                                                className={`w-full text-left bg-secondary border border-border rounded-lg p-2 transition-all ${canEdit ? 'hover:bg-accent-50 hover:border-accent-200 cursor-pointer dark:hover:bg-accent-400/12 dark:hover:border-accent-400/30' : 'cursor-not-allowed opacity-60'}`}
                                             >
                                                 <div className="font-bold text-sm text-foreground">{result.name}</div>
                                                 <div className="text-xs text-muted-foreground truncate">{result.address}</div>
@@ -2097,7 +2097,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                  disabled={!canEdit || normalizedTransportMode === mode}
                                  className={`flex flex-col items-center justify-center w-full h-20 rounded-xl border-2 transition-all ${
                                     normalizedTransportMode === mode
-                                        ? (mode === 'na' ? 'bg-secondary border-border text-muted-foreground' : 'bg-accent-50 border-accent-500 text-accent-700')
+                                        ? (mode === 'na' ? 'bg-secondary border-border text-muted-foreground' : 'bg-accent-50 border-accent-500 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200')
                                         : (mode === 'na' ? 'bg-secondary border-border text-muted-foreground' : 'bg-secondary border-border text-muted-foreground')
                                  } ${(canEdit && normalizedTransportMode !== mode) ? 'hover:border-border' : 'opacity-60 cursor-not-allowed'}`}
                              >
@@ -2118,7 +2118,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                              disabled={!onExportActivityCalendar}
                              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
                                  onExportActivityCalendar
-                                     ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100 hover:border-accent-300'
+                                     ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100 hover:border-accent-300 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30 dark:hover:border-accent-400/30'
                                      : 'border-border bg-secondary text-muted-foreground cursor-not-allowed'
                              }`}
                              {...getAnalyticsDebugAttributes('trip_view__calendar_export--activity', {
@@ -2172,14 +2172,14 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     />
                 </Suspense>
                 {aiError && (
-                    <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                    <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 dark:bg-red-400/12">
                         {aiError}
                     </div>
                 )}
                 {isCity && pendingNotesProposal && (
-                    <div className="mt-4 border border-accent-100 rounded-xl bg-accent-50/40 overflow-hidden">
+                    <div className="mt-4 border border-accent-100 rounded-xl bg-accent-50/40 overflow-hidden dark:bg-accent-400/12">
                         <div className="px-4 py-3 border-b border-accent-100 bg-card/80">
-                            <div className="text-xs font-semibold text-accent-700">AI Draft Preview</div>
+                            <div className="text-xs font-semibold text-accent-700 dark:text-accent-200">AI Draft Preview</div>
                             <div className="text-[11px] text-accent-600 mt-1">
                                 Action: {pendingNotesProposal.actionLabel}
                             </div>
@@ -2191,7 +2191,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 <LazyMarkdownEditor value={proposedNotesPreview} readOnly />
                             </Suspense>
                         </div>
-                        <div className="px-4 py-3 bg-accent-50 border-t border-accent-100 flex items-center justify-end gap-2">
+                        <div className="px-4 py-3 bg-accent-50 border-t border-accent-100 flex items-center justify-end gap-2 dark:bg-accent-400/12">
                             <button type="button"
                                 onClick={handleDeclineNotesProposal}
                                 disabled={!canEdit}
@@ -2214,7 +2214,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                         <div className="flex items-center mb-3 justify-between">
                             <div className="flex items-center gap-2">
                                 <Sparkles size={16} className="text-accent-500 animate-pulse" />
-                                <h3 className="text-sm font-semibold text-accent-900">AI Insights</h3>
+                                <h3 className="text-sm font-semibold text-accent-900 dark:text-accent-200">AI Insights</h3>
                             </div>
                             <button type="button"
                                 onClick={fetchDetails}

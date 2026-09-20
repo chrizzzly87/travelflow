@@ -65,7 +65,7 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
     <section className="py-8 md:py-12">
       <div className="mx-auto max-w-5xl text-center">
         <h1 className="text-balance text-5xl font-black tracking-tight text-foreground sm:text-6xl md:text-7xl">
-          <span className="text-accent-700">
+          <span className="text-accent-700 dark:text-accent-200">
             {greetingGlyphs.map(({ character, animationDelayMs }, index) => (
               <span
                 key={`hero-glyph-${index}-${character}`}
@@ -83,7 +83,7 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
         </h1>
 
         <p className="mt-5 text-base leading-7 text-muted-foreground [text-wrap:pretty] md:text-lg">
-          <span className="font-semibold text-accent-700">{transliteration}</span>
+          <span className="font-semibold text-accent-700 dark:text-accent-200">{transliteration}</span>
           {' '}
           <span className="font-medium text-accent-600">/{ipa}/</span>
           {' '}
@@ -95,7 +95,7 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
           <Link
             to={ctaHref}
             onClick={onCtaClick}
-            className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800 dark:hover:text-accent-200"
             {...(analyticsAttributes || {})}
           >
             <FlagIcon code={inspirationCountryCode} size="sm" fallback={null} />

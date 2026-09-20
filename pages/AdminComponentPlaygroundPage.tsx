@@ -191,7 +191,7 @@ const GLOBE_PALETTES: Record<GlobePaletteId, {
         markerColor: [0.38, 0.31, 0.9],
         arcColor: [0.38, 0.31, 0.9],
         glowColor: [0.995, 0.995, 0.995],
-        accentClass: 'border-violet-200 bg-violet-50 text-violet-800',
+        accentClass: 'border-violet-200 bg-violet-50 text-violet-800 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30',
     },
     coastal: {
         label: 'Coastal teal',
@@ -199,7 +199,7 @@ const GLOBE_PALETTES: Record<GlobePaletteId, {
         markerColor: [0.04, 0.54, 0.62],
         arcColor: [0.04, 0.54, 0.62],
         glowColor: [0.9, 0.99, 1],
-        accentClass: 'border-cyan-200 bg-cyan-50 text-cyan-800',
+        accentClass: 'border-cyan-200 bg-cyan-50 text-cyan-800 dark:bg-cyan-400/12 dark:text-cyan-200 dark:border-cyan-400/30',
     },
     ember: {
         label: 'Warm route',
@@ -207,7 +207,7 @@ const GLOBE_PALETTES: Record<GlobePaletteId, {
         markerColor: [0.92, 0.36, 0.15],
         arcColor: [0.92, 0.36, 0.15],
         glowColor: [1, 0.96, 0.9],
-        accentClass: 'border-orange-200 bg-orange-50 text-orange-800',
+        accentClass: 'border-orange-200 bg-orange-50 text-orange-800 dark:bg-orange-400/12 dark:text-orange-200 dark:border-orange-400/30',
     },
 };
 
@@ -226,7 +226,7 @@ const CTA_AUDIENCE_COPY: Record<CtaAudienceId, { label: string; eyebrow: string;
         body: 'Invite travelers to browse saved routes, stamps, and public travel highlights.',
         primary: 'Open profile',
         secondary: 'Edit visibility',
-        className: 'border-indigo-200 bg-indigo-50 text-indigo-950',
+        className: 'border-indigo-200 bg-indigo-50 text-indigo-950 dark:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30',
     },
     launch: {
         label: 'Launch',
@@ -234,7 +234,7 @@ const CTA_AUDIENCE_COPY: Record<CtaAudienceId, { label: string; eyebrow: string;
         body: 'Use a sharper announcement CTA for product updates, early access, or new feature launches.',
         primary: 'Read update',
         secondary: 'Share link',
-        className: 'border-emerald-200 bg-emerald-50 text-emerald-950',
+        className: 'border-emerald-200 bg-emerald-50 text-emerald-950 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30',
     },
 };
 
@@ -245,7 +245,7 @@ const EXAMPLE_TRIP_TEMPLATES: Record<ExampleTripTemplateId, { label: string; tit
         countries: 'Japan',
         days: '12 days',
         route: ['Tokyo', 'Kyoto', 'Osaka'],
-        colorClass: 'from-rose-100 via-slate-100 to-sky-100',
+        colorClass: 'from-rose-100 via-secondary to-sky-100',
     },
     portugal: {
         label: 'Portugal coast',
@@ -261,7 +261,7 @@ const EXAMPLE_TRIP_TEMPLATES: Record<ExampleTripTemplateId, { label: string; tit
         countries: 'Iceland',
         days: '10 days',
         route: ['Reykjavik', 'Vik', 'Akureyri'],
-        colorClass: 'from-slate-200 via-blue-100 to-cyan-100',
+        colorClass: 'from-secondary via-blue-100 to-cyan-100',
     },
 };
 
@@ -271,34 +271,34 @@ const BLOG_CARD_CATEGORIES: Record<BlogCardCategoryId, { label: string; title: s
         title: 'Smarter route previews for shared trips',
         category: 'Product',
         excerpt: 'A closer look at route cards, map previews, and the small states that help shared plans feel legible.',
-        imageClass: 'from-indigo-200 via-sky-100 to-white',
+        imageClass: 'from-indigo-200 via-sky-100 to-card',
     },
     travel: {
         label: 'Travel guide',
         title: 'How to choose a slower city sequence',
         category: 'Travel guide',
         excerpt: 'A practical guide to pacing multi-city routes without losing the thrill of discovery.',
-        imageClass: 'from-emerald-200 via-teal-100 to-white',
+        imageClass: 'from-emerald-200 via-teal-100 to-card',
     },
     engineering: {
         label: 'Engineering',
         title: 'Making map previews resilient',
         category: 'Engineering',
         excerpt: 'What we learned while making route previews reliable across loading, fallback, and offline states.',
-        imageClass: 'from-slate-300 via-violet-100 to-white',
+        imageClass: 'from-slate-300 via-violet-100 to-card',
     },
 };
 
 const PROFILE_STATUS_COPY: Record<ProfileTripStatusId, { label: string; badge: string; className: string }> = {
-    active: { label: 'Active', badge: 'Ready', className: 'border-emerald-200 bg-emerald-50 text-emerald-800' },
-    expired: { label: 'Expired', badge: 'Expired', className: 'border-amber-200 bg-amber-50 text-amber-800' },
-    generationFailed: { label: 'Generation failed', badge: 'Needs review', className: 'border-rose-200 bg-rose-50 text-rose-800' },
+    active: { label: 'Active', badge: 'Ready', className: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30' },
+    expired: { label: 'Expired', badge: 'Expired', className: 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30' },
+    generationFailed: { label: 'Generation failed', badge: 'Needs review', className: 'border-rose-200 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30' },
 };
 
 const STAMP_RARITY_COPY: Record<StampRarityId, { label: string; percent: string; className: string }> = {
     common: { label: 'Common', percent: '42%', className: 'bg-secondary text-foreground' },
-    rare: { label: 'Rare', percent: '12%', className: 'bg-indigo-100 text-indigo-700' },
-    legendary: { label: 'Legendary', percent: '2%', className: 'bg-amber-100 text-amber-800' },
+    rare: { label: 'Rare', percent: '12%', className: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-400/12 dark:text-indigo-200' },
+    legendary: { label: 'Legendary', percent: '2%', className: 'bg-amber-100 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200' },
 };
 
 const FEATURE_CARD_COPY: Record<FeatureCardVariantId, { label: string; title: string; body: string; metric: string; icon: React.ReactNode; className: string }> = {
@@ -308,7 +308,7 @@ const FEATURE_CARD_COPY: Record<FeatureCardVariantId, { label: string; title: st
         body: 'Turn rough ideas into sequenced cities, nights, and transport choices.',
         metric: '3.2k plans',
         icon: <MapPin data-icon="inline-start" />,
-        className: 'border-indigo-200 bg-indigo-50',
+        className: 'border-indigo-200 bg-indigo-50 dark:bg-indigo-400/12 dark:border-indigo-400/30',
     },
     maps: {
         label: 'Maps',
@@ -316,7 +316,7 @@ const FEATURE_CARD_COPY: Record<FeatureCardVariantId, { label: string; title: st
         body: 'Keep visual route context close to every saved or shared trip.',
         metric: '98% rendered',
         icon: <Eye data-icon="inline-start" />,
-        className: 'border-cyan-200 bg-cyan-50',
+        className: 'border-cyan-200 bg-cyan-50 dark:bg-cyan-400/12 dark:border-cyan-400/30',
     },
     profile: {
         label: 'Profiles',
@@ -324,7 +324,7 @@ const FEATURE_CARD_COPY: Record<FeatureCardVariantId, { label: string; title: st
         body: 'Showcase trips, stamps, and recent travel work from one profile surface.',
         metric: '12 stamps',
         icon: <Trophy data-icon="inline-start" />,
-        className: 'border-emerald-200 bg-emerald-50',
+        className: 'border-emerald-200 bg-emerald-50 dark:bg-emerald-400/12 dark:border-emerald-400/30',
     },
 };
 
@@ -333,19 +333,19 @@ const ADMIN_SURFACE_COPY: Record<AdminSurfaceStateId, { label: string; title: st
         label: 'Healthy',
         title: 'Worker queue',
         body: 'Generation workers are claiming jobs and completing within the expected window.',
-        badgeClassName: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+        badgeClassName: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30',
     },
     attention: {
         label: 'Needs attention',
         title: 'Billing sync',
         body: 'Webhook delivery is delayed and may require a reconciliation pass.',
-        badgeClassName: 'border-amber-200 bg-amber-50 text-amber-800',
+        badgeClassName: 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
     },
     blocked: {
         label: 'Blocked',
         title: 'Airport import',
         body: 'The current upstream sync failed and is waiting for an admin retry.',
-        badgeClassName: 'border-rose-200 bg-rose-50 text-rose-800',
+        badgeClassName: 'border-rose-200 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
     },
 };
 
@@ -764,7 +764,7 @@ const BlogPostCardPreview: React.FC<{ settings: BlogCardSettings }> = ({ setting
                 <h3 className="text-lg font-semibold leading-tight text-foreground">{category.title}</h3>
                 <p className="text-sm leading-6 text-muted-foreground">{category.excerpt}</p>
                 {settings.featured ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent-700">
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent-700 dark:text-accent-200">
                         <Star data-icon="inline-start" />
                         Featured article
                     </span>
@@ -779,7 +779,7 @@ const ProfileTripCardPreview: React.FC<{ settings: ProfileTripCardSettings }> = 
 
     return (
         <article className="max-w-md overflow-hidden rounded-xl border border-border bg-card">
-            <div className={cn('relative aspect-[16/9] bg-gradient-to-br', settings.status === 'generationFailed' ? 'from-rose-100 to-slate-100' : settings.status === 'expired' ? 'from-amber-100 to-slate-100' : 'from-cyan-100 to-indigo-100')}>
+            <div className={cn('relative aspect-[16/9] bg-gradient-to-br', settings.status === 'generationFailed' ? 'from-rose-100 to-secondary' : settings.status === 'expired' ? 'from-amber-100 to-secondary' : 'from-cyan-100 to-indigo-100')}>
                 <div className="absolute inset-x-5 top-5 flex items-center justify-between gap-2">
                     <span className={cn('rounded-full border px-2.5 py-1 text-xs font-semibold', status.className)}>{status.badge}</span>
                     {!settings.isPublic ? <span className="rounded-full bg-card/80 px-2.5 py-1 text-xs font-semibold text-foreground">Hidden</span> : null}
@@ -822,7 +822,7 @@ const StampCardPreview: React.FC<{ settings: StampCardSettings }> = ({ settings 
             aria-pressed={settings.selected}
             className={cn(
                 'flex aspect-square max-w-56 flex-col overflow-hidden rounded-xl border bg-card p-3 text-left shadow-sm transition',
-                settings.selected ? 'border-accent-300 shadow-accent-100' : 'border-border',
+                settings.selected ? 'border-accent-300 shadow-accent-100 dark:border-accent-400/30' : 'border-border',
                 settings.achieved ? '' : 'opacity-80 saturate-50',
             )}
         >
@@ -845,7 +845,7 @@ const FeatureCardPreview: React.FC<{ settings: FeatureCardSettings }> = ({ setti
     return (
         <article className={cn('max-w-md rounded-2xl border p-5', feature.className)}>
             <div className="flex items-start justify-between gap-3">
-                <span className="inline-flex size-10 items-center justify-center rounded-xl bg-card/80 text-accent-700">
+                <span className="inline-flex size-10 items-center justify-center rounded-xl bg-card/80 text-accent-700 dark:text-accent-200">
                     {feature.icon}
                 </span>
                 {settings.showMetric ? <span className="rounded-full bg-card/80 px-2.5 py-1 text-xs font-semibold text-foreground">{feature.metric}</span> : null}
@@ -906,17 +906,17 @@ const CalendarCardPreview: React.FC<{ settings: CalendarCardSettings }> = ({ set
         <section className="max-w-xl rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex min-w-0 items-start gap-3">
-                    <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-700 ring-1 ring-accent-200">
+                    <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-700 ring-1 ring-accent-200 dark:bg-accent-400/12 dark:text-accent-200">
                         <CalendarDays className="size-5" aria-hidden="true" />
                     </span>
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-accent-700">{scope.label}</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-accent-700 dark:text-accent-200">{scope.label}</p>
                         <h3 className="mt-1 text-lg font-semibold text-foreground">{scope.title}</h3>
                         {settings.showDescription ? <p className="mt-1 text-sm text-muted-foreground">{scope.body}</p> : null}
                         <p className="mt-1 text-xs font-medium text-muted-foreground">{settings.eventCount} calendar events</p>
                     </div>
                 </div>
-                <button type="button" className="inline-flex items-center gap-1.5 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-800">
+                <button type="button" className="inline-flex items-center gap-1.5 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-800 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                     <CalendarDays className="size-4" aria-hidden="true" />
                     Add calendar
                 </button>

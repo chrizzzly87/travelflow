@@ -50,7 +50,7 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
               style={isPlain ? { paddingInline: 0 } : undefined}
               {...(getItemButtonProps ? getItemButtonProps(item, isOpen) : {})}
             >
-              <span className={`max-w-[100ch] font-semibold ${isOpen ? 'text-accent-700 dark:text-accent-300' : ''} ${compact ? 'text-sm' : 'text-[1.02rem]'}`}>
+              <span className={`max-w-[100ch] font-semibold ${isOpen ? 'text-accent-700 dark:text-accent-300 dark:text-accent-200' : ''} ${compact ? 'text-sm' : 'text-[1.02rem]'}`}>
                 {item.question}
               </span>
               <CaretDown

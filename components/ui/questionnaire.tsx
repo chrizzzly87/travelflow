@@ -118,7 +118,7 @@ export const QuestionnaireChoice = ({
             data-disabled={isDisabled ? '' : undefined}
             className={cn(
                 'relative flex cursor-pointer items-start gap-2.5 rounded-lg border p-2.5 text-start text-sm transition-colors outline-none select-none',
-                isChecked ? 'border-accent-300 bg-accent-50/60' : 'border-border hover:bg-secondary',
+                isChecked ? 'border-accent-300 bg-accent-50/60 dark:bg-accent-400/12 dark:border-accent-400/30' : 'border-border hover:bg-secondary',
                 isDisabled && 'pointer-events-none cursor-not-allowed opacity-50',
                 'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent-500',
                 className,

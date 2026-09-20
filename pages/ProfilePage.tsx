@@ -887,7 +887,7 @@ export const ProfilePage: React.FC = () => {
                 </div>
 
                 {pinNotice && (
-                    <section className="rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900">
+                    <section className="rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                         {pinNotice}
                     </section>
                 )}
@@ -1001,7 +1001,7 @@ export const ProfilePage: React.FC = () => {
                             <NavLink
                                 to={buildPath('adminDashboard')}
                                 onClick={() => trackEvent('profile__shortcut--admin_workspace')}
-                                className="inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-900 transition-colors hover:bg-accent-100"
+                                className="inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-900 transition-colors hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                                 {...getAnalyticsDebugAttributes('profile__shortcut--admin_workspace')}
                             >
                                 <ShieldCheck size={16} />
@@ -1103,7 +1103,7 @@ export const ProfilePage: React.FC = () => {
                                     className={[
                                         'rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors',
                                         recentSort === 'created'
-                                            ? 'bg-secondary text-accent-700'
+                                            ? 'bg-secondary text-accent-700 dark:text-accent-200'
                                             : 'text-muted-foreground hover:text-foreground',
                                     ].join(' ')}
                                     {...getAnalyticsDebugAttributes('profile__recent_sort--created')}
@@ -1116,7 +1116,7 @@ export const ProfilePage: React.FC = () => {
                                     className={[
                                         'rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors',
                                         recentSort === 'updated'
-                                            ? 'bg-secondary text-accent-700'
+                                            ? 'bg-secondary text-accent-700 dark:text-accent-200'
                                             : 'text-muted-foreground hover:text-foreground',
                                     ].join(' ')}
                                     {...getAnalyticsDebugAttributes('profile__recent_sort--updated')}
@@ -1145,7 +1145,7 @@ export const ProfilePage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={handleSelectExpiredTrips}
-                                    className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100"
+                                    className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                     {...getAnalyticsDebugAttributes('profile__trip_select--expired', { tab })}
                                 >
                                     {t('selection.selectExpired')}
@@ -1153,7 +1153,7 @@ export const ProfilePage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={handleSelectExampleTrips}
-                                    className="inline-flex items-center rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 transition-colors hover:bg-sky-100"
+                                    className="inline-flex items-center rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 transition-colors hover:bg-sky-100 dark:bg-sky-400/12 dark:hover:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30"
                                     {...getAnalyticsDebugAttributes('profile__trip_select--examples', { tab })}
                                 >
                                     {t('selection.selectExamples')}
@@ -1161,7 +1161,7 @@ export const ProfilePage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={handleToggleFavoriteSelectedTrips}
-                                    className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100"
+                                    className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                     {...getAnalyticsDebugAttributes('profile__trip_favorite--batch_toggle', {
                                         tab,
                                         selected_count: selectedTripCount,
@@ -1183,7 +1183,7 @@ export const ProfilePage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => void handleArchiveSelectedTrips()}
-                                    className="inline-flex items-center rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 transition-colors hover:bg-rose-100"
+                                    className="inline-flex items-center rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 transition-colors hover:bg-rose-100 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                                     {...getAnalyticsDebugAttributes('profile__trip_archive--batch', {
                                         tab,
                                         selected_count: selectedTripCount,

@@ -641,7 +641,7 @@ const AirportSourcePill: React.FC<{
 }> = ({ source, databaseAvailable }) => {
     if (source === 'database') {
         return (
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                 <Database size={12} />
                 Database-backed
             </span>
@@ -652,7 +652,7 @@ const AirportSourcePill: React.FC<{
         <span className={cn(
             'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold',
             databaseAvailable
-                ? 'border-amber-200 bg-amber-50 text-amber-800'
+                ? 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30'
                 : 'border-border bg-secondary text-foreground',
         )}>
             <WarningCircle size={12} />
@@ -1105,7 +1105,7 @@ const AdminAirportTester: React.FC<{
                     )}
 
                     {lookupError && (
-                        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+                        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             {lookupError}
                         </div>
                     )}
@@ -1353,13 +1353,13 @@ const AdminAirportBulkEditor: React.FC<{
                     type="button"
                     onClick={() => void onDeleteSelected()}
                     disabled={!databaseBacked || selectedCount === 0 || isDeleting || isApplying}
-                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-rose-300 bg-card px-3 text-sm font-semibold text-rose-700 transition-colors hover:border-rose-400 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-rose-300 bg-card px-3 text-sm font-semibold text-rose-700 transition-colors hover:border-rose-400 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                 >
                     {isDeleting ? <SpinnerGap size={14} className="animate-spin" /> : <Trash size={14} />}
                     Delete selected
                 </button>
                 {!databaseBacked && (
-                    <span className="text-xs text-amber-700">Sync the database catalog first to enable bulk edits.</span>
+                    <span className="text-xs text-amber-700 dark:text-amber-200">Sync the database catalog first to enable bulk edits.</span>
                 )}
             </div>
         </AdminSurfaceCard>
@@ -1487,8 +1487,8 @@ const AdminAirportTicketLab: React.FC<{
             </div>
 
             {!nearbyResult && fallbackDepartureOption && (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                    <div className="font-semibold text-amber-950">Testing fallback active</div>
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
+                    <div className="font-semibold text-amber-950 dark:text-amber-200">Testing fallback active</div>
                     <div className="mt-1">
                         Using Berlin Brandenburg Airport (BER) as the default ticket departure until you run a nearby-airport lookup.
                     </div>
@@ -2370,7 +2370,7 @@ export const AdminAirportsPage: React.FC = () => {
         >
             <div className="space-y-4">
                 {errorMessage && (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                         {errorMessage}
                     </div>
                 )}
@@ -2399,8 +2399,8 @@ export const AdminAirportsPage: React.FC = () => {
                                 <span className={cn(
                                     'inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold',
                                     editorPreviewAirport.isCommercial
-                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                        : 'border-amber-200 bg-amber-50 text-amber-800',
+                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
+                                        : 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
                                 )}>
                                     {editorPreviewAirport.isCommercial ? 'Commercial lookup eligible' : 'Excluded from commercial lookup'}
                                 </span>
@@ -2657,9 +2657,9 @@ export const AdminAirportsPage: React.FC = () => {
                                                 <span className={cn(
                                                     'inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold',
                                                     airport.commercialServiceTier === 'major'
-                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
                                                         : airport.commercialServiceTier === 'regional'
-                                                            ? 'border-sky-200 bg-sky-50 text-sky-700'
+                                                            ? 'border-sky-200 bg-sky-50 text-sky-700 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'
                                                             : 'border-border bg-card text-foreground',
                                                 )}>
                                                     {formatServiceTierLabel(airport.commercialServiceTier)}
@@ -2717,12 +2717,12 @@ export const AdminAirportsPage: React.FC = () => {
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {editorMode === 'create' && (
-                                    <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
+                                    <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30">
                                         New row draft
                                     </span>
                                 )}
                                 {!databaseBacked && (
-                                    <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                                    <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                         Sync DB first to enable saves
                                     </span>
                                 )}
@@ -2905,8 +2905,8 @@ export const AdminAirportsPage: React.FC = () => {
                                             <span className={cn(
                                                 'inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold',
                                                 editorPreviewAirport.isCommercial
-                                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                                    : 'border-amber-200 bg-amber-50 text-amber-800',
+                                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
+                                                    : 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
                                             )}>
                                                 {editorPreviewAirport.isCommercial ? 'Included in nearby-airport results' : 'Excluded from nearby-airport results'}
                                             </span>
@@ -2933,7 +2933,7 @@ export const AdminAirportsPage: React.FC = () => {
                                             type="button"
                                             onClick={() => void handleDeleteAirport()}
                                             disabled={!databaseBacked || deleting}
-                                            className="inline-flex h-10 items-center gap-2 rounded-lg border border-rose-300 bg-card px-3 text-sm font-semibold text-rose-700 transition-colors hover:border-rose-400 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                            className="inline-flex h-10 items-center gap-2 rounded-lg border border-rose-300 bg-card px-3 text-sm font-semibold text-rose-700 transition-colors hover:border-rose-400 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                                         >
                                             {deleting ? <SpinnerGap size={16} className="animate-spin" /> : <Trash size={16} />}
                                             Delete airport

@@ -218,7 +218,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
             }}
         >
             {state.error && (
-                 <div className="mb-4 flex items-start gap-2 rounded-lg border border-yellow-100 bg-yellow-50 p-3 text-sm text-yellow-700">
+                 <div className="mb-4 flex items-start gap-2 rounded-lg border border-yellow-100 bg-yellow-50 p-3 text-sm text-yellow-700 dark:bg-yellow-400/12 dark:text-yellow-200">
                     <AlertTriangle size={16} className="mt-0.5 shrink-0" />
                     <div>{state.error}</div>
                 </div>

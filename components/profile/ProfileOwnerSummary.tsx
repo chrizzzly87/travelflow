@@ -89,7 +89,7 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
       <article className="relative flex h-full min-h-[540px] flex-col rounded-2xl border border-border bg-card px-6 pb-6 pt-16 text-center shadow-sm">
         <div className="absolute inset-x-0 top-0 -translate-y-1/2">
           <div className={`relative mx-auto size-24 ${status.ringClassName}`}>
-            <span className="absolute inset-0 inline-flex items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-semibold text-accent-800 shadow-md ring-2 ring-current">
+            <span className="absolute inset-0 inline-flex items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-semibold text-accent-800 shadow-md ring-2 ring-current dark:bg-accent-400/12 dark:text-accent-200">
               {initials}
             </span>
             {showAvatarOrbitText && (

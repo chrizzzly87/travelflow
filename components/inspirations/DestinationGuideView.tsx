@@ -36,8 +36,8 @@ interface DestinationGuideViewProps {
 
 const MONTH_DATE_SEED_YEAR = 2026;
 const SEASON_STYLES: Record<DestinationSeason, string> = {
-  ideal: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  shoulder: 'border-amber-200 bg-amber-50 text-amber-800',
+  ideal: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30',
+  shoulder: 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
   avoid: 'border-border bg-secondary text-muted-foreground',
 };
 
@@ -89,19 +89,19 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData }} />
       <section className="pt-8 pb-8 md:pt-14 md:pb-12 animate-hero-entrance">
         <nav aria-label={t('inspirations.subpages.guide.breadcrumbLabel')} className="mb-6 flex flex-wrap items-center gap-2 text-sm font-medium text-muted-foreground">
-          <Link to={countriesPath} className="inline-flex items-center gap-1.5 transition-colors hover:text-accent-700">
+          <Link to={countriesPath} className="inline-flex items-center gap-1.5 transition-colors hover:text-accent-700 dark:hover:text-accent-200">
             <ArrowLeft className="rtl:rotate-180" size={14} weight="bold" />
             {t('inspirations.subpages.guide.backToCountries')}
           </Link>
           {!isCountry ? (
             <>
               <span aria-hidden="true">/</span>
-              <Link to={countryPath} className="transition-colors hover:text-accent-700">{country.name}</Link>
+              <Link to={countryPath} className="transition-colors hover:text-accent-700 dark:hover:text-accent-200">{country.name}</Link>
             </>
           ) : null}
         </nav>
 
-        <span className="flex w-fit items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700">
+        <span className="flex w-fit items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
           {guide.kind === 'island' ? <Island size={14} weight="duotone" /> : guide.kind === 'city' ? <City size={14} weight="duotone" /> : <Globe size={14} weight="duotone" />}
           {typeLabel}
         </span>
@@ -138,7 +138,7 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
           <div className="rounded-3xl border border-border bg-card p-5 shadow-sm md:p-7">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-accent-700">{t('inspirations.subpages.guide.timingEyebrow')}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-accent-700 dark:text-accent-200">{t('inspirations.subpages.guide.timingEyebrow')}</p>
                 <h2 className="mt-1 text-2xl font-black text-foreground">{t('inspirations.subpages.guide.bestTime')}</h2>
               </div>
               <div className="flex flex-wrap gap-3 text-xs font-semibold text-muted-foreground">
@@ -192,7 +192,7 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
       {children.length > 0 ? (
         <section className="pb-10 animate-hero-stagger" style={{ '--stagger': '140ms' } as React.CSSProperties}>
           <div className="mb-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-accent-700">{t('inspirations.subpages.guide.goDeeperEyebrow')}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-accent-700 dark:text-accent-200">{t('inspirations.subpages.guide.goDeeperEyebrow')}</p>
             <h2 className="mt-1 text-2xl font-black text-foreground">{t('inspirations.subpages.guide.exploreChildren')}</h2>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -208,11 +208,11 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
                   key={child.id}
                   to={path}
                   onClick={() => trackEvent('inspirations__destination_card', payload)}
-                  className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent-200 hover:shadow-md"
+                  className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent-200 hover:shadow-md dark:hover:border-accent-400/30"
                   {...getAnalyticsDebugAttributes('inspirations__destination_card', payload)}
                 >
                   <span className="flex min-w-0 items-center gap-3">
-                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-50 text-accent-700"><Icon size={20} weight="duotone" /></span>
+                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200"><Icon size={20} weight="duotone" /></span>
                     <span className="min-w-0">
                       <span className="block truncate font-bold text-foreground">{child.name}</span>
                       <span className="text-xs capitalize text-muted-foreground">{child.kind}</span>
@@ -238,7 +238,7 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
       >
         {guide.highlights.length > 0 ? (
           <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
-            <h2 className="flex items-center gap-2 text-xl font-black text-foreground"><Sparkle size={20} weight="duotone" className="text-accent-700" />{t('inspirations.subpages.guide.highlights')}</h2>
+            <h2 className="flex items-center gap-2 text-xl font-black text-foreground"><Sparkle size={20} weight="duotone" className="text-accent-700 dark:text-accent-200" />{t('inspirations.subpages.guide.highlights')}</h2>
             <ul className="mt-4 space-y-3">
               {guide.highlights.map((highlight) => <li key={highlight} className="rounded-xl bg-secondary px-4 py-3 text-sm font-semibold text-foreground">{highlight}</li>)}
             </ul>
@@ -246,11 +246,11 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
         ) : null}
         {country.airports.length > 0 ? (
           <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
-            <h2 className="flex items-center gap-2 text-xl font-black text-foreground"><AirplaneTilt size={20} weight="duotone" className="text-accent-700" />{t('inspirations.subpages.guide.arrivalAirports')}</h2>
+            <h2 className="flex items-center gap-2 text-xl font-black text-foreground"><AirplaneTilt size={20} weight="duotone" className="text-accent-700 dark:text-accent-200" />{t('inspirations.subpages.guide.arrivalAirports')}</h2>
             <ul className="mt-4 space-y-3">
               {country.airports.slice(0, 4).map((airport) => (
                 <li key={airport.iata} className="flex items-center gap-3 rounded-xl bg-secondary px-4 py-3">
-                  <span className="rounded-md bg-card px-2 py-1 font-mono text-xs font-bold text-accent-700 shadow-sm">{airport.iata}</span>
+                  <span className="rounded-md bg-card px-2 py-1 font-mono text-xs font-bold text-accent-700 shadow-sm dark:text-accent-200">{airport.iata}</span>
                   <span className="text-sm font-semibold text-foreground">{airport.name}</span>
                 </li>
               ))}
@@ -262,13 +262,13 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
       {effectiveEvents.length > 0 ? (
         <section className="pb-10 animate-hero-stagger" style={{ '--stagger': '240ms' } as React.CSSProperties}>
           <div className="mb-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-accent-700">{t('inspirations.subpages.guide.planAroundEyebrow')}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-accent-700 dark:text-accent-200">{t('inspirations.subpages.guide.planAroundEyebrow')}</p>
             <h2 className="mt-1 text-2xl font-black text-foreground">{t('inspirations.subpages.guide.events')}</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             {effectiveEvents.map((event) => (
               <article key={event.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <p className="text-xs font-bold uppercase tracking-wider text-accent-700">{monthLabels[event.month - 1]} · {event.type}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-accent-700 dark:text-accent-200">{monthLabels[event.month - 1]} · {event.type}</p>
                 <h3 className="mt-2 text-lg font-black text-foreground">{event.name}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{event.summary}</p>
               </article>

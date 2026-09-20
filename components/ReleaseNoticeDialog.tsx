@@ -71,7 +71,7 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
             />
             <div ref={dialogRef} className="relative w-full max-w-lg rounded-3xl border border-accent-100 bg-card shadow-2xl">
                 <div className="rounded-t-3xl border-b border-border bg-gradient-to-r from-accent-50 to-accent-100 px-6 py-5">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-700">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-700 dark:text-accent-200">
                         Latest release · {latestInAppRelease.version}
                     </p>
                     <h2 id="release-update-title" className="mt-2 text-xl font-black text-foreground">
@@ -89,7 +89,7 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
                                 components={{
                                     p: ({ node, ...props }) => <p {...props} className="m-0" />,
                                     a: ({ node, children, ...props }) => (
-                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800">{children}</a>
+                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200">{children}</a>
                                     ),
                                     code: ({ node, ...props }) => (
                                         <code {...props} className="rounded bg-secondary px-1 py-0.5 text-[0.92em] text-foreground" />
@@ -113,7 +113,7 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
                                                     components={{
                                                         p: ({ node, ...props }) => <p {...props} className="m-0" />,
                                                         a: ({ node, children, ...props }) => (
-                                                            <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800">{children}</a>
+                                                            <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200">{children}</a>
                                                         ),
                                                         code: ({ node, ...props }) => (
                                                             <code {...props} className="rounded bg-secondary px-1 py-0.5 text-[0.92em] text-foreground" />

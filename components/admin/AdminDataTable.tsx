@@ -23,14 +23,14 @@ export const AdminSortHeaderButton: React.FC<AdminSortHeaderButtonProps> = ({
         onClick={onClick}
         className={cn(
             'inline-flex w-full items-center justify-between gap-2 text-left transition-colors',
-            isActive ? 'font-semibold text-accent-800' : 'hover:text-foreground',
+            isActive ? 'font-semibold text-accent-800 dark:text-accent-200' : 'hover:text-foreground',
             className,
         )}
         title={`Sort by ${label}`}
     >
         <span>{label}</span>
         {isActive
-            ? (direction === 'asc' ? <CaretUp size={12} className="text-accent-700" /> : <CaretDown size={12} className="text-accent-700" />)
+            ? (direction === 'asc' ? <CaretUp size={12} className="text-accent-700 dark:text-accent-200" /> : <CaretDown size={12} className="text-accent-700 dark:text-accent-200" />)
             : <CaretDown size={12} className="text-muted-foreground opacity-70" />}
     </button>
 );

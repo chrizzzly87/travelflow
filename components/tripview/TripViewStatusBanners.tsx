@@ -196,10 +196,10 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
             {showSyncStatusStrip && (
                 <div className={`px-4 py-2 text-xs sm:px-6 border-b flex items-center justify-between gap-3 ${
                     connectivityState === 'offline'
-                        ? 'border-rose-200 bg-rose-50 text-rose-900'
+                        ? 'border-rose-200 bg-rose-50 text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30'
                         : connectivityState === 'degraded'
-                            ? 'border-amber-200 bg-amber-50 text-amber-900'
-                            : 'border-sky-200 bg-sky-50 text-sky-900'
+                            ? 'border-amber-200 bg-amber-50 text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30'
+                            : 'border-sky-200 bg-sky-50 text-sky-900 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'
                 }`}>
                     <span className="inline-flex items-center gap-2">
                         {stripIcon}
@@ -259,8 +259,8 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
             {shouldShowGenerationStrip && (
                 <div className={`px-4 py-2 text-xs sm:px-6 border-b flex items-center justify-between gap-3 ${
                     generationState === 'failed'
-                        ? 'border-rose-200 bg-rose-50 text-rose-900'
-                        : 'border-amber-200 bg-amber-50 text-amber-900'
+                        ? 'border-rose-200 bg-rose-50 text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30'
+                        : 'border-amber-200 bg-amber-50 text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30'
                 }`}>
                     <span className="inline-flex items-center gap-2">
                         {generationState === 'failed' ? (
@@ -335,7 +335,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
             )}
 
             {hasConflictBackupForTrip && onRestoreConflictBackup && (
-                <div className="px-4 sm:px-6 py-2 border-b border-violet-200 bg-violet-50 text-violet-900 text-xs flex items-center justify-between gap-3">
+                <div className="px-4 sm:px-6 py-2 border-b border-violet-200 bg-violet-50 text-violet-900 text-xs flex items-center justify-between gap-3 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30">
                     <span>{t('connectivity.tripStrip.serverBackup')}</span>
                     <button
                         type="button"
@@ -345,7 +345,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                             });
                             onRestoreConflictBackup();
                         }}
-                        className="px-3 py-1 rounded-md bg-violet-100 text-violet-900 text-xs font-semibold hover:bg-violet-200"
+                        className="px-3 py-1 rounded-md bg-violet-100 text-violet-900 text-xs font-semibold hover:bg-violet-200 dark:bg-violet-400/12 dark:text-violet-200"
                         {...getAnalyticsDebugAttributes('trip_connectivity__trip_strip--restore_backup', {
                             trip_id: tripId,
                         })}
@@ -356,7 +356,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
             )}
 
             {shareStatus && (
-                <div className="px-4 sm:px-6 py-2 border-b border-amber-200 bg-amber-50 text-amber-900 text-xs flex items-center justify-between">
+                <div className="px-4 sm:px-6 py-2 border-b border-amber-200 bg-amber-50 text-amber-900 text-xs flex items-center justify-between dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                     <span>
                         {shareStatus === 'view' ? 'View-only shared trip' : 'Shared trip · Editing enabled'}
                     </span>
@@ -364,7 +364,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                         <button
                             type="button"
                             onClick={onCopyTrip}
-                            className="px-3 py-1 rounded-md bg-amber-200 text-amber-900 text-xs font-semibold hover:bg-amber-300"
+                            className="px-3 py-1 rounded-md bg-amber-200 text-amber-900 text-xs font-semibold hover:bg-amber-300 dark:text-amber-200"
                         >
                             Copy trip
                         </button>
@@ -373,32 +373,32 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
             )}
 
             {isAdminFallbackView && (
-                <div className="border-b border-indigo-200 bg-indigo-50 px-4 py-3 text-xs text-indigo-900 sm:px-6">
+                <div className="border-b border-indigo-200 bg-indigo-50 px-4 py-3 text-xs text-indigo-900 sm:px-6 dark:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
                             <p className="font-semibold">
                                 {adminOverrideEnabled ? 'Admin override editing is enabled.' : 'Admin fallback view is read-only by default.'}
                             </p>
-                            <p className="mt-1 text-[11px] text-indigo-800">
+                            <p className="mt-1 text-[11px] text-indigo-800 dark:text-indigo-200">
                                 Owner: {ownerEmail || 'No email'} · {ownerId || 'Unknown user'}
                             </p>
                             {isTripLockedByArchive && (
-                                <p className="mt-1 text-[11px] text-indigo-800">
+                                <p className="mt-1 text-[11px] text-indigo-800 dark:text-indigo-200">
                                     This trip is archived and stays read-only here.
                                 </p>
                             )}
                             {isTripLockedByExpiry && (
-                                <p className="mt-1 text-[11px] text-indigo-800">
+                                <p className="mt-1 text-[11px] text-indigo-800 dark:text-indigo-200">
                                     This trip is expired and stays read-only here.
                                 </p>
                             )}
                             {!canEnableAdminOverride && (
-                                <p className="mt-1 text-[11px] text-indigo-800">
+                                <p className="mt-1 text-[11px] text-indigo-800 dark:text-indigo-200">
                                     You do not have trip write permission, so editing cannot be enabled.
                                 </p>
                             )}
                             {hasLoadingItems && (
-                                <p className="mt-1 text-[11px] text-indigo-800">
+                                <p className="mt-1 text-[11px] text-indigo-800 dark:text-indigo-200">
                                     This trip has unfinished generation data, so some itinerary details may be missing.
                                 </p>
                             )}
@@ -414,7 +414,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                         });
                                         onOpenOwnerDrawer();
                                     }}
-                                    className="rounded-md border border-indigo-300 bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-900 hover:bg-indigo-200"
+                                    className="rounded-md border border-indigo-300 bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-900 hover:bg-indigo-200 dark:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30"
                                     {...getAnalyticsDebugAttributes('trip_view__admin_owner--open_users', {
                                         trip_id: tripId,
                                         owner_id: ownerId || null,
@@ -424,7 +424,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                 </button>
                             )}
                             <div className="inline-flex items-center gap-2">
-                                <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-indigo-800">
+                                <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-indigo-800 dark:text-indigo-200">
                                     Enable editing
                                 </span>
                                 <label
@@ -465,7 +465,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
             )}
 
             {shareSnapshotMeta && (
-                <div className="px-4 sm:px-6 py-2 border-b border-accent-200 bg-accent-50 text-accent-900 text-xs flex items-center justify-between gap-3">
+                <div className="px-4 sm:px-6 py-2 border-b border-accent-200 bg-accent-50 text-accent-900 text-xs flex items-center justify-between gap-3 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                     <span>
                         {shareSnapshotMeta.hasNewer
                             ? 'You are viewing an older snapshot. This trip has newer updates.'
@@ -475,7 +475,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                         <button
                             type="button"
                             onClick={onOpenLatestSnapshot}
-                            className="px-3 py-1 rounded-md bg-accent-100 text-accent-900 text-xs font-semibold hover:bg-accent-200"
+                            className="px-3 py-1 rounded-md bg-accent-100 text-accent-900 text-xs font-semibold hover:bg-accent-200 dark:bg-accent-400/12 dark:text-accent-200"
                         >
                             Open latest
                         </button>
@@ -487,8 +487,8 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                 <div
                     className={`border-b ${
                         isTripLockedByExpiry
-                            ? 'border-rose-200 bg-rose-50 text-rose-900'
-                            : 'border-sky-200 bg-sky-50 text-sky-900'
+                            ? 'border-rose-200 bg-rose-50 text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30'
+                            : 'border-sky-200 bg-sky-50 text-sky-900 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'
                     }`}
                 >
                     <div className="p-4 sm:px-6">
@@ -497,8 +497,8 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                 <div className="flex flex-wrap items-center gap-2">
                                     <span className={`inline-flex size-8 items-center justify-center rounded-lg border ${
                                         isTripLockedByExpiry
-                                            ? 'border-rose-200 bg-card text-rose-700'
-                                            : 'border-sky-200 bg-card text-sky-700'
+                                            ? 'border-rose-200 bg-card text-rose-700 dark:text-rose-200 dark:border-rose-400/30'
+                                            : 'border-sky-200 bg-card text-sky-700 dark:text-sky-200 dark:border-sky-400/30'
                                     }`}>
                                         <AlertTriangle className="size-4" />
                                     </span>
@@ -518,8 +518,8 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                     {isPaywallLocked ? (
                                         <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
                                             isTripLockedByExpiry
-                                                ? 'border-rose-200 bg-card text-rose-800'
-                                                : 'border-sky-200 bg-card text-sky-800'
+                                                ? 'border-rose-200 bg-card text-rose-800 dark:text-rose-200 dark:border-rose-400/30'
+                                                : 'border-sky-200 bg-card text-sky-800 dark:text-sky-200 dark:border-sky-400/30'
                                         }`}>
                                             {explorerTier.publicName} · ${explorerTier.monthlyPriceUsd}{t('shared.perMonth', { ns: 'pricing' })}
                                         </span>
@@ -533,8 +533,8 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                                 key={feature}
                                                 className={`inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-medium ${
                                                     isTripLockedByExpiry
-                                                        ? 'border-rose-200 text-rose-900'
-                                                        : 'border-sky-200 text-sky-900'
+                                                        ? 'border-rose-200 text-rose-900 dark:text-rose-200 dark:border-rose-400/30'
+                                                        : 'border-sky-200 text-sky-900 dark:text-sky-200 dark:border-sky-400/30'
                                                 }`}
                                             >
                                                 <Check size={12} weight="bold" className="shrink-0 text-accent-600" />
@@ -582,7 +582,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
               * keeps the map controls covered either. */}
             {exampleTripBanner && !isExampleBannerDismissed && (
                 <div className="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+4.75rem)] z-[1450] sm:inset-x-auto sm:right-6 sm:top-auto sm:bottom-6 sm:w-[420px]">
-                    <div className="relative rounded-2xl border border-accent-200 bg-card/95 px-4 py-3 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/85">
+                    <div className="relative rounded-2xl border border-accent-200 bg-card/95 px-4 py-3 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/85 dark:border-accent-400/30">
                         <button
                             type="button"
                             onClick={() => setIsExampleBannerDismissed(true)}
@@ -591,7 +591,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                         >
                             <X size={14} />
                         </button>
-                        <p className="pe-8 text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700">Example trip playground</p>
+                        <p className="pe-8 text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700 dark:text-accent-200">Example trip playground</p>
                         <p className="mt-1 text-sm font-semibold text-foreground">Explore freely. Copy when you want to keep and edit.</p>
                         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                             This itinerary is for illustration only and never saves changes.
@@ -604,7 +604,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                 <button
                                     type="button"
                                     onClick={exampleTripBanner.onCreateSimilarTrip}
-                                    className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-accent-200 bg-card px-3 text-xs font-semibold text-accent-700 transition-colors hover:bg-accent-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                    className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-accent-200 bg-card px-3 text-xs font-semibold text-accent-700 transition-colors hover:bg-accent-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                                 >
                                     <Sparkle size={14} weight="duotone" />
                                     Create similar trip

@@ -36,7 +36,7 @@ export const TripDirectionsButton: React.FC<TripDirectionsButtonProps> = ({
                 type="button"
                 onClick={openDirections}
                 data-testid="trip-directions-button"
-                className={className ?? 'inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-600'}
+                className={className ?? 'inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-600 dark:hover:border-accent-400/30'}
                 aria-label={`Directions to ${target.label}`}
                 title={`Directions to ${target.label}`}
                 {...getAnalyticsDebugAttributes('trip_view__directions--open', { trip_id: tripId, item_id: itemId })}

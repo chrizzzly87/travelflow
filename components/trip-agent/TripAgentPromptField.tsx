@@ -61,7 +61,7 @@ export const TripAgentPromptField: React.FC<{
             <mark
                 key={`mention-${span.start}-${span.end}`}
                 className={`rounded-[5px] px-0.5 py-px text-transparent ${
-                    span.contextRef ? 'bg-accent-100' : 'bg-secondary'
+                    span.contextRef ? 'bg-accent-100 dark:bg-accent-400/12' : 'bg-secondary'
                 }`}
             >
                 {value.slice(span.start, span.end)}

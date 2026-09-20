@@ -119,13 +119,13 @@ const getGenerationPill = (trip: ITrip): { state: 'failed' | 'running' | 'queued
   if (state === 'failed') {
     return {
       state,
-      className: 'border-rose-200 bg-rose-50 text-rose-700',
+      className: 'border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
     };
   }
   if (state === 'running' || state === 'queued') {
     return {
       state,
-      className: 'border-amber-200 bg-amber-50 text-amber-700',
+      className: 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
     };
   }
   return null;
@@ -442,7 +442,7 @@ const TripRow: React.FC<TripRowProps> = ({
     <div
       ref={rowRef}
       className={`group flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 transition-colors ${
-        trip.id === currentTripId ? 'bg-accent-50' : 'hover:bg-secondary'
+        trip.id === currentTripId ? 'bg-accent-50 dark:bg-accent-400/12' : 'hover:bg-secondary'
       }`}
       onMouseEnter={emitHoverAnchor}
       onMouseMove={emitHoverAnchor}
@@ -462,7 +462,7 @@ const TripRow: React.FC<TripRowProps> = ({
             )}
           </span>
           {extraFlags > 0 && <span className="text-[10px] text-gray-300">+{extraFlags}</span>}
-          <span className={`truncate text-sm font-medium ${trip.id === currentTripId ? 'text-accent-700' : 'text-foreground'}`}>
+          <span className={`truncate text-sm font-medium ${trip.id === currentTripId ? 'text-accent-700 dark:text-accent-200' : 'text-foreground'}`}>
             {trip.title}
           </span>
         </div>
@@ -477,7 +477,7 @@ const TripRow: React.FC<TripRowProps> = ({
       <div className="flex items-center gap-0.5">
         {lifecycleStatus === 'expired' && (
           <span
-            className="mr-1 shrink-0 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700"
+            className="mr-1 shrink-0 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
             title="This trip is expired. Activate an account to unlock editing again."
           >
             Expired
@@ -493,7 +493,7 @@ const TripRow: React.FC<TripRowProps> = ({
         <button
           type="button"
           onClick={(e) => onDelete(e, trip.id)}
-          className="cursor-pointer p-1.5 rounded-md text-rose-400 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100" aria-label="Archive trip"
+          className="cursor-pointer p-1.5 rounded-md text-rose-400 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 dark:hover:bg-red-400/12" aria-label="Archive trip"
         >
           <Trash2 size={14} />
         </button>
@@ -586,7 +586,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
             <div className="text-sm font-semibold text-foreground truncate">{trip.title}</div>
             <div className="shrink-0 flex items-center gap-1.5">
               {lifecycleStatus === 'expired' && (
-                <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
+                <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                   Expired
                 </span>
               )}

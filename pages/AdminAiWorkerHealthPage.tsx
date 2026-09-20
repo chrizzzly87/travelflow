@@ -57,15 +57,15 @@ const STATUS_ORDER: Record<AdminAsyncWorkerHealthStatus, number> = {
 const STATUS_META: Record<AdminAsyncWorkerHealthStatus, { label: string; className: string }> = {
     ok: {
         label: 'Healthy',
-        className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        className: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30',
     },
     warning: {
         label: 'Warning',
-        className: 'border-amber-200 bg-amber-50 text-amber-700',
+        className: 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
     },
     failed: {
         label: 'Failed',
-        className: 'border-rose-200 bg-rose-50 text-rose-700',
+        className: 'border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
     },
 };
 
@@ -312,7 +312,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
         >
             <div className="space-y-5">
                 {error ? (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                         {error}
                     </div>
                 ) : null}

@@ -20,7 +20,7 @@ export const CreateTripWizardCtaBanner: React.FC<CreateTripWizardCtaBannerProps>
 }) => {
     return (
         <section className={className}>
-            <div className="relative overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 p-5 text-white shadow-lg">
+            <div className="relative overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 p-5 text-white shadow-lg dark:border-indigo-400/30">
                 <div className="pointer-events-none absolute -right-14 -top-16 size-40 rounded-full bg-card/15 blur-2xl dark:bg-card/15" />
                 <div className="pointer-events-none absolute -bottom-12 -left-12 size-36 rounded-full bg-indigo-200/20 blur-2xl" />
 
@@ -32,7 +32,7 @@ export const CreateTripWizardCtaBanner: React.FC<CreateTripWizardCtaBannerProps>
                     <Link
                         to={buildPath('createTripWizard')}
                         onClick={() => trackEvent(WIZARD_CTA_EVENT, { source: 'create_trip_page' })}
-                        className="inline-flex shrink-0 items-center justify-center rounded-xl border border-white/30 bg-card px-4 py-2 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-50 dark:bg-card"
+                        className="inline-flex shrink-0 items-center justify-center rounded-xl border border-white/30 bg-card px-4 py-2 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-50 dark:bg-card dark:hover:bg-indigo-400/12 dark:text-indigo-200"
                         {...getAnalyticsDebugAttributes(WIZARD_CTA_EVENT, { source: 'create_trip_page' })}
                     >
                         {ctaLabel}

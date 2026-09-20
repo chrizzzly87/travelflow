@@ -626,13 +626,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                 <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                     {!isOnline && (
-                        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" aria-live="polite">
+                        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30" aria-live="polite">
                             <p className="font-semibold">{t('states.offlineNoticeTitle')}</p>
                             <p className="mt-1">{t('states.offlineNoticeBody')}</p>
                         </div>
                     )}
                     {sessionRestoreState === 'restoring' && (
-                        <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900" aria-live="polite">
+                        <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30" aria-live="polite">
                             <span className="inline-flex items-center gap-2 font-semibold">
                                 <Loader2 size={14} className="animate-spin" />
                                 {t('states.restoringSession')}
@@ -640,7 +640,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         </div>
                     )}
                     {sessionRestoreState === 'restored' && (
-                        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" aria-live="polite">
+                        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30" aria-live="polite">
                             <p className="font-semibold">{t('states.sessionRestored')}</p>
                         </div>
                     )}
@@ -737,7 +737,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                                 type="button"
                                                 onClick={() => void handlePasswordResetRequest('forgot_password')}
                                                 disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-300"
+                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-300 dark:text-accent-200 dark:hover:text-accent-200"
                                                 {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'forgot_password' })}
                                             >
                                                 {t('actions.forgotPassword')}
@@ -746,7 +746,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                                 type="button"
                                                 onClick={() => void handlePasswordResetRequest('set_password')}
                                                 disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-300"
+                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-300 dark:text-accent-200 dark:hover:text-accent-200"
                                                 {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'set_password' })}
                                             >
                                                 {t('actions.setPasswordSocial')}
@@ -768,11 +768,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                         />
                                         <span>
                                             {t('copy.termsConsentPrefix')}{' '}
-                                            <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-300" to={termsPath} target="_blank" rel="noreferrer">
+                                            <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-300 dark:text-accent-200" to={termsPath} target="_blank" rel="noreferrer">
                                                 {t('copy.termsConsentTerms')}
                                             </Link>{' '}
                                             {t('copy.termsConsentJoiner')}{' '}
-                                            <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-300" to={privacyPath} target="_blank" rel="noreferrer">
+                                            <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-300 dark:text-accent-200" to={privacyPath} target="_blank" rel="noreferrer">
                                                 {t('copy.termsConsentPrivacy')}
                                             </Link>
                                             .
@@ -826,7 +826,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     )}
 
                     {showAuthSupportMessage ? (
-                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             <p className="font-semibold">{t('errors.auth_unavailable_title')}</p>
                             <p className="mt-1">{t('errors.auth_unavailable_body')}</p>
                             <Link
@@ -834,19 +834,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 target="_blank"
                                 rel="noreferrer"
                                 onClick={() => trackEvent('auth__config_error--contact', { source: 'modal' })}
-                                className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4"
+                                className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4 dark:text-rose-200"
                                 {...getAnalyticsDebugAttributes('auth__config_error--contact', { source: 'modal' })}
                             >
                                 {t('actions.contactSupport')}
                             </Link>
                         </div>
                     ) : errorMessage ? (
-                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             {errorMessage}
                         </div>
                     ) : null}
                     {infoMessage && (
-                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                             {infoMessage}
                         </div>
                     )}

@@ -199,12 +199,12 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
       ref={cardRef}
       className={[
         'group relative overflow-hidden rounded-xl border bg-card transition-colors hover:border-border',
-        isGenerationFailed ? 'border-rose-200' : (isExpired ? 'border-amber-200' : 'border-border'),
+        isGenerationFailed ? 'border-rose-200 dark:border-rose-400/30' : (isExpired ? 'border-amber-200 dark:border-amber-400/30' : 'border-border'),
         !isPublic ? 'opacity-[0.82]' : '',
       ].join(' ')}
       style={{ contentVisibility: 'auto', containIntrinsicSize: '420px' }}
     >
-      <div className={`relative aspect-[16/9] overflow-hidden ${isGenerationFailed ? 'bg-rose-50' : (isExpired ? 'bg-amber-50' : 'bg-secondary')}`}>
+      <div className={`relative aspect-[16/9] overflow-hidden ${isGenerationFailed ? 'bg-rose-50 dark:bg-rose-400/12' : (isExpired ? 'bg-amber-50 dark:bg-amber-400/12' : 'bg-secondary')}`}>
         <Link
           to={tripDetailPath}
           onClick={() => onOpen(trip)}
@@ -268,12 +268,12 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               </span>
             )}
             {isExpired && (
-              <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
+              <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                 {labels.expiredTag || 'Expired'}
               </span>
             )}
             {isGenerationFailed && (
-              <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700">
+              <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                 {(labels.generationFailedTag || 'Generation failed').toLowerCase()}
               </span>
             )}
@@ -294,7 +294,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
           <Link
             to={tripDetailPath}
             onClick={() => onOpen(trip)}
-            className="inline cursor-pointer transition-colors hover:text-accent-700"
+            className="inline cursor-pointer transition-colors hover:text-accent-700 dark:hover:text-accent-200"
             {...(analyticsAttrs ? analyticsAttrs('open') : {})}
           >
             {displayTitle}
@@ -310,7 +310,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
             <MapPin size={15} weight="duotone" className="text-accent-500" />
             {cityStops.length}
           </span>
-          <span className="inline-flex items-center gap-1.5 text-accent-700">
+          <span className="inline-flex items-center gap-1.5 text-accent-700 dark:text-accent-200">
             <CalendarBlank size={14} weight="duotone" />
             {dateRange}
           </span>
@@ -389,7 +389,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
                   trip_id: trip.id,
                 });
               }}
-              className="font-semibold text-foreground hover:text-accent-700 hover:underline"
+              className="font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
               {...(analyticsAttrs ? analyticsAttrs('creator') : {})}
             >
               @{creatorHandle}
@@ -418,7 +418,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               onClick={() => onArchive(trip)}
               aria-label={labels.archive || 'Archive'}
               title={labels.archive || 'Archive'}
-              className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md border border-rose-200 bg-rose-50 text-rose-700 transition-colors hover:bg-rose-100"
+              className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md border border-rose-200 bg-rose-50 text-rose-700 transition-colors hover:bg-rose-100 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
               {...(analyticsAttrs ? analyticsAttrs('archive') : {})}
             >
               <Trash size={16} weight="duotone" />
@@ -434,7 +434,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               className={[
                 'inline-flex size-9 cursor-pointer items-center justify-center rounded-md border transition-colors',
                 isPublic
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-400/12 dark:hover:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
                   : 'border-border bg-secondary text-foreground hover:bg-slate-200',
               ].join(' ')}
               {...(analyticsAttrs ? analyticsAttrs('visibility') : {})}
@@ -452,7 +452,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               className={[
                 'inline-flex size-9 cursor-pointer items-center justify-center rounded-md border transition-colors',
                 trip.isFavorite
-                  ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                  ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30'
                   : 'border-border text-foreground hover:border-border hover:bg-secondary',
               ].join(' ')}
               {...(analyticsAttrs ? analyticsAttrs('favorite') : {})}
@@ -470,7 +470,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               className={[
                 'inline-flex size-9 cursor-pointer items-center justify-center rounded-md border transition-colors',
                 trip.isPinned
-                  ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
+                  ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
                   : 'border-border text-foreground hover:border-border hover:bg-secondary',
               ].join(' ')}
               {...(analyticsAttrs ? analyticsAttrs('pin') : {})}

@@ -586,7 +586,7 @@ const NumberStepper: React.FC<{
                 type="button"
                 onClick={() => onChange(clampNumber(value - 1, min, max))}
                 disabled={value <= min}
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:text-accent-300"
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:text-accent-300 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
             >
                 <Minus size={14} />
             </button>
@@ -595,7 +595,7 @@ const NumberStepper: React.FC<{
                 type="button"
                 onClick={() => onChange(clampNumber(value + 1, min, max))}
                 disabled={value >= max}
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:text-accent-300"
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:text-accent-300 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
             >
                 <Plus size={14} />
             </button>
@@ -1468,7 +1468,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     className={[
                                         'rounded-xl border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors',
                                         soloComfort === value
-                                            ? 'border-accent-300 bg-accent-50 text-accent-800 dark:bg-accent-400/15'
+                                            ? 'border-accent-300 bg-accent-50 text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30'
                                             : 'border-border bg-card text-muted-foreground hover:border-border dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:border-border',
                                     ].join(' ')}
                                 >
@@ -1603,7 +1603,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     className={[
                                         'rounded-xl border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors',
                                         friendsEnergy === value
-                                            ? 'border-accent-300 bg-accent-50 text-accent-800 dark:bg-accent-400/15'
+                                            ? 'border-accent-300 bg-accent-50 text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30'
                                             : 'border-border bg-card text-muted-foreground hover:border-border dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:border-border',
                                     ].join(' ')}
                                 >
@@ -2050,8 +2050,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     return (
         <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#eef2ff_0%,#f8fafc_50%,#ffffff_100%)] text-foreground dark:text-foreground">
             <div className="pointer-events-none fixed inset-0 opacity-60">
-                <div className="absolute -left-16 top-12 size-56 rounded-full bg-accent-200/50 blur-3xl" />
-                <div className="absolute right-0 top-24 size-64 rounded-full bg-cyan-200/40 blur-3xl" />
+                <div className="absolute -left-16 top-12 size-56 rounded-full bg-accent-200/50 dark:bg-accent-500/12 blur-3xl" />
+                <div className="absolute right-0 top-24 size-64 rounded-full bg-cyan-200/40 dark:bg-cyan-500/12 blur-3xl" />
             </div>
 
             <div className="relative z-10">
@@ -2066,13 +2066,13 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
                 <main className="mx-auto w-full max-w-[1260px] px-4 pb-28 pt-8 sm:px-6 sm:pb-32 lg:px-8 lg:pb-14">
                     {prefillMeta?.label && (
-                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-medium text-accent-800 dark:bg-accent-400/15">
+                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-medium text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30">
                             <Sparkle size={13} weight="duotone" />
                             <span>{t('prefillBadge', { label: prefillMeta.label })}</span>
                         </div>
                     )}
                     {submitError && (
-                        <div ref={submitErrorRef} className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                        <div ref={submitErrorRef} className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             {submitError}
                         </div>
                     )}
@@ -2203,7 +2203,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         className={[
                                                             'inline-flex items-center gap-2 rounded-lg border bg-card px-2.5 py-1 text-sm font-medium text-foreground shadow-sm dark:bg-card dark:text-foreground',
                                                             isStartStop
-                                                                ? 'border-accent-400 bg-accent-50 text-accent-900 dark:bg-accent-400/15'
+                                                                ? 'border-accent-400 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200'
                                                                 : 'border-border dark:border-border',
                                                             routeLock ? 'cursor-grab active:cursor-grabbing' : '',
                                                             dragActive ? 'ring-2 ring-accent-200' : '',
@@ -2225,7 +2225,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                             }}
                                                             className={[
                                                                 'rounded-full transition-colors',
-                                                                isStartStop ? 'text-accent-700 dark:text-accent-300' : 'text-muted-foreground hover:text-accent-600 dark:text-muted-foreground dark:hover:text-accent-300',
+                                                                isStartStop ? 'text-accent-700 dark:text-accent-300 dark:text-accent-200' : 'text-muted-foreground hover:text-accent-600 dark:text-muted-foreground dark:hover:text-accent-300',
                                                             ].join(' ')}
                                                             aria-label={t('destination.pinAsStart', { destination: destinationLabel })}
                                                             title={t('destination.pinAsStart', { destination: destinationLabel })}
@@ -2464,7 +2464,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         className={[
                                                             'group relative rounded-xl border p-3 text-left transition-colors',
                                                             active
-                                                                ? 'border-accent-400 bg-accent-50 text-accent-900 dark:bg-accent-400/15'
+                                                                ? 'border-accent-400 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200'
                                                                 : 'border-border bg-secondary text-foreground hover:border-border dark:border-border dark:bg-secondary dark:text-foreground dark:hover:border-border',
                                                         ].join(' ')}
                                                     >
@@ -2479,7 +2479,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                             className={[
                                                                 'absolute right-2 top-2 inline-flex size-7 items-center justify-center rounded-lg border transition-all',
                                                                 active
-                                                                    ? 'border-accent-300 bg-card text-accent-700 opacity-100 dark:bg-card dark:text-accent-300'
+                                                                    ? 'border-accent-300 bg-card text-accent-700 opacity-100 dark:bg-card dark:text-accent-300 dark:text-accent-200 dark:border-accent-400/30'
                                                                     : 'border-border bg-card text-muted-foreground opacity-0 group-hover:opacity-100 dark:border-border dark:bg-card dark:text-muted-foreground',
                                                             ].join(' ')}
                                                         >
@@ -2531,7 +2531,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         className={[
                                                             'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
                                                             active
-                                                                ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/15'
+                                                                ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30'
                                                                 : 'border-border bg-card text-muted-foreground hover:border-border dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:border-border',
                                                         ].join(' ')}
                                                     >
@@ -2578,7 +2578,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         className={[
                                                             'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
                                                             active
-                                                                ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/15'
+                                                                ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30'
                                                                 : 'border-border bg-card text-muted-foreground hover:border-border dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:border-border',
                                                         ].join(' ')}
                                                     >
@@ -2595,9 +2595,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                         </div>
 
                         <aside className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
-                            <div className="space-y-4 rounded-2xl border border-indigo-300/20 bg-gradient-to-b from-[#0d1330] via-[#090f26] to-[#060915] p-4 text-slate-100 shadow-2xl sm:p-5">
+                            <div className="space-y-4 rounded-2xl border border-indigo-300/20 bg-gradient-to-b from-[#0d1330] via-[#090f26] to-[#060915] p-4 text-slate-100 shadow-2xl sm:p-5 dark:border-indigo-400/30">
                                 <div>
-                                    <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-indigo-300/30 bg-card/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-100 dark:bg-card/5">
+                                    <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-indigo-300/30 bg-card/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-100 dark:bg-card/5 dark:border-indigo-400/30">
                                         <Compass size={13} weight="duotone" />
                                         {t('snapshot.title')}
                                     </div>
@@ -2638,7 +2638,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     {showLockedRouteLines && snapshotRouteGeometry && roundTrip && (
                                         <>
                                             <div
-                                                className="pointer-events-none absolute rounded-s-2xl border-y-2 border-indigo-300/70 shadow-[inset_2px_0_0_rgba(165,180,252,0.7)]"
+                                                className="pointer-events-none absolute rounded-s-2xl border-y-2 border-indigo-300/70 shadow-[inset_2px_0_0_rgba(165,180,252,0.7)] dark:border-indigo-400/30"
                                                 style={{
                                                     left: snapshotRouteGeometry.loopLeft,
                                                     top: snapshotRouteGeometry.firstY,
@@ -2690,7 +2690,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         <div className="min-w-0 pt-0.5">
                                                             <div className="text-sm font-semibold text-indigo-50">{getLocalizedDestinationLabel(destination)}</div>
                                                             {isFirst && (
-                                                                <div className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-indigo-300/40 bg-indigo-300/10 px-2 py-0.5 text-[11px] font-semibold text-indigo-100">
+                                                                <div className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-indigo-300/40 bg-indigo-300/10 px-2 py-0.5 text-[11px] font-semibold text-indigo-100 dark:border-indigo-400/30">
                                                                     <MapPin size={12} weight="fill" />
                                                                     {roundTrip ? t('snapshot.startEnd') : t('snapshot.start')}
                                                                 </div>
@@ -2746,7 +2746,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                         <Select value={selectedAiModel.id} onValueChange={handleModelChange}>
                                             <SelectTrigger
                                                 id="create-trip-model-desktop"
-                                                className="h-auto min-h-11 w-full rounded-xl border-indigo-200/45 bg-card/95 text-left text-indigo-950 hover:bg-card dark:bg-card/95 dark:hover:bg-card"
+                                                className="h-auto min-h-11 w-full rounded-xl border-indigo-200/45 bg-card/95 text-left text-indigo-950 hover:bg-card dark:bg-card/95 dark:hover:bg-card dark:text-indigo-200 dark:border-indigo-400/30"
                                                 {...getAnalyticsDebugAttributes('create_trip__model--select', {
                                                     provider: selectedAiModel.provider,
                                                     model: selectedAiModel.model,
@@ -2756,11 +2756,11 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                             >
                                                 <span className="flex min-w-0 flex-wrap items-center gap-1.5 pr-2">
                                                     <span className="truncate text-sm font-semibold">{selectedAiModel.label}</span>
-                                                    <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-700">
+                                                    <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-700 dark:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30">
                                                         {selectedAiModel.providerShortName}
                                                     </span>
                                                     {MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id] && (
-                                                        <span className="rounded-full border border-emerald-300/70 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                        <span className="rounded-full border border-emerald-300/70 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                                                             {t(MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id])}
                                                         </span>
                                                     )}
@@ -2784,7 +2784,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                                                 {model.providerShortName}
                                                                             </span>
                                                                             {noteKey && (
-                                                                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                                                                                     {t(noteKey)}
                                                                                 </span>
                                                                             )}
@@ -2825,7 +2825,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     type="button"
                                     onClick={handleGenerateTrip}
                                         disabled={isSubmitting || !destinationComplete || isGenerationBlockedOffline || (dateInputMode === 'exact' && totalNights < 1)}
-                                    className="inline-flex w-full items-center justify-center rounded-xl bg-card px-4 py-3 text-sm font-semibold text-indigo-900 transition-colors hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-card"
+                                    className="inline-flex w-full items-center justify-center rounded-xl bg-card px-4 py-3 text-sm font-semibold text-indigo-900 transition-colors hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-card dark:hover:bg-indigo-400/12 dark:text-indigo-200"
                                     {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
                                         destination_count: orderedDestinations.length,
                                         date_mode: dateInputMode,
@@ -2848,7 +2848,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 </main>
 
                 <div
-                    className="fixed inset-x-0 z-40 border-t border-indigo-300/25 bg-gradient-to-b from-[#0d1330]/95 via-[#090f26]/95 to-[#060915]/95 px-3 pb-4 pt-4 text-slate-100 backdrop-blur lg:hidden"
+                    className="fixed inset-x-0 z-40 border-t border-indigo-300/25 bg-gradient-to-b from-[#0d1330]/95 via-[#090f26]/95 to-[#060915]/95 px-3 pb-4 pt-4 text-slate-100 backdrop-blur lg:hidden dark:border-indigo-400/30"
                     style={{ bottom: `${mobileSnapshotFooterOffset}px` }}
                 >
                     <div className="mx-auto max-w-[1260px]">
@@ -2870,11 +2870,11 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     >
                                         <span className="flex min-w-0 flex-wrap items-center gap-1.5 pr-2">
                                             <span className="truncate text-sm font-semibold">{selectedAiModel.label}</span>
-                                            <span className="rounded-full border border-indigo-200/40 bg-indigo-300/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-100">
+                                            <span className="rounded-full border border-indigo-200/40 bg-indigo-300/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-100 dark:border-indigo-400/30">
                                                 {selectedAiModel.providerShortName}
                                             </span>
                                             {MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id] && (
-                                                <span className="rounded-full border border-emerald-300/35 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-100">
+                                                <span className="rounded-full border border-emerald-300/35 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-100 dark:border-emerald-400/30">
                                                     {t(MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id])}
                                                 </span>
                                             )}
@@ -2898,7 +2898,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                                         {model.providerShortName}
                                                                     </span>
                                                                     {noteKey && (
-                                                                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                                                                             {t(noteKey)}
                                                                         </span>
                                                                     )}
@@ -2951,7 +2951,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 type="button"
                                 onClick={handleGenerateTrip}
                                 disabled={isSubmitting || !destinationComplete || isGenerationBlockedOffline || (dateInputMode === 'exact' && totalNights < 1)}
-                                className="rounded-xl bg-card px-3.5 py-2.5 text-sm font-semibold text-indigo-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-card"
+                                className="rounded-xl bg-card px-3.5 py-2.5 text-sm font-semibold text-indigo-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-card dark:text-indigo-200"
                                 {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
                                     destination_count: orderedDestinations.length,
                                     date_mode: dateInputMode,

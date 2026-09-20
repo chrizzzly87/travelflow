@@ -183,14 +183,14 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                     <button 
                         type="button"
                         onClick={() => setMode('manual')}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${mode === 'manual' ? 'bg-accent-100 text-accent-700' : 'bg-card text-muted-foreground hover:bg-secondary border border-border'}`}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${mode === 'manual' ? 'bg-accent-100 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200' : 'bg-card text-muted-foreground hover:bg-secondary border border-border'}`}
                     >
                         Manual Entry
                     </button>
                     <button 
                         type="button"
                         onClick={() => setMode('ai')}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${mode === 'ai' ? 'bg-accent-100 text-accent-700' : 'bg-card text-muted-foreground hover:bg-secondary border border-border'}`}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${mode === 'ai' ? 'bg-accent-100 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200' : 'bg-card text-muted-foreground hover:bg-secondary border border-border'}`}
                     >
                         <Sparkles size={14} /> AI Suggestion
                     </button>
@@ -280,7 +280,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                             </div>
 
                             {generationFailed && !isGenerating && (
-                                <div role="alert" className="flex items-start justify-between gap-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                                <div role="alert" className="flex items-start justify-between gap-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 dark:bg-red-400/12">
                                     <div className="flex items-start gap-2">
                                         <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
                                         <span>{t('tripView.addActivity.aiError')}</span>
@@ -288,7 +288,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                     <button
                                         type="button"
                                         onClick={handleGenerate}
-                                        className="font-semibold text-red-700 underline underline-offset-2 hover:text-red-800 whitespace-nowrap"
+                                        className="font-semibold text-red-700 underline underline-offset-2 hover:text-red-800 whitespace-nowrap dark:text-red-200 dark:hover:text-red-200"
                                     >
                                         {t('tripView.addActivity.aiRetry')}
                                     </button>
@@ -301,7 +301,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                         <button
                                             type="button"
                                             key={`${p.title}-${p.description ?? ''}`}
-                                            className="w-full text-left bg-card border border-border rounded-xl p-4 hover:border-accent-300 hover:bg-accent-50 transition-all cursor-pointer group"
+                                            className="w-full text-left bg-card border border-border rounded-xl p-4 hover:border-accent-300 hover:bg-accent-50 transition-all cursor-pointer group dark:hover:bg-accent-400/12 dark:hover:border-accent-400/30"
                                             onClick={() => handleSelectProposal(p)}
                                         >
                                             {(() => {

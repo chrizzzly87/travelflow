@@ -134,7 +134,7 @@ export const HeroSection: React.FC = () => {
             <div className="relative flex items-center gap-8 lg:gap-12">
                 <div className="max-w-3xl flex-1">
                     <div className="animate-hero-stagger" style={{ '--stagger': '0ms' } as React.CSSProperties}>
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                             <Sparkle size={14} weight="duotone" />
                             {t('hero.badge')}
                         </span>

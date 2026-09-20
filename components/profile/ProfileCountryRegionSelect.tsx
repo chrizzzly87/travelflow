@@ -199,7 +199,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                                     onMouseDown={(event) => event.preventDefault()}
                                     onClick={() => selectCountry(country)}
                                     className={`flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors ${
-                                        index === activeIndex ? 'bg-accent-50 text-accent-900' : 'text-foreground hover:bg-secondary'
+                                        index === activeIndex ? 'bg-accent-50 text-accent-900 dark:bg-accent-400/12 dark:text-accent-200' : 'text-foreground hover:bg-secondary'
                                     }`}
                                 >
                                     <span className="inline-flex items-center gap-2">
@@ -207,7 +207,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                                         <span>{country.name}</span>
                                     </span>
                                     {country.code === value && (
-                                        <Check size={14} weight="bold" className="text-accent-700" />
+                                        <Check size={14} weight="bold" className="text-accent-700 dark:text-accent-200" />
                                     )}
                                 </button>
                             ))

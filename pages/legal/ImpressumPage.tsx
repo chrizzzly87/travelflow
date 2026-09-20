@@ -41,7 +41,7 @@ export const ImprintPage: React.FC = () => {
     return (
         <MarketingLayout>
             <div className="space-y-6">
-                <section className="rounded-3xl border border-border bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm md:p-10">
+                <section className="rounded-3xl border border-border bg-gradient-to-br from-card to-secondary p-6 shadow-sm md:p-10">
                     <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">{t('imprint.heroEyebrow')}</p>
                     <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground md:text-4xl">
                         {t('imprint.title')}
@@ -80,13 +80,13 @@ export const ImprintPage: React.FC = () => {
                             <dd className="space-y-1">
                                 <div>
                                     <span className="font-semibold text-foreground">{t('imprint.emailLabel')}</span>{' '}
-                                    <a className="text-accent-700 hover:underline" href={`mailto:${entity.contactEmail}`}>
+                                    <a className="text-accent-700 hover:underline dark:text-accent-200" href={`mailto:${entity.contactEmail}`}>
                                         {entity.contactEmail}
                                     </a>
                                 </div>
                                 {additionalContactEmails.map((email) => (
                                     <div key={email}>
-                                        <a className="text-accent-700 hover:underline" href={`mailto:${email}`}>
+                                        <a className="text-accent-700 hover:underline dark:text-accent-200" href={`mailto:${email}`}>
                                             {email}
                                         </a>
                                     </div>
@@ -94,7 +94,7 @@ export const ImprintPage: React.FC = () => {
                                 <div>
                                     <span className="font-semibold text-foreground">{t('imprint.contactFormLabel')}</span>{' '}
                                     <Link
-                                        className="text-accent-700 hover:underline"
+                                        className="text-accent-700 hover:underline dark:text-accent-200"
                                         to={contactPath}
                                         onClick={handleContactFormClick}
                                         {...getAnalyticsDebugAttributes('imprint__contact--form')}
@@ -163,7 +163,7 @@ export const ImprintPage: React.FC = () => {
                     <p className="mt-2 font-semibold">{supervision.authorityName}</p>
                     <p>
                         {t('imprint.supervisionWebsiteLabel')}{' '}
-                        <a className="text-accent-700 hover:underline" href={supervision.authorityWebsite} target="_blank" rel="noreferrer">
+                        <a className="text-accent-700 hover:underline dark:text-accent-200" href={supervision.authorityWebsite} target="_blank" rel="noreferrer">
                             {supervision.authorityWebsite}
                         </a>
                     </p>

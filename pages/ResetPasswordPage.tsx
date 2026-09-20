@@ -154,7 +154,7 @@ export const ResetPasswordPage: React.FC = () => {
                     <p className="mt-3 text-sm leading-6 text-muted-foreground">{t('reset.description')}</p>
 
                     {!isLoading && (!isAuthenticated || isAnonymous) && (
-                        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                             {t('copy.resetLinkHint')}
                         </div>
                     )}
@@ -206,12 +206,12 @@ export const ResetPasswordPage: React.FC = () => {
                     </form>
 
                     {errorMessage && (
-                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             {errorMessage}
                         </div>
                     )}
                     {infoMessage && (
-                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                             {infoMessage}
                         </div>
                     )}
@@ -220,7 +220,7 @@ export const ResetPasswordPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => navigate('/login')}
-                            className="text-sm font-semibold text-accent-700 hover:text-accent-800"
+                            className="text-sm font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
                             {...getAnalyticsDebugAttributes('auth__password_reset--back_login')}
                         >
                             {t('actions.backToLogin')}

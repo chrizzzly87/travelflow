@@ -121,7 +121,7 @@ export const TripAgentActivityGroup: React.FC<{
                                         aria-expanded={openStepKey === step.key}
                                         className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors ${
                                             isFailedState(step.state)
-                                                ? 'border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100'
+                                                ? 'border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30'
                                                 : 'border-border bg-card text-foreground hover:bg-secondary'
                                         }`}
                                     >

@@ -275,7 +275,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                                 creator_handle: resolvedCreatorHandle,
                             });
                         }}
-                        className="text-xs font-semibold text-muted-foreground transition-colors hover:text-accent-700 hover:underline dark:text-muted-foreground dark:hover:text-accent-300"
+                        className="text-xs font-semibold text-muted-foreground transition-colors hover:text-accent-700 hover:underline dark:text-muted-foreground dark:hover:text-accent-300 dark:hover:text-accent-200"
                     >
                         @{resolvedCreatorHandle}
                     </Link>

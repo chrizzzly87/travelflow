@@ -418,10 +418,10 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
     const usernameStatusTone = useMemo(() => {
         if (usernameCheck.loading) return 'text-muted-foreground';
         const availability = usernameCheck.result?.availability;
-        if (availability === 'available' || availability === 'unchanged') return 'text-emerald-700';
-        if (availability === 'cooldown') return 'text-amber-700';
-        if (availability === 'taken' || availability === 'invalid' || availability === 'reserved') return 'text-rose-700';
-        if (usernameCheck.error) return 'text-rose-700';
+        if (availability === 'available' || availability === 'unchanged') return 'text-emerald-700 dark:text-emerald-200';
+        if (availability === 'cooldown') return 'text-amber-700 dark:text-amber-200';
+        if (availability === 'taken' || availability === 'invalid' || availability === 'reserved') return 'text-rose-700 dark:text-rose-200';
+        if (usernameCheck.error) return 'text-rose-700 dark:text-rose-200';
         return 'text-muted-foreground';
     }, [usernameCheck]);
 
@@ -866,7 +866,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-5 pb-14 pt-8 md:px-8 md:pt-10">
                 <section className="space-y-2">
                     <nav className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        <NavLink to={buildPath('profile')} className="transition-colors hover:text-accent-700">
+                        <NavLink to={buildPath('profile')} className="transition-colors hover:text-accent-700 dark:hover:text-accent-200">
                             {t('settings.breadcrumb.profile')}
                         </NavLink>
                         <CaretRight size={12} weight="bold" aria-hidden="true" />
@@ -886,7 +886,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                     ) : (
                         <>
                             {errorMessage && (
-                                <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+                                <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                     {errorMessage}
                                 </div>
                             )}
@@ -960,7 +960,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                                 className={`text-[11px] font-semibold normal-case tracking-normal text-accent-700 transition-colors ${
                                                     isUsernameEditBlocked
                                                         ? 'cursor-not-allowed opacity-50'
-                                                        : 'hover:text-accent-800'
+                                                        : 'hover:text-accent-800 dark:hover:text-accent-200'
                                                 } disabled:cursor-not-allowed disabled:opacity-50`}
                                                 {...getAnalyticsDebugAttributes('profile_settings__username_edit--open')}
                                             >
@@ -1163,7 +1163,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 {publicProfilePath && (
                                     <NavLink
                                         to={publicProfilePath}
-                                        className="mt-2 inline-flex text-sm font-semibold text-accent-700 hover:underline"
+                                        className="mt-2 inline-flex text-sm font-semibold text-accent-700 hover:underline dark:text-accent-200"
                                         onClick={() => trackEvent('profile_settings__public_url--open')}
                                         {...getAnalyticsDebugAttributes('profile_settings__public_url--open')}
                                     >
@@ -1185,14 +1185,14 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 </div>
 
                                 {billingLifecycleState === 'canceled_grace' && (
-                                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:bg-amber-400/12 dark:border-amber-400/30">
                                         <div className="flex flex-wrap items-start justify-between gap-4">
                                             <div className="space-y-2">
-                                                <p className="text-sm font-semibold text-amber-900">{t('settings.billing.canceledGrace.title')}</p>
+                                                <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">{t('settings.billing.canceledGrace.title')}</p>
                                                 <p className="max-w-2xl text-sm leading-6 text-amber-900/90">
                                                     {t('settings.billing.canceledGrace.description', { date: billingAccessDateLabel })}
                                                 </p>
-                                                <p className="text-xs font-medium text-amber-800">
+                                                <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
                                                     {t('settings.billing.canceledGrace.impact')}
                                                 </p>
                                             </div>
@@ -1209,7 +1209,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                                     type="button"
                                                     onClick={() => void openBillingManagement('manage')}
                                                     disabled={isBillingLoading || isManageBillingSubmitting}
-                                                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-amber-300 bg-card px-4 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-amber-300 bg-card px-4 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                                 >
                                                     {t('settings.billing.manageCta')}
                                                 </button>
@@ -1219,7 +1219,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 )}
 
                                 {billingLifecycleState === 'inactive' && hasPaidTier && (
-                                    <div className="mt-4 rounded-xl border border-accent-200 bg-accent-50/70 p-4">
+                                    <div className="mt-4 rounded-xl border border-accent-200 bg-accent-50/70 p-4 dark:bg-accent-400/12 dark:border-accent-400/30">
                                         <div className="flex flex-wrap items-start justify-between gap-4">
                                             <div className="space-y-2">
                                                 <p className="text-sm font-semibold text-foreground">{t('settings.billing.inactive.title')}</p>
@@ -1316,7 +1316,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     {mode === 'onboarding' ? t('settings.actions.saveAndContinue') : t('settings.actions.save')}
                                 </button>
                                 {Object.values(requiredFieldErrors).some(Boolean) && (
-                                    <span className="text-xs font-semibold text-amber-700">
+                                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-200">
                                         {t('settings.requiredHint')}
                                     </span>
                                 )}

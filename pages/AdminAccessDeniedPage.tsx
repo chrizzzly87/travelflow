@@ -16,8 +16,8 @@ export const AdminAccessDeniedPage: React.FC = () => {
 
     return (
         <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-            <section className="rounded-2xl border border-amber-200 bg-card p-6 shadow-sm sm:p-8">
-                <div className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-800">
+            <section className="rounded-2xl border border-amber-200 bg-card p-6 shadow-sm sm:p-8 dark:border-amber-400/30">
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                     <ShieldWarning size={14} />
                     Access denied
                 </div>

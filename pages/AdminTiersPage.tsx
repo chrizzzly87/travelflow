@@ -64,7 +64,7 @@ const EntitlementCard: React.FC<{
                 aria-label="Tier limits JSON editor"
                 value={draft}
                 onChange={(e) => onChange(e.target.value)}
-                className="mt-3 min-h-[220px] w-full rounded-lg border border-red-300 bg-red-50 text-red-900 px-3 py-2 font-mono text-xs"
+                className="mt-3 min-h-[220px] w-full rounded-lg border border-red-300 bg-red-50 text-red-900 px-3 py-2 font-mono text-xs dark:bg-red-400/12 dark:text-red-200 dark:border-red-400/30"
             />
         );
     }
@@ -273,12 +273,12 @@ export const AdminTiersPage: React.FC = () => {
             )}
         >
             {errorMessage && (
-                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                     {errorMessage}
                 </section>
             )}
             {message && (
-                <section className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                <section className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                     {message}
                 </section>
             )}
@@ -351,7 +351,7 @@ export const AdminTiersPage: React.FC = () => {
                                 type="button"
                                 onClick={() => void reapplyTier(tierKey)}
                                 disabled={isSaving !== null || isReapplying !== null}
-                                className="rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-900 hover:bg-accent-100 disabled:opacity-50"
+                                className="rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-900 hover:bg-accent-100 disabled:opacity-50 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                             >
                                 {isReapplying === tierKey ? (
                                     <span className="inline-flex items-center gap-1">

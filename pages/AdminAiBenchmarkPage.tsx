@@ -271,19 +271,19 @@ const SATISFACTION_META: Record<SatisfactionRating, { label: string; icon: React
     good: {
         label: 'Good',
         icon: <Smiley size={14} weight="fill" />,
-        activeClass: 'border-emerald-300 bg-emerald-50 text-emerald-700',
+        activeClass: 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30',
         idleClass: 'border-border bg-card text-muted-foreground hover:bg-secondary',
     },
     medium: {
         label: 'Medium',
         icon: <SmileyMeh size={14} weight="fill" />,
-        activeClass: 'border-amber-300 bg-amber-50 text-amber-700',
+        activeClass: 'border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
         idleClass: 'border-border bg-card text-muted-foreground hover:bg-secondary',
     },
     bad: {
         label: 'Bad',
         icon: <SmileySad size={14} weight="fill" />,
-        activeClass: 'border-rose-300 bg-rose-50 text-rose-700',
+        activeClass: 'border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
         idleClass: 'border-border bg-card text-muted-foreground hover:bg-secondary',
     },
 };
@@ -2223,13 +2223,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4">
 
                 {error && (
-                    <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                    <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                         {error}
                     </section>
                 )}
 
                 {message && (
-                    <section className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                    <section className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                         {message}
                     </section>
                 )}
@@ -2283,7 +2283,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     </div>
 
                     {snapshotTelemetryError && (
-                        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             {snapshotTelemetryError}
                         </div>
                     )}
@@ -2762,7 +2762,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     const isPending = isRunActive(run);
                                     const isCancelled = isRunCancelledByUser(run);
                                     const statusIcon = isCancelled
-                                        ? <StopCircle size={15} className="text-amber-700" />
+                                        ? <StopCircle size={15} className="text-amber-700 dark:text-amber-200" />
                                         : isFailed
                                             ? <WarningCircle size={15} className="text-rose-600" />
                                         : isCompleted
@@ -2800,13 +2800,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                     {statusLabel}
                                                 </div>
                                                 {run.error_message && (
-                                                    <div className="mt-1 max-w-[320px] space-y-1 text-xs text-rose-700">
+                                                    <div className="mt-1 max-w-[320px] space-y-1 text-xs text-rose-700 dark:text-rose-200">
                                                         <div>{parsedError.shortMessage}</div>
                                                         {hasErrorDetails && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setErrorModalRun(run)}
-                                                                className="rounded border border-rose-300 bg-card px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700 hover:bg-rose-50"
+                                                                className="rounded border border-rose-300 bg-card px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                                                             >
                                                                 Details
                                                             </button>
@@ -2825,7 +2825,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         )}
                                                     </div>
                                                     {warningCount > 0 && (
-                                                        <div className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                                                        <div className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                                             {warningCount} warning{warningCount === 1 ? '' : 's'}
                                                         </div>
                                                     )}
@@ -2856,7 +2856,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         href={`/trip/${encodeURIComponent(run.trip_id)}`}
                                                         target="_blank"
                                                         rel="noreferrer"
-                                                        className="font-semibold text-accent-700 hover:underline"
+                                                        className="font-semibold text-accent-700 hover:underline dark:text-accent-200"
                                                     >
                                                         Open trip
                                                     </a>
@@ -2940,7 +2940,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                             type="button"
                                                             onClick={() => cancelRun(run)}
                                                             disabled={cancelling}
-                                                            className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                            className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                                         >
                                                             Abort
                                                         </button>
@@ -2994,10 +2994,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         const satisfactionClass = row.averageRatingScore === null
                                             ? 'text-muted-foreground'
                                             : row.averageRatingScore >= 2.5
-                                                ? 'text-emerald-700'
+                                                ? 'text-emerald-700 dark:text-emerald-200'
                                                 : row.averageRatingScore >= 1.75
-                                                    ? 'text-amber-700'
-                                                    : 'text-rose-700';
+                                                    ? 'text-amber-700 dark:text-amber-200'
+                                                    : 'text-rose-700 dark:text-rose-200';
                                         return (
                                             <tr key={`${row.provider}-${row.model}`} className="border-b border-border/70">
                                                 <td className="px-2 py-1.5 font-semibold text-foreground">
@@ -3188,7 +3188,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                     className={[
                                                         'flex w-full items-center justify-between rounded-md border p-2 text-left text-xs',
                                                         selected
-                                                            ? 'border-accent-300 bg-accent-50 text-accent-900'
+                                                            ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
                                                             : 'border-border bg-card text-foreground hover:bg-secondary',
                                                         disabled ? 'cursor-not-allowed opacity-50' : '',
                                                     ].join(' ')}

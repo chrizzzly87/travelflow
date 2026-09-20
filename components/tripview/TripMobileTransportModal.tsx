@@ -94,7 +94,7 @@ export const TripMobileTransportModal: React.FC<TripMobileTransportModalProps> =
                                     aria-pressed={isActive}
                                     className={`flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-xl border-2 transition-colors ${
                                         isActive
-                                            ? 'border-accent-500 bg-accent-50 text-accent-700'
+                                            ? 'border-accent-500 bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200'
                                             : 'border-border bg-card text-muted-foreground hover:border-border'
                                     }`}
                                     {...getAnalyticsDebugAttributes('trip_view__mobile_transport--change', {

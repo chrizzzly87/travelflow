@@ -589,7 +589,7 @@ const NumberStepper: React.FC<{
                 type="button"
                 onClick={() => onChange(clampNumber(value - 1, min, max))}
                 disabled={value <= min}
-                className="inline-flex size-9 items-center justify-center rounded-xl border border-border bg-secondary text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-secondary dark:text-muted-foreground dark:hover:text-accent-300"
+                className="inline-flex size-9 items-center justify-center rounded-xl border border-border bg-secondary text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-secondary dark:text-muted-foreground dark:hover:text-accent-300 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
             >
                 -
             </button>
@@ -598,7 +598,7 @@ const NumberStepper: React.FC<{
                 type="button"
                 onClick={() => onChange(clampNumber(value + 1, min, max))}
                 disabled={value >= max}
-                className="inline-flex size-9 items-center justify-center rounded-xl border border-border bg-secondary text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-secondary dark:text-muted-foreground dark:hover:text-accent-300"
+                className="inline-flex size-9 items-center justify-center rounded-xl border border-border bg-secondary text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-border dark:bg-secondary dark:text-muted-foreground dark:hover:text-accent-300 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
             >
                 +
             </button>
@@ -1517,11 +1517,11 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                 <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
                     <div className="w-full max-w-xl rounded-3xl border border-accent-100 bg-card/95 px-5 py-4 shadow-xl backdrop-blur-sm dark:bg-card/95">
                         <div className="flex items-center gap-3">
-                            <div className="flex size-10 items-center justify-center rounded-full bg-accent-100 text-accent-600 dark:text-accent-300">
+                            <div className="flex size-10 items-center justify-center rounded-full bg-accent-100 text-accent-600 dark:text-accent-300 dark:bg-accent-400/12">
                                 <Loader2 size={18} className="animate-spin" />
                             </div>
                             <div className="min-w-0">
-                                <div className="truncate text-sm font-semibold text-accent-900">{t('wizard.loading.title')}</div>
+                                <div className="truncate text-sm font-semibold text-accent-900 dark:text-accent-200">{t('wizard.loading.title')}</div>
                                 <div className="truncate text-xs text-muted-foreground dark:text-muted-foreground">{t('wizard.loading.message')}</div>
                             </div>
                         </div>
@@ -1711,8 +1711,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                     className={[
                                         'rounded-3xl border p-4 text-start transition-all',
                                         active
-                                            ? 'border-accent-500 bg-accent-50 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none'
-                                            : 'border-border bg-card hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:hover:bg-accent-400/15',
+                                            ? 'border-accent-500 bg-accent-50 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none dark:bg-accent-400/12'
+                                            : 'border-border bg-card hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:hover:bg-accent-400/15 dark:hover:bg-accent-400/12 dark:hover:border-accent-400/30',
                                     ].join(' ')}
                                     {...getAnalyticsDebugAttributes('create_trip_wizard__branch--select', { branch: option.id })}
                                 >
@@ -1778,8 +1778,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         className={[
                                             'rounded-2xl border p-3 text-center transition-all',
                                             active
-                                                ? 'border-accent-500 bg-accent-50 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none'
-                                                : 'border-border bg-card hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:hover:bg-accent-400/15',
+                                                ? 'border-accent-500 bg-accent-50 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none dark:bg-accent-400/12'
+                                                : 'border-border bg-card hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:hover:bg-accent-400/15 dark:hover:bg-accent-400/12 dark:hover:border-accent-400/30',
                                         ].join(' ')}
                                     >
                                         <div className="mb-1 flex justify-center">
@@ -1908,7 +1908,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     )}
 
                     <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
-                        <span className="inline-flex items-center rounded-full border border-accent-200 bg-accent-50 px-3 py-1 font-medium text-accent-700 dark:bg-accent-400/15 dark:text-accent-300">
+                        <span className="inline-flex items-center rounded-full border border-accent-200 bg-accent-50 px-3 py-1 font-medium text-accent-700 dark:bg-accent-400/15 dark:text-accent-300 dark:text-accent-200 dark:border-accent-400/30">
                             {dateInputMode === 'exact'
                                 ? t('wizard.dates.exactLength', { days: exactTripSpan?.days ?? totalDays, nights: exactTripSpan?.nights ?? totalNights })
                                 : t('wizard.dates.flexLength', { weeks: flexWeeks, days: totalDays })}
@@ -1984,8 +1984,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         className={[
                                             'rounded-2xl border p-3 text-start transition-all',
                                             active
-                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none'
-                                                : 'border-border bg-card text-foreground hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-accent-400/15',
+                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none dark:text-accent-200'
+                                                : 'border-border bg-card text-foreground hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-accent-400/15 dark:hover:bg-accent-400/12 dark:hover:border-accent-400/30',
                                         ].join(' ')}
                                     >
                                         <div className="flex items-center gap-2 text-sm font-semibold">
@@ -2012,8 +2012,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         className={[
                                             'rounded-2xl border p-3 text-start transition-all',
                                             active
-                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none'
-                                                : 'border-border bg-card text-foreground hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-accent-400/15',
+                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none dark:text-accent-200'
+                                                : 'border-border bg-card text-foreground hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-accent-400/15 dark:hover:bg-accent-400/12 dark:hover:border-accent-400/30',
                                         ].join(' ')}
                                     >
                                         <div className="flex items-center gap-2 text-sm font-semibold">
@@ -2040,8 +2040,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         className={[
                                             'rounded-2xl border p-3 text-start transition-all',
                                             active
-                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none'
-                                                : 'border-border bg-card text-foreground hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-accent-400/15',
+                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none dark:text-accent-200'
+                                                : 'border-border bg-card text-foreground hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-accent-400/15 dark:hover:bg-accent-400/12 dark:hover:border-accent-400/30',
                                         ].join(' ')}
                                     >
                                         <div className="flex items-center gap-2 text-sm font-semibold">
@@ -2215,7 +2215,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                 </div>
 
                 {generationError && (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                         {generationError}
                     </div>
                 )}
@@ -2238,7 +2238,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                 <div className="mb-4 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground dark:text-muted-foreground">
                     <span>{t('wizard.flowLabel')}</span>
                     <span className="text-slate-300">•</span>
-                    <Link to={buildVariantUrl('/create-trip')} className="font-medium text-accent-700 transition-colors hover:text-accent-900 dark:text-accent-300">
+                    <Link to={buildVariantUrl('/create-trip')} className="font-medium text-accent-700 transition-colors hover:text-accent-900 dark:text-accent-300 dark:text-accent-200 dark:hover:text-accent-200">
                         {t('labsBanner.links.classicCard')}
                     </Link>
                 </div>
@@ -2257,7 +2257,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                             <button
                                 type="button"
                                 onClick={() => goToStep(Math.max(0, currentStepIndex - 1))}
-                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent-300 hover:text-accent-900 dark:border-border dark:bg-card dark:text-foreground"
+                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent-300 hover:text-accent-900 dark:border-border dark:bg-card dark:text-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
                             >
                                 {t('wizard.actions.back')}
                             </button>
@@ -2278,7 +2278,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         type="button"
                                         onClick={handleCreateBlank}
                                         disabled={selectedCountries.length === 0}
-                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent-300 hover:text-accent-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-border dark:bg-card dark:text-foreground"
+                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent-300 hover:text-accent-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-border dark:bg-card dark:text-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
                                     >
                                         <FilePlus size={16} weight="duotone" />
                                         {t('wizard.actions.blank')}

@@ -26,7 +26,7 @@ export const ProfileSummaryStats: React.FC<ProfileSummaryStatsProps> = ({
         >
           <p
             className={stat.accent
-              ? 'text-3xl font-black tracking-tight text-accent-700 tabular-nums [font-variant-numeric:tabular-nums]'
+              ? 'text-3xl font-black tracking-tight text-accent-700 tabular-nums [font-variant-numeric:tabular-nums] dark:text-accent-200'
               : 'text-3xl font-black tracking-tight text-foreground tabular-nums [font-variant-numeric:tabular-nums]'}
           >
             <ProfileStatCountUp value={stat.value} locale={locale} />

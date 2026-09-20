@@ -153,7 +153,7 @@ export const AdminDashboardPage: React.FC = () => {
             )}
         >
             {errorMessage && (
-                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                     {errorMessage}
                 </section>
             )}
@@ -258,7 +258,7 @@ export const AdminDashboardPage: React.FC = () => {
                                     </span>
                                 </span>
                                 <div className="ml-4 space-y-1 w-full max-w-[200px] sm:max-w-none">
-                                    <p className="text-sm font-medium leading-none truncate group-hover:text-accent-700 transition-colors">{getUserName(user)}</p>
+                                    <p className="text-sm font-medium leading-none truncate group-hover:text-accent-700 transition-colors dark:group-hover:text-accent-200">{getUserName(user)}</p>
                                     <p className="text-sm text-muted-foreground truncate">{user.email || 'No email'}</p>
                                 </div>
                                 <div className="ml-auto flex items-end flex-col gap-1 shrink-0 text-right font-medium">

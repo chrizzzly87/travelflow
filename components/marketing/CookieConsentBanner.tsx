@@ -92,7 +92,7 @@ export const CookieConsentBanner: React.FC = () => {
             <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 rounded-2xl border border-border bg-card/95 p-4 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-6 dark:border-border dark:bg-card/95">
                 <p className="text-sm leading-6 text-foreground dark:text-foreground">
                     {t('cookieBanner.message', { appName: APP_NAME })}{' '}
-                    <Link to={buildLocalizedMarketingPath('cookies', locale)} className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-300">
+                    <Link to={buildLocalizedMarketingPath('cookies', locale)} className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-300 dark:text-accent-200 dark:hover:text-accent-200">
                         {t('cookieBanner.policyLinkLabel')}
                     </Link>
                     .

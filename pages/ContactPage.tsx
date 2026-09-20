@@ -524,7 +524,7 @@ export const ContactPage: React.FC = () => {
                         </p>
                         <a
                             href={`mailto:${t('contact.emailValue')}`}
-                            className="inline-flex items-center gap-2 text-base font-semibold text-accent-700 transition-colors hover:text-accent-800"
+                            className="inline-flex items-center gap-2 text-base font-semibold text-accent-700 transition-colors hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
                         >
                             <EnvelopeSimple size={18} weight="duotone" />
                             {t('contact.emailValue')}
@@ -540,7 +540,7 @@ export const ContactPage: React.FC = () => {
                                     type="button"
                                     disabled
                                     aria-label={label}
-                                    className="inline-flex size-10 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-accent-50 hover:text-accent-700 disabled:cursor-not-allowed"
+                                    className="inline-flex size-10 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-accent-50 hover:text-accent-700 disabled:cursor-not-allowed dark:hover:bg-accent-400/12 dark:hover:text-accent-200"
                                 >
                                     <Icon size={18} weight="duotone" />
                                 </button>
@@ -704,28 +704,28 @@ export const ContactPage: React.FC = () => {
                         </div>
 
                         {submitStatus === 'success' && (
-                            <div className="max-w-xl rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                            <div className="max-w-xl rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                                 <div className="flex items-start gap-2">
-                                    <CheckCircle size={18} weight="duotone" className="mt-0.5 shrink-0 text-emerald-700" />
+                                    <CheckCircle size={18} weight="duotone" className="mt-0.5 shrink-0 text-emerald-700 dark:text-emerald-200" />
                                     <div>
                                         <p className="font-semibold">{t('contact.form.successTitle')}</p>
-                                        <p className="mt-1 text-emerald-800">{t('contact.form.successBody')}</p>
+                                        <p className="mt-1 text-emerald-800 dark:text-emerald-200">{t('contact.form.successBody')}</p>
                                     </div>
                                 </div>
                             </div>
                         )}
 
                         {submitStatus === 'error' && (
-                            <div className="max-w-xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                            <div className="max-w-xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                 <div className="flex items-start gap-2">
-                                    <WarningCircle size={18} weight="duotone" className="mt-0.5 shrink-0 text-amber-700" />
+                                    <WarningCircle size={18} weight="duotone" className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-200" />
                                     <div>
                                         <p className="font-semibold">{validationError || t('contact.form.errorTitle')}</p>
-                                        {!validationError && <p className="mt-1 text-amber-800">{t('contact.form.errorBody')}</p>}
+                                        {!validationError && <p className="mt-1 text-amber-800 dark:text-amber-200">{t('contact.form.errorBody')}</p>}
                                         {!validationError && (
-                                            <div className="mt-3 rounded-lg border border-amber-300/80 bg-card/80 p-3">
-                                                <p className="font-semibold text-amber-900">{t('contact.form.fallbackTitle')}</p>
-                                                <p className="mt-1 text-amber-800">{t('contact.form.fallbackBody')}</p>
+                                            <div className="mt-3 rounded-lg border border-amber-300/80 bg-card/80 p-3 dark:border-amber-400/30">
+                                                <p className="font-semibold text-amber-900 dark:text-amber-200">{t('contact.form.fallbackTitle')}</p>
+                                                <p className="mt-1 text-amber-800 dark:text-amber-200">{t('contact.form.fallbackBody')}</p>
                                                 <a
                                                     href={fallbackEmailHref}
                                                     onClick={() => trackEvent(CONTACT_FALLBACK_EMAIL_EVENT, {
@@ -737,7 +737,7 @@ export const ContactPage: React.FC = () => {
                                                         error_type: errorType,
                                                         source: contactSource,
                                                     })}
-                                                    className="mt-2 inline-flex items-center gap-2 font-semibold text-amber-800 underline decoration-amber-500/70 underline-offset-2 hover:text-amber-900"
+                                                    className="mt-2 inline-flex items-center gap-2 font-semibold text-amber-800 underline decoration-amber-500/70 underline-offset-2 hover:text-amber-900 dark:text-amber-200 dark:hover:text-amber-200"
                                                     {...getAnalyticsDebugAttributes(CONTACT_FALLBACK_EMAIL_EVENT, {
                                                         reason: isValidReason(formState.reason) ? formState.reason : null,
                                                         sub_reason: selectedSubReason || null,
@@ -807,7 +807,7 @@ export const ContactPage: React.FC = () => {
                                     section_id: item.sectionId,
                                     source: 'contact_page',
                                 })}
-                                className="inline-flex text-xs font-semibold text-accent-700 underline decoration-accent-400/70 underline-offset-2 hover:text-accent-800"
+                                className="inline-flex text-xs font-semibold text-accent-700 underline decoration-accent-400/70 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
                                 {...getAnalyticsDebugAttributes(CONTACT_FAQ_LINK_ITEM_EVENT, {
                                     item_id: item.id,
                                     section_id: item.sectionId,
@@ -825,7 +825,7 @@ export const ContactPage: React.FC = () => {
                     onClick={() => trackEvent(CONTACT_FAQ_LINK_FULL_PAGE_EVENT, {
                         source: 'contact_page',
                     })}
-                    className="mt-5 inline-flex items-center rounded-lg bg-card px-3 py-2 text-sm font-semibold text-accent-700 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-secondary"
+                    className="mt-5 inline-flex items-center rounded-lg bg-card px-3 py-2 text-sm font-semibold text-accent-700 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-secondary dark:text-accent-200"
                     {...getAnalyticsDebugAttributes(CONTACT_FAQ_LINK_FULL_PAGE_EVENT, {
                         source: 'contact_page',
                     })}

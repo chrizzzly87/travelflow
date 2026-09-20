@@ -228,7 +228,7 @@ const CheckoutStepSection: React.FC<CheckoutStepSectionProps> = ({ step, state, 
                 className={cn(
                     'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
                     state === 'complete'
-                        ? 'bg-accent-50 text-accent-700 ring-1 ring-accent-200'
+                        ? 'bg-accent-50 text-accent-700 ring-1 ring-accent-200 dark:bg-accent-400/12 dark:text-accent-200'
                         : state === 'active'
                             ? 'border border-slate-900 text-foreground'
                             : 'border border-border text-muted-foreground'
@@ -945,8 +945,8 @@ export const CheckoutPage: React.FC = () => {
 
     const completedPanel = checkoutCompleted ? (
         <div ref={inlineCheckoutSectionRef} className="space-y-5">
-            <div className="rounded-2xl bg-emerald-50 p-6 shadow-sm ring-1 ring-emerald-100">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+            <div className="rounded-2xl bg-emerald-50 p-6 shadow-sm ring-1 ring-emerald-100 dark:bg-emerald-400/12">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">
                     {t('checkout.successEyebrow', { ns: 'pricing' })}
                 </p>
                 <h3 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
@@ -968,7 +968,7 @@ export const CheckoutPage: React.FC = () => {
                 ) : null}
 
                 {completedFlowMode === 'acquisition' && postPaymentSyncState === 'delayed' ? (
-                    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                         <p className="font-semibold">{t('checkout.paymentSyncDelayedTitle', { ns: 'pricing' })}</p>
                         <p className="mt-1">{t('checkout.paymentSyncDelayedDescription', { ns: 'pricing' })}</p>
                     </div>
@@ -976,7 +976,7 @@ export const CheckoutPage: React.FC = () => {
 
                 {completedFlowMode === 'acquisition' && postPaymentSyncState === 'synced' ? (
                     <div className="mt-5 rounded-xl bg-card/80 px-4 py-3 text-sm text-foreground ring-1 ring-emerald-100">
-                        <span className="font-semibold text-emerald-800">{t('checkout.paymentSyncReadyTitle', { ns: 'pricing' })}</span>{' '}
+                        <span className="font-semibold text-emerald-800 dark:text-emerald-200">{t('checkout.paymentSyncReadyTitle', { ns: 'pricing' })}</span>{' '}
                         {t('checkout.paymentSyncReadyDescription', { ns: 'pricing' })}
                     </div>
                 ) : null}
@@ -989,7 +989,7 @@ export const CheckoutPage: React.FC = () => {
                 ) : null}
 
                 {postPaymentClaimState === 'error' && postPaymentClaimErrorMessage ? (
-                    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                         <p className="font-semibold">{t('checkout.successClaimNeedsAttention', { ns: 'pricing' })}</p>
                         <p className="mt-1">{postPaymentClaimErrorMessage}</p>
                     </div>
@@ -1639,7 +1639,7 @@ export const CheckoutPage: React.FC = () => {
                 <section className="mt-8 grid gap-10 xl:gap-16 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_440px] lg:items-start">
                     <div className="order-1 min-w-0">
                         {paddlePublicConfig?.issues.length ? (
-                            <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                            <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                 <p className="font-semibold">{t('checkout.errorTitle', { ns: 'pricing' })}</p>
                                 <p className="mt-1">{t('checkout.errorConfig', { ns: 'pricing' })}</p>
                             </div>
@@ -1726,11 +1726,11 @@ export const CheckoutPage: React.FC = () => {
                                                 />
                                                 <span className="leading-6">
                                                     {t('copy.termsConsentPrefix', { ns: 'auth' })}{' '}
-                                                    <Link className="font-semibold text-accent-700 hover:underline" to={termsPath} target="_blank" rel="noreferrer">
+                                                    <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={termsPath} target="_blank" rel="noreferrer">
                                                         {t('copy.termsConsentTerms', { ns: 'auth' })}
                                                     </Link>{' '}
                                                     {t('copy.termsConsentJoiner', { ns: 'auth' })}{' '}
-                                                    <Link className="font-semibold text-accent-700 hover:underline" to={privacyPath} target="_blank" rel="noreferrer">
+                                                    <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={privacyPath} target="_blank" rel="noreferrer">
                                                         {t('copy.termsConsentPrivacy', { ns: 'auth' })}
                                                     </Link>
                                                     .
@@ -1739,11 +1739,11 @@ export const CheckoutPage: React.FC = () => {
                                         ) : null}
 
                                         {showAuthSupportMessage ? (
-                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                                 <p className="font-semibold">{t('errors.auth_unavailable_title', { ns: 'auth' })}</p>
                                                 <p className="mt-1">{t('errors.auth_unavailable_body', { ns: 'auth' })}</p>
                                                 <Link
-                                                    className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4"
+                                                    className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4 dark:text-rose-200"
                                                     to={contactPath}
                                                     target="_blank"
                                                     rel="noreferrer"
@@ -1754,12 +1754,12 @@ export const CheckoutPage: React.FC = () => {
                                                 </Link>
                                             </div>
                                         ) : authErrorMessage ? (
-                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                                 {authErrorMessage}
                                             </div>
                                         ) : null}
                                         {authInfoMessage ? (
-                                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                                                 {authInfoMessage}
                                             </div>
                                         ) : null}
@@ -1806,7 +1806,7 @@ export const CheckoutPage: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={handleEditTravelerDetails}
-                                                className="inline-flex items-center gap-1 text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                                className="inline-flex items-center gap-1 text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:text-accent-200 dark:hover:text-accent-200"
                                                 {...getAnalyticsDebugAttributes('checkout__traveler_details--edit')}
                                             >
                                                 <NotePencil size={16} weight="duotone" />
@@ -1816,7 +1816,7 @@ export const CheckoutPage: React.FC = () => {
                                     </div>
 
                                     {checkoutErrorMessage ? (
-                                        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                             {checkoutErrorMessage}
                                         </div>
                                     ) : null}
@@ -2003,7 +2003,7 @@ export const CheckoutPage: React.FC = () => {
                                                 {upgradePreview?.prorationMessage || t('checkout.upgradePreviewDescription', { ns: 'pricing' })}
                                             </p>
                                             {upgradePreview?.immediateAmount !== null && upgradePreview?.immediateAmount !== undefined ? (
-                                                <div className="mt-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-foreground">
+                                                <div className="mt-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-foreground dark:bg-accent-400/12 dark:border-accent-400/30">
                                                     <span className="font-semibold text-foreground">{t('checkout.dueNowLabel', { ns: 'pricing' })}</span>{' '}
                                                     {`${upgradePreview.immediateCurrency || ''} ${(upgradePreview.immediateAmount / 100).toFixed(2)}`}
                                                 </div>
@@ -2011,7 +2011,7 @@ export const CheckoutPage: React.FC = () => {
                                         </div>
 
                                         {checkoutErrorMessage ? (
-                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                                 {checkoutErrorMessage}
                                             </div>
                                         ) : null}
@@ -2070,7 +2070,7 @@ export const CheckoutPage: React.FC = () => {
                                                 <button
                                                     type="button"
                                                     disabled
-                                                    className={cn(checkoutActionClassName, 'cursor-not-allowed border border-accent-200 bg-accent-50 text-accent-700')}
+                                                    className={cn(checkoutActionClassName, 'cursor-not-allowed border border-accent-200 bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30')}
                                                 >
                                                     {t('checkout.currentPlanCta', { ns: 'pricing' })}
                                                 </button>
@@ -2113,7 +2113,7 @@ export const CheckoutPage: React.FC = () => {
                                                     className={cn(
                                                         'inline-flex h-11 appearance-none cursor-pointer items-center whitespace-nowrap border-0 border-b-2 bg-transparent px-0 pb-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed',
                                                         isActive
-                                                            ? 'border-accent-600 text-accent-700'
+                                                            ? 'border-accent-600 text-accent-700 dark:text-accent-200'
                                                             : 'border-transparent text-muted-foreground hover:text-foreground',
                                                         Boolean(paddlePublicConfig) && !tierAvailable ? 'text-slate-300 hover:text-slate-300' : null,
                                                     )}
@@ -2157,7 +2157,7 @@ export const CheckoutPage: React.FC = () => {
                                         <div className="mt-4 flex flex-col gap-3">
                                             {hasAppliedDiscountCode ? (
                                                 <div className="flex flex-wrap items-center gap-2">
-                                                    <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                                    <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                                                         {isDiscountPreviewLoading ? (
                                                             <SpinnerGap size={12} className="animate-spin" />
                                                         ) : null}
@@ -2165,7 +2165,7 @@ export const CheckoutPage: React.FC = () => {
                                                         <button
                                                             type="button"
                                                             onClick={handleClearVoucher}
-                                                            className="inline-flex size-5 items-center justify-center rounded-full text-emerald-700 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+                                                            className="inline-flex size-5 items-center justify-center rounded-full text-emerald-700 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 dark:hover:bg-emerald-400/12 dark:text-emerald-200"
                                                             aria-label={t('voucher.clearCta', { ns: 'pricing' })}
                                                             {...getAnalyticsDebugAttributes('checkout__voucher--clear')}
                                                         >
@@ -2201,12 +2201,12 @@ export const CheckoutPage: React.FC = () => {
                                                 </div>
                                             )}
                                             {!hasAppliedDiscountCode && normalizedDiscountInput && !isDiscountPreviewLoading && activeDiscountErrorMessage ? (
-                                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                                     {activeDiscountErrorMessage}
                                                 </div>
                                             ) : null}
                                             {hasAppliedDiscountCode && activeDiscountErrorMessage ? (
-                                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                                     {activeDiscountErrorMessage}
                                                 </div>
                                             ) : null}

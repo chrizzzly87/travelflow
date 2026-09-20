@@ -63,7 +63,7 @@ const CountryExplorerCardComponent: React.FC<CountryExplorerCardProps> = ({
     <Link
       to={href}
       onClick={() => trackEvent('inspirations__destination_card', payload)}
-      className="group flex min-h-52 flex-col rounded-3xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-accent-200 hover:shadow-lg"
+      className="group flex min-h-52 flex-col rounded-3xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-accent-200 hover:shadow-lg dark:hover:border-accent-400/30"
       {...getAnalyticsDebugAttributes('inspirations__destination_card', payload)}
     >
       <div className="flex items-start justify-between gap-4">
@@ -85,7 +85,7 @@ const CountryExplorerCardComponent: React.FC<CountryExplorerCardProps> = ({
           {entry.region}
         </span>
         {entry.tags.slice(0, MAX_VISIBLE_TAGS).map((tag) => (
-          <span key={tag} className="rounded-full bg-accent-50 px-2.5 py-1 font-bold capitalize text-accent-700">
+          <span key={tag} className="rounded-full bg-accent-50 px-2.5 py-1 font-bold capitalize text-accent-700 dark:bg-accent-400/12 dark:text-accent-200">
             {tag}
           </span>
         ))}

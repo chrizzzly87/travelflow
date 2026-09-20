@@ -27,8 +27,8 @@ interface AdminJsonDiffModalProps {
 }
 
 const lineCellClassName = (type: JsonDiffLineType): string => {
-    if (type === 'removed') return 'bg-rose-50 text-rose-900';
-    if (type === 'added') return 'bg-emerald-50 text-emerald-900';
+    if (type === 'removed') return 'bg-rose-50 text-rose-900 dark:bg-rose-400/12 dark:text-rose-200';
+    if (type === 'added') return 'bg-emerald-50 text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200';
     if (type === 'empty') return 'bg-secondary text-slate-300';
     return 'bg-card text-foreground';
 };
@@ -113,10 +113,10 @@ const formatJsonLine = (value: string | null, keyPrefix: string): React.ReactNod
 };
 
 const JSON_TOKEN_CLASSNAMES = [
-    '[&_.token.property]:!text-sky-700',
-    '[&_.token.string]:!text-emerald-700',
-    '[&_.token.number]:!text-fuchsia-700',
-    '[&_.token.boolean]:!text-amber-700',
+    '[&_.token.property]:!text-sky-700 dark:text-sky-200',
+    '[&_.token.string]:!text-emerald-700 dark:text-emerald-200',
+    '[&_.token.number]:!text-fuchsia-700 dark:text-fuchsia-200',
+    '[&_.token.boolean]:!text-amber-700 dark:text-amber-200',
     '[&_.token.null]:!text-muted-foreground',
     '[&_.token.punctuation]:!text-muted-foreground',
 ].join(' ');
@@ -181,7 +181,7 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
             closeLabel="Close diff modal"
         >
             {errorMessage && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                     {errorMessage}
                 </div>
             )}

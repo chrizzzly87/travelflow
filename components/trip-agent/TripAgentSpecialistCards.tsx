@@ -8,7 +8,7 @@ const BUDGET_ORDER: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high']
 
 /**
  * Stays from the grounded hotel specialist, as the three budget groups the
- * feature promises rather than a paragraph of prose.
+ * feature promises rather than a paragraph of prose dark:prose-invert.
  */
 export const TripAgentHotelCards: React.FC<{
     groups: Record<'low' | 'medium' | 'high', TripAgentHotelOption[]>;
@@ -98,7 +98,7 @@ export const TripAgentRouteCards: React.FC<{
                             <button
                                 type="button"
                                 onClick={() => onAsk(t('tripAgent.routeAskPrompt', { title: alternative.title }))}
-                                className="mt-1.5 text-[11px] font-medium text-accent-700 underline-offset-2 hover:underline"
+                                className="mt-1.5 text-[11px] font-medium text-accent-700 underline-offset-2 hover:underline dark:text-accent-200"
                             >
                                 {t('tripAgent.routeAsk')}
                             </button>

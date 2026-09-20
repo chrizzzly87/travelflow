@@ -493,7 +493,7 @@ export const PublicProfilePage: React.FC = () => {
                         />
 
                         {errorMessage && (
-                            <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                            <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                 {errorMessage}
                             </section>
                         )}

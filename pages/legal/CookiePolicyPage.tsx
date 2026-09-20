@@ -53,7 +53,7 @@ export const CookiePolicyPage: React.FC = () => {
     return (
         <MarketingLayout>
             <div className="space-y-6">
-                <section className="rounded-3xl border border-border bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm md:p-10">
+                <section className="rounded-3xl border border-border bg-gradient-to-br from-card to-secondary p-6 shadow-sm md:p-10">
                     <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">ePrivacy · GDPR Art. 6</p>
                     <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground md:text-4xl">
                         Cookie & Local Storage Policy

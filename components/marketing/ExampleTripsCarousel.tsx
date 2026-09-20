@@ -457,8 +457,8 @@ export const ExampleTripsCarousel: React.FC = () => {
             </div>
 
             <div className="relative mt-12 -mx-5 md:-mx-8 lg:mx-[calc(-50vw+50%)] overflow-hidden">
-                <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-10 bg-gradient-to-r from-slate-50 via-slate-50/85 to-transparent sm:w-14 md:w-24 dark:from-background dark:via-background/85" />
-                <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-10 bg-gradient-to-l from-slate-50 via-slate-50/85 to-transparent sm:w-14 md:w-24 dark:from-background dark:via-background/85" />
+                <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-10 bg-gradient-to-r from-secondary via-secondary/85 to-transparent sm:w-14 md:w-24 dark:from-background dark:via-background/85" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-10 bg-gradient-to-l from-secondary via-secondary/85 to-transparent sm:w-14 md:w-24 dark:from-background dark:via-background/85" />
 
                 <div
                     ref={containerRef}
@@ -571,7 +571,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                 <Link
                     to={INSPIRATIONS_LINK}
                     onClick={() => trackEvent('home__carousel_cta--inspirations')}
-                    className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800 dark:text-accent-300"
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800 dark:text-accent-300 dark:hover:text-accent-200"
                     {...getAnalyticsDebugAttributes('home__carousel_cta--inspirations')}
                 >
                     {uiCopy.moreInspirationsCta}

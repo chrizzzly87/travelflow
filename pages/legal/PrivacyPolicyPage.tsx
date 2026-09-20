@@ -21,7 +21,7 @@ export const PrivacyPolicyPage: React.FC = () => {
     return (
         <MarketingLayout>
             <div className="space-y-6">
-                <section className="rounded-3xl border border-border bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm md:p-10">
+                <section className="rounded-3xl border border-border bg-gradient-to-br from-card to-secondary p-6 shadow-sm md:p-10">
                     <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">GDPR · DSGVO</p>
                     <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground md:text-4xl">
                         Privacy Policy
@@ -51,11 +51,11 @@ export const PrivacyPolicyPage: React.FC = () => {
                     </div>
                     <p className="mt-2">
                         Email:{' '}
-                        <a href={`mailto:${entity.contactEmail}`} className="text-accent-700 hover:underline">{entity.contactEmail}</a>
+                        <a href={`mailto:${entity.contactEmail}`} className="text-accent-700 hover:underline dark:text-accent-200">{entity.contactEmail}</a>
                     </p>
                     <p>
                         Privacy inquiries:{' '}
-                        <a href={`mailto:${entity.privacyEmail}`} className="text-accent-700 hover:underline">{entity.privacyEmail}</a>
+                        <a href={`mailto:${entity.privacyEmail}`} className="text-accent-700 hover:underline dark:text-accent-200">{entity.privacyEmail}</a>
                     </p>
                 </Section>
 
@@ -92,25 +92,25 @@ export const PrivacyPolicyPage: React.FC = () => {
                     <ul className="mt-3 list-disc space-y-2 pl-5">
                         <li>
                             <strong>Google Maps Platform:</strong>{' '}
-                            <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="text-accent-700 hover:underline">
+                            <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="text-accent-700 hover:underline dark:text-accent-200">
                                 https://policies.google.com/privacy
                             </a>
                         </li>
                         <li>
                             <strong>Google (OAuth):</strong>{' '}
-                            <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="text-accent-700 hover:underline">
+                            <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="text-accent-700 hover:underline dark:text-accent-200">
                                 https://policies.google.com/privacy
                             </a>
                         </li>
                         <li>
                             <strong>Facebook (OAuth):</strong>{' '}
-                            <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noreferrer" className="text-accent-700 hover:underline">
+                            <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noreferrer" className="text-accent-700 hover:underline dark:text-accent-200">
                                 https://www.facebook.com/privacy/policy/
                             </a>
                         </li>
                         <li>
                             <strong>Kakao (OAuth):</strong>{' '}
-                            <a href="https://www.kakao.com/policy/privacy" target="_blank" rel="noreferrer" className="text-accent-700 hover:underline">
+                            <a href="https://www.kakao.com/policy/privacy" target="_blank" rel="noreferrer" className="text-accent-700 hover:underline dark:text-accent-200">
                                 https://www.kakao.com/policy/privacy
                             </a>
                         </li>
@@ -196,7 +196,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                     </ul>
                     <p className="mt-2">
                         To exercise these rights, email{' '}
-                        <a href={`mailto:${entity.privacyEmail}`} className="text-accent-700 hover:underline">{entity.privacyEmail}</a>.
+                        <a href={`mailto:${entity.privacyEmail}`} className="text-accent-700 hover:underline dark:text-accent-200">{entity.privacyEmail}</a>.
                         We respond within one month as required by Art. 12(3) GDPR.
                     </p>
                 </Section>
@@ -208,7 +208,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                         our local authority:
                     </p>
                     <p className="mt-2 font-semibold">{supervision.authorityName}</p>
-                    <a href={supervision.authorityWebsite} target="_blank" rel="noreferrer" className="text-accent-700 hover:underline">
+                    <a href={supervision.authorityWebsite} target="_blank" rel="noreferrer" className="text-accent-700 hover:underline dark:text-accent-200">
                         {supervision.authorityWebsite}
                     </a>
                 </Section>

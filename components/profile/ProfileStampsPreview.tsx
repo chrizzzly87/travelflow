@@ -55,7 +55,7 @@ export const ProfileStampsPreview: React.FC<ProfileStampsPreviewProps> = ({
         <button
           type="button"
           onClick={onOpen}
-          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800"
+          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800 dark:hover:text-accent-200"
         >
           <Sparkle size={15} weight="duotone" />
           {openLabel}

@@ -676,7 +676,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
         >
             <div className="mx-auto w-full max-w-[1600px] space-y-4">
                 {telemetryError && (
-                    <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                    <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                         {telemetryError}
                     </section>
                 )}
@@ -1085,7 +1085,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                                     }}
                                                     className={`flex w-full items-center justify-between rounded-md border px-2 py-1.5 text-left text-xs transition ${
                                                         isSelected
-                                                            ? 'border-blue-300 bg-blue-50 text-blue-900'
+                                                            ? 'border-blue-300 bg-blue-50 text-blue-900 dark:bg-blue-400/12 dark:text-blue-200 dark:border-blue-400/30'
                                                             : 'border-border bg-card text-foreground hover:border-border'
                                                     } ${isDisabled ? 'cursor-not-allowed opacity-60' : ''}`}
                                                 >
@@ -1125,9 +1125,9 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         )}
 
                         {selectedModelStats && (
-                            <div className="mt-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+                            <div className="mt-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900 dark:bg-blue-400/12 dark:text-blue-200 dark:border-blue-400/30">
                                 <p className="font-semibold">
-                                    Model details: <ProviderLabel provider={selectedModelStats.provider} model={selectedModelStats.model} providerClassName="text-blue-900" modelClassName="text-blue-800" logoSize={12} />
+                                    Model details: <ProviderLabel provider={selectedModelStats.provider} model={selectedModelStats.model} providerClassName="text-blue-900 dark:text-blue-200" modelClassName="text-blue-800 dark:text-blue-200" logoSize={12} />
                                 </p>
                                 <p className="mt-1">
                                     Calls {selectedModelStats.total.toLocaleString()} • Success {formatPercent(selectedModelStats.successRate)} • Avg duration {formatDuration(selectedModelStats.averageLatencyMs)} • Avg cost {formatUsd(selectedModelStats.averageCostUsd)}
@@ -1247,7 +1247,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                                 <ProviderLabel provider={row.provider} model={row.model} logoSize={13} />
                                             </td>
                                             <td className="px-2 py-1.5">
-                                                <span className={row.status === 'success' ? 'font-semibold text-emerald-700' : 'font-semibold text-rose-700'}>
+                                                <span className={row.status === 'success' ? 'font-semibold text-emerald-700 dark:text-emerald-200' : 'font-semibold text-rose-700 dark:text-rose-200'}>
                                                     {row.status}
                                                 </span>
                                             </td>

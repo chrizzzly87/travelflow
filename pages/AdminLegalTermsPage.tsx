@@ -219,12 +219,12 @@ export const AdminLegalTermsPage: React.FC = () => {
         >
             <div className="space-y-4">
                 {actionMessage && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                         {actionMessage}
                     </div>
                 )}
                 {errorMessage && (
-                    <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                         {errorMessage}
                     </div>
                 )}
@@ -417,13 +417,13 @@ export const AdminLegalTermsPage: React.FC = () => {
                         <div className="mt-3 grid gap-4 lg:grid-cols-2">
                             <article className="rounded-xl border border-border bg-secondary p-3">
                                 <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">German binding</h3>
-                                <div className="prose prose-sm mt-2 max-w-none prose-headings:mt-4 prose-headings:text-foreground prose-p:text-foreground">
+                                <div className="prose dark:prose-invert prose-sm mt-2 max-w-none prose-headings:mt-4 prose-headings:text-foreground prose-p:text-foreground">
                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{draft.contentDe}</ReactMarkdown>
                                 </div>
                             </article>
                             <article className="rounded-xl border border-border bg-secondary p-3">
                                 <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">English helper</h3>
-                                <div className="prose prose-sm mt-2 max-w-none prose-headings:mt-4 prose-headings:text-foreground prose-p:text-foreground">
+                                <div className="prose dark:prose-invert prose-sm mt-2 max-w-none prose-headings:mt-4 prose-headings:text-foreground prose-p:text-foreground">
                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{draft.contentEn}</ReactMarkdown>
                                 </div>
                             </article>
@@ -450,7 +450,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                             {versions.map((version) => (
                                 <article
                                     key={version.version}
-                                    className={`rounded-xl border p-3 text-sm ${version.isCurrent ? 'border-accent-300 bg-accent-50' : 'border-border bg-card'}`}
+                                    className={`rounded-xl border p-3 text-sm ${version.isCurrent ? 'border-accent-300 bg-accent-50 dark:bg-accent-400/12 dark:border-accent-400/30' : 'border-border bg-card'}`}
                                 >
                                     <div className="flex flex-wrap items-start justify-between gap-2">
                                         <div>
@@ -461,11 +461,11 @@ export const AdminLegalTermsPage: React.FC = () => {
                                             </p>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${version.requiresReaccept ? 'border-amber-300 bg-amber-100 text-amber-900' : 'border-sky-300 bg-sky-100 text-sky-900'}`}>
+                                            <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${version.requiresReaccept ? 'border-amber-300 bg-amber-100 text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30' : 'border-sky-300 bg-sky-100 text-sky-900 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'}`}>
                                                 {version.requiresReaccept ? 'Force re-accept' : 'Inform only'}
                                             </span>
                                             {version.isCurrent && (
-                                                <span className="rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-900">
+                                                <span className="rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                                                     Current
                                                 </span>
                                             )}
@@ -488,7 +488,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                                                     type="button"
                                                     disabled={isPublishing}
                                                     onClick={() => void handleSetCurrent(version.version, true)}
-                                                    className="inline-flex h-8 items-center rounded-lg border border-amber-300 bg-amber-50 px-3 text-xs font-semibold text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    className="inline-flex h-8 items-center rounded-lg border border-amber-300 bg-amber-50 px-3 text-xs font-semibold text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                                 >
                                                     Set Current (Force)
                                                 </button>
@@ -496,7 +496,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                                                     type="button"
                                                     disabled={isPublishing}
                                                     onClick={() => void handleSetCurrent(version.version, false)}
-                                                    className="inline-flex h-8 items-center rounded-lg border border-sky-300 bg-sky-50 px-3 text-xs font-semibold text-sky-900 hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    className="inline-flex h-8 items-center rounded-lg border border-sky-300 bg-sky-50 px-3 text-xs font-semibold text-sky-900 hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-400/12 dark:hover:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30"
                                                 >
                                                     Set Current (Inform)
                                                 </button>

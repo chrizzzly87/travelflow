@@ -498,11 +498,11 @@ export const TripAgentProposalCard: React.FC<{
 
     return (
         <section
-            className={`overflow-hidden rounded-2xl border bg-card shadow-sm ${state === 'error' ? 'border-rose-200' : 'border-border'}`}
+            className={`overflow-hidden rounded-2xl border bg-card shadow-sm ${state === 'error' ? 'border-rose-200 dark:border-rose-400/30' : 'border-border'}`}
             aria-label={t('tripAgent.review')}
         >
             <header className="border-b border-border px-4 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-200">
                     {stage === 'preview' ? t('tripAgent.eyebrowPreview') : t('tripAgent.eyebrowReview')}
                 </p>
                 <h3 className="mt-1 text-sm font-semibold leading-5 text-foreground">{shortSummary(changeSet.summary)}</h3>
@@ -589,7 +589,7 @@ export const TripAgentProposalCard: React.FC<{
                 </div>
             ) : (
                 <div className="space-y-2 px-4 py-3">
-                    <p className="flex items-center gap-1.5 rounded-xl bg-accent-50 px-2.5 py-2 text-xs font-medium text-accent-900">
+                    <p className="flex items-center gap-1.5 rounded-xl bg-accent-50 px-2.5 py-2 text-xs font-medium text-accent-900 dark:bg-accent-400/12 dark:text-accent-200">
                         <Eye className="size-3.5 shrink-0" />
                         {t('tripAgent.previewLive')}
                     </p>
@@ -600,9 +600,9 @@ export const TripAgentProposalCard: React.FC<{
                                 {t('tripAgent.itemCount', { count: trip.items.length })} · {t('tripAgent.dayCount', { count: tripDayCount(trip) })}
                             </dd>
                         </div>
-                        <div className="rounded-xl bg-emerald-50 p-2.5">
-                            <dt className="font-semibold text-emerald-900">{t('tripAgent.after')}</dt>
-                            <dd className="mt-0.5 text-emerald-800">
+                        <div className="rounded-xl bg-emerald-50 p-2.5 dark:bg-emerald-400/12">
+                            <dt className="font-semibold text-emerald-900 dark:text-emerald-200">{t('tripAgent.after')}</dt>
+                            <dd className="mt-0.5 text-emerald-800 dark:text-emerald-200">
                                 {t('tripAgent.itemCount', { count: preview?.trip?.items.length ?? trip.items.length })} · {t('tripAgent.dayCount', { count: preview?.trip ? tripDayCount(preview.trip) : tripDayCount(trip) })}
                             </dd>
                         </div>
@@ -616,17 +616,17 @@ export const TripAgentProposalCard: React.FC<{
                         ))}
                     </ul>
                     {preview?.error && (
-                        <p className="rounded-xl bg-rose-50 p-2.5 text-xs text-rose-800" role="alert">
+                        <p className="rounded-xl bg-rose-50 p-2.5 text-xs text-rose-800 dark:bg-rose-400/12 dark:text-rose-200" role="alert">
                             {t('tripAgent.previewFailed')}
                         </p>
                     )}
                     {!preview?.error && preview?.skippedCount ? (
-                        <p className="rounded-xl bg-amber-50 p-2.5 text-xs text-amber-800" role="status">
+                        <p className="rounded-xl bg-amber-50 p-2.5 text-xs text-amber-800 dark:bg-amber-400/12 dark:text-amber-200" role="status">
                             {t('tripAgent.previewSkipped', { count: preview.skippedCount })}
                         </p>
                     ) : null}
                     {!preview?.error && preview?.noOpCount ? (
-                        <p className="rounded-xl bg-amber-50 p-2.5 text-xs text-amber-800" role="status">
+                        <p className="rounded-xl bg-amber-50 p-2.5 text-xs text-amber-800 dark:bg-amber-400/12 dark:text-amber-200" role="status">
                             {t('tripAgent.previewNoOp', { count: preview.noOpCount })}
                         </p>
                     ) : null}
@@ -645,12 +645,12 @@ export const TripAgentProposalCard: React.FC<{
             )}
 
             {state === 'error' && error && (
-                <div className="mx-4 mb-1 rounded-xl border border-rose-200 bg-rose-50 p-3" role="alert">
-                    <p className="flex items-center gap-1.5 text-sm font-semibold text-rose-900">
+                <div className="mx-4 mb-1 rounded-xl border border-rose-200 bg-rose-50 p-3 dark:bg-rose-400/12 dark:border-rose-400/30" role="alert">
+                    <p className="flex items-center gap-1.5 text-sm font-semibold text-rose-900 dark:text-rose-200">
                         <AlertTriangle className="size-4" />
                         {t([`tripAgent.errors.${error.code}`, 'tripAgent.errors.TRIP_AGENT_REQUEST_FAILED'])}
                     </p>
-                    <p className="mt-1 break-words text-xs leading-5 text-rose-800">{error.message}</p>
+                    <p className="mt-1 break-words text-xs leading-5 text-rose-800 dark:text-rose-200">{error.message}</p>
                 </div>
             )}
 

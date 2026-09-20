@@ -255,7 +255,7 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                         </div>
                         <span className="flex h-7 items-start justify-center pt-0.5">
                             {segment.isToday && (
-                                <span className="rounded-full bg-accent-50 px-1.5 py-px text-[9px] font-bold uppercase tracking-[0.08em] text-accent-700">
+                                <span className="rounded-full bg-accent-50 px-1.5 py-px text-[9px] font-bold uppercase tracking-[0.08em] text-accent-700 dark:bg-accent-400/12 dark:text-accent-200">
                                     Today
                                 </span>
                             )}

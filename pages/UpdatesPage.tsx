@@ -155,8 +155,8 @@ export const UpdatesPage: React.FC = () => {
 
             <section className="mt-2 space-y-4">
                 {showInternalNews && (
-                    <article className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4 shadow-sm">
-                        <p className="text-sm font-medium text-rose-800">Internal view enabled. Hidden release items are visible.</p>
+                    <article className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4 shadow-sm dark:bg-rose-400/12 dark:border-rose-400/30">
+                        <p className="text-sm font-medium text-rose-800 dark:text-rose-200">Internal view enabled. Hidden release items are visible.</p>
                     </article>
                 )}
 
@@ -184,7 +184,7 @@ export const UpdatesPage: React.FC = () => {
                                     <span
                                         className={
                                             isTopNews
-                                                ? 'inline-flex rounded-full border border-accent-300 bg-accent-100 px-2.5 py-0.5 text-[11px] font-semibold text-accent-800 shadow-accent-glow-sm'
+                                                ? 'inline-flex rounded-full border border-accent-300 bg-accent-100 px-2.5 py-0.5 text-[11px] font-semibold text-accent-800 shadow-accent-glow-sm dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
                                                 : 'inline-flex rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-foreground'
                                         }
                                     >
@@ -203,7 +203,7 @@ export const UpdatesPage: React.FC = () => {
                                         components={{
                                             p: ({ node, ...props }) => <p {...props} className="m-0" />,
                                             a: ({ node, children, ...props }) => (
-                                                <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800">{children}</a>
+                                                <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200">{children}</a>
                                             ),
                                             code: ({ node, ...props }) => (
                                                 <code {...props} className="rounded bg-secondary px-1 py-0.5 text-[0.92em] text-foreground" />
@@ -224,7 +224,7 @@ export const UpdatesPage: React.FC = () => {
                                                 <li key={`${release.id}-${group.typeKey}-${group.typeLabel}-${itemIndex}`}>
                                                     <div className="flex flex-wrap items-start gap-2">
                                                         {item.typeKey === 'internal' && (
-                                                            <span className="mt-0.5 inline-flex shrink-0 rounded-full border border-rose-300 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700">
+                                                            <span className="mt-0.5 inline-flex shrink-0 rounded-full border border-rose-300 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                                                 Internal
                                                             </span>
                                                         )}
@@ -234,7 +234,7 @@ export const UpdatesPage: React.FC = () => {
                                                                 components={{
                                                                     p: ({ node, ...props }) => <p {...props} className="m-0" />,
                                                                     a: ({ node, children, ...props }) => (
-                                                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800">{children}</a>
+                                                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200">{children}</a>
                                                                     ),
                                                                     code: ({ node, ...props }) => (
                                                                         <code {...props} className="rounded bg-secondary px-1 py-0.5 text-[0.92em] text-foreground" />

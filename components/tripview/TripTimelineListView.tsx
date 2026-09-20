@@ -100,7 +100,7 @@ const buildMarkdownComponents = (
     a: ({ node, children, ...props }: any) => (
         <a
             {...props}
-            className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800"
+            className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
             target="_blank"
             rel="noopener noreferrer"
         >{children}</a>
@@ -227,7 +227,7 @@ const buildMarkdownComponents = (
 };
 };
 
-const TODAY_BADGE_CLASS = 'rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-red-700';
+const TODAY_BADGE_CLASS = 'rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-red-700 dark:bg-red-400/12 dark:text-red-200 dark:border-red-400/30';
 
 const TodayBadge: React.FC = () => (
     <span className={TODAY_BADGE_CLASS}>Today</span>
@@ -518,8 +518,8 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                             className={`pointer-events-auto origin-center -rotate-90 rounded-full border bg-card/95 shadow-sm transition-colors ${
                                                 transfer.itemId
                                                     ? transferSelected
-                                                        ? 'border-accent-500 text-accent-700 ring-2 ring-accent-200'
-                                                        : 'border-border text-foreground hover:border-accent-300 hover:text-accent-700'
+                                                        ? 'border-accent-500 text-accent-700 ring-2 ring-accent-200 dark:text-accent-200'
+                                                        : 'border-border text-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30'
                                                     : 'border-border text-muted-foreground'
                                             }`}
                                             {...getAnalyticsDebugAttributes('trip_view__timeline_transfer--open', {
@@ -601,7 +601,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                 })}
                                             >
                                                 <div className="flex flex-wrap items-end justify-between gap-3">
-                                                    <h3 className={`text-2xl font-semibold tracking-tight underline-offset-4 decoration-2 transition-[color,text-decoration-color] group-hover:underline ${citySelected ? 'text-accent-700 decoration-accent-500' : 'text-foreground decoration-slate-400'}`}>
+                                                    <h3 className={`text-2xl font-semibold tracking-tight underline-offset-4 decoration-2 transition-[color,text-decoration-color] group-hover:underline ${citySelected ? 'text-accent-700 decoration-accent-500 dark:text-accent-200' : 'text-foreground decoration-slate-400'}`}>
                                                         {cityTitle}
                                                     </h3>
                                                     <div className="flex flex-wrap items-center gap-2">
@@ -713,7 +713,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                                             <TodayBadge />
                                                                         )}
                                                                     </div>
-                                                                    <p className={`mt-1 inline-flex cursor-pointer text-[17px] leading-7 underline-offset-4 decoration-2 transition-[color,text-decoration-color,translate] ${titleHoverShiftClass} group-hover:underline ${isSelected ? 'font-semibold text-accent-700 decoration-accent-400' : 'font-medium text-foreground decoration-slate-300'}`}>
+                                                                    <p className={`mt-1 inline-flex cursor-pointer text-[17px] leading-7 underline-offset-4 decoration-2 transition-[color,text-decoration-color,translate] ${titleHoverShiftClass} group-hover:underline ${isSelected ? 'font-semibold text-accent-700 decoration-accent-400 dark:text-accent-200' : 'font-medium text-foreground decoration-slate-300'}`}>
                                                                         {activity.item.title}
                                                                     </p>
                                                                     {activity.item.description && (

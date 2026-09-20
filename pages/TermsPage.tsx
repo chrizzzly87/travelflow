@@ -53,7 +53,7 @@ const MARKDOWN_COMPONENTS: Components = {
     li: ({ children }) => <li>{children}</li>,
     strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
     a: ({ href, children }) => (
-        <a className="font-semibold text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800" href={href || '#'} target="_blank" rel="noreferrer">
+        <a className="font-semibold text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200" href={href || '#'} target="_blank" rel="noreferrer">
             {children}
         </a>
     ),
@@ -154,7 +154,7 @@ export const TermsPage: React.FC = () => {
     return (
         <MarketingLayout>
             <div className="space-y-6">
-                <section className="rounded-3xl border border-border bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm md:p-10">
+                <section className="rounded-3xl border border-border bg-gradient-to-br from-card to-secondary p-6 shadow-sm md:p-10">
                     <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">{t('termsPage.heroEyebrow')}</p>
                     <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{t('termsPage.heroTitle')}</h1>
                     <p className="mt-4 text-sm leading-6 text-foreground">
@@ -167,15 +167,15 @@ export const TermsPage: React.FC = () => {
                     </div>
                     <p className="mt-3 text-xs text-muted-foreground">
                         {t('termsPage.controllerInfoLead')}{' '}
-                        <Link className="font-semibold text-accent-700 hover:underline" to={imprintPath}>{t('termsPage.imprintLinkLabel')}</Link>.
+                        <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={imprintPath}>{t('termsPage.imprintLinkLabel')}</Link>.
                         {' '}
                         {t('termsPage.privacyInfoLead')}{' '}
-                        <Link className="font-semibold text-accent-700 hover:underline" to={privacyPath}>{t('termsPage.privacyLinkLabel')}</Link>.
+                        <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={privacyPath}>{t('termsPage.privacyLinkLabel')}</Link>.
                     </p>
                 </section>
 
                 {canAcceptCurrentTerms && (
-                    <section className={`rounded-2xl p-4 text-sm ${acceptRequired ? 'border border-amber-200 bg-amber-50 text-amber-900' : 'border border-sky-200 bg-sky-50 text-sky-900'}`}>
+                    <section className={`rounded-2xl p-4 text-sm ${acceptRequired ? 'border border-amber-200 bg-amber-50 text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30' : 'border border-sky-200 bg-sky-50 text-sky-900 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'}`}>
                         <p className="font-semibold">
                             {acceptRequired ? t('termsPage.acceptRequiredTitle') : t('termsPage.acceptOptionalTitle')}
                         </p>
@@ -195,7 +195,7 @@ export const TermsPage: React.FC = () => {
                             </button>
                         </div>
                         {acceptError && (
-                            <p className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{acceptError}</p>
+                            <p className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">{acceptError}</p>
                         )}
                     </section>
                 )}

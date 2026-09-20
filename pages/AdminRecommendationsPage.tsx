@@ -38,10 +38,10 @@ const STATUS_LABEL: Record<RecommendationStatus, string> = {
 };
 
 const STATUS_TONE: Record<string, string> = {
-    published: 'bg-emerald-100 text-emerald-800',
-    in_review: 'bg-amber-100 text-amber-800',
+    published: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200',
+    in_review: 'bg-amber-100 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200',
     draft: 'bg-secondary text-muted-foreground',
-    rejected: 'bg-red-100 text-red-800',
+    rejected: 'bg-red-100 text-red-800 dark:bg-red-400/12 dark:text-red-200',
     retired: 'bg-slate-200 text-muted-foreground',
 };
 
@@ -360,7 +360,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                 </div>
 
                 {error && (
-                    <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                    <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-400/12 dark:text-red-200 dark:border-red-400/30">
                         <WarningCircle size={18} className="mt-0.5 shrink-0" />
                         {error}
                     </div>
@@ -408,7 +408,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                                     className={cn(
                                         'mb-1 flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-3 text-start transition-colors',
                                         selectedId === row.id
-                                            ? 'border-accent-300 bg-accent-50'
+                                            ? 'border-accent-300 bg-accent-50 dark:bg-accent-400/12 dark:border-accent-400/30'
                                             : 'border-transparent hover:border-border hover:bg-secondary',
                                     )}
                                 >
@@ -442,7 +442,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                                         const row = rows.find((entry) => entry.id === selectedId);
                                         if (row) void changeStatus(row, 'published');
                                     }}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-400/12 dark:hover:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30"
                                 >
                                     Publish now
                                 </button>
@@ -593,7 +593,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                                         type="button"
                                         onClick={() => void remove()}
                                         disabled={saving}
-                                        className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                                        className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-400/12 dark:text-red-200 dark:border-red-400/30"
                                     >
                                         <Trash size={17} /> Delete
                                     </button>

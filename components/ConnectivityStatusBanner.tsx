@@ -55,19 +55,19 @@ export const ConnectivityStatusBanner: React.FC<ConnectivityStatusBannerProps> =
   const bannerTone = useMemo(() => {
     if (connectivity.state === 'offline') {
       return {
-        wrapper: 'border-rose-200 bg-rose-50/80 text-rose-950',
-        button: 'border-rose-300 bg-card text-rose-900 hover:bg-rose-100',
+        wrapper: 'border-rose-200 bg-rose-50/80 text-rose-950 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
+        button: 'border-rose-300 bg-card text-rose-900 hover:bg-rose-100 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
       };
     }
     if (connectivity.state === 'degraded') {
       return {
-        wrapper: 'border-amber-200 bg-amber-50/85 text-amber-950',
-        button: 'border-amber-300 bg-card text-amber-900 hover:bg-amber-100',
+        wrapper: 'border-amber-200 bg-amber-50/85 text-amber-950 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
+        button: 'border-amber-300 bg-card text-amber-900 hover:bg-amber-100 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
       };
     }
     return {
-      wrapper: 'border-sky-200 bg-sky-50/80 text-sky-950',
-      button: 'border-sky-300 bg-card text-sky-900 hover:bg-sky-100',
+      wrapper: 'border-sky-200 bg-sky-50/80 text-sky-950 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30',
+      button: 'border-sky-300 bg-card text-sky-900 hover:bg-sky-100 dark:hover:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30',
     };
   }, [connectivity.state]);
 

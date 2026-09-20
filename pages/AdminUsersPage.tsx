@@ -264,17 +264,17 @@ const LOGIN_PILL_DEFINITIONS: Record<LoginPillKey, LoginPillDefinition> = {
     },
     google: {
         label: 'Gmail',
-        className: 'border-rose-200 bg-rose-50 text-rose-700',
+        className: 'border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
         icon: GoogleLogo,
     },
     facebook: {
         label: 'Facebook',
-        className: 'border-sky-200 bg-sky-50 text-sky-700',
+        className: 'border-sky-200 bg-sky-50 text-sky-700 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30',
         icon: FacebookLogo,
     },
     kakao: {
         label: 'Kakao',
-        className: 'border-amber-200 bg-amber-50 text-amber-800',
+        className: 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
         icon: ChatCircleDots,
     },
     apple: {
@@ -289,17 +289,17 @@ const LOGIN_PILL_DEFINITIONS: Record<LoginPillKey, LoginPillDefinition> = {
     },
     discord: {
         label: 'Discord',
-        className: 'border-indigo-200 bg-indigo-50 text-indigo-700',
+        className: 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30',
         icon: DiscordLogo,
     },
     other_social: {
         label: 'Other social',
-        className: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700',
+        className: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-400/12 dark:text-fuchsia-200 dark:border-fuchsia-400/30',
         icon: ChatCircleDots,
     },
     anonymous: {
         label: 'Anonymous',
-        className: 'border-violet-300 bg-violet-50 text-violet-700',
+        className: 'border-violet-300 bg-violet-50 text-violet-700 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30',
         icon: Question,
     },
     unknown: {
@@ -546,10 +546,10 @@ const getActivationStatusLabel = (status: UserActivationStatus): string => {
 };
 
 const activationPillClass = (status: UserActivationStatus): string => {
-    if (status === 'activated') return 'border-emerald-300 bg-emerald-50 text-emerald-800';
-    if (status === 'invited') return 'border-sky-300 bg-sky-50 text-sky-800';
-    if (status === 'pending') return 'border-amber-300 bg-amber-50 text-amber-800';
-    return 'border-violet-300 bg-violet-50 text-violet-800';
+    if (status === 'activated') return 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
+    if (status === 'invited') return 'border-sky-300 bg-sky-50 text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30';
+    if (status === 'pending') return 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
+    return 'border-violet-300 bg-violet-50 text-violet-800 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30';
 };
 
 const normalizeProviderKey = (value: string | null | undefined): string => {
@@ -690,9 +690,9 @@ const getUserTermsStateLabel = (state: UserTermsState): string => {
 };
 
 const getUserTermsStatePillClass = (state: UserTermsState): string => {
-    if (state === 'latest') return 'border-emerald-300 bg-emerald-50 text-emerald-800';
-    if (state === 'pending') return 'border-amber-300 bg-amber-50 text-amber-800';
-    return 'border-rose-300 bg-rose-50 text-rose-800';
+    if (state === 'latest') return 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
+    if (state === 'pending') return 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
+    return 'border-rose-300 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
 };
 
 const getUserTermsSortRank = (state: UserTermsState): number => {
@@ -750,7 +750,7 @@ const buildSingleHardDeleteMessage = (
                     To keep trips, cancel and use <strong>Transfer trips + hard delete</strong> first.
                 </p>
             ) : null}
-            <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-800">
+            <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                 <WarningCircle size={16} className="mt-0.5 shrink-0" />
                 <span><strong>This action cannot be undone.</strong></span>
             </div>
@@ -802,7 +802,7 @@ const buildBulkHardDeleteMessage = (
                     <li>Continue hard delete to permanently remove selected users and owned trips.</li>
                 ) : null}
             </ul>
-            <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-800">
+            <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                 <WarningCircle size={16} className="mt-0.5 shrink-0" />
                 <span><strong>This action cannot be undone.</strong></span>
             </div>
@@ -824,7 +824,7 @@ const buildTransferAndHardDeleteMessage = (
             <li>Step 2: Hard-delete the source user (auth + profile only).</li>
             <li>Result: trips remain accessible under the new owner.</li>
         </ul>
-        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
             <WarningCircle size={16} className="mt-0.5 shrink-0" />
             <span><strong>Transfer first if you want to preserve trips before hard delete.</strong></span>
         </div>
@@ -869,14 +869,14 @@ const areOverrideRecordsEqual = (left: Record<string, unknown>, right: Record<st
 
 const rolePillClass = (role: 'admin' | 'user') => (
     role === 'admin'
-        ? 'border-accent-300 bg-accent-50 text-accent-900'
+        ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
         : 'border-border bg-secondary text-foreground'
 );
 
 const statusPillClass = (status: UserAccountStatus) => {
-    if (status === 'active') return 'border-emerald-300 bg-emerald-50 text-emerald-800';
-    if (status === 'disabled') return 'border-amber-300 bg-amber-50 text-amber-800';
-    return 'border-rose-300 bg-rose-50 text-rose-800';
+    if (status === 'active') return 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
+    if (status === 'disabled') return 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
+    return 'border-rose-300 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
 };
 
 const formatAccountStatusLabel = (status: UserAccountStatus): string => {
@@ -933,8 +933,8 @@ const resolveUserSubscriptionDowngradeAt = (user: AdminUserRecord): string | nul
 );
 
 const tierPillClass = (tier: PlanTierKey) => {
-    if (tier === 'tier_premium') return 'border-violet-300 bg-violet-50 text-violet-800';
-    if (tier === 'tier_mid') return 'border-sky-300 bg-sky-50 text-sky-800';
+    if (tier === 'tier_premium') return 'border-violet-300 bg-violet-50 text-violet-800 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30';
+    if (tier === 'tier_mid') return 'border-sky-300 bg-sky-50 text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30';
     return 'border-border bg-secondary text-foreground';
 };
 
@@ -1021,7 +1021,7 @@ const UserRowActionsMenu: React.FC<{
                             setIsOpen(false);
                             onSoftDelete();
                         }}
-                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-amber-800 hover:bg-amber-50"
+                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-amber-800 hover:bg-amber-50 dark:hover:bg-amber-400/12 dark:text-amber-200"
                     >
                         {isDeleted ? 'Restore user' : 'Soft-delete user'}
                     </button>
@@ -2794,22 +2794,22 @@ export const AdminUsersPage: React.FC = () => {
             )}
         >
             {errorMessage && (
-                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                     {errorMessage}
                 </section>
             )}
             {dataSourceNotice && (
-                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                     {dataSourceNotice}
                 </section>
             )}
             {message && (
-                <section className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                <section className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                     {message}
                 </section>
             )}
             {isSaving && (
-                <section className="mb-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900">
+                <section className="mb-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                     <span className="inline-flex items-center gap-2 font-medium">
                         <SpinnerGap size={14} className="animate-spin" />
                         Processing admin changes. Please wait…
@@ -2827,7 +2827,7 @@ export const AdminUsersPage: React.FC = () => {
                 </article>
                 <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Active account ratio</p>
-                    <p className="mt-2 inline-flex items-baseline gap-0.5 text-3xl font-semibold text-emerald-700">
+                    <p className="mt-2 inline-flex items-baseline gap-0.5 text-3xl font-semibold text-emerald-700 dark:text-emerald-200">
                         <AdminCountUpNumber value={usersSummary.activeRatioPct} />
                         <span className="text-xl">%</span>
                     </p>
@@ -2837,7 +2837,7 @@ export const AdminUsersPage: React.FC = () => {
                 </article>
                 <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Pending activation</p>
-                    <p className="mt-2 text-3xl font-semibold text-amber-700">
+                    <p className="mt-2 text-3xl font-semibold text-amber-700 dark:text-amber-200">
                         <AdminCountUpNumber value={usersSummary.pendingActivation} />
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">{usersSummary.pendingRatioPct}% of visible users</p>
@@ -2990,7 +2990,7 @@ export const AdminUsersPage: React.FC = () => {
                         type="button"
                         onClick={() => void handleBulkSoftDeleteUsers()}
                         disabled={isSaving || selectedVisibleUsers.length === 0}
-                        className="inline-flex h-8 items-center rounded-lg border border-amber-300 px-3 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-8 items-center rounded-lg border border-amber-300 px-3 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                     >
                         Soft-delete selected
                     </button>
@@ -2998,7 +2998,7 @@ export const AdminUsersPage: React.FC = () => {
                         type="button"
                         onClick={() => void handleBulkHardDeleteUsers()}
                         disabled={isSaving || selectedVisibleUsers.every((user) => !isUserHardDeleteEligible(user))}
-                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-rose-300 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-rose-300 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                     >
                         <Trash size={12} />
                         Hard delete selected
@@ -3206,7 +3206,7 @@ export const AdminUsersPage: React.FC = () => {
                                                     type="button"
                                                     onClick={() => openUserDetail(user.user_id)}
                                                     title="Open details drawer"
-                                                    className="group block w-full min-w-0 cursor-pointer text-left hover:text-accent-700"
+                                                    className="group block w-full min-w-0 cursor-pointer text-left hover:text-accent-700 dark:hover:text-accent-200"
                                                 >
                                                     <div className="truncate text-sm font-semibold text-foreground group-hover:underline group-hover:decoration-slate-400">{userName}</div>
                                                     <div className="truncate text-xs text-muted-foreground">{user.email || 'No email address'}</div>
@@ -3236,17 +3236,17 @@ export const AdminUsersPage: React.FC = () => {
                                                         );
                                                     })}
                                                     {activationStatus === 'pending' && (
-                                                        <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                                                        <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                                             Needs activation
                                                         </span>
                                                     )}
                                                     {activationStatus === 'invited' && (
-                                                        <span className="rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800">
+                                                        <span className="rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30">
                                                             Invite sent
                                                         </span>
                                                     )}
                                                     {activationStatus === 'anonymous' && (
-                                                        <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                                                        <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                                             Temp
                                                         </span>
                                                     )}
@@ -3255,14 +3255,14 @@ export const AdminUsersPage: React.FC = () => {
                                         )}
                                         {isUserColumnVisible('trips') && (
                                             <TableCell className={`px-4 py-3 text-xs text-muted-foreground ${isUserSortedColumn('total_trips') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <div className="font-semibold text-foreground hover:text-accent-700">
+                                                <div className="font-semibold text-foreground hover:text-accent-700 dark:hover:text-accent-200">
                                                     {getUserTotalTrips(user)} total
                                                 </div>
                                                 <div className="text-[11px] text-muted-foreground">
                                                     {getUserActiveTrips(user)} active
                                                 </div>
                                                 {isTriplessNoData && (
-                                                    <div className="text-[11px] font-semibold text-amber-700">
+                                                    <div className="text-[11px] font-semibold text-amber-700 dark:text-amber-200">
                                                         No profile data
                                                     </div>
                                                 )}
@@ -3423,7 +3423,7 @@ export const AdminUsersPage: React.FC = () => {
                 <DialogContent className="w-[min(96vw,760px)]">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-base font-semibold">
-                            <UserPlus size={16} className="text-accent-700" />
+                            <UserPlus size={16} className="text-accent-700 dark:text-accent-200" />
                             Create user
                         </DialogTitle>
                         <DialogDescription>
@@ -3934,7 +3934,7 @@ export const AdminUsersPage: React.FC = () => {
                                     type="button"
                                     onClick={() => void handleSoftDelete(selectedUser)}
                                     disabled={isSaving}
-                                    className="rounded-lg border border-amber-300 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+                                    className="rounded-lg border border-amber-300 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                 >
                                     {(selectedUser.account_status || 'active') === 'deleted' ? 'Restore user' : 'Soft-delete user'}
                                 </button>
@@ -3942,7 +3942,7 @@ export const AdminUsersPage: React.FC = () => {
                                     type="button"
                                     onClick={() => void handleHardDelete(selectedUser)}
                                     disabled={isSaving || !isUserHardDeleteEligible(selectedUser)}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-rose-300 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                                    className="inline-flex items-center gap-1 rounded-lg border border-rose-300 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                                 >
                                     <Trash size={13} />
                                     Hard delete
@@ -3952,7 +3952,7 @@ export const AdminUsersPage: React.FC = () => {
                                         type="button"
                                         onClick={() => void handleTransferTripsAndHardDelete(selectedUser)}
                                         disabled={isSaving || isLoadingTrips}
-                                        className="inline-flex items-center gap-1 rounded-lg border border-indigo-300 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
+                                        className="inline-flex items-center gap-1 rounded-lg border border-indigo-300 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 disabled:opacity-50 dark:hover:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30"
                                     >
                                         Transfer trips + hard delete
                                     </button>
@@ -3977,7 +3977,7 @@ export const AdminUsersPage: React.FC = () => {
                                                                 target="_blank"
                                                                 rel="noreferrer"
                                                                 title="Open trip in a new tab"
-                                                                className="block text-sm font-semibold text-foreground hover:text-accent-700 hover:underline"
+                                                                className="block text-sm font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
                                                             >
                                                                 {trip.title || trip.trip_id}
                                                             </a>
@@ -4071,7 +4071,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </div>
                                     <p className="text-xs text-muted-foreground">Showing the latest {USER_CHANGE_LOG_DRAWER_LIMIT} entries for this user.</p>
                                     {userChangeLogsError && (
-                                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                             {userChangeLogsError}
                                         </div>
                                     )}
@@ -4125,11 +4125,11 @@ export const AdminUsersPage: React.FC = () => {
                                                                             {formatFieldLabel(entry.key)}
                                                                         </p>
                                                                         <div className="mt-1 grid gap-1 lg:grid-cols-2">
-                                                                            <div className="rounded border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900">
+                                                                            <div className="rounded border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                                                                 <span className="font-semibold">Before: </span>
                                                                                 <span className="break-all">{formatUserChangeDiffValue(entry, entry.beforeValue)}</span>
                                                                             </div>
-                                                                            <div className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900">
+                                                                            <div className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                                                                                 <span className="font-semibold">After: </span>
                                                                                 <span className="break-all">{formatUserChangeDiffValue(entry, entry.afterValue)}</span>
                                                                             </div>
@@ -4202,7 +4202,7 @@ export const AdminUsersPage: React.FC = () => {
                                                 type="button"
                                                 onClick={() => void handleResetTermsAcceptance()}
                                                 disabled={isSaving || !selectedUser.terms_accepted_version}
-                                                className="inline-flex h-6 items-center rounded-md border border-amber-300 bg-amber-50 px-2 text-[11px] font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+                                                className="inline-flex h-6 items-center rounded-md border border-amber-300 bg-amber-50 px-2 text-[11px] font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                             >
                                                 Reset ToC acceptance
                                             </button>

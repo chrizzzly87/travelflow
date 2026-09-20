@@ -444,7 +444,7 @@ export const LoginPage: React.FC = () => {
                     <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{t('hero.title')}</h1>
                     <p className="mt-3 text-sm leading-6 text-muted-foreground">{t('hero.description')}</p>
                     {claimRequestId && (
-                        <div className="mt-4 rounded-2xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900">
+                        <div className="mt-4 rounded-2xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                             {t('copy.queueHint')}
                         </div>
                     )}
@@ -537,7 +537,7 @@ export const LoginPage: React.FC = () => {
                                         type="button"
                                         onClick={() => void handlePasswordResetRequest('forgot_password')}
                                         disabled={isSubmitting || isPostAuthProcessing}
-                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200"
                                         {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'page', intent: 'forgot_password' })}
                                     >
                                         {t('actions.forgotPassword')}
@@ -546,7 +546,7 @@ export const LoginPage: React.FC = () => {
                                         type="button"
                                         onClick={() => void handlePasswordResetRequest('set_password')}
                                         disabled={isSubmitting || isPostAuthProcessing}
-                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200"
                                         {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'page', intent: 'set_password' })}
                                     >
                                         {t('actions.setPasswordSocial')}
@@ -568,11 +568,11 @@ export const LoginPage: React.FC = () => {
                                 />
                                 <span>
                                     {t('copy.termsConsentPrefix')}{' '}
-                                    <Link className="font-semibold text-accent-700 hover:underline" to={termsPath} target="_blank" rel="noreferrer">
+                                    <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={termsPath} target="_blank" rel="noreferrer">
                                         {t('copy.termsConsentTerms')}
                                     </Link>{' '}
                                     {t('copy.termsConsentJoiner')}{' '}
-                                    <Link className="font-semibold text-accent-700 hover:underline" to={privacyPath} target="_blank" rel="noreferrer">
+                                    <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={privacyPath} target="_blank" rel="noreferrer">
                                         {t('copy.termsConsentPrivacy')}
                                     </Link>
                                     .
@@ -630,7 +630,7 @@ export const LoginPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => handleModeChange('register')}
-                                className="font-semibold text-accent-700 hover:text-accent-800"
+                                className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
                             >
                                 {t('copy.switchToRegister')}
                             </button>
@@ -638,7 +638,7 @@ export const LoginPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => handleModeChange('login')}
-                                className="font-semibold text-accent-700 hover:text-accent-800"
+                                className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
                             >
                                 {t('copy.switchToLogin')}
                             </button>
@@ -646,7 +646,7 @@ export const LoginPage: React.FC = () => {
                     </div>
 
                     {showAuthSupportMessage ? (
-                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             <p className="font-semibold">{t('errors.auth_unavailable_title')}</p>
                             <p className="mt-1">{t('errors.auth_unavailable_body')}</p>
                             <Link
@@ -654,19 +654,19 @@ export const LoginPage: React.FC = () => {
                                 target="_blank"
                                 rel="noreferrer"
                                 onClick={() => trackEvent('auth__config_error--contact', { source: 'page' })}
-                                className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4"
+                                className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4 dark:text-rose-200"
                                 {...getAnalyticsDebugAttributes('auth__config_error--contact', { source: 'page' })}
                             >
                                 {t('actions.contactSupport')}
                             </Link>
                         </div>
                     ) : errorMessage ? (
-                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             {errorMessage}
                         </div>
                     ) : null}
                     {infoMessage && (
-                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                             {infoMessage}
                         </div>
                     )}

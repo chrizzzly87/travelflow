@@ -127,7 +127,7 @@ const MentionText: React.FC<{ text: string }> = ({ text }) => {
     while (match) {
         if (match.index > cursor) pieces.push(text.slice(cursor, match.index));
         pieces.push(
-            <mark key={`${match.index}-${match[0]}`} className="rounded-[5px] bg-accent-100 px-0.5 py-px text-accent-900">
+            <mark key={`${match.index}-${match[0]}`} className="rounded-[5px] bg-accent-100 px-0.5 py-px text-accent-900 dark:bg-accent-400/12 dark:text-accent-200">
                 {match[0]}
             </mark>,
         );
@@ -242,11 +242,11 @@ const ChatMessage: React.FC<{
                             <div
                                 key={block.key}
                                 role="alert"
-                                className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5"
+                                className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 dark:bg-rose-400/12 dark:border-rose-400/30"
                             >
-                                <p className="text-xs font-semibold text-rose-900">{t('tripAgent.proposalFailed')}</p>
+                                <p className="text-xs font-semibold text-rose-900 dark:text-rose-200">{t('tripAgent.proposalFailed')}</p>
                                 {block.detail && (
-                                    <p className="mt-1 break-words text-[11px] leading-4 text-rose-800">{block.detail}</p>
+                                    <p className="mt-1 break-words text-[11px] leading-4 text-rose-800 dark:text-rose-200">{block.detail}</p>
                                 )}
                                 {onRetry && (
                                     <Button type="button" variant="outline" size="sm" className="mt-2" onClick={onRetry}>
@@ -283,8 +283,8 @@ const ChatMessage: React.FC<{
                     return <Source key={block.key} href={block.url} title={block.title} />;
                 })}
                 {wasInterrupted && (
-                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2">
-                        <span className="text-[11px] font-medium text-amber-800">{t('tripAgent.runInterrupted')}</span>
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2 dark:bg-amber-400/12 dark:border-amber-400/30">
+                        <span className="text-[11px] font-medium text-amber-800 dark:text-amber-200">{t('tripAgent.runInterrupted')}</span>
                         {onRetry && (
                             <Button type="button" variant="outline" size="sm" onClick={onRetry}>
                                 <RotateCcw className="size-3.5" />{t('tripAgent.continueRun')}
@@ -294,7 +294,7 @@ const ChatMessage: React.FC<{
                 )}
                 {hasFailed && onRetry && (
                     <div className="flex items-center justify-end gap-2 pt-1">
-                        <span className="me-auto text-[11px] font-medium text-rose-700">{t('tripAgent.messageFailed')}</span>
+                        <span className="me-auto text-[11px] font-medium text-rose-700 dark:text-rose-200">{t('tripAgent.messageFailed')}</span>
                         <Button type="button" variant="outline" size="sm" onClick={onRetry}>
                             <RotateCcw className="size-3.5" />{t('tripAgent.retryMessage')}
                         </Button>
@@ -639,14 +639,14 @@ const TripAgentChatSession: React.FC<{
                         </div>
                     )}
                     {errorInfo && (
-                        <section className="rounded-2xl border border-rose-200 bg-rose-50/80 p-3 text-rose-950" role="alert">
+                        <section className="rounded-2xl border border-rose-200 bg-rose-50/80 p-3 text-rose-950 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30" role="alert">
                             <div className="flex items-start gap-2.5">
                                 <AlertCircle className="mt-0.5 size-4 shrink-0 text-rose-600" />
                                 <div className="min-w-0 flex-1">
                                     <h3 className="text-sm font-semibold leading-5">
                                         {t([`tripAgent.errors.${errorInfo.code}`, 'tripAgent.errors.TRIP_AGENT_REQUEST_FAILED'])}
                                     </h3>
-                                    <p className="mt-1 break-words text-xs leading-5 text-rose-800">{errorInfo.detail || errorInfo.message}</p>
+                                    <p className="mt-1 break-words text-xs leading-5 text-rose-800 dark:text-rose-200">{errorInfo.detail || errorInfo.message}</p>
                                     <p className="mt-1.5 font-mono text-[10px] uppercase tracking-wide text-rose-600">
                                         {[errorInfo.code, errorInfo.status ? `HTTP ${errorInfo.status}` : null, errorInfo.requestId ? `#${errorInfo.requestId.slice(0, 8)}` : null].filter(Boolean).join(' · ')}
                                     </p>
@@ -764,7 +764,7 @@ const TripAgentChatSession: React.FC<{
                         </PromptInputFooter>
                     </PromptInput>
                 </div>
-                {isQuotaReached && <p className="mt-2 text-xs text-amber-700" role="status">{t('tripAgent.quotaReached', { resetTime })}</p>}
+                {isQuotaReached && <p className="mt-2 text-xs text-amber-700 dark:text-amber-200" role="status">{t('tripAgent.quotaReached', { resetTime })}</p>}
             </div>
         </>
     );
@@ -968,7 +968,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                                             }}
                                             className={`flex w-full items-start gap-2 rounded-xl border px-2.5 py-2 text-start transition-colors ${
                                                 thread.id === currentThreadId
-                                                    ? 'border-accent-200 bg-accent-50'
+                                                    ? 'border-accent-200 bg-accent-50 dark:bg-accent-400/12 dark:border-accent-400/30'
                                                     : 'border-border hover:bg-secondary'
                                             }`}
                                         >

@@ -3450,7 +3450,7 @@ const useTripViewRender = ({
     return (
         <GoogleMapsLoader language={appLanguage} enabled={isMapBootstrapEnabled}>
             <div
-                className="relative h-screen w-screen flex flex-col bg-secondary overflow-hidden text-foreground font-sans selection:bg-accent-100 selection:text-accent-900"
+                className="relative h-screen w-screen flex flex-col bg-secondary overflow-hidden text-foreground font-sans selection:bg-accent-100 selection:text-accent-900 dark:selection:bg-accent-400/12 dark:selection:text-accent-200"
                 data-tf-handoff-ready="true"
             >
                 
@@ -3732,7 +3732,7 @@ const useTripViewRender = ({
                             role="status"
                             className="pointer-events-none fixed inset-x-0 top-2 z-[1600] flex justify-center px-3"
                         >
-                            <p className="pointer-events-auto rounded-full border border-accent-200 bg-accent-50/95 px-3 py-1.5 text-xs font-medium text-accent-900 shadow-sm backdrop-blur">
+                            <p className="pointer-events-auto rounded-full border border-accent-200 bg-accent-50/95 px-3 py-1.5 text-xs font-medium text-accent-900 shadow-sm backdrop-blur dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                                 {t('tripAgent.previewBanner')}
                             </p>
                         </div>

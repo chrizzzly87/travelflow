@@ -103,7 +103,7 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                         </button>
                     </div>
                     {hasUnsyncedChanges && (
-                        <div className="border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                        <div className="border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                             {failedSyncCount > 0 ? failedSyncLabel : pendingSyncLabel}
                         </div>
                     )}
@@ -116,7 +116,7 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                                     const Icon = item.meta.Icon;
                                     const showUnsyncedBadge = hasUnsyncedChanges && index === 0;
                                     return (
-                                        <li key={item.id} className={`flex items-start gap-3 p-4 ${item.isCurrent ? 'bg-accent-50/70' : 'hover:bg-secondary/80'}`}>
+                                        <li key={item.id} className={`flex items-start gap-3 p-4 ${item.isCurrent ? 'bg-accent-50/70 dark:bg-accent-400/12' : 'hover:bg-secondary/80'}`}>
                                             <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${item.meta.iconClass}`}>
                                                 <Icon size={15} />
                                             </div>
@@ -127,12 +127,12 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                                                     </span>
                                                     <span className="text-xs text-muted-foreground">{formatHistoryTime(item.ts)}</span>
                                                     {item.isCurrent && (
-                                                        <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[10px] font-semibold text-accent-600">
+                                                        <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[10px] font-semibold text-accent-600 dark:bg-accent-400/12">
                                                             Current
                                                         </span>
                                                     )}
                                                     {showUnsyncedBadge && (
-                                                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                                                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200">
                                                             Not synced
                                                         </span>
                                                     )}

@@ -184,7 +184,7 @@ export const PublicProfileStampsPage: React.FC = () => {
           <CaretLeft size={14} weight="bold" className="text-muted-foreground" />
           <NavLink
             to={publicProfilePath}
-            className="transition-colors hover:text-accent-700"
+            className="transition-colors hover:text-accent-700 dark:hover:text-accent-200"
             onClick={() => trackEvent('public_profile__stamps_back--profile')}
             {...getAnalyticsDebugAttributes('public_profile__stamps_back--profile')}
           >
@@ -213,7 +213,7 @@ export const PublicProfileStampsPage: React.FC = () => {
         {state.status === 'found' && state.profile ? (
           <>
             <header className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-700">{t('stamps.eyebrow')}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-700 dark:text-accent-200">{t('stamps.eyebrow')}</p>
               <h1 className="text-4xl font-black tracking-tight text-foreground md:text-5xl">{t('stamps.title')}</h1>
               <p className="max-w-3xl text-sm text-muted-foreground">{t('stamps.description', { name: displayName })}</p>
             </header>

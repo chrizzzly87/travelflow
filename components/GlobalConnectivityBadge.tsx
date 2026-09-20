@@ -118,18 +118,18 @@ export const GlobalConnectivityBadge: React.FC = () => {
 
     const palette = badgeState === 'offline'
         ? {
-            shell: 'border-rose-300 bg-rose-50/95 text-rose-900',
+            shell: 'border-rose-300 bg-rose-50/95 text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
             icon: pulsingDot('offline'),
             label: t('connectivity.globalBadge.offline'),
         }
         : badgeState === 'syncing'
             ? {
-                shell: 'border-amber-300 bg-amber-50/95 text-amber-900',
+                shell: 'border-amber-300 bg-amber-50/95 text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
                 icon: <Spinner className="size-3.5 text-amber-600" aria-hidden="true" />,
                 label: t('connectivity.globalBadge.syncing'),
             }
             : {
-                shell: 'border-emerald-300 bg-emerald-50/95 text-emerald-900',
+                shell: 'border-emerald-300 bg-emerald-50/95 text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30',
                 icon: pulsingDot('online'),
                 label: t('connectivity.globalBadge.online'),
             };

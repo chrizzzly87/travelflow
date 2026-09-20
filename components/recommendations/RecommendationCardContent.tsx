@@ -25,7 +25,7 @@ export const RecommendationCardMedia: React.FC<{
     const mapUrl = mapFailed ? null : buildRecommendationMapUrl(recommendation);
 
     return (
-        <div className={`relative shrink-0 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 ${className ?? 'h-56'}`}>
+        <div className={`relative shrink-0 overflow-hidden bg-gradient-to-br from-secondary to-secondary ${className ?? 'h-56'}`}>
             {photoUrl ? (
                 <img
                     src={photoUrl}
@@ -163,7 +163,7 @@ export const RecommendationSources: React.FC<{ recommendation: Recommendation }>
                         href={source.url}
                         target="_blank"
                         rel="noopener noreferrer nofollow"
-                        className="text-[11px] font-medium text-accent-700 underline decoration-accent-300 underline-offset-2"
+                        className="text-[11px] font-medium text-accent-700 underline decoration-accent-300 underline-offset-2 dark:text-accent-200"
                     >
                         {label}
                     </a>

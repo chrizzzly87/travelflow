@@ -139,7 +139,7 @@ const modalSecondaryButtonClassName = 'inline-flex h-10 items-center justify-cen
 const modalPrimaryButtonClassName = 'inline-flex h-10 items-center justify-center gap-2 rounded-md bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 const modalSectionClassName = 'space-y-4 border-t border-border pt-6';
 const modalSubtlePanelClassName = 'rounded-md bg-secondary px-4 py-3 text-sm leading-6 text-muted-foreground';
-const modalTextButtonClassName = 'inline-flex items-center text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2';
+const modalTextButtonClassName = 'inline-flex items-center text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:text-accent-200 dark:hover:text-accent-200';
 const tabClassName = 'relative flex-none gap-2 px-0 data-[state=active]:[&_svg]:text-accent-600 [&_svg]:text-slate-400';
 
 const SummaryCard: React.FC<SummaryCardProps> = ({ label, value, wide = false }) => (
@@ -264,7 +264,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
         if (resolvedGenerationState === 'failed') {
             return {
                 label: t('tripView.generation.tripInfo.state.failed').toLowerCase(),
-                className: 'border-rose-200 bg-rose-50 text-rose-700',
+                className: 'border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
             };
         }
         if (resolvedGenerationState === 'running' || resolvedGenerationState === 'queued') {
@@ -272,13 +272,13 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                 label: resolvedGenerationState === 'queued'
                     ? t('tripView.generation.tripInfo.state.queued').toLowerCase()
                     : t('tripView.generation.tripInfo.state.running').toLowerCase(),
-                className: 'border-amber-200 bg-amber-50 text-amber-700',
+                className: 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
             };
         }
         if (resolvedGenerationState === 'succeeded') {
             return {
                 label: t('tripView.generation.tripInfo.state.succeeded').toLowerCase(),
-                className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+                className: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30',
             };
         }
         return null;
@@ -457,7 +457,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                                 onClick={onToggleFavorite}
                                                 disabled={!canEdit}
                                                 className={`${modalSecondaryButtonClassName} shrink-0 px-2.5 sm:px-3 ${
-                                                    isFavorite ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100' : ''
+                                                    isFavorite ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30' : ''
                                                 }`}
                                                 aria-label={isFavorite
                                                     ? t('tripView.infoDialog.general.favoriteRemove')
@@ -571,7 +571,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                                     </SelectContent>
                                                 </Select>
                                                 {selectedRetryModelOption && (
-                                                    <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-[11px] font-semibold text-accent-800">
+                                                    <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-[11px] font-semibold text-accent-800 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                                                         <AiProviderLogo provider={selectedRetryModelOption.provider} model={selectedRetryModelOption.model} size={12} />
                                                         <span>{selectedRetryModelOption.providerLabel} · {selectedRetryModelOption.label}</span>
                                                     </div>
@@ -610,7 +610,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                         {forkMeta && (
                             <section className={modalSectionClassName}>
                                 <div className="flex items-center gap-2">
-                                    <MapPinned size={16} className="text-accent-700" />
+                                    <MapPinned size={16} className="text-accent-700 dark:text-accent-200" />
                                     <h3 className="text-base font-semibold text-foreground">{t('tripView.infoDialog.general.sections.source')}</h3>
                                 </div>
                                 <p className="mt-3 text-sm font-semibold text-foreground">{forkMeta.label}</p>
@@ -622,7 +622,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                 {forkMeta.url && (
                                     <a
                                         href={forkMeta.url}
-                                        className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline"
+                                        className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-accent-700 hover:text-accent-800 hover:underline dark:text-accent-200 dark:hover:text-accent-200"
                                     >
                                         <ExternalLink size={14} />
                                         <span>{t('tripView.infoDialog.general.viewSource')}</span>
@@ -664,7 +664,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                 </section>
 
                                 {hasUnsyncedChanges && (
-                                    <section className="rounded-md bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+                                    <section className="rounded-md bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900 dark:bg-amber-400/12 dark:text-amber-200">
                                         {failedSyncCount > 0 ? failedSyncLabel : pendingSyncLabel}
                                     </section>
                                 )}
@@ -678,7 +678,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                                 const Icon = item.meta.Icon;
                                                 const showUnsyncedBadge = hasUnsyncedChanges && index === 0;
                                                 return (
-                                                    <li key={item.id} className={`flex items-start gap-3 p-4 ${item.isCurrent ? 'bg-accent-50/60' : 'bg-card'}`}>
+                                                    <li key={item.id} className={`flex items-start gap-3 p-4 ${item.isCurrent ? 'bg-accent-50/60 dark:bg-accent-400/12' : 'bg-card'}`}>
                                                         <div className={`flex size-9 shrink-0 items-center justify-center rounded-md ${item.meta.iconClass}`}>
                                                             <Icon size={16} />
                                                         </div>
@@ -689,12 +689,12 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                                                 </span>
                                                                 <span className="text-xs text-muted-foreground">{formatHistoryTime(item.ts)}</span>
                                                                 {item.isCurrent && (
-                                                                    <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[10px] font-semibold text-accent-700">
+                                                                    <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[10px] font-semibold text-accent-700 dark:bg-accent-400/12 dark:text-accent-200">
                                                                         {t('tripView.infoDialog.history.current')}
                                                                     </span>
                                                                 )}
                                                                 {showUnsyncedBadge && (
-                                                                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                                                                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200">
                                                                         {t('tripView.infoDialog.history.notSynced')}
                                                                     </span>
                                                                 )}
@@ -752,18 +752,18 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
 
                     <TabsContent value="destination" className="space-y-6">
                         {travelerWarnings.length > 0 && (
-                            <section className="rounded-md bg-amber-50 p-4">
+                            <section className="rounded-md bg-amber-50 p-4 dark:bg-amber-400/12">
                                 <div className="flex items-center gap-2">
-                                    <ShieldAlert size={16} className="text-amber-700" />
-                                    <h3 className="text-base font-semibold text-amber-950">{t('tripView.warningSummary.title')}</h3>
+                                    <ShieldAlert size={16} className="text-amber-700 dark:text-amber-200" />
+                                    <h3 className="text-base font-semibold text-amber-950 dark:text-amber-200">{t('tripView.warningSummary.title')}</h3>
                                 </div>
-                                <p className="mt-2 text-sm leading-6 text-amber-900">
+                                <p className="mt-2 text-sm leading-6 text-amber-900 dark:text-amber-200">
                                     {t('tripView.warningSummary.description')}
                                 </p>
                                 <div className="mt-4 space-y-3">
                                     {travelerWarnings.map((warning) => (
-                                        <div key={`${warning.cityName}-${warning.notes.join('|')}`} className="border-s-2 border-amber-300 ps-3">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700">
+                                        <div key={`${warning.cityName}-${warning.notes.join('|')}`} className="border-s-2 border-amber-300 ps-3 dark:border-amber-400/30">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700 dark:text-amber-200">
                                                 {warning.cityName}
                                             </p>
                                             <ul className="mt-2 space-y-2 text-sm leading-6 text-foreground">

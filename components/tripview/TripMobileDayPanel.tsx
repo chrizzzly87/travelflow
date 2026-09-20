@@ -35,7 +35,7 @@ const MARKDOWN_COMPONENTS = {
     },
     ol: ({ node, ...props }: any) => <ol {...props} className="my-1 list-decimal ps-5 leading-6" />,
     a: ({ node, children, ...props }: any) => (
-        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2" target="_blank" rel="noopener noreferrer">
+        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 dark:text-accent-200" target="_blank" rel="noopener noreferrer">
             {children}
         </a>
     ),
@@ -132,7 +132,7 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                     {day.fullDateLabel}
                 </p>
                 {day.isToday && (
-                    <span className="rounded-full bg-accent-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent-700">
+                    <span className="rounded-full bg-accent-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:bg-accent-400/12 dark:text-accent-200">
                         Today
                     </span>
                 )}
@@ -153,7 +153,7 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                         className="h-5 w-1.5 shrink-0 rounded-full"
                         style={{ backgroundColor: day.cityColorHex || 'var(--tf-accent-500, #4f46e5)' }}
                     />
-                    <span className={`truncate text-xl font-semibold tracking-tight ${selectedItemId === city.id ? 'text-accent-700' : 'text-foreground'}`}>
+                    <span className={`truncate text-xl font-semibold tracking-tight ${selectedItemId === city.id ? 'text-accent-700 dark:text-accent-200' : 'text-foreground'}`}>
                         {cityTitle}
                     </span>
                 </button>
@@ -248,7 +248,7 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                             onAddActivity(day.dayOffset);
                         }}
                         data-testid="mobile-day-add-activity"
-                        className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 text-xs font-semibold text-accent-700 transition-colors hover:bg-accent-100"
+                        className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 text-xs font-semibold text-accent-700 transition-colors hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                         {...getAnalyticsDebugAttributes('trip_view__mobile_activity--add', {
                             trip_id: tripId,
                             day_offset: day.dayOffset,
@@ -280,7 +280,7 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                                 data-selected={isSelected || undefined}
                                 className={`flex items-start gap-2 rounded-xl border px-3 transition-colors ${
                                     isSelected
-                                        ? 'border-accent-200 bg-accent-50 shadow-sm'
+                                        ? 'border-accent-200 bg-accent-50 shadow-sm dark:bg-accent-400/12 dark:border-accent-400/30'
                                         : 'border-transparent'
                                 }`}
                             >
@@ -300,7 +300,7 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                                         item_id: activity.id,
                                     })}
                                 >
-                                    <p className={`text-[16px] leading-6 ${isSelected ? 'font-semibold text-accent-700' : 'font-medium text-foreground'}`}>
+                                    <p className={`text-[16px] leading-6 ${isSelected ? 'font-semibold text-accent-700 dark:text-accent-200' : 'font-medium text-foreground'}`}>
                                         {activity.title}
                                     </p>
                                     {activity.description && (

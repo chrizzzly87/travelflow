@@ -274,7 +274,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                 aria-expanded={isOpen}
                 aria-label={!shouldShowLabel ? triggerLabel : undefined}
             >
-                <span className="flex size-7 shrink-0 aspect-square items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
+                <span className="flex size-7 shrink-0 aspect-square items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900 dark:bg-accent-400/12 dark:text-accent-200">
                     {computeInitial(profile, email, userId)}
                 </span>
                 {shouldShowLabel && <span className="truncate">{triggerLabel}</span>}
@@ -397,7 +397,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                             onClick={() => {
                                 void handleLogout();
                             }}
-                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50"
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50 dark:hover:bg-rose-400/12 dark:text-rose-200"
                             {...getAnalyticsDebugAttributes('navigation__account_menu--logout')}
                         >
                             <SignOut size={16} />

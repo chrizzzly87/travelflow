@@ -87,10 +87,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             type="button"
                                             onClick={() => onToggleView?.('horizontal')}
                                             disabled={!onToggleView}
-                                            className={`p-4 rounded-xl border-2 text-left transition-all relative ${timelineView === 'horizontal' ? 'border-accent-500 bg-accent-50' : 'border-border hover:border-border'} ${!onToggleView ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                            className={`p-4 rounded-xl border-2 text-left transition-all relative ${timelineView === 'horizontal' ? 'border-accent-500 bg-accent-50 dark:bg-accent-400/12' : 'border-border hover:border-border'} ${!onToggleView ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             <div className="flex items-center justify-between mb-2">
-                                                <span className={`font-semibold ${timelineView === 'horizontal' ? 'text-accent-900' : 'text-foreground'}`}>{t('settings:layout.horizontal')}</span>
+                                                <span className={`font-semibold ${timelineView === 'horizontal' ? 'text-accent-900 dark:text-accent-200' : 'text-foreground'}`}>{t('settings:layout.horizontal')}</span>
                                                 {timelineView === 'horizontal' && <Check size={16} className="text-accent-600" />}
                                             </div>
                                             <div className="h-2 w-full bg-gray-200 rounded-full mb-2 overflow-hidden">
@@ -103,10 +103,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             type="button"
                                             onClick={() => onToggleView?.('vertical')}
                                             disabled={!onToggleView}
-                                            className={`p-4 rounded-xl border-2 text-left transition-all relative ${timelineView === 'vertical' ? 'border-accent-500 bg-accent-50' : 'border-border hover:border-border'} ${!onToggleView ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                            className={`p-4 rounded-xl border-2 text-left transition-all relative ${timelineView === 'vertical' ? 'border-accent-500 bg-accent-50 dark:bg-accent-400/12' : 'border-border hover:border-border'} ${!onToggleView ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             <div className="flex items-center justify-between mb-2">
-                                                <span className={`font-semibold ${timelineView === 'vertical' ? 'text-accent-900' : 'text-foreground'}`}>{t('settings:layout.vertical')}</span>
+                                                <span className={`font-semibold ${timelineView === 'vertical' ? 'text-accent-900 dark:text-accent-200' : 'text-foreground'}`}>{t('settings:layout.vertical')}</span>
                                                 {timelineView === 'vertical' && <Check size={16} className="text-accent-600" />}
                                             </div>
                                             <div className="flex gap-2 h-8">
@@ -132,7 +132,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             type="button"
                                             onClick={() => onMapStyleChange?.('minimal')}
                                             disabled={!onMapStyleChange}
-                                            className={`aspect-video rounded-lg flex flex-col items-center justify-center p-2 border-2 transition-all ${mapStyle === 'minimal' ? 'border-accent-500 bg-accent-50' : 'border-transparent bg-secondary hover:bg-gray-200'} ${!onMapStyleChange ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                            className={`aspect-video rounded-lg flex flex-col items-center justify-center p-2 border-2 transition-all ${mapStyle === 'minimal' ? 'border-accent-500 bg-accent-50 dark:bg-accent-400/12' : 'border-transparent bg-secondary hover:bg-gray-200'} ${!onMapStyleChange ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             <span className="font-semibold text-foreground text-sm">{t('settings:appearance.minimal')}</span>
                                             <span className="text-xs text-muted-foreground mt-1">{t('settings:appearance.minimalDescription')}</span>
@@ -141,7 +141,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             type="button"
                                             onClick={() => onMapStyleChange?.('standard')}
                                             disabled={!onMapStyleChange}
-                                            className={`aspect-video rounded-lg flex flex-col items-center justify-center p-2 border-2 transition-all ${mapStyle === 'standard' ? 'border-accent-500 bg-accent-50' : 'border-transparent bg-secondary hover:bg-gray-200'} ${!onMapStyleChange ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                            className={`aspect-video rounded-lg flex flex-col items-center justify-center p-2 border-2 transition-all ${mapStyle === 'standard' ? 'border-accent-500 bg-accent-50 dark:bg-accent-400/12' : 'border-transparent bg-secondary hover:bg-gray-200'} ${!onMapStyleChange ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             <span className="font-semibold text-foreground text-sm">{t('settings:appearance.standard')}</span>
                                             <span className="text-xs text-muted-foreground mt-1">{t('settings:appearance.standardDescription')}</span>
@@ -171,7 +171,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                         {activeTab === 'language' && (
                             <div className="space-y-6">
-                                <div className="p-4 bg-accent-50 border border-accent-100 rounded-lg text-sm text-accent-800">
+                                <div className="p-4 bg-accent-50 border border-accent-100 rounded-lg text-sm text-accent-800 dark:bg-accent-400/12 dark:text-accent-200">
                                     <strong>{t('settings:language.noteTitle')}</strong>
                                     <p className="mt-1">{t('settings:language.noteDescription')}</p>
                                 </div>

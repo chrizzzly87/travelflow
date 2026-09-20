@@ -83,14 +83,14 @@ const buildDesktopNavClass = ({ isActive }: { isActive: boolean }, isCollapsed: 
         ? 'flex items-center justify-center rounded-xl border p-2 text-sm transition-colors'
         : 'flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors';
     if (isActive) {
-        return `${base} border-accent-200 bg-accent-50 font-semibold text-accent-900`;
+        return `${base} border-accent-200 bg-accent-50 font-semibold text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30`;
     }
     return `${base} border-transparent font-medium text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground`;
 };
 
 const buildMobileNavClass = ({ isActive }: { isActive: boolean }) => {
     if (isActive) {
-        return 'flex items-center gap-2 rounded-xl border border-accent-300 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-900';
+        return 'flex items-center gap-2 rounded-xl border border-accent-300 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30';
     }
     return 'flex items-center gap-2 rounded-xl border border-transparent px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-border hover:bg-secondary hover:text-foreground';
 };
@@ -356,7 +356,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <button
                         type="button"
                         onClick={() => setIsSidebarCollapsed((current) => !current)}
-                        className="absolute -right-4 top-6 z-50 inline-flex size-8 items-center justify-center rounded-full border border-accent-300 bg-card text-accent-700 shadow-sm hover:bg-accent-50"
+                        className="absolute -right-4 top-6 z-50 inline-flex size-8 items-center justify-center rounded-full border border-accent-300 bg-card text-accent-700 shadow-sm hover:bg-accent-50 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                         aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                         {...getAnalyticsDebugAttributes('admin__menu--collapse_toggle')}
                     >
@@ -377,7 +377,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                     >
                                         <List size={16} />
                                     </button>
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-700">Admin workspace</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-700 dark:text-accent-200">Admin workspace</p>
                                 </div>
                                 <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{title}</h1>
                                 {description && (
@@ -430,7 +430,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     </header>
 
                     {isSimulatedDebugLoginActive && (
-                        <section className="mx-4 mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 md:mx-6">
+                        <section className="mx-4 mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 md:mx-6 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                             <p className="font-semibold">Debug simulated-login mode is active.</p>
                             <p className="mt-1">
                                 Admin pages are showing mock data because the browser debug toggle is on (`{SIMULATED_LOGIN_STORAGE_KEY}=1`).
@@ -439,17 +439,17 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                 <button
                                     type="button"
                                     onClick={handleDisableSimulatedLogin}
-                                    className="inline-flex h-8 items-center rounded-lg border border-amber-400 bg-card px-3 text-xs font-semibold text-amber-900 hover:bg-amber-100"
+                                    className="inline-flex h-8 items-center rounded-lg border border-amber-400 bg-card px-3 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:hover:bg-amber-400/12 dark:text-amber-200"
                                 >
                                     Disable simulated login
                                 </button>
-                                <span className="text-xs text-amber-800">Reload data after disabling to confirm live backend records.</span>
+                                <span className="text-xs text-amber-800 dark:text-amber-200">Reload data after disabling to confirm live backend records.</span>
                             </div>
                         </section>
                     )}
 
                     {!isSimulatedDebugLoginActive && isDevAdminBypassActive && (
-                        <section className="mx-4 mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 md:mx-6">
+                        <section className="mx-4 mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 md:mx-6 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30">
                             <p className="font-semibold">Dev admin bypass is active in this tab.</p>
                             <p className="mt-1">
                                 This session uses the local dev-admin identity instead of your real account.

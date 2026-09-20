@@ -36,7 +36,7 @@ export const RecommendationMiniCard: React.FC<{
                 onClick={onOpen}
                 data-testid="recommendation-mini-card"
                 data-recommendation-id={recommendation.id}
-                className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-2 pe-11 text-start transition-colors hover:border-accent-300 hover:bg-accent-50/40"
+                className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-2 pe-11 text-start transition-colors hover:border-accent-300 hover:bg-accent-50/40 dark:hover:bg-accent-400/12 dark:hover:border-accent-400/30"
             >
                 <span className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-secondary">
                     {thumbUrl ? (

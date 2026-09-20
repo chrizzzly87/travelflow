@@ -303,7 +303,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         disabled={!onExportActivitiesCalendar}
                         className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
                             onExportActivitiesCalendar
-                                ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
+                                ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
                                 : 'border-border bg-secondary text-muted-foreground cursor-not-allowed'
                         }`}
                         {...getAnalyticsDebugAttributes('trip_view__calendar_export--activities', { source: 'print_view' })}
@@ -316,7 +316,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         disabled={!onExportCitiesCalendar}
                         className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
                             onExportCitiesCalendar
-                                ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
+                                ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
                                 : 'border-border bg-secondary text-muted-foreground cursor-not-allowed'
                         }`}
                         {...getAnalyticsDebugAttributes('trip_view__calendar_export--cities', { source: 'print_view' })}
@@ -329,7 +329,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         disabled={!onExportAllCalendar}
                         className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
                             onExportAllCalendar
-                                ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
+                                ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
                                 : 'border-border bg-secondary text-muted-foreground cursor-not-allowed'
                         }`}
                         {...getAnalyticsDebugAttributes('trip_view__calendar_export--all', { source: 'print_view' })}
@@ -547,8 +547,8 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                                                         {act.description && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{act.description}</div>}
                                                                         {act.aiInsights && (
                                                                             <div className="mt-2 flex flex-wrap gap-2">
-                                                                                {act.aiInsights.bestTime && <span className="text-[10px] bg-accent-50 text-accent-600 px-1.5 py-0.5 rounded">Time: {act.aiInsights.bestTime}</span>}
-                                                                                {act.aiInsights.cost && <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded">Cost: {act.aiInsights.cost}</span>}
+                                                                                {act.aiInsights.bestTime && <span className="text-[10px] bg-accent-50 text-accent-600 px-1.5 py-0.5 rounded dark:bg-accent-400/12">Time: {act.aiInsights.bestTime}</span>}
+                                                                                {act.aiInsights.cost && <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded dark:bg-green-400/12">Cost: {act.aiInsights.cost}</span>}
                                                                             </div>
                                                                         )}
                                                                     </div>

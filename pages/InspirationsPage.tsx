@@ -89,7 +89,7 @@ const BlogLinks: React.FC<{ slugs?: string[]; asText?: boolean }> = ({ slugs, as
                 asText ? (
                     <span
                         key={`${post.language}:${post.slug}`}
-                        className="inline-flex items-center gap-1 text-xs text-accent-700"
+                        className="inline-flex items-center gap-1 text-xs text-accent-700 dark:text-accent-200"
                     >
                         <Article size={11} weight="duotone" />
                         {post.title}
@@ -98,7 +98,7 @@ const BlogLinks: React.FC<{ slugs?: string[]; asText?: boolean }> = ({ slugs, as
                     <Link
                         key={`${post.language}:${post.slug}`}
                         to={buildLocalizedMarketingPath('blogPost', post.language, { slug: post.slug })}
-                        className="inline-flex items-center gap-1 text-xs text-accent-700 hover:underline"
+                        className="inline-flex items-center gap-1 text-xs text-accent-700 hover:underline dark:text-accent-200"
                     >
                         <Article size={11} weight="duotone" />
                         {post.title}
@@ -175,7 +175,7 @@ const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }
         </div>
 
         <div className="p-4">
-            <h3 className="text-base font-semibold text-foreground group-hover:text-accent-700 transition-colors">{destination.title}</h3>
+            <h3 className="text-base font-semibold text-foreground group-hover:text-accent-700 transition-colors dark:group-hover:text-accent-200">{destination.title}</h3>
             <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground line-clamp-2">{destination.description}</p>
 
             <div className="mt-4 border-t border-border pt-3">
@@ -252,7 +252,7 @@ const FestivalCard: React.FC<{ event: FestivalEventType; nextDate: Date }> = ({ 
             )}
         </div>
         <div className="flex flex-1 flex-col p-4">
-            <h3 className="text-base font-semibold text-foreground group-hover:text-accent-700 transition-colors">{event.name}</h3>
+            <h3 className="text-base font-semibold text-foreground group-hover:text-accent-700 transition-colors dark:group-hover:text-accent-200">{event.name}</h3>
             <p className="mt-1 line-clamp-1 text-xs font-medium text-muted-foreground inline-flex items-center gap-1.5">
                 <FlagIcon value={event.flag} />
                 {locationLabel}
@@ -299,7 +299,7 @@ const GetawayCard: React.FC<{ getaway: WeekendGetawayType }> = ({ getaway }) => 
             <AirplaneTakeoff size={24} weight="duotone" className={getaway.mapAccent.replace('bg-', 'text-')} />
         </div>
         <div className="min-w-0 flex-1">
-            <h3 className="text-base font-semibold text-foreground group-hover:text-accent-700 transition-colors">{getaway.title}</h3>
+            <h3 className="text-base font-semibold text-foreground group-hover:text-accent-700 transition-colors dark:group-hover:text-accent-200">{getaway.title}</h3>
             <p className="mt-0.5 text-xs font-medium text-muted-foreground inline-flex items-center gap-1.5">
                 <FlagIcon value={getaway.flag} />
                 {getaway.to} · {getaway.durationDays} days
@@ -327,7 +327,7 @@ const CountryPill: React.FC<{ group: CountryGroup }> = ({ group }) => (
     >
         <FlagIcon value={group.flag} size="2xl" />
         <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-semibold text-foreground group-hover:text-accent-700 transition-colors">{group.country}</h3>
+            <h3 className="text-sm font-semibold text-foreground group-hover:text-accent-700 transition-colors dark:group-hover:text-accent-200">{group.country}</h3>
             <p className="text-xs text-muted-foreground">{group.bestMonths}</p>
             <div className="mt-1.5 flex flex-wrap gap-1">
                 {group.tags.map((tag) => (
@@ -340,7 +340,7 @@ const CountryPill: React.FC<{ group: CountryGroup }> = ({ group }) => (
                 </div>
             )}
         </div>
-        <span className="shrink-0 rounded-full bg-accent-50 px-2 py-0.5 text-xs font-bold text-accent-600">{group.tripCount}</span>
+        <span className="shrink-0 rounded-full bg-accent-50 px-2 py-0.5 text-xs font-bold text-accent-600 dark:bg-accent-400/12">{group.tripCount}</span>
     </Link>
 );
 
@@ -431,7 +431,7 @@ export const InspirationsPage: React.FC = () => {
         <MarketingLayout>
             {/* ── Hero ── */}
             <section className="pt-8 pb-8 md:pt-14 md:pb-12 animate-hero-entrance">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                     <Backpack size={14} weight="duotone" />
                     {t('inspirations.hero.pill')}
                 </span>
@@ -515,7 +515,7 @@ export const InspirationsPage: React.FC = () => {
                                     <a
                                         key={s.id}
                                         href={`#${s.id}`}
-                                        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground shadow-sm transition-[border-color,color,box-shadow] duration-150 ease-out hover:border-accent-300 hover:text-accent-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transition-none"
+                                        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground shadow-sm transition-[border-color,color,box-shadow] duration-150 ease-out hover:border-accent-300 hover:text-accent-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transition-none dark:hover:text-accent-200 dark:hover:border-accent-400/30"
                                     >
                                         <SIcon size={14} weight="duotone" />
                                         {s.label}
@@ -539,7 +539,7 @@ export const InspirationsPage: React.FC = () => {
                                         key={idea.label}
                                         to={buildCreateTripUrl({ countries, startDate: toIso(start), endDate: toIso(end), meta: { source: 'inspirations', label: ideaLabel } })}
                                         onClick={() => trackEvent('inspirations__quick_pill', { label: ideaLabel })}
-                                        className="rounded-full border border-border bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground shadow-sm transition-[transform,border-color,color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:border-accent-300 hover:text-accent-700 hover:shadow-md active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none"
+                                        className="rounded-full border border-border bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground shadow-sm transition-[transform,border-color,color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:border-accent-300 hover:text-accent-700 hover:shadow-md active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none dark:hover:text-accent-200 dark:hover:border-accent-400/30"
                                         {...getAnalyticsDebugAttributes('inspirations__quick_pill', { label: ideaLabel })}
                                     >
                                         <span className="inline-flex items-center gap-1.5">
@@ -566,7 +566,7 @@ export const InspirationsPage: React.FC = () => {
                                             <div className="flex items-start justify-between gap-4">
                                                 <h2 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{category.title}</h2>
                                                 {idx === 0 && (
-                                                    <Link to={buildLocalizedMarketingPath('inspirationsThemes', locale)} onClick={() => trackEvent('inspirations__section--themes')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors" {...getAnalyticsDebugAttributes('inspirations__section--themes')}>
+                                                    <Link to={buildLocalizedMarketingPath('inspirationsThemes', locale)} onClick={() => trackEvent('inspirations__section--themes')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors dark:hover:text-accent-200" {...getAnalyticsDebugAttributes('inspirations__section--themes')}>
                                                         {t('inspirations.links.allThemes')}
                                                         <ArrowRight size={14} weight="bold" />
                                                     </Link>
@@ -596,13 +596,13 @@ export const InspirationsPage: React.FC = () => {
                     <section id="months" className="scroll-mt-28 py-12 md:py-16 border-t border-border">
                         <div className="animate-scroll-blur-in">
                             <div className="flex items-start gap-4">
-                                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-sky-100">
+                                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-sky-100 dark:bg-sky-400/12">
                                     <CalendarDots size={24} weight="duotone" />
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-4">
                                         <h2 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{t('inspirations.sections.bestTimeTitle')}</h2>
-                                        <Link to={buildLocalizedMarketingPath('inspirationsBestTime', locale)} onClick={() => trackEvent('inspirations__section--months')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors" {...getAnalyticsDebugAttributes('inspirations__section--months')}>
+                                        <Link to={buildLocalizedMarketingPath('inspirationsBestTime', locale)} onClick={() => trackEvent('inspirations__section--months')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors dark:hover:text-accent-200" {...getAnalyticsDebugAttributes('inspirations__section--months')}>
                                             {t('inspirations.links.monthGuide')}
                                             <ArrowRight size={14} weight="bold" />
                                         </Link>
@@ -622,7 +622,7 @@ export const InspirationsPage: React.FC = () => {
 	                                        onClick={() => setSelectedMonthIndex(entry.monthIndex)}
                                         className={`relative px-3.5 py-2 text-sm font-semibold transition-[background-color,color,box-shadow] duration-150 ease-out rounded-lg whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transition-none ${
                                             selectedMonthIndex === entry.monthIndex
-                                                ? 'bg-card text-sky-700 shadow-sm'
+                                                ? 'bg-card text-sky-700 shadow-sm dark:text-sky-200'
                                                 : 'text-muted-foreground hover:text-foreground'
                                         }`}
                                     >
@@ -648,7 +648,7 @@ export const InspirationsPage: React.FC = () => {
                                         <Link
                                             key={dest}
                                             to={buildCreateTripUrl({ countries, startDate: selectedMonthRouteDates.startDate, endDate: selectedMonthRouteDates.endDate, meta: { source: 'inspirations', label: `${selectedMonth.month} in ${dest}` } })}
-                                            className="rounded-full bg-sky-50 px-3 py-1 text-sm font-semibold text-sky-700 transition-colors hover:bg-sky-100"
+                                            className="rounded-full bg-sky-50 px-3 py-1 text-sm font-semibold text-sky-700 transition-colors hover:bg-sky-100 dark:bg-sky-400/12 dark:hover:bg-sky-400/12 dark:text-sky-200"
                                         >
                                             {dest}
                                         </Link>
@@ -668,13 +668,13 @@ export const InspirationsPage: React.FC = () => {
                     <section id="countries" className="scroll-mt-28 py-12 md:py-16 border-t border-border">
                         <div className="animate-scroll-blur-in">
                             <div className="flex items-start gap-4">
-                                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-teal-600 ring-1 ring-teal-100">
+                                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-teal-600 ring-1 ring-teal-100 dark:bg-teal-400/12">
                                     <Globe size={24} weight="duotone" />
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-4">
                                         <h2 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{t('inspirations.sections.browseCountryTitle')}</h2>
-                                        <Link to={buildLocalizedMarketingPath('inspirationsCountries', locale)} onClick={() => trackEvent('inspirations__section--countries')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors" {...getAnalyticsDebugAttributes('inspirations__section--countries')}>
+                                        <Link to={buildLocalizedMarketingPath('inspirationsCountries', locale)} onClick={() => trackEvent('inspirations__section--countries')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors dark:hover:text-accent-200" {...getAnalyticsDebugAttributes('inspirations__section--countries')}>
                                             {t('inspirations.links.allCountries')}
                                             <ArrowRight size={14} weight="bold" />
                                         </Link>
@@ -696,13 +696,13 @@ export const InspirationsPage: React.FC = () => {
                     <section id="festivals" className="scroll-mt-28 py-12 md:py-16 border-t border-border">
                         <div className="animate-scroll-blur-in">
                             <div className="flex items-start gap-4">
-                                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-fuchsia-50 text-fuchsia-600 ring-1 ring-fuchsia-100">
+                                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-fuchsia-50 text-fuchsia-600 ring-1 ring-fuchsia-100 dark:bg-fuchsia-400/12">
                                     <Confetti size={24} weight="duotone" />
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-4">
                                         <h2 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{t('inspirations.sections.upcomingFestivalsTitle')}</h2>
-                                        <Link to={buildLocalizedMarketingPath('inspirationsFestivals', locale)} onClick={() => trackEvent('inspirations__section--festivals')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors" {...getAnalyticsDebugAttributes('inspirations__section--festivals')}>
+                                        <Link to={buildLocalizedMarketingPath('inspirationsFestivals', locale)} onClick={() => trackEvent('inspirations__section--festivals')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors dark:hover:text-accent-200" {...getAnalyticsDebugAttributes('inspirations__section--festivals')}>
                                             {t('inspirations.links.allEvents')}
                                             <ArrowRight size={14} weight="bold" />
                                         </Link>
@@ -724,7 +724,7 @@ export const InspirationsPage: React.FC = () => {
                             <div className="mt-8 text-center">
                                 <Link
                                     to={buildLocalizedMarketingPath('inspirationsFestivals', locale)}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-3 text-sm font-bold text-foreground shadow-sm transition-[border-color,color,box-shadow] duration-150 ease-out hover:border-accent-300 hover:text-accent-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transition-none"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-3 text-sm font-bold text-foreground shadow-sm transition-[border-color,color,box-shadow] duration-150 ease-out hover:border-accent-300 hover:text-accent-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transition-none dark:hover:text-accent-200 dark:hover:border-accent-400/30"
                                 >
                                     {t('inspirations.links.viewAllEvents', { count: upcomingFestivals.length })}
                                     <ArrowRight size={14} weight="bold" />
@@ -737,13 +737,13 @@ export const InspirationsPage: React.FC = () => {
                     <section id="weekends" className="scroll-mt-28 py-12 md:py-16 border-t border-border">
                         <div className="animate-scroll-blur-in">
                             <div className="flex items-start gap-4">
-                                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 ring-1 ring-amber-100">
+                                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 ring-1 ring-amber-100 dark:bg-amber-400/12">
                                     <Lightning size={24} weight="duotone" />
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-4">
                                         <h2 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{t('inspirations.sections.weekendTitle')}</h2>
-                                        <Link to={buildLocalizedMarketingPath('inspirationsWeekendGetaways', locale)} onClick={() => trackEvent('inspirations__section--weekends')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors" {...getAnalyticsDebugAttributes('inspirations__section--weekends')}>
+                                        <Link to={buildLocalizedMarketingPath('inspirationsWeekendGetaways', locale)} onClick={() => trackEvent('inspirations__section--weekends')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors dark:hover:text-accent-200" {...getAnalyticsDebugAttributes('inspirations__section--weekends')}>
                                             {t('inspirations.links.allGetaways')}
                                             <ArrowRight size={14} weight="bold" />
                                         </Link>
@@ -798,7 +798,7 @@ export const InspirationsPage: React.FC = () => {
                             <Link
                                 to="/create-trip"
                                 onClick={() => trackEvent('inspirations__bottom_cta')}
-                                className="relative mt-8 inline-block rounded-2xl bg-card px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-[transform,background-color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:bg-accent-50 hover:shadow-xl active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-accent-700 motion-reduce:transform-none motion-reduce:transition-none"
+                                className="relative mt-8 inline-block rounded-2xl bg-card px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-[transform,background-color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:bg-accent-50 hover:shadow-xl active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-accent-700 motion-reduce:transform-none motion-reduce:transition-none dark:hover:bg-accent-400/12 dark:text-accent-200"
                                 {...getAnalyticsDebugAttributes('inspirations__bottom_cta')}
                             >
                                 {t('inspirations.bottomCta.button')}

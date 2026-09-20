@@ -92,17 +92,17 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
         <>
             {shareStatus === 'view' && onCopyTrip && (
                 <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-sm z-[1400]">
-                    <div className="rounded-2xl border border-amber-200 bg-amber-50/95 backdrop-blur px-4 py-3 shadow-lg text-amber-900 text-sm">
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50/95 backdrop-blur px-4 py-3 shadow-lg text-amber-900 text-sm dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                         <div className="font-semibold">View-only trip</div>
-                        <div className="text-xs text-amber-800 mt-1">
+                        <div className="text-xs text-amber-800 mt-1 dark:text-amber-200">
                             You can change visual settings, but edits to the itinerary are disabled.
                         </div>
                         <div className="mt-3 flex items-center justify-between gap-3">
-                            <span className="text-[11px] text-amber-700">Copy to edit your own version.</span>
+                            <span className="text-[11px] text-amber-700 dark:text-amber-200">Copy to edit your own version.</span>
                             <button
                                 type="button"
                                 onClick={onCopyTrip}
-                                className="px-3 py-1.5 rounded-lg bg-amber-200 text-amber-900 text-xs font-semibold hover:bg-amber-300"
+                                className="px-3 py-1.5 rounded-lg bg-amber-200 text-amber-900 text-xs font-semibold hover:bg-amber-300 dark:text-amber-200"
                             >
                                 Copy trip
                             </button>
@@ -118,7 +118,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                             <div className="p-5 sm:p-6">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="min-w-0">
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-200">
                                             {t('tripPaywall.overlay.eyebrow')}
                                         </p>
                                         <h2 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
@@ -127,7 +127,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                                 : t('tripPaywall.overlay.title.direct')}
                                         </h2>
                                     </div>
-                                    <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700">
+                                    <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                                         <WarningCircle size={20} weight="duotone" />
                                     </span>
                                 </div>
@@ -139,7 +139,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                 </p>
 
                                 <div className="mt-4 flex flex-wrap gap-2">
-                                    <span className="inline-flex items-center rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-800">
+                                    <span className="inline-flex items-center rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-800 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                                         {explorerTier.publicName} · ${explorerTier.monthlyPriceUsd}{t('shared.perMonth', { ns: 'pricing' })}
                                     </span>
                                     <span className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
@@ -162,7 +162,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                         <Link
                                             to={paywallOverlayUpgradeCheckoutPath}
                                             onClick={() => trackEvent('trip_paywall__overlay--upgrade', { trip_id: tripId })}
-                                            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-accent-200 bg-accent-50 px-4 text-sm font-semibold text-accent-800 hover:bg-accent-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-accent-200 bg-accent-50 px-4 text-sm font-semibold text-accent-800 hover:bg-accent-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                                         >
                                             <Sparkle size={15} weight="duotone" />
                                             {t('checkout.tripEntryCta', { ns: 'pricing' })}
@@ -210,11 +210,11 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                         {pendingAuthModalStage === 'loading' ? (
                             <div className="p-5 sm:p-6">
                                 <div className="flex items-start gap-4">
-                                    <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-accent-50 text-accent-700">
+                                    <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200">
                                         <Loader2 size={20} className="animate-spin" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-200">
                                             {t('tripView.pendingAuth.eyebrowLoading')}
                                         </p>
                                         <h2 id="trip-pending-auth-title" className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
@@ -234,14 +234,14 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                 <div className="p-5 sm:p-6">
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="min-w-0">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-200">
                                                 {t('tripView.pendingAuth.eyebrowLocked')}
                                             </p>
                                             <h2 id="trip-pending-auth-title" className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
                                                 {t('tripView.pendingAuth.titleLocked')}
                                             </h2>
                                         </div>
-                                        <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700">
+                                        <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                                             <WarningCircle size={20} weight="duotone" />
                                         </span>
                                     </div>
@@ -301,11 +301,11 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                 <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
                     <div className="w-full max-w-xl rounded-2xl border border-accent-100 bg-card/95 shadow-xl backdrop-blur-sm px-5 py-4">
                         <div className="flex items-center gap-3">
-                            <div className="size-9 rounded-full bg-accent-100 text-accent-600 flex items-center justify-center shrink-0">
+                            <div className="size-9 rounded-full bg-accent-100 text-accent-600 flex items-center justify-center shrink-0 dark:bg-accent-400/12">
                                 <Loader2 size={18} className="animate-spin" />
                             </div>
                             <div className="min-w-0">
-                                <div className="text-sm font-semibold text-accent-900 truncate">Planning your trip</div>
+                                <div className="text-sm font-semibold text-accent-900 truncate dark:text-accent-200">Planning your trip</div>
                                 <div className="text-xs text-muted-foreground truncate">{generationProgressMessage}</div>
                             </div>
                         </div>
@@ -331,14 +331,14 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                             <div className="p-5 sm:p-6">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="min-w-0">
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-200">
                                             {t('tripView.claimConflict.eyebrow')}
                                         </p>
                                         <h2 id="trip-claim-conflict-title" className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
                                             {t('tripView.claimConflict.title')}
                                         </h2>
                                     </div>
-                                    <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700">
+                                    <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                                         <WarningCircle size={20} weight="duotone" />
                                     </span>
                                 </div>

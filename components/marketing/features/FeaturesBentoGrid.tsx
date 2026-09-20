@@ -95,8 +95,8 @@ const ItineraryVisual: React.FC<BentoVisualProps> = ({ item }) => (
                         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground dark:text-muted-foreground">Trip rhythm</p>
                         <p className="mt-2 text-lg font-bold text-foreground dark:text-foreground">Slow mornings, packed evenings</p>
                     </div>
-                    <div className="rounded-[12px] border border-accent-200 bg-accent-50 p-3 text-accent-800 dark:bg-accent-400/15">
-                        <p className="text-xs uppercase tracking-[0.18em] text-accent-700 dark:text-accent-300">Ready in</p>
+                    <div className="rounded-[12px] border border-accent-200 bg-accent-50 p-3 text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30">
+                        <p className="text-xs uppercase tracking-[0.18em] text-accent-700 dark:text-accent-300 dark:text-accent-200">Ready in</p>
                         <p className="mt-2 text-3xl font-black">26s</p>
                     </div>
                 </div>
@@ -153,7 +153,7 @@ const InspirationVisual: React.FC<BentoVisualProps> = ({ item }) => (
                 loading="lazy"
             />
             <div className="absolute inset-x-4 bottom-4 rounded-[12px] border border-border bg-card/96 p-4 dark:border-border dark:bg-card/96">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-700 dark:text-accent-300">{item.detail}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-700 dark:text-accent-300 dark:text-accent-200">{item.detail}</p>
                 <p className="mt-2 text-lg font-bold text-foreground dark:text-foreground">Fork a route that already feels believable</p>
             </div>
         </div>
@@ -242,7 +242,7 @@ const FeatureCardShell: React.FC<FeatureCardShellProps> = ({ IconComponent, inde
             <div className="flex items-start justify-between gap-4">
                 <div>
                     {!hideEyebrow && item.eyebrow ? (
-                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-accent-700 dark:text-accent-300">
+                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-accent-700 dark:text-accent-300 dark:text-accent-200">
                             {item.eyebrow}
                         </p>
                     ) : null}
@@ -254,7 +254,7 @@ const FeatureCardShell: React.FC<FeatureCardShellProps> = ({ IconComponent, inde
                     </p>
                 </div>
                 {IconComponent ? (
-                    <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary text-accent-700 shadow-sm dark:border-border dark:bg-secondary dark:text-accent-300">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary text-accent-700 shadow-sm dark:border-border dark:bg-secondary dark:text-accent-300 dark:text-accent-200">
                         <IconComponent size={20} weight="regular" />
                     </div>
                 ) : null}

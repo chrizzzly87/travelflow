@@ -29,7 +29,7 @@ interface MobileMenuProps {
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `block rounded-xl px-4 py-3 text-base font-semibold transition-colors ${
         isActive
-            ? 'bg-accent-50 text-accent-700 dark:bg-accent-400/15 dark:text-accent-200'
+            ? 'bg-accent-50 text-accent-700 dark:bg-accent-400/15 dark:text-accent-200 dark:bg-accent-400/12'
             : 'text-foreground hover:bg-secondary dark:text-foreground dark:hover:bg-secondary'
     }`;
 
@@ -317,7 +317,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                         onClick={() => {
                                             void handleLogout();
                                         }}
-                                        className="block w-full rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-base font-semibold text-rose-700 transition-colors hover:bg-rose-100"
+                                        className="block w-full rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-base font-semibold text-rose-700 transition-colors hover:bg-rose-100 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                                         {...mobileNavDebugAttributes('logout')}
                                     >
                                         Logout

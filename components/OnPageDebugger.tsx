@@ -351,11 +351,11 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                 ? (snapshot.source === 'session-cache' ? 'Cached' : 'Detected')
                 : 'Unavailable';
     const statusClassName = snapshot.loading
-        ? 'border-sky-300 bg-sky-50 text-sky-700'
+        ? 'border-sky-300 bg-sky-50 text-sky-700 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'
         : snapshot.source === 'error'
-            ? 'border-rose-300 bg-rose-50 text-rose-700'
+            ? 'border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30'
             : snapshot.available
-                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
                 : 'border-border bg-secondary text-muted-foreground';
 
     const statusMessage = snapshot.loading
@@ -539,7 +539,7 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                 </div>
 
                 {nearbyAirportsState.error && (
-                    <p className="mt-3 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700">
+                    <p className="mt-3 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                         {nearbyAirportsState.error}
                     </p>
                 )}
@@ -568,7 +568,7 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                                                     {entry.airport.timezone ? ` · ${entry.airport.timezone}` : ''}
                                                 </div>
                                             </div>
-                                            <div className="rounded-full border border-sky-200 bg-sky-50 px-2 py-1 font-medium text-sky-700">
+                                            <div className="rounded-full border border-sky-200 bg-sky-50 px-2 py-1 font-medium text-sky-700 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30">
                                                 {formatNearbyAirportDistance(entry.airDistanceKm)}
                                             </div>
                                         </div>
@@ -1758,7 +1758,7 @@ export const OnPageDebugger: React.FC = () => {
                         </span>
                         <span className={`rounded-md border px-2 py-1 text-xs ${
                             isPrefetchEnabled
-                                ? 'border-sky-300 bg-sky-50 text-sky-700'
+                                ? 'border-sky-300 bg-sky-50 text-sky-700 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'
                                 : 'border-border bg-secondary text-muted-foreground'
                         }`}>
                             Prefetch {isPrefetchEnabled ? 'on' : 'off'}
@@ -1771,8 +1771,8 @@ export const OnPageDebugger: React.FC = () => {
                         </span>
                         <span className={`rounded-md border px-2 py-1 text-xs ${
                             viewTransitionDiagnostics.supported
-                                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                                : 'border-amber-300 bg-amber-50 text-amber-700'
+                                ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
+                                : 'border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30'
                         }`}>
                             VT API {viewTransitionDiagnostics.supported ? 'on' : 'off'}
                         </span>
@@ -1788,25 +1788,25 @@ export const OnPageDebugger: React.FC = () => {
                         )}
                         <span className={`rounded-md border px-2 py-1 text-xs ${
                             simulatedLoggedIn
-                                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
                                 : 'border-border bg-secondary text-muted-foreground'
                         }`}>
                             Sim login {simulatedLoggedIn ? 'on' : 'off'}
                         </span>
                         <span className={`rounded-md border px-2 py-1 text-xs ${
                             browserConnectivitySnapshot.isOnline
-                                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                                : 'border-rose-300 bg-rose-50 text-rose-700'
+                                ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
+                                : 'border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30'
                         }`}>
                             Browser {browserConnectivitySnapshot.isOnline ? 'online' : 'offline'}
                             {browserConnectivitySnapshot.override ? ` (forced ${browserConnectivitySnapshot.override})` : ''}
                         </span>
                         <span className={`rounded-md border px-2 py-1 text-xs ${
                             connectivitySnapshot.state === 'offline'
-                                ? 'border-rose-300 bg-rose-50 text-rose-700'
+                                ? 'border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30'
                                 : connectivitySnapshot.state === 'degraded'
-                                    ? 'border-amber-300 bg-amber-50 text-amber-700'
-                                    : 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                    ? 'border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30'
+                                    : 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
                         }`}>
                             Supabase {connectivitySnapshot.state}
                         </span>
@@ -1815,7 +1815,7 @@ export const OnPageDebugger: React.FC = () => {
                         </span>
                         <span className={`rounded-md border px-2 py-1 text-xs ${
                             syncRunSnapshot.isSyncing
-                                ? 'border-sky-300 bg-sky-50 text-sky-700'
+                                ? 'border-sky-300 bg-sky-50 text-sky-700 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'
                                 : 'border-border bg-secondary text-muted-foreground'
                         }`}>
                             Sync {syncRunSnapshot.isSyncing ? 'running' : 'idle'}
@@ -1823,8 +1823,8 @@ export const OnPageDebugger: React.FC = () => {
                         {isTripDetailRoute && tripExpiredToggleAvailable && (
                             <span className={`rounded-md border px-2 py-1 text-xs ${
                                 tripExpiredDebug
-                                    ? 'border-rose-300 bg-rose-50 text-rose-700'
-                                    : 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                    ? 'border-rose-300 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30'
+                                    : 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
                             }`}>
                                 Trip {tripExpiredDebug ? 'expired (debug)' : 'active'}
                             </span>
@@ -1907,7 +1907,7 @@ export const OnPageDebugger: React.FC = () => {
                                     onClick={toggleAutoOpen}
                                     className={`ml-auto rounded border px-2 py-1 text-xs font-medium ${
                                         autoOpenEnabled
-                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
                                             : 'border-border bg-card text-foreground'
                                     }`}
                                 >
@@ -1934,7 +1934,7 @@ export const OnPageDebugger: React.FC = () => {
                                                     onClick={() => toggleSimulatedLogin()}
                                                     className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                         simulatedLoggedIn
-                                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-400/12 dark:hover:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
                                                             : 'border-border bg-card text-foreground hover:bg-secondary'
                                                     }`}
                                                 >
@@ -1947,7 +1947,7 @@ export const OnPageDebugger: React.FC = () => {
                                                     onClick={() => setSupabaseConnectivityMode('offline')}
                                                     className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                         connectivitySnapshot.isForced && connectivitySnapshot.forcedState === 'offline'
-                                                            ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                                            ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30'
                                                             : 'border-border bg-card text-foreground hover:bg-secondary'
                                                     }`}
                                                 >
@@ -1960,7 +1960,7 @@ export const OnPageDebugger: React.FC = () => {
                                                     onClick={() => setBrowserConnectivityMode('offline')}
                                                     className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                         browserConnectivitySnapshot.override === 'offline'
-                                                            ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                                            ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30'
                                                             : 'border-border bg-card text-foreground hover:bg-secondary'
                                                     }`}
                                                 >
@@ -1973,7 +1973,7 @@ export const OnPageDebugger: React.FC = () => {
                                                     onClick={() => setBrowserConnectivityMode('online')}
                                                     className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                         browserConnectivitySnapshot.override === 'online'
-                                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-400/12 dark:hover:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
                                                             : 'border-border bg-card text-foreground hover:bg-secondary'
                                                     }`}
                                                 >
@@ -1986,7 +1986,7 @@ export const OnPageDebugger: React.FC = () => {
                                                     onClick={() => setBrowserConnectivityMode('clear')}
                                                     className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                         browserConnectivitySnapshot.override
-                                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-400/12 dark:hover:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
                                                             : 'border-border bg-card text-foreground hover:bg-secondary'
                                                     }`}
                                                 >
@@ -1999,7 +1999,7 @@ export const OnPageDebugger: React.FC = () => {
                                                     onClick={() => setSupabaseConnectivityMode('degraded')}
                                                     className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                         connectivitySnapshot.isForced && connectivitySnapshot.forcedState === 'degraded'
-                                                            ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                                            ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30'
                                                             : 'border-border bg-card text-foreground hover:bg-secondary'
                                                     }`}
                                                 >
@@ -2010,7 +2010,7 @@ export const OnPageDebugger: React.FC = () => {
                                                 <button
                                                     type="button"
                                                     onClick={() => setSupabaseConnectivityMode('clear')}
-                                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-800 hover:bg-cyan-100"
+                                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-800 hover:bg-cyan-100 dark:bg-cyan-400/12 dark:hover:bg-cyan-400/12 dark:text-cyan-200 dark:border-cyan-400/30"
                                                 >
                                                     <Flask size={16} weight="duotone" />
                                                     Set Supabase Normal
@@ -2043,7 +2043,7 @@ export const OnPageDebugger: React.FC = () => {
                                                         disabled={!tripExpiredToggleAvailable}
                                                         className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                             tripExpiredDebug
-                                                                ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                                                ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30'
                                                                 : 'border-border bg-card text-foreground hover:bg-secondary'
                                                         } ${tripExpiredToggleAvailable ? '' : 'opacity-50 cursor-not-allowed'}`}
                                                     >
@@ -2092,14 +2092,14 @@ export const OnPageDebugger: React.FC = () => {
                             )}
 
                             {activeTab === 'maps' && isAdmin && (
-                                <div className="mt-3 rounded-lg border border-sky-200 bg-gradient-to-br from-sky-50 via-white to-slate-50 p-3 text-xs shadow-sm">
+                                <div className="mt-3 rounded-lg border border-sky-200 bg-gradient-to-br from-sky-50 via-card to-secondary p-3 text-xs shadow-sm dark:border-sky-400/30">
                                     <div className="flex flex-wrap items-start justify-between gap-3">
                                         <div className="min-w-0 flex-1">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <h3 className="text-sm font-semibold text-foreground">
                                                     Map Runtime
                                                 </h3>
-                                                <span className="rounded-full border border-sky-200 bg-card px-2 py-0.5 text-[11px] font-medium text-sky-700">
+                                                <span className="rounded-full border border-sky-200 bg-card px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:text-sky-200 dark:border-sky-400/30">
                                                     Active {activeMapRuntimePresetLabel}
                                                 </span>
                                                 <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] text-muted-foreground">
@@ -2156,7 +2156,7 @@ export const OnPageDebugger: React.FC = () => {
                                             onClick={() => applyMapRuntimePreset('default')}
                                             className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                 mapRuntimeResolution.overrideSource === 'default'
-                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-400/12 dark:hover:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
                                                     : 'border-border bg-card text-foreground hover:bg-secondary'
                                             }`}
                                         >
@@ -2167,7 +2167,7 @@ export const OnPageDebugger: React.FC = () => {
                                             onClick={() => applyMapRuntimePreset('google')}
                                             className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                 mapRuntimeResolution.requestedPreset === 'google_all'
-                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-400/12 dark:hover:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
                                                     : 'border-border bg-card text-foreground hover:bg-secondary'
                                             }`}
                                         >
@@ -2178,7 +2178,7 @@ export const OnPageDebugger: React.FC = () => {
                                             onClick={() => applyMapRuntimePreset('mapbox_visuals')}
                                             className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                 mapRuntimeResolution.requestedPreset === 'mapbox_visual_google_services'
-                                                    ? 'border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100'
+                                                    ? 'border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100 dark:bg-sky-400/12 dark:hover:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'
                                                     : 'border-border bg-card text-foreground hover:bg-secondary'
                                             }`}
                                         >
@@ -2214,7 +2214,7 @@ export const OnPageDebugger: React.FC = () => {
                                     </div>
 
                                     {mapRuntimeResolution.warnings.length > 0 && (
-                                        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+                                        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                             <strong>Runtime warnings:</strong>
                                             <ul className="mt-1 space-y-0.5">
                                                 {mapRuntimeResolution.warnings.map((warning) => (
@@ -2255,7 +2255,7 @@ export const OnPageDebugger: React.FC = () => {
                                                                     onClick={() => applyMapRuntimeSelection({ [subsystem]: 'google' } as Partial<MapRuntimeSelection>)}
                                                                     className={`rounded border px-2 py-1 font-medium ${
                                                                         requestedImplementation === 'google'
-                                                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
                                                                             : 'border-border bg-card text-foreground hover:bg-secondary'
                                                                     }`}
                                                                 >
@@ -2266,7 +2266,7 @@ export const OnPageDebugger: React.FC = () => {
                                                                     onClick={() => applyMapRuntimeSelection({ [subsystem]: 'mapbox' } as Partial<MapRuntimeSelection>)}
                                                                     className={`rounded border px-2 py-1 font-medium ${
                                                                         requestedImplementation === 'mapbox'
-                                                                            ? 'border-sky-300 bg-sky-50 text-sky-700'
+                                                                            ? 'border-sky-300 bg-sky-50 text-sky-700 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'
                                                                             : 'border-border bg-card text-foreground hover:bg-secondary'
                                                                     }`}
                                                                 >
@@ -2304,7 +2304,7 @@ export const OnPageDebugger: React.FC = () => {
                                             onClick={() => setTrackingEnabled((prev) => !prev)}
                                             className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                 trackingEnabled
-                                                    ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
+                                                    ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-400/12 dark:hover:bg-red-400/12 dark:text-red-200 dark:border-red-400/30'
                                                     : 'border-border bg-card text-foreground hover:bg-secondary'
                                             }`}
                                         >
@@ -2317,7 +2317,7 @@ export const OnPageDebugger: React.FC = () => {
                                             onClick={() => setPrefetchOverlayEnabled((prev) => !prev)}
                                             className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                 prefetchOverlayEnabled
-                                                    ? 'border-cyan-300 bg-cyan-50 text-cyan-700 hover:bg-cyan-100'
+                                                    ? 'border-cyan-300 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 dark:bg-cyan-400/12 dark:hover:bg-cyan-400/12 dark:text-cyan-200 dark:border-cyan-400/30'
                                                     : 'border-border bg-card text-foreground hover:bg-secondary'
                                             }`}
                                         >
@@ -2478,7 +2478,7 @@ export const OnPageDebugger: React.FC = () => {
                                                 </div>
 
                                                 {viewTransitionDiagnostics.duplicateAnchorNames.length > 0 && (
-                                                    <div className="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-amber-800">
+                                                    <div className="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                                         <strong>Duplicate anchor names:</strong>{' '}
                                                         {viewTransitionDiagnostics.duplicateAnchorNames.join(', ')}
                                                     </div>
@@ -2543,7 +2543,7 @@ export const OnPageDebugger: React.FC = () => {
                                                 onClick={() => setH1HighlightEnabled((prev) => !prev)}
                                                 className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                     h1HighlightEnabled
-                                                        ? 'border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100'
+                                                        ? 'border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100 dark:bg-sky-400/12 dark:hover:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'
                                                         : 'border-border bg-card text-foreground hover:bg-secondary'
                                                 }`}
                                             >
@@ -2572,7 +2572,7 @@ export const OnPageDebugger: React.FC = () => {
                                     </div>
 
                                     {!showSeoTools && (
-                                        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                                        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                             SEO checks are disabled on trip detail routes. Use a marketing page to run meta and heading checks.
                                         </div>
                                     )}

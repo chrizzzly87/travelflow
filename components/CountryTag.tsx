@@ -44,7 +44,7 @@ export const CountryTag: React.FC<CountryTagProps> = ({
                         event.stopPropagation();
                         onRemove?.();
                     }}
-                    className="ml-1 rounded-full p-0.5 text-muted-foreground hover:bg-red-50 hover:text-red-500"
+                    className="ml-1 rounded-full p-0.5 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-400/12"
                     aria-label={`Remove ${countryName}`}
                     title={`Remove ${countryName}`}
                 >

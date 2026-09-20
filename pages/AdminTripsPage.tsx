@@ -315,14 +315,14 @@ const formatAccountStatusLabel = (status: string | null | undefined): string => 
 
 const getLifecyclePillClassName = (status: TripStatus): string => {
     if (status === 'archived') return 'border-border bg-secondary text-foreground';
-    if (status === 'expired') return 'border-amber-200 bg-amber-50 text-amber-700';
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    if (status === 'expired') return 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
 };
 
 const getGenerationPillClassName = (state: TripGenerationState): string => {
-    if (state === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700';
-    if (state === 'running' || state === 'queued') return 'border-amber-200 bg-amber-50 text-amber-700';
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    if (state === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
+    if (state === 'running' || state === 'queued') return 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
 };
 
 const getGenerationStateLabel = (state: TripGenerationState): string => {
@@ -333,10 +333,10 @@ const getGenerationStateLabel = (state: TripGenerationState): string => {
 };
 
 const getGenerationJobPillClassName = (state: TripGenerationJobSummary['state']): string => {
-    if (state === 'dead') return 'border-rose-300 bg-rose-100 text-rose-800';
-    if (state === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700';
-    if (state === 'queued' || state === 'leased') return 'border-amber-200 bg-amber-50 text-amber-700';
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    if (state === 'dead') return 'border-rose-300 bg-rose-100 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
+    if (state === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
+    if (state === 'queued' || state === 'leased') return 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
 };
 
 const resolveTripGenerationState = (trip: AdminTripRecord): TripGenerationState => {
@@ -474,7 +474,7 @@ const TripRowActionsMenu: React.FC<{
                         type="button"
                         onClick={() => runAction(onSoftDeleteTrip)}
                         className={`flex w-full items-center rounded-md px-3 py-2 text-left text-sm ${
-                            isArchived ? 'text-emerald-800 hover:bg-emerald-50' : 'text-amber-800 hover:bg-amber-50'
+                            isArchived ? 'text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-400/12 dark:text-emerald-200' : 'text-amber-800 hover:bg-amber-50 dark:hover:bg-amber-400/12 dark:text-amber-200'
                         }`}
                     >
                         {isArchived ? 'Restore trip' : 'Soft-delete trip'}
@@ -482,7 +482,7 @@ const TripRowActionsMenu: React.FC<{
                     <button
                         type="button"
                         onClick={() => runAction(onHardDeleteTrip)}
-                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-rose-800 hover:bg-rose-50"
+                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-rose-800 hover:bg-rose-50 dark:hover:bg-rose-400/12 dark:text-rose-200"
                     >
                         Hard delete trip
                     </button>
@@ -1802,17 +1802,17 @@ export const AdminTripsPage: React.FC = () => {
             )}
         >
             {errorMessage && (
-                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                     {errorMessage}
                 </section>
             )}
             {dataSourceNotice && (
-                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                     {dataSourceNotice}
                 </section>
             )}
             {message && (
-                <section className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                <section className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                     {message}
                 </section>
             )}
@@ -1824,26 +1824,26 @@ export const AdminTripsPage: React.FC = () => {
                 </article>
                 <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active</p>
-                    <p className="mt-2 text-2xl font-semibold text-emerald-700"><AdminCountUpNumber value={summary.active} /></p>
+                    <p className="mt-2 text-2xl font-semibold text-emerald-700 dark:text-emerald-200"><AdminCountUpNumber value={summary.active} /></p>
                 </article>
                 <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Expired</p>
-                    <p className="mt-2 text-2xl font-semibold text-amber-700"><AdminCountUpNumber value={summary.expired} /></p>
+                    <p className="mt-2 text-2xl font-semibold text-amber-700 dark:text-amber-200"><AdminCountUpNumber value={summary.expired} /></p>
                 </article>
                 <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Archived</p>
                     <p className="mt-2 text-2xl font-semibold text-foreground"><AdminCountUpNumber value={summary.archived} /></p>
                 </article>
-                <article className="rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm">
+                <article className="rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm dark:bg-rose-400/12 dark:border-rose-400/30">
                     <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">Failed generation</p>
-                    <p className="mt-2 text-2xl font-semibold text-rose-700"><AdminCountUpNumber value={summary.failedGeneration} /></p>
+                    <p className="mt-2 text-2xl font-semibold text-rose-700 dark:text-rose-200"><AdminCountUpNumber value={summary.failedGeneration} /></p>
                     <button
                         type="button"
                         onClick={() => {
                             setGenerationStateFilters(['failed']);
                             setPage(1);
                         }}
-                        className="mt-2 inline-flex h-7 items-center rounded-md border border-rose-300 bg-card px-2.5 text-[11px] font-semibold text-rose-700 hover:bg-rose-100"
+                        className="mt-2 inline-flex h-7 items-center rounded-md border border-rose-300 bg-card px-2.5 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                     >
                         Filter failed
                     </button>
@@ -1916,7 +1916,7 @@ export const AdminTripsPage: React.FC = () => {
                         type="button"
                         onClick={() => void handleBulkSoftDeleteTrips()}
                         disabled={isSaving || selectedVisibleTrips.length === 0}
-                        className="inline-flex h-8 items-center rounded-lg border border-amber-300 px-3 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-8 items-center rounded-lg border border-amber-300 px-3 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                     >
                         Soft-delete selected
                     </button>
@@ -1924,7 +1924,7 @@ export const AdminTripsPage: React.FC = () => {
                         type="button"
                         onClick={() => void handleBulkHardDeleteTrips()}
                         disabled={isSaving || selectedVisibleTrips.length === 0}
-                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-rose-300 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-rose-300 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                     >
                         <Trash size={12} />
                         Hard delete selected
@@ -2101,7 +2101,7 @@ export const AdminTripsPage: React.FC = () => {
                                         >
                                             <div
                                                 title="Open trip details drawer"
-                                                className="inline-flex xl:max-w-full items-center gap-1.5 truncate text-left text-sm font-semibold text-foreground group-hover:text-accent-700 group-hover:underline"
+                                                className="inline-flex xl:max-w-full items-center gap-1.5 truncate text-left text-sm font-semibold text-foreground group-hover:text-accent-700 group-hover:underline dark:group-hover:text-accent-200"
                                             >
                                                 <span className="truncate">{trip.title || trip.trip_id}</span>
                                             </div>
@@ -2121,7 +2121,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     title="Open owner details"
                                                     className="group block w-full cursor-pointer text-left"
                                                 >
-                                                    <span className="block truncate text-sm font-medium text-foreground group-hover:text-accent-700 group-hover:underline">
+                                                    <span className="block truncate text-sm font-medium text-foreground group-hover:text-accent-700 group-hover:underline dark:group-hover:text-accent-200">
                                                         {trip.owner_email || trip.owner_id}
                                                     </span>
                                                     <span className="mt-0.5 block text-[11px] text-muted-foreground">
@@ -2307,7 +2307,7 @@ export const AdminTripsPage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => handleOpenTripPreview(selectedTripForDrawer)}
-                                    className="mt-3 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-accent-300 bg-accent-50 px-3 text-sm font-semibold text-accent-800 hover:bg-accent-100"
+                                    className="mt-3 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-accent-300 bg-accent-50 px-3 text-sm font-semibold text-accent-800 hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                                 >
                                     Open trip page
                                     <ArrowSquareOut size={14} />
@@ -2347,7 +2347,7 @@ export const AdminTripsPage: React.FC = () => {
                                                                 void handleTransferTrip(selectedTripForDrawer);
                                                             }}
                                                             disabled={isSaving}
-                                                            className="shrink-0 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            className="shrink-0 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                                         >
                                                             Transfer owner
                                                         </button>
@@ -2776,10 +2776,10 @@ export const AdminTripsPage: React.FC = () => {
                                                 <div className="max-w-sm">
                                                     <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Retry model</p>
                                                     {selectedDrawerRetryModelOption && (
-                                                        <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-2 py-0.5 text-[11px] font-semibold text-accent-800">
+                                                        <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-2 py-0.5 text-[11px] font-semibold text-accent-800 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                                                             <AiProviderLogo provider={selectedDrawerRetryModelOption.provider} model={selectedDrawerRetryModelOption.model} size={12} />
                                                             <span>{selectedDrawerRetryModelOption.providerLabel} · {selectedDrawerRetryModelOption.label}</span>
-                                                            <span className="rounded-full border border-accent-300 bg-card px-1.5 text-[10px] uppercase tracking-wide text-accent-700">current</span>
+                                                            <span className="rounded-full border border-accent-300 bg-card px-1.5 text-[10px] uppercase tracking-wide text-accent-700 dark:text-accent-200 dark:border-accent-400/30">current</span>
                                                         </div>
                                                     )}
                                                     <Select
@@ -2799,7 +2799,7 @@ export const AdminTripsPage: React.FC = () => {
                                                                                 <AiProviderLogo provider={option.provider} model={option.model} size={14} />
                                                                                 <span className="font-medium text-foreground">{option.label}</span>
                                                                                 {option.id === drawerRetryModelId && (
-                                                                                    <span className="rounded-full border border-accent-300 bg-accent-50 px-1.5 text-[10px] uppercase tracking-wide text-accent-700">
+                                                                                    <span className="rounded-full border border-accent-300 bg-accent-50 px-1.5 text-[10px] uppercase tracking-wide text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                                                                                         current
                                                                                     </span>
                                                                                 )}
@@ -2822,7 +2822,7 @@ export const AdminTripsPage: React.FC = () => {
                                                         void handleRetryTripGeneration();
                                                     }}
                                                     disabled={!canRetryGenerationInDrawer}
-                                                    className="inline-flex items-center rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-800 transition-colors hover:bg-accent-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    className="inline-flex items-center rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-800 transition-colors hover:bg-accent-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                                                 >
                                                     {isRetryingGeneration ? 'Retrying generation…' : 'Retry generation'}
                                                 </button>
@@ -2865,7 +2865,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     void handleDuplicateTrip(selectedTripForDrawer);
                                                 }}
                                                 disabled={isSaving}
-                                                className="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-800 transition-colors hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                className="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-800 transition-colors hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-400/12 dark:hover:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30"
                                             >
                                                 Duplicate trip
                                             </button>
@@ -2875,7 +2875,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     void handleTransferTrip(selectedTripForDrawer);
                                                 }}
                                                 disabled={isSaving}
-                                                className="inline-flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                className="inline-flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                             >
                                                 Transfer owner
                                             </button>
@@ -2887,8 +2887,8 @@ export const AdminTripsPage: React.FC = () => {
                                                 disabled={isSaving}
                                                 className={`inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                                                     selectedTripForDrawer.status === 'archived'
-                                                        ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                                                        : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                                        ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-400/12 dark:hover:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
+                                                        : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30'
                                                 }`}
                                             >
                                                 {selectedTripForDrawer.status === 'archived' ? 'Restore trip' : 'Soft-delete trip'}
@@ -2899,7 +2899,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     void handleHardDeleteTrip(selectedTripForDrawer);
                                                 }}
                                                 disabled={isSaving}
-                                                className="inline-flex items-center justify-center rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-800 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                className="inline-flex items-center justify-center rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-800 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                                             >
                                                 Hard delete
                                             </button>
@@ -2947,7 +2947,7 @@ export const AdminTripsPage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => navigate(`/admin/users?user=${encodeURIComponent(selectedOwnerId)}&drawer=user`)}
-                                    className="mt-3 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-accent-300 bg-accent-50 px-3 text-sm font-semibold text-accent-800 hover:bg-accent-100"
+                                    className="mt-3 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-accent-300 bg-accent-50 px-3 text-sm font-semibold text-accent-800 hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                                 >
                                     Open user profile
                                     <ArrowSquareOut size={14} />

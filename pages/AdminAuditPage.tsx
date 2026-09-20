@@ -379,108 +379,108 @@ const resolveAuditActionPresentation = (
 ): { label: string; className: string } => {
     const raw = log.action;
     if (raw === 'admin.user.hard_delete') {
-        return { label: 'Hard-deleted user', className: 'border-rose-300 bg-rose-50 text-rose-800' };
+        return { label: 'Hard-deleted user', className: 'border-rose-300 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30' };
     }
     if (raw === 'admin.trip.hard_delete') {
-        return { label: 'Hard-deleted trip', className: 'border-rose-300 bg-rose-50 text-rose-800' };
+        return { label: 'Hard-deleted trip', className: 'border-rose-300 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30' };
     }
     if (raw === 'admin.user.invite') {
-        return { label: 'Invited user', className: 'border-sky-300 bg-sky-50 text-sky-800' };
+        return { label: 'Invited user', className: 'border-sky-300 bg-sky-50 text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30' };
     }
     if (raw === 'admin.user.create_direct') {
-        return { label: 'Created user', className: 'border-emerald-300 bg-emerald-50 text-emerald-800' };
+        return { label: 'Created user', className: 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30' };
     }
     if (raw === 'admin.user.update_profile') {
         const accountStatusChange = getStatusChange(diffEntries, 'account_status');
         if (accountStatusChange?.to === 'deleted') {
-            return { label: 'Soft-deleted user', className: 'border-amber-300 bg-amber-50 text-amber-800' };
+            return { label: 'Soft-deleted user', className: 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30' };
         }
         if (accountStatusChange?.from === 'deleted' && accountStatusChange?.to === 'active') {
-            return { label: 'Restored user', className: 'border-emerald-300 bg-emerald-50 text-emerald-800' };
+            return { label: 'Restored user', className: 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30' };
         }
         if (accountStatusChange?.to === 'disabled') {
-            return { label: 'Suspended user', className: 'border-amber-300 bg-amber-50 text-amber-800' };
+            return { label: 'Suspended user', className: 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30' };
         }
         if (accountStatusChange?.from === 'disabled' && accountStatusChange?.to === 'active') {
-            return { label: 'Reactivated user', className: 'border-emerald-300 bg-emerald-50 text-emerald-800' };
+            return { label: 'Reactivated user', className: 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30' };
         }
         if (diffEntries.some((entry) => entry.key === 'system_role')) {
-            return { label: 'Updated user role', className: 'border-indigo-300 bg-indigo-50 text-indigo-800' };
+            return { label: 'Updated user role', className: 'border-indigo-300 bg-indigo-50 text-indigo-800 dark:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30' };
         }
         if (diffEntries.some((entry) => entry.key === 'tier_key')) {
-            return { label: 'Updated user tier', className: 'border-sky-300 bg-sky-50 text-sky-800' };
+            return { label: 'Updated user tier', className: 'border-sky-300 bg-sky-50 text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30' };
         }
         return { label: 'Updated user', className: 'border-border bg-secondary text-foreground' };
     }
     if (raw === 'admin.user.update_tier') {
-        return { label: 'Updated user tier', className: 'border-sky-300 bg-sky-50 text-sky-800' };
+        return { label: 'Updated user tier', className: 'border-sky-300 bg-sky-50 text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30' };
     }
     if (raw === 'admin.user.update_overrides') {
-        return { label: 'Updated overrides', className: 'border-indigo-300 bg-indigo-50 text-indigo-800' };
+        return { label: 'Updated overrides', className: 'border-indigo-300 bg-indigo-50 text-indigo-800 dark:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30' };
     }
     if (raw === 'admin.user.reset_username_cooldown') {
-        return { label: 'Revoked username cooldown', className: 'border-amber-300 bg-amber-50 text-amber-800' };
+        return { label: 'Revoked username cooldown', className: 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30' };
     }
     if (raw === 'admin.user.reset_terms_acceptance') {
-        return { label: 'Reset Terms acceptance', className: 'border-amber-300 bg-amber-50 text-amber-800' };
+        return { label: 'Reset Terms acceptance', className: 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30' };
     }
     if (raw === 'admin.trip.update') {
         if (diffEntries.some((entry) => entry.key === 'owner_id')) {
-            return { label: 'Transferred trip owner', className: 'border-violet-300 bg-violet-50 text-violet-800' };
+            return { label: 'Transferred trip owner', className: 'border-violet-300 bg-violet-50 text-violet-800 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30' };
         }
         const tripStatusChange = getStatusChange(diffEntries, 'status');
         if (tripStatusChange?.to === 'archived') {
-            return { label: 'Archived trip', className: 'border-amber-300 bg-amber-50 text-amber-800' };
+            return { label: 'Archived trip', className: 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30' };
         }
         if (tripStatusChange?.from === 'archived' && tripStatusChange?.to === 'active') {
-            return { label: 'Restored trip', className: 'border-emerald-300 bg-emerald-50 text-emerald-800' };
+            return { label: 'Restored trip', className: 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30' };
         }
         if (tripStatusChange?.to === 'expired') {
-            return { label: 'Expired trip', className: 'border-amber-300 bg-amber-50 text-amber-800' };
+            return { label: 'Expired trip', className: 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30' };
         }
         if (diffEntries.some((entry) => entry.key === 'trip_expires_at')) {
-            return { label: 'Updated trip expiry', className: 'border-sky-300 bg-sky-50 text-sky-800' };
+            return { label: 'Updated trip expiry', className: 'border-sky-300 bg-sky-50 text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30' };
         }
         return { label: 'Updated trip', className: 'border-border bg-secondary text-foreground' };
     }
     if (raw === 'admin.trip.override_commit') {
         if (parseUndoSourceEventId(log)) {
-            return { label: 'Undid trip change', className: 'border-emerald-300 bg-emerald-50 text-emerald-800' };
+            return { label: 'Undid trip change', className: 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30' };
         }
-        return { label: 'Overrode trip content', className: 'border-violet-300 bg-violet-50 text-violet-800' };
+        return { label: 'Overrode trip content', className: 'border-violet-300 bg-violet-50 text-violet-800 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30' };
     }
     if (raw === 'admin.tier.update_entitlements') {
-        return { label: 'Updated tier entitlements', className: 'border-sky-300 bg-sky-50 text-sky-800' };
+        return { label: 'Updated tier entitlements', className: 'border-sky-300 bg-sky-50 text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30' };
     }
     if (raw === 'admin.tier.reapply') {
         return { label: 'Reapplied tier', className: 'border-border bg-secondary text-foreground' };
     }
     if (raw === 'admin.terms.publish') {
-        return { label: 'Published Terms version', className: 'border-sky-300 bg-sky-50 text-sky-800' };
+        return { label: 'Published Terms version', className: 'border-sky-300 bg-sky-50 text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30' };
     }
     if (raw === 'admin.terms.set_current') {
-        return { label: 'Set current Terms version', className: 'border-sky-300 bg-sky-50 text-sky-800' };
+        return { label: 'Set current Terms version', className: 'border-sky-300 bg-sky-50 text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30' };
     }
     if (raw.startsWith('billing.subscription.')) {
         if (raw.endsWith('.canceled')) {
-            return { label: 'Billing subscription canceled', className: 'border-rose-300 bg-rose-50 text-rose-800' };
+            return { label: 'Billing subscription canceled', className: 'border-rose-300 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30' };
         }
         if (raw.endsWith('.activated')) {
-            return { label: 'Billing subscription activated', className: 'border-emerald-300 bg-emerald-50 text-emerald-800' };
+            return { label: 'Billing subscription activated', className: 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30' };
         }
-        return { label: 'Billing subscription updated', className: 'border-accent-300 bg-accent-50 text-accent-800' };
+        return { label: 'Billing subscription updated', className: 'border-accent-300 bg-accent-50 text-accent-800 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30' };
     }
     if (raw === 'billing.transaction.completed') {
-        return { label: 'Billing transaction completed', className: 'border-emerald-300 bg-emerald-50 text-emerald-800' };
+        return { label: 'Billing transaction completed', className: 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30' };
     }
     return { label: getActionFilterLabel(raw), className: 'border-border bg-secondary text-foreground' };
 };
 
 const getTargetPillClass = (targetType: string): string => {
-    if (targetType === 'user') return 'border-indigo-300 bg-indigo-50 text-indigo-800';
-    if (targetType === 'trip') return 'border-sky-300 bg-sky-50 text-sky-800';
-    if (targetType === 'tier') return 'border-violet-300 bg-violet-50 text-violet-800';
-    if (targetType === 'subscription') return 'border-accent-300 bg-accent-50 text-accent-800';
+    if (targetType === 'user') return 'border-indigo-300 bg-indigo-50 text-indigo-800 dark:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30';
+    if (targetType === 'trip') return 'border-sky-300 bg-sky-50 text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30';
+    if (targetType === 'tier') return 'border-violet-300 bg-violet-50 text-violet-800 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30';
+    if (targetType === 'subscription') return 'border-accent-300 bg-accent-50 text-accent-800 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30';
     return 'border-border bg-secondary text-foreground';
 };
 
@@ -1594,12 +1594,12 @@ export const AdminAuditPage: React.FC = () => {
             )}
         >
             {errorMessage && (
-                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                     {errorMessage}
                 </section>
             )}
             {dataSourceNotice && (
-                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                     {dataSourceNotice}
                 </section>
             )}
@@ -1724,13 +1724,13 @@ export const AdminAuditPage: React.FC = () => {
                         Action pill legend
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
-                        <span className="inline-flex rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 font-semibold text-sky-800">
+                        <span className="inline-flex rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 font-semibold text-sky-800 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30">
                             Primary action
                         </span>
                         <span className="inline-flex rounded-full border border-border bg-secondary px-2 py-0.5 font-semibold text-foreground">
                             Event origin
                         </span>
-                        <span className="inline-flex rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-semibold text-amber-800">
+                        <span className="inline-flex rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                             Field facet
                         </span>
                         <span className="text-muted-foreground">
@@ -1904,7 +1904,7 @@ export const AdminAuditPage: React.FC = () => {
                                                                 });
                                                             }}
                                                             title="Open actor details"
-                                                            className="block w-full truncate text-left text-sm font-medium text-foreground hover:text-accent-700 hover:underline"
+                                                            className="block w-full truncate text-left text-sm font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
                                                         >
                                                             {actorEmail || 'Unknown actor'}
                                                         </button>
@@ -1948,7 +1948,7 @@ export const AdminAuditPage: React.FC = () => {
                                                     <CopySimple size={11} />
                                                     Copy
                                                 </button>
-                                                {copiedToken === `action-${timelineEntry.kind}-${log.id}` && <span className="text-emerald-700">Copied</span>}
+                                                {copiedToken === `action-${timelineEntry.kind}-${log.id}` && <span className="text-emerald-700 dark:text-emerald-200">Copied</span>}
                                             </div>
                                             {secondaryFacets.length > 0 && (
                                                 <div className="mt-1 flex flex-wrap items-center gap-1">
@@ -1978,7 +1978,7 @@ export const AdminAuditPage: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => openTargetDrawer(log)}
-                                                        className="inline-flex h-6 items-center gap-1 rounded-md border border-border bg-card px-2 text-[11px] font-semibold text-foreground hover:border-accent-300 hover:text-accent-700"
+                                                        className="inline-flex h-6 items-center gap-1 rounded-md border border-border bg-card px-2 text-[11px] font-semibold text-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
                                                         title={`Open ${targetLabel.toLowerCase()} drawer`}
                                                     >
                                                         Open
@@ -2009,7 +2009,7 @@ export const AdminAuditPage: React.FC = () => {
                                                                 {formatFieldLabel(entry.key)}
                                                             </p>
                                                             <div className="mt-1 grid gap-1 lg:grid-cols-2">
-                                                                <div className="rounded border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900">
+                                                                <div className="rounded border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                                                     <span className="font-semibold">Before: </span>
                                                                     <span className="break-all">
                                                                         {timelineEntry.kind === 'user'
@@ -2017,7 +2017,7 @@ export const AdminAuditPage: React.FC = () => {
                                                                             : formatAuditValue(entry.beforeValue)}
                                                                     </span>
                                                                 </div>
-                                                                <div className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900">
+                                                                <div className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                                                                     <span className="font-semibold">After: </span>
                                                                     <span className="break-all">
                                                                         {timelineEntry.kind === 'user'
@@ -2047,7 +2047,7 @@ export const AdminAuditPage: React.FC = () => {
                                                 </button>
                                             )}
                                             {timelineEntry.kind === 'admin' && log.action === 'admin.user.hard_delete' && ownedTripsBeforeDelete !== null && (
-                                                <p className="mt-2 text-[11px] font-semibold text-rose-700">
+                                                <p className="mt-2 text-[11px] font-semibold text-rose-700 dark:text-rose-200">
                                                     Trip impact: {ownedTripsBeforeDelete} owned trip{ownedTripsBeforeDelete === 1 ? '' : 's'} deleted with this account.
                                                 </p>
                                             )}
@@ -2069,7 +2069,7 @@ export const AdminAuditPage: React.FC = () => {
                                                             type="button"
                                                             onClick={() => void undoTimelineEntry(timelineEntry)}
                                                             disabled={Boolean(revertingEntryKey)}
-                                                            className="inline-flex h-7 items-center justify-center rounded-md border border-amber-300 px-2 text-[11px] font-semibold text-amber-800 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            className="inline-flex h-7 items-center justify-center rounded-md border border-amber-300 px-2 text-[11px] font-semibold text-amber-800 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                                         >
                                                             {isUndoing ? 'Undoing…' : getUndoActionLabel(timelineEntry)}
                                                         </button>
@@ -2175,7 +2175,7 @@ export const AdminAuditPage: React.FC = () => {
                         </div>
                         <div className="flex-1 overflow-y-auto p-4">
                             {userDrawerError && (
-                                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                     {userDrawerError}
                                 </div>
                             )}
@@ -2221,7 +2221,7 @@ export const AdminAuditPage: React.FC = () => {
                                                     || !selectedUserLog?.target_id
                                                     || !selectedUserProfile
                                                 }
-                                                className="inline-flex h-8 items-center rounded-lg border border-emerald-300 px-3 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                                className="inline-flex h-8 items-center rounded-lg border border-emerald-300 px-3 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30"
                                             >
                                                 {isRestoringUser ? 'Restoring…' : 'Restore user'}
                                             </button>
@@ -2274,7 +2274,7 @@ export const AdminAuditPage: React.FC = () => {
                         </div>
                         <div className="flex-1 overflow-y-auto p-4">
                             {tripDrawerError && (
-                                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                     {tripDrawerError}
                                 </div>
                             )}

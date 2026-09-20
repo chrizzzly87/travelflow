@@ -327,7 +327,7 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
       <div
         // Geographic, so it must not mirror: east stays east in RTL locales.
         dir="ltr"
-        className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-b from-sky-50 to-white"
+        className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-b from-sky-50 to-card"
       >
         <svg
           ref={svgRef}
@@ -402,7 +402,7 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
                 <>
                   <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{hoveredEntry.region}</p>
                   {hoveredInsight ? (
-                    <p className="mt-1 text-[11px] font-bold text-accent-700">
+                    <p className="mt-1 text-[11px] font-bold text-accent-700 dark:text-accent-200">
                       {t(`inspirations.subpages.explorer.band.${hoveredInsight.band}`)}
                       {hoveredInsight.climate ? ` · ${t('inspirations.subpages.explorer.temperature', {
                         high: Math.round(hoveredInsight.climate.avgHighC),
@@ -446,7 +446,7 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
           <button
             type="button"
             onClick={() => setMissingGuideName(null)}
-            className="rounded-full border border-border px-2.5 py-1 text-[11px] font-bold text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700"
+            className="rounded-full border border-border px-2.5 py-1 text-[11px] font-bold text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
           >
             {t('inspirations.subpages.map.dismissNotice')}
           </button>

@@ -1265,7 +1265,10 @@ h6,
 ::view-transition-old(.blog-card-transition),
 ::view-transition-new(.blog-card-transition) {
   transform-origin: center top;
-  background: rgba(255, 255, 255, 0.98);
+  /* The snapshot needs an opaque backing or the two states show through each
+     other, but hardcoding white meant every blog navigation flashed a white
+     card in dark mode. The card token is opaque in both themes. */
+  background: var(--card);
   border-radius: 1rem;
 }
 

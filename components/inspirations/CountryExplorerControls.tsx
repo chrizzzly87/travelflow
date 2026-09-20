@@ -41,7 +41,7 @@ const chipClass = (isActive: boolean): string => [
   'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors',
   isActive
     ? 'border-accent-500 bg-accent-500 text-white'
-    : 'border-border bg-card text-muted-foreground hover:border-accent-300 hover:text-accent-700',
+    : 'border-border bg-card text-muted-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30',
 ].join(' ');
 
 const FacetGroup: React.FC<{
@@ -90,8 +90,8 @@ const OriginNotice: React.FC<{ origin: CountryExplorerOriginControl }> = ({ orig
   const place = [inferredCity, inferredCountry].filter(Boolean).join(', ');
 
   const tone = status === 'ready'
-    ? 'border-accent-200 bg-accent-50 text-accent-800'
-    : 'border-amber-200 bg-amber-50 text-amber-900';
+    ? 'border-accent-200 bg-accent-50 text-accent-800 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
+    : 'border-amber-200 bg-amber-50 text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
 
   return (
     <div
@@ -114,7 +114,7 @@ const OriginNotice: React.FC<{ origin: CountryExplorerOriginControl }> = ({ orig
             trackEvent('inspirations__country_sort--origin_dismiss');
             origin.onDismiss();
           }}
-          className="shrink-0 rounded-full border border-accent-300 px-2.5 py-1 text-[11px] font-bold transition-colors hover:bg-card"
+          className="shrink-0 rounded-full border border-accent-300 px-2.5 py-1 text-[11px] font-bold transition-colors hover:bg-card dark:border-accent-400/30"
           {...getAnalyticsDebugAttributes('inspirations__country_sort--origin_dismiss')}
         >
           {t('inspirations.subpages.explorer.origin.notMe')}
@@ -127,7 +127,7 @@ const OriginNotice: React.FC<{ origin: CountryExplorerOriginControl }> = ({ orig
             trackEvent('inspirations__country_sort--origin_restore');
             origin.onRestore();
           }}
-          className="shrink-0 rounded-full border border-amber-300 px-2.5 py-1 text-[11px] font-bold transition-colors hover:bg-card"
+          className="shrink-0 rounded-full border border-amber-300 px-2.5 py-1 text-[11px] font-bold transition-colors hover:bg-card dark:border-amber-400/30"
           {...getAnalyticsDebugAttributes('inspirations__country_sort--origin_restore')}
         >
           {t('inspirations.subpages.explorer.origin.useAnyway')}
@@ -262,7 +262,7 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
           <Funnel className="text-muted-foreground" size={16} weight="duotone" />
           {t('inspirations.subpages.explorer.filtersTitle')}
           {activeFilterCount > 0 ? (
-            <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-black text-accent-700">
+            <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-black text-accent-700 dark:bg-accent-400/12 dark:text-accent-200">
               {activeFilterCount}
             </span>
           ) : null}
@@ -332,7 +332,7 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
                 trackEvent('inspirations__country_filter--reset');
                 dispatch({ type: 'reset' });
               }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
               {...getAnalyticsDebugAttributes('inspirations__country_filter--reset')}
             >
               <ArrowsClockwise size={13} weight="bold" />

@@ -89,13 +89,13 @@ const statusPill = (value: string | null | undefined) => {
 const webhookMessageClassName = (status: string | null | undefined) => {
     const normalizedStatus = normalizeAdminBillingStatus(status);
     if (normalizedStatus === 'failed') {
-        return 'mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900';
+        return 'mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
     }
     if (normalizedStatus === 'past_due' || normalizedStatus === 'paused' || normalizedStatus === 'ignored') {
-        return 'mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900';
+        return 'mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
     }
     if (normalizedStatus === 'processed' || normalizedStatus === 'received') {
-        return 'mt-3 rounded-lg border border-accent-200 bg-accent-50/70 px-3 py-2 text-sm text-foreground';
+        return 'mt-3 rounded-lg border border-accent-200 bg-accent-50/70 px-3 py-2 text-sm text-foreground dark:bg-accent-400/12 dark:border-accent-400/30';
     }
     return 'mt-3 rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground';
 };
@@ -349,13 +349,13 @@ export const AdminBillingPage: React.FC = () => {
             )}
         >
             {errorMessage ? (
-                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                     {errorMessage}
                 </section>
             ) : null}
 
             {lastReconcileSummary ? (
-                <section className="mb-4 rounded-2xl border border-accent-200 bg-accent-50/70 p-4 text-sm text-foreground shadow-sm">
+                <section className="mb-4 rounded-2xl border border-accent-200 bg-accent-50/70 p-4 text-sm text-foreground shadow-sm dark:bg-accent-400/12 dark:border-accent-400/30">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <p className="font-semibold text-foreground">Latest Paddle reconciliation</p>
@@ -385,7 +385,7 @@ export const AdminBillingPage: React.FC = () => {
                             </div>
                             <p className="mt-2 text-sm text-muted-foreground">Current MRR-eligible subscriptions after the latest billing sync.</p>
                         </div>
-                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-accent-200 bg-accent-50 text-accent-700">
+                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-accent-200 bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                             <ShieldCheck size={18} weight="duotone" />
                         </span>
                     </div>
@@ -400,7 +400,7 @@ export const AdminBillingPage: React.FC = () => {
                             </div>
                             <p className="mt-2 text-sm text-muted-foreground">Includes subscriptions scheduled to cancel and grace-access accounts.</p>
                         </div>
-                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                             <CreditCard size={18} weight="duotone" />
                         </span>
                     </div>
@@ -415,7 +415,7 @@ export const AdminBillingPage: React.FC = () => {
                             </div>
                             <p className="mt-2 text-sm text-muted-foreground">Events that need replay or payload inspection.</p>
                         </div>
-                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700">
+                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             <WarningCircle size={18} weight="duotone" />
                         </span>
                     </div>
@@ -607,7 +607,7 @@ export const AdminBillingPage: React.FC = () => {
                                                     {record.user_id ? (
                                                         <Link
                                                             to={`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`}
-                                                            className="block truncate font-semibold text-foreground hover:text-accent-700 hover:underline"
+                                                            className="block truncate font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
                                                         >
                                                             {record.email || 'Unknown user'}
                                                         </Link>
@@ -638,7 +638,7 @@ export const AdminBillingPage: React.FC = () => {
                                             <td className="border-b border-border py-4 pe-4">
                                                 <div className="font-medium text-foreground">{formatCompactDate(record.current_period_end)}</div>
                                                 {record.grace_ends_at ? (
-                                                    <div className="mt-1 text-xs text-amber-700">Grace until {formatCompactDate(record.grace_ends_at)}</div>
+                                                    <div className="mt-1 text-xs text-amber-700 dark:text-amber-200">Grace until {formatCompactDate(record.grace_ends_at)}</div>
                                                 ) : null}
                                             </td>
                                             <td className="border-b border-border py-4 pe-4">
@@ -687,7 +687,7 @@ export const AdminBillingPage: React.FC = () => {
                                             {record.user_email && record.user_id ? (
                                                 <Link
                                                     to={`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`}
-                                                    className="font-medium text-foreground hover:text-accent-700 hover:underline"
+                                                    className="font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
                                                 >
                                                     {record.user_email}
                                                 </Link>

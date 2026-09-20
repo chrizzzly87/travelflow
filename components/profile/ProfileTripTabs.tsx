@@ -37,7 +37,7 @@ export const ProfileTripTabs: React.FC<ProfileTripTabsProps> = ({
             className={[
               'inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-semibold transition-colors',
               isActive
-                ? 'border-accent-300 bg-accent-50 text-accent-900'
+                ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
                 : 'border-border bg-card text-foreground hover:border-border hover:text-foreground',
               tab.disabled ? 'cursor-not-allowed opacity-70' : '',
             ].join(' ')}
@@ -47,7 +47,7 @@ export const ProfileTripTabs: React.FC<ProfileTripTabsProps> = ({
             <span
               className={[
                 'rounded-full px-2 py-0.5 text-xs font-bold',
-                isActive ? 'bg-accent-100 text-accent-800' : 'bg-secondary text-muted-foreground',
+                isActive ? 'bg-accent-100 text-accent-800 dark:bg-accent-400/12 dark:text-accent-200' : 'bg-secondary text-muted-foreground',
               ].join(' ')}
             >
               {tab.count}

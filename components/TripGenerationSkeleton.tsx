@@ -103,8 +103,8 @@ export const TripGenerationSkeleton: React.FC = () => {
                 <div className="absolute inset-0 bg-card/70 backdrop-blur-[2px] flex items-center justify-center z-50">
                     <div className="bg-card p-8 rounded-2xl shadow-2xl border border-border max-w-sm w-full text-center flex flex-col items-center gap-5 animate-in zoom-in-95 duration-500">
                         <div className="relative">
-                            <div className="absolute inset-0 bg-accent-100 rounded-full animate-ping opacity-30" />
-                            <div className="bg-accent-50 p-4 rounded-full text-accent-600 relative z-10">
+                            <div className="absolute inset-0 bg-accent-100 rounded-full animate-ping opacity-30 dark:bg-accent-400/12" />
+                            <div className="bg-accent-50 p-4 rounded-full text-accent-600 relative z-10 dark:bg-accent-400/12">
                                 <Loader2 className="size-8 animate-spin" />
                             </div>
                         </div>

@@ -152,11 +152,11 @@ export const AdminOgToolsPage: React.FC = () => {
                                 </p>
                             </div>
                             {inspectResult?.mode === 'static' ? (
-                                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+                                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                                     <CheckCircle size={14} /> Static mode
                                 </span>
                             ) : inspectResult?.mode === 'dynamic' ? (
-                                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+                                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                     <WarningCircle size={14} /> Dynamic mode
                                 </span>
                             ) : null}
@@ -203,7 +203,7 @@ export const AdminOgToolsPage: React.FC = () => {
                         </div>
 
                         {inspectError && (
-                            <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+                            <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                 {inspectError}
                             </p>
                         )}
@@ -263,7 +263,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                                 href={inspectResult.resolvedOgImageUrl}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="text-xs font-semibold text-accent-700 hover:text-accent-800"
+                                                className="text-xs font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
                                             >
                                                 Open image
                                             </a>
@@ -463,7 +463,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                     href={playgroundSrc}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="rounded-lg border border-accent-300 bg-accent-50 px-3 py-1.5 text-xs font-semibold text-accent-800 hover:bg-accent-100"
+                                    className="rounded-lg border border-accent-300 bg-accent-50 px-3 py-1.5 text-xs font-semibold text-accent-800 hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                                 >
                                     Open standalone
                                 </a>
@@ -471,7 +471,7 @@ export const AdminOgToolsPage: React.FC = () => {
                         </header>
 
                         {playgroundLoadIssue && (
-                            <p className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+                            <p className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                 {playgroundLoadIssue}
                             </p>
                         )}

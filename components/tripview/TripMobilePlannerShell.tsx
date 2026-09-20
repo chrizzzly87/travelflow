@@ -335,7 +335,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                                 type="button"
                                 onClick={onOpenDiscover}
                                 data-testid="mobile-open-discover"
-                                className="ms-auto me-1 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 text-xs font-semibold text-accent-700 transition-colors hover:bg-accent-100"
+                                className="ms-auto me-1 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 text-xs font-semibold text-accent-700 transition-colors hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                                 {...getAnalyticsDebugAttributes('trip_view__recommendations--open', { trip_id: tripId })}
                             >
                                 <Sparkles size={14} />

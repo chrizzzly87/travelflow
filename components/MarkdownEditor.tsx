@@ -469,7 +469,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
     if (readOnly) {
         return (
-            <div className={`prose prose-sm max-w-none text-muted-foreground ${className}`}>
+            <div className={`prose dark:prose-invert prose-sm max-w-none text-muted-foreground ${className}`}>
                 <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
@@ -509,7 +509,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         <button type="button"
                             onClick={handleAiButtonClick}
                             disabled={isGenerating}
-                            className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-accent-600 hover:bg-accent-50 rounded-md transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-accent-600 hover:bg-accent-50 rounded-md transition-colors disabled:opacity-50 dark:hover:bg-accent-400/12"
                             aria-haspopup={hasAiActions ? 'menu' : undefined}
                             aria-expanded={hasAiActions ? isAiPopoverOpen : undefined}
                         >
@@ -529,7 +529,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                                                 onAiActionSelect?.(action.id);
                                                 setIsAiPopoverOpen(false);
                                             }}
-                                            className="w-full text-left px-2.5 py-2 rounded-md hover:bg-accent-50 transition-colors"
+                                            className="w-full text-left px-2.5 py-2 rounded-md hover:bg-accent-50 transition-colors dark:hover:bg-accent-400/12"
                                         >
                                             <div className="text-xs font-semibold text-foreground">{action.label}</div>
                                             <div className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{action.description}</div>
@@ -543,7 +543,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             </div>
 
             {aiStatus && (
-                <div className="px-3 py-1.5 bg-accent-50/80 border-b border-accent-100 text-[11px] text-accent-700">
+                <div className="px-3 py-1.5 bg-accent-50/80 border-b border-accent-100 text-[11px] text-accent-700 dark:bg-accent-400/12 dark:text-accent-200">
                     {aiStatus}
                 </div>
             )}

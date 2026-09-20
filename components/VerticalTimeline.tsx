@@ -587,7 +587,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                         aria-hidden="true"
                     >
                         <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-red-400/60" />
-                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-red-200/90 bg-card/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-red-500 shadow-sm">
+                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-red-200/90 bg-card/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-red-500 shadow-sm dark:border-red-400/30">
                             Today
                         </span>
                     </div>
@@ -613,7 +613,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                     <div
                                         key={`month-rail-${slot.index}`}
                                         className={`absolute inset-x-0 border-b border-border ${
-                                            isToday ? 'bg-red-50/70' : slot.isWeekend ? 'bg-secondary' : 'bg-secondary/80'
+                                            isToday ? 'bg-red-50/70 dark:bg-red-400/12' : slot.isWeekend ? 'bg-secondary' : 'bg-secondary/80'
                                         }`}
                                         style={{
                                             height: `${slot.size}px`,
@@ -664,7 +664,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                 <div
                                     key={slot.index}
                                     className={`absolute flex w-full select-none items-center justify-center border-b border-border px-1 ${
-                                        isToday ? 'bg-red-50/70' : slot.isWeekend ? 'bg-secondary' : 'bg-card'
+                                        isToday ? 'bg-red-50/70 dark:bg-red-400/12' : slot.isWeekend ? 'bg-secondary' : 'bg-card'
                                     }`}
                                     style={{
                                         height: `${slot.size}px`,
@@ -677,7 +677,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                             <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-muted-foreground'}`}>
                                                 {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
                                             </span>
-                                            <span className={`text-sm font-semibold leading-none ${isToday ? 'text-red-700' : 'text-foreground'}`}>
+                                            <span className={`text-sm font-semibold leading-none ${isToday ? 'text-red-700 dark:text-red-200' : 'text-foreground'}`}>
                                                 {slot.dayNum}
                                             </span>
                                         </div>
@@ -686,7 +686,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                             <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-muted-foreground'}`}>
                                                 {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
                                             </span>
-                                            <span className={`text-sm font-semibold leading-tight ${isToday ? 'text-red-700' : 'text-foreground'}`}>
+                                            <span className={`text-sm font-semibold leading-tight ${isToday ? 'text-red-700 dark:text-red-200' : 'text-foreground'}`}>
                                                 {slot.dayNum}
                                             </span>
                                         </div>
@@ -695,7 +695,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                             <span className={`block text-[10px] font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-muted-foreground'}`}>
                                                 {slot.dayName}
                                             </span>
-                                            <span className={`block text-lg font-bold leading-tight ${isToday ? 'text-red-700' : 'text-foreground'}`}>
+                                            <span className={`block text-lg font-bold leading-tight ${isToday ? 'text-red-700 dark:text-red-200' : 'text-foreground'}`}>
                                                 {slot.dayNum}
                                             </span>
                                             <span className={`text-[10px] uppercase leading-none ${isToday ? 'text-red-500' : 'text-muted-foreground'}`}>
@@ -732,7 +732,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                          <button type="button"
                              onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddCity(); }}
                              disabled={!canEdit}
-                             className={`opacity-0 group-hover/cities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-accent-100' : 'opacity-50 cursor-not-allowed'}`}
+                             className={`opacity-0 group-hover/cities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-accent-100 dark:hover:bg-accent-400/12' : 'opacity-50 cursor-not-allowed'}`}
                          >
                              <Plus size={12} />
                          </button>
@@ -919,7 +919,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                      <button type="button"
                                          onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                          className={`absolute z-10 left-1/2 -translate-x-1/2 px-4 rounded-xl border text-[11px] font-semibold flex items-center justify-between gap-2 shadow-sm transition-colors pointer-events-auto
-                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 ring-2 ring-blue-600 ring-offset-1' : (isUnsetTransport ? 'bg-secondary/70 border-border border-dashed text-muted-foreground' : 'bg-card border-border text-muted-foreground')}
+                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 ring-2 ring-blue-600 ring-offset-1 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30' : (isUnsetTransport ? 'bg-secondary/70 border-border border-dashed text-muted-foreground' : 'bg-card border-border text-muted-foreground')}
                                              ${travel || canEdit ? 'hover:bg-secondary cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                          `}
                                          style={{ top: chipTop, height: chipHeight, width: chipWidth }}
@@ -946,7 +946,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                          <button type="button"
                              onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(visualStartOffset); }}
                              disabled={!canEdit}
-                             className={`opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-accent-100' : 'opacity-50 cursor-not-allowed'}`}
+                             className={`opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-accent-100 dark:hover:bg-accent-400/12' : 'opacity-50 cursor-not-allowed'}`}
                              aria-label="Add activity"
                          >
                              <Plus size={12} />

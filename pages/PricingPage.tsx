@@ -72,16 +72,16 @@ const TIER_STYLE: Record<'backpacker' | 'explorer' | 'globetrotter', TierStyle> 
         featureIconClass: 'text-muted-foreground',
     },
     explorer: {
-        badgeClass: 'border-accent-300 bg-accent-100 text-accent-700',
-        surfaceClass: 'border-accent-200 shadow-md ring-1 ring-accent-100',
-        headerClass: 'bg-accent-50/70',
+        badgeClass: 'border-accent-300 bg-accent-100 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30',
+        surfaceClass: 'border-accent-200 shadow-md ring-1 ring-accent-100 dark:border-accent-400/30',
+        headerClass: 'bg-accent-50/70 dark:bg-accent-400/12',
         featureIconClass: 'text-accent-600',
         highlighted: true,
     },
     globetrotter: {
-        badgeClass: 'border-amber-300 bg-amber-100 text-amber-700',
-        surfaceClass: 'border-amber-200',
-        headerClass: 'bg-amber-50/70',
+        badgeClass: 'border-amber-300 bg-amber-100 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
+        surfaceClass: 'border-amber-200 dark:border-amber-400/30',
+        headerClass: 'bg-amber-50/70 dark:bg-amber-400/12',
         featureIconClass: 'text-amber-600',
     },
 };
@@ -271,8 +271,8 @@ export const PricingPage: React.FC = () => {
                     <div className={cn(
                         'mx-auto mb-8 max-w-5xl rounded-2xl border px-6 py-5',
                         billingLifecycleState === 'canceled_grace'
-                            ? 'border-amber-200 bg-amber-50'
-                            : 'border-accent-200 bg-accent-50/70',
+                            ? 'border-amber-200 bg-amber-50 dark:bg-amber-400/12 dark:border-amber-400/30'
+                            : 'border-accent-200 bg-accent-50/70 dark:bg-accent-400/12 dark:border-accent-400/30',
                     )}>
                         <div className="flex flex-wrap items-start justify-between gap-4">
                             <div className="space-y-2">
@@ -400,7 +400,7 @@ export const PricingPage: React.FC = () => {
                                     label: t('shared.currentPlanCta'),
                                     href: checkoutTarget,
                                     disabled: true,
-                                    className: 'w-full cursor-not-allowed rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm font-semibold text-accent-700',
+                                    className: 'w-full cursor-not-allowed rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm font-semibold text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30',
                                     analyticsId: 'pricing__plan_cta--current',
                                     helperText: t('shared.currentPlanHelper'),
                                 };

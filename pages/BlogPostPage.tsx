@@ -535,7 +535,7 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                     {config.categories.map((category) => (
                         <AccordionItem key={category.id} value={category.id} className="border-b border-border last:border-b-0">
                             <AccordionTrigger
-                                className="cursor-pointer px-4 py-3 text-sm font-semibold text-foreground hover:no-underline hover:text-accent-700 data-[state=open]:text-accent-700"
+                                className="cursor-pointer px-4 py-3 text-sm font-semibold text-foreground hover:no-underline hover:text-accent-700 data-[state=open]:text-accent-700 dark:hover:text-accent-200"
                                 {...getAnalyticsDebugAttributes('blog__map_card--category', {
                                     slug: postSlug,
                                     category: category.id,
@@ -563,7 +563,7 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                                                         spot: spot.id,
                                                     });
                                                 }}
-                                                className="group flex w-full items-start justify-between gap-3 rounded-lg p-2 text-left transition-colors hover:bg-accent-50/60"
+                                                className="group flex w-full items-start justify-between gap-3 rounded-lg p-2 text-left transition-colors hover:bg-accent-50/60 dark:hover:bg-accent-400/12"
                                                 {...getAnalyticsDebugAttributes('blog__map_card--spot', {
                                                     slug: postSlug,
                                                     category: category.id,
@@ -571,11 +571,11 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                                                 })}
                                             >
                                                 <span className="inline-flex min-w-0 items-start gap-2">
-                                                    <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-accent-300 bg-accent-50 text-[10px] font-bold text-accent-700">
+                                                    <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-accent-300 bg-accent-50 text-[10px] font-bold text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                                                         {spotIndex + 1}
                                                     </span>
                                                     <span className="min-w-0">
-                                                        <span className="block min-w-0 break-words text-sm font-semibold text-foreground transition-colors group-hover:text-accent-800">
+                                                        <span className="block min-w-0 break-words text-sm font-semibold text-foreground transition-colors group-hover:text-accent-800 dark:group-hover:text-accent-200">
                                                             {spot.name}
                                                         </span>
                                                         {spot.note && (
@@ -588,7 +588,7 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                                                 <ArrowSquareOut
                                                     size={14}
                                                     weight="bold"
-                                                    className="mt-0.5 shrink-0 text-accent-700 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                                                    className="mt-0.5 shrink-0 text-accent-700 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 dark:text-accent-200"
                                                 />
                                             </a>
                                         );
@@ -635,27 +635,27 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
             return (
                 <Link
                     to={resolvedHref}
-                    className="group my-1 inline-flex w-full items-center justify-between gap-3 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 font-semibold text-accent-900 shadow-sm transition-colors hover:border-accent-300 hover:bg-accent-100"
+                    className="group my-1 inline-flex w-full items-center justify-between gap-3 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 font-semibold text-accent-900 shadow-sm transition-colors hover:border-accent-300 hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30 dark:hover:border-accent-400/30"
                 >
                     <span className="inline-flex min-w-0 items-center gap-2">
                         <img src="/favicon-32.png" alt="" aria-hidden="true" className="size-5 rounded" loading="lazy" />
                         <span className="truncate text-sm">{`${APP_NAME}: ${displayLabel}`}</span>
                     </span>
-                    <ArrowSquareOut size={14} weight="bold" className="shrink-0 text-accent-700 transition-transform group-hover:translate-x-0.5" />
+                    <ArrowSquareOut size={14} weight="bold" className="shrink-0 text-accent-700 transition-transform group-hover:translate-x-0.5 dark:text-accent-200" />
                 </Link>
             );
         }
 
         if (resolvedHref && isInternalPath(resolvedHref)) {
             return (
-                <Link to={resolvedHref} className="text-accent-600 underline decoration-accent-300 hover:text-accent-800 transition-colors">
+                <Link to={resolvedHref} className="text-accent-600 underline decoration-accent-300 hover:text-accent-800 transition-colors dark:hover:text-accent-200">
                     {children}
                 </Link>
             );
         }
 
         return (
-            <a href={resolvedHref} className="text-accent-600 underline decoration-accent-300 hover:text-accent-800 transition-colors" target="_blank" rel="noopener noreferrer">
+            <a href={resolvedHref} className="text-accent-600 underline decoration-accent-300 hover:text-accent-800 transition-colors dark:hover:text-accent-200" target="_blank" rel="noopener noreferrer">
                 {children}
             </a>
         );
@@ -721,7 +721,7 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
         );
     },
     blockquote: ({ children }) => (
-        <blockquote className="mb-4 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 italic text-muted-foreground">{children}</blockquote>
+        <blockquote className="mb-4 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 italic text-muted-foreground dark:bg-accent-400/12">{children}</blockquote>
     ),
     table: ({ children }) => (
         <div className="mb-4 overflow-x-auto">
@@ -1007,14 +1007,14 @@ export const BlogPostPage: React.FC = () => {
                         onClick={handleBackToBlogClick}
                         onFocus={prefetchBlogListRoute}
                         onPointerEnter={prefetchBlogListRoute}
-                        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-accent-700 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-accent-700 transition-colors dark:hover:text-accent-200"
                     >
                         <ArrowLeft size={14} weight="bold" />
                         {t('common:buttons.backToBlog')}
                     </Link>
                 </div>
                 {showEnglishContentNotice && (
-                    <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+                    <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                         <span className="inline-flex items-center gap-1.5">
                             <FlagIcon code="GB" size="sm" />
                             {t('index.englishArticleNotice')}
@@ -1101,7 +1101,7 @@ export const BlogPostPage: React.FC = () => {
                                 ))}
                             </div>
 
-                            <p className="mt-6 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 text-lg leading-relaxed text-muted-foreground">
+                            <p className="mt-6 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 text-lg leading-relaxed text-muted-foreground dark:bg-accent-400/12">
                                 {post.summary}
                             </p>
 
@@ -1136,7 +1136,7 @@ export const BlogPostPage: React.FC = () => {
                                                         }}
                                                         className={`block w-full py-1.5 pl-4 text-left text-[13px] leading-snug transition-colors duration-200 ${
                                                             isActive
-                                                                ? 'font-semibold text-accent-700'
+                                                                ? 'font-semibold text-accent-700 dark:text-accent-200'
                                                                 : 'text-muted-foreground hover:text-foreground'
                                                         }`}
                                                     >
@@ -1165,7 +1165,7 @@ export const BlogPostPage: React.FC = () => {
                                                         <Article size={12} weight="duotone" className="text-muted-foreground" />
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <p className="text-sm font-medium text-foreground group-hover:text-accent-700 transition-colors line-clamp-2 leading-snug">
+                                                        <p className="text-sm font-medium text-foreground group-hover:text-accent-700 transition-colors line-clamp-2 leading-snug dark:group-hover:text-accent-200">
                                                             {related.title}
                                                         </p>
                                                         <p className="mt-0.5 text-xs text-muted-foreground">{t('index.readTime', { minutes: related.readingTimeMin })}</p>
@@ -1177,7 +1177,7 @@ export const BlogPostPage: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className="rounded-2xl border border-border bg-gradient-to-br from-accent-50 to-white p-5">
+                            <div className="rounded-2xl border border-border bg-gradient-to-br from-accent-50 to-card p-5">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Compass size={18} weight="duotone" className="text-accent-500" />
                                     <h4 className="text-sm font-semibold text-foreground">{t('post.planTripTitle')}</h4>
@@ -1197,11 +1197,11 @@ export const BlogPostPage: React.FC = () => {
                             <div>
                                 <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">{t('post.explore')}</h4>
                                 <div className="space-y-2">
-                                    <Link to={buildLocalizedMarketingPath('blog', locale)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent-700 transition-colors">
+                                    <Link to={buildLocalizedMarketingPath('blog', locale)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent-700 transition-colors dark:hover:text-accent-200">
                                         <Article size={14} weight="duotone" className="text-muted-foreground" />
                                         {t('post.allArticles')}
                                     </Link>
-                                    <Link to={buildLocalizedMarketingPath('inspirations', locale)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent-700 transition-colors">
+                                    <Link to={buildLocalizedMarketingPath('inspirations', locale)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent-700 transition-colors dark:hover:text-accent-200">
                                         <Compass size={14} weight="duotone" className="text-muted-foreground" />
                                         {t('post.tripInspirations')}
                                     </Link>
@@ -1233,7 +1233,7 @@ export const BlogPostPage: React.FC = () => {
                                         <ArrowRight size={16} weight="bold" className="text-muted-foreground group-hover:text-accent-600 transition-colors" />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <h3 className="text-sm font-semibold text-foreground group-hover:text-accent-700 transition-colors line-clamp-2">
+                                        <h3 className="text-sm font-semibold text-foreground group-hover:text-accent-700 transition-colors line-clamp-2 dark:group-hover:text-accent-200">
                                             {related.title}
                                         </h3>
                                         <p className="mt-1 text-xs text-muted-foreground">
