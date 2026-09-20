@@ -140,7 +140,7 @@ const modalPrimaryButtonClassName = 'inline-flex h-10 items-center justify-cente
 const modalSectionClassName = 'space-y-4 border-t border-border pt-6';
 const modalSubtlePanelClassName = 'rounded-md bg-secondary px-4 py-3 text-sm leading-6 text-muted-foreground dark:text-foreground';
 const modalTextButtonClassName = 'inline-flex items-center text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300';
-const tabClassName = 'relative flex-none gap-2 px-0 data-[state=active]:[&_svg]:text-accent-600 [&_svg]:text-slate-400';
+const tabClassName = 'relative flex-none gap-2 px-0 data-[state=active]:[&_svg]:text-accent-600 [&_svg]:text-muted-foreground';
 
 const SummaryCard: React.FC<SummaryCardProps> = ({ label, value, wide = false }) => (
     <div className={`space-y-1 ${wide ? 'sm:col-span-2' : ''}`}>

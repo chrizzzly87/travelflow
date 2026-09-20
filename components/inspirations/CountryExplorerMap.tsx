@@ -62,12 +62,16 @@ const GEOMETRY_CODES: ReadonlySet<string> = new Set(GEOMETRY.map((shape) => shap
  * it and the active tones so a filtered-out guide country visibly recedes without disappearing.
  */
 const TONE_CLASS: Record<CountryMapTone, string> = {
-  ideal: 'fill-emerald-500/85 stroke-white',
-  shoulder: 'fill-amber-400/85 stroke-white',
-  avoid: 'fill-slate-400/70 stroke-white',
-  match: 'fill-accent-500/85 stroke-white',
-  muted: 'fill-slate-200 stroke-white',
-  land: 'fill-slate-100 stroke-white',
+  // The hairline between countries is the page background, not white: on a dark
+  // page a white stroke turns the whole map into a bright mesh. The `land` and
+  // `muted` fills are furniture and have to follow the surface, or the map reads
+  // as one big light panel dropped onto the page.
+  ideal: 'fill-emerald-500/85 stroke-white dark:stroke-background',
+  shoulder: 'fill-amber-400/85 stroke-white dark:stroke-background',
+  avoid: 'fill-slate-400/70 stroke-white dark:fill-slate-500/50 dark:stroke-background',
+  match: 'fill-accent-500/85 stroke-white dark:stroke-background',
+  muted: 'fill-slate-200 stroke-white dark:fill-slate-700/60 dark:stroke-background',
+  land: 'fill-slate-100 stroke-white dark:fill-slate-800/70 dark:stroke-background',
 };
 
 const MARKER_RADIUS = 4;
@@ -307,7 +311,7 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
         data-country-code={countryCode}
         tabIndex={activeRovingCode === countryCode ? 0 : -1}
         aria-label={describeCountry(entry)}
-        className="cursor-pointer outline-none [&:focus-visible>*]:stroke-accent-700 [&:focus-visible>*]:[stroke-width:1.6] [&:hover>*]:stroke-slate-900 [&:hover>*]:[stroke-width:1.2]"
+        className="cursor-pointer outline-none [&:focus-visible>*]:stroke-accent-700 [&:focus-visible>*]:[stroke-width:1.6] [&:hover>*]:stroke-slate-900 dark:[&:hover>*]:stroke-white [&:hover>*]:[stroke-width:1.2]"
         onClick={(event) => handleActivateGuide(event, entry, href)}
         onKeyDown={(event) => handleKeyDown(event, countryCode)}
         onFocus={() => setHover((current) => ({ ...current, focusCountryCode: countryCode }))}

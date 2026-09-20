@@ -8,7 +8,7 @@ export const Toaster: React.FC<ToasterProps> = (props) => {
       offset={14}
       closeButton={false}
       toastOptions={{
-        className: 'border border-border bg-card/95 text-foreground shadow-lg backdrop-blur supports-[backdrop-filter]:bg-white/90',
+        className: 'border border-border bg-card/95 text-foreground shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/90',
         classNames: {
           icon: '!h-8 !w-8 !me-2 !shrink-0',
         },
