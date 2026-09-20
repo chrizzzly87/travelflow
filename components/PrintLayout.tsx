@@ -480,7 +480,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                                     <div key={hIdx} className="border border-border rounded-lg overflow-hidden">
                                                         <div className="bg-secondary p-3 border-b border-border flex items-center justify-between">
                                                             <div className="font-bold text-sm text-foreground flex items-center gap-2">
-                                                                <Hotel size={14} className="text-accent-600"/> {hotel.name}
+                                                                <Hotel size={14} className="text-accent-600 dark:text-accent-300"/> {hotel.name}
                                                             </div>
                                                         </div>
                                                         {hotel.address && (
@@ -547,7 +547,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                                                         {act.description && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{act.description}</div>}
                                                                         {act.aiInsights && (
                                                                             <div className="mt-2 flex flex-wrap gap-2">
-                                                                                {act.aiInsights.bestTime && <span className="text-[10px] bg-accent-50 text-accent-600 px-1.5 py-0.5 rounded dark:bg-accent-400/12">Time: {act.aiInsights.bestTime}</span>}
+                                                                                {act.aiInsights.bestTime && <span className="text-[10px] bg-accent-50 text-accent-600 px-1.5 py-0.5 rounded dark:bg-accent-400/12 dark:text-accent-300">Time: {act.aiInsights.bestTime}</span>}
                                                                                 {act.aiInsights.cost && <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded dark:bg-green-400/12">Cost: {act.aiInsights.cost}</span>}
                                                                             </div>
                                                                         )}

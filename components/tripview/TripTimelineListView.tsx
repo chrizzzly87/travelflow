@@ -100,7 +100,7 @@ const buildMarkdownComponents = (
     a: ({ node, children, ...props }: any) => (
         <a
             {...props}
-            className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
+            className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
             target="_blank"
             rel="noopener noreferrer"
         >{children}</a>
@@ -518,8 +518,8 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                             className={`pointer-events-auto origin-center -rotate-90 rounded-full border bg-card/95 shadow-sm transition-colors ${
                                                 transfer.itemId
                                                     ? transferSelected
-                                                        ? 'border-accent-500 text-accent-700 ring-2 ring-accent-200 dark:text-accent-200'
-                                                        : 'border-border text-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30'
+                                                        ? 'border-accent-500 text-accent-700 ring-2 ring-accent-200 dark:text-accent-200 dark:ring-0'
+                                                        : 'border-border text-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300'
                                                     : 'border-border text-muted-foreground'
                                             }`}
                                             {...getAnalyticsDebugAttributes('trip_view__timeline_transfer--open', {
@@ -650,7 +650,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                         key={hotel.id}
                                                         className="inline-flex max-w-full items-start gap-2 rounded-2xl border border-border bg-secondary px-3 py-2 text-left text-sm text-foreground"
                                                     >
-                                                        <Hotel size={14} className="mt-0.5 shrink-0 text-accent-600" />
+                                                        <Hotel size={14} className="mt-0.5 shrink-0 text-accent-600 dark:text-accent-300" />
                                                         <div className="min-w-0">
                                                             {hotel.name?.trim() && (
                                                                 <p className="truncate font-semibold text-foreground">

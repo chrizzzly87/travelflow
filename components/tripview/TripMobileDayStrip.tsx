@@ -170,7 +170,7 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                                     data-testid="planner-mobile-transfer-node"
                                     onClick={() => onSelectTransfer(node.segmentIndex, transfer)}
                                     title={`${modeLabel} to ${transfer.toCityTitle}${scheduleLabel ? ` — ${scheduleLabel}` : ''}`}
-                                    className="relative z-10 inline-flex size-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:border-slate-400 hover:text-accent-600"
+                                    className="relative z-10 inline-flex size-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:border-slate-400 hover:text-accent-600 dark:hover:text-accent-300"
                                     {...getAnalyticsDebugAttributes('trip_view__mobile_transfer--select', {
                                         trip_id: tripId,
                                         mode: transfer.mode,

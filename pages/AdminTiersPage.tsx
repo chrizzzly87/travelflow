@@ -113,7 +113,7 @@ const EntitlementCard: React.FC<{
 	                            aria-label={p.label}
 	                            checked={Boolean(parsed[p.key])}
                             onChange={(e) => updateField(p.key, e.target.checked)}
-                            className="size-4 rounded border-border text-accent-600 focus:ring-accent-600"
+                            className="size-4 rounded border-border text-accent-600 focus:ring-accent-600 dark:text-accent-300"
                         />
                         <span className="text-xs font-medium text-foreground">{p.label}</span>
                     </label>

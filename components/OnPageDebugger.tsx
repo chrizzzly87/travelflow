@@ -1753,7 +1753,7 @@ export const OnPageDebugger: React.FC = () => {
                             <Flask size={13} weight="duotone" />
                             Debugger
                         </span>
-                        <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground">
+                        <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground dark:text-foreground">
                             {trackingBoxes.length} tracked in viewport
                         </span>
                         <span className={`rounded-md border px-2 py-1 text-xs ${
@@ -1763,10 +1763,10 @@ export const OnPageDebugger: React.FC = () => {
                         }`}>
                             Prefetch {isPrefetchEnabled ? 'on' : 'off'}
                         </span>
-                        <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground">
+                        <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground dark:text-foreground">
                             Prefetch {prefetchStats.completed}/{prefetchStats.attempts}
                         </span>
-                        <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground">
+                        <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground dark:text-foreground">
                             Prefetch skips {totalPrefetchSkips}
                         </span>
                         <span className={`rounded-md border px-2 py-1 text-xs ${
@@ -1777,12 +1777,12 @@ export const OnPageDebugger: React.FC = () => {
                             VT API {viewTransitionDiagnostics.supported ? 'on' : 'off'}
                         </span>
                         {showSeoTools && seoAudit && (
-                            <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground">
+                            <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground dark:text-foreground">
                                 SEO {seoAudit.passCount}/{seoAudit.checks.length}
                             </span>
                         )}
                         {a11yAudit && (
-                            <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground">
+                            <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground dark:text-foreground">
                                 A11y {a11yAudit.passCount}/{a11yAudit.checks.length}
                             </span>
                         )}
@@ -1810,7 +1810,7 @@ export const OnPageDebugger: React.FC = () => {
                         }`}>
                             Supabase {connectivitySnapshot.state}
                         </span>
-                        <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground">
+                        <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground dark:text-foreground">
                             Queue {offlineQueueSnapshot.pendingCount}
                         </span>
                         <span className={`rounded-md border px-2 py-1 text-xs ${

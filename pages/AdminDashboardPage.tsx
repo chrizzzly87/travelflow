@@ -253,12 +253,12 @@ export const AdminDashboardPage: React.FC = () => {
                                 className="flex items-center group hover:bg-secondary p-2 -mx-2 rounded-lg transition-colors cursor-pointer"
                             >
                                 <span className="relative flex shrink-0 overflow-hidden rounded-full size-9 border border-transparent group-hover:border-border group-hover:shadow-sm transition-all">
-                                    <span className="flex size-full items-center justify-center rounded-full bg-secondary text-muted-foreground font-semibold uppercase group-hover:bg-card transition-colors">
+                                    <span className="flex size-full items-center justify-center rounded-full bg-secondary text-muted-foreground font-semibold uppercase group-hover:bg-card transition-colors dark:text-foreground">
                                         {getUserName(user).charAt(0)}
                                     </span>
                                 </span>
                                 <div className="ml-4 space-y-1 w-full max-w-[200px] sm:max-w-none">
-                                    <p className="text-sm font-medium leading-none truncate group-hover:text-accent-700 transition-colors dark:group-hover:text-accent-200">{getUserName(user)}</p>
+                                    <p className="text-sm font-medium leading-none truncate group-hover:text-accent-700 transition-colors dark:group-hover:text-accent-200 dark:group-hover:text-accent-300">{getUserName(user)}</p>
                                     <p className="text-sm text-muted-foreground truncate">{user.email || 'No email'}</p>
                                 </div>
                                 <div className="ml-auto flex items-end flex-col gap-1 shrink-0 text-right font-medium">

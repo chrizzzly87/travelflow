@@ -1908,7 +1908,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     )}
 
                     <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
-                        <span className="inline-flex items-center rounded-full border border-accent-200 bg-accent-50 px-3 py-1 font-medium text-accent-700 dark:bg-accent-400/15 dark:text-accent-300 dark:text-accent-200 dark:border-accent-400/30">
+                        <span className="inline-flex items-center rounded-full border border-accent-200 bg-accent-50 px-3 py-1 font-medium text-accent-700 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30">
                             {dateInputMode === 'exact'
                                 ? t('wizard.dates.exactLength', { days: exactTripSpan?.days ?? totalDays, nights: exactTripSpan?.nights ?? totalNights })
                                 : t('wizard.dates.flexLength', { weeks: flexWeeks, days: totalDays })}
@@ -2238,7 +2238,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                 <div className="mb-4 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground dark:text-muted-foreground">
                     <span>{t('wizard.flowLabel')}</span>
                     <span className="text-slate-300">•</span>
-                    <Link to={buildVariantUrl('/create-trip')} className="font-medium text-accent-700 transition-colors hover:text-accent-900 dark:text-accent-300 dark:text-accent-200 dark:hover:text-accent-200">
+                    <Link to={buildVariantUrl('/create-trip')} className="font-medium text-accent-700 transition-colors hover:text-accent-900 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300">
                         {t('labsBanner.links.classicCard')}
                     </Link>
                 </div>
@@ -2257,7 +2257,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                             <button
                                 type="button"
                                 onClick={() => goToStep(Math.max(0, currentStepIndex - 1))}
-                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent-300 hover:text-accent-900 dark:border-border dark:bg-card dark:text-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
+                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent-300 hover:text-accent-900 dark:border-border dark:bg-card dark:text-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300"
                             >
                                 {t('wizard.actions.back')}
                             </button>
@@ -2278,7 +2278,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         type="button"
                                         onClick={handleCreateBlank}
                                         disabled={selectedCountries.length === 0}
-                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent-300 hover:text-accent-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-border dark:bg-card dark:text-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30"
+                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent-300 hover:text-accent-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-border dark:bg-card dark:text-foreground dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300"
                                     >
                                         <FilePlus size={16} weight="duotone" />
                                         {t('wizard.actions.blank')}

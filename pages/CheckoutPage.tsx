@@ -228,7 +228,7 @@ const CheckoutStepSection: React.FC<CheckoutStepSectionProps> = ({ step, state, 
                 className={cn(
                     'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
                     state === 'complete'
-                        ? 'bg-accent-50 text-accent-700 ring-1 ring-accent-200 dark:bg-accent-400/12 dark:text-accent-200'
+                        ? 'bg-accent-50 text-accent-700 ring-1 ring-accent-200 dark:bg-accent-400/12 dark:text-accent-200 dark:ring-0'
                         : state === 'active'
                             ? 'border border-slate-900 text-foreground'
                             : 'border border-border text-muted-foreground'
@@ -945,7 +945,7 @@ export const CheckoutPage: React.FC = () => {
 
     const completedPanel = checkoutCompleted ? (
         <div ref={inlineCheckoutSectionRef} className="space-y-5">
-            <div className="rounded-2xl bg-emerald-50 p-6 shadow-sm ring-1 ring-emerald-100 dark:bg-emerald-400/12">
+            <div className="rounded-2xl bg-emerald-50 p-6 shadow-sm ring-1 ring-emerald-100 dark:bg-emerald-400/12 dark:ring-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">
                     {t('checkout.successEyebrow', { ns: 'pricing' })}
                 </p>
@@ -961,8 +961,8 @@ export const CheckoutPage: React.FC = () => {
                 </p>
 
                 {completedFlowMode === 'acquisition' && postPaymentSyncState === 'syncing' ? (
-                    <div className="mt-5 flex items-center gap-3 rounded-xl bg-card/80 px-4 py-3 text-sm text-foreground ring-1 ring-emerald-100">
-                        <SpinnerGap size={16} className="animate-spin text-accent-600" />
+                    <div className="mt-5 flex items-center gap-3 rounded-xl bg-card/80 px-4 py-3 text-sm text-foreground ring-1 ring-emerald-100 dark:ring-0">
+                        <SpinnerGap size={16} className="animate-spin text-accent-600 dark:text-accent-300" />
                         <span>{t('checkout.paymentSyncingMessage', { ns: 'pricing' })}</span>
                     </div>
                 ) : null}
@@ -975,15 +975,15 @@ export const CheckoutPage: React.FC = () => {
                 ) : null}
 
                 {completedFlowMode === 'acquisition' && postPaymentSyncState === 'synced' ? (
-                    <div className="mt-5 rounded-xl bg-card/80 px-4 py-3 text-sm text-foreground ring-1 ring-emerald-100">
+                    <div className="mt-5 rounded-xl bg-card/80 px-4 py-3 text-sm text-foreground ring-1 ring-emerald-100 dark:ring-0">
                         <span className="font-semibold text-emerald-800 dark:text-emerald-200">{t('checkout.paymentSyncReadyTitle', { ns: 'pricing' })}</span>{' '}
                         {t('checkout.paymentSyncReadyDescription', { ns: 'pricing' })}
                     </div>
                 ) : null}
 
                 {postPaymentClaimState === 'processing' ? (
-                    <div className="mt-5 flex items-center gap-3 rounded-xl bg-card/80 px-4 py-3 text-sm text-foreground ring-1 ring-emerald-100">
-                        <SpinnerGap size={16} className="animate-spin text-accent-600" />
+                    <div className="mt-5 flex items-center gap-3 rounded-xl bg-card/80 px-4 py-3 text-sm text-foreground ring-1 ring-emerald-100 dark:ring-0">
+                        <SpinnerGap size={16} className="animate-spin text-accent-600 dark:text-accent-300" />
                         <span>{t('checkout.successClaimProcessing', { ns: 'pricing' })}</span>
                     </div>
                 ) : null}
@@ -1806,7 +1806,7 @@ export const CheckoutPage: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={handleEditTravelerDetails}
-                                                className="inline-flex items-center gap-1 text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:text-accent-200 dark:hover:text-accent-200"
+                                                className="inline-flex items-center gap-1 text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
                                                 {...getAnalyticsDebugAttributes('checkout__traveler_details--edit')}
                                             >
                                                 <NotePencil size={16} weight="duotone" />
@@ -2144,7 +2144,7 @@ export const CheckoutPage: React.FC = () => {
                                     <ul className="mt-4 space-y-3">
                                         {planFeatures.map((feature) => (
                                             <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-foreground">
-                                                <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
+                                                <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600 dark:text-accent-300" />
                                                 <span>{feature}</span>
                                             </li>
                                         ))}

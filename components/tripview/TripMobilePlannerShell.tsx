@@ -312,7 +312,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                             <button
                                 type="button"
                                 onClick={() => setPanelMode('days')}
-                                className={`inline-flex size-8 items-center justify-center rounded-full transition-colors ${panelMode === 'days' ? 'bg-card text-accent-600 shadow-sm' : 'text-muted-foreground'}`}
+                                className={`inline-flex size-8 items-center justify-center rounded-full transition-colors ${panelMode === 'days' ? 'bg-card text-accent-600 shadow-sm dark:text-accent-300' : 'text-muted-foreground'}`}
                                 aria-label="Day by day"
                                 aria-pressed={panelMode === 'days'}
                                 {...getAnalyticsDebugAttributes('trip_view__mobile_panel--days', { trip_id: tripId })}
@@ -322,7 +322,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                             <button
                                 type="button"
                                 onClick={() => setPanelMode('timeline')}
-                                className={`inline-flex size-8 items-center justify-center rounded-full transition-colors ${panelMode === 'timeline' ? 'bg-card text-accent-600 shadow-sm' : 'text-muted-foreground'}`}
+                                className={`inline-flex size-8 items-center justify-center rounded-full transition-colors ${panelMode === 'timeline' ? 'bg-card text-accent-600 shadow-sm dark:text-accent-300' : 'text-muted-foreground'}`}
                                 aria-label="Full itinerary"
                                 aria-pressed={panelMode === 'timeline'}
                                 {...getAnalyticsDebugAttributes('trip_view__mobile_panel--timeline', { trip_id: tripId })}
@@ -346,7 +346,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                             type="button"
                             onClick={toggleSheet}
                             data-testid="planner-mobile-sheet-toggle"
-                            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary"
+                            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary dark:text-foreground"
                             aria-label={isFullyExpanded ? 'Collapse day panel' : 'Expand day panel'}
                             aria-expanded={isFullyExpanded}
                             {...getAnalyticsDebugAttributes('trip_view__mobile_sheet--toggle', { trip_id: tripId })}

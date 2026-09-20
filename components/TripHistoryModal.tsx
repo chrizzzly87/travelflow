@@ -127,7 +127,7 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                                                     </span>
                                                     <span className="text-xs text-muted-foreground">{formatHistoryTime(item.ts)}</span>
                                                     {item.isCurrent && (
-                                                        <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[10px] font-semibold text-accent-600 dark:bg-accent-400/12">
+                                                        <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[10px] font-semibold text-accent-600 dark:bg-accent-400/12 dark:text-accent-300">
                                                             Current
                                                         </span>
                                                     )}
@@ -143,7 +143,7 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                                                 <button
                                                     type="button"
                                                     onClick={() => onGo(item)}
-                                                    className="rounded-md border border-border px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-secondary"
+                                                    className="rounded-md border border-border px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-secondary dark:text-foreground"
                                                 >
                                                     Open trip
                                                 </button>

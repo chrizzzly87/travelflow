@@ -204,7 +204,7 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
 
     const tabButtonClass = (value: DiscoverTab): string => (
         `inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-semibold transition-colors ${
-            tab === value ? 'bg-card text-accent-600 shadow-sm' : 'text-muted-foreground'
+            tab === value ? 'bg-card text-accent-600 shadow-sm dark:text-accent-300' : 'text-muted-foreground'
         }`
     );
 
@@ -264,7 +264,7 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="inline-flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary"
+                        className="inline-flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary dark:text-foreground"
                         aria-label="Close discover"
                     >
                         <X size={18} />
@@ -305,7 +305,7 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
                             <button
                                 type="button"
                                 onClick={() => removeSaved(recommendation.id)}
-                                className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-rose-600"
+                                className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-rose-600 dark:text-foreground"
                                 aria-label={`Remove ${recommendation.title}`}
                             >
                                 <Trash2 size={15} />
@@ -327,7 +327,7 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
                                 type="button"
                                 onClick={() => restoreSkipped(recommendation.id)}
                                 data-testid="recommendation-restore"
-                                className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-accent-600"
+                                className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-accent-600 dark:text-foreground dark:hover:text-accent-300"
                                 aria-label={`Put ${recommendation.title} back in the deck`}
                             >
                                 <RotateCcw size={15} />

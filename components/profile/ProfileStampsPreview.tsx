@@ -22,7 +22,7 @@ export const ProfileStampsPreview: React.FC<ProfileStampsPreviewProps> = ({
   return (
     <article className="border border-border bg-card p-4">
       <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        <SealCheck size={14} weight="duotone" className="text-accent-600" />
+        <SealCheck size={14} weight="duotone" className="text-accent-600 dark:text-accent-300" />
         {title}
       </p>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
@@ -55,7 +55,7 @@ export const ProfileStampsPreview: React.FC<ProfileStampsPreviewProps> = ({
         <button
           type="button"
           onClick={onOpen}
-          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800 dark:hover:text-accent-200"
+          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800 dark:hover:text-accent-200 dark:text-accent-300 dark:hover:text-accent-300"
         >
           <Sparkle size={15} weight="duotone" />
           {openLabel}

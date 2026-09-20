@@ -294,7 +294,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
           <Link
             to={tripDetailPath}
             onClick={() => onOpen(trip)}
-            className="inline cursor-pointer transition-colors hover:text-accent-700 dark:hover:text-accent-200"
+            className="inline cursor-pointer transition-colors hover:text-accent-700 dark:hover:text-accent-200 dark:hover:text-accent-300"
             {...(analyticsAttrs ? analyticsAttrs('open') : {})}
           >
             {displayTitle}
@@ -323,13 +323,13 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
             {cityStops.slice(0, 3).map((stop) => (
               <span
                 key={`${trip.id}-stop-${stop.id}`}
-                className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground"
+                className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground dark:text-foreground"
               >
                 {stop.title}
               </span>
             ))}
             {cityStops.length > 3 && (
-              <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+              <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground dark:text-foreground">
                 +{cityStops.length - 3}
               </span>
             )}
@@ -389,7 +389,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
                   trip_id: trip.id,
                 });
               }}
-              className="font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
+              className="font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200 dark:hover:text-accent-300"
               {...(analyticsAttrs ? analyticsAttrs('creator') : {})}
             >
               @{creatorHandle}

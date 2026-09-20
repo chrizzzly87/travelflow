@@ -188,7 +188,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                 <ul className="mt-4 space-y-3">
                                     {explorerHighlights.map((feature) => (
                                         <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-foreground">
-                                            <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
+                                            <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600 dark:text-accent-300" />
                                             <span>{feature}</span>
                                         </li>
                                     ))}
@@ -285,7 +285,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                             t('tripView.pendingAuth.benefits.sync'),
                                         ].map((benefit) => (
                                             <li key={benefit} className="flex items-start gap-3 text-sm leading-6 text-foreground">
-                                                <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
+                                                <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600 dark:text-accent-300" />
                                                 <span>{benefit}</span>
                                             </li>
                                         ))}
@@ -301,7 +301,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                 <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
                     <div className="w-full max-w-xl rounded-2xl border border-accent-100 bg-card/95 shadow-xl backdrop-blur-sm px-5 py-4">
                         <div className="flex items-center gap-3">
-                            <div className="size-9 rounded-full bg-accent-100 text-accent-600 flex items-center justify-center shrink-0 dark:bg-accent-400/12">
+                            <div className="size-9 rounded-full bg-accent-100 text-accent-600 flex items-center justify-center shrink-0 dark:bg-accent-400/12 dark:text-accent-300">
                                 <Loader2 size={18} className="animate-spin" />
                             </div>
                             <div className="min-w-0">
@@ -406,7 +406,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                         t('tripView.claimConflict.benefits.adjust'),
                                     ].map((benefit) => (
                                         <li key={benefit} className="flex items-start gap-3 text-sm leading-6 text-foreground">
-                                            <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
+                                            <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600 dark:text-accent-300" />
                                             <span>{benefit}</span>
                                         </li>
                                     ))}

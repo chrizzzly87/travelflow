@@ -978,7 +978,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                                                     {formatTripAgentTimestamp(thread.updatedAt, i18n.language, now)}
                                                 </span>
                                             </span>
-                                            {thread.id === currentThreadId && <Check className="mt-0.5 size-3.5 text-accent-600" />}
+                                            {thread.id === currentThreadId && <Check className="mt-0.5 size-3.5 text-accent-600 dark:text-accent-300" />}
                                             {thread.status === 'archived' && <Archive className="mt-0.5 size-3.5 text-muted-foreground" />}
                                         </button>
                                         {thread.status === 'active' && (

@@ -41,7 +41,7 @@ const chipClass = (isActive: boolean): string => [
   'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors',
   isActive
     ? 'border-accent-500 bg-accent-500 text-white'
-    : 'border-border bg-card text-muted-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30',
+    : 'border-border bg-card text-muted-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300',
 ].join(' ');
 
 const FacetGroup: React.FC<{
@@ -222,7 +222,7 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
 
       <section className="mt-6">
         <h2 className="flex items-center gap-2 text-base font-black text-foreground">
-          <CalendarHeart className="text-accent-600" size={18} weight="duotone" />
+          <CalendarHeart className="text-accent-600 dark:text-accent-300" size={18} weight="duotone" />
           {t('inspirations.subpages.explorer.monthTitle')}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">{t('inspirations.subpages.explorer.monthSubtitle')}</p>
@@ -332,7 +332,7 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
                 trackEvent('inspirations__country_filter--reset');
                 dispatch({ type: 'reset' });
               }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300"
               {...getAnalyticsDebugAttributes('inspirations__country_filter--reset')}
             >
               <ArrowsClockwise size={13} weight="bold" />

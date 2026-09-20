@@ -92,7 +92,7 @@ export const DialogContent = React.forwardRef<
             {showCloseButton && (
                 <DialogPrimitive.Close
                     aria-label={closeLabel}
-                    className="absolute end-3 top-3 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:outline-none"
+                    className="absolute end-3 top-3 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:outline-none dark:text-foreground"
                 >
                     <X size={16} weight="bold" />
                 </DialogPrimitive.Close>

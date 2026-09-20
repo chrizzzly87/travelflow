@@ -135,7 +135,7 @@ const ModelSearchList: React.FC<{
                                             {model.availability !== 'active' && (
                                                 <Badge variant="secondary" className="shrink-0">Planned</Badge>
                                             )}
-                                            {selected && <Check weight="bold" className="size-4 shrink-0 text-accent-600" />}
+                                            {selected && <Check weight="bold" className="size-4 shrink-0 text-accent-600 dark:text-accent-300" />}
                                         </button>
                                     </li>
                                 );

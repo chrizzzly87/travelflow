@@ -2239,7 +2239,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     onValueChange={(value) => setWorkspaceTab(value as 'setup' | 'results' | 'insights')}
                     className="flex flex-col gap-4"
                 >
-                    <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-card/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur">
+                    <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-card/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur dark:ring-0">
                         <TabsList className="grid w-full grid-cols-3 sm:w-auto">
                             <TabsTrigger value="setup">Setup</TabsTrigger>
                             <TabsTrigger value="results">Results · {runs.length}</TabsTrigger>
@@ -2903,7 +2903,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         maxLength={BENCHMARK_RUN_COMMENT_MAX_LENGTH}
                                                         rows={2}
                                                         placeholder={canEditComment ? 'Add run note…' : 'Comment after run completes'}
-                                                        className="w-full resize-y rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent-400 focus:outline-none focus:ring-1 focus:ring-accent-300 disabled:cursor-not-allowed disabled:bg-secondary"
+                                                        className="w-full resize-y rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent-400 focus:outline-none focus:ring-1 focus:ring-accent-300 disabled:cursor-not-allowed disabled:bg-secondary dark:text-foreground"
                                                     />
                                                     <div className="flex items-center justify-between gap-2">
                                                         <span className={`text-[10px] ${isCommentTooLong ? 'text-rose-600' : 'text-muted-foreground'}`}>

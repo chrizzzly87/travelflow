@@ -342,7 +342,7 @@ const AirportTesterDetailCard: React.FC<{
           type="button"
           onClick={onClose}
           aria-label="Close airport details"
-          className="rounded-full border border-border p-1 text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+          className="rounded-full border border-border p-1 text-muted-foreground transition hover:bg-secondary hover:text-foreground dark:text-foreground"
         >
           <X size={14} />
         </button>

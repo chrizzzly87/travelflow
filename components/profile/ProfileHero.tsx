@@ -85,7 +85,7 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
         <p className="mt-5 text-base leading-7 text-muted-foreground [text-wrap:pretty] md:text-lg">
           <span className="font-semibold text-accent-700 dark:text-accent-200">{transliteration}</span>
           {' '}
-          <span className="font-medium text-accent-600">/{ipa}/</span>
+          <span className="font-medium text-accent-600 dark:text-accent-300">/{ipa}/</span>
           {' '}
           <span>{context}</span>
         </p>
@@ -95,7 +95,7 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
           <Link
             to={ctaHref}
             onClick={onCtaClick}
-            className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800 dark:hover:text-accent-200"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800 dark:hover:text-accent-200 dark:text-accent-300 dark:hover:text-accent-300"
             {...(analyticsAttributes || {})}
           >
             <FlagIcon code={inspirationCountryCode} size="sm" fallback={null} />

@@ -50,13 +50,13 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
             <div className="bg-card border-b border-border p-4 relative">
                 <button type="button"
                     onClick={onClose}
-                    className="absolute top-4 right-4 p-2 bg-secondary hover:bg-gray-200 rounded-full text-muted-foreground"
+                    className="absolute top-4 right-4 p-2 bg-secondary hover:bg-gray-200 rounded-full text-muted-foreground dark:text-foreground"
                     aria-label="Close selection"
                 >
                     <X size={16} />
                 </button>
                 <div className="pr-10">
-                    <div className="text-xs font-bold uppercase tracking-wider text-accent-600">Selected Cities</div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-accent-600 dark:text-accent-300">Selected Cities</div>
                     <h2 className="text-xl font-semibold text-foreground mt-1">{selectedCities.length} selected</h2>
                     <p className="text-xs text-muted-foreground mt-2">
                         Reorder the selected stops, then apply. Activities move with their city, and changed routes are reset to N/A.

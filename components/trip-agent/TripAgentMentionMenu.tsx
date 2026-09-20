@@ -72,7 +72,7 @@ export const TripAgentMentionMenu: React.FC<{
                                 <span className="block truncate text-sm">{item.label}</span>
                                 {item.meta && <span className="block truncate text-[11px] text-muted-foreground">{item.meta}</span>}
                             </span>
-                            {item.isSelected && <span className="text-[11px] font-medium text-accent-600">✓</span>}
+                            {item.isSelected && <span className="text-[11px] font-medium text-accent-600 dark:text-accent-300">✓</span>}
                         </li>
                     </React.Fragment>
                 );

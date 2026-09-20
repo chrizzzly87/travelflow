@@ -95,7 +95,7 @@ const formatZoomLevelLabel = (value: number): string => `×${Number.isFinite(val
 const CONTROL_GROUP_CLASS_NAME = 'inline-flex flex-col items-center gap-1 rounded-xl border border-border bg-card/90 p-1 shadow-sm backdrop-blur';
 const CONTROL_TOGGLE_BUTTON_CLASS_NAME = 'inline-flex size-10 items-center justify-center rounded-lg transition-colors';
 const CONTROL_TOGGLE_ACTIVE_CLASS_NAME = 'border-accent-700 bg-accent-600 text-white';
-const CONTROL_TOGGLE_INACTIVE_CLASS_NAME = 'text-muted-foreground hover:bg-secondary hover:text-accent-600';
+const CONTROL_TOGGLE_INACTIVE_CLASS_NAME = 'text-muted-foreground hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300';
 
 export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> = ({
     isPaywallLocked,
@@ -304,7 +304,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                     onClick={toggleMapDockMode}
                                     data-testid="map-dock-toggle-button"
                                     data-floating-map-control="true"
-                                    className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600"
+                                    className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300"
                                     aria-label={effectiveMapDockMode === 'docked' ? 'Minimize map preview' : 'Maximize map preview'}
                                     {...getAnalyticsDebugAttributes(
                                         effectiveMapDockMode === 'docked' ? 'trip_view__map_preview--minimize' : 'trip_view__map_preview--maximize',

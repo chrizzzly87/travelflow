@@ -208,7 +208,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                     {localizedCard.tags.map((tag) => (
                         <span
                             key={tag}
-                            className="rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground dark:bg-secondary dark:text-muted-foreground"
+                            className="rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground dark:bg-secondary dark:text-muted-foreground dark:text-foreground"
                         >
                             {tag}
                         </span>

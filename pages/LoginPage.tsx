@@ -440,7 +440,7 @@ export const LoginPage: React.FC = () => {
         <MarketingLayout>
             <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_360px]">
                 <section className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">{t('hero.eyebrow')}</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-accent-600 dark:text-accent-300">{t('hero.eyebrow')}</p>
                     <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{t('hero.title')}</h1>
                     <p className="mt-3 text-sm leading-6 text-muted-foreground">{t('hero.description')}</p>
                     {claimRequestId && (
@@ -537,7 +537,7 @@ export const LoginPage: React.FC = () => {
                                         type="button"
                                         onClick={() => void handlePasswordResetRequest('forgot_password')}
                                         disabled={isSubmitting || isPostAuthProcessing}
-                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200"
+                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
                                         {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'page', intent: 'forgot_password' })}
                                     >
                                         {t('actions.forgotPassword')}
@@ -546,7 +546,7 @@ export const LoginPage: React.FC = () => {
                                         type="button"
                                         onClick={() => void handlePasswordResetRequest('set_password')}
                                         disabled={isSubmitting || isPostAuthProcessing}
-                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200"
+                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
                                         {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'page', intent: 'set_password' })}
                                     >
                                         {t('actions.setPasswordSocial')}
@@ -630,7 +630,7 @@ export const LoginPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => handleModeChange('register')}
-                                className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
+                                className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
                             >
                                 {t('copy.switchToRegister')}
                             </button>
@@ -638,7 +638,7 @@ export const LoginPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => handleModeChange('login')}
-                                className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
+                                className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
                             >
                                 {t('copy.switchToLogin')}
                             </button>

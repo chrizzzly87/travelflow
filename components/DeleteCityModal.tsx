@@ -31,7 +31,7 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
                 onClick={() => setDeleteActivities(!deleteActivities)}
                 aria-pressed={deleteActivities}
             >
-                <div className={`transition-colors ${deleteActivities ? 'text-accent-600' : 'text-gray-300 group-hover:text-muted-foreground'}`}>
+                <div className={`transition-colors ${deleteActivities ? 'text-accent-600 dark:text-accent-300' : 'text-gray-300 group-hover:text-muted-foreground'}`}>
                     {deleteActivities ? <CheckSquare size={20} /> : <Square size={20} />}
                 </div>
                 <span className="text-sm font-medium text-foreground">Delete attached activities</span>
@@ -43,7 +43,7 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
                     onClick={() => onConfirm('extend-prev', deleteActivities)}
                     className="group flex w-full items-center rounded-xl border border-border p-4 text-left transition-all hover:border-accent-500 hover:bg-accent-50 dark:hover:bg-accent-400/12"
                 >
-                    <div className="mr-4 flex size-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm group-hover:border-accent-200 group-hover:text-accent-600 dark:group-hover:border-accent-400/30">
+                    <div className="mr-4 flex size-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm group-hover:border-accent-200 group-hover:text-accent-600 dark:group-hover:border-accent-400/30 dark:group-hover:text-accent-300">
                         <ArrowRight size={20} />
                     </div>
                     <div>
@@ -57,7 +57,7 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
                     onClick={() => onConfirm('extend-next', deleteActivities)}
                     className="group flex w-full items-center rounded-xl border border-border p-4 text-left transition-all hover:border-accent-500 hover:bg-accent-50 dark:hover:bg-accent-400/12"
                 >
-                    <div className="mr-4 flex size-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm group-hover:border-accent-200 group-hover:text-accent-600 dark:group-hover:border-accent-400/30">
+                    <div className="mr-4 flex size-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm group-hover:border-accent-200 group-hover:text-accent-600 dark:group-hover:border-accent-400/30 dark:group-hover:text-accent-300">
                         <ArrowLeft size={20} />
                     </div>
                     <div>
@@ -71,7 +71,7 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
                     onClick={() => onConfirm('move-rest', deleteActivities)}
                     className="group flex w-full items-center rounded-xl border border-border p-4 text-left transition-all hover:border-accent-500 hover:bg-accent-50 dark:hover:bg-accent-400/12"
                 >
-                    <div className="mr-4 flex size-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm group-hover:border-accent-200 group-hover:text-accent-600 dark:group-hover:border-accent-400/30">
+                    <div className="mr-4 flex size-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm group-hover:border-accent-200 group-hover:text-accent-600 dark:group-hover:border-accent-400/30 dark:group-hover:text-accent-300">
                         <ArrowLeftRight size={20} />
                     </div>
                     <div>

@@ -59,7 +59,7 @@ const CountryRouteCard: React.FC<{ route: CountryRoute; locale: AppLanguage }> =
       <div className="px-1">
         <p className="text-sm leading-relaxed text-muted-foreground">{localized.pitch}</p>
         <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-          <CalendarBlank size={14} weight="duotone" className="text-accent-600" />
+          <CalendarBlank size={14} weight="duotone" className="text-accent-600 dark:text-accent-300" />
           {t('inspirations.subpages.guide.routes.bestMonths', { months: formatBestMonths(route.bestMonths, locale) })}
         </p>
       </div>

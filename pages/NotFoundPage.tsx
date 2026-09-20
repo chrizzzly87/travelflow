@@ -69,7 +69,7 @@ export const NotFoundPage: React.FC = () => {
                         <Link
                             to={contactPath}
                             onClick={() => trackEvent(CONTACT_LINK_EVENT, { locale })}
-                            className="font-semibold text-accent-700 underline decoration-accent-300 underline-offset-2 transition-colors hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
+                            className="font-semibold text-accent-700 underline decoration-accent-300 underline-offset-2 transition-colors hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
                             {...getAnalyticsDebugAttributes(CONTACT_LINK_EVENT, { locale })}
                         >
                             {t('notFound.contactCta')}

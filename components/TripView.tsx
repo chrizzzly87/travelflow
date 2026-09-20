@@ -3450,7 +3450,7 @@ const useTripViewRender = ({
     return (
         <GoogleMapsLoader language={appLanguage} enabled={isMapBootstrapEnabled}>
             <div
-                className="relative h-screen w-screen flex flex-col bg-secondary overflow-hidden text-foreground font-sans selection:bg-accent-100 selection:text-accent-900 dark:selection:bg-accent-400/12 dark:selection:text-accent-200"
+                className="relative h-screen w-screen flex flex-col bg-secondary overflow-hidden text-foreground font-sans selection:bg-accent-100 selection:text-accent-900 dark:selection:bg-accent-400/12 dark:selection:text-accent-200 dark:selection:text-accent-300"
                 data-tf-handoff-ready="true"
             >
                 
@@ -3723,7 +3723,7 @@ const useTripViewRender = ({
                         >
                             {isTripAgentLocked
                                 ? <Lock className="size-4 text-muted-foreground" />
-                                : <Sparkles className="size-4 text-accent-600" />}
+                                : <Sparkles className="size-4 text-accent-600 dark:text-accent-300" />}
                             <span>{t('tripAgent.title')}</span>
                         </button>
                     )}

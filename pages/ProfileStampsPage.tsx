@@ -93,7 +93,7 @@ export const ProfileStampsPage: React.FC = () => {
           <CaretLeft size={14} weight="bold" className="text-muted-foreground" />
           <NavLink
             to={buildPath('profile')}
-            className="transition-colors hover:text-accent-700 dark:hover:text-accent-200"
+            className="transition-colors hover:text-accent-700 dark:hover:text-accent-200 dark:hover:text-accent-300"
             onClick={() => trackEvent('profile__stamps_back--profile')}
             {...getAnalyticsDebugAttributes('profile__stamps_back--profile')}
           >
@@ -108,8 +108,8 @@ export const ProfileStampsPage: React.FC = () => {
         </header>
 
         <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            <IdentificationCard size={14} weight="duotone" className="text-accent-600" />
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:text-foreground">
+            <IdentificationCard size={14} weight="duotone" className="text-accent-600 dark:text-accent-300" />
             {t('summary.stampsTitle')}
           </div>
           <ProfileStampBookViewer

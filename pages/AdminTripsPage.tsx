@@ -434,7 +434,7 @@ const TripRowActionsMenu: React.FC<{
                 type="button"
                 onClick={() => setIsOpen((current) => !current)}
                 disabled={disabled}
-                className="inline-flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 dark:text-foreground"
                 aria-label="Open trip actions"
             >
                 <DotsThreeVertical size={16} />
@@ -2101,7 +2101,7 @@ export const AdminTripsPage: React.FC = () => {
                                         >
                                             <div
                                                 title="Open trip details drawer"
-                                                className="inline-flex xl:max-w-full items-center gap-1.5 truncate text-left text-sm font-semibold text-foreground group-hover:text-accent-700 group-hover:underline dark:group-hover:text-accent-200"
+                                                className="inline-flex xl:max-w-full items-center gap-1.5 truncate text-left text-sm font-semibold text-foreground group-hover:text-accent-700 group-hover:underline dark:group-hover:text-accent-200 dark:group-hover:text-accent-300"
                                             >
                                                 <span className="truncate">{trip.title || trip.trip_id}</span>
                                             </div>
@@ -2121,7 +2121,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     title="Open owner details"
                                                     className="group block w-full cursor-pointer text-left"
                                                 >
-                                                    <span className="block truncate text-sm font-medium text-foreground group-hover:text-accent-700 group-hover:underline dark:group-hover:text-accent-200">
+                                                    <span className="block truncate text-sm font-medium text-foreground group-hover:text-accent-700 group-hover:underline dark:group-hover:text-accent-200 dark:group-hover:text-accent-300">
                                                         {trip.owner_email || trip.owner_id}
                                                     </span>
                                                     <span className="mt-0.5 block text-[11px] text-muted-foreground">

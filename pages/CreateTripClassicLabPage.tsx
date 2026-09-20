@@ -2206,7 +2206,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                                 ? 'border-accent-400 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200'
                                                                 : 'border-border dark:border-border',
                                                             routeLock ? 'cursor-grab active:cursor-grabbing' : '',
-                                                            dragActive ? 'ring-2 ring-accent-200' : '',
+                                                            dragActive ? 'ring-2 ring-accent-200 dark:ring-0' : '',
                                                         ].join(' ')}
                                                     >
                                                         {routeLock && (
@@ -2225,7 +2225,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                             }}
                                                             className={[
                                                                 'rounded-full transition-colors',
-                                                                isStartStop ? 'text-accent-700 dark:text-accent-300 dark:text-accent-200' : 'text-muted-foreground hover:text-accent-600 dark:text-muted-foreground dark:hover:text-accent-300',
+                                                                isStartStop ? 'text-accent-700 dark:text-accent-200' : 'text-muted-foreground hover:text-accent-600 dark:text-muted-foreground dark:hover:text-accent-300',
                                                             ].join(' ')}
                                                             aria-label={t('destination.pinAsStart', { destination: destinationLabel })}
                                                             title={t('destination.pinAsStart', { destination: destinationLabel })}
@@ -2350,7 +2350,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                     type="button"
                                                     onClick={() => setFlexWeeks((previous) => clampNumber(previous - 1, 1, 8))}
                                                     disabled={flexWeeks <= 1}
-                                                    className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 dark:text-muted-foreground dark:hover:bg-secondary dark:hover:text-foreground"
+                                                    className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 dark:text-muted-foreground dark:hover:bg-secondary dark:hover:text-foreground dark:text-foreground"
                                                     aria-label="Decrease weeks"
                                                 >
                                                     <Minus size={13} />
@@ -2372,7 +2372,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                     type="button"
                                                     onClick={() => setFlexWeeks((previous) => clampNumber(previous + 1, 1, 8))}
                                                     disabled={flexWeeks >= 8}
-                                                    className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 dark:text-muted-foreground dark:hover:bg-secondary dark:hover:text-foreground"
+                                                    className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 dark:text-muted-foreground dark:hover:bg-secondary dark:hover:text-foreground dark:text-foreground"
                                                     aria-label="Increase weeks"
                                                 >
                                                     <Plus size={13} />
@@ -2479,7 +2479,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                             className={[
                                                                 'absolute right-2 top-2 inline-flex size-7 items-center justify-center rounded-lg border transition-all',
                                                                 active
-                                                                    ? 'border-accent-300 bg-card text-accent-700 opacity-100 dark:bg-card dark:text-accent-300 dark:text-accent-200 dark:border-accent-400/30'
+                                                                    ? 'border-accent-300 bg-card text-accent-700 opacity-100 dark:bg-card dark:text-accent-200 dark:border-accent-400/30'
                                                                     : 'border-border bg-card text-muted-foreground opacity-0 group-hover:opacity-100 dark:border-border dark:bg-card dark:text-muted-foreground',
                                                             ].join(' ')}
                                                         >
@@ -2780,7 +2780,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                                             <span className="block truncate text-[11px] text-muted-foreground dark:text-muted-foreground">{model.model}</span>
                                                                         </span>
                                                                         <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
-                                                                            <span className="rounded-full border border-border bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground dark:border-border dark:bg-secondary dark:text-muted-foreground">
+                                                                            <span className="rounded-full border border-border bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground dark:border-border dark:bg-secondary dark:text-muted-foreground dark:text-foreground">
                                                                                 {model.providerShortName}
                                                                             </span>
                                                                             {noteKey && (
@@ -2808,7 +2808,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                                         <span className="block truncate font-semibold">{model.label}</span>
                                                                         <span className="block truncate text-[11px] text-muted-foreground dark:text-muted-foreground">{model.model}</span>
                                                                     </span>
-                                                                    <span className="rounded-full border border-border bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground dark:border-border dark:bg-secondary dark:text-muted-foreground">
+                                                                    <span className="rounded-full border border-border bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground dark:border-border dark:bg-secondary dark:text-muted-foreground dark:text-foreground">
                                                                         {model.providerShortName}
                                                                     </span>
                                                                 </span>
@@ -2894,7 +2894,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                                     <span className="block truncate text-[11px] text-muted-foreground dark:text-muted-foreground">{model.model}</span>
                                                                 </span>
                                                                 <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
-                                                                    <span className="rounded-full border border-border bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground dark:border-border dark:bg-secondary dark:text-muted-foreground">
+                                                                    <span className="rounded-full border border-border bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground dark:border-border dark:bg-secondary dark:text-muted-foreground dark:text-foreground">
                                                                         {model.providerShortName}
                                                                     </span>
                                                                     {noteKey && (
@@ -2922,7 +2922,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                                 <span className="block truncate font-semibold">{model.label}</span>
                                                                 <span className="block truncate text-[11px] text-muted-foreground dark:text-muted-foreground">{model.model}</span>
                                                             </span>
-                                                            <span className="rounded-full border border-border bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground dark:border-border dark:bg-secondary dark:text-muted-foreground">
+                                                            <span className="rounded-full border border-border bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground dark:border-border dark:bg-secondary dark:text-muted-foreground dark:text-foreground">
                                                                 {model.providerShortName}
                                                             </span>
                                                         </span>

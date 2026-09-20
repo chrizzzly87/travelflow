@@ -474,7 +474,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                     remarkPlugins={[remarkGfm]}
                     components={{
                         a: ({node, children, ...props}) => (
-                            <a {...props} className="text-accent-600 hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>
+                            <a {...props} className="text-accent-600 hover:underline dark:text-accent-300" target="_blank" rel="noopener noreferrer">{children}</a>
                         ),
                         blockquote: ({node, ...props}) => (
                             <blockquote {...props} className={MARKDOWN_HEADS_UP_BANNER_CLASS} />
@@ -509,7 +509,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         <button type="button"
                             onClick={handleAiButtonClick}
                             disabled={isGenerating}
-                            className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-accent-600 hover:bg-accent-50 rounded-md transition-colors disabled:opacity-50 dark:hover:bg-accent-400/12"
+                            className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-accent-600 hover:bg-accent-50 rounded-md transition-colors disabled:opacity-50 dark:hover:bg-accent-400/12 dark:text-accent-300"
                             aria-haspopup={hasAiActions ? 'menu' : undefined}
                             aria-expanded={hasAiActions ? isAiPopoverOpen : undefined}
                         >

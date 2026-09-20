@@ -286,7 +286,7 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                                 ref={cancelButtonRef}
                                 type="button"
                                 onClick={() => closeWithResult(activeRequest.kind === 'confirm' ? false : null)}
-                                className="px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-card border border-border rounded-md hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-gray-300"
+                                className="px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-card border border-border rounded-md hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-gray-300 dark:text-foreground"
                             >
                                 {activeRequest.options.cancelLabel || 'Cancel'}
                             </button>

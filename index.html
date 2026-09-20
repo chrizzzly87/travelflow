@@ -64,11 +64,6 @@
           if (dark) {
             root.classList.add('dark');
             root.style.colorScheme = 'dark';
-            // Seed the two variables the boot-shell CSS above reads. That CSS
-            // runs before index.css has loaded, so without this the shell paints
-            // its light fallback for a frame and the page flashes white before
-            // the real tokens arrive. Keep these in step with the warm tone in
-            // the .dark block of index.css.
             // Deliberately NOT seeding --background and friends inline here.
             // index.css is a render-blocking <link> in this same <head>, so its
             // :root and .dark blocks are already applied before the first paint;
@@ -207,7 +202,7 @@
         height: 28px;
         width: 28px;
         border-radius: 6px;
-        background: #4f46e5;
+        background: var(--tf-accent-600, #4b3df0);
       }
 
       .tf-boot-logo-image {
@@ -221,7 +216,10 @@
         line-height: 1.75rem;
         font-weight: 800;
         letter-spacing: -0.025em;
-        color: #0f172a;
+        /* Hardcoded near-black here meant the wordmark was invisible against the
+           dark boot shell and then snapped to white once the app rendered —
+           the logo "flash" on every page load. */
+        color: var(--foreground, #0f172a);
       }
 
       .tf-boot-nav {

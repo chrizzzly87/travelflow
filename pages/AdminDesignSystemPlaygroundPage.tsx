@@ -251,7 +251,7 @@ const TOAST_SCENARIOS: ToastScenarioDefinition[] = [
     },
 ];
 
-const usagePillClassName = 'rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted-foreground';
+const usagePillClassName = 'rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted-foreground dark:text-foreground';
 const previewPanelClassName = 'rounded-2xl border border-border bg-secondary p-4';
 const subtleHeadingClassName = 'text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground';
 const sampleAdminTableRows: PlaygroundTableRow[] = [
@@ -680,7 +680,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                             </button>
                             <button
                                 type="button"
-                                className="inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-bold text-foreground shadow-sm transition-all hover:border-accent-300 hover:text-accent-700 hover:shadow-md dark:hover:text-accent-200 dark:hover:border-accent-400/30"
+                                className="inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-bold text-foreground shadow-sm transition-all hover:border-accent-300 hover:text-accent-700 hover:shadow-md dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300"
                             >
                                 Inspirations section action
                             </button>
@@ -1332,7 +1332,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                                 Preview component families and states side-by-side. This page is read-only and does not persist changes.
                             </p>
                         </div>
-                        <div className="flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold text-muted-foreground">
+                        <div className="flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold text-muted-foreground dark:text-foreground">
                             <Eye size={14} weight="duotone" />
                             Admin-only preview lab
                         </div>

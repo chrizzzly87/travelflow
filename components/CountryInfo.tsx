@@ -136,7 +136,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                     </p>
                     <div className="flex flex-wrap gap-1">
                         {languages.map((lang) => (
-                            <span key={lang} className="px-2 py-1 bg-accent-50 text-accent-700 text-xs font-medium rounded-md border border-accent-100 whitespace-nowrap dark:bg-accent-400/15 dark:text-accent-300 dark:text-accent-200">
+                            <span key={lang} className="px-2 py-1 bg-accent-50 text-accent-700 text-xs font-medium rounded-md border border-accent-100 whitespace-nowrap dark:bg-accent-400/15 dark:text-accent-200">
                                 {lang}
                             </span>
                         ))}

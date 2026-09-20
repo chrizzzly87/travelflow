@@ -267,7 +267,7 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
                         onClick={onUndo}
                         disabled={!canUndo || !onUndo}
                         data-testid="recommendation-undo"
-                        className="inline-flex size-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:bg-secondary disabled:opacity-40"
+                        className="inline-flex size-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:bg-secondary disabled:opacity-40 dark:text-foreground"
                         aria-label="Undo last decision"
                     >
                         <RotateCcw size={16} />

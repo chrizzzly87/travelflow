@@ -53,7 +53,7 @@ const MARKDOWN_COMPONENTS: Components = {
     li: ({ children }) => <li>{children}</li>,
     strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
     a: ({ href, children }) => (
-        <a className="font-semibold text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200" href={href || '#'} target="_blank" rel="noreferrer">
+        <a className="font-semibold text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300" href={href || '#'} target="_blank" rel="noreferrer">
             {children}
         </a>
     ),
@@ -155,7 +155,7 @@ export const TermsPage: React.FC = () => {
         <MarketingLayout>
             <div className="space-y-6">
                 <section className="rounded-3xl border border-border bg-gradient-to-br from-card to-secondary p-6 shadow-sm md:p-10">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">{t('termsPage.heroEyebrow')}</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-accent-600 dark:text-accent-300">{t('termsPage.heroEyebrow')}</p>
                     <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{t('termsPage.heroTitle')}</h1>
                     <p className="mt-4 text-sm leading-6 text-foreground">
                         {t('termsPage.heroIntro', { appName: APP_NAME })}

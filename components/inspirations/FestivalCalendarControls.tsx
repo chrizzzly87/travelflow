@@ -25,7 +25,7 @@ const chipClass = (isActive: boolean): string => [
   'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors',
   isActive
     ? 'border-accent-500 bg-accent-500 text-white'
-    : 'border-border bg-card text-muted-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30',
+    : 'border-border bg-card text-muted-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300',
 ].join(' ');
 
 /**
@@ -63,7 +63,7 @@ export const FestivalCalendarControls: React.FC<FestivalCalendarControlsProps> =
     <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="inline-flex items-center gap-2 text-sm font-bold text-foreground">
-          <Funnel size={16} weight="duotone" className="text-accent-600" />
+          <Funnel size={16} weight="duotone" className="text-accent-600 dark:text-accent-300" />
           {t('inspirations.subpages.festivals.resultSummary', {
             count: resultCount,
             total: totalCount,
@@ -76,7 +76,7 @@ export const FestivalCalendarControls: React.FC<FestivalCalendarControlsProps> =
               dispatch({ type: 'clear-filters' });
               trackEvent('inspirations__festival_filter--clear', { active_filters: activeFilterCount });
             }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300"
             {...getAnalyticsDebugAttributes('inspirations__festival_filter--clear', { active_filters: activeFilterCount })}
           >
             <ArrowsClockwise size={14} weight="bold" />

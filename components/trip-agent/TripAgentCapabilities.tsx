@@ -45,7 +45,7 @@ export const TripAgentCapabilities: React.FC = () => {
                             {CHANGE_KINDS.map((kind) => (
                                 <li
                                     key={kind}
-                                    className="rounded-md border border-border bg-secondary px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                                    className="rounded-md border border-border bg-secondary px-1.5 py-0.5 text-[11px] text-muted-foreground dark:text-foreground"
                                 >
                                     {t(`tripAgent.changeKinds.${kind}`)}
                                 </li>

@@ -55,21 +55,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <button 
                             type="button"
                             onClick={() => setActiveTab('layout')}
-                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'layout' ? 'bg-card shadow-sm text-accent-600' : 'text-muted-foreground hover:bg-secondary'}`}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'layout' ? 'bg-card shadow-sm text-accent-600 dark:text-accent-300' : 'text-muted-foreground hover:bg-secondary'}`}
                         >
                             <Layout size={16} /> {t('settings:tabs.layout')}
                         </button>
                         <button 
                             type="button"
                             onClick={() => setActiveTab('appearance')}
-                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'appearance' ? 'bg-card shadow-sm text-accent-600' : 'text-muted-foreground hover:bg-secondary'}`}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'appearance' ? 'bg-card shadow-sm text-accent-600 dark:text-accent-300' : 'text-muted-foreground hover:bg-secondary'}`}
                         >
                             <Map size={16} /> {t('settings:tabs.appearance')}
                         </button>
                         <button 
                             type="button"
                             onClick={() => setActiveTab('language')}
-                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'language' ? 'bg-card shadow-sm text-accent-600' : 'text-muted-foreground hover:bg-secondary'}`}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'language' ? 'bg-card shadow-sm text-accent-600 dark:text-accent-300' : 'text-muted-foreground hover:bg-secondary'}`}
                         >
                             <Globe size={16} /> {t('settings:tabs.language')}
                         </button>
@@ -91,7 +91,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         >
                                             <div className="flex items-center justify-between mb-2">
                                                 <span className={`font-semibold ${timelineView === 'horizontal' ? 'text-accent-900 dark:text-accent-200' : 'text-foreground'}`}>{t('settings:layout.horizontal')}</span>
-                                                {timelineView === 'horizontal' && <Check size={16} className="text-accent-600" />}
+                                                {timelineView === 'horizontal' && <Check size={16} className="text-accent-600 dark:text-accent-300" />}
                                             </div>
                                             <div className="h-2 w-full bg-gray-200 rounded-full mb-2 overflow-hidden">
                                                 <div className="h-full w-1/3 bg-gray-400"></div>
@@ -107,7 +107,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         >
                                             <div className="flex items-center justify-between mb-2">
                                                 <span className={`font-semibold ${timelineView === 'vertical' ? 'text-accent-900 dark:text-accent-200' : 'text-foreground'}`}>{t('settings:layout.vertical')}</span>
-                                                {timelineView === 'vertical' && <Check size={16} className="text-accent-600" />}
+                                                {timelineView === 'vertical' && <Check size={16} className="text-accent-600 dark:text-accent-300" />}
                                             </div>
                                             <div className="flex gap-2 h-8">
                                                 <div className="w-1 h-full bg-gray-300 rounded-full"></div>

@@ -348,7 +348,7 @@ export const AdminLegalTermsPage: React.FC = () => {
 	                                    id="legal-terms-requires-reaccept"
 	                                    type="checkbox"
 	                                    aria-label="Force re-acceptance"
-	                                    className="mt-0.5 size-4 rounded border-border text-accent-600 focus:ring-accent-500"
+	                                    className="mt-0.5 size-4 rounded border-border text-accent-600 focus:ring-accent-500 dark:text-accent-300"
                                     checked={draft.requiresReaccept}
                                     onChange={(event) => handleDraftField('requiresReaccept', event.target.checked)}
                                 />

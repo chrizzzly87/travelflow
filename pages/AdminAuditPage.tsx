@@ -1904,7 +1904,7 @@ export const AdminAuditPage: React.FC = () => {
                                                                 });
                                                             }}
                                                             title="Open actor details"
-                                                            className="block w-full truncate text-left text-sm font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
+                                                            className="block w-full truncate text-left text-sm font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200 dark:hover:text-accent-300"
                                                         >
                                                             {actorEmail || 'Unknown actor'}
                                                         </button>
@@ -1933,7 +1933,7 @@ export const AdminAuditPage: React.FC = () => {
                                                 {actionPresentation.label}
                                             </span>
                                             <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                                                <span className="inline-flex rounded-full border border-border bg-secondary px-2 py-0.5 font-semibold text-muted-foreground">
+                                                <span className="inline-flex rounded-full border border-border bg-secondary px-2 py-0.5 font-semibold text-muted-foreground dark:text-foreground">
                                                     {eventTypeLabel}
                                                 </span>
                                                 <span className="max-w-[220px] truncate font-mono" title={log.action}>
@@ -1978,7 +1978,7 @@ export const AdminAuditPage: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => openTargetDrawer(log)}
-                                                        className="inline-flex h-6 items-center gap-1 rounded-md border border-border bg-card px-2 text-[11px] font-semibold text-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
+                                                        className="inline-flex h-6 items-center gap-1 rounded-md border border-border bg-card px-2 text-[11px] font-semibold text-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300"
                                                         title={`Open ${targetLabel.toLowerCase()} drawer`}
                                                     >
                                                         Open

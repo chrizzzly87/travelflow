@@ -225,7 +225,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                             ref={closeButtonRef}
                             type="button"
                             onClick={onClose}
-                            className="flex size-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-muted-foreground dark:text-muted-foreground dark:hover:bg-secondary"
+                            className="flex size-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-muted-foreground dark:text-muted-foreground dark:hover:bg-secondary dark:text-foreground"
                             aria-label="Close menu"
                         >
                             <X size={20} weight="bold" />

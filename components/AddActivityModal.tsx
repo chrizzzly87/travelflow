@@ -329,7 +329,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                                 <span>💰 {p.cost}</span>
                                                 <span>🕒 {p.bestTime}</span>
                                             </div>
-                                            <div className="mt-2 text-xs text-accent-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                            <div className="mt-2 text-xs text-accent-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 dark:text-accent-300">
                                                 Click to add <Check size={12} />
                                             </div>
                                         </button>

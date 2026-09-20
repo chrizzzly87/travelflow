@@ -167,9 +167,9 @@ export const InstallAppBanner: React.FC = () => {
 
                     {showsIosInstructions ? (
                         <p className="mt-2 inline-flex flex-wrap items-center gap-1 text-xs font-medium text-foreground">
-                            <Export size={14} weight="bold" className="text-accent-600" />
+                            <Export size={14} weight="bold" className="text-accent-600 dark:text-accent-300" />
                             <span>{t('install.banner.iosStepShare')}</span>
-                            <Plus size={14} weight="bold" className="text-accent-600" />
+                            <Plus size={14} weight="bold" className="text-accent-600 dark:text-accent-300" />
                             <span>{t('install.banner.iosStepAdd')}</span>
                         </p>
                     ) : (
@@ -189,7 +189,7 @@ export const InstallAppBanner: React.FC = () => {
                     onClick={dismiss}
                     data-testid="install-app-banner-dismiss"
                     aria-label={t('install.banner.dismiss')}
-                    className="-m-1 flex size-8 flex-none items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-muted-foreground"
+                    className="-m-1 flex size-8 flex-none items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-muted-foreground dark:text-foreground"
                 >
                     <X size={16} weight="bold" />
                 </button>

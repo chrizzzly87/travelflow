@@ -60,7 +60,7 @@ const SettingsHeading: React.FC<SettingsHeadingProps> = ({ title, description, i
         {icon && (
             <span
                 aria-hidden="true"
-                className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-secondary text-muted-foreground [&_svg]:size-4"
+                className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-secondary text-muted-foreground [&_svg]:size-4 dark:text-foreground"
             >
                 {icon}
             </span>

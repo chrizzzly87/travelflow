@@ -71,7 +71,7 @@ const CountryExplorerCardComponent: React.FC<CountryExplorerCardProps> = ({
           <FlagIcon code={entry.countryCode} size="2xl" />
         </span>
         <ArrowRight
-          className="text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-accent-600 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+          className="text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-accent-600 rtl:rotate-180 rtl:group-hover:-translate-x-0.5 dark:group-hover:text-accent-300"
           size={18}
           weight="bold"
         />

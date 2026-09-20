@@ -16,7 +16,7 @@ export const BestTimeToTravelPage: React.FC = () => {
             <section className="pt-8 pb-8 md:pt-14 md:pb-12 animate-hero-entrance">
                 <Link
                     to={buildLocalizedMarketingPath('inspirations', locale)}
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-accent-700 transition-colors mb-6 dark:hover:text-accent-200"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-accent-700 transition-colors mb-6 dark:hover:text-accent-200 dark:hover:text-accent-300"
                 >
                     <ArrowLeft size={14} weight="bold" />
                     {t('inspirations.subpages.backToInspirations')}

@@ -446,7 +446,7 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
           <button
             type="button"
             onClick={() => setMissingGuideName(null)}
-            className="rounded-full border border-border px-2.5 py-1 text-[11px] font-bold text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
+            className="rounded-full border border-border px-2.5 py-1 text-[11px] font-bold text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300"
           >
             {t('inspirations.subpages.map.dismissNotice')}
           </button>

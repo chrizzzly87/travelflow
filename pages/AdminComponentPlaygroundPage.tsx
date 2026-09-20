@@ -791,7 +791,7 @@ const ProfileTripCardPreview: React.FC<{ settings: ProfileTripCardSettings }> = 
                         <h3 className="text-base font-semibold text-foreground">Kyoto Rail Plan</h3>
                         <p className="mt-1 text-sm text-muted-foreground">9 days · 4 cities · Rail first</p>
                     </div>
-                    {settings.isPinned ? <Pin className="size-4 text-accent-600" aria-hidden="true" /> : null}
+                    {settings.isPinned ? <Pin className="size-4 text-accent-600 dark:text-accent-300" aria-hidden="true" /> : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
                     {['Tokyo', 'Kyoto', 'Osaka'].map((city) => (
@@ -906,7 +906,7 @@ const CalendarCardPreview: React.FC<{ settings: CalendarCardSettings }> = ({ set
         <section className="max-w-xl rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex min-w-0 items-start gap-3">
-                    <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-700 ring-1 ring-accent-200 dark:bg-accent-400/12 dark:text-accent-200">
+                    <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-700 ring-1 ring-accent-200 dark:bg-accent-400/12 dark:text-accent-200 dark:ring-0">
                         <CalendarDays className="size-5" aria-hidden="true" />
                     </span>
                     <div>

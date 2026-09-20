@@ -73,9 +73,9 @@ const TIER_STYLE: Record<'backpacker' | 'explorer' | 'globetrotter', TierStyle> 
     },
     explorer: {
         badgeClass: 'border-accent-300 bg-accent-100 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30',
-        surfaceClass: 'border-accent-200 shadow-md ring-1 ring-accent-100 dark:border-accent-400/30',
+        surfaceClass: 'border-accent-200 shadow-md ring-1 ring-accent-100 dark:border-accent-400/30 dark:ring-0',
         headerClass: 'bg-accent-50/70 dark:bg-accent-400/12',
-        featureIconClass: 'text-accent-600',
+        featureIconClass: 'text-accent-600 dark:text-accent-300',
         highlighted: true,
     },
     globetrotter: {

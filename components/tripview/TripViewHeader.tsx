@@ -47,7 +47,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
     isTripLockedByExpiry,
 }) => {
     const { t } = useTranslation('common');
-    const headerSecondaryButtonClassName = 'inline-flex min-h-10 items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm transition-[scale,border-color,background-color,color,box-shadow] duration-150 ease-out hover:border-border hover:bg-secondary hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100';
+    const headerSecondaryButtonClassName = 'inline-flex min-h-10 items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm transition-[scale,border-color,background-color,color,box-shadow] duration-150 ease-out hover:border-border hover:bg-secondary hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 dark:text-foreground';
     const headerPrimaryButtonClassName = 'inline-flex min-h-10 items-center gap-2 rounded-md bg-accent-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-[scale,background-color,box-shadow] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100';
     const titleStyle = titleViewTransitionName
         ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties)
@@ -113,7 +113,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                             {tripTitle}
                         </h1>
                         {!isMobile && showTripSummary && (
-                            <div className="mt-1 text-xs font-semibold tabular-nums text-accent-600">
+                            <div className="mt-1 text-xs font-semibold tabular-nums text-accent-600 dark:text-accent-300">
                                 {tripSummary}
                             </div>
                         )}

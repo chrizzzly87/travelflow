@@ -174,7 +174,7 @@ export const UpdatesPage: React.FC = () => {
                             key={release.id}
                             className={
                                 isTopNews
-                                    ? 'rounded-2xl border border-accent-200/80 bg-gradient-to-b from-accent-50/40 to-card p-6 shadow-accent-glow-md dark:border-accent-400/30 dark:from-accent-400/10 dark:to-card dark:shadow-none'
+                                    ? 'rounded-2xl border border-accent-200/80 bg-card p-6 shadow-accent-glow-md dark:border-accent-400/30 dark:shadow-none'
                                     : 'rounded-2xl border border-border bg-card p-6 shadow-sm'
                             }
                         >
@@ -203,7 +203,7 @@ export const UpdatesPage: React.FC = () => {
                                         components={{
                                             p: ({ node, ...props }) => <p {...props} className="m-0" />,
                                             a: ({ node, children, ...props }) => (
-                                                <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200">{children}</a>
+                                                <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300">{children}</a>
                                             ),
                                             code: ({ node, ...props }) => (
                                                 <code {...props} className="rounded bg-secondary px-1 py-0.5 text-[0.92em] text-foreground" />
@@ -224,9 +224,7 @@ export const UpdatesPage: React.FC = () => {
                                                 <li key={`${release.id}-${group.typeKey}-${group.typeLabel}-${itemIndex}`}>
                                                     <div className="flex flex-wrap items-start gap-2">
                                                         {item.typeKey === 'internal' && (
-                                                            <span className="mt-0.5 inline-flex shrink-0 rounded-full border border-rose-300 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
-                                                                Internal
-                                                            </span>
+                                                            <ReleasePill typeKey="internal" label="Internal" className="mt-0.5" />
                                                         )}
                                                         <div className="min-w-0 flex-1">
                                                             <ReactMarkdown
@@ -234,7 +232,7 @@ export const UpdatesPage: React.FC = () => {
                                                                 components={{
                                                                     p: ({ node, ...props }) => <p {...props} className="m-0" />,
                                                                     a: ({ node, children, ...props }) => (
-                                                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200">{children}</a>
+                                                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300">{children}</a>
                                                                     ),
                                                                     code: ({ node, ...props }) => (
                                                                         <code {...props} className="rounded bg-secondary px-1 py-0.5 text-[0.92em] text-foreground" />

@@ -42,7 +42,7 @@ export const ImprintPage: React.FC = () => {
         <MarketingLayout>
             <div className="space-y-6">
                 <section className="rounded-3xl border border-border bg-gradient-to-br from-card to-secondary p-6 shadow-sm md:p-10">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">{t('imprint.heroEyebrow')}</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-accent-600 dark:text-accent-300">{t('imprint.heroEyebrow')}</p>
                     <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground md:text-4xl">
                         {t('imprint.title')}
                     </h1>

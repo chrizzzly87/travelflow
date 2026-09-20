@@ -53,7 +53,7 @@ export const ProfileTripTabs: React.FC<ProfileTripTabsProps> = ({
               {tab.count}
             </span>
             {tab.badge && (
-              <span className="rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+              <span className="rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground dark:text-foreground">
                 {tab.badge}
               </span>
             )}

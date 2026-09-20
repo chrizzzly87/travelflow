@@ -156,7 +156,7 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => trackEvent('inspirations__destination_source', { country: countryName, section: 'entry_requirements' })}
-                  className="inline-flex font-bold text-accent-700 underline decoration-accent-200 underline-offset-4 hover:text-accent-900 dark:text-accent-200 dark:hover:text-accent-200"
+                  className="inline-flex font-bold text-accent-700 underline decoration-accent-200 underline-offset-4 hover:text-accent-900 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
                   {...getAnalyticsDebugAttributes('inspirations__destination_source', { country: countryName, section: 'entry_requirements' })}
                 >
                   {t('inspirations.subpages.guide.checkOfficialAdvice')}
@@ -251,7 +251,7 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => trackEvent('inspirations__destination_source', { country: countryName, section: 'embassy' })}
-                  className="font-bold text-accent-700 underline decoration-accent-200 underline-offset-4 hover:text-accent-900 dark:text-accent-200 dark:hover:text-accent-200"
+                  className="font-bold text-accent-700 underline decoration-accent-200 underline-offset-4 hover:text-accent-900 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
                   {...getAnalyticsDebugAttributes('inspirations__destination_source', { country: countryName, section: 'embassy' })}
                 >{t('inspirations.subpages.guide.visitWebsite')}</a>
               ) : null}

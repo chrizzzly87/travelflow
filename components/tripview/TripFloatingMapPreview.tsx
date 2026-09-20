@@ -969,7 +969,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                             data-testid="floating-map-resize-handle"
                             data-floating-map-control="true"
                             onClick={toggleFloatingMapSize}
-                            className="group pointer-events-auto relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-card text-muted-foreground shadow-sm transition-colors hover:bg-card hover:text-accent-600"
+                            className="group pointer-events-auto relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-card text-muted-foreground shadow-sm transition-colors hover:bg-card hover:text-accent-600 dark:hover:text-accent-300"
                             aria-label={floatingMapSizePreset === 'lg'
                                 ? 'Use compact floating map size'
                                 : 'Use expanded floating map size'}
@@ -988,7 +988,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                             data-testid="floating-map-orientation-toggle"
                             data-floating-map-control="true"
                             onClick={toggleFloatingMapOrientation}
-                            className="group pointer-events-auto relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-card text-muted-foreground shadow-sm transition-colors hover:bg-card hover:text-accent-600"
+                            className="group pointer-events-auto relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-card text-muted-foreground shadow-sm transition-colors hover:bg-card hover:text-accent-600 dark:hover:text-accent-300"
                             aria-label={floatingMapOrientation === 'portrait'
                                 ? 'Switch floating map preview to landscape'
                                 : 'Switch floating map preview to portrait'}

@@ -85,7 +85,7 @@ const ScheduleRow: React.FC<{
                     type="button"
                     onClick={action.onClick}
                     data-testid="mobile-day-transport-edit"
-                    className="me-2 inline-flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-card hover:text-accent-600"
+                    className="me-2 inline-flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-card hover:text-accent-600 dark:hover:text-accent-300"
                     aria-label={action.label}
                     title={action.label}
                 >
@@ -218,7 +218,7 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                 <div className="mt-3 flex flex-col gap-2">
                     {hotels.map((hotel) => (
                         <div key={hotel.id} className="flex items-start gap-2 rounded-2xl border border-border px-3 py-2 text-sm text-foreground">
-                            <BedDouble size={14} className="mt-0.5 shrink-0 text-accent-600" />
+                            <BedDouble size={14} className="mt-0.5 shrink-0 text-accent-600 dark:text-accent-300" />
                             <div className="min-w-0">
                                 {hotel.name?.trim() && <p className="truncate font-semibold text-foreground">{hotel.name.trim()}</p>}
                                 {hotel.address?.trim() && (

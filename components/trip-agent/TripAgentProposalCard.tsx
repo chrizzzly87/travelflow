@@ -563,7 +563,7 @@ export const TripAgentProposalCard: React.FC<{
                                                                         checked={selectedIds.includes(operationId)}
                                                                         disabled={state !== 'pending'}
                                                                         onChange={() => toggleOperation(operationId)}
-                                                                        className="mt-0.5 size-3.5 rounded border-border text-accent-600 focus:ring-accent-500"
+                                                                        className="mt-0.5 size-3.5 rounded border-border text-accent-600 focus:ring-accent-500 dark:text-accent-300"
                                                                     />
                                                                     <label
                                                                         htmlFor={`trip-agent-operation-${operationId}`}

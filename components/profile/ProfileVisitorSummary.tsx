@@ -112,11 +112,11 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
           ) : null}
           <div className="flex flex-col gap-2">
             <p className="flex w-full items-center gap-2 text-sm font-semibold text-foreground">
-              <MapPin size={15} weight="duotone" className="text-accent-600" />
+              <MapPin size={15} weight="duotone" className="text-accent-600 dark:text-accent-300" />
               <span>{location}</span>
             </p>
             <p className="flex w-full items-center gap-2 text-sm font-semibold text-foreground">
-              <Mountains size={15} weight="duotone" className="text-accent-600" />
+              <Mountains size={15} weight="duotone" className="text-accent-600 dark:text-accent-300" />
               <span>{distanceLabel}</span>
             </p>
           </div>

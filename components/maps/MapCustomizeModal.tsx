@@ -134,7 +134,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
         <button
           type="button"
           onClick={switchToMapbox}
-          className="font-semibold text-accent-700 underline underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
+          className="font-semibold text-accent-700 underline underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
           {...getAnalyticsDebugAttributes('trip_view__map_customize--switch_mapbox', { surface: 'map_customize' })}
         >
           {key('switchToMapbox', 'Switch to Mapbox')}
@@ -703,7 +703,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
           type="button"
           onClick={onClose}
           aria-label={key('close', 'Close')}
-          className="-me-1 -mt-1 inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          className="-me-1 -mt-1 inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground dark:text-foreground"
         >
           <X size={16} />
         </button>

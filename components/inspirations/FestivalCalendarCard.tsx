@@ -78,7 +78,7 @@ const FestivalCalendarCardComponent: React.FC<FestivalCalendarCardProps> = ({ en
           <Link
             to={guidePath}
             onClick={() => trackEvent('inspirations__festival_card--guide', payload)}
-            className="transition-colors hover:text-accent-700 focus-visible:text-accent-700 dark:hover:text-accent-200 dark:focus-visible:text-accent-200"
+            className="transition-colors hover:text-accent-700 focus-visible:text-accent-700 dark:hover:text-accent-200 dark:focus-visible:text-accent-200 dark:hover:text-accent-300 dark:focus-visible:text-accent-300"
             {...getAnalyticsDebugAttributes('inspirations__festival_card--guide', payload)}
           >
             {event.name}
@@ -112,7 +112,7 @@ const FestivalCalendarCardComponent: React.FC<FestivalCalendarCardProps> = ({ en
         <Link
           to={planUrl}
           onClick={() => trackEvent('inspirations__festival_plan', payload)}
-          className="inline-flex items-center gap-1 text-accent-700 transition-colors hover:text-accent-900 dark:text-accent-200 dark:hover:text-accent-200"
+          className="inline-flex items-center gap-1 text-accent-700 transition-colors hover:text-accent-900 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
           {...getAnalyticsDebugAttributes('inspirations__festival_plan', payload)}
         >
           {t('inspirations.subpages.festivals.planCta')}
@@ -122,7 +122,7 @@ const FestivalCalendarCardComponent: React.FC<FestivalCalendarCardProps> = ({ en
           <Link
             to={guidePath}
             onClick={() => trackEvent('inspirations__festival_card--guide', payload)}
-            className="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-accent-700 dark:hover:text-accent-200"
+            className="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-accent-700 dark:hover:text-accent-200 dark:hover:text-accent-300"
             {...getAnalyticsDebugAttributes('inspirations__festival_card--guide', payload)}
           >
             <Compass size={14} weight="duotone" />
@@ -135,7 +135,7 @@ const FestivalCalendarCardComponent: React.FC<FestivalCalendarCardProps> = ({ en
             target="_blank"
             rel="noopener noreferrer nofollow"
             onClick={() => trackEvent('inspirations__festival_source', payload)}
-            className="ms-auto text-xs font-semibold text-muted-foreground transition-colors hover:text-accent-600"
+            className="ms-auto text-xs font-semibold text-muted-foreground transition-colors hover:text-accent-600 dark:hover:text-accent-300"
             {...getAnalyticsDebugAttributes('inspirations__festival_source', payload)}
           >
             {t('inspirations.subpages.festivals.sourceCta')}

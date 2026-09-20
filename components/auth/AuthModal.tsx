@@ -28,6 +28,7 @@ import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { getAuthRequestTimeoutMs, getAuthRestoreTimeoutMs } from '../../services/networkStatus';
 import { normalizeAppLanguage } from '../../utils';
 import { SocialProviderIcon } from './SocialProviderIcon';
+import { SegmentedControl } from '../ui/segmented-control';
 
 type AuthMode = 'login' | 'register';
 
@@ -611,7 +612,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <button
                         ref={closeButtonRef}
                         type="button"
-                        className="inline-flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary hover:text-foreground dark:border-border dark:text-muted-foreground dark:hover:bg-secondary dark:hover:text-foreground"
+                        className="inline-flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary hover:text-foreground dark:border-border dark:text-muted-foreground dark:hover:bg-secondary dark:hover:text-foreground dark:text-foreground"
                         onClick={() => {
                             if (sessionRestoreState === 'restoring') return;
                             trackEvent('auth__modal--close', { source, reason: 'dismiss' });
@@ -647,28 +648,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                     {sessionRestoreState !== 'restored' && (
                         <>
-                            <div className="inline-flex rounded-xl border border-border bg-secondary p-1 dark:border-border dark:bg-secondary">
-                                <button
-                                    type="button"
-                                    onClick={() => handleModeChange('login')}
-                                    disabled={isSubmitting || isRestoreBlocked}
-                                    className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                                        mode === 'login' ? 'bg-card text-foreground shadow-sm dark:bg-card dark:text-foreground' : 'text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground'
-                                    }`}
-                                >
-                                    {t('tabs.login')}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleModeChange('register')}
-                                    disabled={isSubmitting || isRestoreBlocked}
-                                    className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                                        mode === 'register' ? 'bg-card text-foreground shadow-sm dark:bg-card dark:text-foreground' : 'text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground'
-                                    }`}
-                                >
-                                    {t('tabs.register')}
-                                </button>
-                            </div>
+                            <SegmentedControl
+                                name="tf-auth-mode"
+                                label={t('tabs.login')}
+                                size="md"
+                                value={mode === 'register' ? 'register' : 'login'}
+                                disabled={isSubmitting || isRestoreBlocked}
+                                onChange={(next) => handleModeChange(next as 'login' | 'register')}
+                                options={[
+                                    { value: 'login', label: t('tabs.login') },
+                                    { value: 'register', label: t('tabs.register') },
+                                ]}
+                            />
 
                             <form className="mt-5 space-y-4" onSubmit={handlePasswordSubmit} onKeyDown={handleFormKeyDown}>
                                 <div className="block">
@@ -737,7 +728,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                                 type="button"
                                                 onClick={() => void handlePasswordResetRequest('forgot_password')}
                                                 disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-300 dark:text-accent-200 dark:hover:text-accent-200"
+                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
                                                 {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'forgot_password' })}
                                             >
                                                 {t('actions.forgotPassword')}
@@ -746,7 +737,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                                 type="button"
                                                 onClick={() => void handlePasswordResetRequest('set_password')}
                                                 disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-300 dark:text-accent-200 dark:hover:text-accent-200"
+                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300"
                                                 {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'set_password' })}
                                             >
                                                 {t('actions.setPasswordSocial')}
@@ -768,11 +759,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                         />
                                         <span>
                                             {t('copy.termsConsentPrefix')}{' '}
-                                            <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-300 dark:text-accent-200" to={termsPath} target="_blank" rel="noreferrer">
+                                            <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={termsPath} target="_blank" rel="noreferrer">
                                                 {t('copy.termsConsentTerms')}
                                             </Link>{' '}
                                             {t('copy.termsConsentJoiner')}{' '}
-                                            <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-300 dark:text-accent-200" to={privacyPath} target="_blank" rel="noreferrer">
+                                            <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={privacyPath} target="_blank" rel="noreferrer">
                                                 {t('copy.termsConsentPrivacy')}
                                             </Link>
                                             .

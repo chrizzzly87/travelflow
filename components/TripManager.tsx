@@ -598,7 +598,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
               <div className="text-[10px] text-muted-foreground">{updatedAtLabel}</div>
             </div>
           </div>
-          <div className="mt-1 flex items-center gap-1.5 text-accent-600 text-sm font-semibold">
+          <div className="mt-1 flex items-center gap-1.5 text-accent-600 text-sm font-semibold dark:text-accent-300">
             <CalendarDays size={14} />
             <span>{formatTripDateRange(trip, locale)}</span>
             {distanceLabel && <span className="text-accent-300">•</span>}
@@ -1288,7 +1288,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
                 onClick={() => setSortMode('updated')}
                 className={`group relative inline-flex size-7 items-center justify-center rounded-md transition-colors ${
                   sortMode === 'updated'
-                    ? 'bg-card text-accent-600 shadow-sm'
+                    ? 'bg-card text-accent-600 shadow-sm dark:text-accent-300'
                     : 'text-muted-foreground hover:text-muted-foreground hover:bg-card/80'
                 }`}
                 aria-label="Sort by last updated"
@@ -1300,7 +1300,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
                 onClick={() => setSortMode('travelDate')}
                 className={`group relative inline-flex size-7 items-center justify-center rounded-md transition-colors ${
                   sortMode === 'travelDate'
-                    ? 'bg-card text-accent-600 shadow-sm'
+                    ? 'bg-card text-accent-600 shadow-sm dark:text-accent-300'
                     : 'text-muted-foreground hover:text-muted-foreground hover:bg-card/80'
                 }`}
                 aria-label="Sort by travel date"
@@ -1309,7 +1309,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
               </button>
             </div>
             {!isPageVariant && (
-              <button ref={closeButtonRef} type="button" onClick={onClose} className="p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-muted-foreground" aria-label="Close">
+              <button ref={closeButtonRef} type="button" onClick={onClose} className="p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-muted-foreground dark:text-foreground" aria-label="Close">
                 <X size={18} />
               </button>
             )}
@@ -1326,7 +1326,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={hideHoverNow}
               placeholder={t('trips.list.searchPlaceholder')}
-              className="w-full h-9 pl-8 pr-2.5 rounded-md border border-border bg-secondary text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent focus:bg-card"
+              className="w-full h-9 pl-8 pr-2.5 rounded-md border border-border bg-secondary text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent focus:bg-card dark:text-foreground"
             />
           </div>
         </div>

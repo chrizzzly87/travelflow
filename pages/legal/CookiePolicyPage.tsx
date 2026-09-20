@@ -54,7 +54,7 @@ export const CookiePolicyPage: React.FC = () => {
         <MarketingLayout>
             <div className="space-y-6">
                 <section className="rounded-3xl border border-border bg-gradient-to-br from-card to-secondary p-6 shadow-sm md:p-10">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">ePrivacy · GDPR Art. 6</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-accent-600 dark:text-accent-300">ePrivacy · GDPR Art. 6</p>
                     <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground md:text-4xl">
                         Cookie & Local Storage Policy
                     </h1>
@@ -97,7 +97,7 @@ export const CookiePolicyPage: React.FC = () => {
                     <section key={category} className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8">
                         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">{category}</p>
+                                <p className="text-xs font-semibold uppercase tracking-widest text-accent-600 dark:text-accent-300">{category}</p>
                                 <h2 className="text-xl font-semibold text-foreground">
                                     {COOKIE_CATEGORY_COPY[category].title}
                                 </h2>

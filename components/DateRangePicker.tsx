@@ -283,7 +283,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
             }
         } else if (inRange) {
              // Range State: Indigo text
-            base += "bg-accent-50 text-accent-700 rounded-none  dark:bg-accent-400/15 dark:text-accent-300 dark:text-accent-200";
+            base += "bg-accent-50 text-accent-700 rounded-none dark:bg-accent-400/15 dark:text-accent-200";
              if (!isCurrent) base += "opacity-40 ";
         } else {
              // Default State
@@ -353,13 +353,13 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                     
                     {/* Header */}
                     <div className="flex items-center justify-between mb-4">
-                        <button type="button" onClick={() => changeMonth(-1)} className="p-1 hover:bg-secondary rounded-full text-muted-foreground dark:hover:bg-secondary dark:text-muted-foreground" aria-label={text.previousMonth}>
+                        <button type="button" onClick={() => changeMonth(-1)} className="p-1 hover:bg-secondary rounded-full text-muted-foreground dark:hover:bg-secondary dark:text-muted-foreground dark:text-foreground" aria-label={text.previousMonth}>
                             <ChevronLeft size={20} />
                         </button>
                         <span className="font-bold text-foreground dark:text-foreground">
                             {viewDate.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}
                         </span>
-                        <button type="button" onClick={() => changeMonth(1)} className="p-1 hover:bg-secondary rounded-full text-muted-foreground dark:hover:bg-secondary dark:text-muted-foreground" aria-label={text.nextMonth}>
+                        <button type="button" onClick={() => changeMonth(1)} className="p-1 hover:bg-secondary rounded-full text-muted-foreground dark:hover:bg-secondary dark:text-muted-foreground dark:text-foreground" aria-label={text.nextMonth}>
                             <ChevronRight size={20} />
                         </button>
                     </div>

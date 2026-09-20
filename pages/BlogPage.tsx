@@ -190,7 +190,7 @@ const BlogCard: React.FC<{
                 </div>
                 <div className="flex flex-1 flex-col rounded-b-2xl bg-card p-5">
                     <h3
-                        className="text-base font-semibold text-foreground group-hover:text-accent-700 transition-colors line-clamp-2 dark:group-hover:text-accent-200"
+                        className="text-base font-semibold text-foreground group-hover:text-accent-700 transition-colors line-clamp-2 dark:group-hover:text-accent-200 dark:group-hover:text-accent-300"
                         style={
                             transitionNames
                                 ? ({
@@ -228,7 +228,7 @@ const BlogCard: React.FC<{
                         {post.tags.map((tag) => (
                             <span
                                 key={tag}
-                                className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground"
+                                className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground dark:text-foreground"
                             >
                                 {tag}
                             </span>
@@ -358,7 +358,7 @@ export const BlogPage: React.FC = () => {
                             className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200 transition-shadow"
                         />
                         {isSearching && (
-                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-muted-foreground dark:text-foreground">
                                 {filteredPosts.length === 1
                                     ? t('index.result', { count: filteredPosts.length })
                                     : t('index.results', { count: filteredPosts.length })}
@@ -405,7 +405,7 @@ export const BlogPage: React.FC = () => {
                         className={`min-h-10 rounded-full px-3.5 py-1.5 text-sm font-medium shadow-sm transition-[scale,border-color,color,background-color,box-shadow] duration-150 ease-out active:scale-[0.96] ${
                             selectedTag === null
                                 ? 'bg-accent-100 text-accent-800 ring-2 ring-accent-300 dark:bg-accent-400/12 dark:text-accent-200'
-                                : 'bg-card border border-border text-muted-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30'
+                                : 'bg-card border border-border text-muted-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300'
                         }`}
                     >
                         {t('common:buttons.all')}
@@ -417,7 +417,7 @@ export const BlogPage: React.FC = () => {
                             className={`inline-flex min-h-10 items-center gap-1 rounded-full px-3.5 py-1.5 text-sm font-medium shadow-sm transition-[scale,border-color,color,background-color,box-shadow] duration-150 ease-out active:scale-[0.96] ${
                                 selectedTag === tag
                                     ? 'bg-accent-100 text-accent-800 ring-2 ring-accent-300 dark:bg-accent-400/12 dark:text-accent-200'
-                                    : 'bg-card border border-border text-muted-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30'
+                                    : 'bg-card border border-border text-muted-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300'
                             }`}
                         >
                             <Tag size={12} weight="duotone" />

@@ -537,7 +537,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                                         : 'border-sky-200 text-sky-900 dark:text-sky-200 dark:border-sky-400/30'
                                                 }`}
                                             >
-                                                <Check size={12} weight="bold" className="shrink-0 text-accent-600" />
+                                                <Check size={12} weight="bold" className="shrink-0 text-accent-600 dark:text-accent-300" />
                                                 <span>{feature}</span>
                                             </li>
                                         ))}
@@ -586,7 +586,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                         <button
                             type="button"
                             onClick={() => setIsExampleBannerDismissed(true)}
-                            className="absolute end-2 top-2 inline-flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                            className="absolute end-2 top-2 inline-flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 dark:text-foreground"
                             aria-label="Dismiss example trip notice"
                         >
                             <X size={14} />

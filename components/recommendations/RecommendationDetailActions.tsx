@@ -89,7 +89,7 @@ export const RecommendationDetailActions: React.FC<{
                                     key={day.dayOffset}
                                     type="button"
                                     onClick={() => onAssignToDay(saved, day)}
-                                    className="inline-flex min-h-9 items-center rounded-lg border border-border px-2.5 text-xs font-semibold text-foreground transition-colors hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
+                                    className="inline-flex min-h-9 items-center rounded-lg border border-border px-2.5 text-xs font-semibold text-foreground transition-colors hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300"
                                 >
                                     {day.weekdayLabel} {day.dayOfMonthLabel}
                                 </button>

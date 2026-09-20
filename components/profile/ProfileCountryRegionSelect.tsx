@@ -173,7 +173,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                                 inputRef.current?.focus();
                             }
                         }}
-                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-muted-foreground"
+                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-muted-foreground dark:text-foreground"
                         aria-label={toggleLabel}
                         tabIndex={-1}
                     >

@@ -1396,7 +1396,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button type="button"
                                 onClick={() => { if (!canEdit) return; setIsColorPickerOpen(!isColorPickerOpen); }}
                                 disabled={!canEdit}
-                                className={`p-1 rounded-full text-muted-foreground transition-colors ${canEdit ? 'hover:bg-secondary hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1 rounded-full text-muted-foreground transition-colors ${canEdit ? 'hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                                 aria-label={isColorPickerOpen ? 'Close color picker' : 'Open color picker'}
                             >
                                 <Palette size={14} />
@@ -1524,7 +1524,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                           </button>
                           <button type="button"
                               onClick={handleClosePanel}
-                              className="p-2 bg-secondary hover:bg-gray-200 rounded-full text-muted-foreground"
+                              className="p-2 bg-secondary hover:bg-gray-200 rounded-full text-muted-foreground dark:text-foreground"
                               aria-label="Close details"
                               title="Close"
                           >
@@ -1577,7 +1577,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 <button type="button"
                                     onClick={openDurationEditor}
                                     disabled={!canEdit}
-                                    className={`p-1 rounded text-muted-foreground transition-colors ${canEdit ? 'hover:bg-secondary hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                    className={`p-1 rounded text-muted-foreground transition-colors ${canEdit ? 'hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                                     title="Edit duration"
                                     aria-label="Edit duration"
                                 >
@@ -1619,7 +1619,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                     <button type="button"
                                         onClick={openCityEditor}
                                         disabled={!canEdit}
-                                        className={`p-1 rounded text-muted-foreground transition-colors ${canEdit ? 'hover:bg-secondary hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                        className={`p-1 rounded text-muted-foreground transition-colors ${canEdit ? 'hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                                         title="Edit city"
                                     >
                                         <Pencil size={13} />
@@ -1629,7 +1629,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                     <button type="button"
                                         onClick={openActivityLocationEditor}
                                         disabled={!canEdit}
-                                        className={`p-1 rounded text-muted-foreground transition-colors ${canEdit ? 'hover:bg-secondary hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                        className={`p-1 rounded text-muted-foreground transition-colors ${canEdit ? 'hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                                         title="Edit location"
                                         aria-label="Edit location"
                                     >
@@ -1673,7 +1673,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                 <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Schedule</h3>
-                        <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded dark:bg-accent-400/12">
+                        <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded dark:bg-accent-400/12 dark:text-accent-300">
                             {formatActivityDuration(previewDuration)}
                         </div>
                     </div>
@@ -1688,7 +1688,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button type="button"
                                 onClick={() => updateActivityDayDraft(-1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                                 aria-label="Move activity one day earlier"
                             >
                                 <Minus size={14} />
@@ -1697,7 +1697,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button type="button"
                                 onClick={() => updateActivityDayDraft(1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                                 aria-label="Move activity one day later"
                             >
                                 <Plus size={14} />
@@ -1818,12 +1818,12 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Schedule</h3>
                         <div className="flex items-center gap-2">
-                            <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded dark:bg-accent-400/12">{Number(previewDuration.toFixed(1))} Nights</div>
+                            <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded dark:bg-accent-400/12 dark:text-accent-300">{Number(previewDuration.toFixed(1))} Nights</div>
                             {onForceFill && forceFillLabel && (
                                 <button type="button"
                                     onClick={() => { if (!canEdit) return; handleForceFillDraft(); }}
                                     disabled={!canEdit}
-                                    className={`px-2 py-1 rounded text-muted-foreground flex items-center gap-1 text-[10px] font-semibold ${canEdit ? 'hover:bg-secondary hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                    className={`px-2 py-1 rounded text-muted-foreground flex items-center gap-1 text-[10px] font-semibold ${canEdit ? 'hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                                     title={forceFillLabel || 'Occupy available space'}
                                 >
                                     {(forceFillMode === 'shrink') ? <Minimize size={12} /> : <Maximize size={12} />}
@@ -1841,7 +1841,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button type="button"
                                 onClick={() => updateDurationStartDraft(-1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Minus size={14} />
                             </button>
@@ -1849,7 +1849,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button type="button"
                                 onClick={() => updateDurationStartDraft(1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Plus size={14} />
                             </button>
@@ -1864,7 +1864,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button type="button"
                                 onClick={() => updateDurationEndDraft(-1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Minus size={14} />
                             </button>
@@ -1872,7 +1872,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button type="button"
                                 onClick={() => updateDurationEndDraft(1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Plus size={14} />
                             </button>
@@ -1973,7 +1973,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                          <button type="button"
                              onClick={addHotel}
                              disabled={!canEdit}
-                             className={`text-accent-600 p-1 rounded transition-colors text-xs font-medium ${canEdit ? 'hover:text-accent-800 hover:bg-accent-50 dark:hover:bg-accent-400/12 dark:hover:text-accent-200' : 'opacity-50 cursor-not-allowed'}`}
+                             className={`text-accent-600 p-1 rounded transition-colors text-xs font-medium ${canEdit ? 'hover:text-accent-800 hover:bg-accent-50 dark:hover:bg-accent-400/12 dark:hover:text-accent-200 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                          >
                              + Manual
                          </button>
@@ -2180,7 +2180,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     <div className="mt-4 border border-accent-100 rounded-xl bg-accent-50/40 overflow-hidden dark:bg-accent-400/12">
                         <div className="px-4 py-3 border-b border-accent-100 bg-card/80">
                             <div className="text-xs font-semibold text-accent-700 dark:text-accent-200">AI Draft Preview</div>
-                            <div className="text-[11px] text-accent-600 mt-1">
+                            <div className="text-[11px] text-accent-600 mt-1 dark:text-accent-300">
                                 Action: {pendingNotesProposal.actionLabel}
                             </div>
                         </div>

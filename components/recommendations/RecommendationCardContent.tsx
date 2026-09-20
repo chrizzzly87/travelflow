@@ -214,7 +214,7 @@ export const RecommendationLocationFooter: React.FC<{
                 className="flex w-full shrink-0 items-center gap-2 border-t border-border bg-card/95 px-4 py-3 text-start backdrop-blur transition-colors hover:bg-secondary disabled:cursor-default disabled:hover:bg-card/95"
                 aria-label={links ? `Open ${recommendation.title} in Maps` : undefined}
             >
-                <MapPin size={14} className="shrink-0 text-accent-600" />
+                <MapPin size={14} className="shrink-0 text-accent-600 dark:text-accent-300" />
                 <span className="min-w-0 flex-1 truncate text-[12px] leading-4 text-muted-foreground">
                     {address}
                 </span>
@@ -281,7 +281,7 @@ const StaticLocationFooter: React.FC<{ recommendation: Recommendation }> = ({ re
     if (!address) return null;
     return (
         <div className="flex shrink-0 items-center gap-2 border-t border-border bg-card/95 px-4 py-3">
-            <MapPin size={14} className="shrink-0 text-accent-600" />
+            <MapPin size={14} className="shrink-0 text-accent-600 dark:text-accent-300" />
             <span className="min-w-0 flex-1 truncate text-[12px] leading-4 text-muted-foreground">{address}</span>
         </div>
     );
