@@ -10,6 +10,7 @@ import {
   collectModulePreloadHrefs,
   injectModulePreloadHints,
   stripBootstrapShell,
+  isPrerenderedShell,
 } from './prerender-html-utils.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -373,6 +374,23 @@ async function main() {
       await page.addInitScript(() => { window.__TF_PRERENDER_EAGER__ = true; });
 
       await page.goto(`${BASE_URL}${route.path}`, { waitUntil: 'domcontentloaded' });
+
+      // Prove the invariant the deferred index.html write exists to protect:
+      // every route must boot from the clean shell. Deferring the homepage is
+      // easy to undo by accident, and the damage it prevents is invisible —
+      // another page's leftover markup baked into this capture, shipped, and
+      // only visible on a direct load. Fail the route instead of the visitor.
+      const servedShellHtml = await page.evaluate(async () => {
+        const response = await fetch(location.href, { cache: 'reload' });
+        return response.text();
+      });
+      if (isPrerenderedShell(servedShellHtml)) {
+        throw new Error(
+          'Capture server served already-prerendered HTML for this route. '
+          + 'A prerendered page must not be written to dist/ mid-run — it becomes '
+          + "vite preview's SPA fallback for every route captured after it."
+        );
+      }
 
       // Wait for the React handoff to complete and mark the route ready
       await page.waitForSelector('[data-tf-handoff-ready="true"]', { timeout: 10000 });

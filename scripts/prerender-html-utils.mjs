@@ -95,3 +95,18 @@ export function stripBootstrapShell(html) {
 
   return { html: output, removedShell, removedStyle: false, removedScript };
 }
+
+const PRERENDERED_ROOT_MARKER = 'data-tf-prerendered-root';
+
+/**
+ * True when `html` is a captured route rather than the clean boot shell.
+ *
+ * `vite preview` falls back to `dist/index.html` for any URL without a static
+ * file, so writing the prerendered homepage there mid-run made every later
+ * route boot from homepage markup — preact hydrated it and the leftover DOM was
+ * captured into that route's output. The homepage write is deferred to the end
+ * of the run to prevent that; this check is how the run proves it held.
+ */
+export function isPrerenderedShell(html) {
+  return html.includes(PRERENDERED_ROOT_MARKER);
+}
