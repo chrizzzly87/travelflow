@@ -79,7 +79,7 @@ export const TripsRoute: React.FC<TripsRouteProps> = ({
     const showSignedOutNotice = !isAuthLoading && !isAuthenticated;
 
     return (
-        <div className="min-h-screen bg-slate-50" data-tf-handoff-ready="true">
+        <div className="min-h-screen bg-secondary" data-tf-handoff-ready="true">
             <SiteHeader variant="solid" />
 
             {/* The same offline/sync banner the planner shows, so the reason the
@@ -96,10 +96,10 @@ export const TripsRoute: React.FC<TripsRouteProps> = ({
                 the last trip in the list. */}
             <main className="mx-auto w-full max-w-xl px-4 pb-40 pt-6 md:pb-16">
                 <header className="mb-4">
-                    <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+                    <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
                         {t('trips.pageTitle')}
                     </h1>
-                    <p className="mt-1 text-sm text-slate-500">
+                    <p className="mt-1 text-sm text-muted-foreground">
                         {t('trips.pageSubtitle')}
                     </p>
                 </header>
@@ -107,23 +107,23 @@ export const TripsRoute: React.FC<TripsRouteProps> = ({
                 {showSignedOutNotice && (
                     <div
                         role="status"
-                        className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
+                        className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:bg-amber-400/12 dark:border-amber-400/30"
                         data-testid="trips-signed-out-notice"
                         {...getAnalyticsDebugAttributes('trips__signed_out_notice', {
                             source: launchSource || 'direct',
                         })}
                     >
-                        <p className="text-sm font-semibold text-amber-900">
+                        <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
                             {t('trips.signedOut.title')}
                         </p>
-                        <p className="mt-1 text-sm text-amber-800">
+                        <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
                             {t('trips.signedOut.body')}
                         </p>
                         <button
                             type="button"
                             onClick={handleSignIn}
                             data-testid="trips-sign-in-button"
-                            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100"
+                            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-card px-3 py-2 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                         >
                             <SignIn size={16} weight="bold" />
                             {t('trips.signedOut.action')}
@@ -131,7 +131,7 @@ export const TripsRoute: React.FC<TripsRouteProps> = ({
                     </div>
                 )}
 
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                     <TripManager
                         variant="page"
                         isOpen

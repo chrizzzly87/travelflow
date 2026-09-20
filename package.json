@@ -19,6 +19,7 @@
     "updates:fix": "node scripts/validate-updates.mjs --fix",
     "toasts:validate": "node scripts/validate-toast-usage.mjs",
     "storage:validate": "tsx scripts/validate-storage-registry.ts",
+    "darkmode:audit": "node scripts/audit-dark-mode.mjs",
     "plans:validate-sync": "tsx scripts/validate-plan-sync.mjs",
     "plans:generate-seed": "tsx scripts/generate-plan-seed.mjs",
     "updates:next-version": "node scripts/next-release-version.mjs",

@@ -369,7 +369,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                         <button
                             type="button"
                             onClick={() => navigateTo(buildLocalizedCreateTripPath(activeLocale), 'navigation__account_menu--create_trip')}
-                            className="flex w-full items-center justify-center gap-2 rounded-md bg-accent-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-700 dark:bg-accent-400 dark:hover:bg-accent-500"
+                            className="flex w-full items-center justify-center gap-2 rounded-md bg-accent-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-700 dark:bg-accent-400 dark:hover:bg-accent-500 dark:text-background"
                             {...getAnalyticsDebugAttributes('navigation__account_menu--create_trip')}
                         >
                             <AirplaneTakeoff size={16} weight="fill" />

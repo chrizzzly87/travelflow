@@ -109,7 +109,7 @@ export const CookieConsentBanner: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => handleConsent('all')}
-                        className="rounded-lg bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-700 dark:bg-accent-400 dark:hover:bg-accent-500"
+                        className="rounded-lg bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-700 dark:bg-accent-400 dark:hover:bg-accent-500 dark:text-background"
                         {...getAnalyticsDebugAttributes('consent__banner--accept', { source: 'cookie_banner' })}
                     >
                         {t('buttons.acceptAll')}

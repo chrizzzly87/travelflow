@@ -286,36 +286,36 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
             title: `${currentTier.publicName} -> ${upgradeTier.publicName}`,
             message: (
                 <div className="space-y-3">
-                    <div className="rounded-xl border border-slate-200 bg-white p-4">
+                    <div className="rounded-xl border border-border bg-card p-4">
                         <div className="flex items-end justify-between gap-3">
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                     {currentTier.publicName}
                                 </p>
-                                <p className="mt-1 text-sm font-semibold text-slate-900">
+                                <p className="mt-1 text-sm font-semibold text-foreground">
                                     {limit.activeTripCount} / {limit.maxTripCount}
                                 </p>
                             </div>
-                            <div className="text-right text-sm text-slate-500">
+                            <div className="text-right text-sm text-muted-foreground">
                                 ${currentTier.monthlyPriceUsd}{t('shared.perMonth', { ns: 'pricing' })}
                             </div>
                         </div>
                     </div>
-                    <div className="rounded-xl border border-accent-200 bg-accent-50/70 p-4">
+                    <div className="rounded-xl border border-accent-200 bg-accent-50/70 p-4 dark:bg-accent-400/12 dark:border-accent-400/30">
                         <div className="flex items-end justify-between gap-3">
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-300 dark:text-accent-200">
                                     {upgradeTier.publicName}
                                 </p>
-                                <p className="mt-1 text-sm font-semibold text-slate-900">
+                                <p className="mt-1 text-sm font-semibold text-foreground">
                                     ${upgradeTier.monthlyPriceUsd}{t('shared.perMonth', { ns: 'pricing' })}
                                 </p>
                             </div>
                         </div>
                         <ul className="mt-3 space-y-2">
                             {resolveTierHighlights(upgradeTierKey).map((feature) => (
-                                <li key={feature} className="flex items-start gap-2 text-sm leading-6 text-slate-700">
-                                    <Check size={14} weight="bold" className="mt-1 shrink-0 text-accent-600" />
+                                <li key={feature} className="flex items-start gap-2 text-sm leading-6 text-foreground">
+                                    <Check size={14} weight="bold" className="mt-1 shrink-0 text-accent-600 dark:text-accent-300" />
                                     <span>{feature}</span>
                                 </li>
                             ))}

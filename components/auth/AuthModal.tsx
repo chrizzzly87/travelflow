@@ -774,7 +774,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 <button
                                     type="submit"
                                     disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-accent-400 dark:hover:bg-accent-500"
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-accent-400 dark:hover:bg-accent-500 dark:text-background"
                                 >
                                     {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                                     {isSubmitting ? t('actions.submitting') : mode === 'login' ? t('actions.submitLogin') : t('actions.submitRegister')}
