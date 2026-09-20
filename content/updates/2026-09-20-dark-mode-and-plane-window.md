@@ -3,8 +3,8 @@ id: rel-2026-09-20-dark-mode-and-plane-window
 version: v0.185.0
 title: "Dark mode, and a window seat on the homepage"
 date: 2026-09-20
-published_at: 2026-09-20T18:30:00Z
-status: draft
+published_at: 2026-09-20T15:47:41Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "TravelFlow now has a full dark mode you can switch from any page, and the homepage window looks out over drifting clouds you can shut the blind on."
