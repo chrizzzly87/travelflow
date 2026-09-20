@@ -130,7 +130,7 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
         <div className="flex flex-col gap-6 pb-4 w-full">
              {/* Legend */}
              <div className="pt-2">
-                 <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3 border-b border-gray-100 pb-2">Trip Legend</h3>
+                 <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3 border-b border-border pb-2">Trip Legend</h3>
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
                      {cities.map((city, idx) => {
                          const citySpan = getTripSpanFromOffsets(trip.startDate, {
@@ -144,7 +144,7 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                              <button
                                 key={city.id}
                                 type="button"
-                                className="flex items-center gap-2 text-xs cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
+                                className="flex items-center gap-2 text-xs cursor-pointer hover:bg-secondary p-1 rounded transition-colors"
                                 onClick={() => onScrollTo(city.id)}
                              >
                                  <div
@@ -152,8 +152,8 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                                      style={{ backgroundColor: cityColor }}
                                  />
                                  <div className="flex-1 min-w-0">
-                                     <div className="font-bold text-gray-800 truncate">{city.title}</div>
-                                     <div className="text-gray-400 flex justify-between">
+                                     <div className="font-bold text-foreground truncate">{city.title}</div>
+                                     <div className="text-muted-foreground flex justify-between">
                                          <span>{dateStr}</span>
                                          <span className="font-mono">{citySpan.compactLabel}</span>
                                      </div>
@@ -169,7 +169,7 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                 {calendarMonths.map((month) => {
                     return (
                         <div key={month.id} className="break-inside-avoid">
-                            <h4 className="font-semibold text-gray-900 mb-3 capitalize text-sm">
+                            <h4 className="font-semibold text-foreground mb-3 capitalize text-sm">
                                 {month.label}
                             </h4>
                             <div className="grid grid-cols-7 gap-1 text-center">
@@ -187,7 +187,7 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                                 {month.days.map(({ day, activeCities, isWeekend }) => {
                                     const dayCellClass = `
                                         aspect-square relative flex items-center justify-center isolate border border-transparent text-xs
-                                        ${isWeekend ? 'bg-gray-50/50' : ''}
+                                        ${isWeekend ? 'bg-secondary/50' : ''}
                                         ${activeCities.length > 0 ? 'cursor-pointer' : ''}
                                     `;
 
@@ -220,7 +220,7 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                                             })}
 
                                             {/* Day Number */}
-                                            <span className={`relative z-10 font-medium ${activeCities.length > 0 ? 'text-gray-900' : (isWeekend ? 'text-gray-400' : 'text-gray-500')}`}>
+                                            <span className={`relative z-10 font-medium ${activeCities.length > 0 ? 'text-foreground' : (isWeekend ? 'text-muted-foreground' : 'text-muted-foreground')}`}>
                                                 {day}
                                             </span>
                                         </>
@@ -290,12 +290,12 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-white text-gray-900 font-sans size-full overflow-y-auto no-scrollbar print:static print:h-auto print:overflow-visible">
+    <div className="fixed inset-0 z-[9999] bg-card text-foreground font-sans size-full overflow-y-auto no-scrollbar print:static print:h-auto print:overflow-visible">
         <div className="p-8 max-w-[1400px] mx-auto print:p-0 print:max-w-none print:w-full print:h-auto print:overflow-visible">
 
             {/* Navigation Bar (Hidden on Print) */}
-            <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 shadow-sm flex items-center justify-between px-8 print:hidden z-50">
-                <h1 className="font-semibold text-lg text-gray-700">Trip List View</h1>
+            <div className="fixed top-0 left-0 right-0 h-16 bg-card border-b border-border shadow-sm flex items-center justify-between px-8 print:hidden z-50">
+                <h1 className="font-semibold text-lg text-foreground">Trip List View</h1>
                 <div className="flex gap-4">
                     <button
                         type="button"
@@ -304,7 +304,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
                             onExportActivitiesCalendar
                                 ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
-                                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'border-border bg-secondary text-muted-foreground cursor-not-allowed'
                         }`}
                         {...getAnalyticsDebugAttributes('trip_view__calendar_export--activities', { source: 'print_view' })}
                     >
@@ -317,7 +317,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
                             onExportCitiesCalendar
                                 ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
-                                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'border-border bg-secondary text-muted-foreground cursor-not-allowed'
                         }`}
                         {...getAnalyticsDebugAttributes('trip_view__calendar_export--cities', { source: 'print_view' })}
                     >
@@ -330,7 +330,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
                             onExportAllCalendar
                                 ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
-                                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'border-border bg-secondary text-muted-foreground cursor-not-allowed'
                         }`}
                         {...getAnalyticsDebugAttributes('trip_view__calendar_export--all', { source: 'print_view' })}
                     >
@@ -339,7 +339,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
 	                    <button
 	                        type="button"
 	                        onClick={onClose}
-                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
+                        className="px-4 py-2 text-muted-foreground hover:bg-secondary rounded-lg text-sm font-medium"
                     >
                         Close
                     </button>
@@ -360,7 +360,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                     <header className="flex-shrink-0 mb-6 border-b-2 border-gray-900 pb-4 flex justify-between items-end">
                         <div>
                             <h1 className="text-4xl font-semibold tracking-tight mb-2">{trip.title}</h1>
-                            <div className="text-gray-500 font-medium flex gap-4">
+                            <div className="text-muted-foreground font-medium flex gap-4">
                                 <span className="flex items-center gap-1"><Calendar size={16}/> {formatDate(tripSpan.startDate)} - {formatDate(tripSpan.endDate)}</span>
                                 <span className="flex items-center gap-1"><Clock size={16}/> {tripSpan.longLabel}</span>
                                 {distanceLabel && (
@@ -369,7 +369,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                             </div>
                         </div>
                         <div className="text-right hidden sm:block">
-                            <div className="text-sm text-gray-400">Travel Itinerary</div>
+                            <div className="text-sm text-muted-foreground">Travel Itinerary</div>
                         </div>
                     </header>
 
@@ -392,7 +392,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         </div>
 
                         {/* RIGHT: Map */}
-                        <div className="col-span-5 h-full bg-gray-100 rounded-xl overflow-hidden border border-gray-200 print:border-0 print:bg-white relative print:w-full print:h-[400px] print:break-inside-avoid">
+                        <div className="col-span-5 h-full bg-secondary rounded-xl overflow-hidden border border-border print:border-0 print:bg-card relative print:w-full print:h-[400px] print:break-inside-avoid">
                              <ItineraryMap items={trip.items} mapColorMode={trip.mapColorMode} isPaywalled={isPaywalled} />
                         </div>
                     </div>
@@ -438,16 +438,16 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                             <article
                                 key={city.id}
                                 id={`city-detail-${city.id}`}
-                                className="break-inside-avoid pb-8 border-b border-gray-100 last:border-0 scroll-mt-24"
+                                className="break-inside-avoid pb-8 border-b border-border last:border-0 scroll-mt-24"
                             >
                                 {/* City Header */}
                                 <div className="flex items-start justify-between mb-6">
                                     <div>
                                         <div className="flex items-center gap-3 mb-1">
                                             <div className="size-3 rounded-full" style={{ backgroundColor: cityColor }} />
-                                            <h2 className="text-2xl font-semibold text-gray-900">{city.title}</h2>
+                                            <h2 className="text-2xl font-semibold text-foreground">{city.title}</h2>
                                         </div>
-                                        <div className="text-gray-500 font-medium ml-6">
+                                        <div className="text-muted-foreground font-medium ml-6">
                                             {formatDate(cityStart)} to {formatDate(cityEnd)} <span className="text-gray-300 mx-2">|</span> {citySpan.longLabel}
                                         </div>
                                     </div>
@@ -461,15 +461,15 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                     <div className="md:col-span-1 space-y-6">
                                         {/* Transport IN */}
                                         {arrivalTransport && arrivalTransport.type === 'travel' && (
-                                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                                <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                            <div className="bg-secondary p-4 rounded-lg border border-border">
+                                                <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-2">
                                                     <ArrowRight size={12} /> Arrival
                                                 </div>
-                                                <div className="font-bold text-gray-800 flex items-center gap-2">
+                                                <div className="font-bold text-foreground flex items-center gap-2">
                                                     <TransportModeIcon mode={arrivalTransport.transportMode} size={16} />
                                                     {arrivalTransport.title}
                                                 </div>
-                                                {arrivalTransport.description && <div className="text-xs text-gray-500 mt-1">{arrivalTransport.description}</div>}
+                                                {arrivalTransport.description && <div className="text-xs text-muted-foreground mt-1">{arrivalTransport.description}</div>}
                                             </div>
                                         )}
 
@@ -477,19 +477,19 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                         {city.hotels && city.hotels.length > 0 ? (
                                             <div className="space-y-4">
                                                 {city.hotels.map((hotel, hIdx) => (
-                                                    <div key={hIdx} className="border border-gray-200 rounded-lg overflow-hidden">
-                                                        <div className="bg-gray-50 p-3 border-b border-gray-100 flex items-center justify-between">
-                                                            <div className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                                                    <div key={hIdx} className="border border-border rounded-lg overflow-hidden">
+                                                        <div className="bg-secondary p-3 border-b border-border flex items-center justify-between">
+                                                            <div className="font-bold text-sm text-foreground flex items-center gap-2">
                                                                 <Hotel size={14} className="text-accent-600"/> {hotel.name}
                                                             </div>
                                                         </div>
                                                         {hotel.address && (
                                                             <div className="p-0">
-                                                                <div className="p-3 text-xs text-gray-600 border-b border-gray-100 bg-white">
-                                                                    <MapPin size={12} className="inline mr-1 text-gray-400"/> {hotel.address}
+                                                                <div className="p-3 text-xs text-muted-foreground border-b border-border bg-card">
+                                                                    <MapPin size={12} className="inline mr-1 text-muted-foreground"/> {hotel.address}
                                                                 </div>
                                                                 {/* Map Preview Iframe */}
-                                                                <div className="h-32 w-full bg-gray-100 relative">
+                                                                <div className="h-32 w-full bg-secondary relative">
                                                                     <iframe
                                                                         width="100%"
                                                                         height="100%"
@@ -500,7 +500,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                                                         aria-hidden="true"
                                                                         title="Hotel Location"
                                                                     ></iframe>
-                                                                    <div className="absolute inset-0 border-2 border-transparent print:border-gray-200 pointer-events-none"></div>
+                                                                    <div className="absolute inset-0 border-2 border-transparent print:border-border pointer-events-none"></div>
                                                                 </div>
                                                             </div>
                                                         )}
@@ -508,15 +508,15 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                                 ))}
                                             </div>
                                         ) : (
-                                            <div className="bg-white border-2 border-dashed border-gray-200 p-4 rounded-lg text-center">
-                                                <span className="text-xs text-gray-400 font-medium">Accommodation Details Not Set</span>
+                                            <div className="bg-card border-2 border-dashed border-border p-4 rounded-lg text-center">
+                                                <span className="text-xs text-muted-foreground font-medium">Accommodation Details Not Set</span>
                                             </div>
                                         )}
 
                                         {/* Editable Notes Area */}
-                                        <div className="border border-gray-200 rounded-lg p-4 bg-[linear-gradient(white_29px,#eee_30px)] bg-[length:100%_30px] pt-1">
-                                            <div className="text-xs text-gray-400 font-bold uppercase mb-1 flex items-center gap-1"><StickyNote size={12}/> Notes</div>
-                                            <Suspense fallback={<div className="rounded border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">Loading notes…</div>}>
+                                        <div className="border border-border rounded-lg p-4 bg-[linear-gradient(white_29px,#eee_30px)] bg-[length:100%_30px] pt-1">
+                                            <div className="text-xs text-muted-foreground font-bold uppercase mb-1 flex items-center gap-1"><StickyNote size={12}/> Notes</div>
+                                            <Suspense fallback={<div className="rounded border border-border bg-card px-3 py-2 text-xs text-muted-foreground">Loading notes…</div>}>
                                                 <LazyMarkdownEditor
                                                     value={city.description || ''}
                                                     onChange={(val) => handleUpdateNotes(city.id, val)}
@@ -532,19 +532,19 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                             const globalDayIndex = Math.round((day.date.getTime() - tripStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
                                             return (
-                                                <div key={dIdx} className="relative pl-6 border-l-2 border-gray-100 pb-2 last:pb-0">
+                                                <div key={dIdx} className="relative pl-6 border-l-2 border-border pb-2 last:pb-0">
                                                     <div className="absolute -left-[5px] top-0 size-2.5 rounded-full bg-gray-300 ring-4 ring-white" />
-                                                    <h4 className="font-semibold text-gray-900 text-sm mb-3">
-                                                        Day {globalDayIndex} <span className="text-gray-400 font-normal mx-1">•</span> {day.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                                                    <h4 className="font-semibold text-foreground text-sm mb-3">
+                                                        Day {globalDayIndex} <span className="text-muted-foreground font-normal mx-1">•</span> {day.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                                                     </h4>
 
                                                     {day.activities.length > 0 ? (
                                                         <div className="space-y-3">
                                                             {day.activities.map(act => (
-                                                                <div key={act.id} className="bg-white rounded-lg p-3 border border-gray-100 shadow-sm flex gap-3">
+                                                                <div key={act.id} className="bg-card rounded-lg p-3 border border-border shadow-sm flex gap-3">
                                                                     <div className="flex-1">
-                                                                        <div className="font-bold text-sm text-gray-800">{act.title}</div>
-                                                                        {act.description && <div className="text-xs text-gray-500 mt-1 line-clamp-2">{act.description}</div>}
+                                                                        <div className="font-bold text-sm text-foreground">{act.title}</div>
+                                                                        {act.description && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{act.description}</div>}
                                                                         {act.aiInsights && (
                                                                             <div className="mt-2 flex flex-wrap gap-2">
                                                                                 {act.aiInsights.bestTime && <span className="text-[10px] bg-accent-50 text-accent-600 px-1.5 py-0.5 rounded">Time: {act.aiInsights.bestTime}</span>}
@@ -556,7 +556,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                                             ))}
                                                         </div>
                                                     ) : (
-                                                        <div className="text-xs text-gray-400 italic py-2">Free day / No activities planned</div>
+                                                        <div className="text-xs text-muted-foreground italic py-2">Free day / No activities planned</div>
                                                     )}
                                                 </div>
                                             );
@@ -568,7 +568,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                     })}
                 </div>
 
-                <footer className="mt-12 pt-8 border-t border-gray-200 text-center text-xs text-gray-400 break-before-page">
+                <footer className="mt-12 pt-8 border-t border-border text-center text-xs text-muted-foreground break-before-page">
                     Created with TravelFlow
                 </footer>
             </div>

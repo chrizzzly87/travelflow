@@ -36,9 +36,9 @@ export const RecommendationMiniCard: React.FC<{
                 onClick={onOpen}
                 data-testid="recommendation-mini-card"
                 data-recommendation-id={recommendation.id}
-                className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-2 pe-11 text-start transition-colors hover:border-accent-300 hover:bg-accent-50/40"
+                className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-2 pe-11 text-start transition-colors hover:border-accent-300 hover:bg-accent-50/40"
             >
-                <span className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                <span className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-secondary">
                     {thumbUrl ? (
                         <img
                             src={thumbUrl}
@@ -55,12 +55,12 @@ export const RecommendationMiniCard: React.FC<{
                 </span>
 
                 <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[15px] font-semibold text-slate-900">
+                    <span className="block truncate text-[15px] font-semibold text-foreground">
                         {recommendation.title}
                     </span>
-                    {meta && <span className="mt-0.5 block truncate text-xs text-slate-500">{meta}</span>}
+                    {meta && <span className="mt-0.5 block truncate text-xs text-muted-foreground">{meta}</span>}
                     {recommendation.summary && (
-                        <span className="mt-0.5 block truncate text-xs text-slate-400">{recommendation.summary}</span>
+                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">{recommendation.summary}</span>
                     )}
                 </span>
             </button>

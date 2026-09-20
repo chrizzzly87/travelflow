@@ -10,7 +10,7 @@ const PILL_CLASSES: Record<ReleaseNoteItem['typeKey'], string> = {
     new: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     improved: 'bg-sky-100 text-sky-800 border-sky-200',
     fixed: 'bg-amber-100 text-amber-800 border-amber-200',
-    internal: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-secondary dark:text-foreground dark:border-border',
+    internal: 'bg-secondary text-foreground border-border dark:bg-secondary dark:text-foreground dark:border-border',
     update: 'bg-accent-100 text-accent-800 border-accent-200',
 };
 

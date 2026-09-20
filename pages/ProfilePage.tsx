@@ -837,7 +837,7 @@ export const ProfilePage: React.FC = () => {
 
     if (isProfileLoading && !profile) {
         return (
-            <div className="flex min-h-screen flex-col bg-slate-50">
+            <div className="flex min-h-screen flex-col bg-secondary">
                 <SiteHeader />
                 <main className="mx-auto w-full max-w-7xl flex-1 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                     <div className="h-24" aria-hidden="true" />
@@ -848,7 +848,7 @@ export const ProfilePage: React.FC = () => {
     }
 
     return (
-        <div className="flex min-h-screen flex-col bg-slate-50">
+        <div className="flex min-h-screen flex-col bg-secondary">
             <SiteHeader />
             <main data-testid="profile-page-container" className="mx-auto w-full max-w-7xl flex-1 space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                 <ProfileHero
@@ -879,7 +879,7 @@ export const ProfilePage: React.FC = () => {
                         onClick={() => {
                             trackEvent('profile__summary--edit_profile');
                         }}
-                        className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                        className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary hover:text-foreground"
                         {...getAnalyticsDebugAttributes('profile__summary--edit_profile')}
                     >
                         {t('summary.editProfile')}
@@ -974,12 +974,12 @@ export const ProfilePage: React.FC = () => {
                 />
 
                 <section className="hidden space-y-2 md:block">
-                    <h2 className="text-sm font-black tracking-tight text-slate-900">{t('actions.title')}</h2>
+                    <h2 className="text-sm font-black tracking-tight text-foreground">{t('actions.title')}</h2>
                     <div className="flex flex-wrap items-center gap-2">
                         <NavLink
                             to={buildPath('createTrip')}
                             onClick={() => trackEvent('profile__shortcut--planner')}
-                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
+                            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary hover:text-foreground"
                             {...getAnalyticsDebugAttributes('profile__shortcut--planner')}
                         >
                             <IdentificationCard size={16} />
@@ -991,7 +991,7 @@ export const ProfilePage: React.FC = () => {
                                 trackEvent('profile__shortcut--stamps');
                                 handleOpenPassportDialog(e.currentTarget.getBoundingClientRect());
                             }}
-                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
+                            className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary hover:text-foreground"
                             {...getAnalyticsDebugAttributes('profile__shortcut--stamps')}
                         >
                             <SealCheck size={16} weight="duotone" />
@@ -1014,8 +1014,8 @@ export const ProfilePage: React.FC = () => {
                 {pinnedTrips.length > 0 && (
                     <section className="space-y-3">
                         <div className="flex items-center justify-between gap-3">
-                            <h2 className="text-lg font-black tracking-tight text-slate-900">{t('sections.highlights')}</h2>
-                            <span className="text-xs font-semibold text-slate-500">
+                            <h2 className="text-lg font-black tracking-tight text-foreground">{t('sections.highlights')}</h2>
+                            <span className="text-xs font-semibold text-muted-foreground">
                                 {t('sections.highlightsCount', { count: pinnedTrips.length })}
                             </span>
                         </div>
@@ -1085,7 +1085,7 @@ export const ProfilePage: React.FC = () => {
                         />
 
                         {tab !== 'liked' && (
-                            <label className="ms-auto inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700">
+                            <label className="ms-auto inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground">
                                 <span>{t('filters.showOnlyPublic')}</span>
                                 <Switch
                                     checked={showOnlyPublicTrips}
@@ -1096,15 +1096,15 @@ export const ProfilePage: React.FC = () => {
                         )}
 
                         {tab === 'recent' && (
-                            <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-1">
+                            <div className="inline-flex items-center rounded-xl border border-border bg-card p-1">
                                 <button
                                     type="button"
                                     onClick={() => handleRecentSortChange('created')}
                                     className={[
                                         'rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors',
                                         recentSort === 'created'
-                                            ? 'bg-slate-100 text-accent-700'
-                                            : 'text-slate-600 hover:text-slate-900',
+                                            ? 'bg-secondary text-accent-700'
+                                            : 'text-muted-foreground hover:text-foreground',
                                     ].join(' ')}
                                     {...getAnalyticsDebugAttributes('profile__recent_sort--created')}
                                 >
@@ -1116,8 +1116,8 @@ export const ProfilePage: React.FC = () => {
                                     className={[
                                         'rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors',
                                         recentSort === 'updated'
-                                            ? 'bg-slate-100 text-accent-700'
-                                            : 'text-slate-600 hover:text-slate-900',
+                                            ? 'bg-secondary text-accent-700'
+                                            : 'text-muted-foreground hover:text-foreground',
                                     ].join(' ')}
                                     {...getAnalyticsDebugAttributes('profile__recent_sort--updated')}
                                 >
@@ -1128,7 +1128,7 @@ export const ProfilePage: React.FC = () => {
 
                         {tab !== 'liked' && selectedTripCount > 0 && (
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
+                                <span className="rounded-full border border-border bg-card px-2.5 py-1 text-xs font-semibold text-muted-foreground">
                                     {t('selection.selectedCount', {
                                         count: selectedTripCount,
                                         total: tabCounts[tab] ?? tripsForTab.length,
@@ -1137,7 +1137,7 @@ export const ProfilePage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={handleSelectVisibleTrips}
-                                    className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-100"
+                                    className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary"
                                     {...getAnalyticsDebugAttributes('profile__trip_select--visible', { tab })}
                                 >
                                     {t('selection.selectVisible')}
@@ -1172,7 +1172,7 @@ export const ProfilePage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={handleToggleVisibilitySelectedTrips}
-                                    className="inline-flex items-center rounded-lg border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-800 transition-colors hover:bg-slate-200"
+                                    className="inline-flex items-center rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-slate-200"
                                     {...getAnalyticsDebugAttributes('profile__trip_visibility--batch_toggle', {
                                         tab,
                                         selected_count: selectedTripCount,
@@ -1194,25 +1194,25 @@ export const ProfilePage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={handleEndSelection}
-                                    className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-100"
+                                    className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary"
                                     {...getAnalyticsDebugAttributes('profile__trip_select--end', { tab })}
                                 >
                                     {t('selection.end')}
                                 </button>
-                                <span className="text-[11px] text-slate-500">{t('selection.hotkeyHint')}</span>
+                                <span className="text-[11px] text-muted-foreground">{t('selection.hotkeyHint')}</span>
                             </div>
                         )}
                     </div>
 
                     {tab === 'liked' ? (
-                        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
-                            <p className="text-sm font-semibold text-slate-800">{t('likedPlaceholder.title')}</p>
-                            <p className="mt-1 text-sm text-slate-600">{t('likedPlaceholder.description')}</p>
+                        <div className="rounded-xl border border-dashed border-border bg-secondary px-4 py-8 text-center">
+                            <p className="text-sm font-semibold text-foreground">{t('likedPlaceholder.title')}</p>
+                            <p className="mt-1 text-sm text-muted-foreground">{t('likedPlaceholder.description')}</p>
                         </div>
                     ) : tripsForTab.length === 0 ? (
-                        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
-                            <p className="text-sm font-semibold text-slate-800">{t('empty.title')}</p>
-                            <p className="mt-1 text-sm text-slate-600">{t('empty.description')}</p>
+                        <div className="rounded-xl border border-dashed border-border bg-secondary px-4 py-8 text-center">
+                            <p className="text-sm font-semibold text-foreground">{t('empty.title')}</p>
+                            <p className="mt-1 text-sm text-muted-foreground">{t('empty.description')}</p>
                         </div>
                     ) : (
                         <>

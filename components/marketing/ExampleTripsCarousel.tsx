@@ -448,10 +448,10 @@ export const ExampleTripsCarousel: React.FC = () => {
     return (
         <section id="examples" className="py-16 md:py-24 overflow-x-hidden md:overflow-x-visible">
             <div className="animate-scroll-blur-in">
-                <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl dark:text-foreground">
+                <h2 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl dark:text-foreground">
                     {t('examples.title')}
                 </h2>
-                <p className="mt-3 max-w-xl text-base text-slate-600 dark:text-muted-foreground">
+                <p className="mt-3 max-w-xl text-base text-muted-foreground dark:text-muted-foreground">
                     {t('examples.subtitle')}
                 </p>
             </div>

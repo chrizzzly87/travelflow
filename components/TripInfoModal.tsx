@@ -135,17 +135,17 @@ interface SummaryCardProps {
     wide?: boolean;
 }
 
-const modalSecondaryButtonClassName = 'inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+const modalSecondaryButtonClassName = 'inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 const modalPrimaryButtonClassName = 'inline-flex h-10 items-center justify-center gap-2 rounded-md bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
-const modalSectionClassName = 'space-y-4 border-t border-slate-200 pt-6';
-const modalSubtlePanelClassName = 'rounded-md bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600';
+const modalSectionClassName = 'space-y-4 border-t border-border pt-6';
+const modalSubtlePanelClassName = 'rounded-md bg-secondary px-4 py-3 text-sm leading-6 text-muted-foreground';
 const modalTextButtonClassName = 'inline-flex items-center text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2';
 const tabClassName = 'relative flex-none gap-2 px-0 data-[state=active]:[&_svg]:text-accent-600 [&_svg]:text-slate-400';
 
 const SummaryCard: React.FC<SummaryCardProps> = ({ label, value, wide = false }) => (
     <div className={`space-y-1 ${wide ? 'sm:col-span-2' : ''}`}>
-        <dt className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{label}</dt>
-        <dd className="mt-1 text-sm font-semibold leading-6 text-slate-900">{value}</dd>
+        <dt className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{label}</dt>
+        <dd className="mt-1 text-sm font-semibold leading-6 text-foreground">{value}</dd>
     </div>
 );
 
@@ -166,8 +166,8 @@ const ActionCard: React.FC<ActionCardProps> = ({
 }) => (
     <div className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
-            <h4 className="text-sm font-semibold text-slate-900">{title}</h4>
-            <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
+            <h4 className="text-sm font-semibold text-foreground">{title}</h4>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
         </div>
         <button
             type="button"
@@ -410,7 +410,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                         <section className="space-y-4">
                             <div className="min-w-0">
                                 <div className="mb-2 flex items-center justify-between gap-3">
-                                    <label className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                                    <label className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                                         {t('tripView.infoDialog.general.titleLabel')}
                                     </label>
                                     {canManageTripMetadata && (
@@ -449,7 +449,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                                         event.stopPropagation();
                                                     }
                                                 }}
-                                                className="h-10 flex-1 text-sm font-medium shadow-none disabled:bg-white disabled:text-slate-900 disabled:opacity-100"
+                                                className="h-10 flex-1 text-sm font-medium shadow-none disabled:bg-card disabled:text-foreground disabled:opacity-100"
                                                 aria-label={t('tripView.infoDialog.general.titleLabel')}
                                             />
                                             <button
@@ -463,7 +463,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                                     ? t('tripView.infoDialog.general.favoriteRemove')
                                                     : t('tripView.infoDialog.general.favoriteAdd')}
                                             >
-                                                <Star size={16} className={isFavorite ? 'fill-current text-amber-500' : 'text-slate-500'} />
+                                                <Star size={16} className={isFavorite ? 'fill-current text-amber-500' : 'text-muted-foreground'} />
                                                 <span className="hidden sm:inline">
                                                     {t(isFavorite ? 'tripView.infoDialog.general.favoriteOn' : 'tripView.infoDialog.general.favoriteOff')}
                                                 </span>
@@ -473,12 +473,12 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                             </button>
                                         </>
                                     ) : (
-                                        <Input value={tripTitle} disabled className="h-10 text-sm font-medium shadow-none disabled:bg-white disabled:text-slate-900 disabled:opacity-100" />
+                                        <Input value={tripTitle} disabled className="h-10 text-sm font-medium shadow-none disabled:bg-card disabled:text-foreground disabled:opacity-100" />
                                     )}
                                 </div>
                             </div>
                             {!canManageTripMetadata && (
-                                <p className="text-sm leading-6 text-slate-600">
+                                <p className="text-sm leading-6 text-muted-foreground">
                                     {isExamplePreview
                                         ? t('tripView.infoDialog.general.readOnlyHintExample')
                                         : t('tripView.infoDialog.general.readOnlyHintShared')}
@@ -488,7 +488,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
 
                         <section className={modalSectionClassName}>
                             <div className="mb-3 flex items-center justify-between gap-2">
-                                <h3 className="text-base font-semibold text-slate-900">{t('tripView.infoDialog.general.sections.meta')}</h3>
+                                <h3 className="text-base font-semibold text-foreground">{t('tripView.infoDialog.general.sections.meta')}</h3>
                                 {generationPill && (
                                     <span className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${generationPill.className}`}>
                                         {generationPill.label}
@@ -519,7 +519,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                             <section className={modalSectionClassName}>
                                 <div className="mb-3 flex items-center gap-2">
                                     <Sparkles size={16} className="text-accent-600" />
-                                    <h3 className="text-base font-semibold text-slate-900">{t('tripView.generation.tripInfo.title')}</h3>
+                                    <h3 className="text-base font-semibold text-foreground">{t('tripView.generation.tripInfo.title')}</h3>
                                 </div>
                                 <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <SummaryCard label={t('tripView.generation.tripInfo.provider')} value={latestAttempt?.provider || aiMeta?.provider || '—'} />
@@ -529,13 +529,13 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                 </dl>
                                 {recentAttempts.length > 1 && (
                                     <div className="mt-4 space-y-2">
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                                             {t('tripView.generation.tripInfo.recentAttempts')}
                                         </p>
-                                        <ul className="divide-y divide-slate-200 border-y border-slate-200">
+                                        <ul className="divide-y divide-slate-200 border-y border-border">
                                             {recentAttempts.map((attempt) => (
-                                                <li key={attempt.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm text-slate-600">
-                                                    <span className="font-semibold text-slate-900">{attempt.state}</span>
+                                                <li key={attempt.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm text-muted-foreground">
+                                                    <span className="font-semibold text-foreground">{attempt.state}</span>
                                                     <span>{attempt.model || t('tripView.generation.tripInfo.modelFallback')}</span>
                                                     <span>{formatDurationMs(attempt.durationMs)}</span>
                                                 </li>
@@ -547,11 +547,11 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                     <div className="mt-4 flex flex-col gap-3">
                                         {activeRetryModelOptions.length > 0 && onRetryModelIdChange && (
                                             <div className="max-w-md">
-                                                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                                                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                                                     {t('tripView.generation.tripInfo.model')}
                                                 </p>
                                                 <Select value={selectedRetryModelId} onValueChange={onRetryModelIdChange}>
-                                                    <SelectTrigger className="h-11 rounded-md border-slate-300 text-sm">
+                                                    <SelectTrigger className="h-11 rounded-md border-border text-sm">
                                                         <SelectValue placeholder={t('tripView.generation.tripInfo.modelFallback')} />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -611,10 +611,10 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                             <section className={modalSectionClassName}>
                                 <div className="flex items-center gap-2">
                                     <MapPinned size={16} className="text-accent-700" />
-                                    <h3 className="text-base font-semibold text-slate-900">{t('tripView.infoDialog.general.sections.source')}</h3>
+                                    <h3 className="text-base font-semibold text-foreground">{t('tripView.infoDialog.general.sections.source')}</h3>
                                 </div>
-                                <p className="mt-3 text-sm font-semibold text-slate-900">{forkMeta.label}</p>
-                                <p className="mt-2 text-sm leading-6 text-slate-600">
+                                <p className="mt-3 text-sm font-semibold text-foreground">{forkMeta.label}</p>
+                                <p className="mt-2 text-sm leading-6 text-muted-foreground">
                                     {forkMeta.url
                                         ? t('tripView.infoDialog.general.sourceSharedDescription')
                                         : t('tripView.infoDialog.general.sourceTripDescription')}
@@ -669,16 +669,16 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                     </section>
                                 )}
 
-                                <section className="overflow-hidden border-y border-slate-200">
+                                <section className="overflow-hidden border-y border-border">
                                     {visibleHistoryItems.length === 0 ? (
-                                        <div className="p-6 text-sm text-slate-500">{t('tripView.infoDialog.history.empty')}</div>
+                                        <div className="p-6 text-sm text-muted-foreground">{t('tripView.infoDialog.history.empty')}</div>
                                     ) : (
                                         <ul className="divide-y divide-slate-100">
                                             {visibleHistoryItems.map((item, index) => {
                                                 const Icon = item.meta.Icon;
                                                 const showUnsyncedBadge = hasUnsyncedChanges && index === 0;
                                                 return (
-                                                    <li key={item.id} className={`flex items-start gap-3 p-4 ${item.isCurrent ? 'bg-accent-50/60' : 'bg-white'}`}>
+                                                    <li key={item.id} className={`flex items-start gap-3 p-4 ${item.isCurrent ? 'bg-accent-50/60' : 'bg-card'}`}>
                                                         <div className={`flex size-9 shrink-0 items-center justify-center rounded-md ${item.meta.iconClass}`}>
                                                             <Icon size={16} />
                                                         </div>
@@ -687,7 +687,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                                                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${item.meta.badgeClass}`}>
                                                                     {item.meta.label}
                                                                 </span>
-                                                                <span className="text-xs text-slate-500">{formatHistoryTime(item.ts)}</span>
+                                                                <span className="text-xs text-muted-foreground">{formatHistoryTime(item.ts)}</span>
                                                                 {item.isCurrent && (
                                                                     <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[10px] font-semibold text-accent-700">
                                                                         {t('tripView.infoDialog.history.current')}
@@ -699,7 +699,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <p className="mt-2 text-sm font-semibold leading-6 text-slate-900">{item.details}</p>
+                                                            <p className="mt-2 text-sm font-semibold leading-6 text-foreground">{item.details}</p>
                                                         </div>
                                                         <button
                                                             type="button"
@@ -719,7 +719,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                     </TabsContent>
 
                     <TabsContent value="export" className="space-y-4">
-                        <div className="divide-y divide-slate-200 border-y border-slate-200">
+                        <div className="divide-y divide-slate-200 border-y border-border">
                             <ActionCard
                                 title={t('tripView.infoDialog.export.activities.title')}
                                 description={t('tripView.infoDialog.export.activities.description')}
@@ -766,7 +766,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700">
                                                 {warning.cityName}
                                             </p>
-                                            <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-700">
+                                            <ul className="mt-2 space-y-2 text-sm leading-6 text-foreground">
                                                 {warning.notes.map((note) => (
                                                     <li key={`${warning.cityName}-${note}`} className="flex items-start gap-2">
                                                         <span className="mt-2 inline-block size-1.5 shrink-0 rounded-full bg-amber-500" />
@@ -796,15 +796,15 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
 
                         <section className={modalSectionClassName}>
                             <div className="flex items-center gap-2">
-                                <AlertTriangle size={16} className="text-slate-600" />
-                                <h3 className="text-base font-semibold text-slate-900">{t('tripView.infoDialog.destination.futureChecksTitle')}</h3>
+                                <AlertTriangle size={16} className="text-muted-foreground" />
+                                <h3 className="text-base font-semibold text-foreground">{t('tripView.infoDialog.destination.futureChecksTitle')}</h3>
                             </div>
-                            <p className="mt-2 text-sm leading-6 text-slate-600">
+                            <p className="mt-2 text-sm leading-6 text-muted-foreground">
                                 {t('tripView.infoDialog.destination.futureChecksDescription')}
                             </p>
                             <div className="mt-4 flex flex-wrap gap-2">
                                 {destinationFutureChecks.map((label) => (
-                                    <span key={label} className="rounded-full border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700">
+                                    <span key={label} className="rounded-full border border-border bg-card px-3 py-1 text-sm font-medium text-foreground">
                                         {label}
                                     </span>
                                 ))}
@@ -815,7 +815,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                     {canShowDebugTab && (
                         <TabsContent value="debug" className="space-y-8">
                             <section className="space-y-4">
-                                <h3 className="text-base font-semibold text-slate-900">Admin access</h3>
+                                <h3 className="text-base font-semibold text-foreground">Admin access</h3>
                                 <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <SummaryCard label="Owner username" value={adminMeta?.ownerUsername || 'n/a'} />
                                     <SummaryCard label="Owner email" value={adminMeta?.ownerEmail || 'n/a'} />
@@ -825,7 +825,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                             </section>
 
                             <section className={modalSectionClassName}>
-                                <h3 className="text-base font-semibold text-slate-900">AI generation diagnostics</h3>
+                                <h3 className="text-base font-semibold text-foreground">AI generation diagnostics</h3>
                                 <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <SummaryCard label={t('tripView.generation.tripInfo.provider')} value={latestAttempt?.provider || aiMeta?.provider || '—'} />
                                     <SummaryCard label={t('tripView.generation.tripInfo.model')} value={latestAttempt?.model || aiMeta?.model || '—'} />
@@ -842,11 +842,11 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                             </section>
 
                             <section className={modalSectionClassName}>
-                                <h3 className="text-base font-semibold text-slate-900">Raw payloads</h3>
+                                <h3 className="text-base font-semibold text-foreground">Raw payloads</h3>
                                 <div className="mt-4 space-y-4">
                                     {requestPayload && (
                                         <div className="space-y-2">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Request payload JSON</p>
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Request payload JSON</p>
                                             <pre className="max-h-72 overflow-auto rounded-md bg-slate-900 p-3 text-[11px] text-slate-100">
                                                 {JSON.stringify(requestPayload, null, 2)}
                                             </pre>
@@ -854,7 +854,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                     )}
                                     {inputSnapshot && (
                                         <div className="space-y-2">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Input snapshot JSON</p>
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Input snapshot JSON</p>
                                             <pre className="max-h-72 overflow-auto rounded-md bg-slate-900 p-3 text-[11px] text-slate-100">
                                                 {JSON.stringify(inputSnapshot, null, 2)}
                                             </pre>

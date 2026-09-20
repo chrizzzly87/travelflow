@@ -22,7 +22,7 @@ export const RecommendationPoolList: React.FC<{
         className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3"
     >
         {recommendations.length === 0 ? (
-            <p className="py-10 text-center text-sm text-slate-500">{emptyMessage}</p>
+            <p className="py-10 text-center text-sm text-muted-foreground">{emptyMessage}</p>
         ) : (
             <ul className="flex flex-col gap-2">
                 {recommendations.map((recommendation) => (

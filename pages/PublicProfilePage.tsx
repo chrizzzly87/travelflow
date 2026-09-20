@@ -367,7 +367,7 @@ export const PublicProfilePage: React.FC = () => {
     }, [displayName, state.status, t]);
 
     return (
-        <div className="flex min-h-screen flex-col bg-slate-50">
+        <div className="flex min-h-screen flex-col bg-secondary">
             <SiteHeader />
             <main className="mx-auto w-full max-w-7xl flex-1 space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                 {state.status === 'loading' && (
@@ -426,10 +426,10 @@ export const PublicProfilePage: React.FC = () => {
                                 className="mx-auto h-auto w-full max-w-[360px] object-contain opacity-95"
                                 loading="lazy"
                             />
-                            <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+                            <h1 className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
                                 {t('publicProfile.notFoundInvalidPassportTitle')}
                             </h1>
-                            <p className="text-sm font-medium text-slate-600 md:text-base">
+                            <p className="text-sm font-medium text-muted-foreground md:text-base">
                                 {t('publicProfile.notFoundFunSubtitle')}
                             </p>
                             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -441,7 +441,7 @@ export const PublicProfilePage: React.FC = () => {
                                 </NavLink>
                                 <NavLink
                                     to={buildPath('inspirations')}
-                                    className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
+                                    className="inline-flex items-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-border hover:bg-secondary"
                                 >
                                     {t('publicProfile.ctaGetInspired')}
                                 </NavLink>
@@ -501,8 +501,8 @@ export const PublicProfilePage: React.FC = () => {
                         {pinnedTrips.length > 0 && (
                             <section className="space-y-3">
                                 <div className="flex items-center justify-between gap-3">
-                                    <h2 className="text-lg font-black tracking-tight text-slate-900">{t('sections.highlights')}</h2>
-                                    <span className="text-xs font-semibold text-slate-500">
+                                    <h2 className="text-lg font-black tracking-tight text-foreground">{t('sections.highlights')}</h2>
+                                    <span className="text-xs font-semibold text-muted-foreground">
                                         {t('sections.highlightsCount', { count: pinnedTrips.length })}
                                     </span>
                                 </div>
@@ -540,7 +540,7 @@ export const PublicProfilePage: React.FC = () => {
                         )}
 
                         <section className="space-y-3">
-                            <h2 className="text-lg font-black tracking-tight text-slate-900">{t('publicProfile.tripsTitle')}</h2>
+                            <h2 className="text-lg font-black tracking-tight text-foreground">{t('publicProfile.tripsTitle')}</h2>
                             {isTripsLoading && trips.length === 0 ? (
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
                                     {Array.from({ length: 3 }).map((_, index) => (
@@ -548,8 +548,8 @@ export const PublicProfilePage: React.FC = () => {
                                     ))}
                                 </div>
                             ) : trips.length === 0 ? (
-                                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
-                                    <p className="text-sm font-semibold text-slate-800">{t('publicProfile.emptyTrips')}</p>
+                                <div className="rounded-xl border border-dashed border-border bg-secondary px-4 py-8 text-center">
+                                    <p className="text-sm font-semibold text-foreground">{t('publicProfile.emptyTrips')}</p>
                                 </div>
                             ) : (
                                 <>

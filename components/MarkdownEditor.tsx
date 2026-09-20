@@ -469,7 +469,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
     if (readOnly) {
         return (
-            <div className={`prose prose-sm max-w-none text-gray-600 ${className}`}>
+            <div className={`prose prose-sm max-w-none text-muted-foreground ${className}`}>
                 <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
@@ -500,9 +500,9 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }
 
     return (
-        <div className={`border border-gray-200 rounded-lg overflow-visible bg-white ${className}`}>
-            <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
-                <div className="text-[11px] font-semibold tracking-wide uppercase text-gray-500">Rich Notes</div>
+        <div className={`border border-border rounded-lg overflow-visible bg-card ${className}`}>
+            <div className="flex items-center justify-between px-3 py-2 bg-secondary border-b border-border">
+                <div className="text-[11px] font-semibold tracking-wide uppercase text-muted-foreground">Rich Notes</div>
 
                 {hasAiButton && (
                     <div className="relative" ref={aiPopoverRef}>
@@ -517,8 +517,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                             Enhance with AI
                         </button>
                         {hasAiActions && isAiPopoverOpen && (
-                            <div className="absolute top-full right-0 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-xl z-40">
-                                <div className="px-3 py-2 border-b border-gray-100 text-xs font-semibold text-gray-600">
+                            <div className="absolute top-full right-0 mt-2 w-72 bg-card border border-border rounded-lg shadow-xl z-40">
+                                <div className="px-3 py-2 border-b border-border text-xs font-semibold text-muted-foreground">
                                     What should AI add?
                                 </div>
                                 <div className="p-2 space-y-1">
@@ -531,8 +531,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                                             }}
                                             className="w-full text-left px-2.5 py-2 rounded-md hover:bg-accent-50 transition-colors"
                                         >
-                                            <div className="text-xs font-semibold text-gray-800">{action.label}</div>
-                                            <div className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">{action.description}</div>
+                                            <div className="text-xs font-semibold text-foreground">{action.label}</div>
+                                            <div className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{action.description}</div>
                                         </button>
                                     ))}
                                 </div>
@@ -548,31 +548,31 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                 </div>
             )}
 
-            <div className="px-2 py-1.5 bg-white border-b border-gray-100 flex items-center gap-1 overflow-x-auto">
-                <button type="button" onClick={() => handleHeading(1)} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Heading 1">
+            <div className="px-2 py-1.5 bg-card border-b border-border flex items-center gap-1 overflow-x-auto">
+                <button type="button" onClick={() => handleHeading(1)} className="p-1.5 rounded hover:bg-secondary text-muted-foreground" aria-label="Heading 1">
                     <Heading1 size={14} />
                 </button>
-                <button type="button" onClick={() => handleHeading(2)} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Heading 2">
+                <button type="button" onClick={() => handleHeading(2)} className="p-1.5 rounded hover:bg-secondary text-muted-foreground" aria-label="Heading 2">
                     <Heading2 size={14} />
                 </button>
-                <button type="button" onClick={() => handleHeading(3)} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Heading 3">
+                <button type="button" onClick={() => handleHeading(3)} className="p-1.5 rounded hover:bg-secondary text-muted-foreground" aria-label="Heading 3">
                     <Heading3 size={14} />
                 </button>
                 <div className="w-px h-5 bg-gray-200 mx-0.5" />
-                <button type="button" onClick={() => runCommand('bold')} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Bold">
+                <button type="button" onClick={() => runCommand('bold')} className="p-1.5 rounded hover:bg-secondary text-muted-foreground" aria-label="Bold">
                     <Bold size={14} />
                 </button>
-                <button type="button" onClick={() => runCommand('italic')} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Italic">
+                <button type="button" onClick={() => runCommand('italic')} className="p-1.5 rounded hover:bg-secondary text-muted-foreground" aria-label="Italic">
                     <Italic size={14} />
                 </button>
                 <div className="w-px h-5 bg-gray-200 mx-0.5" />
-                <button type="button" onClick={() => runCommand('insertUnorderedList')} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Bullet list">
+                <button type="button" onClick={() => runCommand('insertUnorderedList')} className="p-1.5 rounded hover:bg-secondary text-muted-foreground" aria-label="Bullet list">
                     <List size={14} />
                 </button>
-                <button type="button" onClick={handleChecklist} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Checklist">
+                <button type="button" onClick={handleChecklist} className="p-1.5 rounded hover:bg-secondary text-muted-foreground" aria-label="Checklist">
                     <CheckSquare size={14} />
                 </button>
-                <button type="button" onClick={handleLink} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Link">
+                <button type="button" onClick={handleLink} className="p-1.5 rounded hover:bg-secondary text-muted-foreground" aria-label="Link">
                     <Link2 size={14} />
                 </button>
             </div>
@@ -606,10 +606,10 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         });
                     }
                 }}
-                className="h-48 overflow-y-auto p-3 text-sm leading-relaxed text-gray-800 outline-none [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:border-t [&_h1]:border-gray-100 [&_h1]:pt-2 [&_h1]:text-base [&_h1]:font-black [&_h1]:tracking-tight [&_h1]:text-gray-800 [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:border-t [&_h2]:border-gray-100 [&_h2]:pt-2 [&_h2]:text-sm [&_h2]:font-extrabold [&_h2]:tracking-wide [&_h2]:text-gray-800 [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:border-t [&_h3]:border-gray-100 [&_h3]:pt-2 [&_h3]:text-sm [&_h3]:font-black [&_h3]:tracking-wide [&_h3]:text-gray-800 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_a]:text-accent-600 [&_a]:underline [&_strong]:font-semibold [&_strong]:text-slate-900 [&_input[type='checkbox']]:h-4 [&_input[type='checkbox']]:w-4 [&_input[type='checkbox']]:rounded-[4px] [&_input[type='checkbox']]:border-slate-500 [&_input[type='checkbox']]:accent-accent-600 [&_ul[data-task-list='true']]:list-none [&_ul[data-task-list='true']]:space-y-2 [&_ul[data-task-list='true']]:pl-0 [&_li[data-task-list-item='true']]:list-none [&_li[data-task-list-item='true']]:pl-0 [&_li[data-task-list-item='true']>label]:flex [&_li[data-task-list-item='true']>label]:items-start [&_li[data-task-list-item='true']>label]:gap-3 [&_li[data-task-list-item='true']>label>input[type='checkbox']]:mt-0.5 [&_div[data-heads-up-group='true']]:my-2 [&_div[data-heads-up-group='true']]:space-y-2 [&_div[data-heads-up-banner='true']]:rounded-lg [&_div[data-heads-up-banner='true']]:border [&_div[data-heads-up-banner='true']]:border-slate-200 [&_div[data-heads-up-banner='true']]:bg-slate-100/85 [&_div[data-heads-up-banner='true']]:px-3 [&_div[data-heads-up-banner='true']]:py-2 [&_div[data-heads-up-banner='true']]:text-slate-700"
+                className="h-48 overflow-y-auto p-3 text-sm leading-relaxed text-foreground outline-none [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:border-t [&_h1]:border-gray-100 [&_h1]:pt-2 [&_h1]:text-base [&_h1]:font-black [&_h1]:tracking-tight [&_h1]:text-gray-800 [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:border-t [&_h2]:border-gray-100 [&_h2]:pt-2 [&_h2]:text-sm [&_h2]:font-extrabold [&_h2]:tracking-wide [&_h2]:text-gray-800 [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:border-t [&_h3]:border-gray-100 [&_h3]:pt-2 [&_h3]:text-sm [&_h3]:font-black [&_h3]:tracking-wide [&_h3]:text-gray-800 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_a]:text-accent-600 [&_a]:underline [&_strong]:font-semibold [&_strong]:text-slate-900 [&_input[type='checkbox']]:h-4 [&_input[type='checkbox']]:w-4 [&_input[type='checkbox']]:rounded-[4px] [&_input[type='checkbox']]:border-slate-500 [&_input[type='checkbox']]:accent-accent-600 [&_ul[data-task-list='true']]:list-none [&_ul[data-task-list='true']]:space-y-2 [&_ul[data-task-list='true']]:pl-0 [&_li[data-task-list-item='true']]:list-none [&_li[data-task-list-item='true']]:pl-0 [&_li[data-task-list-item='true']>label]:flex [&_li[data-task-list-item='true']>label]:items-start [&_li[data-task-list-item='true']>label]:gap-3 [&_li[data-task-list-item='true']>label>input[type='checkbox']]:mt-0.5 [&_div[data-heads-up-group='true']]:my-2 [&_div[data-heads-up-group='true']]:space-y-2 [&_div[data-heads-up-banner='true']]:rounded-lg [&_div[data-heads-up-banner='true']]:border [&_div[data-heads-up-banner='true']]:border-slate-200 [&_div[data-heads-up-banner='true']]:bg-slate-100/85 [&_div[data-heads-up-banner='true']]:px-3 [&_div[data-heads-up-banner='true']]:py-2 [&_div[data-heads-up-banner='true']]:text-slate-700"
             />
 
-            <div className="px-3 py-1.5 bg-gray-50 border-t border-gray-200 text-[10px] text-gray-400 flex justify-between">
+            <div className="px-3 py-1.5 bg-secondary border-t border-border text-[10px] text-muted-foreground flex justify-between">
                 <span>Rich editor (saved as Markdown)</span>
                 <span>{value.length} chars</span>
             </div>

@@ -64,7 +64,7 @@ function Slider({
           // track's start, and worse again when the slider is disabled and the
           // whole group drops to 50% opacity. Bigger, with a solid ring and a
           // real shadow, so it reads as a grabbable knob on any surface.
-          className="block size-5 shrink-0 rounded-full border-2 border-primary bg-white shadow-md ring-ring/50 transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
+          className="block size-5 shrink-0 rounded-full border-2 border-primary bg-card shadow-md ring-ring/50 transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
         />
       ))}
     </SliderPrimitive.Root>

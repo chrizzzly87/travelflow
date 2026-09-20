@@ -64,7 +64,7 @@ export const RecommendationDetailActions: React.FC<{
                 type="button"
                 onClick={onRestore}
                 data-testid="recommendation-detail-restore"
-                className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-border px-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
             >
                 <RotateCcw size={15} />
                 Put back in the deck
@@ -80,7 +80,7 @@ export const RecommendationDetailActions: React.FC<{
             <div className="flex max-h-56 flex-col gap-2.5 overflow-y-auto">
                 {groups.map((group) => (
                     <div key={`${group.cityName}-${group.days[0]?.dayOffset}`}>
-                        <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                        <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
                             {group.cityName}
                         </p>
                         <div className="flex flex-wrap gap-1.5">
@@ -89,7 +89,7 @@ export const RecommendationDetailActions: React.FC<{
                                     key={day.dayOffset}
                                     type="button"
                                     onClick={() => onAssignToDay(saved, day)}
-                                    className="inline-flex min-h-9 items-center rounded-lg border border-slate-200 px-2.5 text-xs font-semibold text-slate-700 transition-colors hover:border-accent-300 hover:text-accent-700"
+                                    className="inline-flex min-h-9 items-center rounded-lg border border-border px-2.5 text-xs font-semibold text-foreground transition-colors hover:border-accent-300 hover:text-accent-700"
                                 >
                                     {day.weekdayLabel} {day.dayOfMonthLabel}
                                 </button>
@@ -100,7 +100,7 @@ export const RecommendationDetailActions: React.FC<{
                 <button
                     type="button"
                     onClick={onCancelAssigning}
-                    className="inline-flex min-h-9 shrink-0 items-center self-start rounded-lg px-2.5 text-xs font-semibold text-slate-500"
+                    className="inline-flex min-h-9 shrink-0 items-center self-start rounded-lg px-2.5 text-xs font-semibold text-muted-foreground"
                 >
                     Cancel
                 </button>

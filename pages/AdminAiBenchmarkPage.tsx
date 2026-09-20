@@ -272,19 +272,19 @@ const SATISFACTION_META: Record<SatisfactionRating, { label: string; icon: React
         label: 'Good',
         icon: <Smiley size={14} weight="fill" />,
         activeClass: 'border-emerald-300 bg-emerald-50 text-emerald-700',
-        idleClass: 'border-slate-300 bg-white text-slate-500 hover:bg-slate-50',
+        idleClass: 'border-border bg-card text-muted-foreground hover:bg-secondary',
     },
     medium: {
         label: 'Medium',
         icon: <SmileyMeh size={14} weight="fill" />,
         activeClass: 'border-amber-300 bg-amber-50 text-amber-700',
-        idleClass: 'border-slate-300 bg-white text-slate-500 hover:bg-slate-50',
+        idleClass: 'border-border bg-card text-muted-foreground hover:bg-secondary',
     },
     bad: {
         label: 'Bad',
         icon: <SmileySad size={14} weight="fill" />,
         activeClass: 'border-rose-300 bg-rose-50 text-rose-700',
-        idleClass: 'border-slate-300 bg-white text-slate-500 hover:bg-slate-50',
+        idleClass: 'border-border bg-card text-muted-foreground hover:bg-secondary',
     },
 };
 
@@ -337,11 +337,11 @@ const ProviderLabel: React.FC<{
     return (
         <span className="inline-flex min-w-0 items-center gap-1.5">
             <AiProviderLogo provider={provider} model={model} size={logoSize} />
-            <span className={providerClassName || 'font-semibold text-slate-800'} title={`${providerLabel} (${provider})`}>
+            <span className={providerClassName || 'font-semibold text-foreground'} title={`${providerLabel} (${provider})`}>
                 {providerShortName}
             </span>
             {modelLabel && showModel ? (
-                <span className={modelClassName || 'truncate text-slate-600'}>
+                <span className={modelClassName || 'truncate text-muted-foreground'}>
                     / {modelLabel}
                 </span>
             ) : null}
@@ -388,7 +388,7 @@ const ModelReasoningSelect: React.FC<{
 }> = ({ model, runDefault, value, onChange }) => {
     const isConfigurable = model.provider === 'openrouter' && model.supportsReasoning === true;
     if (!isConfigurable) {
-        return <span className="text-xs text-slate-500">Not configurable</span>;
+        return <span className="text-xs text-muted-foreground">Not configurable</span>;
     }
 
     const supportedEfforts = (model.reasoningEfforts?.length ? model.reasoningEfforts : AI_REASONING_EFFORTS)
@@ -2239,13 +2239,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     onValueChange={(value) => setWorkspaceTab(value as 'setup' | 'results' | 'insights')}
                     className="flex flex-col gap-4"
                 >
-                    <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur">
+                    <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-card/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur">
                         <TabsList className="grid w-full grid-cols-3 sm:w-auto">
                             <TabsTrigger value="setup">Setup</TabsTrigger>
                             <TabsTrigger value="results">Results · {runs.length}</TabsTrigger>
                             <TabsTrigger value="insights">Insights</TabsTrigger>
                         </TabsList>
-                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <Badge variant={accessToken ? 'secondary' : 'destructive'}>
                                 {accessToken ? 'Admin connected' : 'Re-auth required'}
                             </Badge>
@@ -2255,11 +2255,11 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                     <TabsContent value="insights" className="mt-0">
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+                <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <h3 className="text-base font-semibold text-slate-900">7-day telemetry quick view</h3>
-                            <p className="text-xs text-slate-500">
+                            <h3 className="text-base font-semibold text-foreground">7-day telemetry quick view</h3>
+                            <p className="text-xs text-muted-foreground">
                                 Three quick ranking cards. Open the full telemetry page for detailed charts and filters.
                             </p>
                         </div>
@@ -2268,14 +2268,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 type="button"
                                 onClick={() => void refreshTelemetryData()}
                                 disabled={snapshotTelemetryLoading}
-                                className="inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <ArrowClockwise size={14} className={snapshotTelemetryLoading ? 'animate-spin' : ''} />
                                 Refresh snapshot
                             </button>
                             <Link
                                 to="/admin/ai-benchmark/telemetry"
-                                className="inline-flex items-center rounded border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                className="inline-flex items-center rounded border border-border bg-card px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                             >
                                 Open telemetry page
                             </Link>
@@ -2288,31 +2288,31 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
-                        Calls: <span className="font-semibold text-slate-800">{snapshotTelemetrySummary ? snapshotTelemetrySummary.total : '—'}</span>
-                        <span className="mx-2 text-slate-400">•</span>
-                        Success: <span className="font-semibold text-slate-800">{snapshotTelemetrySummary ? `${snapshotTelemetrySummary.successRate.toFixed(1)}%` : '—'}</span>
-                        <span className="mx-2 text-slate-400">•</span>
-                        Cost: <span className="font-semibold text-slate-800">{snapshotTelemetrySummary ? formatUsd(snapshotTelemetrySummary.totalCostUsd) : '—'}</span>
+                    <div className="mt-3 rounded-xl border border-border bg-secondary px-3 py-2 text-[11px] text-muted-foreground">
+                        Calls: <span className="font-semibold text-foreground">{snapshotTelemetrySummary ? snapshotTelemetrySummary.total : '—'}</span>
+                        <span className="mx-2 text-muted-foreground">•</span>
+                        Success: <span className="font-semibold text-foreground">{snapshotTelemetrySummary ? `${snapshotTelemetrySummary.successRate.toFixed(1)}%` : '—'}</span>
+                        <span className="mx-2 text-muted-foreground">•</span>
+                        Cost: <span className="font-semibold text-foreground">{snapshotTelemetrySummary ? formatUsd(snapshotTelemetrySummary.totalCostUsd) : '—'}</span>
                     </div>
 
                     <div className="mt-3 grid gap-3 xl:grid-cols-3">
                         {snapshotTelemetryCards.map((card) => (
-                            <article key={card.id} className="rounded-xl border border-slate-200 bg-white p-3">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{card.title}</p>
-                                <p className="mt-1 text-xl font-black text-slate-900">{card.metric}</p>
-                                <p className="mt-1 text-xs font-semibold text-slate-700">
+                            <article key={card.id} className="rounded-xl border border-border bg-card p-3">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{card.title}</p>
+                                <p className="mt-1 text-xl font-black text-foreground">{card.metric}</p>
+                                <p className="mt-1 text-xs font-semibold text-foreground">
                                     {card.model ? (
                                         <ProviderLabel
                                             provider={card.model.provider}
                                             model={card.model.model}
-                                            providerClassName="font-semibold text-slate-700"
-                                            modelClassName="text-slate-600"
+                                            providerClassName="font-semibold text-foreground"
+                                            modelClassName="text-muted-foreground"
                                             logoSize={13}
                                         />
                                     ) : 'No model yet'}
                                 </p>
-                                <p className="mt-1 text-[11px] text-slate-500">{card.detail}</p>
+                                <p className="mt-1 text-[11px] text-muted-foreground">{card.detail}</p>
                             </article>
                         ))}
                     </div>
@@ -2322,8 +2322,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                     <TabsContent value="setup" className="mt-0">
 
-                <Card className="gap-0 rounded-lg border-slate-200 py-0 shadow-sm">
-                    <CardHeader className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-start sm:justify-between md:px-6">
+                <Card className="gap-0 rounded-lg border-border py-0 shadow-sm">
+                    <CardHeader className="flex flex-col gap-3 border-b border-border px-4 py-4 sm:flex-row sm:items-start sm:justify-between md:px-6">
                         <div>
                             <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
                                 Benchmark setup
@@ -2369,7 +2369,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                     <CardContent className="divide-y divide-slate-200 px-0">
                         <section className="grid gap-4 p-4 md:grid-cols-[minmax(220px,0.8fr)_minmax(240px,1fr)_minmax(300px,1.4fr)] md:p-6">
-                            <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-slate-700">
+                            <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
                                 Trip template
                                 <Select value={selectedPresetId} onValueChange={(value) => void handlePresetSelection(value)}>
                                     <SelectTrigger aria-label="Trip template" className="h-9">
@@ -2386,7 +2386,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </Select>
                             </label>
 
-                            <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-slate-700">
+                            <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
                                 Session name
                                 <Input
                                     aria-label="Session name"
@@ -2396,14 +2396,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 />
                             </label>
 
-                            <div className="min-w-0 rounded-md border border-slate-200 bg-slate-50 p-3">
+                            <div className="min-w-0 rounded-md border border-border bg-secondary p-3">
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <span className="truncate text-sm font-semibold text-slate-900">{selectedPreset?.name || 'Template'}</span>
+                                            <span className="truncate text-sm font-semibold text-foreground">{selectedPreset?.name || 'Template'}</span>
                                             <Badge variant="outline" className="h-5 text-[10px]">{selectedPreset?.kind || 'system'}</Badge>
                                         </div>
-                                        <p className="mt-1 line-clamp-2 text-xs text-slate-500">
+                                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                                             {selectedPreset?.description || 'No description saved for this template.'}
                                         </p>
                                     </div>
@@ -2423,17 +2423,17 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         <section className="p-4 md:p-6">
                             <div className="mb-3 flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
                                 <div>
-                                    <h3 className="text-sm font-semibold text-slate-900">Execution</h3>
-                                    <p className="text-xs text-slate-500">Run defaults apply unless a model has its own reasoning setting below.</p>
+                                    <h3 className="text-sm font-semibold text-foreground">Execution</h3>
+                                    <p className="text-xs text-muted-foreground">Run defaults apply unless a model has its own reasoning setting below.</p>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     <span>{Math.max(0, runnableTargets.length - benchmarkConcurrency)} queued</span>
                                     <span aria-hidden="true">·</span>
                                     <span>{preferencesLoaded ? 'Saved preferences ready' : 'Loading preferences'}</span>
                                 </div>
                             </div>
                             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-700">
+                                <label className="flex flex-col gap-1.5 text-xs font-medium text-foreground">
                                     Run default reasoning
                                     <Select value={benchmarkReasoningMode} onValueChange={(value) => setBenchmarkReasoningMode(value as BenchmarkReasoningMode)}>
                                         <SelectTrigger aria-label="Run default reasoning" className="h-9"><SelectValue /></SelectTrigger>
@@ -2446,10 +2446,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             </SelectGroup>
                                         </SelectContent>
                                     </Select>
-                                    <span className="font-normal text-slate-500">Used by {reasoningTargets.length} compatible model{reasoningTargets.length === 1 ? '' : 's'}.</span>
+                                    <span className="font-normal text-muted-foreground">Used by {reasoningTargets.length} compatible model{reasoningTargets.length === 1 ? '' : 's'}.</span>
                                 </label>
 
-                                <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-700">
+                                <label className="flex flex-col gap-1.5 text-xs font-medium text-foreground">
                                     Parallel requests
                                     <Select value={String(benchmarkConcurrency)} onValueChange={(value) => setBenchmarkConcurrency(Number(value))}>
                                         <SelectTrigger aria-label="Parallel requests" className="h-9"><SelectValue /></SelectTrigger>
@@ -2461,10 +2461,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             </SelectGroup>
                                         </SelectContent>
                                     </Select>
-                                    <span className="font-normal text-slate-500">Lower reduces provider contention and timeout risk.</span>
+                                    <span className="font-normal text-muted-foreground">Lower reduces provider contention and timeout risk.</span>
                                 </label>
 
-                                <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-700">
+                                <label className="flex flex-col gap-1.5 text-xs font-medium text-foreground">
                                     Time limit
                                     <Input
                                         type="number"
@@ -2481,13 +2481,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 : BENCHMARK_TIMEOUT_DEFAULT_SECONDS);
                                         }}
                                     />
-                                    <span className="font-normal text-slate-500">Seconds per model; actual latency stays visible.</span>
+                                    <span className="font-normal text-muted-foreground">Seconds per model; actual latency stays visible.</span>
                                 </label>
 
-                                <div className="flex min-h-[76px] items-start justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+                                <div className="flex min-h-[76px] items-start justify-between gap-3 rounded-md border border-border bg-secondary p-3">
                                     <div>
-                                        <div className="text-xs font-medium text-slate-700">Compact output</div>
-                                        <p className="mt-1 text-xs text-slate-500">Shorter JSON, faster comparisons.</p>
+                                        <div className="text-xs font-medium text-foreground">Compact output</div>
+                                        <p className="mt-1 text-xs text-muted-foreground">Shorter JSON, faster comparisons.</p>
                                     </div>
                                     <Switch aria-label="Compact output" checked={compactBenchmarkOutput} onCheckedChange={setCompactBenchmarkOutput} />
                                 </div>
@@ -2497,8 +2497,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         <section className="p-4 md:p-6">
                             <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
                                 <div>
-                                    <h3 className="text-sm font-semibold text-slate-900">Models</h3>
-                                    <p className="text-xs text-slate-500">Set each model’s reasoning, active status, and single-run actions.</p>
+                                    <h3 className="text-sm font-semibold text-foreground">Models</h3>
+                                    <p className="text-xs text-muted-foreground">Set each model’s reasoning, active status, and single-run actions.</p>
                                 </div>
                                 <Button type="button" onClick={openModelPicker} disabled={loading || cancelling || hasPendingRuns}>
                                     <Plus data-icon="inline-start" />
@@ -2506,8 +2506,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </Button>
                             </div>
 
-                            <div className="mb-3 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 lg:grid-cols-[minmax(260px,1fr)_auto]">
-                                <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-slate-700">
+                            <div className="mb-3 grid gap-3 rounded-md border border-border bg-secondary p-3 lg:grid-cols-[minmax(260px,1fr)_auto]">
+                                <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
                                     Frontend default model
                                     <Select
                                         value={aiRuntimeSettings.defaultModelId}
@@ -2519,7 +2519,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             ])),
                                         })}
                                     >
-                                        <SelectTrigger aria-label="Frontend default model" className="h-9 bg-white">
+                                        <SelectTrigger aria-label="Frontend default model" className="h-9 bg-card">
                                             <SelectValue placeholder="Choose the frontend model" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -2544,14 +2544,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="overflow-hidden rounded-md border border-slate-200">
+                            <div className="overflow-hidden rounded-md border border-border">
                                 {selectedTargets.length === 0 ? (
-                                    <div className="px-4 py-10 text-center text-sm text-slate-500">
+                                    <div className="px-4 py-10 text-center text-sm text-muted-foreground">
                                         No benchmark models selected. Add models to build a comparison set.
                                     </div>
                                 ) : (
                                     <Table>
-                                        <TableHeader className="bg-slate-50">
+                                        <TableHeader className="bg-secondary">
                                             <TableRow>
                                                 <TableHead className="ps-4">Model</TableHead>
                                                 <TableHead className="w-[220px]">Reasoning</TableHead>
@@ -2564,14 +2564,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 const isActive = !inactiveTargetIdSet.has(model.id);
                                                 const singleTarget: AiBenchmarkRunTarget = { provider: model.provider, model: model.model, label: model.label };
                                                 return (
-                                                    <TableRow key={model.id} className={!isActive ? 'bg-slate-50/70 text-slate-500' : undefined}>
+                                                    <TableRow key={model.id} className={!isActive ? 'bg-secondary/70 text-muted-foreground' : undefined}>
                                                         <TableCell className="ps-4">
-                                                            <div className="flex items-center gap-2 font-medium text-slate-900">
+                                                            <div className="flex items-center gap-2 font-medium text-foreground">
                                                                 <AiProviderLogo provider={model.provider} model={model.model} size={20} />
                                                                 <span className="truncate">{model.label}</span>
                                                                 {aiRuntimeSettings.defaultModelId === model.id && <Badge variant="secondary">Frontend</Badge>}
                                                             </div>
-                                                            <div className="ps-7 text-xs text-slate-500">{model.providerShortName} · {model.model}</div>
+                                                            <div className="ps-7 text-xs text-muted-foreground">{model.providerShortName} · {model.model}</div>
                                                         </TableCell>
                                                         <TableCell>
                                                             <ModelReasoningSelect
@@ -2596,7 +2596,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                                     disabled={loading || cancelling || hasPendingRuns}
                                                                     aria-label={`${isActive ? 'Deactivate' : 'Activate'} ${model.label}`}
                                                                 />
-                                                                <span className="text-xs text-slate-500">{isActive ? 'On' : 'Off'}</span>
+                                                                <span className="text-xs text-muted-foreground">{isActive ? 'On' : 'Off'}</span>
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className="pe-4">
@@ -2616,7 +2616,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     </Table>
                                 )}
                             </div>
-                            <p className="mt-2 text-xs text-slate-500">{COST_ESTIMATE_FOOTNOTE}</p>
+                            <p className="mt-2 text-xs text-muted-foreground">{COST_ESTIMATE_FOOTNOTE}</p>
                         </section>
                     </CardContent>
                 </Card>
@@ -2626,11 +2626,11 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                     <TabsContent value="results" className="mt-0">
 
-                <section ref={resultsSectionRef} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+                <section ref={resultsSectionRef} className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <h3 className="text-lg font-semibold text-slate-900">Benchmark runs</h3>
-                            <p className="text-xs text-slate-500">
+                            <h3 className="text-lg font-semibold text-foreground">Benchmark runs</h3>
+                            <p className="text-xs text-muted-foreground">
                                 Session: {session ? `${session.name || 'Unnamed'} (${session.share_token})` : 'No session loaded'}
                             </p>
                         </div>
@@ -2640,7 +2640,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 type="button"
                                 onClick={() => downloadAllZip(false)}
                                 disabled={loading || !session || runs.length === 0}
-                                className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <DownloadSimple size={14} />
                                 Download all
@@ -2649,7 +2649,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 type="button"
                                 onClick={() => downloadAllZip(true)}
                                 disabled={loading || !session || runs.length === 0}
-                                className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <DownloadSimple size={14} />
                                 Download all + logs
@@ -2664,14 +2664,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         <SelectItem key={provider} value={provider}>
                                             <ProviderLabel
                                                 provider={provider}
-                                                providerClassName="text-slate-700"
+                                                providerClassName="text-foreground"
                                                 logoSize={12}
                                             />
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <label className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
+                            <label className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1.5 text-xs font-medium text-foreground">
 	                                <input
 	                                    type="checkbox"
 	                                    aria-label="Hide failed"
@@ -2680,7 +2680,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 />
                                 Hide failed
                             </label>
-                            <label className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
+                            <label className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1.5 text-xs font-medium text-foreground">
 	                                <input
 	                                    type="checkbox"
 	                                    aria-label="Only warnings"
@@ -2689,7 +2689,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 />
                                 Only warnings
                             </label>
-                            <label className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
+                            <label className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1.5 text-xs font-medium text-foreground">
 	                                <input
 	                                    type="checkbox"
 	                                    aria-label="Only unrated"
@@ -2702,37 +2702,37 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     </div>
 
                     {summary && (
-                        <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-slate-600 sm:grid-cols-4">
-                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                <span className="font-semibold text-slate-700">Completed:</span> {summary.completed}/{summary.total}
+                        <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground sm:grid-cols-4">
+                            <div className="rounded border border-border bg-secondary px-2 py-1">
+                                <span className="font-semibold text-foreground">Completed:</span> {summary.completed}/{summary.total}
                             </div>
-                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                <span className="font-semibold text-slate-700">Failed:</span> {summary.failed}
+                            <div className="rounded border border-border bg-secondary px-2 py-1">
+                                <span className="font-semibold text-foreground">Failed:</span> {summary.failed}
                             </div>
-                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                <span className="font-semibold text-slate-700">Avg latency:</span> {formatDuration(summary.averageLatencyMs)}
+                            <div className="rounded border border-border bg-secondary px-2 py-1">
+                                <span className="font-semibold text-foreground">Avg latency:</span> {formatDuration(summary.averageLatencyMs)}
                             </div>
-                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                <span className="font-semibold text-slate-700">Total est.:</span> {hasExactCostData ? formatUsd(summary.totalCostUsd) : '—'}
+                            <div className="rounded border border-border bg-secondary px-2 py-1">
+                                <span className="font-semibold text-foreground">Total est.:</span> {hasExactCostData ? formatUsd(summary.totalCostUsd) : '—'}
                             </div>
                         </div>
                     )}
 
-                    <p className="mt-2 text-[11px] text-slate-500">
+                    <p className="mt-2 text-[11px] text-muted-foreground">
                         Cost column uses exact provider cost when returned; otherwise it falls back to the catalog estimate for that model.
                     </p>
 
                     <div className="mt-3 overflow-x-auto">
                         <table className="min-w-full border-collapse text-left text-sm">
                             <thead>
-                                <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                                <tr className="border-b border-border bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
                                     <th className="px-3 py-2">Model</th>
                                     <th className="px-3 py-2">Status</th>
                                     <th className="px-3 py-2">
                                         <button
                                             type="button"
                                             onClick={() => setRunSortDirection((current) => (current === 'desc' ? 'asc' : 'desc'))}
-                                            className="inline-flex items-center gap-1 font-semibold text-slate-600 hover:text-slate-900"
+                                            className="inline-flex items-center gap-1 font-semibold text-muted-foreground hover:text-foreground"
                                         >
                                             Run at
                                             <ArrowsDownUp size={12} />
@@ -2750,7 +2750,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             <tbody>
                                 {displayRuns.length === 0 && (
                                     <tr>
-                                        <td colSpan={10} className="px-3 py-6 text-center text-sm text-slate-500">
+                                        <td colSpan={10} className="px-3 py-6 text-center text-sm text-muted-foreground">
                                             {loading ? 'Loading benchmark runs...' : 'No runs yet. Configure targets and click Test all.'}
                                         </td>
                                     </tr>
@@ -2787,15 +2787,15 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     const canSaveComment = canEditComment && isCommentDirty && !isCommentTooLong && !isCommentSaveBusy && !loading;
 
                                     return (
-                                        <tr key={run.id} className="border-b border-slate-100 align-top">
+                                        <tr key={run.id} className="border-b border-border align-top">
                                             <td className="px-3 py-2">
-                                                <div className="font-semibold text-slate-800">
+                                                <div className="font-semibold text-foreground">
                                                     <ProviderLabel provider={run.provider} model={run.model} />
                                                 </div>
-                                                <div className="text-xs text-slate-500">run #{run.run_index}</div>
+                                                <div className="text-xs text-muted-foreground">run #{run.run_index}</div>
                                             </td>
                                             <td className="px-3 py-2">
-                                                <div className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
+                                                <div className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-foreground">
                                                     {statusIcon}
                                                     {statusLabel}
                                                 </div>
@@ -2806,7 +2806,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setErrorModalRun(run)}
-                                                                className="rounded border border-rose-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700 hover:bg-rose-50"
+                                                                className="rounded border border-rose-300 bg-card px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700 hover:bg-rose-50"
                                                             >
                                                                 Details
                                                             </button>
@@ -2814,14 +2814,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="px-3 py-2 text-xs text-slate-600">{formatTimestamp(getRunTimestampIso(run))}</td>
-                                            <td className="px-3 py-2 text-sm text-slate-700"><RunLatency run={run} /></td>
-                                            <td className="px-3 py-2 text-sm text-slate-700">
+                                            <td className="px-3 py-2 text-xs text-muted-foreground">{formatTimestamp(getRunTimestampIso(run))}</td>
+                                            <td className="px-3 py-2 text-sm text-foreground"><RunLatency run={run} /></td>
+                                            <td className="px-3 py-2 text-sm text-foreground">
                                                 <div className="space-y-1">
                                                     <div>
                                                         {run.schema_valid === null ? '—' : run.schema_valid ? 'Valid' : 'Invalid'}
                                                         {validationStats.total > 0 && (
-                                                            <span className="ml-1 text-xs text-slate-500">({validationStats.passed}/{validationStats.total})</span>
+                                                            <span className="ml-1 text-xs text-muted-foreground">({validationStats.passed}/{validationStats.total})</span>
                                                         )}
                                                     </div>
                                                     {warningCount > 0 && (
@@ -2833,20 +2833,20 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         <button
                                                             type="button"
                                                             onClick={() => setValidationModalRun(run)}
-                                                            className="rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-700 hover:bg-slate-50"
+                                                            className="rounded border border-border bg-card px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground hover:bg-secondary"
                                                         >
                                                             Checks
                                                         </button>
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="px-3 py-2 text-sm text-slate-700">
+                                            <td className="px-3 py-2 text-sm text-foreground">
                                                 {typeof run.cost_usd === 'number' && Number.isFinite(run.cost_usd) ? (
                                                     formatUsd(run.cost_usd)
                                                 ) : costEstimateLabel ? (
                                                     <div className="space-y-0.5">
                                                         <div>{costEstimateLabel}</div>
-                                                        <div className="text-[10px] uppercase tracking-wide text-slate-500">catalog est.</div>
+                                                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">catalog est.</div>
                                                     </div>
                                                 ) : '—'}
                                             </td>
@@ -2903,23 +2903,23 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         maxLength={BENCHMARK_RUN_COMMENT_MAX_LENGTH}
                                                         rows={2}
                                                         placeholder={canEditComment ? 'Add run note…' : 'Comment after run completes'}
-                                                        className="w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 placeholder:text-slate-400 focus:border-accent-400 focus:outline-none focus:ring-1 focus:ring-accent-300 disabled:cursor-not-allowed disabled:bg-slate-100"
+                                                        className="w-full resize-y rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent-400 focus:outline-none focus:ring-1 focus:ring-accent-300 disabled:cursor-not-allowed disabled:bg-secondary"
                                                     />
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <span className={`text-[10px] ${isCommentTooLong ? 'text-rose-600' : 'text-slate-500'}`}>
+                                                        <span className={`text-[10px] ${isCommentTooLong ? 'text-rose-600' : 'text-muted-foreground'}`}>
                                                             {commentLength}/{BENCHMARK_RUN_COMMENT_MAX_LENGTH}
                                                         </span>
                                                         <button
                                                             type="button"
                                                             onClick={() => void saveRunComment(run)}
                                                             disabled={!canSaveComment}
-                                                            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                            className="rounded border border-border bg-card px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                                                         >
                                                             {isCommentSaveBusy ? 'Saving…' : 'Save'}
                                                         </button>
                                                     </div>
                                                     {run.run_comment_updated_at && (
-                                                        <div className="text-[10px] text-slate-500">
+                                                        <div className="text-[10px] text-muted-foreground">
                                                             Saved {formatTimestamp(run.run_comment_updated_at)}
                                                         </div>
                                                     )}
@@ -2931,7 +2931,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         type="button"
                                                         onClick={() => rerunTarget(run)}
                                                         disabled={loading || cancelling || isPending}
-                                                        className="rounded border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                        className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                                                     >
                                                         Rerun
                                                     </button>
@@ -2949,7 +2949,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         type="button"
                                                         onClick={() => downloadRow(run)}
                                                         disabled={isPending}
-                                                        className="rounded border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                        className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                                                     >
                                                         JSON
                                                     </button>
@@ -2962,14 +2962,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         </table>
                     </div>
 
-                    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <h4 className="text-sm font-semibold text-slate-800">Model dashboard</h4>
-                        <p className="text-[11px] text-slate-500">Averages are computed from persisted runs in the loaded session.</p>
+                    <div className="mt-4 rounded-xl border border-border bg-secondary p-3">
+                        <h4 className="text-sm font-semibold text-foreground">Model dashboard</h4>
+                        <p className="text-[11px] text-muted-foreground">Averages are computed from persisted runs in the loaded session.</p>
 
                         <div className="mt-2 overflow-x-auto">
                             <table className="min-w-full border-collapse text-left text-xs">
                                 <thead>
-                                    <tr className="border-b border-slate-200 uppercase tracking-wide text-slate-500">
+                                    <tr className="border-b border-border uppercase tracking-wide text-muted-foreground">
                                         <th className="px-2 py-1.5">Model</th>
                                         <th className="px-2 py-1.5">Avg time</th>
                                         <th className="px-2 py-1.5">Avg cost</th>
@@ -2984,7 +2984,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 <tbody>
                                     {modelDashboardRows.length === 0 && (
                                         <tr>
-                                            <td colSpan={9} className="px-2 py-4 text-center text-slate-500">
+                                            <td colSpan={9} className="px-2 py-4 text-center text-muted-foreground">
                                                 No model metrics yet.
                                             </td>
                                         </tr>
@@ -2992,27 +2992,27 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                                     {modelDashboardRows.map((row) => {
                                         const satisfactionClass = row.averageRatingScore === null
-                                            ? 'text-slate-500'
+                                            ? 'text-muted-foreground'
                                             : row.averageRatingScore >= 2.5
                                                 ? 'text-emerald-700'
                                                 : row.averageRatingScore >= 1.75
                                                     ? 'text-amber-700'
                                                     : 'text-rose-700';
                                         return (
-                                            <tr key={`${row.provider}-${row.model}`} className="border-b border-slate-200/70">
-                                                <td className="px-2 py-1.5 font-semibold text-slate-800">
+                                            <tr key={`${row.provider}-${row.model}`} className="border-b border-border/70">
+                                                <td className="px-2 py-1.5 font-semibold text-foreground">
                                                     <ProviderLabel provider={row.provider} model={row.model} logoSize={13} />
                                                 </td>
-                                                <td className="px-2 py-1.5 text-slate-700">{formatDuration(row.averageLatencyMs)}</td>
-                                                <td className="px-2 py-1.5 text-slate-700">{formatUsd(row.averageCostUsd)}</td>
-                                                <td className="px-2 py-1.5 tabular-nums text-slate-700">{row.averageTotalTokens?.toLocaleString() ?? '—'}</td>
-                                                <td className="px-2 py-1.5 tabular-nums text-slate-700">{Math.round(row.successRate * 100)}%</td>
-                                                <td className="px-2 py-1.5 tabular-nums text-slate-700">{Math.round(row.repairRate * 100)}%</td>
+                                                <td className="px-2 py-1.5 text-foreground">{formatDuration(row.averageLatencyMs)}</td>
+                                                <td className="px-2 py-1.5 text-foreground">{formatUsd(row.averageCostUsd)}</td>
+                                                <td className="px-2 py-1.5 tabular-nums text-foreground">{row.averageTotalTokens?.toLocaleString() ?? '—'}</td>
+                                                <td className="px-2 py-1.5 tabular-nums text-foreground">{Math.round(row.successRate * 100)}%</td>
+                                                <td className="px-2 py-1.5 tabular-nums text-foreground">{Math.round(row.repairRate * 100)}%</td>
                                                 <td className={`px-2 py-1.5 font-semibold ${satisfactionClass}`}>
                                                     {row.averageRatingScore === null ? 'No votes' : `${row.averageRatingScore.toFixed(2)} / 3`}
                                                 </td>
-                                                <td className="px-2 py-1.5 text-slate-700">{row.ratingCount}</td>
-                                                <td className="px-2 py-1.5 text-slate-700">{row.totalRuns}</td>
+                                                <td className="px-2 py-1.5 text-foreground">{row.ratingCount}</td>
+                                                <td className="px-2 py-1.5 text-foreground">{row.totalRuns}</td>
                                             </tr>
                                         );
                                     })}
@@ -3055,9 +3055,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 { label: 'Budget', value: budget },
                                 { label: 'Pace', value: pace },
                             ].map((item) => (
-                                <div key={item.label} className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                                    <div className="text-[11px] font-medium text-slate-500">{item.label}</div>
-                                    <div className="mt-1 truncate text-sm font-semibold text-slate-900" title={item.value}>{item.value}</div>
+                                <div key={item.label} className="rounded-md border border-border bg-secondary p-3">
+                                    <div className="text-[11px] font-medium text-muted-foreground">{item.label}</div>
+                                    <div className="mt-1 truncate text-sm font-semibold text-foreground" title={item.value}>{item.value}</div>
                                 </div>
                             ))}
                         </div>
@@ -3065,8 +3065,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         <div>
                             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                                 <div>
-                                    <h4 className="text-sm font-semibold text-slate-900">Scenario JSON</h4>
-                                    <p className="text-xs text-slate-500">The normalized input sent through the classic benchmark contract.</p>
+                                    <h4 className="text-sm font-semibold text-foreground">Scenario JSON</h4>
+                                    <p className="text-xs text-muted-foreground">The normalized input sent through the classic benchmark contract.</p>
                                 </div>
                                 {selectedPresetId === CUSTOM_JSON_PRESET_ID && (
                                     <Badge variant={customScenarioDraftParse.error ? 'destructive' : 'secondary'}>
@@ -3121,9 +3121,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     )}
                 >
                     <div className="space-y-4">
-                        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                        <div className="rounded-xl border border-border bg-secondary/80 p-3">
                             <div className="mb-3 flex items-center justify-between gap-3">
-                                <div className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700"><Funnel size={15} /> Catalog filters</div>
+                                <div className="inline-flex items-center gap-2 text-xs font-semibold text-foreground"><Funnel size={15} /> Catalog filters</div>
                                 <Button type="button" variant="ghost" size="sm" onClick={() => void loadModelCatalog()} disabled={modelCatalogLoading}>
                                     <ArrowClockwise className={modelCatalogLoading ? 'animate-spin' : ''} data-icon="inline-start" /> Refresh OpenRouter
                                 </Button>
@@ -3143,8 +3143,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     <SelectContent><SelectItem value="all">Any price</SelectItem><SelectItem value="free">Free</SelectItem><SelectItem value="budget">Budget (≤ $5/M output)</SelectItem><SelectItem value="premium">Premium (&gt; $5/M output)</SelectItem></SelectContent>
                                 </Select>
                             </div>
-                            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-3">
-                                <label className="flex items-center gap-2 text-xs font-medium text-slate-700">
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+                                <label className="flex items-center gap-2 text-xs font-medium text-foreground">
                                     Newer than
                                     <Select value={String(aiRuntimeSettings.modelMaxAgeMonths)} onValueChange={(value) => {
                                         const modelMaxAgeMonths = Number(value);
@@ -3155,23 +3155,23 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         <SelectContent>{[3, 6, 12, 24].map((months) => <SelectItem key={months} value={String(months)}>{months} months</SelectItem>)}</SelectContent>
                                     </Select>
                                 </label>
-                                <label className="flex items-center gap-2 text-xs font-medium text-slate-700">
+                                <label className="flex items-center gap-2 text-xs font-medium text-foreground">
                                     <Switch checked={aiRuntimeSettings.showOlderModels} onCheckedChange={(showOlderModels) => {
                                         setAiRuntimeSettings((current) => ({ ...current, showOlderModels }));
                                         void persistAiRuntimeSettings({ showOlderModels }, { silent: true });
                                     }} aria-label="Show older models" />
                                     Show older models
                                 </label>
-                                <span className="text-xs text-slate-500">{filteredModels.length} compatible models</span>
+                                <span className="text-xs text-muted-foreground">{filteredModels.length} compatible models</span>
                             </div>
                         </div>
                         <div className="max-h-[55vh] space-y-3 overflow-y-auto pr-1">
                             {filteredModels.length === 0 && (
-                                <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">No compatible models match these filters. Try showing older models or clearing a filter.</div>
+                                <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No compatible models match these filters. Try showing older models or clearing a filter.</div>
                             )}
                             {Object.entries(groupedModels).map(([providerLabel, models]) => (
                                 <div key={providerLabel} className="space-y-1">
-                                    <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                         <AiProviderLogo provider={models[0]?.provider || providerLabel} model={models[0]?.model} size={12} />
                                         <span>{providerLabel}</span>
                                     </div>
@@ -3189,7 +3189,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         'flex w-full items-center justify-between rounded-md border p-2 text-left text-xs',
                                                         selected
                                                             ? 'border-accent-300 bg-accent-50 text-accent-900'
-                                                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                                                            : 'border-border bg-card text-foreground hover:bg-secondary',
                                                         disabled ? 'cursor-not-allowed opacity-50' : '',
                                                     ].join(' ')}
                                                 >
@@ -3201,14 +3201,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                             {model.catalogSource === 'openrouter-live' && <Badge variant="outline" className="h-5 text-[10px]">Live</Badge>}
                                                             {model.isFree && <Badge variant="outline" className="h-5 text-[10px]">Free</Badge>}
                                                         </span>
-                                                        <span className="truncate text-[10px] font-normal text-slate-500">
+                                                        <span className="truncate text-[10px] font-normal text-muted-foreground">
                                                             {model.contextLength ? `${Math.round(model.contextLength / 1000)}k context · ` : ''}
                                                             {model.supportsReasoning
                                                                 ? `Reasoning ${model.reasoningMandatory ? 'required' : 'optional'} · ${model.reasoningEfforts?.join(', ') || 'provider controlled'}${model.defaultReasoningEffort ? ` · default ${model.defaultReasoningEffort}` : ''}`
                                                                 : 'No configurable reasoning'}
                                                         </span>
                                                     </span>
-                                                    <span className="ml-2 shrink-0 text-[10px] text-slate-500">{model.estimatedCostPerQueryLabel}</span>
+                                                    <span className="ml-2 shrink-0 text-[10px] text-muted-foreground">{model.estimatedCostPerQueryLabel}</span>
                                                 </button>
                                             );
                                         })}
@@ -3231,7 +3231,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => setPresetEditor(null)}
-                                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
                             >
                                 Cancel
                             </button>
@@ -3248,38 +3248,38 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     {presetEditor && (
                         <div className="grid grid-cols-1 gap-3">
                             <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Name</span>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Name</span>
 	                                <input
 	                                    aria-label="Name"
 	                                    value={presetEditor.name}
                                     onChange={(event) => setPresetEditor((current) => current ? { ...current, name: event.target.value } : current)}
-                                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                    className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
                             </label>
 
                             <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Description</span>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Description</span>
 	                                <input
 	                                    aria-label="Description"
 	                                    value={presetEditor.description}
                                     onChange={(event) => setPresetEditor((current) => current ? { ...current, description: event.target.value } : current)}
-                                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                    className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
                             </label>
 
                             <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Destinations</span>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Destinations</span>
 	                                <input
 	                                    aria-label="Destinations"
 	                                    value={presetEditor.scenario.destinations}
                                     onChange={(event) => updatePresetDraftScenario('destinations', event.target.value)}
-                                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                    className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
                             </label>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Date mode</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Date mode</span>
                                     <Select
                                         value={presetEditor.scenario.dateInputMode}
                                         onValueChange={(value) => updatePresetDraftScenario('dateInputMode', value as BenchmarkMaskScenario['dateInputMode'])}
@@ -3296,7 +3296,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                                 {presetEditor.scenario.dateInputMode === 'flex' ? (
                                     <label className="space-y-1 text-sm">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Flex weeks</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Flex weeks</span>
 	                                        <input
 	                                            type="number"
 	                                            aria-label="Flex weeks"
@@ -3308,18 +3308,18 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 const normalized = Number.isFinite(next) ? Math.min(12, Math.max(1, Math.round(next))) : 1;
                                                 updatePresetDraftScenario('flexWeeks', normalized);
                                             }}
-                                            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                            className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                         />
                                     </label>
                                 ) : (
                                     <label className="space-y-1 text-sm">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Start date</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Start date</span>
 	                                        <input
 	                                            type="date"
 	                                            aria-label="Start date"
 	                                            value={presetEditor.scenario.startDate || defaultDates.startDate}
                                             onChange={(event) => updatePresetDraftScenario('startDate', event.target.value)}
-                                            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                            className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                         />
                                     </label>
                                 )}
@@ -3328,18 +3328,18 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 {presetEditor.scenario.dateInputMode === 'exact' ? (
                                     <label className="space-y-1 text-sm">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">End date</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">End date</span>
 	                                        <input
 	                                            type="date"
 	                                            aria-label="End date"
 	                                            value={presetEditor.scenario.endDate || defaultDates.endDate}
                                             onChange={(event) => updatePresetDraftScenario('endDate', event.target.value)}
-                                            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                            className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                         />
                                     </label>
                                 ) : (
                                     <div className="space-y-1 text-sm">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Flex window</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Flex window</span>
                                         <Select
                                             value={presetEditor.scenario.flexWindow}
                                             onValueChange={(value) => updatePresetDraftScenario('flexWindow', value as BenchmarkMaskScenario['flexWindow'])}
@@ -3359,7 +3359,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 )}
 
                                 <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Round trip</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Round trip</span>
                                     <Select
                                         value={presetEditor.scenario.roundTrip ? 'yes' : 'no'}
                                         onValueChange={(value) => updatePresetDraftScenario('roundTrip', value === 'yes')}
@@ -3377,7 +3377,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Budget</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Budget</span>
                                     <Select value={presetEditor.scenario.budget} onValueChange={(value) => updatePresetDraftScenario('budget', value)}>
                                         <SelectTrigger aria-label="Budget">
                                             <SelectValue placeholder="Budget" />
@@ -3391,7 +3391,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     </Select>
                                 </div>
                                 <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pace</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pace</span>
                                     <Select value={presetEditor.scenario.pace} onValueChange={(value) => updatePresetDraftScenario('pace', value)}>
                                         <SelectTrigger aria-label="Pace">
                                             <SelectValue placeholder="Pace" />
@@ -3407,16 +3407,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <label className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Specific cities</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Specific cities</span>
 	                                    <input
 	                                        aria-label="Specific cities"
 	                                        value={presetEditor.scenario.specificCities}
                                         onChange={(event) => updatePresetDraftScenario('specificCities', event.target.value)}
-                                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                        className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                     />
                                 </label>
                                 <label className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stops</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Stops</span>
 	                                    <input
 	                                        type="number"
 	                                        aria-label="Stops"
@@ -3427,14 +3427,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             const next = event.target.value ? Number(event.target.value) : null;
                                             updatePresetDraftScenario('numCities', Number.isFinite(next as number) ? (next as number) : null);
                                         }}
-                                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                        className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                     />
                                 </label>
                             </div>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                                 <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Traveler setup</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Traveler setup</span>
                                     <Select
                                         value={presetEditor.scenario.travelerSetup}
                                         onValueChange={(value) => updatePresetDraftScenario('travelerSetup', value as BenchmarkMaskScenario['travelerSetup'])}
@@ -3451,7 +3451,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     </Select>
                                 </div>
                                 <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Trip style</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Trip style</span>
                                     <Select
                                         value={presetEditor.scenario.tripStyleMask}
                                         onValueChange={(value) => updatePresetDraftScenario('tripStyleMask', value as BenchmarkMaskScenario['tripStyleMask'])}
@@ -3467,7 +3467,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     </Select>
                                 </div>
                                 <div className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Transport</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Transport</span>
                                     <Select
                                         value={presetEditor.scenario.transportMask}
                                         onValueChange={(value) => updatePresetDraftScenario('transportMask', value as BenchmarkMaskScenario['transportMask'])}
@@ -3486,17 +3486,17 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             </div>
 
                             <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Notes/interests</span>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes/interests</span>
 	                                <textarea
 	                                    aria-label="Notes/interests"
 	                                    rows={3}
                                     value={presetEditor.scenario.notes}
                                     onChange={(event) => updatePresetDraftScenario('notes', event.target.value)}
-                                    className="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                    className="w-full resize-y rounded-md border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
                             </label>
 
-                            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                            <label className="inline-flex items-center gap-2 text-sm text-foreground">
 	                                <input
 	                                    type="checkbox"
 	                                    aria-label="Route lock"
@@ -3518,32 +3518,32 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             onClick={() => setPromptModal(null)}
                         />
                         <div
-                            className="relative z-10 w-full max-w-4xl rounded-xl border border-slate-300 bg-white shadow-2xl"
+                            className="relative z-10 w-full max-w-4xl rounded-xl border border-border bg-card shadow-2xl"
                         >
-                            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                            <div className="flex items-center justify-between border-b border-border px-4 py-3">
                                 <div>
-                                    <h4 className="text-sm font-semibold text-slate-900">Generated benchmark prompt</h4>
-                                    <p className="text-xs text-slate-500">{formatTimestamp(promptModal.generatedAt)}</p>
+                                    <h4 className="text-sm font-semibold text-foreground">Generated benchmark prompt</h4>
+                                    <p className="text-xs text-muted-foreground">{formatTimestamp(promptModal.generatedAt)}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button
                                         type="button"
                                         onClick={copyPromptToClipboard}
-                                        className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                                     >
                                         Copy
                                     </button>
                                     <button
                                         type="button"
                                         onClick={downloadPromptText}
-                                        className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                                     >
                                         Download .txt
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setPromptModal(null)}
-                                        className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                                     >
                                         Close
                                     </button>
@@ -3555,7 +3555,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 	                                    value={promptModal.prompt}
                                     readOnly
                                     rows={18}
-                                    className="w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-800 outline-none"
+                                    className="w-full rounded-md border border-border bg-secondary px-3 py-2 font-mono text-xs text-foreground outline-none"
                                 />
                             </div>
                         </div>
@@ -3576,12 +3576,12 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
                                 <div>
                                     <h4 className="text-sm font-semibold text-slate-100">Run error details</h4>
-                                    <p className="text-xs text-slate-400">
+                                    <p className="text-xs text-muted-foreground">
                                         <ProviderLabel
                                             provider={errorModalRun.provider}
                                             model={errorModalRun.model}
                                             providerClassName="text-slate-300"
-                                            modelClassName="text-slate-400"
+                                            modelClassName="text-muted-foreground"
                                             logoSize={12}
                                         />
                                         <span className="ml-1">· run #{errorModalRun.run_index}</span>
@@ -3621,12 +3621,12 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
                                 <div>
                                     <h4 className="text-sm font-semibold text-slate-100">Validation details</h4>
-                                    <p className="text-xs text-slate-400">
+                                    <p className="text-xs text-muted-foreground">
                                         <ProviderLabel
                                             provider={validationModalRun.provider}
                                             model={validationModalRun.model}
                                             providerClassName="text-slate-300"
-                                            modelClassName="text-slate-400"
+                                            modelClassName="text-muted-foreground"
                                             logoSize={12}
                                         />
                                         <span className="ml-1">· run #{validationModalRun.run_index}</span>

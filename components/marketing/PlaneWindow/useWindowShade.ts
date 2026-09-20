@@ -12,6 +12,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { setResolvedTheme, getResolvedTheme } from '../../../contexts/theme/themeStore';
 
+/**
+ * Dragging does NOT go through React state. Every pointermove used to call
+ * setShade, which re-rendered the component and rewrote the shade transform and
+ * the frame's filter as inline styles — and pointermove fires faster than the
+ * browser paints, so renders queued up behind frames and the shade moved in
+ * steps. The drag now writes those two properties straight to the DOM, coalesced
+ * into one rAF per frame, and React state is only touched when the drag settles.
+ */
+
 /** Past this speed (shade units per second) a flick wins over position. */
 const FLICK_VELOCITY = 1.6;
 /** How far the veil is allowed to darken before the theme actually commits. */
@@ -20,10 +29,17 @@ const COMMIT_EPSILON = 0.001;
 /** Matches the .is-recolouring transition in index.css. */
 const RECOLOUR_MS = 520;
 
+/** Shade travel as a fraction of the opening height; mirrored in PlaneWindow. */
+export const SHADE_TRAVEL = 1.02;
+/** How far the cabin dims as the shade comes down. */
+export const FRAME_DIM = 0.28;
+
 export interface WindowShadeResult {
     shade: number;
     dragging: boolean;
     isDark: boolean;
+    shadeElRef: React.MutableRefObject<HTMLElement | null>;
+    frameElRef: React.MutableRefObject<HTMLElement | null>;
     handlers: {
         onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
         onPointerMove: (event: React.PointerEvent<HTMLElement>) => void;
@@ -104,6 +120,12 @@ export const useWindowShade = (): WindowShadeResult => {
         return () => observer.disconnect();
     }, []);
 
+    // Attached by PlaneWindow so the drag can paint without a render.
+    const shadeElRef = useRef<HTMLElement | null>(null);
+    const frameElRef = useRef<HTMLElement | null>(null);
+    const pending = useRef<number | null>(null);
+    const rafId = useRef(0);
+
     const paintVeil = useCallback((value: number, active: boolean) => {
         const veil = getVeil();
         if (!veil) return;
@@ -113,13 +135,56 @@ export const useWindowShade = (): WindowShadeResult => {
             return;
         }
         const currentlyDark = document.documentElement.classList.contains('dark');
+        const travelled = currentlyDark ? 1 - value : value;
         veil.style.transition = '';
         veil.style.backgroundColor = readVeilColour(!currentlyDark);
-        veil.style.opacity = String((currentlyDark ? 1 - value : value) * VEIL_MAX);
+        // Ease toward fully opaque near the end. The theme actually swaps behind
+        // this veil, so any daylight left at the moment of the swap shows up as a
+        // hard snap; easing it to 1 hides the change and the fade-out reveals the
+        // new colours instead.
+        veil.style.opacity = String(travelled >= 0.985 ? 1 : travelled ** 0.85 * VEIL_MAX);
     }, []);
+
+    /** Write the drag straight to the DOM. One paint per frame, latest value wins. */
+    const paintShade = useCallback((value: number) => {
+        const shadeEl = shadeElRef.current;
+        if (shadeEl) shadeEl.style.transform = `translate3d(0, ${-(1 - value) * SHADE_TRAVEL * 100}%, 0)`;
+        const frameEl = frameElRef.current;
+        if (frameEl) frameEl.style.filter = `brightness(${1 - value * FRAME_DIM})`;
+        paintVeil(value, true);
+    }, [paintVeil]);
+
+    const schedulePaint = useCallback((value: number) => {
+        pending.current = value;
+        if (rafId.current) return;
+        rafId.current = requestAnimationFrame(() => {
+            rafId.current = 0;
+            const next = pending.current;
+            if (next !== null) paintShade(next);
+        });
+    }, [paintShade]);
 
     const commit = useCallback(
         (next: 0 | 1) => {
+            // Drop a queued frame, or it would repaint the old position after
+            // React has already settled the element on the new one.
+            if (rafId.current) {
+                cancelAnimationFrame(rafId.current);
+                rafId.current = 0;
+            }
+            pending.current = null;
+            // Write the TARGET, do not clear. Clearing looks tidier but breaks:
+            // React diffs against its previous vdom, so if the computed style
+            // string is unchanged it never rewrites the property, and the element
+            // keeps the cleared value — a shade with no transform sits fully down
+            // whatever the state says. Writing the target keeps DOM and state in
+            // agreement, and React's next render is a harmless no-op.
+            if (shadeElRef.current) {
+                shadeElRef.current.style.transform = `translate3d(0, ${-(1 - next) * SHADE_TRAVEL * 100}%, 0)`;
+            }
+            if (frameElRef.current) {
+                frameElRef.current.style.filter = `brightness(${1 - next * FRAME_DIM})`;
+            }
             setShade(next);
             const wantsDark = next === 1;
             if (getResolvedTheme() !== (wantsDark ? 'dark' : 'light')) {
@@ -172,15 +237,15 @@ export const useWindowShade = (): WindowShadeResult => {
             state.lastAt = now;
             state.lastShade = next;
 
-            setShade(next);
-            paintVeil(next, true);
+            // Paint, do not render. setShade here was the stagger.
+            schedulePaint(next);
 
             // Reaching an end during the drag commits immediately, so a confident
             // pull all the way down flips the theme under your finger.
             if (next >= 1 - COMMIT_EPSILON) commit(1);
             else if (next <= COMMIT_EPSILON) commit(0);
         },
-        [commit, paintVeil],
+        [commit, schedulePaint],
     );
 
     const endDrag = useCallback(
@@ -221,12 +286,15 @@ export const useWindowShade = (): WindowShadeResult => {
         toggle();
     }, [toggle]);
 
-    useEffect(() => () => { window.clearTimeout(recolourTimer); }, []);
+    useEffect(() => () => {
+        window.clearTimeout(recolourTimer);
+        if (rafId.current) cancelAnimationFrame(rafId.current);
+    }, []);
 
     const handlers = useMemo(
         () => ({ onPointerDown, onPointerMove, onPointerUp: endDrag, onPointerCancel: endDrag, onKeyDown, onClick }),
         [onPointerDown, onPointerMove, endDrag, onKeyDown, onClick],
     );
 
-    return { shade: hydrated ? shade : 0, dragging, isDark: hydrated && isDark, handlers };
+    return { shade: hydrated ? shade : 0, dragging, isDark: hydrated && isDark, handlers, shadeElRef, frameElRef };
 };

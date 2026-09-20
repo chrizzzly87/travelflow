@@ -74,30 +74,30 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
             contentClassName="sm:w-[min(92vw,560px)]"
         >
             {isExamplePreview ? (
-                <div className="p-5 text-sm text-slate-600">
+                <div className="p-5 text-sm text-muted-foreground">
                     This example trip is a playground. History snapshots are intentionally disabled so no local or database state is created while exploring.
                 </div>
             ) : (
                 <>
-                    <div className="flex items-center gap-2 border-b border-gray-100 p-3">
+                    <div className="flex items-center gap-2 border-b border-border p-3">
                         <button
                             type="button"
                             onClick={onUndo}
-                            className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200"
+                            className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-gray-200"
                         >
                             Undo
                         </button>
                         <button
                             type="button"
                             onClick={onRedo}
-                            className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200"
+                            className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-gray-200"
                         >
                             Redo
                         </button>
                         <button
                             type="button"
                             onClick={onToggleShowAllHistory}
-                            className="ml-auto rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200"
+                            className="ml-auto rounded-lg bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-gray-200"
                         >
                             {showAllHistory ? 'Show Recent' : 'Show All'}
                         </button>
@@ -109,14 +109,14 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                     )}
                     <div className="min-h-0 flex-1 overflow-y-auto">
                         {items.length === 0 ? (
-                            <div className="p-6 text-sm text-gray-500">No history entries yet.</div>
+                            <div className="p-6 text-sm text-muted-foreground">No history entries yet.</div>
                         ) : (
                             <ul className="divide-y divide-gray-100">
                                 {items.map((item, index) => {
                                     const Icon = item.meta.Icon;
                                     const showUnsyncedBadge = hasUnsyncedChanges && index === 0;
                                     return (
-                                        <li key={item.id} className={`flex items-start gap-3 p-4 ${item.isCurrent ? 'bg-accent-50/70' : 'hover:bg-gray-50/80'}`}>
+                                        <li key={item.id} className={`flex items-start gap-3 p-4 ${item.isCurrent ? 'bg-accent-50/70' : 'hover:bg-secondary/80'}`}>
                                             <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${item.meta.iconClass}`}>
                                                 <Icon size={15} />
                                             </div>
@@ -125,7 +125,7 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                                                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${item.meta.badgeClass}`}>
                                                         {item.meta.label}
                                                     </span>
-                                                    <span className="text-xs text-gray-500">{formatHistoryTime(item.ts)}</span>
+                                                    <span className="text-xs text-muted-foreground">{formatHistoryTime(item.ts)}</span>
                                                     {item.isCurrent && (
                                                         <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[10px] font-semibold text-accent-600">
                                                             Current
@@ -137,13 +137,13 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="mt-1 text-sm font-semibold leading-snug text-gray-900">{item.details}</div>
+                                                <div className="mt-1 text-sm font-semibold leading-snug text-foreground">{item.details}</div>
                                             </div>
                                             <div className="shrink-0">
                                                 <button
                                                     type="button"
                                                     onClick={() => onGo(item)}
-                                                    className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                                                    className="rounded-md border border-border px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-secondary"
                                                 >
                                                     Open trip
                                                 </button>

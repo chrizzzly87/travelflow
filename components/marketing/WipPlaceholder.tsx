@@ -10,13 +10,13 @@ export const WipPlaceholder: React.FC<WipPlaceholderProps> = ({ title, descripti
     const { t } = useTranslation('wip');
 
     return (
-        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+        <section className="rounded-3xl border border-border bg-card p-8 shadow-sm">
             <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-900">
                 {t('label')}
             </span>
-            <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">{title}</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">{description}</p>
-            <p className="mt-6 text-xs text-slate-400">{t('footer')}</p>
+            <h1 className="mt-4 text-3xl font-black tracking-tight text-foreground">{title}</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
+            <p className="mt-6 text-xs text-muted-foreground">{t('footer')}</p>
         </section>
     );
 };

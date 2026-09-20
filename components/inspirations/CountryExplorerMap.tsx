@@ -327,7 +327,7 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
       <div
         // Geographic, so it must not mirror: east stays east in RTL locales.
         dir="ltr"
-        className="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-b from-sky-50 to-white"
+        className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-b from-sky-50 to-white"
       >
         <svg
           ref={svgRef}
@@ -390,17 +390,17 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
         {hoveredCountryCode && hoveredName && hoveredPoint ? (
           <div
             role="presentation"
-            className="pointer-events-none absolute z-10 w-max max-w-56 -translate-x-1/2 -translate-y-[calc(100%+10px)] rounded-xl border border-slate-200 bg-white/95 px-3 py-2 shadow-lg backdrop-blur-sm"
+            className="pointer-events-none absolute z-10 w-max max-w-56 -translate-x-1/2 -translate-y-[calc(100%+10px)] rounded-xl border border-border bg-card/95 px-3 py-2 shadow-lg backdrop-blur-sm"
             style={{
               left: `${(hoveredPoint.x / PROJECTION.width) * 100}%`,
               top: `${(hoveredPoint.y / PROJECTION.height) * 100}%`,
             }}
           >
             <div dir={direction} className="text-start">
-              <p className="text-xs font-black text-slate-900">{hoveredName}</p>
+              <p className="text-xs font-black text-foreground">{hoveredName}</p>
               {hoveredEntry ? (
                 <>
-                  <p className="mt-0.5 text-[11px] font-semibold text-slate-500">{hoveredEntry.region}</p>
+                  <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{hoveredEntry.region}</p>
                   {hoveredInsight ? (
                     <p className="mt-1 text-[11px] font-bold text-accent-700">
                       {t(`inspirations.subpages.explorer.band.${hoveredInsight.band}`)}
@@ -411,16 +411,16 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
                     </p>
                   ) : null}
                   {hoveredDistanceKm !== undefined && formatDistance ? (
-                    <p className="mt-1 text-[11px] font-semibold text-slate-500">
+                    <p className="mt-1 text-[11px] font-semibold text-muted-foreground">
                       {formatDistance(hoveredDistanceKm)}
                     </p>
                   ) : null}
-                  <p className="mt-1 text-[11px] font-bold text-slate-400">
+                  <p className="mt-1 text-[11px] font-bold text-muted-foreground">
                     {t('inspirations.subpages.map.openGuide')}
                   </p>
                 </>
               ) : (
-                <p className="mt-0.5 text-[11px] font-semibold text-slate-500">
+                <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
                   {t('inspirations.subpages.map.noGuide')}
                 </p>
               )}
@@ -439,21 +439,21 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
 
       {missingGuideName ? (
         <p
-          className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold text-slate-600"
+          className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-secondary px-4 py-2.5 text-xs font-semibold text-muted-foreground"
           role="status"
         >
           {t('inspirations.subpages.map.noGuideFor', { country: missingGuideName })}
           <button
             type="button"
             onClick={() => setMissingGuideName(null)}
-            className="rounded-full border border-slate-300 px-2.5 py-1 text-[11px] font-bold text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700"
+            className="rounded-full border border-border px-2.5 py-1 text-[11px] font-bold text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700"
           >
             {t('inspirations.subpages.map.dismissNotice')}
           </button>
         </p>
       ) : null}
 
-      <figcaption className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-semibold text-slate-500">
+      <figcaption className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-semibold text-muted-foreground">
         {(month === null
           ? (['match', 'muted', 'land'] as CountryMapTone[])
           : (['ideal', 'shoulder', 'avoid', 'muted', 'land'] as CountryMapTone[])
@@ -465,7 +465,7 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
             {t(`inspirations.subpages.map.legend.${tone}`)}
           </span>
         ))}
-        <span className="w-full text-slate-400">{t('inspirations.subpages.map.keyboardHint')}</span>
+        <span className="w-full text-muted-foreground">{t('inspirations.subpages.map.keyboardHint')}</span>
       </figcaption>
     </figure>
   );

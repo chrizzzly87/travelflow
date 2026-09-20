@@ -24,7 +24,7 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
   const isPlain = variant === 'plain';
 
   return (
-    <div className={isPlain ? '' : 'rounded-2xl border border-slate-200 bg-white dark:border-border dark:bg-card'}>
+    <div className={isPlain ? '' : 'rounded-2xl border border-border bg-card dark:border-border dark:bg-card'}>
       {items.map((item, index) => {
         const isOpen = openItemIds.includes(item.id);
         const panelId = `faq-panel-${item.id}`;
@@ -34,7 +34,7 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
           <div
             key={item.id}
             id={item.id}
-            className={`scroll-mt-28 border-b border-slate-200 ${index === items.length - 1 ? 'border-b-0' : ''}`}
+            className={`scroll-mt-28 border-b border-border ${index === items.length - 1 ? 'border-b-0' : ''}`}
           >
             <button
               id={triggerId}
@@ -42,8 +42,8 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
               aria-expanded={isOpen}
               aria-controls={panelId}
               onClick={() => onToggle(item, !isOpen)}
-              className={`flex w-full items-center justify-between gap-3 text-left text-slate-900 transition-colors ${
-                isPlain ? 'hover:text-slate-700 dark:hover:text-foreground' : 'hover:bg-slate-50 dark:hover:bg-secondary'
+              className={`flex w-full items-center justify-between gap-3 text-left text-foreground transition-colors ${
+                isPlain ? 'hover:text-foreground dark:hover:text-foreground' : 'hover:bg-secondary dark:hover:bg-secondary'
               } ${
                 compact ? 'py-3' : 'py-4'
               }`}
@@ -56,7 +56,7 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
               <CaretDown
                 size={18}
                 weight="bold"
-                className={`shrink-0 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                className={`shrink-0 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}
               />
             </button>
 
@@ -65,7 +65,7 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
                 id={panelId}
                 role="region"
                 aria-labelledby={triggerId}
-                className={`max-w-[100ch] pb-4 text-slate-600 ${compact ? 'text-sm leading-6' : 'text-[0.95rem] leading-7'}`}
+                className={`max-w-[100ch] pb-4 text-muted-foreground ${compact ? 'text-sm leading-6' : 'text-[0.95rem] leading-7'}`}
                 style={isPlain ? { paddingInline: 0 } : { paddingInline: '1rem' }}
               >
                 <p>{item.answer}</p>

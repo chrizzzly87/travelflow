@@ -113,7 +113,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
 
             {isPaywallLocked && (
                 <div className="fixed inset-0 z-[1490] flex items-end sm:items-center justify-center p-3 sm:p-4 pointer-events-none">
-                    <div className="pointer-events-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                    <div className="pointer-events-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
                         <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_320px]">
                             <div className="p-5 sm:p-6">
                                 <div className="flex items-start justify-between gap-4">
@@ -121,7 +121,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
                                             {t('tripPaywall.overlay.eyebrow')}
                                         </p>
-                                        <h2 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-slate-900">
+                                        <h2 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
                                             {paywallRequiresLogin
                                                 ? t('tripPaywall.overlay.title.login')
                                                 : t('tripPaywall.overlay.title.direct')}
@@ -132,7 +132,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                     </span>
                                 </div>
 
-                                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
                                     {paywallRequiresLogin
                                         ? t('tripPaywall.overlay.description.login')
                                         : t('tripPaywall.overlay.description.direct')}
@@ -142,7 +142,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                     <span className="inline-flex items-center rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-800">
                                         {explorerTier.publicName} · ${explorerTier.monthlyPriceUsd}{t('shared.perMonth', { ns: 'pricing' })}
                                     </span>
-                                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600">
+                                    <span className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
                                         {expirationLabel
                                             ? t('tripPaywall.overlay.footer.withDate', { date: expirationLabel })
                                             : t('tripPaywall.overlay.footer.noDate')}
@@ -153,7 +153,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                     <Link
                                         to="/faq"
                                         onClick={() => trackEvent('trip_paywall__overlay--faq', { trip_id: tripId })}
-                                        className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                        className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border bg-card px-4 text-sm font-semibold text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
                                     >
                                         <Article size={15} weight="duotone" />
                                         Visit FAQ
@@ -181,13 +181,13 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                 </div>
                             </div>
 
-                            <aside className="border-t border-slate-200 bg-slate-50/80 p-5 md:border-l md:border-t-0 sm:p-6">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                            <aside className="border-t border-border bg-secondary/80 p-5 md:border-l md:border-t-0 sm:p-6">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                     {t('checkout.whatsIncluded', { ns: 'pricing' })}
                                 </p>
                                 <ul className="mt-4 space-y-3">
                                     {explorerHighlights.map((feature) => (
-                                        <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+                                        <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-foreground">
                                             <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
                                             <span>{feature}</span>
                                         </li>
@@ -205,7 +205,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="trip-pending-auth-title"
-                        className="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+                        className="w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
                     >
                         {pendingAuthModalStage === 'loading' ? (
                             <div className="p-5 sm:p-6">
@@ -217,15 +217,15 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
                                             {t('tripView.pendingAuth.eyebrowLoading')}
                                         </p>
-                                        <h2 id="trip-pending-auth-title" className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+                                        <h2 id="trip-pending-auth-title" className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
                                             {t('tripView.pendingAuth.titleLoading')}
                                         </h2>
-                                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
                                             {t('tripView.pendingAuth.descriptionLoading')}
                                         </p>
                                     </div>
                                 </div>
-                                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                                <div className="mt-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-xs text-muted-foreground">
                                     {loadingDestinationSummary} • {tripDateRange} • {tripSpanCompactLabel}
                                 </div>
                             </div>
@@ -237,7 +237,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
                                                 {t('tripView.pendingAuth.eyebrowLocked')}
                                             </p>
-                                            <h2 id="trip-pending-auth-title" className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-slate-900">
+                                            <h2 id="trip-pending-auth-title" className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
                                                 {t('tripView.pendingAuth.titleLocked')}
                                             </h2>
                                         </div>
@@ -246,11 +246,11 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                         </span>
                                     </div>
 
-                                    <p className="mt-3 text-sm leading-6 text-slate-600">
+                                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
                                         {t('tripView.pendingAuth.descriptionLocked')}
                                     </p>
 
-                                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                                    <div className="mt-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-xs text-muted-foreground">
                                         {loadingDestinationSummary} • {tripDateRange} • {tripSpanCompactLabel}
                                     </div>
 
@@ -274,8 +274,8 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                     </button>
                                 </div>
 
-                                <aside className="border-t border-slate-200 bg-slate-50/80 p-5 md:border-l md:border-t-0 sm:p-6">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                <aside className="border-t border-border bg-secondary/80 p-5 md:border-l md:border-t-0 sm:p-6">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                         {t('tripView.pendingAuth.benefitsTitle')}
                                     </p>
                                     <ul className="mt-4 space-y-3">
@@ -284,7 +284,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                             t('tripView.pendingAuth.benefits.background'),
                                             t('tripView.pendingAuth.benefits.sync'),
                                         ].map((benefit) => (
-                                            <li key={benefit} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+                                            <li key={benefit} className="flex items-start gap-3 text-sm leading-6 text-foreground">
                                                 <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
                                                 <span>{benefit}</span>
                                             </li>
@@ -299,20 +299,20 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
 
             {showGenerationOverlay && (
                 <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
-                    <div className="w-full max-w-xl rounded-2xl border border-accent-100 bg-white/95 shadow-xl backdrop-blur-sm px-5 py-4">
+                    <div className="w-full max-w-xl rounded-2xl border border-accent-100 bg-card/95 shadow-xl backdrop-blur-sm px-5 py-4">
                         <div className="flex items-center gap-3">
                             <div className="size-9 rounded-full bg-accent-100 text-accent-600 flex items-center justify-center shrink-0">
                                 <Loader2 size={18} className="animate-spin" />
                             </div>
                             <div className="min-w-0">
                                 <div className="text-sm font-semibold text-accent-900 truncate">Planning your trip</div>
-                                <div className="text-xs text-gray-600 truncate">{generationProgressMessage}</div>
+                                <div className="text-xs text-muted-foreground truncate">{generationProgressMessage}</div>
                             </div>
                         </div>
-                        <div className="mt-3 text-xs text-gray-500">
+                        <div className="mt-3 text-xs text-muted-foreground">
                             {loadingDestinationSummary} • {tripDateRange} • {tripSpanCompactLabel}
                         </div>
-                        <div className="mt-3 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                        <div className="mt-3 h-1.5 rounded-full bg-secondary overflow-hidden">
                             <div className="h-full w-1/2 bg-gradient-to-r from-accent-500 to-accent-600 animate-pulse rounded-full" />
                         </div>
                     </div>
@@ -325,7 +325,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="trip-claim-conflict-title"
-                        className="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+                        className="w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
                     >
                         <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_220px]">
                             <div className="p-5 sm:p-6">
@@ -334,7 +334,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
                                             {t('tripView.claimConflict.eyebrow')}
                                         </p>
-                                        <h2 id="trip-claim-conflict-title" className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-slate-900">
+                                        <h2 id="trip-claim-conflict-title" className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
                                             {t('tripView.claimConflict.title')}
                                         </h2>
                                     </div>
@@ -343,13 +343,13 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                     </span>
                                 </div>
 
-                                <p className="mt-3 text-sm leading-6 text-slate-600">
+                                <p className="mt-3 text-sm leading-6 text-muted-foreground">
                                     {claimConflictShowLoginCta
                                         ? t('tripView.claimConflict.descriptionLoggedOut')
                                         : t('tripView.claimConflict.descriptionLoggedIn')}
                                 </p>
 
-                                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                                <div className="mt-4 rounded-2xl border border-border bg-secondary px-4 py-3 text-xs text-muted-foreground">
                                     {loadingDestinationSummary} • {tripDateRange} • {tripSpanCompactLabel}
                                 </div>
 
@@ -383,7 +383,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                         }}
                                         className={`inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 ${
                                             claimConflictShowLoginCta
-                                                ? 'border border-slate-200 bg-white text-slate-800 hover:bg-slate-50'
+                                                ? 'border border-border bg-card text-foreground hover:bg-secondary'
                                                 : 'bg-accent-600 text-white hover:bg-accent-700'
                                         }`}
                                         {...getAnalyticsDebugAttributes('trip_generation__claim_conflict_modal--create_similar', {
@@ -396,8 +396,8 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                 </div>
                             </div>
 
-                            <aside className="border-t border-slate-200 bg-slate-50/80 p-5 md:border-l md:border-t-0 sm:p-6">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                            <aside className="border-t border-border bg-secondary/80 p-5 md:border-l md:border-t-0 sm:p-6">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                     {t('tripView.claimConflict.benefitsTitle')}
                                 </p>
                                 <ul className="mt-4 space-y-3">
@@ -405,7 +405,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                         t('tripView.claimConflict.benefits.prefill'),
                                         t('tripView.claimConflict.benefits.adjust'),
                                     ].map((benefit) => (
-                                        <li key={benefit} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+                                        <li key={benefit} className="flex items-start gap-3 text-sm leading-6 text-foreground">
                                             <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
                                             <span>{benefit}</span>
                                         </li>

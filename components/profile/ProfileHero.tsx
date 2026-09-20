@@ -64,7 +64,7 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
   return (
     <section className="py-8 md:py-12">
       <div className="mx-auto max-w-5xl text-center">
-        <h1 className="text-balance text-5xl font-black tracking-tight text-slate-900 sm:text-6xl md:text-7xl">
+        <h1 className="text-balance text-5xl font-black tracking-tight text-foreground sm:text-6xl md:text-7xl">
           <span className="text-accent-700">
             {greetingGlyphs.map(({ character, animationDelayMs }, index) => (
               <span
@@ -82,7 +82,7 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
           <span>{`, ${name}`}</span>
         </h1>
 
-        <p className="mt-5 text-base leading-7 text-slate-600 [text-wrap:pretty] md:text-lg">
+        <p className="mt-5 text-base leading-7 text-muted-foreground [text-wrap:pretty] md:text-lg">
           <span className="font-semibold text-accent-700">{transliteration}</span>
           {' '}
           <span className="font-medium text-accent-600">/{ipa}/</span>
@@ -90,7 +90,7 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
           <span>{context}</span>
         </p>
 
-        <p className="mt-3 inline-flex flex-wrap items-center justify-center gap-1.5 text-sm text-slate-600">
+        <p className="mt-3 inline-flex flex-wrap items-center justify-center gap-1.5 text-sm text-muted-foreground">
           <span>{ctaIntroLabel}</span>
           <Link
             to={ctaHref}

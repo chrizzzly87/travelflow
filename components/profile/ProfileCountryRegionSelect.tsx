@@ -138,7 +138,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                         <FlagIcon code={selectedCountry.code} size="sm" fallback={null} className="block" />
                     ) : (
                         <span className="flex size-4 items-center justify-center">
-                            <GlobeHemisphereWest size={16} weight="duotone" className="text-slate-400" />
+                            <GlobeHemisphereWest size={16} weight="duotone" className="text-muted-foreground" />
                         </span>
                     )}
                 </div>
@@ -149,7 +149,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                     disabled={disabled}
                     placeholder={placeholder}
                     autoComplete="off"
-                    className={`h-11 w-full rounded-lg border border-slate-300 bg-white ps-11 pe-12 text-sm leading-6 text-slate-900 outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:opacity-60 ${inputClassName}`.trim()}
+                    className={`h-11 w-full rounded-lg border border-border bg-card ps-11 pe-12 text-sm leading-6 text-foreground outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:opacity-60 ${inputClassName}`.trim()}
                     aria-expanded={isOpen}
                     aria-controls={listboxId}
                     aria-autocomplete="list"
@@ -173,7 +173,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                                 inputRef.current?.focus();
                             }
                         }}
-                        className="inline-flex size-8 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-muted-foreground"
                         aria-label={toggleLabel}
                         tabIndex={-1}
                     >
@@ -185,10 +185,10 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                     <div
                         id={listboxId}
                         role="listbox"
-                        className="absolute inset-x-0 z-20 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+                        className="absolute inset-x-0 z-20 mt-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-card py-1 shadow-lg"
                     >
                         {options.length === 0 ? (
-                            <p className="px-3 py-2 text-xs text-slate-500">{emptyLabel}</p>
+                            <p className="px-3 py-2 text-xs text-muted-foreground">{emptyLabel}</p>
                         ) : (
                             options.map((country, index) => (
                                 <button
@@ -199,7 +199,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                                     onMouseDown={(event) => event.preventDefault()}
                                     onClick={() => selectCountry(country)}
                                     className={`flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors ${
-                                        index === activeIndex ? 'bg-accent-50 text-accent-900' : 'text-slate-700 hover:bg-slate-50'
+                                        index === activeIndex ? 'bg-accent-50 text-accent-900' : 'text-foreground hover:bg-secondary'
                                     }`}
                                 >
                                     <span className="inline-flex items-center gap-2">

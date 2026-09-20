@@ -34,19 +34,19 @@ interface InfoCardProps {
 }
 
 const InfoCard: React.FC<InfoCardProps> = ({ icon: Icon, title, children }) => (
-  <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-    <h3 className="flex items-center gap-2 text-base font-black text-slate-900">
+  <article className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <h3 className="flex items-center gap-2 text-base font-black text-foreground">
       <Icon size={19} weight="duotone" className="text-accent-700" />
       {title}
     </h3>
-    <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-600">{children}</div>
+    <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">{children}</div>
   </article>
 );
 
 const Fact: React.FC<{ label: string; value?: React.ReactNode }> = ({ label, value }) => value ? (
-  <div className="flex items-start justify-between gap-3 border-t border-slate-100 pt-2 first:border-0 first:pt-0">
-    <span className="text-slate-500">{label}</span>
-    <span className="text-end font-bold text-slate-800">{value}</span>
+  <div className="flex items-start justify-between gap-3 border-t border-border pt-2 first:border-0 first:pt-0">
+    <span className="text-muted-foreground">{label}</span>
+    <span className="text-end font-bold text-foreground">{value}</span>
   </div>
 ) : null;
 
@@ -100,11 +100,11 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
       <section className="pb-10 animate-hero-stagger" style={{ '--stagger': '120ms' } as React.CSSProperties}>
         <div className="mb-4">
           <p className="text-xs font-bold uppercase tracking-wider text-accent-700">{t('inspirations.subpages.guide.atAGlanceEyebrow')}</p>
-          <h2 className="mt-1 text-2xl font-black text-slate-900">{t('inspirations.subpages.guide.atAGlance')}</h2>
+          <h2 className="mt-1 text-2xl font-black text-foreground">{t('inspirations.subpages.guide.atAGlance')}</h2>
         </div>
         <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
               <Fact label={t('inspirations.subpages.guide.currency')} value={profile.currencyCode || undefined} />
               <Fact
                 label={t('inspirations.subpages.guide.exchangeRate')}
@@ -117,15 +117,15 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
             </div>
           </div>
           {profile.weather.length > 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <h3 className="flex items-center gap-2 font-black text-slate-900"><CloudSun size={19} weight="duotone" className="text-accent-700" />{t('inspirations.subpages.guide.weather')}</h3>
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <h3 className="flex items-center gap-2 font-black text-foreground"><CloudSun size={19} weight="duotone" className="text-accent-700" />{t('inspirations.subpages.guide.weather')}</h3>
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
                 {profile.weather.slice(0, 5).map((day) => (
-                  <div key={day.date} className="rounded-xl bg-slate-50 p-3 text-center">
-                    <p className="text-xs font-bold uppercase text-slate-500">{day.day}</p>
-                    <p className="mt-1 font-black text-slate-900">{formatTemperature(day.max_temp)}</p>
-                    <p className="text-xs text-slate-500">{formatTemperature(day.min_temp)}</p>
-                    <p className="mt-1 line-clamp-2 text-xs text-slate-600">{day.condition}</p>
+                  <div key={day.date} className="rounded-xl bg-secondary p-3 text-center">
+                    <p className="text-xs font-bold uppercase text-muted-foreground">{day.day}</p>
+                    <p className="mt-1 font-black text-foreground">{formatTemperature(day.max_temp)}</p>
+                    <p className="text-xs text-muted-foreground">{formatTemperature(day.min_temp)}</p>
+                    <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{day.condition}</p>
                   </div>
                 ))}
               </div>
@@ -137,12 +137,12 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
       <section className="pb-10 animate-hero-stagger" style={{ '--stagger': '170ms' } as React.CSSProperties}>
         <div className="mb-4">
           <p className="text-xs font-bold uppercase tracking-wider text-accent-700">{t('inspirations.subpages.guide.beforeYouGoEyebrow')}</p>
-          <h2 className="mt-1 text-2xl font-black text-slate-900">{t('inspirations.subpages.guide.beforeYouGo')}</h2>
+          <h2 className="mt-1 text-2xl font-black text-foreground">{t('inspirations.subpages.guide.beforeYouGo')}</h2>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           {entry?.tips?.length ? (
             <InfoCard icon={Info} title={t('inspirations.subpages.guide.entryRequirements')}>
-              <p className="rounded-xl bg-slate-50 p-3 font-semibold text-slate-700">{t('inspirations.subpages.guide.ukTravellerContext')}</p>
+              <p className="rounded-xl bg-secondary p-3 font-semibold text-foreground">{t('inspirations.subpages.guide.ukTravellerContext')}</p>
               <TipList items={entry.tips} />
               {entry.bonus_tips?.length ? (
                 <div className="rounded-xl bg-accent-50 p-3 text-accent-950">
@@ -168,7 +168,7 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
             <InfoCard icon={ShieldCheck} title={t('inspirations.subpages.guide.safety')}>
               <TipList items={profile.safetyTips} />
               {profile.bonusTips.length > 0 ? (
-                <div className="rounded-xl bg-slate-50 p-3"><TipList items={profile.bonusTips} /></div>
+                <div className="rounded-xl bg-secondary p-3"><TipList items={profile.bonusTips} /></div>
               ) : null}
             </InfoCard>
           ) : null}
@@ -178,7 +178,7 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
       <section className="pb-10 animate-hero-stagger" style={{ '--stagger': '220ms' } as React.CSSProperties}>
         <div className="mb-4">
           <p className="text-xs font-bold uppercase tracking-wider text-accent-700">{t('inspirations.subpages.guide.practicalEyebrow')}</p>
-          <h2 className="mt-1 text-2xl font-black text-slate-900">{t('inspirations.subpages.guide.practicalInfo')}</h2>
+          <h2 className="mt-1 text-2xl font-black text-foreground">{t('inspirations.subpages.guide.practicalInfo')}</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {health ? (
@@ -242,7 +242,7 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
           ) : null}
           {embassy ? (
             <InfoCard icon={Lightning} title={t('inspirations.subpages.guide.embassy')}>
-              {embassy.name ? <p className="font-bold text-slate-800">{embassy.name}</p> : null}
+              {embassy.name ? <p className="font-bold text-foreground">{embassy.name}</p> : null}
               {embassy.address ? <p className="whitespace-pre-line">{embassy.address}</p> : null}
               <Fact label={t('inspirations.subpages.guide.phone')} value={embassy.phone} />
               {embassy.website ? (
@@ -264,7 +264,7 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
         <section className="pb-10 animate-hero-stagger" style={{ '--stagger': '260ms' } as React.CSSProperties}>
           <div className="mb-4">
             <p className="text-xs font-bold uppercase tracking-wider text-accent-700">{t('inspirations.subpages.guide.coastEyebrow')}</p>
-            <h2 className="mt-1 text-2xl font-black text-slate-900">{t('inspirations.subpages.guide.beaches')}</h2>
+            <h2 className="mt-1 text-2xl font-black text-foreground">{t('inspirations.subpages.guide.beaches')}</h2>
           </div>
           <div className="flex flex-wrap gap-2">
             {profile.beaches.slice(0, 18).map((beach) => (
@@ -278,13 +278,13 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
         <section className="pb-10 animate-hero-stagger" style={{ '--stagger': '280ms' } as React.CSSProperties}>
           <div className="mb-4">
             <p className="text-xs font-bold uppercase tracking-wider text-accent-700">{t('inspirations.subpages.guide.faqEyebrow')}</p>
-            <h2 className="mt-1 text-2xl font-black text-slate-900">{t('inspirations.subpages.guide.faq')}</h2>
+            <h2 className="mt-1 text-2xl font-black text-foreground">{t('inspirations.subpages.guide.faq')}</h2>
           </div>
           <div className="space-y-3">
             {profile.faqs.map((faq) => (
-              <details key={faq.question} className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <summary className="cursor-pointer list-none font-black text-slate-900 marker:hidden">{faq.question}</summary>
-                <p className="mt-3 text-sm leading-relaxed text-slate-600">{faq.answer}</p>
+              <details key={faq.question} className="group rounded-2xl border border-border bg-card p-5 shadow-sm">
+                <summary className="cursor-pointer list-none font-black text-foreground marker:hidden">{faq.question}</summary>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{faq.answer}</p>
               </details>
             ))}
           </div>
@@ -295,16 +295,16 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
         <section className="pb-10 animate-hero-stagger" style={{ '--stagger': '300ms' } as React.CSSProperties}>
           <div className="mb-4">
             <p className="text-xs font-bold uppercase tracking-wider text-accent-700">{t('inspirations.subpages.guide.freshnessEyebrow')}</p>
-            <h2 className="mt-1 text-2xl font-black text-slate-900">{t('inspirations.subpages.guide.recentUpdates')}</h2>
+            <h2 className="mt-1 text-2xl font-black text-foreground">{t('inspirations.subpages.guide.recentUpdates')}</h2>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             {profile.recentUpdates.map((update) => (
-              <article key={`${update.timestamp || 'update'}-${update.category || 'travel'}-${update.messages.join('|')}`} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <article key={`${update.timestamp || 'update'}-${update.category || 'travel'}-${update.messages.join('|')}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent-700">
                   <ClockCounterClockwise size={16} weight="duotone" />
                   {update.category || t('inspirations.subpages.guide.travelUpdate')}
                 </p>
-                {update.timestamp ? <p className="mt-2 text-xs text-slate-500">{dateFormatter.format(new Date(update.timestamp))}</p> : null}
+                {update.timestamp ? <p className="mt-2 text-xs text-muted-foreground">{dateFormatter.format(new Date(update.timestamp))}</p> : null}
                 <div className="mt-3"><TipList items={update.messages} /></div>
               </article>
             ))}
@@ -313,7 +313,7 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
       ) : null}
 
       {provenance ? (
-        <section className="pb-10 text-xs leading-relaxed text-slate-500">
+        <section className="pb-10 text-xs leading-relaxed text-muted-foreground">
           <p>
             {t('inspirations.subpages.guide.sourceAttribution')}{' '}
             <a
@@ -321,7 +321,7 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackEvent('inspirations__destination_source', { country: countryName, section: 'profile_origin' })}
-              className="font-bold underline decoration-slate-300 underline-offset-2 hover:text-slate-800"
+              className="font-bold underline decoration-slate-300 underline-offset-2 hover:text-foreground"
               {...getAnalyticsDebugAttributes('inspirations__destination_source', { country: countryName, section: 'profile_origin' })}
             >{provenance.provider}</a>
             {' · '}{t('inspirations.subpages.guide.fetchedOn', { date: dateFormatter.format(new Date(provenance.fetchedAt)) })}

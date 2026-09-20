@@ -75,10 +75,10 @@ export const ProfileStampsPage: React.FC = () => {
 
   if (isProfileLoading && !profile) {
     return (
-      <div className="flex min-h-screen flex-col bg-slate-50">
+      <div className="flex min-h-screen flex-col bg-secondary">
         <SiteHeader hideCreateTrip />
         <main className="mx-auto w-full max-w-7xl flex-1 px-5 pb-14 pt-8 md:px-8 md:pt-10">
-          <div className="h-20 animate-pulse rounded-lg bg-slate-100" aria-hidden="true" />
+          <div className="h-20 animate-pulse rounded-lg bg-secondary" aria-hidden="true" />
         </main>
         <SiteFooter />
       </div>
@@ -86,11 +86,11 @@ export const ProfileStampsPage: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-secondary">
       <SiteHeader hideCreateTrip />
       <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-5 pb-14 pt-8 md:px-8 md:pt-10">
-        <nav className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600">
-          <CaretLeft size={14} weight="bold" className="text-slate-500" />
+        <nav className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <CaretLeft size={14} weight="bold" className="text-muted-foreground" />
           <NavLink
             to={buildPath('profile')}
             className="transition-colors hover:text-accent-700"
@@ -103,12 +103,12 @@ export const ProfileStampsPage: React.FC = () => {
 
         <header className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-700">{t('stamps.eyebrow')}</p>
-          <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">{t('stamps.title')}</h1>
-          <p className="max-w-3xl text-sm text-slate-600">{t('stamps.description', { name: displayName })}</p>
+          <h1 className="text-4xl font-black tracking-tight text-foreground md:text-5xl">{t('stamps.title')}</h1>
+          <p className="max-w-3xl text-sm text-muted-foreground">{t('stamps.description', { name: displayName })}</p>
         </header>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
+        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             <IdentificationCard size={14} weight="duotone" className="text-accent-600" />
             {t('summary.stampsTitle')}
           </div>

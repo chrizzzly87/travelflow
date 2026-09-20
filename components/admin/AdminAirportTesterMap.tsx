@@ -333,25 +333,25 @@ const AirportTesterDetailCard: React.FC<{
     <div
       role="dialog"
       aria-label={`${buildAirportTesterDetailTitle(point)} details`}
-      className="absolute inset-x-3 bottom-3 z-20 max-h-[calc(100%-1.5rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white/97 p-3 shadow-xl backdrop-blur"
+      className="absolute inset-x-3 bottom-3 z-20 max-h-[calc(100%-1.5rem)] overflow-y-auto rounded-2xl border border-border bg-card/97 p-3 shadow-xl backdrop-blur"
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="text-sm font-semibold text-slate-900">{buildAirportTesterDetailTitle(point)}</div>
+        <div className="text-sm font-semibold text-foreground">{buildAirportTesterDetailTitle(point)}</div>
         <button
           ref={closeButtonRef}
           type="button"
           onClick={onClose}
           aria-label="Close airport details"
-          className="rounded-full border border-slate-200 p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+          className="rounded-full border border-border p-1 text-muted-foreground transition hover:bg-secondary hover:text-foreground"
         >
           <X size={14} />
         </button>
       </div>
       <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
         {rows.map((row) => (
-          <div key={row.label} className="flex items-baseline justify-between gap-3 border-b border-slate-100 py-1 last:border-b-0">
-            <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{row.label}</dt>
-            <dd className="text-xs font-medium text-slate-900">{row.value}</dd>
+          <div key={row.label} className="flex items-baseline justify-between gap-3 border-b border-border py-1 last:border-b-0">
+            <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{row.label}</dt>
+            <dd className="text-xs font-medium text-foreground">{row.value}</dd>
           </div>
         ))}
       </dl>
@@ -383,7 +383,7 @@ export const AdminAirportTesterMap: React.FC<AdminAirportTesterMapProps> = ({ or
   const rendererLabel = renderer === 'mapbox' ? 'Mapbox' : 'Google Maps';
 
   return (
-    <div className="relative h-[340px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+    <div className="relative h-[340px] overflow-hidden rounded-2xl border border-border bg-secondary">
       {!loadError && renderer === 'mapbox' && (
         <MapboxTesterMapLayer
           accessToken={mapboxAccessToken}
@@ -403,7 +403,7 @@ export const AdminAirportTesterMap: React.FC<AdminAirportTesterMapProps> = ({ or
       )}
 
       {!loadError && (!rendererReady || !origin) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-100/85 px-6 text-center text-sm text-slate-600">
+        <div className="absolute inset-0 flex items-center justify-center bg-secondary/85 px-6 text-center text-sm text-muted-foreground">
           {!rendererReady
             ? `Loading ${rendererLabel} for airport testing…`
             : 'Pick a city or use manual coordinates to preview the nearest-airport map.'}
@@ -411,7 +411,7 @@ export const AdminAirportTesterMap: React.FC<AdminAirportTesterMapProps> = ({ or
       )}
 
       {loadError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-100/90 px-6 text-center text-sm text-slate-700">
+        <div className="absolute inset-0 flex items-center justify-center bg-secondary/90 px-6 text-center text-sm text-foreground">
           {rendererLabel} could not be loaded for this admin tester.
         </div>
       )}

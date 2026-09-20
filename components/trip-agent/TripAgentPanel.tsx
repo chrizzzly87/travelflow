@@ -192,8 +192,8 @@ const ChatMessage: React.FC<{
     return (
         <Message from={message.role}>
             {(authorLabel || timestamp) && (
-                <div className={`flex items-center gap-1.5 text-[11px] text-slate-400 ${isOwnMessage ? 'justify-end' : ''}`}>
-                    {authorLabel && <span className="font-medium text-slate-500">{authorLabel}</span>}
+                <div className={`flex items-center gap-1.5 text-[11px] text-muted-foreground ${isOwnMessage ? 'justify-end' : ''}`}>
+                    {authorLabel && <span className="font-medium text-muted-foreground">{authorLabel}</span>}
                     {authorLabel && timestamp && <span aria-hidden="true">·</span>}
                     {timestamp && <time dateTime={String(message.metadata?.createdAt || '')}>{timestamp}</time>}
                 </div>
@@ -527,7 +527,7 @@ const TripAgentChatSession: React.FC<{
                     key: `preset:${suggestion}`,
                     group: t('tripAgent.commandMenu'),
                     label: suggestion,
-                    icon: <SlashGlyph className="w-4 shrink-0 text-center text-slate-400" />,
+                    icon: <SlashGlyph className="w-4 shrink-0 text-center text-muted-foreground" />,
                 }));
         }
         if (commandMenu !== 'context') return [];
@@ -543,7 +543,7 @@ const TripAgentChatSession: React.FC<{
                 label: contextRef.label,
                 meta: contextMeta(contextRef),
                 isSelected: activeContextRefs.some((candidate) => contextRefKey(candidate) === contextRefKey(contextRef)),
-                icon: <ContextKindIcon kind={contextRef.kind} className="size-4 shrink-0 text-slate-400" />,
+                icon: <ContextKindIcon kind={contextRef.kind} className="size-4 shrink-0 text-muted-foreground" />,
             })));
     }, [activeContextRefs, commandMenu, menuQuery, selectableContextRefs, suggestions, t, trip.items]);
 
@@ -622,8 +622,8 @@ const TripAgentChatSession: React.FC<{
                     {isGenerating && (
                         <div className="space-y-2">
                             {!hasStreamingAssistantText && (
-                                <div className="text-[11px] text-slate-400">
-                                    <span className="font-medium text-slate-500">{t('tripAgent.agentName')}</span>
+                                <div className="text-[11px] text-muted-foreground">
+                                    <span className="font-medium text-muted-foreground">{t('tripAgent.agentName')}</span>
                                     <span aria-hidden="true"> · </span>
                                     <span>{formatTripAgentTimestamp(Date.now(), i18n.language, now)}</span>
                                 </div>
@@ -658,7 +658,7 @@ const TripAgentChatSession: React.FC<{
                 <ConversationScrollButton />
             </Conversation>
 
-            <div className="border-t border-slate-200 bg-white/95 p-3 backdrop-blur">
+            <div className="border-t border-border bg-card/95 p-3 backdrop-blur">
                 {messages.length === 0 && (
                     <Suggestions className="mb-2">
                         {suggestions.map((suggestion) => (
@@ -667,14 +667,14 @@ const TripAgentChatSession: React.FC<{
                     </Suggestions>
                 )}
                 {selectionOnlyRefs.length > 0 && (
-                    <p className="mb-1.5 truncate px-1 text-[11px] text-slate-500">
+                    <p className="mb-1.5 truncate px-1 text-[11px] text-muted-foreground">
                         {t('tripAgent.alsoUsingSelection', {
                             labels: selectionOnlyRefs.map((contextRef) => contextRef.label).join(', '),
                         })}
                     </p>
                 )}
                 {pendingChoice && (
-                    <div className="mb-2 rounded-xl border border-slate-200 bg-white p-3">
+                    <div className="mb-2 rounded-xl border border-border bg-card p-3">
                         <Questionnaire>
                             <QuestionnaireItem>
                                 <QuestionnaireTitle>
@@ -699,7 +699,7 @@ const TripAgentChatSession: React.FC<{
                                 >
                                     {pendingChoice.options.map((option) => (
                                         <QuestionnaireChoice key={contextRefKey(option)} value={contextRefKey(option)}>
-                                            <span className="text-sm text-slate-900">{option.label}</span>
+                                            <span className="text-sm text-foreground">{option.label}</span>
                                             <QuestionnaireChoiceDescription>{contextMeta(option)}</QuestionnaireChoiceDescription>
                                         </QuestionnaireChoice>
                                     ))}
@@ -717,7 +717,7 @@ const TripAgentChatSession: React.FC<{
                                 className="fixed inset-0 z-10 cursor-default"
                                 onClick={() => setCommandMenu(null)}
                             />
-                            <div className="absolute inset-x-0 bottom-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                            <div className="absolute inset-x-0 bottom-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-xl border border-border bg-card shadow-xl">
                                 <TripAgentMentionMenu
                                     items={menuItems}
                                     activeIndex={menuIndex}
@@ -755,7 +755,7 @@ const TripAgentChatSession: React.FC<{
                                     <SlashGlyph />
                                 </Button>
                                 {quota.remaining !== null && (
-                                    <span className="truncate px-1 text-[11px] text-slate-500">
+                                    <span className="truncate px-1 text-[11px] text-muted-foreground">
                                         {t('tripAgent.quota', { remaining: quota.remaining })}
                                     </span>
                                 )}
@@ -901,17 +901,17 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                 role="dialog"
                 aria-modal="true"
                 aria-label={t('tripAgent.title')}
-                className={`trip-agent-panel-enter fixed inset-x-0 bottom-0 z-[1500] flex flex-col overflow-hidden rounded-t-[1.5rem] border border-slate-200 bg-white shadow-[0_-24px_80px_rgba(15,23,42,0.18)] transition-[height] duration-200 sm:inset-x-auto sm:bottom-4 sm:end-4 sm:h-[min(720px,calc(100dvh-2rem))] sm:w-[420px] sm:rounded-[1.5rem] sm:shadow-2xl ${
+                className={`trip-agent-panel-enter fixed inset-x-0 bottom-0 z-[1500] flex flex-col overflow-hidden rounded-t-[1.5rem] border border-border bg-card shadow-[0_-24px_80px_rgba(15,23,42,0.18)] transition-[height] duration-200 sm:inset-x-auto sm:bottom-4 sm:end-4 sm:h-[min(720px,calc(100dvh-2rem))] sm:w-[420px] sm:rounded-[1.5rem] sm:shadow-2xl ${
                     isPreviewActive ? 'h-[min(42dvh,340px)]' : 'h-[min(82dvh,720px)]'
                 }`}
                 style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
                 onKeyDown={handlePanelKeyDown}
             >
-            <header className="flex shrink-0 items-center gap-3 border-b border-slate-200 px-4 py-3">
+            <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
                 <div className="flex size-9 items-center justify-center rounded-xl bg-slate-950 text-white"><Sparkles className="size-4" /></div>
                 <div className="min-w-0 flex-1">
-                    <h2 className="truncate text-sm font-semibold text-slate-950">{t('tripAgent.title')}</h2>
-                    <p className="truncate text-xs text-slate-500">
+                    <h2 className="truncate text-sm font-semibold text-foreground">{t('tripAgent.title')}</h2>
+                    <p className="truncate text-xs text-muted-foreground">
                         {currentThread ? currentThread.title : t('tripAgent.subtitle')}
                     </p>
                 </div>
@@ -950,11 +950,11 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
             {isHistoryOpen ? (
                 <div className="min-h-0 flex-1 overflow-y-auto p-3">
                     {threadSections.length === 0 && (
-                        <p className="px-1 py-4 text-center text-xs text-slate-500">{t('tripAgent.historyEmpty')}</p>
+                        <p className="px-1 py-4 text-center text-xs text-muted-foreground">{t('tripAgent.historyEmpty')}</p>
                     )}
                     {threadSections.map((section) => (
                         <section key={section.key} className="mb-3">
-                            <h3 className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                            <h3 className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                 {t(`tripAgent.historySections.${section.key}`)}
                             </h3>
                             <ul className="space-y-1">
@@ -969,23 +969,23 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                                             className={`flex w-full items-start gap-2 rounded-xl border px-2.5 py-2 text-start transition-colors ${
                                                 thread.id === currentThreadId
                                                     ? 'border-accent-200 bg-accent-50'
-                                                    : 'border-slate-200 hover:bg-slate-50'
+                                                    : 'border-border hover:bg-secondary'
                                             }`}
                                         >
                                             <span className="min-w-0 flex-1">
-                                                <span className="block truncate text-sm text-slate-900">{thread.title}</span>
-                                                <span className="block text-[11px] text-slate-500">
+                                                <span className="block truncate text-sm text-foreground">{thread.title}</span>
+                                                <span className="block text-[11px] text-muted-foreground">
                                                     {formatTripAgentTimestamp(thread.updatedAt, i18n.language, now)}
                                                 </span>
                                             </span>
                                             {thread.id === currentThreadId && <Check className="mt-0.5 size-3.5 text-accent-600" />}
-                                            {thread.status === 'archived' && <Archive className="mt-0.5 size-3.5 text-slate-400" />}
+                                            {thread.status === 'archived' && <Archive className="mt-0.5 size-3.5 text-muted-foreground" />}
                                         </button>
                                         {thread.status === 'active' && (
                                             <button
                                                 type="button"
                                                 onClick={() => void archiveThread(thread.id)}
-                                                className="mt-0.5 w-full rounded-lg px-2.5 py-1 text-start text-[11px] text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                                                className="mt-0.5 w-full rounded-lg px-2.5 py-1 text-start text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground"
                                             >
                                                 {t('tripAgent.archive')}
                                             </button>
@@ -994,7 +994,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                                 ))}
                             </ul>
                             {section.hiddenCount > 0 && (
-                                <p className="px-1 pt-1 text-[11px] text-slate-400">
+                                <p className="px-1 pt-1 text-[11px] text-muted-foreground">
                                     {t('tripAgent.historyHidden', { count: section.hiddenCount })}
                                 </p>
                             )}
@@ -1004,7 +1004,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
             ) : loadError ? (
                 <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
                     <Lock className="size-6 text-amber-600" />
-                    <p className="text-sm text-slate-700">
+                    <p className="text-sm text-foreground">
                         {t([`tripAgent.errors.${loadError.code}`, 'tripAgent.errors.TRIP_AGENT_REQUEST_FAILED'])}
                     </p>
                     <Button size="sm" variant="outline" onClick={() => void refresh()}>{t('tripAgent.retry')}</Button>
@@ -1027,7 +1027,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                     onReapplyAgentChange={onReapplyAgentChange}
                 />
             ) : (
-                <div className="flex flex-1 items-center justify-center text-sm text-slate-500">{t('tripAgent.loading')}</div>
+                <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">{t('tripAgent.loading')}</div>
             )}
             </aside>
         </>

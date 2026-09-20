@@ -67,8 +67,8 @@ export const ThemeToggle = forwardRef<HTMLButtonElement, ThemeToggleProps>(
                     onClick={handleClick}
                     aria-pressed={isDark}
                     className={cn(
-                        'flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors',
-                        'hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                        'flex w-full items-center justify-between gap-3 rounded-xl border border-border px-3 py-2.5 text-sm font-medium text-foreground transition-colors',
+                        'hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                         'dark:border-border dark:text-foreground dark:hover:bg-secondary',
                         className,
                     )}
@@ -91,8 +91,8 @@ export const ThemeToggle = forwardRef<HTMLButtonElement, ThemeToggleProps>(
                 aria-label={label}
                 title={label}
                 className={cn(
-                    'inline-flex size-9 items-center justify-center rounded-lg text-slate-600 transition-colors',
-                    'hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                    'inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors',
+                    'hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                     'dark:text-muted-foreground dark:hover:bg-secondary dark:hover:text-foreground',
                     className,
                 )}

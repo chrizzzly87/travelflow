@@ -100,9 +100,9 @@ const TONE_META: Record<AppToastTone, AppToastToneMeta> = {
   },
   neutral: {
     Icon: Save,
-    borderClass: 'border-slate-200',
-    iconWrapClass: 'bg-slate-100 text-slate-700',
-    titleClass: 'text-slate-800',
+    borderClass: 'border-border',
+    iconWrapClass: 'bg-secondary text-foreground',
+    titleClass: 'text-foreground',
   },
 };
 
@@ -148,7 +148,7 @@ export const showAppToast = ({
     dismissible,
     action,
     position: 'bottom-right',
-    className: `border bg-white/95 text-slate-900 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/90 ${meta.borderClass}`,
+    className: `border bg-card/95 text-foreground shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/90 ${meta.borderClass}`,
     icon: (
       <span className={`inline-flex size-8 items-center justify-center rounded-full ${meta.iconWrapClass}`}>
         <Icon size={20} className={tone === 'loading' && !iconVariant ? 'animate-spin' : undefined} />

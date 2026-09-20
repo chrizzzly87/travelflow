@@ -148,10 +148,10 @@ export const ResetPasswordPage: React.FC = () => {
     return (
         <MarketingLayout>
             <div className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-[1fr_320px]">
-                <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+                <section className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8">
                     <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">{t('reset.eyebrow')}</p>
-                    <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">{t('reset.title')}</h1>
-                    <p className="mt-3 text-sm leading-6 text-slate-600">{t('reset.description')}</p>
+                    <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{t('reset.title')}</h1>
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">{t('reset.description')}</p>
 
                     {!isLoading && (!isAuthenticated || isAnonymous) && (
                         <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -161,7 +161,7 @@ export const ResetPasswordPage: React.FC = () => {
 
                     <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
                         <label className="block">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('labels.newPassword')}</span>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('labels.newPassword')}</span>
 	                            <input
 	                                type="password"
 	                                aria-label={t('labels.newPassword')}
@@ -173,12 +173,12 @@ export const ResetPasswordPage: React.FC = () => {
                                 })}
                                 required
                                 minLength={MIN_PASSWORD_LENGTH}
-                                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500"
+                                className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-accent-500"
                             />
                         </label>
 
                         <label className="block">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('labels.confirmPassword')}</span>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('labels.confirmPassword')}</span>
 	                            <input
 	                                type="password"
 	                                aria-label={t('labels.confirmPassword')}
@@ -190,7 +190,7 @@ export const ResetPasswordPage: React.FC = () => {
                                 })}
                                 required
                                 minLength={MIN_PASSWORD_LENGTH}
-                                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500"
+                                className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-accent-500"
                             />
                         </label>
 
@@ -228,11 +228,11 @@ export const ResetPasswordPage: React.FC = () => {
                     </div>
                 </section>
 
-                <aside className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-                    <h2 className="text-base font-semibold text-slate-900">{t('benefits.title')}</h2>
-                    <ul className="mt-4 space-y-3 text-sm text-slate-600">
+                <aside className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8">
+                    <h2 className="text-base font-semibold text-foreground">{t('benefits.title')}</h2>
+                    <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
                         {(t('benefits.items', { returnObjects: true }) as string[]).map((item) => (
-                            <li key={item} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                            <li key={item} className="rounded-xl border border-border bg-secondary px-3 py-2">
                                 {item}
                             </li>
                         ))}

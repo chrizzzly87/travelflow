@@ -229,11 +229,11 @@ export const AdminLegalTermsPage: React.FC = () => {
                     </div>
                 )}
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+                <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <h2 className="text-base font-semibold text-slate-900">Publish New Terms Version</h2>
-                            <p className="mt-1 text-xs text-slate-600">
+                            <h2 className="text-base font-semibold text-foreground">Publish New Terms Version</h2>
+                            <p className="mt-1 text-xs text-muted-foreground">
                                 Start from the current version, edit DE/EN text, then publish. Use <code>{'{appName}'}</code> in content to keep app naming dynamic.
                             </p>
                         </div>
@@ -245,7 +245,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                                 setActionMessage('Draft reset from current version.');
                                 setErrorMessage(null);
                             }}
-                            className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-slate-50"
+                            className="inline-flex h-9 items-center rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-secondary"
                             disabled={!currentVersion || isLoading}
                         >
                             Reset Draft From Current
@@ -253,27 +253,27 @@ export const AdminLegalTermsPage: React.FC = () => {
                     </div>
 
                     {!draft ? (
-                        <p className="mt-4 text-sm text-slate-600">{isLoading ? 'Loading terms…' : 'No terms version available.'}</p>
+                        <p className="mt-4 text-sm text-muted-foreground">{isLoading ? 'Loading terms…' : 'No terms version available.'}</p>
                     ) : (
                         <div className="mt-4 space-y-4">
                             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                                <label className="space-y-1 text-xs font-semibold text-slate-700">
+                                <label className="space-y-1 text-xs font-semibold text-foreground">
                                     Version date prefix
 	                                    <input
 	                                        type="text"
 	                                        aria-label="Version date prefix"
 	                                        value={draft.versionDate}
                                         readOnly
-                                        className="h-10 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 text-sm text-slate-700"
+                                        className="h-10 w-full rounded-lg border border-border bg-secondary px-3 text-sm text-foreground"
                                     />
-                                    <span className="block text-[11px] font-normal text-slate-500">
+                                    <span className="block text-[11px] font-normal text-muted-foreground">
                                         Current: {currentVersion?.version || 'n/a'} · Suggested next: {suggestedNextVersion}
                                     </span>
-                                    <span className="block text-[11px] font-normal text-slate-500">
+                                    <span className="block text-[11px] font-normal text-muted-foreground">
                                         Draft version: {buildVersionFromParts(draft.versionDate, draft.versionRevision)}
                                     </span>
                                 </label>
-                                <label className="space-y-1 text-xs font-semibold text-slate-700">
+                                <label className="space-y-1 text-xs font-semibold text-foreground">
                                     Revision suffix
 	                                    <input
 	                                        type="number"
@@ -291,13 +291,13 @@ export const AdminLegalTermsPage: React.FC = () => {
                                                 };
                                             });
                                         }}
-                                        className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 outline-none ring-accent-200 focus:ring"
+                                        className="h-10 w-full rounded-lg border border-border px-3 text-sm text-foreground outline-none ring-accent-200 focus:ring"
                                     />
-                                    <span className="block text-[11px] font-normal text-slate-500">
+                                    <span className="block text-[11px] font-normal text-muted-foreground">
                                         0 = {draft.versionDate}; 1 = {draft.versionDate}-1
                                     </span>
                                 </label>
-                                <label className="space-y-1 text-xs font-semibold text-slate-700">
+                                <label className="space-y-1 text-xs font-semibold text-foreground">
                                     Last updated
 	                                    <input
 	                                        type="date"
@@ -316,67 +316,67 @@ export const AdminLegalTermsPage: React.FC = () => {
                                                 };
                                             });
                                         }}
-                                        className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 outline-none ring-accent-200 focus:ring"
+                                        className="h-10 w-full rounded-lg border border-border px-3 text-sm text-foreground outline-none ring-accent-200 focus:ring"
                                     />
                                 </label>
-                                <label className="space-y-1 text-xs font-semibold text-slate-700 md:col-span-2 lg:col-span-2">
+                                <label className="space-y-1 text-xs font-semibold text-foreground md:col-span-2 lg:col-span-2">
                                     Title
 	                                    <input
 	                                        type="text"
 	                                        aria-label="Title"
 	                                        value={draft.title}
                                         onChange={(event) => handleDraftField('title', event.target.value)}
-                                        className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 outline-none ring-accent-200 focus:ring"
+                                        className="h-10 w-full rounded-lg border border-border px-3 text-sm text-foreground outline-none ring-accent-200 focus:ring"
                                         placeholder="Terms of Service / AGB"
                                     />
                                 </label>
                             </div>
 
-                            <label className="space-y-1 text-xs font-semibold text-slate-700">
+                            <label className="space-y-1 text-xs font-semibold text-foreground">
                                 Summary (internal/admin)
 	                                <textarea
 	                                    aria-label="Summary"
 	                                    value={draft.summary}
                                     onChange={(event) => handleDraftField('summary', event.target.value)}
-                                    className="min-h-[72px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-accent-200 focus:ring"
+                                    className="min-h-[72px] w-full rounded-lg border border-border px-3 py-2 text-sm text-foreground outline-none ring-accent-200 focus:ring"
                                     placeholder="What changed in this version?"
                                 />
                             </label>
 
-                            <div className="inline-flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
+                            <div className="inline-flex items-start gap-2 rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground">
                                 <input
 	                                    id="legal-terms-requires-reaccept"
 	                                    type="checkbox"
 	                                    aria-label="Force re-acceptance"
-	                                    className="mt-0.5 size-4 rounded border-slate-300 text-accent-600 focus:ring-accent-500"
+	                                    className="mt-0.5 size-4 rounded border-border text-accent-600 focus:ring-accent-500"
                                     checked={draft.requiresReaccept}
                                     onChange={(event) => handleDraftField('requiresReaccept', event.target.checked)}
                                 />
                                 <label htmlFor="legal-terms-requires-reaccept">
                                     <span className="font-semibold">Force re-acceptance</span>
-                                    <span className="mt-1 block text-xs text-slate-600">
+                                    <span className="mt-1 block text-xs text-muted-foreground">
                                         Enabled: users must accept before protected usage continues. Disabled: users are informed only (no block).
                                     </span>
                                 </label>
                             </div>
 
                             <div className="grid gap-3 lg:grid-cols-2">
-                                <label className="space-y-1 text-xs font-semibold text-slate-700">
+                                <label className="space-y-1 text-xs font-semibold text-foreground">
                                     German binding text (Markdown)
 	                                <textarea
 	                                    aria-label="German binding text"
 	                                    value={draft.contentDe}
                                         onChange={(event) => handleDraftField('contentDe', event.target.value)}
-                                        className="min-h-[320px] w-full rounded-lg border border-slate-300 px-3 py-2 text-xs leading-5 text-slate-900 outline-none ring-accent-200 focus:ring"
+                                        className="min-h-[320px] w-full rounded-lg border border-border px-3 py-2 text-xs leading-5 text-foreground outline-none ring-accent-200 focus:ring"
                                     />
                                 </label>
-                                <label className="space-y-1 text-xs font-semibold text-slate-700">
+                                <label className="space-y-1 text-xs font-semibold text-foreground">
                                     English helper text (Markdown)
 	                                <textarea
 	                                    aria-label="English helper text"
 	                                    value={draft.contentEn}
                                         onChange={(event) => handleDraftField('contentEn', event.target.value)}
-                                        className="min-h-[320px] w-full rounded-lg border border-slate-300 px-3 py-2 text-xs leading-5 text-slate-900 outline-none ring-accent-200 focus:ring"
+                                        className="min-h-[320px] w-full rounded-lg border border-border px-3 py-2 text-xs leading-5 text-foreground outline-none ring-accent-200 focus:ring"
                                     />
                                 </label>
                             </div>
@@ -394,7 +394,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                                         });
                                     }}
                                     disabled={isPublishing}
-                                    className="inline-flex h-10 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="inline-flex h-10 items-center rounded-lg border border-border bg-card px-4 text-sm font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     Use suggested revision
                                 </button>
@@ -412,18 +412,18 @@ export const AdminLegalTermsPage: React.FC = () => {
                 </section>
 
                 {draft && (
-                    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-                        <h2 className="text-base font-semibold text-slate-900">Draft Preview</h2>
+                    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
+                        <h2 className="text-base font-semibold text-foreground">Draft Preview</h2>
                         <div className="mt-3 grid gap-4 lg:grid-cols-2">
-                            <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">German binding</h3>
-                                <div className="prose prose-sm mt-2 max-w-none prose-headings:mt-4 prose-headings:text-slate-900 prose-p:text-slate-700">
+                            <article className="rounded-xl border border-border bg-secondary p-3">
+                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">German binding</h3>
+                                <div className="prose prose-sm mt-2 max-w-none prose-headings:mt-4 prose-headings:text-foreground prose-p:text-foreground">
                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{draft.contentDe}</ReactMarkdown>
                                 </div>
                             </article>
-                            <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">English helper</h3>
-                                <div className="prose prose-sm mt-2 max-w-none prose-headings:mt-4 prose-headings:text-slate-900 prose-p:text-slate-700">
+                            <article className="rounded-xl border border-border bg-secondary p-3">
+                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">English helper</h3>
+                                <div className="prose prose-sm mt-2 max-w-none prose-headings:mt-4 prose-headings:text-foreground prose-p:text-foreground">
                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{draft.contentEn}</ReactMarkdown>
                                 </div>
                             </article>
@@ -431,32 +431,32 @@ export const AdminLegalTermsPage: React.FC = () => {
                     </section>
                 )}
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+                <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
                     <div className="flex items-center justify-between gap-2">
-                        <h2 className="text-base font-semibold text-slate-900">Version History</h2>
+                        <h2 className="text-base font-semibold text-foreground">Version History</h2>
                         {currentVersion && (
-                            <div className="text-xs text-slate-600">
-                                Current: <span className="font-semibold text-slate-900">{currentVersion.version}</span>
+                            <div className="text-xs text-muted-foreground">
+                                Current: <span className="font-semibold text-foreground">{currentVersion.version}</span>
                             </div>
                         )}
                     </div>
 
                     {isLoading ? (
-                        <p className="mt-3 text-sm text-slate-600">Loading version history…</p>
+                        <p className="mt-3 text-sm text-muted-foreground">Loading version history…</p>
                     ) : versions.length === 0 ? (
-                        <p className="mt-3 text-sm text-slate-600">No terms versions found.</p>
+                        <p className="mt-3 text-sm text-muted-foreground">No terms versions found.</p>
                     ) : (
                         <div className="mt-3 space-y-2">
                             {versions.map((version) => (
                                 <article
                                     key={version.version}
-                                    className={`rounded-xl border p-3 text-sm ${version.isCurrent ? 'border-accent-300 bg-accent-50' : 'border-slate-200 bg-white'}`}
+                                    className={`rounded-xl border p-3 text-sm ${version.isCurrent ? 'border-accent-300 bg-accent-50' : 'border-border bg-card'}`}
                                 >
                                     <div className="flex flex-wrap items-start justify-between gap-2">
                                         <div>
-                                            <p className="font-semibold text-slate-900">{version.version}</p>
-                                            <p className="text-xs text-slate-600">{version.title}</p>
-                                            <p className="mt-1 text-xs text-slate-600">
+                                            <p className="font-semibold text-foreground">{version.version}</p>
+                                            <p className="text-xs text-muted-foreground">{version.title}</p>
+                                            <p className="mt-1 text-xs text-muted-foreground">
                                                 Last updated {normalizeDateInput(version.lastUpdated)} · Effective {toDateTimeLabel(version.effectiveAt)}
                                             </p>
                                         </div>
@@ -472,13 +472,13 @@ export const AdminLegalTermsPage: React.FC = () => {
                                         </div>
                                     </div>
                                     {version.summary && (
-                                        <p className="mt-2 text-xs text-slate-600">{version.summary}</p>
+                                        <p className="mt-2 text-xs text-muted-foreground">{version.summary}</p>
                                     )}
                                     <div className="mt-3 flex flex-wrap gap-2">
                                         <button
                                             type="button"
                                             onClick={() => handleUseVersionAsBase(version)}
-                                            className="inline-flex h-8 items-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-slate-50"
+                                            className="inline-flex h-8 items-center rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-secondary"
                                         >
                                             Use as Draft Basis
                                         </button>

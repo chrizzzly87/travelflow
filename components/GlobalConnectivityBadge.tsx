@@ -156,7 +156,7 @@ export const GlobalConnectivityBadge: React.FC = () => {
                 {detailsOpen && (
                     <div
                         role="tooltip"
-                        className="absolute left-1/2 top-full z-10 mt-2 w-[min(92vw,360px)] -translate-x-1/2 rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-[11px] font-medium text-slate-700 shadow-lg backdrop-blur sm:bottom-full sm:top-auto sm:mb-2 sm:mt-0"
+                        className="absolute left-1/2 top-full z-10 mt-2 w-[min(92vw,360px)] -translate-x-1/2 rounded-xl border border-border bg-card/95 px-3 py-2 text-[11px] font-medium text-foreground shadow-lg backdrop-blur sm:bottom-full sm:top-auto sm:mb-2 sm:mt-0"
                     >
                         {detailsCopy}
                     </div>

@@ -44,7 +44,7 @@ export const RecommendationDetailDialog: React.FC<{
                     />
 
                     {actions && (
-                        <div className="shrink-0 border-t border-slate-100 p-3">{actions}</div>
+                        <div className="shrink-0 border-t border-border p-3">{actions}</div>
                     )}
                 </>
             )}

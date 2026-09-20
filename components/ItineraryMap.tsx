@@ -3598,7 +3598,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             )}
             {shouldShowMapLoadingOverlay && (
                 <div
-                    className="absolute inset-0 flex items-center justify-center text-sm text-gray-500"
+                    className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground"
                     style={{ backgroundColor: mapSurfaceBackgroundColor }}
                 >
                     Loading map…
@@ -3626,7 +3626,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         onClick={onClearSelection}
                         data-testid="map-clear-city-focus"
                         data-floating-map-control="true"
-                        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/95 ps-3 pe-4 py-2 text-xs font-semibold text-gray-700 shadow-lg backdrop-blur transition-colors hover:border-accent-300 hover:bg-white hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400"
+                        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-border bg-card/95 ps-3 pe-4 py-2 text-xs font-semibold text-foreground shadow-lg backdrop-blur transition-colors hover:border-accent-300 hover:bg-card hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400"
                         {...getAnalyticsDebugAttributes('trip_view__map_city_focus--clear', { surface: 'map_canvas' })}
                     >
                         <Route size={15} />
@@ -3644,7 +3644,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                             onClick={onMapDockModeToggle}
                             data-testid="map-dock-toggle-button"
                             data-floating-map-control="true"
-                            className="flex size-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-md transition-colors hover:bg-gray-50 hover:text-accent-600"
+                            className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600"
                             aria-label={mapDockMode === 'docked' ? 'Minimize map preview' : 'Maximize map preview'}
                             {...getAnalyticsDebugAttributes(
                                 mapDockMode === 'docked' ? 'trip_view__map_preview--minimize' : 'trip_view__map_preview--maximize',
@@ -3659,12 +3659,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         <>
                             <button type="button"
                                 onClick={() => onLayoutChange('vertical')}
-                                className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Vertical layout"
+                                className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-card border-border text-muted-foreground hover:text-accent-600 hover:bg-secondary'}`} aria-label="Vertical layout"
                                 {...getAnalyticsDebugAttributes('trip_view__layout_direction--vertical', { surface: 'map_controls' })}
                             ><ArrowUpDown size={18} /></button>
                             <button type="button"
                                 onClick={() => onLayoutChange('horizontal')}
-                                className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Horizontal layout"
+                                className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-card border-border text-muted-foreground hover:text-accent-600 hover:bg-secondary'}`} aria-label="Horizontal layout"
                                 {...getAnalyticsDebugAttributes('trip_view__layout_direction--horizontal', { surface: 'map_controls' })}
                             ><ArrowLeftRight size={18} /></button>
                         </>
@@ -3673,7 +3673,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     {onToggleExpanded && (
                         <button type="button"
                             onClick={onToggleExpanded}
-                            className="flex size-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-md transition-colors hover:bg-gray-50 hover:text-accent-600"
+                            className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600"
                             title={isExpanded ? 'Shrink map' : 'Expand map'}
                             aria-label={isExpanded ? 'Shrink map' : 'Expand map'}
                         >
@@ -3684,7 +3684,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     <button type="button"
                         onClick={handleFit}
                         disabled={mapActionsDisabled}
-                        className="flex size-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 shadow-md transition-colors hover:bg-gray-50 hover:text-accent-600 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-white disabled:hover:text-gray-300"
+                        className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-card disabled:hover:text-gray-300"
                         aria-label="Fit to itinerary"
                     ><Focus size={18} /></button>
                     
@@ -3703,10 +3703,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                             data-floating-map-control="true"
                             className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
                                 mapActionsDisabled
-                                    ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
+                                    ? 'bg-card border-border text-gray-300 cursor-not-allowed'
                                     : isCustomizeOpen
                                         ? 'bg-accent-50 border-accent-300 text-accent-600'
-                                        : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'
+                                        : 'bg-card border-border text-muted-foreground hover:text-accent-600 hover:bg-secondary'
                             }`}
                             aria-label={customizeLabel}
                             aria-haspopup="dialog"
@@ -3725,10 +3725,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                             disabled={mapActionsDisabled}
                             className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
                                 mapActionsDisabled
-                                    ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
+                                    ? 'bg-card border-border text-gray-300 cursor-not-allowed'
                                     : showCityNames
                                         ? 'bg-accent-600 border-accent-700 text-white hover:bg-accent-700'
-                                        : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'
+                                        : 'bg-card border-border text-muted-foreground hover:text-accent-600 hover:bg-secondary'
                             }`}
                             aria-label={showCityNames ? 'Hide map labels' : 'Show map labels'}
                             aria-pressed={showCityNames}
@@ -3749,10 +3749,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                             disabled={mapActionsDisabled}
                             className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
                                 mapActionsDisabled
-                                    ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
+                                    ? 'bg-card border-border text-gray-300 cursor-not-allowed'
                                     : activityMarkersEnabled
                                         ? 'bg-accent-600 border-accent-700 text-white hover:bg-accent-700'
-                                        : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'
+                                        : 'bg-card border-border text-muted-foreground hover:text-accent-600 hover:bg-secondary'
                             }`}
                             aria-label={activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}
                             title={activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}

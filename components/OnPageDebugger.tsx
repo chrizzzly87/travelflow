@@ -356,7 +356,7 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
             ? 'border-rose-300 bg-rose-50 text-rose-700'
             : snapshot.available
                 ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                : 'border-slate-300 bg-slate-50 text-slate-600';
+                : 'border-border bg-secondary text-muted-foreground';
 
     const statusMessage = snapshot.loading
         ? 'Fetching the latest Netlify runtime location snapshot for this session.'
@@ -424,10 +424,10 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
     }, [latitudeInput, longitudeInput, limitInput]);
 
     return (
-        <div className="mt-3 rounded-md border border-slate-200 bg-white p-3 text-xs">
+        <div className="mt-3 rounded-md border border-border bg-card p-3 text-xs">
             <div className="flex flex-wrap items-center gap-2">
                 <div className="flex items-center gap-2">
-                    <span className="font-semibold uppercase tracking-wide text-slate-500">Runtime Location</span>
+                    <span className="font-semibold uppercase tracking-wide text-muted-foreground">Runtime Location</span>
                     <span className={`rounded-md border px-2 py-1 ${statusClassName}`}>
                         {statusLabel}
                     </span>
@@ -436,49 +436,49 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                     type="button"
                     onClick={onRefresh}
                     disabled={snapshot.loading}
-                    className="ml-auto inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="ml-auto inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                 >
                     <Globe size={14} weight="duotone" />
                     {snapshot.loading ? 'Refreshing…' : 'Refresh Runtime Location'}
                 </button>
             </div>
 
-            <p className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-600">
+            <p className="mt-2 rounded border border-border bg-secondary px-2 py-1 text-muted-foreground">
                 {statusMessage}
             </p>
 
             <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                    <strong className="text-slate-900">Source:</strong> {snapshot.source}
+                <div className="rounded border border-border bg-secondary px-2 py-1">
+                    <strong className="text-foreground">Source:</strong> {snapshot.source}
                 </div>
-                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                    <strong className="text-slate-900">Fetched:</strong> {formatRuntimeLocationFetchedAt(snapshot.fetchedAt)}
+                <div className="rounded border border-border bg-secondary px-2 py-1">
+                    <strong className="text-foreground">Fetched:</strong> {formatRuntimeLocationFetchedAt(snapshot.fetchedAt)}
                 </div>
-                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                    <strong className="text-slate-900">City:</strong> {formatRuntimeLocationText(snapshot.location.city)}
+                <div className="rounded border border-border bg-secondary px-2 py-1">
+                    <strong className="text-foreground">City:</strong> {formatRuntimeLocationText(snapshot.location.city)}
                 </div>
-                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                    <strong className="text-slate-900">Country:</strong> {formatRuntimeLocationCountry(snapshot)}
+                <div className="rounded border border-border bg-secondary px-2 py-1">
+                    <strong className="text-foreground">Country:</strong> {formatRuntimeLocationCountry(snapshot)}
                 </div>
-                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                    <strong className="text-slate-900">Subdivision:</strong> {formatRuntimeLocationSubdivision(snapshot)}
+                <div className="rounded border border-border bg-secondary px-2 py-1">
+                    <strong className="text-foreground">Subdivision:</strong> {formatRuntimeLocationSubdivision(snapshot)}
                 </div>
-                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                    <strong className="text-slate-900">Timezone:</strong> {formatRuntimeLocationText(snapshot.location.timezone)}
+                <div className="rounded border border-border bg-secondary px-2 py-1">
+                    <strong className="text-foreground">Timezone:</strong> {formatRuntimeLocationText(snapshot.location.timezone)}
                 </div>
-                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                    <strong className="text-slate-900">Postal code:</strong> {formatRuntimeLocationText(snapshot.location.postalCode)}
+                <div className="rounded border border-border bg-secondary px-2 py-1">
+                    <strong className="text-foreground">Postal code:</strong> {formatRuntimeLocationText(snapshot.location.postalCode)}
                 </div>
-                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                    <strong className="text-slate-900">Lat/Lon:</strong> {formatRuntimeLocationCoordinates(snapshot)}
+                <div className="rounded border border-border bg-secondary px-2 py-1">
+                    <strong className="text-foreground">Lat/Lon:</strong> {formatRuntimeLocationCoordinates(snapshot)}
                 </div>
             </div>
 
-            <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+            <div className="mt-3 rounded-md border border-border bg-secondary p-3">
                 <div className="flex flex-wrap items-start gap-2">
                     <div className="min-w-0 flex-1">
-                        <div className="font-semibold uppercase tracking-wide text-slate-500">Nearby Airports Tester</div>
-                        <p className="mt-1 text-slate-600">
+                        <div className="font-semibold uppercase tracking-wide text-muted-foreground">Nearby Airports Tester</div>
+                        <p className="mt-1 text-muted-foreground">
                             Query the nearby-airports endpoint with the current runtime coordinates or manual lat/lon overrides.
                         </p>
                     </div>
@@ -486,7 +486,7 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                         type="button"
                         onClick={applyRuntimeCoordinates}
                         disabled={!hasRuntimeCoordinates}
-                        className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         <Compass size={14} weight="duotone" />
                         Use Runtime Coordinates
@@ -495,7 +495,7 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                         type="button"
                         onClick={handleNearbyAirportsLookup}
                         disabled={nearbyAirportsState.loading}
-                        className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         <MagnifyingGlass size={14} weight="duotone" />
                         {nearbyAirportsState.loading ? 'Looking up…' : 'Lookup Nearby Airports'}
@@ -503,36 +503,36 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                 </div>
 
                 <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                    <label className="flex flex-col gap-1 text-slate-600">
-                        <span className="font-medium text-slate-900">Latitude</span>
+                    <label className="flex flex-col gap-1 text-muted-foreground">
+                        <span className="font-medium text-foreground">Latitude</span>
                         <input
                             aria-label="Nearby airport latitude"
                             inputMode="decimal"
                             value={latitudeInput}
                             onChange={(event) => setLatitudeInput(event.target.value)}
-                            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                            className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                             placeholder="52.5200"
                         />
                     </label>
-                    <label className="flex flex-col gap-1 text-slate-600">
-                        <span className="font-medium text-slate-900">Longitude</span>
+                    <label className="flex flex-col gap-1 text-muted-foreground">
+                        <span className="font-medium text-foreground">Longitude</span>
                         <input
                             aria-label="Nearby airport longitude"
                             inputMode="decimal"
                             value={longitudeInput}
                             onChange={(event) => setLongitudeInput(event.target.value)}
-                            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                            className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                             placeholder="13.4050"
                         />
                     </label>
-                    <label className="flex flex-col gap-1 text-slate-600">
-                        <span className="font-medium text-slate-900">Limit</span>
+                    <label className="flex flex-col gap-1 text-muted-foreground">
+                        <span className="font-medium text-foreground">Limit</span>
                         <input
                             aria-label="Nearby airport result limit"
                             inputMode="numeric"
                             value={limitInput}
                             onChange={(event) => setLimitInput(event.target.value)}
-                            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                            className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                             placeholder="10"
                         />
                     </label>
@@ -545,8 +545,8 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                 )}
 
                 {nearbyAirportsState.response && (
-                    <div className="mt-3 rounded-md border border-slate-200 bg-white">
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-3 py-2 text-slate-600">
+                    <div className="mt-3 rounded-md border border-border bg-card">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2 text-muted-foreground">
                             <span>
                                 Found {nearbyAirportsState.response.airports.length} commercial airports near{' '}
                                 {nearbyAirportsState.response.origin.lat.toFixed(4)}, {nearbyAirportsState.response.origin.lng.toFixed(4)}
@@ -560,10 +560,10 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                                     <li key={`${entry.airport.ident}:${entry.rank}`} className="px-3 py-2">
                                         <div className="flex flex-wrap items-center justify-between gap-2">
                                             <div className="min-w-0 flex-1">
-                                                <div className="font-medium text-slate-900">
+                                                <div className="font-medium text-foreground">
                                                     #{entry.rank} {formatNearbyAirportCode(entry.airport)} · {entry.airport.name}
                                                 </div>
-                                                <div className="mt-1 text-slate-600">
+                                                <div className="mt-1 text-muted-foreground">
                                                     {entry.airport.municipality || entry.airport.subdivisionName || 'Unknown city'} · {entry.airport.countryName}
                                                     {entry.airport.timezone ? ` · ${entry.airport.timezone}` : ''}
                                                 </div>
@@ -576,7 +576,7 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                                 ))}
                             </ul>
                         ) : (
-                            <p className="p-3 text-slate-600">No commercial airports were returned for this lookup.</p>
+                            <p className="p-3 text-muted-foreground">No commercial airports were returned for this lookup.</p>
                         )}
                     </div>
                 )}
@@ -1747,26 +1747,26 @@ export const OnPageDebugger: React.FC = () => {
             )}
 
             <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[1600] px-3">
-                <div className="pointer-events-auto mx-auto w-full max-w-6xl overflow-hidden rounded-xl border border-slate-300 bg-white/95 shadow-2xl backdrop-blur">
+                <div className="pointer-events-auto mx-auto w-full max-w-6xl overflow-hidden rounded-xl border border-border bg-card/95 shadow-2xl backdrop-blur">
                     <div className="flex flex-wrap items-center gap-2 p-2">
                         <span className="inline-flex items-center gap-1 rounded-md bg-slate-900 px-2 py-1 text-xs font-semibold text-white">
                             <Flask size={13} weight="duotone" />
                             Debugger
                         </span>
-                        <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                        <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground">
                             {trackingBoxes.length} tracked in viewport
                         </span>
                         <span className={`rounded-md border px-2 py-1 text-xs ${
                             isPrefetchEnabled
                                 ? 'border-sky-300 bg-sky-50 text-sky-700'
-                                : 'border-slate-300 bg-slate-50 text-slate-600'
+                                : 'border-border bg-secondary text-muted-foreground'
                         }`}>
                             Prefetch {isPrefetchEnabled ? 'on' : 'off'}
                         </span>
-                        <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                        <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground">
                             Prefetch {prefetchStats.completed}/{prefetchStats.attempts}
                         </span>
-                        <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                        <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground">
                             Prefetch skips {totalPrefetchSkips}
                         </span>
                         <span className={`rounded-md border px-2 py-1 text-xs ${
@@ -1777,19 +1777,19 @@ export const OnPageDebugger: React.FC = () => {
                             VT API {viewTransitionDiagnostics.supported ? 'on' : 'off'}
                         </span>
                         {showSeoTools && seoAudit && (
-                            <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                            <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground">
                                 SEO {seoAudit.passCount}/{seoAudit.checks.length}
                             </span>
                         )}
                         {a11yAudit && (
-                            <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                            <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground">
                                 A11y {a11yAudit.passCount}/{a11yAudit.checks.length}
                             </span>
                         )}
                         <span className={`rounded-md border px-2 py-1 text-xs ${
                             simulatedLoggedIn
                                 ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                                : 'border-slate-300 bg-slate-50 text-slate-600'
+                                : 'border-border bg-secondary text-muted-foreground'
                         }`}>
                             Sim login {simulatedLoggedIn ? 'on' : 'off'}
                         </span>
@@ -1810,13 +1810,13 @@ export const OnPageDebugger: React.FC = () => {
                         }`}>
                             Supabase {connectivitySnapshot.state}
                         </span>
-                        <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                        <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground">
                             Queue {offlineQueueSnapshot.pendingCount}
                         </span>
                         <span className={`rounded-md border px-2 py-1 text-xs ${
                             syncRunSnapshot.isSyncing
                                 ? 'border-sky-300 bg-sky-50 text-sky-700'
-                                : 'border-slate-300 bg-slate-50 text-slate-600'
+                                : 'border-border bg-secondary text-muted-foreground'
                         }`}>
                             Sync {syncRunSnapshot.isSyncing ? 'running' : 'idle'}
                         </span>
@@ -1833,7 +1833,7 @@ export const OnPageDebugger: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => setIsExpanded((prev) => !prev)}
-                                className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-xs font-medium text-foreground hover:bg-secondary"
                             >
                                 <List size={14} />
                                 {isExpanded ? 'Collapse' : 'Expand'}
@@ -1841,7 +1841,7 @@ export const OnPageDebugger: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => setIsOpen(false)}
-                                className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-xs font-medium text-foreground hover:bg-secondary"
                             >
                                 <X size={14} />
                                 Close
@@ -1850,7 +1850,7 @@ export const OnPageDebugger: React.FC = () => {
                     </div>
 
                     {isExpanded && (
-                        <div className="border-t border-slate-200 p-3">
+                        <div className="border-t border-border p-3">
                             <div className="flex flex-wrap items-center gap-2">
                                 <button
                                     type="button"
@@ -1858,7 +1858,7 @@ export const OnPageDebugger: React.FC = () => {
                                     className={`inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium ${
                                         activeTab === 'testing'
                                             ? 'border-slate-900 bg-slate-900 text-white'
-                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            : 'border-border bg-card text-foreground hover:bg-secondary'
                                     }`}
                                 >
                                     <Flask size={14} weight="duotone" />
@@ -1871,7 +1871,7 @@ export const OnPageDebugger: React.FC = () => {
                                         className={`inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium ${
                                             activeTab === 'maps'
                                                 ? 'border-slate-900 bg-slate-900 text-white'
-                                                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                : 'border-border bg-card text-foreground hover:bg-secondary'
                                         }`}
                                     >
                                         <Globe size={14} weight="duotone" />
@@ -1884,7 +1884,7 @@ export const OnPageDebugger: React.FC = () => {
                                     className={`inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium ${
                                         activeTab === 'tracking'
                                             ? 'border-slate-900 bg-slate-900 text-white'
-                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            : 'border-border bg-card text-foreground hover:bg-secondary'
                                     }`}
                                 >
                                     <MagnifyingGlass size={14} weight="duotone" />
@@ -1896,7 +1896,7 @@ export const OnPageDebugger: React.FC = () => {
                                     className={`inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium ${
                                         activeTab === 'seo'
                                             ? 'border-slate-900 bg-slate-900 text-white'
-                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            : 'border-border bg-card text-foreground hover:bg-secondary'
                                     }`}
                                 >
                                     <Compass size={14} weight="duotone" />
@@ -1908,7 +1908,7 @@ export const OnPageDebugger: React.FC = () => {
                                     className={`ml-auto rounded border px-2 py-1 text-xs font-medium ${
                                         autoOpenEnabled
                                             ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                                            : 'border-slate-300 bg-white text-slate-700'
+                                            : 'border-border bg-card text-foreground'
                                     }`}
                                 >
                                     {autoOpenEnabled ? 'Auto-open enabled' : 'Enable auto-open'}
@@ -1918,11 +1918,11 @@ export const OnPageDebugger: React.FC = () => {
                             {activeTab === 'testing' && (
                                 <>
                                     <div className="mt-3 space-y-3">
-                                        <div className="rounded-md border border-slate-200 bg-white p-3 text-xs">
+                                        <div className="rounded-md border border-border bg-card p-3 text-xs">
                                             <div className="flex flex-wrap items-center justify-between gap-2">
                                                 <div>
-                                                    <h3 className="text-sm font-semibold text-slate-900">Session & Connectivity</h3>
-                                                    <p className="mt-1 text-[11px] leading-5 text-slate-600">
+                                                    <h3 className="text-sm font-semibold text-foreground">Session & Connectivity</h3>
+                                                    <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
                                                         Simulate auth, network, sync, and trip state without leaving the current page.
                                                     </p>
                                                 </div>
@@ -1935,7 +1935,7 @@ export const OnPageDebugger: React.FC = () => {
                                                     className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                         simulatedLoggedIn
                                                             ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                            : 'border-border bg-card text-foreground hover:bg-secondary'
                                                     }`}
                                                 >
                                                     <User size={16} weight="duotone" />
@@ -1948,7 +1948,7 @@ export const OnPageDebugger: React.FC = () => {
                                                     className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                         connectivitySnapshot.isForced && connectivitySnapshot.forcedState === 'offline'
                                                             ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
-                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                            : 'border-border bg-card text-foreground hover:bg-secondary'
                                                     }`}
                                                 >
                                                     <Flask size={16} weight="duotone" />
@@ -1961,7 +1961,7 @@ export const OnPageDebugger: React.FC = () => {
                                                     className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                         browserConnectivitySnapshot.override === 'offline'
                                                             ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
-                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                            : 'border-border bg-card text-foreground hover:bg-secondary'
                                                     }`}
                                                 >
                                                     <Flask size={16} weight="duotone" />
@@ -1974,7 +1974,7 @@ export const OnPageDebugger: React.FC = () => {
                                                     className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                         browserConnectivitySnapshot.override === 'online'
                                                             ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                            : 'border-border bg-card text-foreground hover:bg-secondary'
                                                     }`}
                                                 >
                                                     <Flask size={16} weight="duotone" />
@@ -1987,7 +1987,7 @@ export const OnPageDebugger: React.FC = () => {
                                                     className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                         browserConnectivitySnapshot.override
                                                             ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                            : 'border-border bg-card text-foreground hover:bg-secondary'
                                                     }`}
                                                 >
                                                     <Flask size={16} weight="duotone" />
@@ -2000,7 +2000,7 @@ export const OnPageDebugger: React.FC = () => {
                                                     className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                         connectivitySnapshot.isForced && connectivitySnapshot.forcedState === 'degraded'
                                                             ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                            : 'border-border bg-card text-foreground hover:bg-secondary'
                                                     }`}
                                                 >
                                                     <Flask size={16} weight="duotone" />
@@ -2021,7 +2021,7 @@ export const OnPageDebugger: React.FC = () => {
                                                     onClick={() => {
                                                         void retryTripSyncNow();
                                                     }}
-                                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
                                                 >
                                                     <RocketLaunch size={16} weight="duotone" />
                                                     Retry Trip Sync
@@ -2030,7 +2030,7 @@ export const OnPageDebugger: React.FC = () => {
                                                 <button
                                                     type="button"
                                                     onClick={openAiBenchmark}
-                                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
                                                 >
                                                     <Flask size={16} weight="duotone" />
                                                     Open AI Benchmark
@@ -2044,7 +2044,7 @@ export const OnPageDebugger: React.FC = () => {
                                                         className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                             tripExpiredDebug
                                                                 ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
-                                                                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                                : 'border-border bg-card text-foreground hover:bg-secondary'
                                                         } ${tripExpiredToggleAvailable ? '' : 'opacity-50 cursor-not-allowed'}`}
                                                     >
                                                         <Flask size={16} weight="duotone" />
@@ -2053,31 +2053,31 @@ export const OnPageDebugger: React.FC = () => {
                                                 )}
                                             </div>
 
-                                            <div className="mt-3 grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700 sm:grid-cols-2 lg:grid-cols-6">
-                                                <div className="rounded border border-slate-200 bg-white px-2 py-1">
-                                                    <strong className="text-slate-900">Browser:</strong>{' '}
+                                            <div className="mt-3 grid gap-2 rounded-md border border-border bg-secondary p-2 text-xs text-foreground sm:grid-cols-2 lg:grid-cols-6">
+                                                <div className="rounded border border-border bg-card px-2 py-1">
+                                                    <strong className="text-foreground">Browser:</strong>{' '}
                                                     {browserConnectivitySnapshot.isOnline ? 'online' : 'offline'}
                                                     {browserConnectivitySnapshot.override ? ` (forced ${browserConnectivitySnapshot.override})` : ''}
                                                 </div>
-                                                <div className="rounded border border-slate-200 bg-white px-2 py-1">
-                                                    <strong className="text-slate-900">Browser key:</strong>{' '}
+                                                <div className="rounded border border-border bg-card px-2 py-1">
+                                                    <strong className="text-foreground">Browser key:</strong>{' '}
                                                     <code>{BROWSER_CONNECTIVITY_OVERRIDE_STORAGE_KEY}</code>
                                                 </div>
-                                                <div className="rounded border border-slate-200 bg-white px-2 py-1">
-                                                    <strong className="text-slate-900">Connectivity:</strong>{' '}
+                                                <div className="rounded border border-border bg-card px-2 py-1">
+                                                    <strong className="text-foreground">Connectivity:</strong>{' '}
                                                     {connectivitySnapshot.state}
                                                     {connectivitySnapshot.isForced ? ' (forced)' : ''}
                                                 </div>
-                                                <div className="rounded border border-slate-200 bg-white px-2 py-1">
-                                                    <strong className="text-slate-900">Override key:</strong>{' '}
+                                                <div className="rounded border border-border bg-card px-2 py-1">
+                                                    <strong className="text-foreground">Override key:</strong>{' '}
                                                     <code>{CONNECTIVITY_DEBUG_OVERRIDE_STORAGE_KEY}</code>
                                                 </div>
-                                                <div className="rounded border border-slate-200 bg-white px-2 py-1">
-                                                    <strong className="text-slate-900">Queue:</strong>{' '}
+                                                <div className="rounded border border-border bg-card px-2 py-1">
+                                                    <strong className="text-foreground">Queue:</strong>{' '}
                                                     pending {offlineQueueSnapshot.pendingCount}, failed {offlineQueueSnapshot.failedCount}
                                                 </div>
-                                                <div className="rounded border border-slate-200 bg-white px-2 py-1">
-                                                    <strong className="text-slate-900">Replay:</strong>{' '}
+                                                <div className="rounded border border-border bg-card px-2 py-1">
+                                                    <strong className="text-foreground">Replay:</strong>{' '}
                                                     processed {syncRunSnapshot.processedCount}, ok {syncRunSnapshot.successCount}, failed {syncRunSnapshot.failedDuringRun}
                                                 </div>
                                             </div>
@@ -2096,24 +2096,24 @@ export const OnPageDebugger: React.FC = () => {
                                     <div className="flex flex-wrap items-start justify-between gap-3">
                                         <div className="min-w-0 flex-1">
                                             <div className="flex flex-wrap items-center gap-2">
-                                                <h3 className="text-sm font-semibold text-slate-900">
+                                                <h3 className="text-sm font-semibold text-foreground">
                                                     Map Runtime
                                                 </h3>
-                                                <span className="rounded-full border border-sky-200 bg-white px-2 py-0.5 text-[11px] font-medium text-sky-700">
+                                                <span className="rounded-full border border-sky-200 bg-card px-2 py-0.5 text-[11px] font-medium text-sky-700">
                                                     Active {activeMapRuntimePresetLabel}
                                                 </span>
-                                                <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] text-slate-600">
+                                                <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] text-muted-foreground">
                                                     Override {mapRuntimeResolution.overrideSource}
                                                 </span>
                                             </div>
-                                            <p className="mt-1 max-w-3xl text-[11px] leading-5 text-slate-600">
+                                            <p className="mt-1 max-w-3xl text-[11px] leading-5 text-muted-foreground">
                                                 Switch this session between Google-only and Mapbox visuals. The override writes a session cookie and reloads so planner maps, preview images, and OG endpoints all stay aligned.
                                             </p>
                                         </div>
                                         <button
                                             type="button"
                                             onClick={() => setMapRuntimeSectionExpanded((prev) => !prev)}
-                                            className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50"
+                                            className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 text-[11px] font-medium text-foreground hover:bg-secondary"
                                         >
                                             {mapRuntimeSectionExpanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
                                             {mapRuntimeSectionExpanded ? 'Hide Advanced Overrides' : 'Show Advanced Overrides'}
@@ -2121,30 +2121,30 @@ export const OnPageDebugger: React.FC = () => {
                                     </div>
 
                                     <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                                        <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-700">
-                                            <div className="text-[11px] uppercase tracking-wide text-slate-500">Default</div>
-                                            <div className="mt-1 text-sm font-semibold text-slate-900">
+                                        <div className="rounded-md border border-border bg-card px-3 py-2 text-foreground">
+                                            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Default</div>
+                                            <div className="mt-1 text-sm font-semibold text-foreground">
                                                 {formatMapRuntimePresetLabel(mapRuntimeResolution.defaultPreset)}
                                             </div>
                                         </div>
-                                        <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-700">
-                                            <div className="text-[11px] uppercase tracking-wide text-slate-500">Requested</div>
-                                            <div className="mt-1 text-sm font-semibold text-slate-900">
+                                        <div className="rounded-md border border-border bg-card px-3 py-2 text-foreground">
+                                            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Requested</div>
+                                            <div className="mt-1 text-sm font-semibold text-foreground">
                                                 {requestedMapRuntimePresetLabel}
                                             </div>
                                         </div>
-                                        <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-700">
-                                            <div className="text-[11px] uppercase tracking-wide text-slate-500">Mapbox Token</div>
-                                            <div className="mt-1 text-sm font-semibold text-slate-900">
+                                        <div className="rounded-md border border-border bg-card px-3 py-2 text-foreground">
+                                            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Mapbox Token</div>
+                                            <div className="mt-1 text-sm font-semibold text-foreground">
                                                 {mapRuntimeResolution.availability.mapboxAccessTokenAvailable ? 'Available' : 'Missing'}
                                             </div>
-                                            <div className="mt-1 text-[11px] text-slate-500">
+                                            <div className="mt-1 text-[11px] text-muted-foreground">
                                                 Present in env only. Token restrictions can still block live tiles.
                                             </div>
                                         </div>
-                                        <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-700">
-                                            <div className="text-[11px] uppercase tracking-wide text-slate-500">Google Key</div>
-                                            <div className="mt-1 text-sm font-semibold text-slate-900">
+                                        <div className="rounded-md border border-border bg-card px-3 py-2 text-foreground">
+                                            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Google Key</div>
+                                            <div className="mt-1 text-sm font-semibold text-foreground">
                                                 {mapRuntimeResolution.availability.googleMapsKeyAvailable ? 'Available' : 'Missing'}
                                             </div>
                                         </div>
@@ -2157,7 +2157,7 @@ export const OnPageDebugger: React.FC = () => {
                                             className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                 mapRuntimeResolution.overrideSource === 'default'
                                                     ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                    : 'border-border bg-card text-foreground hover:bg-secondary'
                                             }`}
                                         >
                                             Use Default
@@ -2168,7 +2168,7 @@ export const OnPageDebugger: React.FC = () => {
                                             className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                 mapRuntimeResolution.requestedPreset === 'google_all'
                                                     ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                    : 'border-border bg-card text-foreground hover:bg-secondary'
                                             }`}
                                         >
                                             Force Google
@@ -2179,7 +2179,7 @@ export const OnPageDebugger: React.FC = () => {
                                             className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                 mapRuntimeResolution.requestedPreset === 'mapbox_visual_google_services'
                                                     ? 'border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100'
-                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                    : 'border-border bg-card text-foreground hover:bg-secondary'
                                             }`}
                                         >
                                             Force Mapbox Visuals
@@ -2193,18 +2193,18 @@ export const OnPageDebugger: React.FC = () => {
                                             const mapboxSupported = mapRuntimeResolution.implementationCapabilities.mapbox[subsystem];
 
                                             return (
-                                                <div key={subsystem} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-700">
-                                                    <div className="text-[11px] uppercase tracking-wide text-slate-500">
+                                                <div key={subsystem} className="rounded-md border border-border bg-card px-3 py-2 text-foreground">
+                                                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
                                                         {MAP_RUNTIME_SUBSYSTEM_LABELS[subsystem]}
                                                     </div>
-                                                    <div className="mt-1 text-sm font-semibold text-slate-900">
+                                                    <div className="mt-1 text-sm font-semibold text-foreground">
                                                         {MAP_RUNTIME_IMPLEMENTATION_LABELS[effectiveImplementation]}
                                                     </div>
-                                                    <div className="mt-1 text-[11px] text-slate-500">
+                                                    <div className="mt-1 text-[11px] text-muted-foreground">
                                                         Requested {MAP_RUNTIME_IMPLEMENTATION_LABELS[requestedImplementation]}
                                                     </div>
                                                     {!mapboxSupported && (
-                                                        <div className="mt-2 text-[11px] text-slate-500">
+                                                        <div className="mt-2 text-[11px] text-muted-foreground">
                                                             Mapbox falls back to Google here in v1.
                                                         </div>
                                                     )}
@@ -2225,11 +2225,11 @@ export const OnPageDebugger: React.FC = () => {
                                     )}
 
                                     {mapRuntimeSectionExpanded && (
-                                        <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
+                                        <div className="mt-3 rounded-md border border-border bg-card p-3">
                                             <div className="flex flex-wrap items-center justify-between gap-2">
                                                 <div>
-                                                    <h4 className="text-sm font-semibold text-slate-900">Advanced Overrides</h4>
-                                                    <p className="mt-1 text-[11px] leading-5 text-slate-600">
+                                                    <h4 className="text-sm font-semibold text-foreground">Advanced Overrides</h4>
+                                                    <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
                                                         Mix individual subsystems when you want to test one implementation without changing the full preset.
                                                     </p>
                                                 </div>
@@ -2242,10 +2242,10 @@ export const OnPageDebugger: React.FC = () => {
                                                     const mapboxSupported = mapRuntimeResolution.implementationCapabilities.mapbox[subsystem];
 
                                                     return (
-                                                        <div key={subsystem} className="rounded border border-slate-200 bg-slate-50 p-3 text-slate-700">
+                                                        <div key={subsystem} className="rounded border border-border bg-secondary p-3 text-foreground">
                                                             <div className="flex items-center justify-between gap-2">
-                                                                <strong className="text-slate-900">{MAP_RUNTIME_SUBSYSTEM_LABELS[subsystem]}</strong>
-                                                                <span className="text-[11px] text-slate-500">
+                                                                <strong className="text-foreground">{MAP_RUNTIME_SUBSYSTEM_LABELS[subsystem]}</strong>
+                                                                <span className="text-[11px] text-muted-foreground">
                                                                     Requested {MAP_RUNTIME_IMPLEMENTATION_LABELS[requestedImplementation]} • Active {MAP_RUNTIME_IMPLEMENTATION_LABELS[effectiveImplementation]}
                                                                 </span>
                                                             </div>
@@ -2256,7 +2256,7 @@ export const OnPageDebugger: React.FC = () => {
                                                                     className={`rounded border px-2 py-1 font-medium ${
                                                                         requestedImplementation === 'google'
                                                                             ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+                                                                            : 'border-border bg-card text-foreground hover:bg-secondary'
                                                                     }`}
                                                                 >
                                                                     Google
@@ -2267,14 +2267,14 @@ export const OnPageDebugger: React.FC = () => {
                                                                     className={`rounded border px-2 py-1 font-medium ${
                                                                         requestedImplementation === 'mapbox'
                                                                             ? 'border-sky-300 bg-sky-50 text-sky-700'
-                                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+                                                                            : 'border-border bg-card text-foreground hover:bg-secondary'
                                                                     }`}
                                                                 >
                                                                     Mapbox
                                                                 </button>
                                                             </div>
                                                             {!mapboxSupported && (
-                                                                <div className="mt-2 text-[11px] text-slate-500">
+                                                                <div className="mt-2 text-[11px] text-muted-foreground">
                                                                     Mapbox requests for this subsystem fall back to Google in v1.
                                                                 </div>
                                                             )}
@@ -2293,7 +2293,7 @@ export const OnPageDebugger: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={openUmami}
-                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
                                         >
                                             <Globe size={16} weight="duotone" />
                                             Open Umami
@@ -2305,7 +2305,7 @@ export const OnPageDebugger: React.FC = () => {
                                             className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                 trackingEnabled
                                                     ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
-                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                    : 'border-border bg-card text-foreground hover:bg-secondary'
                                             }`}
                                         >
                                             <MagnifyingGlass size={16} weight="duotone" />
@@ -2318,7 +2318,7 @@ export const OnPageDebugger: React.FC = () => {
                                             className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                 prefetchOverlayEnabled
                                                     ? 'border-cyan-300 bg-cyan-50 text-cyan-700 hover:bg-cyan-100'
-                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                    : 'border-border bg-card text-foreground hover:bg-secondary'
                                             }`}
                                         >
                                             <RocketLaunch size={16} weight="duotone" />
@@ -2328,35 +2328,35 @@ export const OnPageDebugger: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={runViewTransitionAuditAndStore}
-                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
                                         >
                                             <RocketLaunch size={16} weight="duotone" />
                                             Refresh VT Diagnostics
                                         </button>
                                     </div>
 
-                                    <div className="mt-3 rounded-md border border-slate-200 bg-white p-2 text-xs">
+                                    <div className="mt-3 rounded-md border border-border bg-card p-2 text-xs">
                                         <button
                                             type="button"
                                             onClick={() => setPrefetchSectionExpanded((prev) => !prev)}
-                                            className="flex w-full items-center justify-between gap-2 rounded-md p-1 text-left hover:bg-slate-50"
+                                            className="flex w-full items-center justify-between gap-2 rounded-md p-1 text-left hover:bg-secondary"
                                         >
                                             <div className="flex items-center gap-2">
-                                                <span className="font-semibold uppercase tracking-wide text-slate-500">Navigation Prefetch</span>
+                                                <span className="font-semibold uppercase tracking-wide text-muted-foreground">Navigation Prefetch</span>
                                                 <span
                                                     title="Navigation prefetch warms route chunks before a user navigates, based on hover/focus/touch/viewport/idle intent."
-                                                    className="inline-flex items-center text-slate-500"
+                                                    className="inline-flex items-center text-muted-foreground"
                                                 >
                                                     <Info size={14} weight="duotone" />
                                                 </span>
                                                 <span
                                                     title="Guardrails: skips prefetching when disabled by env, on hidden tabs, with Save-Data, or on 2g/slow-2g connections."
-                                                    className="inline-flex items-center text-slate-500"
+                                                    className="inline-flex items-center text-muted-foreground"
                                                 >
                                                     <Info size={14} />
                                                 </span>
                                             </div>
-                                            <span className="inline-flex items-center gap-1 text-slate-500">
+                                            <span className="inline-flex items-center gap-1 text-muted-foreground">
                                                 {prefetchSectionExpanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
                                                 {prefetchSectionExpanded ? 'Hide' : 'Show'}
                                             </span>
@@ -2364,62 +2364,62 @@ export const OnPageDebugger: React.FC = () => {
 
                                         {prefetchSectionExpanded && (
                                             <div className="mt-2">
-                                                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-600">
+                                                <div className="rounded border border-border bg-secondary px-2 py-1 text-[11px] text-muted-foreground">
                                                     This warms likely next-route assets in the background to reduce follow-up navigation latency. The list below shows what was attempted in this session and why each attempt was used or skipped.
                                                 </div>
 
                                                 <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                        <strong className="text-slate-900">Enabled:</strong> {isPrefetchEnabled ? 'Yes' : 'No'}
+                                                    <div className="rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                        <strong className="text-foreground">Enabled:</strong> {isPrefetchEnabled ? 'Yes' : 'No'}
                                                     </div>
-                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                        <strong className="text-slate-900">Attempts:</strong> {prefetchStats.attempts}
+                                                    <div className="rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                        <strong className="text-foreground">Attempts:</strong> {prefetchStats.attempts}
                                                     </div>
-                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                        <strong className="text-slate-900">Completed:</strong> {prefetchStats.completed}
+                                                    <div className="rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                        <strong className="text-foreground">Completed:</strong> {prefetchStats.completed}
                                                     </div>
-                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                        <strong className="text-slate-900">Skips:</strong> {totalPrefetchSkips}
+                                                    <div className="rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                        <strong className="text-foreground">Skips:</strong> {totalPrefetchSkips}
                                                     </div>
                                                 </div>
 
                                                 <div className="mt-2 grid gap-2 lg:grid-cols-2">
-                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                        <strong className="text-slate-900">Skip reasons:</strong>{' '}
+                                                    <div className="rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                        <strong className="text-foreground">Skip reasons:</strong>{' '}
                                                         disabled {prefetchStats.skippedDisabled}, network {prefetchStats.skippedNetwork}, budget {prefetchStats.skippedBudget}, unsupported {prefetchStats.skippedUnsupportedPath}
                                                     </div>
-                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                        <strong className="text-slate-900">Triggers:</strong>{' '}
+                                                    <div className="rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                        <strong className="text-foreground">Triggers:</strong>{' '}
                                                         hover {prefetchStats.reasons.hover}, focus {prefetchStats.reasons.focus}, pointer {prefetchStats.reasons.pointerdown}, touch {prefetchStats.reasons.touchstart}, viewport {prefetchStats.reasons.viewport}, idle {prefetchStats.reasons.idle}
                                                     </div>
                                                 </div>
 
-                                                <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                    <strong className="text-slate-900">Recently warmed routes:</strong>{' '}
+                                                <div className="mt-2 rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                    <strong className="text-foreground">Recently warmed routes:</strong>{' '}
                                                     {recentlyWarmedRoutePaths.length > 0 ? recentlyWarmedRoutePaths.join(', ') : 'none yet'}
                                                 </div>
 
                                                 <div className="mt-2 grid gap-2 lg:grid-cols-2">
-                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                        <strong className="text-slate-900">Prefetched target modules:</strong>{' '}
+                                                    <div className="rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                        <strong className="text-foreground">Prefetched target modules:</strong>{' '}
                                                         {prefetchStats.prefetchedTargetKeys.length > 0
                                                             ? prefetchStats.prefetchedTargetKeys.slice(0, 16).join(', ')
                                                             : 'none yet'}
                                                     </div>
-                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                        <strong className="text-slate-900">Active queue:</strong>{' '}
+                                                    <div className="rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                        <strong className="text-foreground">Active queue:</strong>{' '}
                                                         queued {prefetchStats.queuedTargetKeys.length}, in-flight {prefetchStats.inFlightTargetKeys.length}
                                                     </div>
                                                 </div>
 
-                                                <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                    <strong className="text-slate-900">Recent prefetch attempts:</strong>{' '}
+                                                <div className="mt-2 rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                    <strong className="text-foreground">Recent prefetch attempts:</strong>{' '}
                                                     {recentPrefetchAttempts.length === 0 ? 'none captured yet' : ''}
                                                     {recentPrefetchAttempts.length > 0 && (
                                                         <ul className="mt-1 space-y-0.5">
                                                             {recentPrefetchAttempts.map((attempt) => (
                                                                 <li key={attempt.id}>
-                                                                    <span className="font-medium text-slate-900">{formatPrefetchAttemptTime(attempt.timestampMs)}</span>{' '}
+                                                                    <span className="font-medium text-foreground">{formatPrefetchAttemptTime(attempt.timestampMs)}</span>{' '}
                                                                     <span className="font-medium">{attempt.reason}</span>{' '}
                                                                     <span>• {formatPrefetchAttemptOutcome(attempt.outcome)}</span>{' '}
                                                                     <span>• {attempt.path}</span>
@@ -2432,19 +2432,19 @@ export const OnPageDebugger: React.FC = () => {
                                         )}
                                     </div>
 
-                                    <div className="mt-3 rounded-md border border-slate-200 bg-white p-2 text-xs">
+                                    <div className="mt-3 rounded-md border border-border bg-card p-2 text-xs">
                                         <button
                                             type="button"
                                             onClick={() => setViewTransitionSectionExpanded((prev) => !prev)}
-                                            className="flex w-full items-center justify-between gap-2 rounded-md p-1 text-left hover:bg-slate-50"
+                                            className="flex w-full items-center justify-between gap-2 rounded-md p-1 text-left hover:bg-secondary"
                                         >
                                             <div className="flex items-center gap-2">
-                                                <h3 className="font-semibold uppercase tracking-wide text-slate-500">
+                                                <h3 className="font-semibold uppercase tracking-wide text-muted-foreground">
                                                     View Transition Diagnostics
                                                 </h3>
-                                                <span className="text-slate-500">Updated {viewTransitionDiagnostics.updatedAtLabel || 'n/a'}</span>
+                                                <span className="text-muted-foreground">Updated {viewTransitionDiagnostics.updatedAtLabel || 'n/a'}</span>
                                             </div>
-                                            <span className="inline-flex items-center gap-1 text-slate-500">
+                                            <span className="inline-flex items-center gap-1 text-muted-foreground">
                                                 {viewTransitionSectionExpanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
                                                 {viewTransitionSectionExpanded ? 'Hide' : 'Show'}
                                             </span>
@@ -2453,25 +2453,25 @@ export const OnPageDebugger: React.FC = () => {
                                         {viewTransitionSectionExpanded && (
                                             <div className="mt-2">
                                                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                        <strong className="text-slate-900">API:</strong>{' '}
+                                                    <div className="rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                        <strong className="text-foreground">API:</strong>{' '}
                                                         {viewTransitionDiagnostics.supported ? 'available' : 'missing'}
                                                     </div>
-                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                        <strong className="text-slate-900">Reduced motion:</strong>{' '}
+                                                    <div className="rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                        <strong className="text-foreground">Reduced motion:</strong>{' '}
                                                         {viewTransitionDiagnostics.prefersReducedMotion ? 'on' : 'off'}
                                                     </div>
-                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                        <strong className="text-slate-900">Route:</strong> {viewTransitionDiagnostics.route}
+                                                    <div className="rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                        <strong className="text-foreground">Route:</strong> {viewTransitionDiagnostics.route}
                                                     </div>
-                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                        <strong className="text-slate-900">Anchors:</strong>{' '}
+                                                    <div className="rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                        <strong className="text-foreground">Anchors:</strong>{' '}
                                                         map {viewTransitionDiagnostics.tripMapAnchors}, title {viewTransitionDiagnostics.tripTitleAnchors}, lanes {viewTransitionDiagnostics.tripCityLaneAnchors}
                                                     </div>
                                                 </div>
 
-                                                <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                    <strong className="text-slate-900">Tracked anchor names:</strong>{' '}
+                                                <div className="mt-2 rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                    <strong className="text-foreground">Tracked anchor names:</strong>{' '}
                                                     {viewTransitionDiagnostics.trackedAnchorNames.length > 0
                                                         ? viewTransitionDiagnostics.trackedAnchorNames.join(', ')
                                                         : 'none detected'}
@@ -2484,14 +2484,14 @@ export const OnPageDebugger: React.FC = () => {
                                                     </div>
                                                 )}
 
-                                                <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                    <strong className="text-slate-900">Recent transition events:</strong>{' '}
+                                                <div className="mt-2 rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                    <strong className="text-foreground">Recent transition events:</strong>{' '}
                                                     {viewTransitionEvents.length === 0 ? 'none captured yet' : ''}
                                                     {viewTransitionEvents.length > 0 && (
                                                         <ul className="mt-1 space-y-0.5">
                                                             {viewTransitionEvents.map((entry) => (
                                                                 <li key={entry.id}>
-                                                                    <span className="font-medium text-slate-900">{entry.timestampLabel}</span>{' '}
+                                                                    <span className="font-medium text-foreground">{entry.timestampLabel}</span>{' '}
                                                                     <span className="font-medium">{entry.detail.phase}</span>
                                                                     {entry.detail.templateId ? ` • ${entry.detail.templateId}` : ''}
                                                                     {entry.detail.durationMs ? ` • ${entry.detail.durationMs}ms` : ''}
@@ -2520,7 +2520,7 @@ export const OnPageDebugger: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={openOgPlayground}
-                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
                                         >
                                             <ShareNetwork size={16} weight="duotone" />
                                             Open OG Playground
@@ -2530,7 +2530,7 @@ export const OnPageDebugger: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={runSeoAuditAndStore}
-                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
                                             >
                                                 <Compass size={16} weight="duotone" />
                                                 Run SEO Check
@@ -2544,7 +2544,7 @@ export const OnPageDebugger: React.FC = () => {
                                                 className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                     h1HighlightEnabled
                                                         ? 'border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100'
-                                                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                        : 'border-border bg-card text-foreground hover:bg-secondary'
                                                 }`}
                                             >
                                                 <Compass size={16} weight="duotone" />
@@ -2555,7 +2555,7 @@ export const OnPageDebugger: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={runA11yAuditAndStore}
-                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
                                         >
                                             <ShieldCheck size={16} weight="duotone" />
                                             Run A11y Check
@@ -2564,7 +2564,7 @@ export const OnPageDebugger: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={openLighthouse}
-                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
                                         >
                                             <RocketLaunch size={16} weight="duotone" />
                                             Open Lighthouse (PSI)
@@ -2578,15 +2578,15 @@ export const OnPageDebugger: React.FC = () => {
                                     )}
 
                                     {showSeoTools && (
-                                        <div className="mt-3 rounded-md border border-slate-200 bg-white p-2 text-xs">
-                                            <div className="font-semibold uppercase tracking-wide text-slate-500">Current Meta</div>
+                                        <div className="mt-3 rounded-md border border-border bg-card p-2 text-xs">
+                                            <div className="font-semibold uppercase tracking-wide text-muted-foreground">Current Meta</div>
                                             <div className="mt-2 grid gap-2">
-                                                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                    <strong className="text-slate-900">Title:</strong>{' '}
+                                                <div className="rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                    <strong className="text-foreground">Title:</strong>{' '}
                                                     {metaSnapshot.title || 'Missing <title>.'}
                                                 </div>
-                                                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                    <strong className="text-slate-900">Description:</strong>{' '}
+                                                <div className="rounded border border-border bg-secondary px-2 py-1 text-foreground">
+                                                    <strong className="text-foreground">Description:</strong>{' '}
                                                     {metaSnapshot.description || 'Missing meta description.'}
                                                 </div>
                                             </div>
@@ -2596,15 +2596,15 @@ export const OnPageDebugger: React.FC = () => {
                                     {(seoAudit || a11yAudit) && (
                                         <div className="mt-3 grid gap-3 lg:grid-cols-2">
                                             {showSeoTools && seoAudit && (
-                                                <div className="rounded-md border border-slate-200 bg-white p-2">
-                                                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">SEO Checks</h3>
+                                                <div className="rounded-md border border-border bg-card p-2">
+                                                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">SEO Checks</h3>
                                                     <ul className="mt-2 space-y-1 text-xs">
                                                         {seoAudit.checks.map((check) => (
                                                             <li key={check.label} className="flex items-start gap-2">
                                                                 <span className={check.status === 'pass' ? 'text-emerald-600' : 'text-amber-600'}>
                                                                     {check.status === 'pass' ? 'PASS' : 'WARN'}
                                                                 </span>
-                                                                <span className="text-slate-700">
+                                                                <span className="text-foreground">
                                                                     <strong>{check.label}:</strong> {check.detail}
                                                                 </span>
                                                             </li>
@@ -2614,15 +2614,15 @@ export const OnPageDebugger: React.FC = () => {
                                             )}
 
                                             {a11yAudit && (
-                                                <div className="rounded-md border border-slate-200 bg-white p-2">
-                                                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Accessibility Checks</h3>
+                                                <div className="rounded-md border border-border bg-card p-2">
+                                                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Accessibility Checks</h3>
                                                     <ul className="mt-2 space-y-1 text-xs">
                                                         {a11yAudit.checks.map((check) => (
                                                             <li key={check.label} className="flex items-start gap-2">
                                                                 <span className={check.status === 'pass' ? 'text-emerald-600' : 'text-amber-600'}>
                                                                     {check.status === 'pass' ? 'PASS' : 'WARN'}
                                                                 </span>
-                                                                <span className="text-slate-700">
+                                                                <span className="text-foreground">
                                                                     <strong>{check.label}:</strong> {check.detail}
                                                                 </span>
                                                             </li>

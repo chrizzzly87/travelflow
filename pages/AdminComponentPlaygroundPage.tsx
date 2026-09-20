@@ -218,7 +218,7 @@ const CTA_AUDIENCE_COPY: Record<CtaAudienceId, { label: string; eyebrow: string;
         body: 'Convert the current inspiration into a practical route with dates, stops, and transport notes.',
         primary: 'Start planning',
         secondary: 'See examples',
-        className: 'border-slate-200 bg-white text-slate-950',
+        className: 'border-border bg-card text-foreground',
     },
     profile: {
         label: 'Profile',
@@ -296,7 +296,7 @@ const PROFILE_STATUS_COPY: Record<ProfileTripStatusId, { label: string; badge: s
 };
 
 const STAMP_RARITY_COPY: Record<StampRarityId, { label: string; percent: string; className: string }> = {
-    common: { label: 'Common', percent: '42%', className: 'bg-slate-100 text-slate-700' },
+    common: { label: 'Common', percent: '42%', className: 'bg-secondary text-foreground' },
     rare: { label: 'Rare', percent: '12%', className: 'bg-indigo-100 text-indigo-700' },
     legendary: { label: 'Legendary', percent: '2%', className: 'bg-amber-100 text-amber-800' },
 };
@@ -405,10 +405,10 @@ const SliderControl: React.FC<SliderControlProps> = ({
     suffix = '',
     onChange,
 }) => (
-    <label className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3">
-        <span className="flex items-center justify-between gap-3 text-xs font-semibold uppercase text-slate-500">
+    <label className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3">
+        <span className="flex items-center justify-between gap-3 text-xs font-semibold uppercase text-muted-foreground">
             <span>{label}</span>
-            <span className="rounded bg-slate-100 px-2 py-0.5 text-slate-700">
+            <span className="rounded bg-secondary px-2 py-0.5 text-foreground">
                 {formatNumber(value)}{suffix}
             </span>
         </span>
@@ -444,7 +444,7 @@ const CopySettingsButton: React.FC<{
             onClick={() => {
                 void handleCopy();
             }}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary"
         >
             <Clipboard data-icon="inline-start" />
             {label}
@@ -457,13 +457,13 @@ const PlaygroundControls: React.FC<{
     copyButton: React.ReactNode;
     onReset: () => void;
 }> = ({ children, copyButton, onReset }) => (
-    <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+    <div className="flex flex-col gap-4 rounded-xl border border-border bg-secondary p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-slate-900">Settings</h3>
+            <h3 className="text-sm font-semibold text-foreground">Settings</h3>
             <button
                 type="button"
                 onClick={onReset}
-                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary"
             >
                 <RotateCcw data-icon="inline-start" />
                 Reset
@@ -595,7 +595,7 @@ const CobeGlobePreview: React.FC<{ settings: GlobePlaygroundSettings }> = ({ set
     return (
         <div
             ref={previewRef}
-            className="relative isolate flex aspect-video w-full min-w-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-950"
+            className="relative isolate flex aspect-video w-full min-w-0 items-center justify-center overflow-hidden rounded-2xl border border-border bg-slate-950"
         >
             <canvas
                 ref={canvasRef}
@@ -608,7 +608,7 @@ const CobeGlobePreview: React.FC<{ settings: GlobePlaygroundSettings }> = ({ set
                 <span className={cn('rounded-full border px-3 py-1 text-xs font-semibold', palette.accentClass)}>
                     {palette.label}
                 </span>
-                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
+                <span className="rounded-full border border-white/15 bg-card/10 px-3 py-1 text-xs font-semibold text-white">
                     COBE preview
                 </span>
             </div>
@@ -685,7 +685,7 @@ const PlaygroundBlock: React.FC<{
     preview: React.ReactNode;
     controls: React.ReactNode;
 }> = ({ title, description, preview, controls }) => (
-    <Card className="w-full rounded-xl border-slate-200 bg-white">
+    <Card className="w-full rounded-xl border-border bg-card">
         <CardHeader>
             <CardTitle>{title}</CardTitle>
             <CardDescription>{description}</CardDescription>
@@ -701,9 +701,9 @@ const ExampleTripCardPreview: React.FC<{ settings: ExampleTripCardSettings }> = 
     const template = EXAMPLE_TRIP_TEMPLATES[settings.template];
 
     return (
-        <article className="max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <article className="max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
             <div className={cn('relative h-40 bg-gradient-to-br', template.colorClass)}>
-                <svg className="absolute inset-0 size-full text-slate-500/35" viewBox="0 0 320 160" fill="none" preserveAspectRatio="none">
+                <svg className="absolute inset-0 size-full text-muted-foreground/35" viewBox="0 0 320 160" fill="none" preserveAspectRatio="none">
                     <path d="M42 112 C86 34 137 78 167 55 C205 26 234 92 286 48" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="8 8" />
                 </svg>
                 {template.route.map((city, index) => (
@@ -719,12 +719,12 @@ const ExampleTripCardPreview: React.FC<{ settings: ExampleTripCardSettings }> = 
             </div>
             <div className="space-y-3 p-4">
                 <div>
-                    <h3 className="text-base font-semibold text-slate-950">{template.title}</h3>
-                    <p className="mt-1 text-sm text-slate-600">{template.countries} · {template.days}</p>
+                    <h3 className="text-base font-semibold text-foreground">{template.title}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">{template.countries} · {template.days}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                     {template.route.map((city) => (
-                        <span key={city} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                        <span key={city} className="rounded-full border border-border bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground">
                             {city}
                         </span>
                     ))}
@@ -732,14 +732,14 @@ const ExampleTripCardPreview: React.FC<{ settings: ExampleTripCardSettings }> = 
                 {settings.showMiniCalendar ? (
                     <div className="grid grid-cols-3 gap-1.5">
                         {template.route.map((city, index) => (
-                            <span key={`${city}-lane`} className="rounded-lg bg-slate-100 px-2 py-1.5 text-center text-xs font-semibold text-slate-600">
+                            <span key={`${city}-lane`} className="rounded-lg bg-secondary px-2 py-1.5 text-center text-xs font-semibold text-muted-foreground">
                                 Day {index * 3 + 1}
                             </span>
                         ))}
                     </div>
                 ) : null}
                 {settings.showCreator ? (
-                    <p className="text-xs font-medium text-slate-500">Created by @travelflow</p>
+                    <p className="text-xs font-medium text-muted-foreground">Created by @travelflow</p>
                 ) : null}
             </div>
         </article>
@@ -750,19 +750,19 @@ const BlogPostCardPreview: React.FC<{ settings: BlogCardSettings }> = ({ setting
     const category = BLOG_CARD_CATEGORIES[settings.category];
 
     return (
-        <article className="group max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <article className="group max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
             <div className={cn('h-40 bg-gradient-to-br', category.imageClass)} />
             <div className="space-y-3 p-4">
-                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-muted-foreground">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-foreground">
                         <Tag data-icon="inline-start" />
                         {category.category}
                     </span>
                     <span>{settings.readingMinutes} min read</span>
                     <span>{settings.language.toUpperCase()}</span>
                 </div>
-                <h3 className="text-lg font-semibold leading-tight text-slate-950">{category.title}</h3>
-                <p className="text-sm leading-6 text-slate-600">{category.excerpt}</p>
+                <h3 className="text-lg font-semibold leading-tight text-foreground">{category.title}</h3>
+                <p className="text-sm leading-6 text-muted-foreground">{category.excerpt}</p>
                 {settings.featured ? (
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent-700">
                         <Star data-icon="inline-start" />
@@ -778,32 +778,32 @@ const ProfileTripCardPreview: React.FC<{ settings: ProfileTripCardSettings }> = 
     const status = PROFILE_STATUS_COPY[settings.status];
 
     return (
-        <article className="max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <article className="max-w-md overflow-hidden rounded-xl border border-border bg-card">
             <div className={cn('relative aspect-[16/9] bg-gradient-to-br', settings.status === 'generationFailed' ? 'from-rose-100 to-slate-100' : settings.status === 'expired' ? 'from-amber-100 to-slate-100' : 'from-cyan-100 to-indigo-100')}>
                 <div className="absolute inset-x-5 top-5 flex items-center justify-between gap-2">
                     <span className={cn('rounded-full border px-2.5 py-1 text-xs font-semibold', status.className)}>{status.badge}</span>
-                    {!settings.isPublic ? <span className="rounded-full bg-white/80 px-2.5 py-1 text-xs font-semibold text-slate-700">Hidden</span> : null}
+                    {!settings.isPublic ? <span className="rounded-full bg-card/80 px-2.5 py-1 text-xs font-semibold text-foreground">Hidden</span> : null}
                 </div>
             </div>
             <div className="space-y-3 p-4">
                 <div className="flex items-start justify-between gap-3">
                     <div>
-                        <h3 className="text-base font-semibold text-slate-950">Kyoto Rail Plan</h3>
-                        <p className="mt-1 text-sm text-slate-600">9 days · 4 cities · Rail first</p>
+                        <h3 className="text-base font-semibold text-foreground">Kyoto Rail Plan</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">9 days · 4 cities · Rail first</p>
                     </div>
                     {settings.isPinned ? <Pin className="size-4 text-accent-600" aria-hidden="true" /> : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
                     {['Tokyo', 'Kyoto', 'Osaka'].map((city) => (
-                        <span key={city} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">{city}</span>
+                        <span key={city} className="rounded-full border border-border bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground">{city}</span>
                     ))}
                 </div>
                 {settings.showActions ? (
-                    <div className="flex items-center gap-2 border-t border-slate-100 pt-3">
-                        <button type="button" className="inline-flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600">
+                    <div className="flex items-center gap-2 border-t border-border pt-3">
+                        <button type="button" className="inline-flex size-8 items-center justify-center rounded-lg border border-border text-muted-foreground">
                             <Eye className="size-4" aria-hidden="true" />
                         </button>
-                        <button type="button" className={cn('inline-flex size-8 items-center justify-center rounded-lg border border-slate-200', settings.isFavorite ? 'text-amber-600' : 'text-slate-600')}>
+                        <button type="button" className={cn('inline-flex size-8 items-center justify-center rounded-lg border border-border', settings.isFavorite ? 'text-amber-600' : 'text-muted-foreground')}>
                             <Star className="size-4" aria-hidden="true" />
                         </button>
                     </div>
@@ -821,19 +821,19 @@ const StampCardPreview: React.FC<{ settings: StampCardSettings }> = ({ settings 
             type="button"
             aria-pressed={settings.selected}
             className={cn(
-                'flex aspect-square max-w-56 flex-col overflow-hidden rounded-xl border bg-white p-3 text-left shadow-sm transition',
-                settings.selected ? 'border-accent-300 shadow-accent-100' : 'border-slate-200',
+                'flex aspect-square max-w-56 flex-col overflow-hidden rounded-xl border bg-card p-3 text-left shadow-sm transition',
+                settings.selected ? 'border-accent-300 shadow-accent-100' : 'border-border',
                 settings.achieved ? '' : 'opacity-80 saturate-50',
             )}
         >
-            <div className="flex flex-1 items-center justify-center rounded-lg bg-slate-50">
+            <div className="flex flex-1 items-center justify-center rounded-lg bg-secondary">
                 <div className={cn('flex size-24 items-center justify-center rounded-full', rarity.className)}>
                     <Trophy className="size-10" aria-hidden="true" />
                 </div>
             </div>
             <div className="mt-3 text-center">
-                <p className="text-xs font-bold text-slate-800">Urban Explorer</p>
-                <p className="text-[10px] font-medium text-slate-500">{rarity.percent} rarity · {settings.achieved ? 'Unlocked' : 'Locked'}</p>
+                <p className="text-xs font-bold text-foreground">Urban Explorer</p>
+                <p className="text-[10px] font-medium text-muted-foreground">{rarity.percent} rarity · {settings.achieved ? 'Unlocked' : 'Locked'}</p>
             </div>
         </button>
     );
@@ -845,17 +845,17 @@ const FeatureCardPreview: React.FC<{ settings: FeatureCardSettings }> = ({ setti
     return (
         <article className={cn('max-w-md rounded-2xl border p-5', feature.className)}>
             <div className="flex items-start justify-between gap-3">
-                <span className="inline-flex size-10 items-center justify-center rounded-xl bg-white/80 text-accent-700">
+                <span className="inline-flex size-10 items-center justify-center rounded-xl bg-card/80 text-accent-700">
                     {feature.icon}
                 </span>
-                {settings.showMetric ? <span className="rounded-full bg-white/80 px-2.5 py-1 text-xs font-semibold text-slate-700">{feature.metric}</span> : null}
+                {settings.showMetric ? <span className="rounded-full bg-card/80 px-2.5 py-1 text-xs font-semibold text-foreground">{feature.metric}</span> : null}
             </div>
-            <h3 className="mt-5 text-lg font-semibold text-slate-950">{feature.title}</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">{feature.body}</p>
+            <h3 className="mt-5 text-lg font-semibold text-foreground">{feature.title}</h3>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">{feature.body}</p>
             {settings.showMedia ? (
                 <div className="mt-4 grid grid-cols-3 gap-2">
                     {[0, 1, 2].map((item) => (
-                        <span key={item} className="h-16 rounded-lg bg-white/75" />
+                        <span key={item} className="h-16 rounded-lg bg-card/75" />
                     ))}
                 </div>
             ) : null}
@@ -867,15 +867,15 @@ const AdminSurfacePreview: React.FC<{ settings: AdminSurfaceSettings }> = ({ set
     const state = ADMIN_SURFACE_COPY[settings.state];
 
     return (
-        <article className="max-w-md rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <article className="max-w-md rounded-2xl border border-border bg-card p-4 shadow-sm">
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Admin card</p>
-                    <h3 className="mt-1 text-lg font-semibold text-slate-950">{state.title}</h3>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admin card</p>
+                    <h3 className="mt-1 text-lg font-semibold text-foreground">{state.title}</h3>
                 </div>
                 <span className={cn('rounded-full border px-2.5 py-1 text-xs font-semibold', state.badgeClassName)}>{state.label}</span>
             </div>
-            <p className="mt-3 text-sm leading-6 text-slate-600">{state.body}</p>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">{state.body}</p>
             {settings.showMetadata ? (
                 <dl className="mt-4 grid grid-cols-3 gap-2 text-xs">
                     {[
@@ -883,15 +883,15 @@ const AdminSurfacePreview: React.FC<{ settings: AdminSurfaceSettings }> = ({ set
                         ['Latency', '1.4s'],
                         ['Errors', settings.state === 'healthy' ? '0' : '3'],
                     ].map(([label, value]) => (
-                        <div key={label} className="rounded-lg bg-slate-50 px-3 py-2">
-                            <dt className="text-slate-500">{label}</dt>
-                            <dd className="font-semibold text-slate-900">{value}</dd>
+                        <div key={label} className="rounded-lg bg-secondary px-3 py-2">
+                            <dt className="text-muted-foreground">{label}</dt>
+                            <dd className="font-semibold text-foreground">{value}</dd>
                         </div>
                     ))}
                 </dl>
             ) : null}
             {settings.showAction ? (
-                <button type="button" className="mt-4 inline-flex min-h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700">
+                <button type="button" className="mt-4 inline-flex min-h-9 items-center rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground">
                     Review
                 </button>
             ) : null}
@@ -903,7 +903,7 @@ const CalendarCardPreview: React.FC<{ settings: CalendarCardSettings }> = ({ set
     const scope = CALENDAR_SCOPE_COPY[settings.scope];
 
     return (
-        <section className="max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="max-w-xl rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex min-w-0 items-start gap-3">
                     <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-700 ring-1 ring-accent-200">
@@ -911,9 +911,9 @@ const CalendarCardPreview: React.FC<{ settings: CalendarCardSettings }> = ({ set
                     </span>
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-wide text-accent-700">{scope.label}</p>
-                        <h3 className="mt-1 text-lg font-semibold text-slate-900">{scope.title}</h3>
-                        {settings.showDescription ? <p className="mt-1 text-sm text-slate-600">{scope.body}</p> : null}
-                        <p className="mt-1 text-xs font-medium text-slate-500">{settings.eventCount} calendar events</p>
+                        <h3 className="mt-1 text-lg font-semibold text-foreground">{scope.title}</h3>
+                        {settings.showDescription ? <p className="mt-1 text-sm text-muted-foreground">{scope.body}</p> : null}
+                        <p className="mt-1 text-xs font-medium text-muted-foreground">{settings.eventCount} calendar events</p>
                     </div>
                 </div>
                 <button type="button" className="inline-flex items-center gap-1.5 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-800">
@@ -977,15 +977,15 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                 return (
                                     <section className={cn('rounded-2xl border p-6 shadow-sm', ctaCopy.className)}>
                                         <div className="max-w-3xl">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{ctaCopy.eyebrow}</p>
-                                            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{sampleHeadline}</h2>
-                                            <p className="mt-3 text-sm leading-6 text-slate-600">{ctaCopy.body}</p>
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{ctaCopy.eyebrow}</p>
+                                            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground">{sampleHeadline}</h2>
+                                            <p className="mt-3 text-sm leading-6 text-muted-foreground">{ctaCopy.body}</p>
                                             <div className="mt-5 flex flex-wrap gap-2">
                                                 <button type="button" className="rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white">
                                                     {ctaCopy.primary}
                                                 </button>
                                                 {ctaSettings.showSecondaryAction ? (
-                                                    <button type="button" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                                                    <button type="button" className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground">
                                                         {ctaCopy.secondary}
                                                     </button>
                                                 ) : null}
@@ -999,12 +999,12 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     onReset={() => setCtaSettings(CTA_DEFAULTS)}
                                     copyButton={<CopySettingsButton label="Copy CTA settings" variableName="ctaSectionSettings" settings={ctaSnippetSettings} />}
                                 >
-                                    <label htmlFor={ctaHeadlineInputId} className="flex flex-col gap-2 text-xs font-semibold uppercase text-slate-500">
+                                    <label htmlFor={ctaHeadlineInputId} className="flex flex-col gap-2 text-xs font-semibold uppercase text-muted-foreground">
                                         Headline
                                         <Input id={ctaHeadlineInputId} value={sampleHeadline} onChange={(event) => setSampleHeadline(event.target.value)} />
                                     </label>
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-slate-500">Audience</span>
+                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Audience</span>
                                         <Select
                                             value={ctaSettings.audience}
                                             onValueChange={(audience) => setCtaSettings((current) => ({ ...current, audience: audience as CtaAudienceId }))}
@@ -1019,7 +1019,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                         <span>Secondary action</span>
                                         <Switch
                                             aria-label="Secondary action"
@@ -1043,7 +1043,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy settings panel settings" variableName="settingsPanelSettings" settings={settingsPanelSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-slate-500">Row layout</span>
+                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Row layout</span>
                                         <Select
                                             value={settingsPanelSettings.layout}
                                             onValueChange={(layout) => setSettingsPanelSettings((current) => ({ ...current, layout: layout as SettingsPanelDensityId }))}
@@ -1057,15 +1057,15 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                         <span>Section icons</span>
                                         <Switch aria-label="Section icons" checked={settingsPanelSettings.showSectionIcon} onCheckedChange={(showSectionIcon) => setSettingsPanelSettings((current) => ({ ...current, showSectionIcon }))} />
                                     </div>
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                         <span>Row descriptions</span>
                                         <Switch aria-label="Row descriptions" checked={settingsPanelSettings.showRowDescriptions} onCheckedChange={(showRowDescriptions) => setSettingsPanelSettings((current) => ({ ...current, showRowDescriptions }))} />
                                     </div>
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                         <span>Row note</span>
                                         <Switch aria-label="Row note" checked={settingsPanelSettings.showNote} onCheckedChange={(showNote) => setSettingsPanelSettings((current) => ({ ...current, showNote }))} />
                                     </div>
@@ -1083,7 +1083,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy globe settings" variableName="globeSettings" settings={globeSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-slate-500">Globe palette</span>
+                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Globe palette</span>
                                         <Select
                                             value={globeSettings.palette}
                                             onValueChange={(palette) => setGlobeSettings((current) => ({ ...current, palette: palette as GlobePaletteId }))}
@@ -1104,7 +1104,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     <SliderControl label="Arc height" value={globeSettings.arcHeight} min={0.15} max={1.4} step={0.01} onChange={(arcHeight) => setGlobeSettings((current) => ({ ...current, arcHeight }))} />
                                     <SliderControl label="Marker elevation" value={globeSettings.markerElevation} min={0.005} max={0.08} step={0.001} onChange={(markerElevation) => setGlobeSettings((current) => ({ ...current, markerElevation }))} />
                                     <SliderControl label="Globe tilt" value={globeSettings.theta} min={-0.35} max={0.35} step={0.01} onChange={(theta) => setGlobeSettings((current) => ({ ...current, theta }))} />
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                         <span>Animate rotation</span>
                                         <Switch aria-label="Animate rotation" checked={globeSettings.animated} onCheckedChange={(animated) => setGlobeSettings((current) => ({ ...current, animated }))} />
                                     </div>
@@ -1122,7 +1122,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy example trip settings" variableName="exampleTripCardSettings" settings={exampleTripSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-slate-500">Template</span>
+                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Template</span>
                                         <Select value={exampleTripSettings.template} onValueChange={(template) => setExampleTripSettings((current) => ({ ...current, template: template as ExampleTripTemplateId }))}>
                                             <SelectTrigger aria-label="Example trip template"><SelectValue placeholder="Choose template" /></SelectTrigger>
                                             <SelectContent>
@@ -1130,11 +1130,11 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                         <span>Creator attribution</span>
                                         <Switch aria-label="Creator attribution" checked={exampleTripSettings.showCreator} onCheckedChange={(showCreator) => setExampleTripSettings((current) => ({ ...current, showCreator }))} />
                                     </div>
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                         <span>Mini calendar</span>
                                         <Switch aria-label="Mini calendar" checked={exampleTripSettings.showMiniCalendar} onCheckedChange={(showMiniCalendar) => setExampleTripSettings((current) => ({ ...current, showMiniCalendar }))} />
                                     </div>
@@ -1152,7 +1152,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy blog card settings" variableName="blogPostCardSettings" settings={blogCardSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-slate-500">Category</span>
+                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Category</span>
                                         <Select value={blogCardSettings.category} onValueChange={(category) => setBlogCardSettings((current) => ({ ...current, category: category as BlogCardCategoryId }))}>
                                             <SelectTrigger aria-label="Blog category"><SelectValue placeholder="Choose category" /></SelectTrigger>
                                             <SelectContent>
@@ -1161,7 +1161,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                         </Select>
                                     </div>
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-slate-500">Language</span>
+                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Language</span>
                                         <Select value={blogCardSettings.language} onValueChange={(language) => setBlogCardSettings((current) => ({ ...current, language: language as 'en' | 'de' }))}>
                                             <SelectTrigger aria-label="Blog language"><SelectValue placeholder="Choose language" /></SelectTrigger>
                                             <SelectContent>
@@ -1171,7 +1171,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                         </Select>
                                     </div>
                                     <SliderControl label="Reading time" value={blogCardSettings.readingMinutes} min={2} max={14} step={1} suffix=" min" onChange={(readingMinutes) => setBlogCardSettings((current) => ({ ...current, readingMinutes }))} />
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                         <span>Featured state</span>
                                         <Switch aria-label="Featured state" checked={blogCardSettings.featured} onCheckedChange={(featured) => setBlogCardSettings((current) => ({ ...current, featured }))} />
                                     </div>
@@ -1189,7 +1189,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy profile trip settings" variableName="profileTripCardSettings" settings={profileTripSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-slate-500">Status</span>
+                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Status</span>
                                         <Select value={profileTripSettings.status} onValueChange={(status) => setProfileTripSettings((current) => ({ ...current, status: status as ProfileTripStatusId }))}>
                                             <SelectTrigger aria-label="Profile trip status"><SelectValue placeholder="Choose status" /></SelectTrigger>
                                             <SelectContent>
@@ -1203,7 +1203,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                         ['Pinned', 'isPinned'],
                                         ['Public', 'isPublic'],
                                     ].map(([label, key]) => (
-                                        <div key={key} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                        <div key={key} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                             <span>{label}</span>
                                             <Switch
                                                 aria-label={label}
@@ -1226,7 +1226,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy stamp card settings" variableName="profileStampCardSettings" settings={stampCardSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-slate-500">Rarity</span>
+                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Rarity</span>
                                         <Select value={stampCardSettings.rarity} onValueChange={(rarity) => setStampCardSettings((current) => ({ ...current, rarity: rarity as StampRarityId }))}>
                                             <SelectTrigger aria-label="Stamp rarity"><SelectValue placeholder="Choose rarity" /></SelectTrigger>
                                             <SelectContent>
@@ -1234,11 +1234,11 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                         <span>Achieved</span>
                                         <Switch aria-label="Achieved" checked={stampCardSettings.achieved} onCheckedChange={(achieved) => setStampCardSettings((current) => ({ ...current, achieved }))} />
                                     </div>
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                         <span>Selected</span>
                                         <Switch aria-label="Selected" checked={stampCardSettings.selected} onCheckedChange={(selected) => setStampCardSettings((current) => ({ ...current, selected }))} />
                                     </div>
@@ -1256,7 +1256,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy feature card settings" variableName="featureCardSettings" settings={featureCardSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-slate-500">Variant</span>
+                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Variant</span>
                                         <Select value={featureCardSettings.variant} onValueChange={(variant) => setFeatureCardSettings((current) => ({ ...current, variant: variant as FeatureCardVariantId }))}>
                                             <SelectTrigger aria-label="Feature card variant"><SelectValue placeholder="Choose variant" /></SelectTrigger>
                                             <SelectContent>
@@ -1264,11 +1264,11 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                         <span>Metric pill</span>
                                         <Switch aria-label="Metric pill" checked={featureCardSettings.showMetric} onCheckedChange={(showMetric) => setFeatureCardSettings((current) => ({ ...current, showMetric }))} />
                                     </div>
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                         <span>Media preview</span>
                                         <Switch aria-label="Media preview" checked={featureCardSettings.showMedia} onCheckedChange={(showMedia) => setFeatureCardSettings((current) => ({ ...current, showMedia }))} />
                                     </div>
@@ -1286,7 +1286,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy admin surface settings" variableName="adminSurfaceSettings" settings={adminSurfaceSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-slate-500">State</span>
+                                        <span className="text-xs font-semibold uppercase text-muted-foreground">State</span>
                                         <Select value={adminSurfaceSettings.state} onValueChange={(state) => setAdminSurfaceSettings((current) => ({ ...current, state: state as AdminSurfaceStateId }))}>
                                             <SelectTrigger aria-label="Admin surface state"><SelectValue placeholder="Choose state" /></SelectTrigger>
                                             <SelectContent>
@@ -1294,11 +1294,11 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                         <span>Metadata</span>
                                         <Switch aria-label="Metadata" checked={adminSurfaceSettings.showMetadata} onCheckedChange={(showMetadata) => setAdminSurfaceSettings((current) => ({ ...current, showMetadata }))} />
                                     </div>
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                         <span>Action</span>
                                         <Switch aria-label="Action" checked={adminSurfaceSettings.showAction} onCheckedChange={(showAction) => setAdminSurfaceSettings((current) => ({ ...current, showAction }))} />
                                     </div>
@@ -1316,7 +1316,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                     copyButton={<CopySettingsButton label="Copy calendar card settings" variableName="calendarCardSettings" settings={calendarCardSnippetSettings} />}
                                 >
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-semibold uppercase text-slate-500">Scope</span>
+                                        <span className="text-xs font-semibold uppercase text-muted-foreground">Scope</span>
                                         <Select value={calendarCardSettings.scope} onValueChange={(scope) => setCalendarCardSettings((current) => ({ ...current, scope: scope as CalendarCardScopeId }))}>
                                             <SelectTrigger aria-label="Calendar scope"><SelectValue placeholder="Choose scope" /></SelectTrigger>
                                             <SelectContent>
@@ -1325,7 +1325,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                                         </Select>
                                     </div>
                                     <SliderControl label="Event count" value={calendarCardSettings.eventCount} min={1} max={8} step={1} onChange={(eventCount) => setCalendarCardSettings((current) => ({ ...current, eventCount }))} />
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 text-sm font-medium text-foreground">
                                         <span>Description</span>
                                         <Switch aria-label="Description" checked={calendarCardSettings.showDescription} onCheckedChange={(showDescription) => setCalendarCardSettings((current) => ({ ...current, showDescription }))} />
                                     </div>
@@ -1346,7 +1346,7 @@ export const AdminComponentPlaygroundPage: React.FC = () => {
                             ['adminSurfaceSettings', adminSurfaceSnippetSettings],
                             ['calendarCardSettings', calendarCardSnippetSettings],
                         ].map(([name, settings]) => (
-                            <Card key={name as string} className="rounded-xl border-slate-200 bg-white">
+                            <Card key={name as string} className="rounded-xl border-border bg-card">
                                 <CardHeader>
                                     <CardTitle>{name as string}</CardTitle>
                                     <CardDescription>Copyable code snapshot for the current playground state.</CardDescription>

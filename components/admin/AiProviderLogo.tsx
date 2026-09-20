@@ -74,7 +74,7 @@ export const AiProviderLogo: React.FC<AiProviderLogoProps> = ({
             aria-hidden="true"
             title={`${metadata.label} logo`}
             className={[
-                'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white',
+                'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card',
                 className || '',
             ].join(' ').trim()}
             style={{ width: size, height: size, fontSize, lineHeight: 1 }}
@@ -88,7 +88,7 @@ export const AiProviderLogo: React.FC<AiProviderLogoProps> = ({
                     className="size-[72%] object-contain"
                 />
             ) : (
-                <span className="font-bold uppercase tracking-tight text-slate-600">AI</span>
+                <span className="font-bold uppercase tracking-tight text-muted-foreground">AI</span>
             )}
         </span>
     );

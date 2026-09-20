@@ -204,7 +204,7 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
 
     const tabButtonClass = (value: DiscoverTab): string => (
         `inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-semibold transition-colors ${
-            tab === value ? 'bg-white text-accent-600 shadow-sm' : 'text-slate-500'
+            tab === value ? 'bg-card text-accent-600 shadow-sm' : 'text-muted-foreground'
         }`
     );
 
@@ -221,8 +221,8 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
                 className="inset-0 left-0 top-0 h-dvh max-h-none w-full max-w-none translate-x-0 translate-y-0 rounded-none border-0"
             >
                 <DialogTitle className="sr-only">Discover things to do</DialogTitle>
-                <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-                    <div className="inline-flex items-center rounded-full bg-slate-100 p-0.5">
+                <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+                    <div className="inline-flex items-center rounded-full bg-secondary p-0.5">
                         <button
                             type="button"
                             onClick={() => setTab('discover')}
@@ -264,7 +264,7 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="inline-flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100"
+                        className="inline-flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary"
                         aria-label="Close discover"
                     >
                         <X size={18} />
@@ -273,7 +273,7 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
 
                 {tab === 'discover' && (
                     isLoading ? (
-                        <div className="flex flex-1 items-center justify-center text-sm text-slate-500">
+                        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
                             Loading ideas…
                         </div>
                     ) : (
@@ -285,8 +285,8 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
                             canUndo={Boolean(lastDecision)}
                             emptyState={pool.length === 0 ? (
                                 <>
-                                    <p className="text-base font-semibold text-slate-900">No ideas for this trip yet</p>
-                                    <p className="mt-1 text-sm text-slate-500">
+                                    <p className="text-base font-semibold text-foreground">No ideas for this trip yet</p>
+                                    <p className="mt-1 text-sm text-muted-foreground">
                                         Recommendations are available for Taiwan so far.
                                     </p>
                                 </>
@@ -305,7 +305,7 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
                             <button
                                 type="button"
                                 onClick={() => removeSaved(recommendation.id)}
-                                className="inline-flex size-8 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-rose-600"
+                                className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-rose-600"
                                 aria-label={`Remove ${recommendation.title}`}
                             >
                                 <Trash2 size={15} />
@@ -327,7 +327,7 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
                                 type="button"
                                 onClick={() => restoreSkipped(recommendation.id)}
                                 data-testid="recommendation-restore"
-                                className="inline-flex size-8 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-accent-600"
+                                className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-accent-600"
                                 aria-label={`Put ${recommendation.title} back in the deck`}
                             >
                                 <RotateCcw size={15} />

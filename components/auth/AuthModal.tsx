@@ -51,19 +51,19 @@ const BASE_OAUTH_BUTTONS: OAuthButtonConfig[] = [
     {
         provider: 'google',
         labelKey: 'actions.oauthGoogle',
-        buttonClassName: 'hover:border-[#ea4335]/40 hover:bg-[#fff7f7]',
+        buttonClassName: 'hover:border-[#ea4335]/40 hover:bg-[#fff7f7] dark:hover:bg-[#ea4335]/12 dark:hover:border-[#ea4335]/50',
     },
     {
         provider: 'facebook',
         labelKey: 'actions.oauthFacebook',
-        buttonClassName: 'hover:border-[#1877f2]/40 hover:bg-[#f3f8ff]',
+        buttonClassName: 'hover:border-[#1877f2]/40 hover:bg-[#f3f8ff] dark:hover:bg-[#1877f2]/14 dark:hover:border-[#1877f2]/50',
     },
 ];
 
 const KAKAO_OAUTH_BUTTON: OAuthButtonConfig = {
     provider: 'kakao',
     labelKey: 'actions.oauthKakao',
-    buttonClassName: 'hover:border-[#FFE812]/60 hover:bg-[#fffde6]',
+    buttonClassName: 'hover:border-[#FFE812]/60 hover:bg-[#fffde6] dark:hover:bg-[#FFE812]/12 dark:hover:border-[#FFE812]/50',
 };
 
 const getOAuthButtons = (language: string): OAuthButtonConfig[] => {
@@ -177,7 +177,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const emailInputId = 'auth-modal-email';
     const secondaryInputId = 'auth-modal-secondary';
     const rememberLoginInputId = 'auth-modal-remember-login';
-    const fieldClassName = 'mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus:ring-rose-200 dark:border-border dark:bg-card dark:text-foreground';
+    const fieldClassName = 'mt-1 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-accent-500 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus:ring-rose-200 dark:border-border dark:bg-card dark:text-foreground';
 
     const updateAuthFeedback = useCallback((patch: Partial<AuthFeedbackState>) => {
         setAuthFeedback((current) => ({ ...current, ...patch }));
@@ -597,21 +597,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             />
             <div
                 ref={dialogRef}
-                className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl sm:max-h-[calc(100dvh-3rem)] dark:border-border dark:bg-card"
+                className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col rounded-2xl border border-border bg-card shadow-2xl sm:max-h-[calc(100dvh-3rem)] dark:border-border dark:bg-card"
                 role="dialog"
                 aria-modal="true"
                 aria-label="Authentication modal"
             >
-                <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-3 sm:py-4 dark:border-border">
+                <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border px-5 py-3 sm:py-4 dark:border-border">
                     <div className="min-w-0">
                         <p className="hidden text-xs font-semibold uppercase tracking-wide text-accent-600 sm:block dark:text-accent-300">{t('hero.eyebrow')}</p>
-                        <h2 className="text-base font-semibold text-slate-900 sm:mt-1 sm:text-lg dark:text-foreground">{t('hero.title')}</h2>
-                        <p className="mt-1 hidden text-sm text-slate-600 sm:block dark:text-muted-foreground">{t('hero.description')}</p>
+                        <h2 className="text-base font-semibold text-foreground sm:mt-1 sm:text-lg dark:text-foreground">{t('hero.title')}</h2>
+                        <p className="mt-1 hidden text-sm text-muted-foreground sm:block dark:text-muted-foreground">{t('hero.description')}</p>
                     </div>
                     <button
                         ref={closeButtonRef}
                         type="button"
-                        className="inline-flex size-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:border-border dark:text-muted-foreground dark:hover:bg-secondary dark:hover:text-foreground"
+                        className="inline-flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary hover:text-foreground dark:border-border dark:text-muted-foreground dark:hover:bg-secondary dark:hover:text-foreground"
                         onClick={() => {
                             if (sessionRestoreState === 'restoring') return;
                             trackEvent('auth__modal--close', { source, reason: 'dismiss' });
@@ -647,13 +647,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                     {sessionRestoreState !== 'restored' && (
                         <>
-                            <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-border dark:bg-secondary">
+                            <div className="inline-flex rounded-xl border border-border bg-secondary p-1 dark:border-border dark:bg-secondary">
                                 <button
                                     type="button"
                                     onClick={() => handleModeChange('login')}
                                     disabled={isSubmitting || isRestoreBlocked}
                                     className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                                        mode === 'login' ? 'bg-white text-slate-900 shadow-sm dark:bg-card dark:text-foreground' : 'text-slate-500 hover:text-slate-800 dark:text-muted-foreground dark:hover:text-foreground'
+                                        mode === 'login' ? 'bg-card text-foreground shadow-sm dark:bg-card dark:text-foreground' : 'text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground'
                                     }`}
                                 >
                                     {t('tabs.login')}
@@ -663,7 +663,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                     onClick={() => handleModeChange('register')}
                                     disabled={isSubmitting || isRestoreBlocked}
                                     className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                                        mode === 'register' ? 'bg-white text-slate-900 shadow-sm dark:bg-card dark:text-foreground' : 'text-slate-500 hover:text-slate-800 dark:text-muted-foreground dark:hover:text-foreground'
+                                        mode === 'register' ? 'bg-card text-foreground shadow-sm dark:bg-card dark:text-foreground' : 'text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground'
                                     }`}
                                 >
                                     {t('tabs.register')}
@@ -674,7 +674,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 <div className="block">
                                     <label
                                         htmlFor={emailInputId}
-                                        className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-muted-foreground"
+                                        className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground dark:text-muted-foreground"
                                     >
                                         {t('labels.email')}
                                     </label>
@@ -698,7 +698,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 <div className="block">
                                     <label
                                         htmlFor={secondaryInputId}
-                                        className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-muted-foreground"
+                                        className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground dark:text-muted-foreground"
                                     >
                                         {t('labels.password')}
                                     </label>
@@ -720,7 +720,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                     <div className="space-y-2">
                                         <label
                                             htmlFor={rememberLoginInputId}
-                                            className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-800 dark:text-foreground"
+                                            className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-foreground dark:text-foreground"
                                         >
                                             <Checkbox
                                                 id={rememberLoginInputId}
@@ -755,7 +755,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                     </div>
                                 )}
                                 {mode === 'register' && (
-                                    <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:border-border dark:bg-secondary dark:text-foreground">
+                                    <label className="flex items-start gap-2 rounded-lg border border-border bg-secondary px-3 py-2 text-xs text-foreground dark:border-border dark:bg-secondary dark:text-foreground">
                                         <input
                                             type="checkbox"
                                             checked={hasAcceptedTerms}
@@ -763,7 +763,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                                 setHasAcceptedTerms(event.target.checked);
                                                 trackEvent(event.target.checked ? 'auth__terms_consent--accept' : 'auth__terms_consent--reject', { source: 'auth_modal' });
                                             }}
-                                            className="mt-0.5 size-4 rounded border-slate-300 dark:border-border"
+                                            className="mt-0.5 size-4 rounded border-border dark:border-border"
                                             {...getAnalyticsDebugAttributes('auth__terms_consent--accept', { source: 'auth_modal' })}
                                         />
                                         <span>
@@ -790,7 +790,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 </button>
                             </form>
 
-                            <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wide text-slate-400 dark:text-muted-foreground">
+                            <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground dark:text-muted-foreground">
                                 <span className="h-px flex-1 bg-slate-200 dark:bg-secondary" />
                                 {t('copy.oauthDivider')}
                                 <span className="h-px flex-1 bg-slate-200 dark:bg-secondary" />
@@ -805,16 +805,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                             type="button"
                                             onClick={() => void handleOAuthLogin(item.provider)}
                                             disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                            className={`relative inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                                            className={`relative inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                                                 isLastUsed
-                                                    ? 'border-slate-400 bg-white dark:border-border dark:bg-card'
-                                                    : 'border-slate-300 bg-white dark:border-border dark:bg-card'
+                                                    ? 'border-slate-400 bg-card dark:border-border dark:bg-card'
+                                                    : 'border-border bg-card dark:border-border dark:bg-card'
                                             } ${item.buttonClassName}`}
                                         >
                                             <SocialProviderIcon provider={item.provider} size={18} />
                                             <span>{t(item.labelKey)}</span>
                                             {isLastUsed && (
-                                                <span className="pointer-events-none absolute -top-2 right-3 rounded-2xl border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 shadow-sm dark:border-border dark:bg-secondary dark:text-muted-foreground">
+                                                <span className="pointer-events-none absolute -top-2 right-3 rounded-2xl border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground shadow-sm dark:border-border dark:bg-secondary dark:text-muted-foreground">
                                                     {t('copy.lastUsedTag')}
                                                 </span>
                                             )}

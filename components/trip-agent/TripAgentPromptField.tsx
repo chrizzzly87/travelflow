@@ -61,7 +61,7 @@ export const TripAgentPromptField: React.FC<{
             <mark
                 key={`mention-${span.start}-${span.end}`}
                 className={`rounded-[5px] px-0.5 py-px text-transparent ${
-                    span.contextRef ? 'bg-accent-100' : 'bg-slate-100'
+                    span.contextRef ? 'bg-accent-100' : 'bg-secondary'
                 }`}
             >
                 {value.slice(span.start, span.end)}
@@ -107,7 +107,7 @@ export const TripAgentPromptField: React.FC<{
                 aria-controls={ariaControls}
                 aria-activedescendant={ariaActiveDescendant}
                 data-slot="input-group-control"
-                className={`relative max-h-48 resize-none bg-transparent text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 ${SHARED_TEXT_CLASSES}`}
+                className={`relative max-h-48 resize-none bg-transparent text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 ${SHARED_TEXT_CLASSES}`}
             />
         </div>
     );

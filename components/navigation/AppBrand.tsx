@@ -25,7 +25,7 @@ export const AppBrand: React.FC<AppBrandProps> = ({
         >
             <img src="/brand-plane.svg" alt="" className={cn('size-4', imageClassName)} />
         </span>
-        <span className={cn('text-lg font-extrabold tracking-tight text-slate-900 dark:text-foreground', wordmarkClassName)}>
+        <span className={cn('text-lg font-extrabold tracking-tight text-foreground dark:text-foreground', wordmarkClassName)}>
             {APP_NAME}
         </span>
     </span>

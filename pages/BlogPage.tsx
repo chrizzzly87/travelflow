@@ -150,11 +150,11 @@ const BlogCard: React.FC<{
         >
             <div
                 aria-hidden
-                className="pointer-events-none absolute inset-0 rounded-2xl border border-slate-200 bg-white shadow-sm transition-[box-shadow,border-color] duration-300 ease-out group-hover:border-slate-300 group-hover:shadow-lg"
+                className="pointer-events-none absolute inset-0 rounded-2xl border border-border bg-card shadow-sm transition-[box-shadow,border-color] duration-300 ease-out group-hover:border-border group-hover:shadow-lg"
             />
             <div className="relative z-10 flex flex-1 flex-col">
                 <div
-                    className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showImage ? 'bg-slate-100' : `${post.coverColor} flex items-center justify-center`}`}
+                    className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showImage ? 'bg-secondary' : `${post.coverColor} flex items-center justify-center`}`}
                 >
                     {showImage ? (
                         <>
@@ -185,12 +185,12 @@ const BlogCard: React.FC<{
                             />
                         </>
                     ) : (
-                        <Article size={36} weight="duotone" className="text-slate-400/40" />
+                        <Article size={36} weight="duotone" className="text-muted-foreground/40" />
                     )}
                 </div>
-                <div className="flex flex-1 flex-col rounded-b-2xl bg-white p-5">
+                <div className="flex flex-1 flex-col rounded-b-2xl bg-card p-5">
                     <h3
-                        className="text-base font-semibold text-slate-900 group-hover:text-accent-700 transition-colors line-clamp-2"
+                        className="text-base font-semibold text-foreground group-hover:text-accent-700 transition-colors line-clamp-2"
                         style={
                             transitionNames
                                 ? ({
@@ -209,12 +209,12 @@ const BlogCard: React.FC<{
                         </p>
                     )}
                     <p
-                        className="mt-2 flex-1 text-sm leading-relaxed text-slate-500 line-clamp-3"
+                        className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground line-clamp-3"
                     >
                         {post.summary}
                     </p>
                     <div
-                        className="mt-3 flex items-center gap-3 text-xs text-slate-400"
+                        className="mt-3 flex items-center gap-3 text-xs text-muted-foreground"
                     >
                         <span className="inline-flex items-center gap-1">
                             <Clock size={13} weight="duotone" className="text-accent-400" />
@@ -228,7 +228,7 @@ const BlogCard: React.FC<{
                         {post.tags.map((tag) => (
                             <span
                                 key={tag}
-                                className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500"
+                                className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground"
                             >
                                 {tag}
                             </span>
@@ -332,12 +332,12 @@ export const BlogPage: React.FC = () => {
                     {t('index.pill')}
                 </span>
                 <h1
-                    className="mt-5 text-4xl font-semibold tracking-tight text-slate-900 md:text-6xl"
+                    className="mt-5 text-4xl font-semibold tracking-tight text-foreground md:text-6xl"
                     style={{ fontFamily: 'var(--tf-font-heading)' }}
                 >
                     {t('index.title')}
                 </h1>
-                <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
+                <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
                     {t('index.description')}
                 </p>
             </section>
@@ -348,17 +348,17 @@ export const BlogPage: React.FC = () => {
             >
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div className="relative w-full md:max-w-xl">
-                        <MagnifyingGlass size={18} weight="duotone" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        <MagnifyingGlass size={18} weight="duotone" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
 	                        <input
 	                            type="text"
 	                            aria-label={t('index.searchPlaceholder')}
 	                            value={search}
                             onChange={(event) => setSearch(event.target.value)}
                             placeholder={t('index.searchPlaceholder')}
-                            className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200 transition-shadow"
+                            className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200 transition-shadow"
                         />
                         {isSearching && (
-                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
+                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
                                 {filteredPosts.length === 1
                                     ? t('index.result', { count: filteredPosts.length })
                                     : t('index.results', { count: filteredPosts.length })}
@@ -367,11 +367,11 @@ export const BlogPage: React.FC = () => {
                     </div>
                     {supportsMixedLanguage && (
                         <div className="relative w-full md:w-72">
-                            <GlobeHemisphereWest size={18} weight="duotone" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <GlobeHemisphereWest size={18} weight="duotone" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                             <Select value={languageFilter} onValueChange={(value) => setLanguageFilterState({ locale, filter: value as BlogLanguageFilter })}>
                                 <SelectTrigger
                                     aria-label={t('index.languageFilterAriaLabel')}
-                                    className="h-auto w-full rounded-xl border-slate-200 bg-white py-3 pl-10 pr-10 text-sm font-medium text-slate-800 shadow-sm focus:border-accent-400 focus:ring-accent-200 transition-shadow"
+                                    className="h-auto w-full rounded-xl border-border bg-card py-3 pl-10 pr-10 text-sm font-medium text-foreground shadow-sm focus:border-accent-400 focus:ring-accent-200 transition-shadow"
                                 >
                                     <span>
                                         {languageFilter === 'nativeAndEnglish' && t('index.languageFilter.nativeAndEnglish')}
@@ -389,7 +389,7 @@ export const BlogPage: React.FC = () => {
                     )}
                 </div>
                 {showMixedLanguageNotice && (
-                    <p className="mt-3 text-xs text-slate-500 md:text-sm">
+                    <p className="mt-3 text-xs text-muted-foreground md:text-sm">
                         {t('index.mixedLanguageNotice', { locale: localeDisplayName })}
                     </p>
                 )}
@@ -405,7 +405,7 @@ export const BlogPage: React.FC = () => {
                         className={`min-h-10 rounded-full px-3.5 py-1.5 text-sm font-medium shadow-sm transition-[scale,border-color,color,background-color,box-shadow] duration-150 ease-out active:scale-[0.96] ${
                             selectedTag === null
                                 ? 'bg-accent-100 text-accent-800 ring-2 ring-accent-300'
-                                : 'bg-white border border-slate-200 text-slate-600 hover:border-accent-300 hover:text-accent-700'
+                                : 'bg-card border border-border text-muted-foreground hover:border-accent-300 hover:text-accent-700'
                         }`}
                     >
                         {t('common:buttons.all')}
@@ -417,7 +417,7 @@ export const BlogPage: React.FC = () => {
                             className={`inline-flex min-h-10 items-center gap-1 rounded-full px-3.5 py-1.5 text-sm font-medium shadow-sm transition-[scale,border-color,color,background-color,box-shadow] duration-150 ease-out active:scale-[0.96] ${
                                 selectedTag === tag
                                     ? 'bg-accent-100 text-accent-800 ring-2 ring-accent-300'
-                                    : 'bg-white border border-slate-200 text-slate-600 hover:border-accent-300 hover:text-accent-700'
+                                    : 'bg-card border border-border text-muted-foreground hover:border-accent-300 hover:text-accent-700'
                             }`}
                         >
                             <Tag size={12} weight="duotone" />
@@ -429,7 +429,7 @@ export const BlogPage: React.FC = () => {
 
             <section className="pb-16 md:pb-24">
                 {filteredPosts.length === 0 ? (
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-muted-foreground">
                         {isSearching
                             ? t('index.noSearch', { query: search })
                             : t('index.noTag')}
@@ -466,7 +466,7 @@ export const BlogPage: React.FC = () => {
                     </p>
                     <Link
                         to={buildLocalizedMarketingPath('contact', locale)}
-                        className="relative mt-8 inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-[scale,background-color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:bg-accent-50 hover:shadow-xl active:scale-[0.96]"
+                        className="relative mt-8 inline-flex items-center gap-2 rounded-2xl bg-card px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-[scale,background-color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:bg-accent-50 hover:shadow-xl active:scale-[0.96]"
                     >
                         {t('index.communityCtaButton')}
                         <ArrowRight size={18} weight="bold" />

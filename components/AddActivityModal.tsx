@@ -171,7 +171,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
             mobileSheet={false}
             contentClassName="max-h-[90vh] sm:w-[min(94vw,860px)]"
             bodyClassName="flex-1 overflow-y-auto p-0"
-            headerClassName="bg-gray-50 p-4"
+            headerClassName="bg-secondary p-4"
             onOpenAutoFocus={(event) => {
                 event.preventDefault();
                 if (mode === 'manual') {
@@ -179,18 +179,18 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                 }
             }}
         >
-                <div className="flex gap-2 border-b border-gray-100 p-4">
+                <div className="flex gap-2 border-b border-border p-4">
                     <button 
                         type="button"
                         onClick={() => setMode('manual')}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${mode === 'manual' ? 'bg-accent-100 text-accent-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${mode === 'manual' ? 'bg-accent-100 text-accent-700' : 'bg-card text-muted-foreground hover:bg-secondary border border-border'}`}
                     >
                         Manual Entry
                     </button>
                     <button 
                         type="button"
                         onClick={() => setMode('ai')}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${mode === 'ai' ? 'bg-accent-100 text-accent-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${mode === 'ai' ? 'bg-accent-100 text-accent-700' : 'bg-card text-muted-foreground hover:bg-secondary border border-border'}`}
                     >
                         <Sparkles size={14} /> AI Suggestion
                     </button>
@@ -200,7 +200,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                     {mode === 'manual' ? (
                         <div className="space-y-4">
                             <div>
-                                <label htmlFor={titleInputId} className="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
+                                <label htmlFor={titleInputId} className="block text-xs font-bold text-muted-foreground uppercase mb-1">Title</label>
                                 <input 
                                     id={titleInputId}
                                     ref={manualTitleInputRef}
@@ -208,12 +208,12 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                     aria-label="Title"
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
-                                    className="w-full p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
+                                    className="w-full p-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
                                     placeholder="e.g. Visit Louvre Museum"
                                 />
                             </div>
                             <fieldset>
-                                <legend className="block text-xs font-bold text-gray-500 uppercase mb-1">Types (Multi-select)</legend>
+                                <legend className="block text-xs font-bold text-muted-foreground uppercase mb-1">Types (Multi-select)</legend>
                                 <div className="flex flex-wrap gap-2">
                                     {ALL_ACTIVITY_TYPES.map(type => (
                                         <button
@@ -230,13 +230,13 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                 </div>
                             </fieldset>
                             <div>
-                                <label htmlFor={descriptionInputId} className="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
+                                <label htmlFor={descriptionInputId} className="block text-xs font-bold text-muted-foreground uppercase mb-1">Description</label>
                                 <textarea 
                                     id={descriptionInputId}
                                     aria-label="Description"
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
-                                    className="w-full p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none h-24 resize-none"
+                                    className="w-full p-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-accent-500 outline-none h-24 resize-none"
                                     placeholder="Notes..."
                                 />
                             </div>
@@ -252,7 +252,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                     ) : (
                         <div className="space-y-6">
                             <div className="relative">
-                                <label htmlFor={promptInputId} className="block text-xs font-bold text-gray-500 uppercase mb-1">What are you looking for?</label>
+                                <label htmlFor={promptInputId} className="block text-xs font-bold text-muted-foreground uppercase mb-1">What are you looking for?</label>
                                 <div className="flex gap-2">
                                     <input 
                                         id={promptInputId}
@@ -260,7 +260,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                         aria-label="What are you looking for?"
                                         value={prompt}
                                         onChange={e => setPrompt(e.target.value)}
-                                        className="flex-1 p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
+                                        className="flex-1 p-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
                                         placeholder="e.g. Something romantic for dinner, or kid-friendly park"
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter' && !isGenerating) {
@@ -301,7 +301,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                         <button
                                             type="button"
                                             key={`${p.title}-${p.description ?? ''}`}
-                                            className="w-full text-left bg-white border border-gray-200 rounded-xl p-4 hover:border-accent-300 hover:bg-accent-50 transition-all cursor-pointer group"
+                                            className="w-full text-left bg-card border border-border rounded-xl p-4 hover:border-accent-300 hover:bg-accent-50 transition-all cursor-pointer group"
                                             onClick={() => handleSelectProposal(p)}
                                         >
                                             {(() => {
@@ -321,11 +321,11 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                                 );
                                             })()}
                                             <div className="flex justify-between items-start mb-2">
-                                                <h4 className="font-semibold text-gray-900">{p.title}</h4>
-                                                <span className="text-xs bg-white border border-gray-200 px-2 py-1 rounded-full uppercase font-bold text-gray-500">AI</span>
+                                                <h4 className="font-semibold text-foreground">{p.title}</h4>
+                                                <span className="text-xs bg-card border border-border px-2 py-1 rounded-full uppercase font-bold text-muted-foreground">AI</span>
                                             </div>
-                                            <p className="text-sm text-gray-600 mb-3">{p.description}</p>
-                                            <div className="flex gap-3 text-xs text-gray-500">
+                                            <p className="text-sm text-muted-foreground mb-3">{p.description}</p>
+                                            <div className="flex gap-3 text-xs text-muted-foreground">
                                                 <span>💰 {p.cost}</span>
                                                 <span>🕒 {p.bestTime}</span>
                                             </div>
@@ -338,7 +338,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                             )}
                             
                             {proposals.length === 0 && !isGenerating && !generationFailed && (
-                                <div className="text-center py-10 text-gray-400">
+                                <div className="text-center py-10 text-muted-foreground">
                                     <Sparkles size={40} className="mx-auto mb-3 opacity-20" />
                                     <p>Enter a wish above to get AI suggestions.</p>
                                 </div>

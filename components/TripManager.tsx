@@ -376,14 +376,14 @@ const FolderHeader: React.FC<FolderHeaderProps> = ({ label, count, isOpen, onTog
     <button
       type="button"
       onClick={onToggle}
-      className="text-[11px] uppercase tracking-wide font-semibold text-gray-400 hover:text-gray-600 transition-colors"
+      className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground hover:text-muted-foreground transition-colors"
     >
       {label} <span className="text-gray-300">{count}</span>
     </button>
     <button
       type="button"
       onClick={onToggle}
-      className="cursor-pointer p-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all"
+      className="cursor-pointer p-1 rounded text-gray-300 hover:text-muted-foreground hover:bg-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all"
       aria-label={isOpen ? `Collapse ${label}` : `Expand ${label}`}
       title={isOpen ? `Collapse ${label}` : `Expand ${label}`}
     >
@@ -442,7 +442,7 @@ const TripRow: React.FC<TripRowProps> = ({
     <div
       ref={rowRef}
       className={`group flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 transition-colors ${
-        trip.id === currentTripId ? 'bg-accent-50' : 'hover:bg-gray-50'
+        trip.id === currentTripId ? 'bg-accent-50' : 'hover:bg-secondary'
       }`}
       onMouseEnter={emitHoverAnchor}
       onMouseMove={emitHoverAnchor}
@@ -462,14 +462,14 @@ const TripRow: React.FC<TripRowProps> = ({
             )}
           </span>
           {extraFlags > 0 && <span className="text-[10px] text-gray-300">+{extraFlags}</span>}
-          <span className={`truncate text-sm font-medium ${trip.id === currentTripId ? 'text-accent-700' : 'text-gray-700'}`}>
+          <span className={`truncate text-sm font-medium ${trip.id === currentTripId ? 'text-accent-700' : 'text-foreground'}`}>
             {trip.title}
           </span>
         </div>
         <div className="mt-0.5 flex items-center justify-between gap-2">
-          <span className="truncate text-[11px] text-gray-400">{formatTripSummaryLine(trip, locale)}</span>
+          <span className="truncate text-[11px] text-muted-foreground">{formatTripSummaryLine(trip, locale)}</span>
           {secondaryInfo && (
-            <span className="shrink-0 text-[10px] font-medium text-gray-400">{secondaryInfo}</span>
+            <span className="shrink-0 text-[10px] font-medium text-muted-foreground">{secondaryInfo}</span>
           )}
         </div>
       </button>
@@ -580,10 +580,10 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
       onMouseEnter={onHoverStart}
       onMouseLeave={onHoverEnd}
     >
-      <div className="size-full rounded-xl border border-gray-200 bg-white shadow-2xl overflow-hidden flex flex-col">
-        <div className="px-3.5 py-3 border-b border-gray-100">
+      <div className="size-full rounded-xl border border-border bg-card shadow-2xl overflow-hidden flex flex-col">
+        <div className="px-3.5 py-3 border-b border-border">
           <div className="flex items-center justify-between gap-3">
-            <div className="text-sm font-semibold text-gray-800 truncate">{trip.title}</div>
+            <div className="text-sm font-semibold text-foreground truncate">{trip.title}</div>
             <div className="shrink-0 flex items-center gap-1.5">
               {lifecycleStatus === 'expired' && (
                 <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
@@ -595,7 +595,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
                     {generationLabel}
                   </span>
                 )}
-              <div className="text-[10px] text-gray-400">{updatedAtLabel}</div>
+              <div className="text-[10px] text-muted-foreground">{updatedAtLabel}</div>
             </div>
           </div>
           <div className="mt-1 flex items-center gap-1.5 text-accent-600 text-sm font-semibold">
@@ -612,10 +612,10 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
         </div>
 
         <div className="grid grid-cols-2 flex-1 min-h-0">
-          <div className="p-3.5 border-r border-gray-100 min-h-0">
+          <div className="p-3.5 border-r border-border min-h-0">
             <div className="h-full overflow-y-auto space-y-0">
               {cityStops.length === 0 ? (
-                <div className="text-[11px] text-gray-400">No city stops yet</div>
+                <div className="text-[11px] text-muted-foreground">No city stops yet</div>
               ) : (
                 cityStops.map((stop, idx) => {
                   const isStart = idx === 0;
@@ -638,7 +638,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
                         )}
                       </div>
                       <div className="min-w-0 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-                        <span className="text-[15px] font-medium text-gray-700 leading-5 break-words">{stop.title}</span>
+                        <span className="text-[15px] font-medium text-foreground leading-5 break-words">{stop.title}</span>
                         <span className="text-[12px] font-medium text-accent-500/75 leading-5">{formatCityStayLabel(stop.duration)}</span>
                       </div>
                     </div>
@@ -648,8 +648,8 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
             </div>
           </div>
 
-          <div className="p-2 bg-gray-50 min-h-0">
-            <div className="size-full rounded-lg border border-gray-200 bg-gray-100 overflow-hidden relative">
+          <div className="p-2 bg-secondary min-h-0">
+            <div className="size-full rounded-lg border border-border bg-secondary overflow-hidden relative">
               {shouldLoadMap ? (
                 mapUrl && !mapError ? (
                   <>
@@ -664,12 +664,12 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
                     />
                   </>
                 ) : (
-                  <div className="size-full flex items-center justify-center text-[11px] text-gray-500">
+                  <div className="size-full flex items-center justify-center text-[11px] text-muted-foreground">
                     Map preview unavailable
                   </div>
                 )
               ) : (
-                <div className="size-full flex items-center justify-center text-[11px] text-gray-500">
+                <div className="size-full flex items-center justify-center text-[11px] text-muted-foreground">
                   Loading preview…
                 </div>
               )}
@@ -734,17 +734,17 @@ const BucketList: React.FC<BucketListProps> = ({
 const TripListSkeleton: React.FC<{ syncing: boolean }> = ({ syncing }) => (
   <div className="space-y-2 px-1">
     <div className="px-2 py-1">
-      <div className="h-3 w-24 rounded bg-gray-100" />
+      <div className="h-3 w-24 rounded bg-secondary" />
     </div>
     {TRIP_SKELETON_ROWS.map((row) => (
-      <div key={row} className="rounded-lg border border-gray-100 bg-white p-2">
+      <div key={row} className="rounded-lg border border-border bg-card p-2">
         <div className="animate-pulse">
           <div className="h-3.5 w-32 rounded bg-gray-200" />
-          <div className="mt-2 h-2.5 w-48 max-w-[85%] rounded bg-gray-100" />
+          <div className="mt-2 h-2.5 w-48 max-w-[85%] rounded bg-secondary" />
         </div>
       </div>
     ))}
-    <div className="px-2 pt-1 text-[11px] text-gray-400">
+    <div className="px-2 pt-1 text-[11px] text-muted-foreground">
       {syncing ? 'Syncing your plans...' : 'Loading your plans...'}
     </div>
   </div>
@@ -1265,31 +1265,31 @@ export const TripManager: React.FC<TripManagerProps> = ({
       <div
         ref={panelRef}
         className={isPageVariant
-          ? 'mx-auto flex w-full max-w-xl flex-col bg-white'
-          : `fixed inset-y-0 right-0 w-[380px] max-w-[94vw] bg-white shadow-2xl z-[2310] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          ? 'mx-auto flex w-full max-w-xl flex-col bg-card'
+          : `fixed inset-y-0 right-0 w-[380px] max-w-[94vw] bg-card shadow-2xl z-[2310] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
         style={isPageVariant ? undefined : { transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}
         role={isPageVariant ? undefined : 'dialog'}
         aria-modal={isPageVariant ? undefined : 'true'}
         aria-labelledby="trip-manager-title"
       >
-        <div className={`px-4 py-3 border-b border-gray-100 flex items-center ${isPageVariant ? 'justify-end' : 'justify-between'}`}>
+        <div className={`px-4 py-3 border-b border-border flex items-center ${isPageVariant ? 'justify-end' : 'justify-between'}`}>
           {/* The /trips route supplies its own localized heading, so repeating a
               hardcoded English one here would both duplicate it and break the
               page's language. */}
           {isPageVariant ? (
             <span className="sr-only" id="trip-manager-title">{t('trips.pageTitle')}</span>
           ) : (
-            <h2 id="trip-manager-title" className="text-lg font-semibold text-gray-800">My Plans</h2>
+            <h2 id="trip-manager-title" className="text-lg font-semibold text-foreground">My Plans</h2>
           )}
           <div className="flex items-center gap-1">
-            <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+            <div className="flex items-center rounded-lg border border-border bg-secondary p-0.5">
               <button
                 type="button"
                 onClick={() => setSortMode('updated')}
                 className={`group relative inline-flex size-7 items-center justify-center rounded-md transition-colors ${
                   sortMode === 'updated'
-                    ? 'bg-white text-accent-600 shadow-sm'
-                    : 'text-gray-400 hover:text-gray-600 hover:bg-white/80'
+                    ? 'bg-card text-accent-600 shadow-sm'
+                    : 'text-muted-foreground hover:text-muted-foreground hover:bg-card/80'
                 }`}
                 aria-label="Sort by last updated"
               >
@@ -1300,8 +1300,8 @@ export const TripManager: React.FC<TripManagerProps> = ({
                 onClick={() => setSortMode('travelDate')}
                 className={`group relative inline-flex size-7 items-center justify-center rounded-md transition-colors ${
                   sortMode === 'travelDate'
-                    ? 'bg-white text-accent-600 shadow-sm'
-                    : 'text-gray-400 hover:text-gray-600 hover:bg-white/80'
+                    ? 'bg-card text-accent-600 shadow-sm'
+                    : 'text-muted-foreground hover:text-muted-foreground hover:bg-card/80'
                 }`}
                 aria-label="Sort by travel date"
               >
@@ -1309,16 +1309,16 @@ export const TripManager: React.FC<TripManagerProps> = ({
               </button>
             </div>
             {!isPageVariant && (
-              <button ref={closeButtonRef} type="button" onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600" aria-label="Close">
+              <button ref={closeButtonRef} type="button" onClick={onClose} className="p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-muted-foreground" aria-label="Close">
                 <X size={18} />
               </button>
             )}
           </div>
         </div>
 
-        <div className="px-3 py-2 border-b border-gray-100">
+        <div className="px-3 py-2 border-b border-border">
           <div className="relative">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
                 aria-label={t('trips.list.searchLabel')}
@@ -1326,7 +1326,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={hideHoverNow}
               placeholder={t('trips.list.searchPlaceholder')}
-              className="w-full h-9 pl-8 pr-2.5 rounded-md border border-gray-200 bg-gray-50 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent focus:bg-white"
+              className="w-full h-9 pl-8 pr-2.5 rounded-md border border-border bg-secondary text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent focus:bg-card"
             />
           </div>
         </div>
@@ -1335,9 +1335,9 @@ export const TripManager: React.FC<TripManagerProps> = ({
           {showLoadingSkeleton ? (
             <TripListSkeleton syncing={isSyncingTrips} />
           ) : trips.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 text-sm">{t('trips.list.empty')}</div>
+            <div className="text-center py-8 text-muted-foreground text-sm">{t('trips.list.empty')}</div>
           ) : filteredTrips.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 text-sm">{t('trips.list.noMatches', { query: searchQuery })}</div>
+            <div className="text-center py-8 text-muted-foreground text-sm">{t('trips.list.noMatches', { query: searchQuery })}</div>
           ) : (
             <>
               <section>
@@ -1382,7 +1382,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
                         <button
                           type="button"
                           onClick={() => setShowPastFavorites(prev => !prev)}
-                          className="text-[10px] uppercase tracking-wide font-semibold text-gray-300 hover:text-gray-500 flex items-center gap-1"
+                          className="text-[10px] uppercase tracking-wide font-semibold text-gray-300 hover:text-muted-foreground flex items-center gap-1"
                         >
                           {forceExpandPast || showPastFavorites ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                           Past trips ({favoriteByTravelDate.past.length})
@@ -1450,7 +1450,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
                         <button
                           type="button"
                           onClick={() => setShowPastTrips(prev => !prev)}
-                          className="text-[10px] uppercase tracking-wide font-semibold text-gray-300 hover:text-gray-500 flex items-center gap-1"
+                          className="text-[10px] uppercase tracking-wide font-semibold text-gray-300 hover:text-muted-foreground flex items-center gap-1"
                         >
                           {forceExpandPast || showPastTrips ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                           Past trips ({regularByTravelDate.past.length})

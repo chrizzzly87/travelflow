@@ -63,11 +63,11 @@ const CountryExplorerCardComponent: React.FC<CountryExplorerCardProps> = ({
     <Link
       to={href}
       onClick={() => trackEvent('inspirations__destination_card', payload)}
-      className="group flex min-h-52 flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-accent-200 hover:shadow-lg"
+      className="group flex min-h-52 flex-col rounded-3xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-accent-200 hover:shadow-lg"
       {...getAnalyticsDebugAttributes('inspirations__destination_card', payload)}
     >
       <div className="flex items-start justify-between gap-4">
-        <span className="grid size-12 place-items-center rounded-2xl bg-slate-50">
+        <span className="grid size-12 place-items-center rounded-2xl bg-secondary">
           <FlagIcon code={entry.countryCode} size="2xl" />
         </span>
         <ArrowRight
@@ -77,10 +77,10 @@ const CountryExplorerCardComponent: React.FC<CountryExplorerCardProps> = ({
         />
       </div>
 
-      <h2 className="mt-5 text-xl font-black text-slate-900">{entry.name}</h2>
+      <h2 className="mt-5 text-xl font-black text-foreground">{entry.name}</h2>
 
-      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
-        <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2.5 py-1">
+      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-muted-foreground">
+        <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1">
           <MapPin size={13} />
           {entry.region}
         </span>
@@ -90,8 +90,8 @@ const CountryExplorerCardComponent: React.FC<CountryExplorerCardProps> = ({
           </span>
         ))}
         {distanceLabel ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2.5 py-1">
-            <NavigationArrow size={13} weight="duotone" className="text-slate-400" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1">
+            <NavigationArrow size={13} weight="duotone" className="text-muted-foreground" />
             {distanceLabel}
           </span>
         ) : null}
@@ -99,18 +99,18 @@ const CountryExplorerCardComponent: React.FC<CountryExplorerCardProps> = ({
 
       <div className="mt-auto pt-5">
         {insight ? (
-          <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs font-semibold text-slate-600">
+          <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs font-semibold text-muted-foreground">
             {insight.climate ? (
               <>
                 <span className="inline-flex items-center gap-1">
-                  <ThermometerSimple size={14} weight="duotone" className="text-slate-400" />
+                  <ThermometerSimple size={14} weight="duotone" className="text-muted-foreground" />
                   {t('inspirations.subpages.explorer.temperature', {
                     high: formatTemperature(insight.climate.avgHighC),
                     low: formatTemperature(insight.climate.avgLowC),
                   })}
                 </span>
                 <span className="inline-flex items-center gap-1">
-                  <Drop size={14} weight="duotone" className="text-slate-400" />
+                  <Drop size={14} weight="duotone" className="text-muted-foreground" />
                   {t(`inspirations.subpages.explorer.rainfall.${insight.climate.rainfall}`)}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
@@ -120,10 +120,10 @@ const CountryExplorerCardComponent: React.FC<CountryExplorerCardProps> = ({
               </>
             ) : (
               <>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-2.5 py-1">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1">
                   {t(`inspirations.subpages.explorer.band.${insight.band}`)}
                 </span>
-                <span className="font-medium text-slate-400">
+                <span className="font-medium text-muted-foreground">
                   {t('inspirations.subpages.explorer.climateUnavailable')}
                 </span>
               </>
@@ -136,7 +136,7 @@ const CountryExplorerCardComponent: React.FC<CountryExplorerCardProps> = ({
           selectedMonth={selectedMonth}
           label={stripLabel}
         />
-        <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+        <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           {idealMonthNames
             ? t('inspirations.subpages.explorer.bestMonths', { months: idealMonthNames })
             : t('inspirations.subpages.explorer.bestMonthsUnknown')}

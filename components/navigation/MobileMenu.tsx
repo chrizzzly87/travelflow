@@ -30,7 +30,7 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `block rounded-xl px-4 py-3 text-base font-semibold transition-colors ${
         isActive
             ? 'bg-accent-50 text-accent-700 dark:bg-accent-400/15 dark:text-accent-200'
-            : 'text-slate-700 hover:bg-slate-100 dark:text-foreground dark:hover:bg-secondary'
+            : 'text-foreground hover:bg-secondary dark:text-foreground dark:hover:bg-secondary'
     }`;
 
 const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean => (
@@ -211,7 +211,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
 
             <div
                 ref={panelRef}
-                className={`fixed inset-y-0 end-0 z-[1700] w-[85vw] max-w-sm bg-white shadow-2xl transition-transform duration-300 ease-out ${
+                className={`fixed inset-y-0 end-0 z-[1700] w-[85vw] max-w-sm bg-card shadow-2xl transition-transform duration-300 ease-out ${
                     isOpen ? 'translate-x-0' : 'translate-x-full rtl:-translate-x-full'
                 }`}
                 role="dialog"
@@ -219,13 +219,13 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                 aria-label="Navigation menu"
             >
                 <div className="flex h-full flex-col">
-                    <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-border">
+                    <div className="flex items-center justify-between border-b border-border px-5 py-4 dark:border-border">
                         <AppBrand />
                         <button
                             ref={closeButtonRef}
                             type="button"
                             onClick={onClose}
-                            className="flex size-10 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:text-muted-foreground dark:hover:bg-secondary"
+                            className="flex size-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-muted-foreground dark:text-muted-foreground dark:hover:bg-secondary"
                             aria-label="Close menu"
                         >
                             <X size={20} weight="bold" />
@@ -236,18 +236,18 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                         shade drag never reaches phones — this is the only theme
                         control mobile users have. It gets the same weight as the
                         language switcher for that reason. */}
-                    <div className="space-y-2 border-b border-slate-100 px-4 py-3 dark:border-border">
+                    <div className="space-y-2 border-b border-border px-4 py-3 dark:border-border">
                         <LanguageSelect
                             ariaLabel={t('language.label')}
                             value={selectedLocale}
                             onChange={handleLocaleChange}
-                            triggerClassName="h-10 w-full rounded-xl border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm"
+                            triggerClassName="h-10 w-full rounded-xl border-border bg-card px-3 py-2.5 text-sm font-semibold text-foreground shadow-sm"
                             contentAlign="start"
                         />
                         <ThemeToggle variant="row" analyticsSurface="mobile_nav" className="h-10" />
                     </div>
 
-                    <nav className="flex-1 overflow-y-auto border-t border-slate-100 p-4 dark:border-border">
+                    <nav className="flex-1 overflow-y-auto border-t border-border p-4 dark:border-border">
                         <div className="flex min-h-full flex-col">
                             <div className="space-y-2">
                                 {onMyTripsClick && hasTrips ? (
@@ -279,7 +279,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                         key={item.id}
                                         to={item.path}
                                         onClick={() => handleNavClick(item.id)}
-                                        className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-border dark:text-muted-foreground"
+                                        className="block w-full rounded-xl border border-border px-4 py-3 text-center text-base font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground dark:border-border dark:text-muted-foreground"
                                         {...mobileNavDebugAttributes(item.id)}
                                     >
                                         {item.label}
@@ -300,12 +300,12 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                     );
                                 })}
                             </div>
-                            <div className="mt-auto space-y-3 border-t border-slate-100 pt-4 dark:border-border">
+                            <div className="mt-auto space-y-3 border-t border-border pt-4 dark:border-border">
                                 {isAdmin && (
                                     <NavLink
                                         to="/admin"
                                         onClick={() => handleNavClick('admin_dashboard')}
-                                        className="block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-border dark:text-foreground dark:bg-secondary"
+                                        className="block w-full rounded-xl border border-border bg-secondary px-4 py-3 text-center text-base font-medium text-foreground transition-colors hover:border-border hover:text-foreground dark:border-border dark:text-foreground dark:bg-secondary"
                                         {...mobileNavDebugAttributes('admin_dashboard')}
                                     >
                                         Admin dashboard
@@ -326,7 +326,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                     <button
                                         type="button"
                                         disabled
-                                        className="inline-flex w-full cursor-wait items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-500 opacity-80 dark:border-border dark:text-muted-foreground"
+                                        className="inline-flex w-full cursor-wait items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-center text-base font-medium text-muted-foreground opacity-80 dark:border-border dark:text-muted-foreground"
                                         aria-disabled="true"
                                         aria-live="polite"
                                     >
@@ -337,7 +337,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                     <NavLink
                                         to={buildLocalizedMarketingPath('login', activeLocale)}
                                         onClick={handleLoginClick}
-                                        className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-border dark:text-muted-foreground"
+                                        className="block w-full rounded-xl border border-border px-4 py-3 text-center text-base font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground dark:border-border dark:text-muted-foreground"
                                         {...mobileNavDebugAttributes('login')}
                                     >
                                         {t('nav.login')}
@@ -349,7 +349,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                             key={`mobile-legal-${item.id}`}
                                             to={buildLocalizedMarketingPath(item.id, activeLocale)}
                                             onClick={() => handleNavClick(item.id)}
-                                            className="block rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-border dark:text-muted-foreground"
+                                            className="block rounded-xl border border-border px-3 py-2 text-center text-sm font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground dark:border-border dark:text-muted-foreground"
                                             {...mobileNavDebugAttributes(item.id)}
                                         >
                                             {item.label}

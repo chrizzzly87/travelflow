@@ -211,7 +211,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
             size="sm"
             mobileSheet={false}
             bodyClassName="p-6"
-            headerClassName="bg-gray-50 p-4"
+            headerClassName="bg-secondary p-4"
             onOpenAutoFocus={(event) => {
                 event.preventDefault();
                 inputRef.current?.focus();
@@ -226,7 +226,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
             
             <div className="space-y-4">
                 <div>
-                    <label htmlFor={cityInputId} className="mb-2 block text-xs font-bold uppercase text-gray-500">
+                    <label htmlFor={cityInputId} className="mb-2 block text-xs font-bold uppercase text-muted-foreground">
                         {state.isManualMode ? "City Name" : "Search City"}
                     </label>
                     <div className="relative">
@@ -241,10 +241,10 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                                 dispatch({ type: 'inputChanged', value: e.target.value });
                             }}
                             onKeyDown={handleKeyDown}
-                            className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-gray-800 outline-none placeholder-gray-400 focus:ring-2 focus:ring-accent-500"
+                            className="w-full rounded-xl border border-border bg-secondary py-3 pl-10 pr-4 text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-accent-500"
                             placeholder="e.g. Kyoto, Japan"
                         />
-                        <div className="absolute left-3 top-3.5 text-gray-400">
+                        <div className="absolute left-3 top-3.5 text-muted-foreground">
                             {!isLoaded || state.isSearchingSuggestions ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
                         </div>
                         
@@ -260,24 +260,24 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                         )}
                     </div>
                     {(state.isSearchingSuggestions || state.suggestions.length > 0) && (
-                        <div className="mt-2 rounded-lg border border-gray-200 bg-white shadow-sm max-h-44 overflow-y-auto">
+                        <div className="mt-2 rounded-lg border border-border bg-card shadow-sm max-h-44 overflow-y-auto">
                             {state.isSearchingSuggestions && (
-                                <div className="px-3 py-2 text-xs text-gray-500">Searching cities…</div>
+                                <div className="px-3 py-2 text-xs text-muted-foreground">Searching cities…</div>
                             )}
                             {!state.isSearchingSuggestions && state.suggestions.map((suggestion) => (
                                 <button
                                     key={suggestion.id}
                                     type="button"
                                     onClick={() => handleSuggestionSelect(suggestion)}
-                                    className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                                    className="w-full text-left px-3 py-2 hover:bg-secondary border-b border-border last:border-b-0"
                                 >
-                                    <div className="text-sm font-semibold text-gray-800">{suggestion.name}</div>
-                                    <div className="text-xs text-gray-500 truncate">{suggestion.label}</div>
+                                    <div className="text-sm font-semibold text-foreground">{suggestion.name}</div>
+                                    <div className="text-xs text-muted-foreground truncate">{suggestion.label}</div>
                                 </button>
                             ))}
                         </div>
                     )}
-                    <p className="mt-2 text-xs text-gray-400">
+                    <p className="mt-2 text-xs text-muted-foreground">
                         {!isLoaded
                             ? "Loading Map services…"
                             : "Start typing to search and select a city suggestion."}

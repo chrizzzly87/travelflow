@@ -88,7 +88,7 @@ export const RecommendationCardBody: React.FC<{ recommendation: Recommendation }
 
     return (
         <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-4 pt-3.5">
-            <h2 className="text-[20px] font-semibold leading-tight tracking-tight text-slate-900">
+            <h2 className="text-[20px] font-semibold leading-tight tracking-tight text-foreground">
                 {recommendation.title}
             </h2>
 
@@ -103,31 +103,31 @@ export const RecommendationCardBody: React.FC<{ recommendation: Recommendation }
                     </span>
                 ))}
                 {costLabel && (
-                    <span className="rounded-full border border-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                    <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
                         {costLabel}
                     </span>
                 )}
                 {durationLabel && (
-                    <span className="rounded-full border border-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                    <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
                         {durationLabel}
                     </span>
                 )}
             </div>
 
             {recommendation.description && (
-                <p className="whitespace-pre-line text-[13.5px] leading-[1.5] text-slate-600">
+                <p className="whitespace-pre-line text-[13.5px] leading-[1.5] text-muted-foreground">
                     {recommendation.description}
                 </p>
             )}
 
             {highlights.length > 0 && (
-                <div data-testid="recommendation-highlights" className="rounded-2xl bg-slate-50 px-3 py-2.5">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                <div data-testid="recommendation-highlights" className="rounded-2xl bg-secondary px-3 py-2.5">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
                         Recommendations
                     </p>
                     <ul className="mt-1.5 flex flex-col gap-1">
                         {highlights.map((highlight) => (
-                            <li key={highlight} className="flex gap-1.5 text-[12.5px] leading-[1.45] text-slate-700">
+                            <li key={highlight} className="flex gap-1.5 text-[12.5px] leading-[1.45] text-foreground">
                                 <span aria-hidden="true" className="mt-[7px] size-1 shrink-0 rounded-full bg-accent-500" />
                                 <span>{highlight}</span>
                             </li>
@@ -150,12 +150,12 @@ export const RecommendationSources: React.FC<{ recommendation: Recommendation }>
     if (recommendation.sources.length === 0) return null;
     return (
         <div className="flex flex-wrap items-center gap-1.5 px-4 pb-3">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">via</span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">via</span>
             {recommendation.sources.slice(0, 3).map((source, index) => {
                 const label = source.handle ?? 'source';
                 const key = `${source.url ?? label}-${index}`;
                 if (!source.url) {
-                    return <span key={key} className="text-[11px] text-slate-500">{label}</span>;
+                    return <span key={key} className="text-[11px] text-muted-foreground">{label}</span>;
                 }
                 return (
                     <a
@@ -211,26 +211,26 @@ export const RecommendationLocationFooter: React.FC<{
                 onClick={openDirections}
                 disabled={!links}
                 data-testid="recommendation-card-address"
-                className="flex w-full shrink-0 items-center gap-2 border-t border-slate-100 bg-white/95 px-4 py-3 text-start backdrop-blur transition-colors hover:bg-slate-50 disabled:cursor-default disabled:hover:bg-white/95"
+                className="flex w-full shrink-0 items-center gap-2 border-t border-border bg-card/95 px-4 py-3 text-start backdrop-blur transition-colors hover:bg-secondary disabled:cursor-default disabled:hover:bg-card/95"
                 aria-label={links ? `Open ${recommendation.title} in Maps` : undefined}
             >
                 <MapPin size={14} className="shrink-0 text-accent-600" />
-                <span className="min-w-0 flex-1 truncate text-[12px] leading-4 text-slate-600">
+                <span className="min-w-0 flex-1 truncate text-[12px] leading-4 text-muted-foreground">
                     {address}
                 </span>
-                {links && <Navigation size={14} className="shrink-0 text-slate-400" />}
+                {links && <Navigation size={14} className="shrink-0 text-muted-foreground" />}
             </button>
 
             <Dialog open={isChooserOpen} onOpenChange={setIsChooserOpen}>
                 <DialogContent size="sm">
                     <div className="p-4">
-                        <DialogTitle className="text-base font-semibold text-slate-900">Open in</DialogTitle>
-                        <p className="truncate text-sm text-slate-500">{recommendation.title}</p>
+                        <DialogTitle className="text-base font-semibold text-foreground">Open in</DialogTitle>
+                        <p className="truncate text-sm text-muted-foreground">{recommendation.title}</p>
                         <div className="mt-4 flex flex-col gap-2">
                             <button
                                 type="button"
                                 onClick={() => chooseApp('apple')}
-                                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50"
+                                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
                             >
                                 Apple Maps
                             </button>
@@ -280,9 +280,9 @@ const StaticLocationFooter: React.FC<{ recommendation: Recommendation }> = ({ re
         || recommendation.cityName;
     if (!address) return null;
     return (
-        <div className="flex shrink-0 items-center gap-2 border-t border-slate-100 bg-white/95 px-4 py-3">
+        <div className="flex shrink-0 items-center gap-2 border-t border-border bg-card/95 px-4 py-3">
             <MapPin size={14} className="shrink-0 text-accent-600" />
-            <span className="min-w-0 flex-1 truncate text-[12px] leading-4 text-slate-600">{address}</span>
+            <span className="min-w-0 flex-1 truncate text-[12px] leading-4 text-muted-foreground">{address}</span>
         </div>
     );
 };

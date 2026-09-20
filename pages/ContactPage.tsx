@@ -511,15 +511,15 @@ export const ContactPage: React.FC = () => {
         <MarketingLayout>
             <section className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
                 <div className="max-w-2xl">
-                    <h1 className="text-4xl font-semibold tracking-tight text-slate-900 md:text-5xl">
+                    <h1 className="text-4xl font-semibold tracking-tight text-foreground md:text-5xl">
                         {t('contact.title')}
                     </h1>
-                    <p className="mt-5 max-w-xl text-sm leading-7 text-slate-600 md:text-base">
+                    <p className="mt-5 max-w-xl text-sm leading-7 text-muted-foreground md:text-base">
                         {t('contact.description')}
                     </p>
 
                     <div className="mt-8 space-y-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                             {t('contact.emailLabel')}
                         </p>
                         <a
@@ -529,7 +529,7 @@ export const ContactPage: React.FC = () => {
                             <EnvelopeSimple size={18} weight="duotone" />
                             {t('contact.emailValue')}
                         </a>
-                        <p className="text-sm leading-6 text-slate-600">{t('contact.responseNote')}</p>
+                        <p className="text-sm leading-6 text-muted-foreground">{t('contact.responseNote')}</p>
                     </div>
 
                     <div className="mt-8">
@@ -540,7 +540,7 @@ export const ContactPage: React.FC = () => {
                                     type="button"
                                     disabled
                                     aria-label={label}
-                                    className="inline-flex size-10 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-accent-50 hover:text-accent-700 disabled:cursor-not-allowed"
+                                    className="inline-flex size-10 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-accent-50 hover:text-accent-700 disabled:cursor-not-allowed"
                                 >
                                     <Icon size={18} weight="duotone" />
                                 </button>
@@ -549,8 +549,8 @@ export const ContactPage: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="self-start rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <div className="self-start rounded-3xl bg-card p-6 shadow-sm ring-1 ring-slate-200 md:p-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                         {t('contact.form.title')}
                     </p>
 
@@ -586,7 +586,7 @@ export const ContactPage: React.FC = () => {
                         </p>
 
                         <div className="max-w-xl space-y-3">
-                            <label htmlFor="contact-reason-trigger" className="text-sm font-semibold text-slate-800">
+                            <label htmlFor="contact-reason-trigger" className="text-sm font-semibold text-foreground">
                                 {t('contact.form.reasonLabel')}
                                 <span aria-hidden="true" className="ml-1 text-rose-600">*</span>
                             </label>
@@ -599,7 +599,7 @@ export const ContactPage: React.FC = () => {
                                     id="contact-reason-trigger"
                                     aria-label={t('contact.form.reasonLabel')}
                                     aria-required="true"
-                                    className="h-11 w-full rounded-lg border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200"
+                                    className="h-11 w-full rounded-lg border-border text-sm focus:border-accent-400 focus:ring-accent-200"
                                 >
                                     <SelectValue placeholder={t('contact.form.reasonPlaceholder')} />
                                 </SelectTrigger>
@@ -615,7 +615,7 @@ export const ContactPage: React.FC = () => {
 
                         {isValidReason(formState.reason) && (
                             <div className="max-w-xl space-y-3">
-                                <label htmlFor="contact-subreason-trigger" className="text-sm font-semibold text-slate-800">
+                                <label htmlFor="contact-subreason-trigger" className="text-sm font-semibold text-foreground">
                                     {t('contact.form.subReasonLabel')}
                                 </label>
                                 <Select
@@ -625,7 +625,7 @@ export const ContactPage: React.FC = () => {
                                     onOpenChange={setIsSubReasonSelectOpen}
                                     onValueChange={handleSubReasonChange}
                                 >
-                                    <SelectTrigger id="contact-subreason-trigger" aria-label={t('contact.form.subReasonLabel')} className="h-11 w-full rounded-lg border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200">
+                                    <SelectTrigger id="contact-subreason-trigger" aria-label={t('contact.form.subReasonLabel')} className="h-11 w-full rounded-lg border-border text-sm focus:border-accent-400 focus:ring-accent-200">
                                         <SelectValue placeholder={t('contact.form.subReasonPlaceholder')} />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -644,7 +644,7 @@ export const ContactPage: React.FC = () => {
 
                         <div className="grid max-w-xl gap-4 md:grid-cols-2">
                             <div className="space-y-3">
-                                <label htmlFor="contact-name" className="text-sm font-semibold text-slate-800">
+                                <label htmlFor="contact-name" className="text-sm font-semibold text-foreground">
                                     {t('contact.form.nameLabel')}
                                 </label>
                                 <input
@@ -656,12 +656,12 @@ export const ContactPage: React.FC = () => {
                                     onChange={handleNameChange}
                                     autoComplete="name"
                                     placeholder={t('contact.form.namePlaceholder')}
-                                    className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                    className="h-11 w-full rounded-lg border border-border px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
                                 />
                             </div>
 
                             <div className="space-y-3">
-                                <label htmlFor="contact-email" className="text-sm font-semibold text-slate-800">
+                                <label htmlFor="contact-email" className="text-sm font-semibold text-foreground">
                                     {t('contact.form.emailLabel')}
                                     <span aria-hidden="true" className="ml-1 text-rose-600">*</span>
                                 </label>
@@ -675,13 +675,13 @@ export const ContactPage: React.FC = () => {
                                     autoComplete="email"
                                     required
                                     placeholder={t('contact.form.emailPlaceholder')}
-                                    className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                    className="h-11 w-full rounded-lg border border-border px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
                                 />
                             </div>
                         </div>
 
                         <div className="max-w-xl space-y-3">
-                            <label htmlFor="contact-message" className="text-sm font-semibold text-slate-800">
+                            <label htmlFor="contact-message" className="text-sm font-semibold text-foreground">
                                 {t('contact.form.messageLabel')}
                                 <span aria-hidden="true" className="ml-1 text-rose-600">*</span>
                             </label>
@@ -695,9 +695,9 @@ export const ContactPage: React.FC = () => {
                                 maxLength={MESSAGE_MAX_LENGTH}
                                 rows={6}
                                 placeholder={t('contact.form.messagePlaceholder')}
-                                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                className="w-full rounded-lg border border-border px-3 py-2 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
                             />
-                            <div className="flex items-center justify-between text-xs text-slate-500">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <span>{t('contact.form.messageLimitHint', { max: MESSAGE_MAX_LENGTH })}</span>
                                 <span>{formState.message.length}/{MESSAGE_MAX_LENGTH}</span>
                             </div>
@@ -723,7 +723,7 @@ export const ContactPage: React.FC = () => {
                                         <p className="font-semibold">{validationError || t('contact.form.errorTitle')}</p>
                                         {!validationError && <p className="mt-1 text-amber-800">{t('contact.form.errorBody')}</p>}
                                         {!validationError && (
-                                            <div className="mt-3 rounded-lg border border-amber-300/80 bg-white/80 p-3">
+                                            <div className="mt-3 rounded-lg border border-amber-300/80 bg-card/80 p-3">
                                                 <p className="font-semibold text-amber-900">{t('contact.form.fallbackTitle')}</p>
                                                 <p className="mt-1 text-amber-800">{t('contact.form.fallbackBody')}</p>
                                                 <a
@@ -772,16 +772,16 @@ export const ContactPage: React.FC = () => {
                         >
                             {submitStatus === 'submitting' ? t('contact.form.submitting') : t('contact.form.submit')}
                         </button>
-                        <p className="text-xs text-slate-500">{t('contact.form.requiredFieldsNote')}</p>
+                        <p className="text-xs text-muted-foreground">{t('contact.form.requiredFieldsNote')}</p>
                     </form>
                 </div>
             </section>
 
-            <section className="mt-14 border-t border-slate-200 pt-10 md:mt-16 md:pt-12">
-                <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
+            <section className="mt-14 border-t border-border pt-10 md:mt-16 md:pt-12">
+                <h2 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
                     Frequently asked questions
                 </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
                     Here are quick answers to common contact and support topics.
                 </p>
 
@@ -825,7 +825,7 @@ export const ContactPage: React.FC = () => {
                     onClick={() => trackEvent(CONTACT_FAQ_LINK_FULL_PAGE_EVENT, {
                         source: 'contact_page',
                     })}
-                    className="mt-5 inline-flex items-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-accent-700 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-slate-100"
+                    className="mt-5 inline-flex items-center rounded-lg bg-card px-3 py-2 text-sm font-semibold text-accent-700 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-secondary"
                     {...getAnalyticsDebugAttributes(CONTACT_FAQ_LINK_FULL_PAGE_EVENT, {
                         source: 'contact_page',
                     })}

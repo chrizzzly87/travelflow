@@ -28,7 +28,7 @@ export interface MapAppLinksProps extends MapDeepLinkTarget {
 }
 
 const BASE_LINK_CLASS = 'inline-flex items-center justify-center gap-1.5 rounded-lg border font-medium '
-  + 'transition-colors border-gray-200 bg-white text-gray-700 hover:border-accent-300 hover:bg-accent-50 '
+  + 'transition-colors border-border bg-card text-foreground hover:border-accent-300 hover:bg-accent-50 '
   + 'hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400';
 
 const SIZE_CLASS: Record<'sm' | 'md', string> = {

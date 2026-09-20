@@ -83,11 +83,11 @@ const EntitlementCard: React.FC<{
     ];
 
     return (
-        <div className="mt-3 flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="mt-3 flex flex-col gap-4 rounded-xl border border-border bg-secondary p-4">
             <div className="grid grid-cols-2 gap-3">
                 {limits.map((l) => (
                     <div key={l.key} className="flex flex-col gap-1">
-                        <label className="text-[11px] font-semibold uppercase text-slate-500">{l.label}</label>
+                        <label className="text-[11px] font-semibold uppercase text-muted-foreground">{l.label}</label>
 	                        <input
 	                            type="number"
 	                            aria-label={l.label}
@@ -97,7 +97,7 @@ const EntitlementCard: React.FC<{
                                 updateField(l.key, val);
                             }}
                             placeholder="Unlimited"
-                            className="h-8 w-full rounded-md border border-slate-300 px-2 text-sm focus:border-accent-400 focus:ring-1 focus:ring-accent-400"
+                            className="h-8 w-full rounded-md border border-border px-2 text-sm focus:border-accent-400 focus:ring-1 focus:ring-accent-400"
                         />
                     </div>
                 ))}
@@ -113,9 +113,9 @@ const EntitlementCard: React.FC<{
 	                            aria-label={p.label}
 	                            checked={Boolean(parsed[p.key])}
                             onChange={(e) => updateField(p.key, e.target.checked)}
-                            className="size-4 rounded border-slate-300 text-accent-600 focus:ring-accent-600"
+                            className="size-4 rounded border-border text-accent-600 focus:ring-accent-600"
                         />
-                        <span className="text-xs font-medium text-slate-700">{p.label}</span>
+                        <span className="text-xs font-medium text-foreground">{p.label}</span>
                     </label>
                 ))}
             </div>
@@ -285,30 +285,30 @@ export const AdminTiersPage: React.FC = () => {
 
             <section className="grid gap-3 md:grid-cols-3">
                 {visibleTierKeys.map((tierKey) => (
-                    <article key={`count-${tierKey}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{tierKey}</p>
-                        <p className="mt-1 text-sm font-semibold text-slate-800">{PLAN_CATALOG[tierKey].publicName}</p>
-                        <p className="mt-2 text-2xl font-semibold text-slate-900">
+                    <article key={`count-${tierKey}`} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tierKey}</p>
+                        <p className="mt-1 text-sm font-semibold text-foreground">{PLAN_CATALOG[tierKey].publicName}</p>
+                        <p className="mt-2 text-2xl font-semibold text-foreground">
                             <AdminCountUpNumber value={tierCounts[tierKey]} />
                         </p>
-                        <p className="text-xs text-slate-500">Users in selected date range</p>
+                        <p className="text-xs text-muted-foreground">Users in selected date range</p>
                     </article>
                 ))}
             </section>
 
             <section className="mt-4 grid gap-3 xl:grid-cols-3">
                 {visibleTierKeys.map((tierKey) => (
-                    <article key={`tier-${tierKey}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <article key={`tier-${tierKey}`} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                         <div className="flex items-center justify-between gap-2">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{tierKey}</p>
-                                <h2 className="text-base font-semibold text-slate-900">{PLAN_CATALOG[tierKey].publicName}</h2>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tierKey}</p>
+                                <h2 className="text-base font-semibold text-foreground">{PLAN_CATALOG[tierKey].publicName}</h2>
                             </div>
-                            <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">
+                            <span className="rounded-full border border-border bg-secondary px-2 py-1 text-xs font-semibold text-foreground">
                                 ${PLAN_CATALOG[tierKey].monthlyPriceUsd}/mo
                             </span>
                         </div>
-                        <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] text-slate-600">
+                        <div className="mt-2 rounded-lg border border-border bg-secondary px-2.5 py-2 text-[11px] text-muted-foreground">
                             {isLoadingPreview === tierKey ? (
                                 <span className="inline-flex items-center gap-1">
                                     <SpinnerGap size={12} className="animate-spin" />
@@ -370,7 +370,7 @@ export const AdminTiersPage: React.FC = () => {
                 ))}
             </section>
             {visibleTierKeys.length === 0 && (
-                <section className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+                <section className="mt-4 rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
                     No tiers match the current search filter.
                 </section>
             )}

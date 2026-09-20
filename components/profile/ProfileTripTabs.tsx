@@ -38,7 +38,7 @@ export const ProfileTripTabs: React.FC<ProfileTripTabsProps> = ({
               'inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-semibold transition-colors',
               isActive
                 ? 'border-accent-300 bg-accent-50 text-accent-900'
-                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:text-slate-900',
+                : 'border-border bg-card text-foreground hover:border-border hover:text-foreground',
               tab.disabled ? 'cursor-not-allowed opacity-70' : '',
             ].join(' ')}
             {...(analyticsAttrs ? analyticsAttrs(tab.id) : {})}
@@ -47,13 +47,13 @@ export const ProfileTripTabs: React.FC<ProfileTripTabsProps> = ({
             <span
               className={[
                 'rounded-full px-2 py-0.5 text-xs font-bold',
-                isActive ? 'bg-accent-100 text-accent-800' : 'bg-slate-100 text-slate-600',
+                isActive ? 'bg-accent-100 text-accent-800' : 'bg-secondary text-muted-foreground',
               ].join(' ')}
             >
               {tab.count}
             </span>
             {tab.badge && (
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-500">
+              <span className="rounded-full border border-border bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
                 {tab.badge}
               </span>
             )}

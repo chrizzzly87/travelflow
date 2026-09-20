@@ -452,7 +452,7 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
                 </GoogleMap>
             )}
             {(!isLoaded || isResolvingSpots) && (
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-100/70 text-xs font-medium text-slate-600">
+                <div className="absolute inset-0 flex items-center justify-center bg-secondary/70 text-xs font-medium text-muted-foreground">
                     {locale === 'de' ? 'Karte wird geladen…' : 'Loading map…'}
                 </div>
             )}
@@ -497,14 +497,14 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
     });
 
     return (
-        <section className="my-12 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-            <h3 className="text-lg font-semibold text-slate-900">
+        <section className="my-12 rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
+            <h3 className="text-lg font-semibold text-foreground">
                 {config.title}
             </h3>
-            {config.description && <p className="mt-2 text-sm text-slate-600">{config.description}</p>}
+            {config.description && <p className="mt-2 text-sm text-muted-foreground">{config.description}</p>}
 
             <div className="mt-5 grid gap-5 xl:grid-cols-2 xl:items-stretch">
-                <div className="order-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 min-h-[380px] xl:order-2 xl:h-full">
+                <div className="order-2 overflow-hidden rounded-xl border border-border bg-secondary min-h-[380px] xl:order-2 xl:h-full">
                     <div className="h-full min-h-[380px] xl:min-h-full">
                         <GoogleMapsLoader language={normalizeAppLanguage(locale)}>
                             <BlogMapCanvas
@@ -530,12 +530,12 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                             category: nextCategoryId,
                         });
                     }}
-                    className="order-1 min-w-0 rounded-xl border border-slate-200 bg-white"
+                    className="order-1 min-w-0 rounded-xl border border-border bg-card"
                 >
                     {config.categories.map((category) => (
-                        <AccordionItem key={category.id} value={category.id} className="border-b border-slate-200 last:border-b-0">
+                        <AccordionItem key={category.id} value={category.id} className="border-b border-border last:border-b-0">
                             <AccordionTrigger
-                                className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-800 hover:no-underline hover:text-accent-700 data-[state=open]:text-accent-700"
+                                className="cursor-pointer px-4 py-3 text-sm font-semibold text-foreground hover:no-underline hover:text-accent-700 data-[state=open]:text-accent-700"
                                 {...getAnalyticsDebugAttributes('blog__map_card--category', {
                                     slug: postSlug,
                                     category: category.id,
@@ -575,11 +575,11 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                                                         {spotIndex + 1}
                                                     </span>
                                                     <span className="min-w-0">
-                                                        <span className="block min-w-0 break-words text-sm font-semibold text-slate-800 transition-colors group-hover:text-accent-800">
+                                                        <span className="block min-w-0 break-words text-sm font-semibold text-foreground transition-colors group-hover:text-accent-800">
                                                             {spot.name}
                                                         </span>
                                                         {spot.note && (
-                                                            <span className="mt-0.5 block text-xs text-slate-500 transition-colors group-hover:text-slate-600">
+                                                            <span className="mt-0.5 block text-xs text-muted-foreground transition-colors group-hover:text-muted-foreground">
                                                                 {spot.note}
                                                             </span>
                                                         )}
@@ -610,7 +610,7 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
         return (
             <h2
                 id={id}
-                className="mt-10 mb-4 text-2xl font-semibold tracking-tight text-slate-900 scroll-mt-24"
+                className="mt-10 mb-4 text-2xl font-semibold tracking-tight text-foreground scroll-mt-24"
                 style={{ fontFamily: 'var(--tf-font-heading)' }}
             >
                 {children}
@@ -618,12 +618,12 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
         );
     },
     h3: ({ children }) => (
-        <h3 className="mt-8 mb-3 text-xl font-semibold text-slate-800" style={{ fontFamily: 'var(--tf-font-heading)' }}>
+        <h3 className="mt-8 mb-3 text-xl font-semibold text-foreground" style={{ fontFamily: 'var(--tf-font-heading)' }}>
             {children}
         </h3>
     ),
     p: ({ children }) => (
-        <p className="mb-4 text-base leading-relaxed text-slate-600">{children}</p>
+        <p className="mb-4 text-base leading-relaxed text-muted-foreground">{children}</p>
     ),
     a: ({ href, children }) => {
         const resolvedHref = (href || '').trim();
@@ -661,10 +661,10 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
         );
     },
     ul: ({ children }) => (
-        <ul className="mb-4 ml-6 list-disc space-y-1.5 text-base leading-relaxed text-slate-600">{children}</ul>
+        <ul className="mb-4 ml-6 list-disc space-y-1.5 text-base leading-relaxed text-muted-foreground">{children}</ul>
     ),
     ol: ({ children }) => (
-        <ol className="mb-4 ml-6 list-decimal space-y-1.5 text-base leading-relaxed text-slate-600">{children}</ol>
+        <ol className="mb-4 ml-6 list-decimal space-y-1.5 text-base leading-relaxed text-muted-foreground">{children}</ol>
     ),
     li: ({ children }) => <li>{children}</li>,
     img: ({ src, alt }) => {
@@ -674,8 +674,8 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
         const resolvedAlt = deriveMarkdownImageAlt(alt, resolvedSrc, mapContext.articleTitle);
         return (
             <figure className="mb-7">
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
-                    <div className="relative w-full overflow-hidden bg-slate-100" style={{ aspectRatio: '3 / 2' }}>
+                <div className="overflow-hidden rounded-2xl border border-border bg-secondary shadow-sm">
+                    <div className="relative w-full overflow-hidden bg-secondary" style={{ aspectRatio: '3 / 2' }}>
                         <ProgressiveImage
                             src={resolvedSrc}
                             alt={resolvedAlt}
@@ -689,7 +689,7 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
                         />
                     </div>
                 </div>
-                <figcaption className="mt-2 text-center text-xs font-medium text-slate-500">{resolvedAlt}</figcaption>
+                <figcaption className="mt-2 text-center text-xs font-medium text-muted-foreground">{resolvedAlt}</figcaption>
             </figure>
         );
     },
@@ -711,7 +711,7 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
     code: ({ children, className }) => {
         const isInline = !className;
         if (isInline) {
-            return <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sm font-mono text-slate-700">{children}</code>;
+            return <code className="rounded bg-secondary px-1.5 py-0.5 text-sm font-mono text-foreground">{children}</code>;
         }
 
         return (
@@ -721,7 +721,7 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
         );
     },
     blockquote: ({ children }) => (
-        <blockquote className="mb-4 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 italic text-slate-500">{children}</blockquote>
+        <blockquote className="mb-4 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 italic text-muted-foreground">{children}</blockquote>
     ),
     table: ({ children }) => (
         <div className="mb-4 overflow-x-auto">
@@ -731,17 +731,17 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
         </div>
     ),
     thead: ({ children }) => (
-        <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500">
+        <thead className="bg-secondary text-xs font-bold uppercase tracking-wider text-muted-foreground">
             {children}
         </thead>
     ),
     th: ({ children }) => (
-        <th className="px-4 py-2.5 border-b border-slate-200">{children}</th>
+        <th className="px-4 py-2.5 border-b border-border">{children}</th>
     ),
     td: ({ children }) => (
-        <td className="px-4 py-2.5 border-b border-slate-100 text-slate-600">{children}</td>
+        <td className="px-4 py-2.5 border-b border-border text-muted-foreground">{children}</td>
     ),
-    hr: () => <hr className="my-8 border-slate-200" />,
+    hr: () => <hr className="my-8 border-border" />,
 });
 
 interface HeadingInfo {
@@ -1007,7 +1007,7 @@ export const BlogPostPage: React.FC = () => {
                         onClick={handleBackToBlogClick}
                         onFocus={prefetchBlogListRoute}
                         onPointerEnter={prefetchBlogListRoute}
-                        className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-accent-700 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-accent-700 transition-colors"
                     >
                         <ArrowLeft size={14} weight="bold" />
                         {t('common:buttons.backToBlog')}
@@ -1026,7 +1026,7 @@ export const BlogPostPage: React.FC = () => {
                     className="relative w-full"
                     style={postTransitionNames && shouldAssignCardTransition ? getBlogTransitionStyle(postTransitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain') : undefined}
                 >
-                    <div className={`relative z-10 mb-8 h-52 overflow-hidden rounded-2xl md:h-72 lg:h-80 ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
+                    <div className={`relative z-10 mb-8 h-52 overflow-hidden rounded-2xl md:h-72 lg:h-80 ${hasHeaderImageError ? post.coverColor : 'bg-secondary'}`}>
                         {!hasHeaderImageError && (
                             <>
                                 <div
@@ -1063,7 +1063,7 @@ export const BlogPostPage: React.FC = () => {
                         >
                             <div id="overview" className="scroll-mt-24 h-px w-full" />
                             <h1
-                                className="text-3xl font-semibold tracking-tight text-slate-900 md:text-5xl"
+                                className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl"
                                 style={
                                     postTransitionNames
                                         ? ({
@@ -1076,7 +1076,7 @@ export const BlogPostPage: React.FC = () => {
                                 {post.title}
                             </h1>
 
-                            <div lang={locale} className="mt-5 flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                            <div lang={locale} className="mt-5 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                                 <span className="inline-flex items-center gap-1.5">
                                     <User size={14} weight="duotone" className="text-accent-400" />
                                     {post.author}
@@ -1093,7 +1093,7 @@ export const BlogPostPage: React.FC = () => {
                                     <Link
                                         key={tag}
                                         to={buildLocalizedMarketingPath('blog', locale)}
-                                        className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500 hover:bg-slate-200 transition-colors"
+                                        className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-muted-foreground hover:bg-slate-200 transition-colors"
                                     >
                                         <Tag size={10} weight="duotone" />
                                         {tag}
@@ -1101,7 +1101,7 @@ export const BlogPostPage: React.FC = () => {
                                 ))}
                             </div>
 
-                            <p className="mt-6 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 text-lg leading-relaxed text-slate-600">
+                            <p className="mt-6 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 text-lg leading-relaxed text-muted-foreground">
                                 {post.summary}
                             </p>
 
@@ -1117,8 +1117,8 @@ export const BlogPostPage: React.FC = () => {
                         <div className="space-y-8 pr-1">
                             {headings.length > 0 && (
                                 <nav>
-                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">{t('post.inThisArticle')}</h4>
-                                    <ul className="relative border-l border-slate-200">
+                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">{t('post.inThisArticle')}</h4>
+                                    <ul className="relative border-l border-border">
                                         {headings.map((heading) => {
                                             const isActive = activeHeadingId === heading.slug;
                                             return (
@@ -1137,7 +1137,7 @@ export const BlogPostPage: React.FC = () => {
                                                         className={`block w-full py-1.5 pl-4 text-left text-[13px] leading-snug transition-colors duration-200 ${
                                                             isActive
                                                                 ? 'font-semibold text-accent-700'
-                                                                : 'text-slate-500 hover:text-slate-800'
+                                                                : 'text-muted-foreground hover:text-foreground'
                                                         }`}
                                                     >
                                                         {heading.text}
@@ -1151,7 +1151,7 @@ export const BlogPostPage: React.FC = () => {
 
                             {relatedPosts.length > 0 && (
                                 <div>
-                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">{t('post.related')}</h4>
+                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">{t('post.related')}</h4>
                                     <ul className="space-y-3">
                                         {relatedPosts.map((related) => (
                                             <li key={`${related.language}:${related.slug}`}>
@@ -1162,13 +1162,13 @@ export const BlogPostPage: React.FC = () => {
                                                     className="group flex items-start gap-2"
                                                 >
                                                     <div className={`mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md ${related.coverColor}`}>
-                                                        <Article size={12} weight="duotone" className="text-slate-400" />
+                                                        <Article size={12} weight="duotone" className="text-muted-foreground" />
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <p className="text-sm font-medium text-slate-700 group-hover:text-accent-700 transition-colors line-clamp-2 leading-snug">
+                                                        <p className="text-sm font-medium text-foreground group-hover:text-accent-700 transition-colors line-clamp-2 leading-snug">
                                                             {related.title}
                                                         </p>
-                                                        <p className="mt-0.5 text-xs text-slate-400">{t('index.readTime', { minutes: related.readingTimeMin })}</p>
+                                                        <p className="mt-0.5 text-xs text-muted-foreground">{t('index.readTime', { minutes: related.readingTimeMin })}</p>
                                                     </div>
                                                 </Link>
                                             </li>
@@ -1177,12 +1177,12 @@ export const BlogPostPage: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-accent-50 to-white p-5">
+                            <div className="rounded-2xl border border-border bg-gradient-to-br from-accent-50 to-white p-5">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Compass size={18} weight="duotone" className="text-accent-500" />
-                                    <h4 className="text-sm font-semibold text-slate-900">{t('post.planTripTitle')}</h4>
+                                    <h4 className="text-sm font-semibold text-foreground">{t('post.planTripTitle')}</h4>
                                 </div>
-                                <p className="text-xs leading-relaxed text-slate-500 mb-3">
+                                <p className="text-xs leading-relaxed text-muted-foreground mb-3">
                                     {t('post.planTripDescription')}
                                 </p>
                                 <Link
@@ -1195,14 +1195,14 @@ export const BlogPostPage: React.FC = () => {
                             </div>
 
                             <div>
-                                <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">{t('post.explore')}</h4>
+                                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">{t('post.explore')}</h4>
                                 <div className="space-y-2">
-                                    <Link to={buildLocalizedMarketingPath('blog', locale)} className="flex items-center gap-2 text-sm text-slate-600 hover:text-accent-700 transition-colors">
-                                        <Article size={14} weight="duotone" className="text-slate-400" />
+                                    <Link to={buildLocalizedMarketingPath('blog', locale)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent-700 transition-colors">
+                                        <Article size={14} weight="duotone" className="text-muted-foreground" />
                                         {t('post.allArticles')}
                                     </Link>
-                                    <Link to={buildLocalizedMarketingPath('inspirations', locale)} className="flex items-center gap-2 text-sm text-slate-600 hover:text-accent-700 transition-colors">
-                                        <Compass size={14} weight="duotone" className="text-slate-400" />
+                                    <Link to={buildLocalizedMarketingPath('inspirations', locale)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent-700 transition-colors">
+                                        <Compass size={14} weight="duotone" className="text-muted-foreground" />
                                         {t('post.tripInspirations')}
                                     </Link>
                                 </div>
@@ -1213,9 +1213,9 @@ export const BlogPostPage: React.FC = () => {
                 </div>
 
                 {relatedPosts.length > 0 && (
-                    <div className="mt-16 border-t border-slate-200 pt-10 lg:hidden" style={BLOG_DEFERRED_SECTION_STYLE}>
+                    <div className="mt-16 border-t border-border pt-10 lg:hidden" style={BLOG_DEFERRED_SECTION_STYLE}>
                         <h2
-                            className="text-xl font-semibold tracking-tight text-slate-900"
+                            className="text-xl font-semibold tracking-tight text-foreground"
                             style={{ fontFamily: 'var(--tf-font-heading)' }}
                         >
                             {t('post.relatedArticles')}
@@ -1227,16 +1227,16 @@ export const BlogPostPage: React.FC = () => {
                                     to={buildLocalizedMarketingPath('blogPost', locale, { slug: related.slug })}
                                     lang={related.language}
                                     data-blog-related-lang={related.language}
-                                    className="group flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
+                                    className="group flex items-start gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
                                 >
                                     <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${related.coverColor}`}>
-                                        <ArrowRight size={16} weight="bold" className="text-slate-400 group-hover:text-accent-600 transition-colors" />
+                                        <ArrowRight size={16} weight="bold" className="text-muted-foreground group-hover:text-accent-600 transition-colors" />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <h3 className="text-sm font-semibold text-slate-900 group-hover:text-accent-700 transition-colors line-clamp-2">
+                                        <h3 className="text-sm font-semibold text-foreground group-hover:text-accent-700 transition-colors line-clamp-2">
                                             {related.title}
                                         </h3>
-                                        <p className="mt-1 text-xs text-slate-400">
+                                        <p className="mt-1 text-xs text-muted-foreground">
                                             {t('index.readTime', { minutes: related.readingTimeMin })}
                                         </p>
                                     </div>

@@ -35,9 +35,9 @@ export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
         const hasValue = value !== undefined && value !== null && String(value).length > 0;
 
         return (
-            <InputGroup className={cn('h-10 border-slate-300 bg-white', containerClassName)}>
+            <InputGroup className={cn('h-10 border-border bg-card', containerClassName)}>
                 <InputGroupAddon align="inline-start">
-                    <MagnifyingGlass className="size-4 text-slate-400" />
+                    <MagnifyingGlass className="size-4 text-muted-foreground" />
                 </InputGroupAddon>
 
                 <InputGroupInput
@@ -59,7 +59,7 @@ export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
                             size="icon-xs"
                             aria-label={clearLabel}
                             onClick={onClear}
-                            className="text-slate-500 hover:text-slate-900"
+                            className="text-muted-foreground hover:text-foreground"
                         >
                             <X weight="bold" className="size-3.5" />
                         </InputGroupButton>

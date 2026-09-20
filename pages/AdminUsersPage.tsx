@@ -259,7 +259,7 @@ interface UserLoginProfile {
 const LOGIN_PILL_DEFINITIONS: Record<LoginPillKey, LoginPillDefinition> = {
     password: {
         label: 'Username/password',
-        className: 'border-slate-300 bg-slate-50 text-slate-700',
+        className: 'border-border bg-secondary text-foreground',
         icon: Key,
     },
     google: {
@@ -279,7 +279,7 @@ const LOGIN_PILL_DEFINITIONS: Record<LoginPillKey, LoginPillDefinition> = {
     },
     apple: {
         label: 'Apple',
-        className: 'border-slate-400 bg-slate-100 text-slate-800',
+        className: 'border-slate-400 bg-secondary text-foreground',
         icon: AppleLogo,
     },
     github: {
@@ -304,7 +304,7 @@ const LOGIN_PILL_DEFINITIONS: Record<LoginPillKey, LoginPillDefinition> = {
     },
     unknown: {
         label: 'Unknown',
-        className: 'border-slate-300 bg-slate-50 text-slate-600',
+        className: 'border-border bg-secondary text-muted-foreground',
         icon: Question,
     },
 };
@@ -870,7 +870,7 @@ const areOverrideRecordsEqual = (left: Record<string, unknown>, right: Record<st
 const rolePillClass = (role: 'admin' | 'user') => (
     role === 'admin'
         ? 'border-accent-300 bg-accent-50 text-accent-900'
-        : 'border-slate-300 bg-slate-50 text-slate-700'
+        : 'border-border bg-secondary text-foreground'
 );
 
 const statusPillClass = (status: UserAccountStatus) => {
@@ -935,7 +935,7 @@ const resolveUserSubscriptionDowngradeAt = (user: AdminUserRecord): string | nul
 const tierPillClass = (tier: PlanTierKey) => {
     if (tier === 'tier_premium') return 'border-violet-300 bg-violet-50 text-violet-800';
     if (tier === 'tier_mid') return 'border-sky-300 bg-sky-50 text-sky-800';
-    return 'border-slate-300 bg-slate-50 text-slate-700';
+    return 'border-border bg-secondary text-foreground';
 };
 
 interface CreateInviteDraft {
@@ -998,20 +998,20 @@ const UserRowActionsMenu: React.FC<{
                 type="button"
                 onClick={() => setIsOpen((current) => !current)}
                 disabled={disabled}
-                className="inline-flex size-8 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Open user actions"
             >
                 <DotsThreeVertical size={16} />
             </button>
             {isOpen && (
-                <div className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[170px] rounded-lg border border-slate-200 bg-white p-1 shadow-xl">
+                <div className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[170px] rounded-lg border border-border bg-card p-1 shadow-xl">
                     <button
                         type="button"
                         onClick={() => {
                             setIsOpen(false);
                             onOpenDetails();
                         }}
-                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-secondary"
                     >
                         Open details
                     </button>
@@ -1180,18 +1180,18 @@ const LoginTypeFilterMenu: React.FC<{
                     updateMenuPosition();
                     setIsOpen((current) => !current);
                 }}
-                className={`inline-flex h-8 w-fit items-center justify-center whitespace-nowrap rounded-md border border-dashed border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50`}
+                className={`inline-flex h-8 w-fit items-center justify-center whitespace-nowrap rounded-md border border-dashed border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-secondary focus:outline-none focus:ring-1 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50`}
                 aria-label="Filter by login type"
                 aria-expanded={isOpen}
             >
-                <Key size={14} className="mr-2 text-slate-500 shrink-0" weight="duotone" />
+                <Key size={14} className="mr-2 text-muted-foreground shrink-0" weight="duotone" />
                 <span>Login type</span>
                 
                 <div className="mx-2 flex h-4 items-center">
                     <div className="h-full w-[1px] bg-slate-200" />
                 </div>
                 
-                <span className="inline-flex items-center rounded-sm bg-slate-100 px-1 font-normal text-slate-800 max-w-[220px] truncate">
+                <span className="inline-flex items-center rounded-sm bg-secondary px-1 font-normal text-foreground max-w-[220px] truncate">
                     {selectedLabelSummary}
                 </span>
             </button>
@@ -1199,19 +1199,19 @@ const LoginTypeFilterMenu: React.FC<{
             {isOpen && typeof document !== 'undefined' && createPortal(
                 <div
                     ref={menuRef}
-                    className="fixed z-[1700] overflow-hidden rounded-md border border-slate-200 bg-white text-slate-950 shadow-md animate-in fade-in-80"
+                    className="fixed z-[1700] overflow-hidden rounded-md border border-border bg-card text-foreground shadow-md animate-in fade-in-80"
                     style={{
                         top: `${menuPosition.top}px`,
                         left: `${menuPosition.left}px`,
                         width: `${menuPosition.width}px`,
                     }}
                 >
-                    <div className="px-2 py-1.5 text-xs font-medium text-slate-500">
+                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
                         Login type
                     </div>
-                    <div className="h-px bg-slate-100" />
+                    <div className="h-px bg-secondary" />
                     <div className="space-y-0.5 p-1">
-                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group">
+                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-secondary hover:text-foreground group">
                             <div className="mr-2 flex size-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('password')}
@@ -1220,9 +1220,9 @@ const LoginTypeFilterMenu: React.FC<{
                                 />
                             </div>
                             <span>Username/password</span>
-                            <span className="ml-auto text-xs text-slate-500">{counts.password}</span>
+                            <span className="ml-auto text-xs text-muted-foreground">{counts.password}</span>
                         </label>
-                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group">
+                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-secondary hover:text-foreground group">
                             <div className="mr-2 flex size-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={socialCheckboxState}
@@ -1231,9 +1231,9 @@ const LoginTypeFilterMenu: React.FC<{
                                 />
                             </div>
                             <span>Social</span>
-                            <span className="ml-auto text-xs text-slate-500">{counts.social}</span>
+                            <span className="ml-auto text-xs text-muted-foreground">{counts.social}</span>
                         </label>
-                        <div className={`ms-6 space-y-0.5 border-l-2 border-slate-100 pl-2 ${socialEnabled ? '' : 'opacity-50 pointer-events-none'}`}>
+                        <div className={`ms-6 space-y-0.5 border-l-2 border-border pl-2 ${socialEnabled ? '' : 'opacity-50 pointer-events-none'}`}>
                             {SOCIAL_PROVIDER_OPTIONS.map((option) => {
                                 const checked = socialEnabled
                                     && (selectedSocialProviders.length === 0 || selectedSocialProviderSet.has(option.value));
@@ -1242,7 +1242,7 @@ const LoginTypeFilterMenu: React.FC<{
                                 return (
                                     <label
                                         key={`social-provider-filter-${option.value}`}
-                                        className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-xs outline-none hover:bg-slate-100 hover:text-slate-900 group"
+                                        className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-xs outline-none hover:bg-secondary hover:text-foreground group"
                                     >
                                         <div className="mr-2 flex size-3.5 shrink-0 items-center justify-center">
                                             <Checkbox
@@ -1251,14 +1251,14 @@ const LoginTypeFilterMenu: React.FC<{
                                                 className="size-3.5 rounded-[2px]"
                                             />
                                         </div>
-                                        <Icon size={12} className="mr-1.5 text-slate-500" />
+                                        <Icon size={12} className="mr-1.5 text-muted-foreground" />
                                         <span>{option.label}</span>
-                                        <span className="ml-auto text-[10px] text-slate-500">{counts.socialProviders[option.value]}</span>
+                                        <span className="ml-auto text-[10px] text-muted-foreground">{counts.socialProviders[option.value]}</span>
                                     </label>
                                 );
                             })}
                         </div>
-                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group">
+                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-secondary hover:text-foreground group">
                             <div className="mr-2 flex size-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('unknown')}
@@ -1267,12 +1267,12 @@ const LoginTypeFilterMenu: React.FC<{
                                 />
                             </div>
                             <span>Unknown</span>
-                            <span className="ml-auto text-xs text-slate-500">{counts.unknown}</span>
+                            <span className="ml-auto text-xs text-muted-foreground">{counts.unknown}</span>
                         </label>
                     </div>
                     {selectedLoginTypeSet.size > 0 && (
                         <>
-                            <div className="h-px bg-slate-100" />
+                            <div className="h-px bg-secondary" />
                             <div className="p-1">
                                 <button
                                     type="button"
@@ -1281,7 +1281,7 @@ const LoginTypeFilterMenu: React.FC<{
                                         onSelectedSocialProvidersChange([]);
                                         setIsOpen(false);
                                     }}
-                                    className="relative flex w-full cursor-default select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-slate-100 hover:text-slate-900"
+                                    className="relative flex w-full cursor-default select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-secondary hover:text-foreground"
                                 >
                                     Clear filters
                                 </button>
@@ -2818,34 +2818,34 @@ export const AdminUsersPage: React.FC = () => {
             )}
 
             <section className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Total users</p>
-                    <p className="mt-2 text-3xl font-semibold text-slate-900">
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Total users</p>
+                    <p className="mt-2 text-3xl font-semibold text-foreground">
                         <AdminCountUpNumber value={usersSummary.total} />
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">Within active table scope</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Within active table scope</p>
                 </article>
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Active account ratio</p>
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Active account ratio</p>
                     <p className="mt-2 inline-flex items-baseline gap-0.5 text-3xl font-semibold text-emerald-700">
                         <AdminCountUpNumber value={usersSummary.activeRatioPct} />
                         <span className="text-xl">%</span>
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                         <AdminCountUpNumber value={usersSummary.activeAccounts} /> active accounts
                     </p>
                 </article>
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Pending activation</p>
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Pending activation</p>
                     <p className="mt-2 text-3xl font-semibold text-amber-700">
                         <AdminCountUpNumber value={usersSummary.pendingActivation} />
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">{usersSummary.pendingRatioPct}% of visible users</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{usersSummary.pendingRatioPct}% of visible users</p>
                 </article>
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                     <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Activation mix</p>
-                        <ChartBarHorizontal size={16} className="text-slate-500" />
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Activation mix</p>
+                        <ChartBarHorizontal size={16} className="text-muted-foreground" />
                     </div>
                     <div className="mt-3 space-y-2">
                         {USER_ACTIVATION_VALUES.map((activation) => {
@@ -2853,11 +2853,11 @@ export const AdminUsersPage: React.FC = () => {
                             const pct = usersSummary.total > 0 ? Math.round((count / usersSummary.total) * 100) : 0;
                             return (
                                 <div key={`activation-mix-${activation}`} className="space-y-1">
-                                    <div className="flex items-center justify-between text-[11px] text-slate-600">
+                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                                         <span>{getActivationStatusLabel(activation)}</span>
                                         <span>{count} ({pct}%)</span>
                                     </div>
-                                    <div className="h-1.5 rounded-full bg-slate-100">
+                                    <div className="h-1.5 rounded-full bg-secondary">
                                         <div className="h-1.5 rounded-full bg-slate-500 transition-[width] duration-500" style={{ width: `${pct}%` }} />
                                     </div>
                                 </div>
@@ -2868,11 +2868,11 @@ export const AdminUsersPage: React.FC = () => {
             </section>
 
             <section
-                className={`relative rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${isSaving ? 'pointer-events-none opacity-80' : ''}`}
+                className={`relative rounded-2xl border border-border bg-card p-4 shadow-sm ${isSaving ? 'pointer-events-none opacity-80' : ''}`}
                 aria-busy={isSaving}
             >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h2 className="text-sm font-semibold text-slate-900">Users</h2>
+                    <h2 className="text-sm font-semibold text-foreground">Users</h2>
                     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                         <AdminFilterMenu
                             label="Activation"
@@ -2962,7 +2962,7 @@ export const AdminUsersPage: React.FC = () => {
                             type="button"
                             onClick={handleExportUsersCsv}
                             disabled={filteredUsers.length === 0}
-                            className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl border border-border bg-card px-3 text-sm font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <ArrowSquareOut size={14} />
                             Export CSV
@@ -2970,20 +2970,20 @@ export const AdminUsersPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={resetTableFilters}
-                            className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                            className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-sm font-semibold text-foreground hover:bg-secondary"
                         >
                             <X size={14} />
                             Reset
                         </button>
                     </div>
                 </div>
-                <p className="mt-2 text-xs text-slate-500">
-                    Cleanup shortcut: use <span className="font-semibold text-slate-700"># Trips</span> and select
-                    <span className="font-semibold text-slate-700"> No trips + no profile data</span>.
+                <p className="mt-2 text-xs text-muted-foreground">
+                    Cleanup shortcut: use <span className="font-semibold text-foreground"># Trips</span> and select
+                    <span className="font-semibold text-foreground"> No trips + no profile data</span>.
                 </p>
 
-                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                    <span className="text-xs font-semibold text-slate-700">
+                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2">
+                    <span className="text-xs font-semibold text-foreground">
                         {selectedVisibleUsers.length} selected
                     </span>
                     <button
@@ -3007,16 +3007,16 @@ export const AdminUsersPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => setSelectedUserIds(new Set())}
-                            className="inline-flex h-8 items-center rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                            className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-xs font-semibold text-foreground hover:bg-secondary"
                         >
                             Clear
                         </button>
                     )}
                 </div>
 
-                <div ref={usersTableScrollRef} className="mt-3 rounded-xl border border-slate-200 bg-white">
+                <div ref={usersTableScrollRef} className="mt-3 rounded-xl border border-border bg-card">
                     <Table className="w-[max(100%,1320px)]">
-                        <TableHeader className="bg-slate-50">
+                        <TableHeader className="bg-secondary">
                             <TableRow>
                                 <TableHead
                                     className={`sticky left-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-2 py-3 ${getAdminStickyHeaderCellClass({
@@ -3033,7 +3033,7 @@ export const AdminUsersPage: React.FC = () => {
                                 </TableHead>
                                 {isUserColumnVisible('user') && (
                                     <TableHead
-                                        className={`sticky left-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] overflow-hidden px-4 py-3 font-semibold text-slate-700 ${getAdminStickyHeaderCellClass({
+                                        className={`sticky left-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] overflow-hidden px-4 py-3 font-semibold text-foreground ${getAdminStickyHeaderCellClass({
                                             isScrolled: isUsersTableScrolledHorizontally,
                                             isFirst: false,
                                             isSorted: isUserSortedColumn('name'),
@@ -3049,7 +3049,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('login') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('email') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('email') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Login"
                                             isActive={isUserSortedColumn('email')}
@@ -3059,7 +3059,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('trips') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('total_trips') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('total_trips') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Trips"
                                             isActive={isUserSortedColumn('total_trips')}
@@ -3069,7 +3069,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('activation') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('activation_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('activation_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Activation"
                                             isActive={isUserSortedColumn('activation_status')}
@@ -3079,7 +3079,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('role') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('system_role') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('system_role') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Role"
                                             isActive={isUserSortedColumn('system_role')}
@@ -3089,7 +3089,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('tier') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('tier_key') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('tier_key') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Tier"
                                             isActive={isUserSortedColumn('tier_key')}
@@ -3099,7 +3099,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('subscription') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('subscription_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('subscription_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Subscription"
                                             isActive={isUserSortedColumn('subscription_status')}
@@ -3109,7 +3109,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('status') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('account_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('account_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Status"
                                             isActive={isUserSortedColumn('account_status')}
@@ -3119,7 +3119,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('toc') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('terms_accepted_version') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('terms_accepted_version') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="ToC"
                                             isActive={isUserSortedColumn('terms_accepted_version')}
@@ -3129,7 +3129,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('last_visit') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('last_sign_in_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('last_sign_in_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Last sign-in"
                                             isActive={isUserSortedColumn('last_sign_in_at')}
@@ -3139,7 +3139,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('last_log') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('updated_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('updated_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Last log"
                                             isActive={isUserSortedColumn('updated_at')}
@@ -3149,7 +3149,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('created') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('created_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isUserSortedColumn('created_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Created"
                                             isActive={isUserSortedColumn('created_at')}
@@ -3158,7 +3158,7 @@ export const AdminUsersPage: React.FC = () => {
                                         />
                                     </TableHead>
                                 )}
-                                <TableHead className="px-4 py-3 text-right font-semibold text-slate-700">Actions</TableHead>
+                                <TableHead className="px-4 py-3 text-right font-semibold text-foreground">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -3208,9 +3208,9 @@ export const AdminUsersPage: React.FC = () => {
                                                     title="Open details drawer"
                                                     className="group block w-full min-w-0 cursor-pointer text-left hover:text-accent-700"
                                                 >
-                                                    <div className="truncate text-sm font-semibold text-slate-800 group-hover:underline group-hover:decoration-slate-400">{userName}</div>
-                                                    <div className="truncate text-xs text-slate-600">{user.email || 'No email address'}</div>
-                                                    <div className="mt-0.5 flex min-w-0 items-center gap-1 text-[11px] text-slate-500">
+                                                    <div className="truncate text-sm font-semibold text-foreground group-hover:underline group-hover:decoration-slate-400">{userName}</div>
+                                                    <div className="truncate text-xs text-muted-foreground">{user.email || 'No email address'}</div>
+                                                    <div className="mt-0.5 flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
                                                         <span className="shrink-0">UUID:</span>
                                                         <CopyableUuid
                                                             value={user.user_id}
@@ -3254,11 +3254,11 @@ export const AdminUsersPage: React.FC = () => {
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('trips') && (
-                                            <TableCell className={`px-4 py-3 text-xs text-slate-600 ${isUserSortedColumn('total_trips') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <div className="font-semibold text-slate-800 hover:text-accent-700">
+                                            <TableCell className={`px-4 py-3 text-xs text-muted-foreground ${isUserSortedColumn('total_trips') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <div className="font-semibold text-foreground hover:text-accent-700">
                                                     {getUserTotalTrips(user)} total
                                                 </div>
-                                                <div className="text-[11px] text-slate-500">
+                                                <div className="text-[11px] text-muted-foreground">
                                                     {getUserActiveTrips(user)} active
                                                 </div>
                                                 {isTriplessNoData && (
@@ -3296,7 +3296,7 @@ export const AdminUsersPage: React.FC = () => {
                                                         {getUserSubscriptionStatusLabel(subscriptionStatus)}
                                                     </span>
                                                     {user.provider_subscription_id ? (
-                                                        <span className="truncate text-[11px] font-mono text-slate-500" title={user.provider_subscription_id}>
+                                                        <span className="truncate text-[11px] font-mono text-muted-foreground" title={user.provider_subscription_id}>
                                                             {user.provider_subscription_id}
                                                         </span>
                                                     ) : null}
@@ -3315,37 +3315,37 @@ export const AdminUsersPage: React.FC = () => {
                                                 <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${getUserTermsStatePillClass(termsState)}`}>
                                                     {getUserTermsStateLabel(termsState)}
                                                 </span>
-                                                <div className="mt-1 text-[11px] text-slate-500">
+                                                <div className="mt-1 text-[11px] text-muted-foreground">
                                                     {user.terms_accepted_version || 'No accepted version'}
                                                 </div>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('last_visit') && (
-                                            <TableCell className={`max-w-[210px] px-4 py-3 text-xs text-slate-600 ${isUserSortedColumn('last_sign_in_at') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                            <TableCell className={`max-w-[210px] px-4 py-3 text-xs text-muted-foreground ${isUserSortedColumn('last_sign_in_at') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 <div className="space-y-0.5">
-                                                    <span className="block font-medium text-slate-700" title={formatTimestamp(user.last_sign_in_at)}>
+                                                    <span className="block font-medium text-foreground" title={formatTimestamp(user.last_sign_in_at)}>
                                                         {formatRelativeTimestamp(user.last_sign_in_at, 'No visit yet')}
                                                     </span>
-                                                    <span className="block text-[11px] text-slate-500">
+                                                    <span className="block text-[11px] text-muted-foreground">
                                                         {formatOptionalTimestamp(user.last_sign_in_at)}
                                                     </span>
                                                 </div>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('last_log') && (
-                                            <TableCell className={`max-w-[210px] px-4 py-3 text-xs text-slate-600 ${isUserSortedColumn('updated_at') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                            <TableCell className={`max-w-[210px] px-4 py-3 text-xs text-muted-foreground ${isUserSortedColumn('updated_at') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 <div className="space-y-0.5">
-                                                    <span className="block font-medium text-slate-700" title={formatOptionalTimestamp(user.updated_at)}>
+                                                    <span className="block font-medium text-foreground" title={formatOptionalTimestamp(user.updated_at)}>
                                                         {formatRelativeTimestamp(user.updated_at, 'No logs yet')}
                                                     </span>
-                                                    <span className="block text-[11px] text-slate-500">
+                                                    <span className="block text-[11px] text-muted-foreground">
                                                         {formatOptionalTimestamp(user.updated_at)}
                                                     </span>
                                                 </div>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('created') && (
-                                            <TableCell className={`max-w-[170px] px-4 py-3 text-xs text-slate-500 ${isUserSortedColumn('created_at') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                            <TableCell className={`max-w-[170px] px-4 py-3 text-xs text-muted-foreground ${isUserSortedColumn('created_at') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 {formatOptionalTimestamp(user.created_at)}
                                             </TableCell>
                                         )}
@@ -3364,16 +3364,16 @@ export const AdminUsersPage: React.FC = () => {
                             })}
                             {pagedUsers.length === 0 && !isLoadingUsers && (
                                 <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={usersTableColumnCount}>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-muted-foreground" colSpan={usersTableColumnCount}>
                                         No users match your filters.
                                     </TableCell>
                                 </TableRow>
                             )}
                             {isLoadingUsers && (
                                 <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={usersTableColumnCount}>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-muted-foreground" colSpan={usersTableColumnCount}>
                                         <span className="inline-flex items-center gap-2 font-medium">
-                                            <SpinnerGap size={16} className="animate-spin text-slate-400" />
+                                            <SpinnerGap size={16} className="animate-spin text-muted-foreground" />
                                             Loading users…
                                         </span>
                                     </TableCell>
@@ -3383,7 +3383,7 @@ export const AdminUsersPage: React.FC = () => {
                     </Table>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
                     <span>
                         {filteredUsers.length === 0
                             ? 'Showing 0 users'
@@ -3394,7 +3394,7 @@ export const AdminUsersPage: React.FC = () => {
                             type="button"
                             onClick={() => setPage((current) => Math.max(current - 1, 1))}
                             disabled={page === 1}
-                            className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
+                            className="rounded border border-border px-2 py-1 disabled:opacity-50"
                         >
                             Prev
                         </button>
@@ -3403,15 +3403,15 @@ export const AdminUsersPage: React.FC = () => {
                             type="button"
                             onClick={() => setPage((current) => Math.min(current + 1, pageCount))}
                             disabled={page >= pageCount}
-                            className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
+                            className="rounded border border-border px-2 py-1 disabled:opacity-50"
                         >
                             Next
                         </button>
                     </div>
                 </div>
                 {isSaving && (
-                    <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-white/45 backdrop-blur-[1px]">
-                        <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
+                    <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-card/45 backdrop-blur-[1px]">
+                        <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground shadow-sm">
                             <SpinnerGap size={13} className="animate-spin" />
                             Applying changes…
                         </span>
@@ -3432,11 +3432,11 @@ export const AdminUsersPage: React.FC = () => {
                     </DialogHeader>
 
                     <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-5">
-                        <div className="inline-flex rounded-lg border border-slate-300 p-0.5 text-xs">
+                        <div className="inline-flex rounded-lg border border-border p-0.5 text-xs">
                             <button
                                 type="button"
                                 onClick={() => setCreateMode('invite')}
-                                className={`rounded-md px-3 py-1.5 font-semibold ${createMode === 'invite' ? 'bg-slate-900 text-white' : 'text-slate-600'}`}
+                                className={`rounded-md px-3 py-1.5 font-semibold ${createMode === 'invite' ? 'bg-slate-900 text-white' : 'text-muted-foreground'}`}
                             >
                                 <span className="inline-flex items-center gap-1">
                                     <EnvelopeSimple size={13} />
@@ -3446,7 +3446,7 @@ export const AdminUsersPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => setCreateMode('direct')}
-                                className={`rounded-md px-3 py-1.5 font-semibold ${createMode === 'direct' ? 'bg-slate-900 text-white' : 'text-slate-600'}`}
+                                className={`rounded-md px-3 py-1.5 font-semibold ${createMode === 'direct' ? 'bg-slate-900 text-white' : 'text-muted-foreground'}`}
                             >
                                 <span className="inline-flex items-center gap-1">
                                     <UserPlus size={13} />
@@ -3458,35 +3458,35 @@ export const AdminUsersPage: React.FC = () => {
                         {createMode === 'invite' ? (
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <label className="space-y-1 sm:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</span>
 	                                    <input
 	                                        aria-label="Email"
 	                                        value={inviteDraft.email}
                                         onChange={(event) => setInviteDraft((current) => ({ ...current, email: event.target.value }))}
                                         placeholder="name@example.com"
-                                        className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
                                     />
                                 </label>
                                 <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">First name</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">First name</span>
 	                                    <input
 	                                        aria-label="First name"
 	                                        value={inviteDraft.firstName}
                                         onChange={(event) => setInviteDraft((current) => ({ ...current, firstName: event.target.value }))}
-                                        className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
                                     />
                                 </label>
                                 <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Last name</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last name</span>
 	                                    <input
 	                                        aria-label="Last name"
 	                                        value={inviteDraft.lastName}
                                         onChange={(event) => setInviteDraft((current) => ({ ...current, lastName: event.target.value }))}
-                                        className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
                                     />
                                 </label>
                                 <div className="space-y-1 sm:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Starting tier</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Starting tier</span>
                                     <Select
                                         value={inviteDraft.tierKey}
                                         onValueChange={(value) => setInviteDraft((current) => ({ ...current, tierKey: value as PlanTierKey }))}
@@ -3517,46 +3517,46 @@ export const AdminUsersPage: React.FC = () => {
                         ) : (
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <label className="space-y-1 sm:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</span>
 	                                    <input
 	                                        aria-label="Email"
 	                                        value={directDraft.email}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, email: event.target.value }))}
                                         placeholder="name@example.com"
-                                        className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
                                     />
                                 </label>
                                 <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">First name</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">First name</span>
 	                                    <input
 	                                        aria-label="First name"
 	                                        value={directDraft.firstName}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, firstName: event.target.value }))}
-                                        className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
                                     />
                                 </label>
                                 <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Last name</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last name</span>
 	                                    <input
 	                                        aria-label="Last name"
 	                                        value={directDraft.lastName}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, lastName: event.target.value }))}
-                                        className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
                                     />
                                 </label>
                                 <label className="space-y-1 sm:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Initial password</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Initial password</span>
 	                                    <input
 	                                        aria-label="Initial password"
 	                                        value={directDraft.password}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, password: event.target.value }))}
                                         type="password"
                                         placeholder="Minimum 8 characters"
-                                        className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                                        className="h-9 w-full rounded-lg border border-border px-3 text-sm"
                                     />
                                 </label>
                                 <div className="space-y-1 sm:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Starting tier</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Starting tier</span>
                                     <Select
                                         value={directDraft.tierKey}
                                         onValueChange={(value) => setDirectDraft((current) => ({ ...current, tierKey: value as PlanTierKey }))}
@@ -3627,12 +3627,12 @@ export const AdminUsersPage: React.FC = () => {
                     accessibleDescription="Inspect and edit profile, entitlement overrides, account state, and connected trips."
                 >
                     {!selectedUser ? (
-                        <div className="p-4 text-sm text-slate-500">No user selected.</div>
+                        <div className="p-4 text-sm text-muted-foreground">No user selected.</div>
                     ) : (
                         <div className="flex h-full flex-col">
-                            <div className="border-b border-slate-200 px-5 py-4">
-                                <h2 className="text-base font-semibold text-slate-900">{getUserDisplayName(selectedUser)}</h2>
-                                <p className="truncate text-sm text-slate-600">
+                            <div className="border-b border-border px-5 py-4">
+                                <h2 className="text-base font-semibold text-foreground">{getUserDisplayName(selectedUser)}</h2>
+                                <p className="truncate text-sm text-muted-foreground">
                                     {selectedUser.email || (
                                         <CopyableUuid
                                             value={selectedUser.user_id}
@@ -3642,14 +3642,14 @@ export const AdminUsersPage: React.FC = () => {
                                     )}
                                 </p>
                                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                                    <p className="text-xs font-semibold text-slate-600">
+                                    <p className="text-xs font-semibold text-muted-foreground">
                                         {selectedUserTripStats.active} active trips / {selectedUserTripStats.total} total trips
                                     </p>
                                     <div className="flex flex-wrap items-center gap-2">
                                         {selectedUserTripsPageLink && (
                                             <a
                                                 href={selectedUserTripsPageLink}
-                                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                                             >
                                                 Open in Trips
                                                 <ArrowSquareOut size={12} />
@@ -3660,13 +3660,13 @@ export const AdminUsersPage: React.FC = () => {
                                                 href={selectedUserPublicProfilePath}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                                             >
                                                 Open public profile
                                                 <ArrowSquareOut size={12} />
                                             </a>
                                         ) : (
-                                            <span className="text-[11px] font-semibold text-slate-500">
+                                            <span className="text-[11px] font-semibold text-muted-foreground">
                                                 Public profile unavailable (missing username)
                                             </span>
                                         )}
@@ -3675,37 +3675,37 @@ export const AdminUsersPage: React.FC = () => {
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-4">
-                                <section className="space-y-3 rounded-xl border border-slate-200 p-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Profile and access</h3>
+                                <section className="space-y-3 rounded-xl border border-border p-3">
+                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Profile and access</h3>
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">First name</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">First name</span>
 	                                        <input
 	                                            aria-label="First name"
 	                                            value={profileDraft.firstName}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, firstName: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                                            className="h-9 w-full rounded-lg border border-border px-3 text-sm"
                                         />
                                     </label>
                                     <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Last name</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last name</span>
 	                                        <input
 	                                            aria-label="Last name"
 	                                            value={profileDraft.lastName}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, lastName: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                                            className="h-9 w-full rounded-lg border border-border px-3 text-sm"
                                         />
                                     </label>
                                     <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Username</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Username</span>
 	                                        <input
 	                                            aria-label="Username"
 	                                            value={profileDraft.username}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, username: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                                            className="h-9 w-full rounded-lg border border-border px-3 text-sm"
                                         />
                                     </label>
-                                    <div className="space-y-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600 sm:col-span-2">
+                                    <div className="space-y-1 rounded-lg border border-border bg-secondary px-3 py-2 text-[11px] text-muted-foreground sm:col-span-2">
                                         <div>Self-service username changes are limited to once every {USERNAME_CHANGE_COOLDOWN_DAYS} days.</div>
                                         <div>Last recorded username change: {formatOptionalTimestamp(selectedUser.username_changed_at)}.</div>
                                         <div>
@@ -3718,13 +3718,13 @@ export const AdminUsersPage: React.FC = () => {
                                             type="button"
                                             onClick={() => void handleResetUsernameCooldown()}
                                             disabled={isSaving || !selectedUserUsernameCooldown.isActive}
-                                            className="mt-1 inline-flex h-7 items-center rounded-md border border-slate-300 bg-white px-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                                            className="mt-1 inline-flex h-7 items-center rounded-md border border-border bg-card px-2.5 text-[11px] font-semibold text-foreground hover:bg-secondary disabled:opacity-50"
                                         >
                                             Revoke cooldown
                                         </button>
                                     </div>
                                     <div className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Gender</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Gender</span>
                                         <Select
                                             value={profileDraft.gender || GENDER_UNSET_VALUE}
                                             onValueChange={(value) => {
@@ -3750,7 +3750,7 @@ export const AdminUsersPage: React.FC = () => {
                                         </Select>
                                     </div>
                                     <div className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Country/Region</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Country/Region</span>
                                         <ProfileCountryRegionSelect
                                             value={profileDraft.country}
                                             placeholder="Search country or region"
@@ -3761,25 +3761,25 @@ export const AdminUsersPage: React.FC = () => {
                                         />
                                     </div>
                                     <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">City</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">City</span>
 	                                        <input
 	                                            aria-label="City"
 	                                            value={profileDraft.city}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, city: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                                            className="h-9 w-full rounded-lg border border-border px-3 text-sm"
                                         />
                                     </label>
                                     <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preferred language</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Preferred language</span>
 	                                        <input
 	                                            aria-label="Preferred language"
 	                                            value={profileDraft.preferredLanguage}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, preferredLanguage: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                                            className="h-9 w-full rounded-lg border border-border px-3 text-sm"
                                         />
                                     </label>
                                     <div className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Account status</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Account status</span>
                                         <Select
                                             value={profileDraft.accountStatus}
                                             onValueChange={(value) => setProfileDraft((current) => ({ ...current, accountStatus: value as 'active' | 'disabled' | 'deleted' }))}
@@ -3797,7 +3797,7 @@ export const AdminUsersPage: React.FC = () => {
                                         </Select>
                                     </div>
                                     <div className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Role</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Role</span>
                                         <Select
                                             value={profileDraft.role}
                                             onValueChange={(value) => setProfileDraft((current) => ({ ...current, role: value as 'admin' | 'user' }))}
@@ -3812,7 +3812,7 @@ export const AdminUsersPage: React.FC = () => {
                                         </Select>
                                     </div>
                                     <div className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tier</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tier</span>
                                         <Select
                                             value={tierDraft}
                                             onValueChange={(value) => setTierDraft(value as PlanTierKey)}
@@ -3832,20 +3832,20 @@ export const AdminUsersPage: React.FC = () => {
                                 </div>
                                 </section>
 
-                                <section className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3">
+                                <section className="mt-4 space-y-3 rounded-xl border border-border p-3">
                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Billing subscription</h3>
+                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Billing subscription</h3>
                                     <a
                                         href={`/admin/billing?q=${encodeURIComponent(selectedUser.provider_subscription_id || selectedUser.user_id)}`}
-                                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                                     >
                                         Open billing workspace
                                         <ArrowSquareOut size={12} />
                                     </a>
                                 </div>
                                 <div className="grid gap-3 sm:grid-cols-2">
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Subscription status</span>
+                                    <div className="rounded-lg border border-border bg-secondary p-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subscription status</span>
                                         <div className="mt-2 flex flex-wrap items-center gap-2">
                                             <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${subscriptionStatusPillClass(resolveUserSubscriptionStatus(selectedUser))}`}>
                                                 {getUserSubscriptionStatusLabel(resolveUserSubscriptionStatus(selectedUser))}
@@ -3854,59 +3854,59 @@ export const AdminUsersPage: React.FC = () => {
                                                 {PLAN_CATALOG[selectedUser.tier_key].publicName}
                                             </span>
                                         </div>
-                                        <div className="mt-2 text-xs text-slate-500">
+                                        <div className="mt-2 text-xs text-muted-foreground">
                                             Provider: {humanizeAdminBillingStatus(selectedUser.provider_status || selectedUser.subscription_status)}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Recurring amount</span>
-                                        <div className="mt-2 text-sm font-semibold text-slate-900">
+                                    <div className="rounded-lg border border-border bg-secondary p-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recurring amount</span>
+                                        <div className="mt-2 text-sm font-semibold text-foreground">
                                             {selectedUser.subscription_amount !== null && selectedUser.subscription_amount !== undefined
                                                 ? `${selectedUser.subscription_currency || '—'} ${(selectedUser.subscription_amount / 100).toFixed(2)}`
                                                 : '—'}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Provider subscription ID</span>
-                                        <div className="mt-2 break-all font-mono text-[11px] text-slate-700">
+                                    <div className="rounded-lg border border-border bg-secondary p-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Provider subscription ID</span>
+                                        <div className="mt-2 break-all font-mono text-[11px] text-foreground">
                                             {selectedUser.provider_subscription_id || '—'}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Paddle price ID</span>
-                                        <div className="mt-2 break-all font-mono text-[11px] text-slate-700">
+                                    <div className="rounded-lg border border-border bg-secondary p-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Paddle price ID</span>
+                                        <div className="mt-2 break-all font-mono text-[11px] text-foreground">
                                             {selectedUser.provider_price_id || '—'}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current period end</span>
-                                        <div className="mt-2 text-sm font-semibold text-slate-900">{formatOptionalTimestamp(selectedUser.current_period_end)}</div>
+                                    <div className="rounded-lg border border-border bg-secondary p-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current period end</span>
+                                        <div className="mt-2 text-sm font-semibold text-foreground">{formatOptionalTimestamp(selectedUser.current_period_end)}</div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Cancellation / grace</span>
-                                        <div className="mt-2 space-y-1 text-xs text-slate-600">
+                                    <div className="rounded-lg border border-border bg-secondary p-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cancellation / grace</span>
+                                        <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                                             <div>Cancel at: {formatOptionalTimestamp(selectedUser.cancel_at)}</div>
                                             <div>Canceled at: {formatOptionalTimestamp(selectedUser.canceled_at)}</div>
                                             <div>Grace ends: {formatOptionalTimestamp(selectedUser.grace_ends_at)}</div>
                                             <div>Downgrades at: {formatOptionalTimestamp(resolveUserSubscriptionDowngradeAt(selectedUser))}</div>
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Latest billing event</span>
-                                        <div className="mt-2 grid gap-2 text-xs text-slate-600 sm:grid-cols-[minmax(0,1fr)_auto]">
+                                    <div className="rounded-lg border border-border bg-secondary p-3 sm:col-span-2">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Latest billing event</span>
+                                        <div className="mt-2 grid gap-2 text-xs text-muted-foreground sm:grid-cols-[minmax(0,1fr)_auto]">
                                             <div className="space-y-1">
-                                                <div className="font-semibold text-slate-900">{selectedUser.subscription_last_event_type || 'No event recorded'}</div>
+                                                <div className="font-semibold text-foreground">{selectedUser.subscription_last_event_type || 'No event recorded'}</div>
                                                 <div>{formatOptionalTimestamp(selectedUser.subscription_last_event_at)}</div>
-                                                <div className="break-all font-mono text-[11px] text-slate-500">{selectedUser.subscription_last_event_id || '—'}</div>
+                                                <div className="break-all font-mono text-[11px] text-muted-foreground">{selectedUser.subscription_last_event_id || '—'}</div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 </section>
 
-                                <section className="mt-4 space-y-2 rounded-xl border border-slate-200 p-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Entitlement overrides (advanced)</h3>
-                                <p className="text-xs text-slate-500">
+                                <section className="mt-4 space-y-2 rounded-xl border border-border p-3">
+                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Entitlement overrides (advanced)</h3>
+                                <p className="text-xs text-muted-foreground">
                                     Optional JSON object. Leave this field empty to inherit all limits from the selected tier.
                                 </p>
 	                                <textarea
@@ -3914,14 +3914,14 @@ export const AdminUsersPage: React.FC = () => {
 	                                    value={overrideDraft}
                                     onChange={(event) => setOverrideDraft(event.target.value)}
                                     placeholder={`{\n  "maxActiveTrips": 15\n}`}
-                                    className="min-h-[140px] w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs"
+                                    className="min-h-[140px] w-full rounded-lg border border-border px-3 py-2 font-mono text-xs"
                                 />
                                 {!overrideDraft.trim() && (
-                                    <p className="text-xs text-slate-500">No override configured for this user.</p>
+                                    <p className="text-xs text-muted-foreground">No override configured for this user.</p>
                                 )}
                                 </section>
 
-                                <section className="mt-4 flex flex-wrap gap-2 rounded-xl border border-slate-200 p-3">
+                                <section className="mt-4 flex flex-wrap gap-2 rounded-xl border border-border p-3">
                                 <button
                                     type="button"
                                     onClick={() => void saveSelectedUser()}
@@ -3959,17 +3959,17 @@ export const AdminUsersPage: React.FC = () => {
                                 )}
                                 </section>
 
-                                <section className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Connected trips</h3>
+                                <section className="mt-4 space-y-3 rounded-xl border border-border p-3">
+                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Connected trips</h3>
                                 {isLoadingTrips ? (
-                                    <div className="text-sm text-slate-500">Loading trips…</div>
+                                    <div className="text-sm text-muted-foreground">Loading trips…</div>
                                 ) : userTrips.length === 0 ? (
-                                    <div className="text-sm text-slate-500">No trips owned by this user.</div>
+                                    <div className="text-sm text-muted-foreground">No trips owned by this user.</div>
                                 ) : (
                                     <div className="space-y-2">
                                         <div className="max-h-[26rem] space-y-2 overflow-y-auto pr-1">
                                             {pagedConnectedTrips.map((trip) => (
-                                                <article key={trip.trip_id} className="rounded-lg border border-slate-200 p-3">
+                                                <article key={trip.trip_id} className="rounded-lg border border-border p-3">
                                                     <div className="flex items-start justify-between gap-2">
                                                         <div className="min-w-0 flex-1">
                                                             <a
@@ -3977,11 +3977,11 @@ export const AdminUsersPage: React.FC = () => {
                                                                 target="_blank"
                                                                 rel="noreferrer"
                                                                 title="Open trip in a new tab"
-                                                                className="block text-sm font-semibold text-slate-800 hover:text-accent-700 hover:underline"
+                                                                className="block text-sm font-semibold text-foreground hover:text-accent-700 hover:underline"
                                                             >
                                                                 {trip.title || trip.trip_id}
                                                             </a>
-                                                            <div className="text-[11px] text-slate-500">
+                                                            <div className="text-[11px] text-muted-foreground">
                                                                 <CopyableUuid
                                                                     value={trip.trip_id}
                                                                     textClassName="max-w-[300px] truncate text-[11px]"
@@ -3999,7 +3999,7 @@ export const AdminUsersPage: React.FC = () => {
                                                             onBlur={(event) => {
                                                                 void handleTripPatch(trip, { tripExpiresAt: fromDateTimeInputValue(event.target.value) });
                                                             }}
-                                                            className="h-8 rounded border border-slate-300 px-2"
+                                                            className="h-8 rounded border border-border px-2"
                                                         />
                                                         <Select
                                                             value={trip.status}
@@ -4016,7 +4016,7 @@ export const AdminUsersPage: React.FC = () => {
                                                                 <SelectItem value="archived">Archived</SelectItem>
                                                             </SelectContent>
                                                         </Select>
-                                                        <span className="text-slate-500">
+                                                        <span className="text-muted-foreground">
                                                             Owner:{' '}
                                                             {trip.owner_email || (
                                                                 <CopyableUuid
@@ -4032,14 +4032,14 @@ export const AdminUsersPage: React.FC = () => {
                                             ))}
                                         </div>
                                         {connectedTripsPageCount > 1 && (
-                                            <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-xs text-slate-500">
+                                            <div className="flex items-center justify-between border-t border-border pt-2 text-xs text-muted-foreground">
                                                 <span>Page {connectedTripsPage} / {connectedTripsPageCount}</span>
                                                 <div className="flex items-center gap-1">
                                                     <button
                                                         type="button"
                                                         onClick={() => setConnectedTripsPage((current) => Math.max(current - 1, 1))}
                                                         disabled={connectedTripsPage <= 1}
-                                                        className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
+                                                        className="rounded border border-border px-2 py-1 disabled:opacity-50"
                                                     >
                                                         Prev
                                                     </button>
@@ -4047,7 +4047,7 @@ export const AdminUsersPage: React.FC = () => {
                                                         type="button"
                                                         onClick={() => setConnectedTripsPage((current) => Math.min(current + 1, connectedTripsPageCount))}
                                                         disabled={connectedTripsPage >= connectedTripsPageCount}
-                                                        className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
+                                                        className="rounded border border-border px-2 py-1 disabled:opacity-50"
                                                     >
                                                         Next
                                                     </button>
@@ -4058,34 +4058,34 @@ export const AdminUsersPage: React.FC = () => {
                                 )}
                                 </section>
 
-                                <section className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3">
+                                <section className="mt-4 space-y-3 rounded-xl border border-border p-3">
                                     <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">User change log</h3>
+                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">User change log</h3>
                                         <a
                                             href={`/admin/audit?q=${encodeURIComponent(selectedUser.user_id)}`}
-                                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                                         >
                                             Open global audit
                                             <ArrowSquareOut size={12} />
                                         </a>
                                     </div>
-                                    <p className="text-xs text-slate-500">Showing the latest {USER_CHANGE_LOG_DRAWER_LIMIT} entries for this user.</p>
+                                    <p className="text-xs text-muted-foreground">Showing the latest {USER_CHANGE_LOG_DRAWER_LIMIT} entries for this user.</p>
                                     {userChangeLogsError && (
                                         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                                             {userChangeLogsError}
                                         </div>
                                     )}
                                     {isLoadingUserChangeLogs ? (
-                                        <div className="text-sm text-slate-500">Loading user change log…</div>
+                                        <div className="text-sm text-muted-foreground">Loading user change log…</div>
                                     ) : selectedUserChangeEntries.length === 0 ? (
-                                        <div className="text-sm text-slate-500">No user-originated changes recorded for this account yet.</div>
+                                        <div className="text-sm text-muted-foreground">No user-originated changes recorded for this account yet.</div>
                                     ) : (
                                         <div className="space-y-2">
                                             <div className="max-h-[30rem] space-y-2 overflow-y-auto pr-1">
                                                 {pagedUserChangeEntries.map(({ log, actionPresentation, secondaryFacets, visibleDiffEntries, hiddenDiffCount }) => (
-                                                    <article key={log.id} className="rounded-lg border border-slate-200 p-3">
+                                                    <article key={log.id} className="rounded-lg border border-border p-3">
                                                         <div className="flex flex-wrap items-center justify-between gap-2">
-                                                            <div className="text-[11px] font-semibold text-slate-500">
+                                                            <div className="text-[11px] font-semibold text-muted-foreground">
                                                                 {formatTimestamp(log.created_at)}
                                                             </div>
                                                             <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${actionPresentation.className}`}>
@@ -4105,14 +4105,14 @@ export const AdminUsersPage: React.FC = () => {
                                                                 ))}
                                                             </div>
                                                         )}
-                                                        <div className="mt-2 space-y-1 text-[11px] text-slate-600">
-                                                            <div><span className="font-semibold text-slate-700">Action:</span> <span className="font-mono">{log.action}</span></div>
+                                                        <div className="mt-2 space-y-1 text-[11px] text-muted-foreground">
+                                                            <div><span className="font-semibold text-foreground">Action:</span> <span className="font-mono">{log.action}</span></div>
                                                             {log.source && (
-                                                                <div><span className="font-semibold text-slate-700">Source:</span> {log.source}</div>
+                                                                <div><span className="font-semibold text-foreground">Source:</span> {log.source}</div>
                                                             )}
                                                             {log.target_type === 'trip' && log.target_id && (
                                                                 <div className="break-all">
-                                                                    <span className="font-semibold text-slate-700">Trip:</span>{' '}
+                                                                    <span className="font-semibold text-foreground">Trip:</span>{' '}
                                                                     <CopyableUuid value={log.target_id} textClassName="break-all text-[11px]" hintClassName="text-[9px]" />
                                                                 </div>
                                                             )}
@@ -4120,8 +4120,8 @@ export const AdminUsersPage: React.FC = () => {
                                                         {visibleDiffEntries.length > 0 ? (
                                                             <div className="mt-2 space-y-2">
                                                                 {visibleDiffEntries.map((entry, entryIndex) => (
-                                                                    <article key={`${log.id}-${buildDiffEntryRenderKey(entry, entryIndex)}`} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5">
-                                                                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                                                    <article key={`${log.id}-${buildDiffEntryRenderKey(entry, entryIndex)}`} className="rounded-md border border-border bg-secondary px-2 py-1.5">
+                                                                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                                                                             {formatFieldLabel(entry.key)}
                                                                         </p>
                                                                         <div className="mt-1 grid gap-1 lg:grid-cols-2">
@@ -4137,19 +4137,19 @@ export const AdminUsersPage: React.FC = () => {
                                                                     </article>
                                                                 ))}
                                                                 {hiddenDiffCount > 0 && (
-                                                                    <p className="text-[11px] font-semibold text-slate-500">
+                                                                    <p className="text-[11px] font-semibold text-muted-foreground">
                                                                         +{hiddenDiffCount} more changed field{hiddenDiffCount === 1 ? '' : 's'}
                                                                     </p>
                                                                 )}
                                                             </div>
                                                         ) : (
-                                                            <p className="mt-2 text-xs text-slate-500">No field diff recorded.</p>
+                                                            <p className="mt-2 text-xs text-muted-foreground">No field diff recorded.</p>
                                                         )}
                                                         {canOpenUserChangeFullDiffModal(log) && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => void openUserChangeFullDiffModal(log)}
-                                                                className="mt-2 inline-flex h-7 items-center rounded-md border border-slate-300 px-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                                                                className="mt-2 inline-flex h-7 items-center rounded-md border border-border px-2.5 text-[11px] font-semibold text-foreground hover:bg-secondary"
                                                             >
                                                                 Show complete diff
                                                             </button>
@@ -4158,14 +4158,14 @@ export const AdminUsersPage: React.FC = () => {
                                                 ))}
                                             </div>
                                             {userChangeLogsPageCount > 1 && (
-                                                <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-xs text-slate-500">
+                                                <div className="flex items-center justify-between border-t border-border pt-2 text-xs text-muted-foreground">
                                                     <span>Page {userChangeLogsPage} / {userChangeLogsPageCount}</span>
                                                     <div className="flex items-center gap-1">
                                                         <button
                                                             type="button"
                                                             onClick={() => setUserChangeLogsPage((current) => Math.max(current - 1, 1))}
                                                             disabled={userChangeLogsPage <= 1}
-                                                            className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
+                                                            className="rounded border border-border px-2 py-1 disabled:opacity-50"
                                                         >
                                                             Prev
                                                         </button>
@@ -4173,7 +4173,7 @@ export const AdminUsersPage: React.FC = () => {
                                                             type="button"
                                                             onClick={() => setUserChangeLogsPage((current) => Math.min(current + 1, userChangeLogsPageCount))}
                                                             disabled={userChangeLogsPage >= userChangeLogsPageCount}
-                                                            className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
+                                                            className="rounded border border-border px-2 py-1 disabled:opacity-50"
                                                         >
                                                             Next
                                                         </button>
@@ -4184,20 +4184,20 @@ export const AdminUsersPage: React.FC = () => {
                                     )}
                                 </section>
 
-                                <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Identity</h3>
-                                    <div className="mt-2 space-y-1 text-sm text-slate-700">
-                                        <div><span className="font-semibold text-slate-800">Name:</span> {getUserDisplayName(selectedUser)}</div>
-                                        <div><span className="font-semibold text-slate-800">Email:</span> {selectedUser.email || 'No email'}</div>
+                                <section className="mt-4 rounded-xl border border-border bg-secondary p-3">
+                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Identity</h3>
+                                    <div className="mt-2 space-y-1 text-sm text-foreground">
+                                        <div><span className="font-semibold text-foreground">Name:</span> {getUserDisplayName(selectedUser)}</div>
+                                        <div><span className="font-semibold text-foreground">Email:</span> {selectedUser.email || 'No email'}</div>
                                         <div className="break-all">
-                                            <span className="font-semibold text-slate-800">User ID:</span>{' '}
+                                            <span className="font-semibold text-foreground">User ID:</span>{' '}
                                             <CopyableUuid value={selectedUser.user_id} textClassName="break-all text-sm" />
                                         </div>
-                                        <div><span className="font-semibold text-slate-800">Activation:</span> {getActivationStatusLabel(resolveActivationStatus(selectedUser))}</div>
-                                        <div><span className="font-semibold text-slate-800">Login method:</span> {getLoginMethodSummary(selectedUser)}</div>
-                                        <div><span className="font-semibold text-slate-800">Account status:</span> {formatAccountStatusLabel((selectedUser.account_status || 'active') as UserAccountStatus)}</div>
+                                        <div><span className="font-semibold text-foreground">Activation:</span> {getActivationStatusLabel(resolveActivationStatus(selectedUser))}</div>
+                                        <div><span className="font-semibold text-foreground">Login method:</span> {getLoginMethodSummary(selectedUser)}</div>
+                                        <div><span className="font-semibold text-foreground">Account status:</span> {formatAccountStatusLabel((selectedUser.account_status || 'active') as UserAccountStatus)}</div>
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <span><span className="font-semibold text-slate-800">Terms accepted version:</span> {selectedUser.terms_accepted_version || 'Not accepted yet'}</span>
+                                            <span><span className="font-semibold text-foreground">Terms accepted version:</span> {selectedUser.terms_accepted_version || 'Not accepted yet'}</span>
                                             <button
                                                 type="button"
                                                 onClick={() => void handleResetTermsAcceptance()}
@@ -4207,14 +4207,14 @@ export const AdminUsersPage: React.FC = () => {
                                                 Reset ToC acceptance
                                             </button>
                                         </div>
-                                        <div><span className="font-semibold text-slate-800">Terms accepted at:</span> {formatOptionalTimestamp(selectedUser.terms_accepted_at)}</div>
+                                        <div><span className="font-semibold text-foreground">Terms accepted at:</span> {formatOptionalTimestamp(selectedUser.terms_accepted_at)}</div>
                                         <div>
-                                            <span className="font-semibold text-slate-800">Last sign-in:</span>{' '}
+                                            <span className="font-semibold text-foreground">Last sign-in:</span>{' '}
                                             {selectedUser.last_sign_in_at
                                                 ? `${formatRelativeTimestamp(selectedUser.last_sign_in_at, 'No visit yet')} (${formatTimestamp(selectedUser.last_sign_in_at)})`
                                                 : 'No visit yet'}
                                         </div>
-                                        <div><span className="font-semibold text-slate-800">Last log:</span> {formatOptionalTimestamp(selectedUser.updated_at)}</div>
+                                        <div><span className="font-semibold text-foreground">Last log:</span> {formatOptionalTimestamp(selectedUser.updated_at)}</div>
                                     </div>
                                 </section>
                             </div>

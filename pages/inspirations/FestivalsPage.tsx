@@ -97,7 +97,7 @@ export const FestivalsPage: React.FC = () => {
       <section className="pt-8 pb-6 md:pt-14 md:pb-8 animate-hero-entrance">
         <Link
           to={buildLocalizedMarketingPath('inspirations', locale)}
-          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-accent-700"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-accent-700"
         >
           <ArrowLeft className="rtl:rotate-180" size={14} weight="bold" />
           {t('inspirations.subpages.backToInspirations')}
@@ -107,12 +107,12 @@ export const FestivalsPage: React.FC = () => {
           {t('inspirations.subpages.festivals.pill')}
         </span>
         <h1
-          className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-6xl"
+          className="mt-5 text-4xl font-black tracking-tight text-foreground md:text-6xl"
           style={{ fontFamily: 'var(--tf-font-heading)' }}
         >
           {t('inspirations.subpages.festivals.title')}
         </h1>
-        <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
+        <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           {t('inspirations.subpages.festivals.description')}
         </p>
         <p className="mt-4 text-sm font-semibold text-accent-700">
@@ -121,7 +121,7 @@ export const FestivalsPage: React.FC = () => {
             exact: exactCount,
           })}
         </p>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
           {t('inspirations.subpages.festivals.accuracyNote')}
         </p>
       </section>
@@ -146,7 +146,7 @@ export const FestivalsPage: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-500 shadow-sm">
+          <div className="rounded-3xl border border-border bg-card p-8 text-sm text-muted-foreground shadow-sm">
             {t('inspirations.subpages.festivals.emptyState')}
           </div>
         )}

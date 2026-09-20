@@ -40,7 +40,7 @@ export const TripAgentQuestionCard: React.FC<{
 
     if (answered) {
         return (
-            <p className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-600">
+            <p className="flex items-center gap-1.5 rounded-xl border border-border bg-secondary px-2.5 py-2 text-xs text-muted-foreground">
                 <Check className="size-3.5 shrink-0 text-emerald-600" />
                 <span className="min-w-0 truncate">{answered}</span>
             </p>
@@ -54,7 +54,7 @@ export const TripAgentQuestionCard: React.FC<{
     };
 
     return (
-        <section className="rounded-2xl border border-slate-200 bg-white p-3" aria-label={question}>
+        <section className="rounded-2xl border border-border bg-card p-3" aria-label={question}>
             <Questionnaire>
                 <QuestionnaireItem>
                     <QuestionnaireTitle className="text-[13px] leading-5">{question}</QuestionnaireTitle>
@@ -70,7 +70,7 @@ export const TripAgentQuestionCard: React.FC<{
                     >
                         {options.map((option) => (
                             <QuestionnaireChoice key={option.id} value={option.id} className="min-h-0 gap-2 p-2">
-                                <span className="text-[13px] font-medium leading-5 text-slate-900">{option.label}</span>
+                                <span className="text-[13px] font-medium leading-5 text-foreground">{option.label}</span>
                                 {option.detail && (
                                     <QuestionnaireChoiceDescription className="mt-0 text-[11px] leading-4">
                                         {option.detail}

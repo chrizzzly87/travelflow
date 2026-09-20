@@ -159,7 +159,7 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
 
                     return (
                         <div key={node.key} className="flex w-14 shrink-0 flex-col items-center">
-                            <span className="h-4 text-[10px] font-semibold leading-4 tabular-nums text-slate-500">
+                            <span className="h-4 text-[10px] font-semibold leading-4 tabular-nums text-muted-foreground">
                                 {transfer.departureTime || ''}
                             </span>
                             <div className="relative flex h-14 w-full items-center justify-center">
@@ -170,7 +170,7 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                                     data-testid="planner-mobile-transfer-node"
                                     onClick={() => onSelectTransfer(node.segmentIndex, transfer)}
                                     title={`${modeLabel} to ${transfer.toCityTitle}${scheduleLabel ? ` — ${scheduleLabel}` : ''}`}
-                                    className="relative z-10 inline-flex size-9 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 shadow-sm transition-colors hover:border-slate-400 hover:text-accent-600"
+                                    className="relative z-10 inline-flex size-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:border-slate-400 hover:text-accent-600"
                                     {...getAnalyticsDebugAttributes('trip_view__mobile_transfer--select', {
                                         trip_id: tripId,
                                         mode: transfer.mode,
@@ -184,11 +184,11 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                             </div>
                             <span
                                 data-testid="planner-mobile-transfer-duration"
-                                className="flex h-7 flex-col items-center justify-start text-[10px] leading-[1.15] tabular-nums text-slate-400"
+                                className="flex h-7 flex-col items-center justify-start text-[10px] leading-[1.15] tabular-nums text-muted-foreground"
                             >
                                 <span>{durationLabel}</span>
                                 {transfer.arrivalTime && (
-                                    <span className="font-semibold text-slate-500">{transfer.arrivalTime}</span>
+                                    <span className="font-semibold text-muted-foreground">{transfer.arrivalTime}</span>
                                 )}
                             </span>
                         </div>
@@ -209,7 +209,7 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
 
                 return (
                     <div key={node.key} className="flex w-[4.25rem] shrink-0 snap-center flex-col items-center">
-                        <span className="h-4 text-[10px] font-semibold uppercase leading-4 tracking-[0.1em] text-slate-400">
+                        <span className="h-4 text-[10px] font-semibold uppercase leading-4 tracking-[0.1em] text-muted-foreground">
                             {segment.isStayStart ? segment.monthLabel : ''}
                         </span>
                         <div className="relative flex h-14 w-full items-center justify-center">
@@ -237,10 +237,10 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                             >
                                 <span
                                     className={`flex size-full flex-col items-center justify-center rounded-full ${
-                                        isActive ? 'text-white' : 'text-slate-700'
+                                        isActive ? 'text-white' : 'text-foreground'
                                     }`}
                                 >
-                                    <span className={`text-[9px] font-semibold uppercase leading-none tracking-[0.08em] ${isActive ? 'text-white/80' : 'text-slate-400'}`}>
+                                    <span className={`text-[9px] font-semibold uppercase leading-none tracking-[0.08em] ${isActive ? 'text-white/80' : 'text-muted-foreground'}`}>
                                         {segment.weekdayLabel}
                                     </span>
                                     <span className="text-[15px] font-bold leading-tight tabular-nums">

@@ -151,22 +151,22 @@ export const InstallAppBanner: React.FC = () => {
             <div
                 role="region"
                 aria-label={t('install.banner.title')}
-                className="mx-auto flex max-w-md items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_8px_30px_rgba(15,23,42,0.18)]"
+                className="mx-auto flex max-w-md items-start gap-3 rounded-2xl border border-border bg-card p-3 shadow-[0_8px_30px_rgba(15,23,42,0.18)]"
             >
                 <span className="mt-0.5 inline-flex size-9 flex-none items-center justify-center rounded-xl bg-accent-600 text-white">
                     <DeviceMobile size={18} weight="bold" />
                 </span>
 
                 <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-slate-900">
+                    <p className="text-sm font-semibold text-foreground">
                         {t('install.banner.title')}
                     </p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-slate-600">
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                         {t('install.banner.body')}
                     </p>
 
                     {showsIosInstructions ? (
-                        <p className="mt-2 inline-flex flex-wrap items-center gap-1 text-xs font-medium text-slate-700">
+                        <p className="mt-2 inline-flex flex-wrap items-center gap-1 text-xs font-medium text-foreground">
                             <Export size={14} weight="bold" className="text-accent-600" />
                             <span>{t('install.banner.iosStepShare')}</span>
                             <Plus size={14} weight="bold" className="text-accent-600" />
@@ -189,7 +189,7 @@ export const InstallAppBanner: React.FC = () => {
                     onClick={dismiss}
                     data-testid="install-app-banner-dismiss"
                     aria-label={t('install.banner.dismiss')}
-                    className="-m-1 flex size-8 flex-none items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                    className="-m-1 flex size-8 flex-none items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-muted-foreground"
                 >
                     <X size={16} weight="bold" />
                 </button>

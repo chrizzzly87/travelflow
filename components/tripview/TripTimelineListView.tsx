@@ -217,13 +217,13 @@ const buildMarkdownComponents = (
         }
         return <input type={type} {...props} />;
     },
-    strong: ({ node, ...props }: any) => <strong {...props} className="font-semibold text-slate-900" />,
-    em: ({ node, ...props }: any) => <em {...props} className="italic text-slate-700" />,
-    del: ({ node, ...props }: any) => <del {...props} className="text-slate-400 line-through" />,
-    blockquote: ({ node, ...props }: any) => <blockquote {...props} className="my-2 border-s-2 border-slate-300 ps-3 text-slate-600 italic" />,
-    code: ({ node, ...props }: any) => <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[12px] text-slate-700" />,
-    pre: ({ node, ...props }: any) => <pre {...props} className="my-2 overflow-x-auto rounded-md bg-slate-100 p-2 text-[12px] text-slate-700" />,
-    hr: () => <hr className="my-3 border-slate-200" />,
+    strong: ({ node, ...props }: any) => <strong {...props} className="font-semibold text-foreground" />,
+    em: ({ node, ...props }: any) => <em {...props} className="italic text-foreground" />,
+    del: ({ node, ...props }: any) => <del {...props} className="text-muted-foreground line-through" />,
+    blockquote: ({ node, ...props }: any) => <blockquote {...props} className="my-2 border-s-2 border-border ps-3 text-muted-foreground italic" />,
+    code: ({ node, ...props }: any) => <code {...props} className="rounded bg-secondary px-1 py-0.5 text-[12px] text-foreground" />,
+    pre: ({ node, ...props }: any) => <pre {...props} className="my-2 overflow-x-auto rounded-md bg-secondary p-2 text-[12px] text-foreground" />,
+    hr: () => <hr className="my-3 border-border" />,
 };
 };
 
@@ -469,11 +469,11 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     return (
         <div
             ref={viewportRef}
-            className="h-full overflow-y-auto bg-white"
+            className="h-full overflow-y-auto bg-card"
         >
             <div className="w-full px-4 py-7 pb-16 sm:px-7 lg:px-8">
                 {model.sections.length === 0 && (
-                    <div className="ps-2 text-sm leading-7 text-slate-500">
+                    <div className="ps-2 text-sm leading-7 text-muted-foreground">
                         No city stops available yet.
                     </div>
                 )}
@@ -515,12 +515,12 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                 transferButtonRefs.current[`transfer-${transfer.itemId}`] = node;
                                             }}
                                             aria-label={`Open ${transfer.modeLabel} transfer details`}
-                                            className={`pointer-events-auto origin-center -rotate-90 rounded-full border bg-white/95 shadow-sm transition-colors ${
+                                            className={`pointer-events-auto origin-center -rotate-90 rounded-full border bg-card/95 shadow-sm transition-colors ${
                                                 transfer.itemId
                                                     ? transferSelected
                                                         ? 'border-accent-500 text-accent-700 ring-2 ring-accent-200'
-                                                        : 'border-slate-300 text-slate-700 hover:border-accent-300 hover:text-accent-700'
-                                                    : 'border-slate-200 text-slate-400'
+                                                        : 'border-border text-foreground hover:border-accent-300 hover:text-accent-700'
+                                                    : 'border-border text-muted-foreground'
                                             }`}
                                             {...getAnalyticsDebugAttributes('trip_view__timeline_transfer--open', {
                                                 trip_id: trip.id,
@@ -533,7 +533,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                 <TransportModeIcon mode={transfer.mode} size={12} />
                                                 <span>{transfer.modeLabel}</span>
                                                 {transferDuration && (
-                                                    <span className="text-[10px] font-medium text-slate-500">{transferDuration}</span>
+                                                    <span className="text-[10px] font-medium text-muted-foreground">{transferDuration}</span>
                                                 )}
                                             </span>
                                         </button>
@@ -579,9 +579,9 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                             }}
                                         />
 
-                                        <header className="sticky top-0 z-20 bg-white/95 py-2 backdrop-blur-sm">
+                                        <header className="sticky top-0 z-20 bg-card/95 py-2 backdrop-blur-sm">
                                             {showCountryRooftitle && countryLabel && (
-                                                <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] leading-6 text-slate-400">
+                                                <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] leading-6 text-muted-foreground">
                                                     {countryLabel}
                                                 </p>
                                             )}
@@ -601,12 +601,12 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                 })}
                                             >
                                                 <div className="flex flex-wrap items-end justify-between gap-3">
-                                                    <h3 className={`text-2xl font-semibold tracking-tight underline-offset-4 decoration-2 transition-[color,text-decoration-color] group-hover:underline ${citySelected ? 'text-accent-700 decoration-accent-500' : 'text-slate-900 decoration-slate-400'}`}>
+                                                    <h3 className={`text-2xl font-semibold tracking-tight underline-offset-4 decoration-2 transition-[color,text-decoration-color] group-hover:underline ${citySelected ? 'text-accent-700 decoration-accent-500' : 'text-foreground decoration-slate-400'}`}>
                                                         {cityTitle}
                                                     </h3>
                                                     <div className="flex flex-wrap items-center gap-2">
                                                         <span
-                                                            className="rounded-full border border-slate-200 px-2.5 py-0.5 text-[11px] font-medium tracking-[0.08em] text-slate-600 uppercase"
+                                                            className="rounded-full border border-border px-2.5 py-0.5 text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase"
                                                             aria-label={`Days ${cityStartDay} - ${cityEndDay}`}
                                                         >
                                                             <AnimatedNumberGroup>
@@ -633,7 +633,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                         </header>
 
                                         {citySummaryMarkdown && (
-                                            <div className="pb-2 text-sm text-slate-600">
+                                            <div className="pb-2 text-sm text-muted-foreground">
                                                 <ReactMarkdown
                                                     remarkPlugins={[remarkGfm, remarkHeadsUpBanners]}
                                                     components={buildMarkdownComponents(trip.id, section.city.id, citySummaryMarkdown, onToggleTaskCheckbox)}
@@ -648,17 +648,17 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                 {hotels.map((hotel) => (
                                                     <div
                                                         key={hotel.id}
-                                                        className="inline-flex max-w-full items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm text-slate-700"
+                                                        className="inline-flex max-w-full items-start gap-2 rounded-2xl border border-border bg-secondary px-3 py-2 text-left text-sm text-foreground"
                                                     >
                                                         <Hotel size={14} className="mt-0.5 shrink-0 text-accent-600" />
                                                         <div className="min-w-0">
                                                             {hotel.name?.trim() && (
-                                                                <p className="truncate font-semibold text-slate-900">
+                                                                <p className="truncate font-semibold text-foreground">
                                                                     {hotel.name.trim()}
                                                                 </p>
                                                             )}
                                                             {hotel.address?.trim() && (
-                                                                <p className="mt-1 flex items-start gap-1 text-xs text-slate-500">
+                                                                <p className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
                                                                     <MapPin size={12} className="mt-0.5 shrink-0" />
                                                                     <span className="break-words">{hotel.address.trim()}</span>
                                                                 </p>
@@ -671,7 +671,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
 
                                         <div className="pt-1">
                                             {section.activities.length === 0 ? (
-                                                <p className="py-3 text-sm leading-7 text-slate-500">
+                                                <p className="py-3 text-sm leading-7 text-muted-foreground">
                                                     No activities planned yet.
                                                 </p>
                                             ) : (
@@ -706,18 +706,18 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                                     })}
                                                                 >
                                                                     <div className="flex flex-wrap items-center justify-between gap-2">
-                                                                        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500">
+                                                                        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                                                                             {formatTripDayLabel(trip.startDate, activity.dayOffset)} · Day {activity.dayOffset + 1}
                                                                         </p>
                                                                         {activity.isToday && (
                                                                             <TodayBadge />
                                                                         )}
                                                                     </div>
-                                                                    <p className={`mt-1 inline-flex cursor-pointer text-[17px] leading-7 underline-offset-4 decoration-2 transition-[color,text-decoration-color,translate] ${titleHoverShiftClass} group-hover:underline ${isSelected ? 'font-semibold text-accent-700 decoration-accent-400' : 'font-medium text-slate-900 decoration-slate-300'}`}>
+                                                                    <p className={`mt-1 inline-flex cursor-pointer text-[17px] leading-7 underline-offset-4 decoration-2 transition-[color,text-decoration-color,translate] ${titleHoverShiftClass} group-hover:underline ${isSelected ? 'font-semibold text-accent-700 decoration-accent-400' : 'font-medium text-foreground decoration-slate-300'}`}>
                                                                         {activity.item.title}
                                                                     </p>
                                                                     {activity.item.description && (
-                                                                        <div className="mt-2 max-w-3xl text-sm text-slate-600">
+                                                                        <div className="mt-2 max-w-3xl text-sm text-muted-foreground">
                                                                             <ReactMarkdown
                                                                                 remarkPlugins={[remarkGfm, remarkHeadsUpBanners]}
                                                                                 components={buildMarkdownComponents(trip.id, activity.item.id, activity.item.description, onToggleTaskCheckbox)}

@@ -76,7 +76,7 @@ export const ProfilePassportDialog: React.FC<ProfilePassportDialogProps> = ({
               className="profile-passport-dialog-book rounded-2xl border p-2 shadow-2xl shadow-slate-900/40 sm:p-3"
               style={{ backgroundColor: theme.coverHex, borderColor: theme.borderHex }}
             >
-              <div className="rounded-xl bg-white/96 backdrop-blur-[1px]">
+              <div className="rounded-xl bg-card/96 backdrop-blur-[1px]">
                 <ProfileStampBookViewer
                 stamps={stamps}
                 locale={locale}

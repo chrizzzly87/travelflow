@@ -16,7 +16,7 @@ export const ThemesPage: React.FC = () => {
             <section className="pt-8 pb-8 md:pt-14 md:pb-12 animate-hero-entrance">
                 <Link
                     to={buildLocalizedMarketingPath('inspirations', locale)}
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-accent-700 transition-colors mb-6"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-accent-700 transition-colors mb-6"
                 >
                     <ArrowLeft size={14} weight="bold" />
                     {t('inspirations.subpages.backToInspirations')}
@@ -26,22 +26,22 @@ export const ThemesPage: React.FC = () => {
                     {t('inspirations.subpages.themes.pill')}
                 </span>
                 <h1
-                    className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-6xl"
+                    className="mt-5 text-4xl font-black tracking-tight text-foreground md:text-6xl"
                     style={{ fontFamily: "var(--tf-font-heading)" }}
                 >
                     {t('inspirations.subpages.themes.title')}
                 </h1>
-                <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
+                <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
                     {t('inspirations.subpages.themes.description')}
                 </p>
             </section>
 
             <section className="pb-16 md:pb-24">
-                <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                <div className="rounded-3xl border border-border bg-card p-8 shadow-sm">
                     <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-900">
                         {t('inspirations.subpages.comingSoon')}
                     </span>
-                    <p className="mt-4 text-sm text-slate-500">
+                    <p className="mt-4 text-sm text-muted-foreground">
                         {t('inspirations.subpages.themes.comingSoonDescription')}
                     </p>
                 </div>

@@ -218,7 +218,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                         source: 'trip_strip',
                                     });
                                 }}
-                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80"
+                                className="px-3 py-1 rounded-md bg-card text-xs font-semibold border border-current/20 hover:bg-card/80"
                                 {...getAnalyticsDebugAttributes('trip_connectivity__banner--contact', {
                                     trip_id: tripId,
                                     pending_count: pendingSyncCount,
@@ -241,7 +241,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                     });
                                     onRetrySyncQueue();
                                 }}
-                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80"
+                                className="px-3 py-1 rounded-md bg-card text-xs font-semibold border border-current/20 hover:bg-card/80"
                                 {...getAnalyticsDebugAttributes('trip_connectivity__trip_strip--retry_sync', {
                                     trip_id: tripId,
                                     failed_count: failedSyncCount,
@@ -290,7 +290,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                     onAbortAndRetryGeneration();
                                 }}
                                 disabled={isRetryingGeneration}
-                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="px-3 py-1 rounded-md bg-card text-xs font-semibold border border-current/20 hover:bg-card/80 disabled:cursor-not-allowed disabled:opacity-50"
                                 {...getAnalyticsDebugAttributes('trip_generation__trip_strip--abort_retry', {
                                     trip_id: tripId,
                                     source: 'trip_strip',
@@ -303,7 +303,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                             <button
                                 type="button"
                                 onClick={onOpenRetryModelSelector}
-                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80"
+                                className="px-3 py-1 rounded-md bg-card text-xs font-semibold border border-current/20 hover:bg-card/80"
                             >
                                 {t('tripView.generation.strip.changeModel')}
                             </button>
@@ -319,7 +319,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                     onRetryGeneration();
                                 }}
                                 disabled={isRetryingGeneration}
-                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="px-3 py-1 rounded-md bg-card text-xs font-semibold border border-current/20 hover:bg-card/80 disabled:cursor-not-allowed disabled:opacity-50"
                                 {...getAnalyticsDebugAttributes('trip_generation__trip_strip--retry', {
                                     trip_id: tripId,
                                     source: 'trip_strip',
@@ -453,7 +453,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                         }}
                                     />
                                     <span
-                                        className={`inline-block size-5 transform rounded-full bg-white shadow transition-transform ${
+                                        className={`inline-block size-5 transform rounded-full bg-card shadow transition-transform ${
                                             adminOverrideEnabled ? 'translate-x-5' : 'translate-x-1'
                                         }`}
                                     />
@@ -497,8 +497,8 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                 <div className="flex flex-wrap items-center gap-2">
                                     <span className={`inline-flex size-8 items-center justify-center rounded-lg border ${
                                         isTripLockedByExpiry
-                                            ? 'border-rose-200 bg-white text-rose-700'
-                                            : 'border-sky-200 bg-white text-sky-700'
+                                            ? 'border-rose-200 bg-card text-rose-700'
+                                            : 'border-sky-200 bg-card text-sky-700'
                                     }`}>
                                         <AlertTriangle className="size-4" />
                                     </span>
@@ -518,8 +518,8 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                     {isPaywallLocked ? (
                                         <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
                                             isTripLockedByExpiry
-                                                ? 'border-rose-200 bg-white text-rose-800'
-                                                : 'border-sky-200 bg-white text-sky-800'
+                                                ? 'border-rose-200 bg-card text-rose-800'
+                                                : 'border-sky-200 bg-card text-sky-800'
                                         }`}>
                                             {explorerTier.publicName} · ${explorerTier.monthlyPriceUsd}{t('shared.perMonth', { ns: 'pricing' })}
                                         </span>
@@ -531,7 +531,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                         {explorerHighlights.map((feature) => (
                                             <li
                                                 key={feature}
-                                                className={`inline-flex items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-xs font-medium ${
+                                                className={`inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-medium ${
                                                     isTripLockedByExpiry
                                                         ? 'border-rose-200 text-rose-900'
                                                         : 'border-sky-200 text-sky-900'
@@ -554,7 +554,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                                 trip_id: tripId,
                                                 has_claim: Boolean(pendingAuthQueueRequestId),
                                             })}
-                                            className="inline-flex h-10 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                            className="inline-flex h-10 items-center rounded-lg border border-border bg-card px-4 text-sm font-semibold text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
                                             {...getAnalyticsDebugAttributes('trip_paywall__strip--upgrade')}
                                         >
                                             {t('checkout.tripEntryCta', { ns: 'pricing' })}
@@ -582,18 +582,18 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
               * keeps the map controls covered either. */}
             {exampleTripBanner && !isExampleBannerDismissed && (
                 <div className="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+4.75rem)] z-[1450] sm:inset-x-auto sm:right-6 sm:top-auto sm:bottom-6 sm:w-[420px]">
-                    <div className="relative rounded-2xl border border-accent-200 bg-white/95 px-4 py-3 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/85">
+                    <div className="relative rounded-2xl border border-accent-200 bg-card/95 px-4 py-3 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/85">
                         <button
                             type="button"
                             onClick={() => setIsExampleBannerDismissed(true)}
-                            className="absolute end-2 top-2 inline-flex size-7 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                            className="absolute end-2 top-2 inline-flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
                             aria-label="Dismiss example trip notice"
                         >
                             <X size={14} />
                         </button>
                         <p className="pe-8 text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700">Example trip playground</p>
-                        <p className="mt-1 text-sm font-semibold text-slate-900">Explore freely. Copy when you want to keep and edit.</p>
-                        <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                        <p className="mt-1 text-sm font-semibold text-foreground">Explore freely. Copy when you want to keep and edit.</p>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                             This itinerary is for illustration only and never saves changes.
                             {exampleTripBanner.countries.length > 0 && (
                                 <span> Country focus: {exampleTripBanner.countries.join(', ')}.</span>
@@ -604,7 +604,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                 <button
                                     type="button"
                                     onClick={exampleTripBanner.onCreateSimilarTrip}
-                                    className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-accent-200 bg-white px-3 text-xs font-semibold text-accent-700 transition-colors hover:bg-accent-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                    className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-accent-200 bg-card px-3 text-xs font-semibold text-accent-700 transition-colors hover:bg-accent-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
                                 >
                                     <Sparkle size={14} weight="duotone" />
                                     Create similar trip

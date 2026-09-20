@@ -208,7 +208,7 @@ export const LanguageSuggestionBanner: React.FC = () => {
                 <button
                     type="button"
                     onClick={handleSwitch}
-                    className="shrink-0 rounded-lg border border-cyan-300 bg-white px-2 py-1 text-xs font-semibold text-cyan-800 transition-colors hover:bg-cyan-100 sm:px-2.5 dark:border-cyan-400/30 dark:bg-card dark:text-cyan-200 dark:hover:bg-cyan-400/15"
+                    className="shrink-0 rounded-lg border border-cyan-300 bg-card px-2 py-1 text-xs font-semibold text-cyan-800 transition-colors hover:bg-cyan-100 sm:px-2.5 dark:border-cyan-400/30 dark:bg-card dark:text-cyan-200 dark:hover:bg-cyan-400/15"
                     {...getAnalyticsDebugAttributes('navigation__language_suggestion--switch', {
                         to: suggestedLocale,
                         source: 'language_banner',

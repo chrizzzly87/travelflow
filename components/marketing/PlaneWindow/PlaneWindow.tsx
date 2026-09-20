@@ -2,15 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { buildImageCdnUrl } from '../../../utils/imageDelivery';
-import { useWindowShade } from './useWindowShade';
+import { useWindowShade, SHADE_TRAVEL, FRAME_DIM } from './useWindowShade';
 import type { CloudSceneHandle } from './cloudScene';
 
 const PLANE_WINDOW_SRC = '/images/plane-window.png';
 const PLANE_WINDOW_IMAGE_WIDTH = 640;
 const PLANE_WINDOW_IMAGE_HEIGHT = 938;
-
-/** How far the shade travels, as a fraction of the opening's height. */
-const SHADE_TRAVEL = 1.02;
 
 const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softwarepipe|basic render|generic renderer/i;
 
@@ -47,7 +44,7 @@ const shouldRenderScene = (): boolean => {
 
 export const PlaneWindow: React.FC = () => {
     const { t } = useTranslation('home');
-    const { shade, dragging, isDark, handlers } = useWindowShade();
+    const { shade, dragging, isDark, handlers, shadeElRef, frameElRef } = useWindowShade();
     const hostRef = useRef<HTMLDivElement | null>(null);
     const sceneRef = useRef<CloudSceneHandle | null>(null);
     const [sceneReady, setSceneReady] = useState(false);
@@ -137,11 +134,15 @@ export const PlaneWindow: React.FC = () => {
                     so it is drawn: a panel the colour of the cabin interior that
                     slides down over the glass. */}
                 <div
+                    ref={(node) => { shadeElRef.current = node; }}
                     className="plane-window-shade absolute inset-0"
                     aria-hidden="true"
                     style={{
                         transform: `translate3d(0, ${-(1 - shade) * SHADE_TRAVEL * 100}%, 0)`,
-                        transition: dragging ? 'none' : 'transform 420ms cubic-bezier(.23,1,.32,1)',
+                        // No transition while dragging: the shade must track the
+                        // finger exactly, not chase it. On release the transition
+                        // comes back and eases it home from wherever it was left.
+                        transition: dragging ? 'none' : 'transform 460ms cubic-bezier(.22,1,.36,1)',
                     }}
                 />
             </div>
@@ -153,10 +154,14 @@ export const PlaneWindow: React.FC = () => {
                 width={PLANE_WINDOW_IMAGE_WIDTH}
                 height={PLANE_WINDOW_IMAGE_HEIGHT}
                 draggable={false}
+                ref={(node) => { frameElRef.current = node; }}
                 className="relative z-10 size-full object-contain drop-shadow-xl"
                 decoding="async"
                 fetchPriority="high"
-                style={{ filter: `brightness(${1 - shade * 0.28})` }}
+                style={{
+                    filter: `brightness(${1 - shade * FRAME_DIM})`,
+                    transition: dragging ? 'none' : 'filter 460ms cubic-bezier(.22,1,.36,1)',
+                }}
             />
 
             {/* The grab target, shaped to the glass. A button so it is reachable

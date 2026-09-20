@@ -39,7 +39,7 @@ export const SettingsPanel = React.forwardRef<HTMLDivElement, React.ComponentPro
             ref={ref}
             data-slot="settings-panel"
             className={cn(
-                'divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200 bg-white',
+                'divide-y divide-slate-200 overflow-hidden rounded-lg border border-border bg-card',
                 className,
             )}
             {...props}
@@ -60,14 +60,14 @@ const SettingsHeading: React.FC<SettingsHeadingProps> = ({ title, description, i
         {icon && (
             <span
                 aria-hidden="true"
-                className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600 [&_svg]:size-4"
+                className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-secondary text-muted-foreground [&_svg]:size-4"
             >
                 {icon}
             </span>
         )}
         <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-            {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
+            <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+            {description && <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>}
         </div>
         {aside && <div className="shrink-0">{aside}</div>}
     </div>
@@ -114,7 +114,7 @@ export const SettingsCard = React.forwardRef<HTMLElement, SettingsCardProps>(
             ref={ref}
             data-slot="settings-card"
             className={cn(
-                'rounded-lg border border-slate-200 bg-card px-4 py-5 text-card-foreground shadow-sm sm:px-6',
+                'rounded-lg border border-border bg-card px-4 py-5 text-card-foreground shadow-sm sm:px-6',
                 className,
             )}
             {...props}
@@ -156,7 +156,7 @@ export interface SettingsRowProps extends Omit<React.ComponentProps<'div'>, 'chi
 export const SettingsRow = React.forwardRef<HTMLDivElement, SettingsRowProps>(
     ({ className, label, description, htmlFor, layout = 'inline', note, children, ...props }, ref) => {
         const noteText = note ? (
-            <span className="mt-0.5 block text-sm text-slate-500">{note}</span>
+            <span className="mt-0.5 block text-sm text-muted-foreground">{note}</span>
         ) : null;
 
         const caption = (
@@ -164,9 +164,9 @@ export const SettingsRow = React.forwardRef<HTMLDivElement, SettingsRowProps>(
                 {htmlFor ? (
                     <Label htmlFor={htmlFor}>{label}</Label>
                 ) : (
-                    <span className="block text-sm font-medium text-slate-900">{label}</span>
+                    <span className="block text-sm font-medium text-foreground">{label}</span>
                 )}
-                {description && <span className="mt-0.5 block text-sm text-slate-500">{description}</span>}
+                {description && <span className="mt-0.5 block text-sm text-muted-foreground">{description}</span>}
                 {layout === 'inline' && noteText}
             </div>
         );

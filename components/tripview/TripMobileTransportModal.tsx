@@ -71,14 +71,14 @@ export const TripMobileTransportModal: React.FC<TripMobileTransportModalProps> =
                 className="pb-[max(1rem,env(safe-area-inset-bottom))]"
             >
                 <div className="px-4 pt-4" data-testid="mobile-transport-modal">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                         Transport
                     </p>
                     {legLabel && (
-                        <p className="mt-1 truncate text-base font-semibold text-slate-900">{legLabel}</p>
+                        <p className="mt-1 truncate text-base font-semibold text-foreground">{legLabel}</p>
                     )}
                     {leg && !leg.item && (
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="mt-1 text-xs text-muted-foreground">
                             This journey has no transport yet. Pick one to add it.
                         </p>
                     )}
@@ -95,7 +95,7 @@ export const TripMobileTransportModal: React.FC<TripMobileTransportModalProps> =
                                     className={`flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-xl border-2 transition-colors ${
                                         isActive
                                             ? 'border-accent-500 bg-accent-50 text-accent-700'
-                                            : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                                            : 'border-border bg-card text-muted-foreground hover:border-border'
                                     }`}
                                     {...getAnalyticsDebugAttributes('trip_view__mobile_transport--change', {
                                         trip_id: tripId,
@@ -114,7 +114,7 @@ export const TripMobileTransportModal: React.FC<TripMobileTransportModalProps> =
                     <button
                         type="button"
                         onClick={onClose}
-                        className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold text-slate-500 transition-colors hover:bg-slate-50"
+                        className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold text-muted-foreground transition-colors hover:bg-secondary"
                     >
                         Cancel
                     </button>
