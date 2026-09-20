@@ -2079,7 +2079,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
                     <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start">
                         <div className="space-y-5">
-                            <section className="rounded-2xl border border-border bg-card/90 p-4 shadow-sm sm:p-5 dark:border-border dark:bg-card/90">
+                            <section className="rounded-2xl border border-border bg-card/90 p-4 shadow-sm sm:p-5 dark:border-border dark:bg-card/90 dark:shadow-none">
                                 <div className="mb-4 flex items-start justify-between gap-3">
                                     <div className="flex items-center gap-2 text-sm font-semibold text-foreground dark:text-foreground">
                                         <Compass size={18} weight="duotone" className="text-accent-600 dark:text-accent-300" />
@@ -2115,12 +2115,12 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                 }
                                             }}
                                             placeholder={t('destination.searchPlaceholder')}
-                                            className="tf-ios-zoom-safe-field w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground shadow-sm transition-shadow placeholder:text-muted-foreground focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200 dark:border-border dark:bg-card dark:text-foreground dark:placeholder:text-muted-foreground"
+                                            className="tf-ios-zoom-safe-field w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground shadow-sm transition-shadow placeholder:text-muted-foreground focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200 dark:border-border dark:bg-card dark:text-foreground dark:placeholder:text-muted-foreground dark:shadow-none"
                                         />
                                     </div>
 
                                     {searchOpen && (query.trim() || suggestions.length > 0) && (
-                                        <div className="absolute inset-x-0 top-[calc(100%+8px)] z-50 max-h-72 overflow-y-auto rounded-2xl border border-border bg-card shadow-xl dark:border-border dark:bg-card">
+                                        <div className="absolute inset-x-0 top-[calc(100%+8px)] z-50 max-h-72 overflow-y-auto rounded-2xl border border-border bg-card shadow-xl dark:border-border dark:bg-card dark:shadow-none">
                                             {suggestions.length > 0 ? (
                                                 suggestions.map((option) => {
                                                     const optionLabel = option.kind === 'country'
@@ -2201,7 +2201,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         onDrop={() => handleDestinationDrop(index)}
                                                         onDragEnd={handleDestinationDragEnd}
                                                         className={[
-                                                            'inline-flex items-center gap-2 rounded-lg border bg-card px-2.5 py-1 text-sm font-medium text-foreground shadow-sm dark:bg-card dark:text-foreground',
+                                                            'inline-flex items-center gap-2 rounded-lg border bg-card px-2.5 py-1 text-sm font-medium text-foreground shadow-sm dark:bg-card dark:text-foreground dark:shadow-none',
                                                             isStartStop
                                                                 ? 'border-accent-400 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200'
                                                                 : 'border-border dark:border-border',
@@ -2247,7 +2247,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                     </div>
 
                                                     {season && (
-                                                        <div className="pointer-events-none absolute left-0 top-[calc(100%+8px)] z-[80] hidden w-[280px] rounded-xl border border-border bg-card p-3 shadow-xl group-hover:block dark:border-border dark:bg-card">
+                                                        <div className="pointer-events-none absolute left-0 top-[calc(100%+8px)] z-[80] hidden w-[280px] rounded-xl border border-border bg-card p-3 shadow-xl group-hover:block dark:border-border dark:bg-card dark:shadow-none">
                                                             <div className="text-xs font-semibold text-foreground dark:text-foreground">{t('destination.idealTravelTime')}</div>
                                                             {metaLabel && <div className="mt-0.5 text-[11px] text-muted-foreground dark:text-muted-foreground">{metaLabel}</div>}
                                                             <IdealTravelTimeline idealMonths={season.bestMonths} shoulderMonths={season.shoulderMonths} locale={i18n.language} />
@@ -2289,7 +2289,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 </div>
                             </section>
 
-                            <section className="rounded-2xl border border-border bg-card/90 p-4 shadow-sm sm:p-5 dark:border-border dark:bg-card/90">
+                            <section className="rounded-2xl border border-border bg-card/90 p-4 shadow-sm sm:p-5 dark:border-border dark:bg-card/90 dark:shadow-none">
                                 <div className="mb-4 flex items-start justify-between gap-3">
                                     <div className="flex items-center gap-2 text-sm font-semibold text-foreground dark:text-foreground">
                                         <CalendarBlank size={18} weight="duotone" className="text-accent-600 dark:text-accent-300" />
@@ -2407,7 +2407,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 </div>
                             </section>
 
-                            <section className="rounded-2xl border border-border bg-card/90 p-4 shadow-sm sm:p-5 dark:border-border dark:bg-card/90">
+                            <section className="rounded-2xl border border-border bg-card/90 p-4 shadow-sm sm:p-5 dark:border-border dark:bg-card/90 dark:shadow-none">
                                 <div className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-foreground dark:text-foreground">
                                     <Info size={16} weight="duotone" className="text-accent-600 dark:text-accent-300" />
                                     {t('notes.title')}
@@ -2423,7 +2423,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 />
                             </section>
 
-                            <section className="rounded-2xl border border-border bg-card/90 p-4 shadow-sm sm:p-5 dark:border-border dark:bg-card/90">
+                            <section className="rounded-2xl border border-border bg-card/90 p-4 shadow-sm sm:p-5 dark:border-border dark:bg-card/90 dark:shadow-none">
                                 <button
                                     type="button"
                                     onClick={() => toggleSection('traveler')}
@@ -2498,7 +2498,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 )}
                             </section>
 
-                            <section className="rounded-2xl border border-border bg-card/90 p-4 shadow-sm sm:p-5 dark:border-border dark:bg-card/90">
+                            <section className="rounded-2xl border border-border bg-card/90 p-4 shadow-sm sm:p-5 dark:border-border dark:bg-card/90 dark:shadow-none">
                                 <button
                                     type="button"
                                     onClick={() => toggleSection('style')}
@@ -2545,7 +2545,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 )}
                             </section>
 
-                            <section className="rounded-2xl border border-border bg-card/90 p-4 shadow-sm sm:p-5 dark:border-border dark:bg-card/90">
+                            <section className="rounded-2xl border border-border bg-card/90 p-4 shadow-sm sm:p-5 dark:border-border dark:bg-card/90 dark:shadow-none">
                                 <button
                                     type="button"
                                     onClick={() => toggleSection('transport')}
@@ -2951,7 +2951,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 type="button"
                                 onClick={handleGenerateTrip}
                                 disabled={isSubmitting || !destinationComplete || isGenerationBlockedOffline || (dateInputMode === 'exact' && totalNights < 1)}
-                                className="rounded-xl bg-card px-3.5 py-2.5 text-sm font-semibold text-indigo-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-card dark:text-indigo-200"
+                                className="rounded-xl bg-card px-3.5 py-2.5 text-sm font-semibold text-indigo-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-card dark:text-indigo-200 dark:shadow-none"
                                 {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
                                     destination_count: orderedDestinations.length,
                                     date_mode: dateInputMode,

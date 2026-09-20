@@ -189,7 +189,7 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
             {isOpen && typeof document !== 'undefined' && createPortal(
                 <div
                     ref={menuRef}
-                    className="fixed z-[1700] overflow-hidden rounded-md border border-border bg-card text-foreground shadow-md animate-in fade-in-80"
+                    className="fixed z-[1700] overflow-hidden rounded-md border border-border bg-card text-foreground shadow-md animate-in fade-in-80 dark:shadow-none"
                     style={{
                         top: `${menuPosition.top}px`,
                         left: `${menuPosition.left}px`,

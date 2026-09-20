@@ -92,7 +92,7 @@ interface TripViewPlannerWorkspaceProps {
 
 const TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED = true;
 const formatZoomLevelLabel = (value: number): string => `×${Number.isFinite(value) ? value.toFixed(1) : '1.0'}`;
-const CONTROL_GROUP_CLASS_NAME = 'inline-flex flex-col items-center gap-1 rounded-xl border border-border bg-card/90 p-1 shadow-sm backdrop-blur';
+const CONTROL_GROUP_CLASS_NAME = 'inline-flex flex-col items-center gap-1 rounded-xl border border-border bg-card/90 p-1 shadow-sm backdrop-blur dark:shadow-none';
 const CONTROL_TOGGLE_BUTTON_CLASS_NAME = 'inline-flex size-10 items-center justify-center rounded-lg transition-colors';
 const CONTROL_TOGGLE_ACTIVE_CLASS_NAME = 'border-accent-700 bg-accent-600 text-white';
 const CONTROL_TOGGLE_INACTIVE_CLASS_NAME = 'text-muted-foreground hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300';
@@ -195,7 +195,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
         <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-2">
             {timelineMode === 'calendar' && (
                 <>
-                    <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-card/90 p-1 shadow-sm backdrop-blur">
+                    <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-card/90 p-1 shadow-sm backdrop-blur dark:shadow-none">
                         <button
                             type="button"
                             onClick={() => onTimelineViewChange('horizontal')}
@@ -225,7 +225,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             <ArrowUpDown size={16} />
                         </button>
                     </div>
-                    <div className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-card/90 p-1 shadow-sm backdrop-blur">
+                    <div className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-card/90 p-1 shadow-sm backdrop-blur dark:shadow-none">
                         <button
                             type="button"
                             onClick={onZoomOut}
@@ -256,7 +256,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     </div>
                 </>
             )}
-            <div className="ms-auto inline-flex items-center gap-1 rounded-lg border border-border bg-card/90 p-1 shadow-sm backdrop-blur">
+            <div className="ms-auto inline-flex items-center gap-1 rounded-lg border border-border bg-card/90 p-1 shadow-sm backdrop-blur dark:shadow-none">
                 <button
                     type="button"
                     onClick={() => onTimelineModeChange('calendar')}
@@ -304,7 +304,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                     onClick={toggleMapDockMode}
                                     data-testid="map-dock-toggle-button"
                                     data-floating-map-control="true"
-                                    className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300"
+                                    className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300 dark:shadow-none"
                                     aria-label={effectiveMapDockMode === 'docked' ? 'Minimize map preview' : 'Maximize map preview'}
                                     {...getAnalyticsDebugAttributes(
                                         effectiveMapDockMode === 'docked' ? 'trip_view__map_preview--minimize' : 'trip_view__map_preview--maximize',
@@ -342,7 +342,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             <button
                                 type="button"
                                 disabled
-                                className="flex size-10 cursor-not-allowed items-center justify-center rounded-lg border border-border bg-card text-gray-300 shadow-md"
+                                className="flex size-10 cursor-not-allowed items-center justify-center rounded-lg border border-border bg-card text-gray-300 shadow-md dark:shadow-none"
                                 aria-label="Fit to itinerary"
                             >
                                 <Focus size={18} />
@@ -350,7 +350,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             <button
                                 type="button"
                                 disabled
-                                className="flex size-10 cursor-not-allowed items-center justify-center rounded-lg border border-border bg-card text-gray-300 shadow-md"
+                                className="flex size-10 cursor-not-allowed items-center justify-center rounded-lg border border-border bg-card text-gray-300 shadow-md dark:shadow-none"
                                 aria-label="Map style"
                             >
                                 <Layers size={18} />

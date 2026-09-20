@@ -31,7 +31,7 @@ const PRESET_PATHS = [
 const OG_PLAYGROUND_PATH = '/api/og/playground';
 const OG_PLAYGROUND_TITLE = 'TravelFlow OG Playground';
 
-const fieldClassName = 'w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm outline-none transition focus:border-accent-400 focus:ring-2 focus:ring-accent-100';
+const fieldClassName = 'w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm outline-none transition focus:border-accent-400 focus:ring-2 focus:ring-accent-100 dark:shadow-none';
 
 const formatModeLabel = (value: OgInspectionResult['mode']): string => {
     if (value === 'static') return 'Static (pre-generated image)';
@@ -143,7 +143,7 @@ export const AdminOgToolsPage: React.FC = () => {
                 </TabsList>
 
                 <TabsContent value="analyzer" className="space-y-6">
-                    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
                         <header className="mb-4 flex items-start justify-between gap-3">
                             <div>
                                 <h2 className="text-base font-semibold text-foreground">URL Inspector</h2>
@@ -286,7 +286,7 @@ export const AdminOgToolsPage: React.FC = () => {
                         )}
                     </section>
 
-                    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
                         <header className="mb-4">
                             <h2 className="text-base font-semibold text-foreground">Static OG Build Command Builder</h2>
                             <p className="mt-1 text-sm text-muted-foreground">
@@ -422,7 +422,7 @@ export const AdminOgToolsPage: React.FC = () => {
                 </TabsContent>
 
                 <TabsContent value="playground">
-                    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
                         <header className="mb-3 flex items-center justify-between gap-3">
                             <div>
                                 <h2 className="text-base font-semibold text-foreground">OG Playground</h2>

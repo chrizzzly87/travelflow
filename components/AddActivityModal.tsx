@@ -280,7 +280,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                             </div>
 
                             {generationFailed && !isGenerating && (
-                                <div role="alert" className="flex items-start justify-between gap-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 dark:bg-red-400/12">
+                                <div role="alert" className="flex items-start justify-between gap-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 dark:bg-red-400/12 dark:border-red-400/25">
                                     <div className="flex items-start gap-2">
                                         <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
                                         <span>{t('tripView.addActivity.aiError')}</span>

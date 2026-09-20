@@ -587,7 +587,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                         aria-hidden="true"
                     >
                         <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-red-400/60" />
-                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-red-200/90 bg-card/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-red-500 shadow-sm dark:border-red-400/30">
+                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-red-200/90 bg-card/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-red-500 shadow-sm dark:border-red-400/30 dark:shadow-none">
                             Today
                         </span>
                     </div>
@@ -596,7 +596,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
             {/* Header (Dates) - Vertical Column */}
             <div
-                className="sticky left-0 z-20 flex h-full flex-shrink-0 border-r border-border bg-card shadow-sm"
+                className="sticky left-0 z-20 flex h-full flex-shrink-0 border-r border-border bg-card shadow-sm dark:shadow-none"
                 style={{ width: `${leftRailWidthPx}px` }}
             >
                 {showMonthRail && (
@@ -811,7 +811,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                          <button type="button"
                              onClick={(e) => { e.stopPropagation(); if (!canEdit) return; handleAddTravel(); }}
                              disabled={!canEdit}
-                             className={`opacity-0 group-hover/travel:opacity-100 transition-opacity ml-1 bg-stone-100 text-stone-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-stone-200' : 'opacity-50 cursor-not-allowed'}`}
+                             className={`opacity-0 group-hover/travel:opacity-100 transition-opacity ml-1 bg-secondary text-muted-foreground rounded-full p-0.5 ${canEdit ? 'hover:bg-secondary' : 'opacity-50 cursor-not-allowed'}`}
                              aria-label="Add transfer"
                              title="Add transfer"
                          >

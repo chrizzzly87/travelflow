@@ -55,21 +55,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <button 
                             type="button"
                             onClick={() => setActiveTab('layout')}
-                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'layout' ? 'bg-card shadow-sm text-accent-600 dark:text-accent-300' : 'text-muted-foreground hover:bg-secondary'}`}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'layout' ? 'bg-card shadow-sm text-accent-600 dark:text-accent-300 dark:shadow-none' : 'text-muted-foreground hover:bg-secondary'}`}
                         >
                             <Layout size={16} /> {t('settings:tabs.layout')}
                         </button>
                         <button 
                             type="button"
                             onClick={() => setActiveTab('appearance')}
-                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'appearance' ? 'bg-card shadow-sm text-accent-600 dark:text-accent-300' : 'text-muted-foreground hover:bg-secondary'}`}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'appearance' ? 'bg-card shadow-sm text-accent-600 dark:text-accent-300 dark:shadow-none' : 'text-muted-foreground hover:bg-secondary'}`}
                         >
                             <Map size={16} /> {t('settings:tabs.appearance')}
                         </button>
                         <button 
                             type="button"
                             onClick={() => setActiveTab('language')}
-                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'language' ? 'bg-card shadow-sm text-accent-600 dark:text-accent-300' : 'text-muted-foreground hover:bg-secondary'}`}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'language' ? 'bg-card shadow-sm text-accent-600 dark:text-accent-300 dark:shadow-none' : 'text-muted-foreground hover:bg-secondary'}`}
                         >
                             <Globe size={16} /> {t('settings:tabs.language')}
                         </button>
@@ -171,7 +171,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                         {activeTab === 'language' && (
                             <div className="space-y-6">
-                                <div className="p-4 bg-accent-50 border border-accent-100 rounded-lg text-sm text-accent-800 dark:bg-accent-400/12 dark:text-accent-200">
+                                <div className="p-4 bg-accent-50 border border-accent-100 rounded-lg text-sm text-accent-800 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/25">
                                     <strong>{t('settings:language.noteTitle')}</strong>
                                     <p className="mt-1">{t('settings:language.noteDescription')}</p>
                                 </div>

@@ -356,7 +356,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <button
                         type="button"
                         onClick={() => setIsSidebarCollapsed((current) => !current)}
-                        className="absolute -right-4 top-6 z-50 inline-flex size-8 items-center justify-center rounded-full border border-accent-300 bg-card text-accent-700 shadow-sm hover:bg-accent-50 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
+                        className="absolute -right-4 top-6 z-50 inline-flex size-8 items-center justify-center rounded-full border border-accent-300 bg-card text-accent-700 shadow-sm hover:bg-accent-50 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30 dark:shadow-none"
                         aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                         {...getAnalyticsDebugAttributes('admin__menu--collapse_toggle')}
                     >

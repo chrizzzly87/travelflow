@@ -580,7 +580,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
       onMouseEnter={onHoverStart}
       onMouseLeave={onHoverEnd}
     >
-      <div className="size-full rounded-xl border border-border bg-card shadow-2xl overflow-hidden flex flex-col">
+      <div className="size-full rounded-xl border border-border bg-card shadow-2xl overflow-hidden flex flex-col dark:shadow-none">
         <div className="px-3.5 py-3 border-b border-border">
           <div className="flex items-center justify-between gap-3">
             <div className="text-sm font-semibold text-foreground truncate">{trip.title}</div>
@@ -1288,7 +1288,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
                 onClick={() => setSortMode('updated')}
                 className={`group relative inline-flex size-7 items-center justify-center rounded-md transition-colors ${
                   sortMode === 'updated'
-                    ? 'bg-card text-accent-600 shadow-sm dark:text-accent-300'
+                    ? 'bg-card text-accent-600 shadow-sm dark:text-accent-300 dark:shadow-none'
                     : 'text-muted-foreground hover:text-muted-foreground hover:bg-card/80'
                 }`}
                 aria-label="Sort by last updated"
@@ -1300,7 +1300,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
                 onClick={() => setSortMode('travelDate')}
                 className={`group relative inline-flex size-7 items-center justify-center rounded-md transition-colors ${
                   sortMode === 'travelDate'
-                    ? 'bg-card text-accent-600 shadow-sm dark:text-accent-300'
+                    ? 'bg-card text-accent-600 shadow-sm dark:text-accent-300 dark:shadow-none'
                     : 'text-muted-foreground hover:text-muted-foreground hover:bg-card/80'
                 }`}
                 aria-label="Sort by travel date"

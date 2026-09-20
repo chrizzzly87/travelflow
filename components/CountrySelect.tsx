@@ -111,7 +111,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
                                 onRemove={() => removeCountry(countryName)}
                             />
                             {season && (
-                                <div className="pointer-events-none absolute left-0 top-[calc(100%+8px)] z-[80] hidden w-[280px] rounded-xl border border-border bg-card p-3 shadow-xl group-hover:block dark:bg-card dark:border-border">
+                                <div className="pointer-events-none absolute left-0 top-[calc(100%+8px)] z-[80] hidden w-[280px] rounded-xl border border-border bg-card p-3 shadow-xl group-hover:block dark:bg-card dark:border-border dark:shadow-none">
                                     <div className="text-xs font-semibold text-foreground dark:text-foreground">{labels?.idealTravelTime || 'Ideal travel time'}</div>
                                     <IdealTravelTimeline idealMonths={season.bestMonths} shoulderMonths={season.shoulderMonths} />
                                 </div>
@@ -145,7 +145,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
             {/* Dropdown */}
             {isOpen && (normalizedSearch || filtered.length > 0) && (
                 <div
-                    className="absolute inset-x-0 top-[calc(100%+8px)] z-50 max-h-60 overflow-y-auto rounded-xl border border-border bg-card shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 dark:bg-card dark:border-border"
+                    className="absolute inset-x-0 top-[calc(100%+8px)] z-50 max-h-60 overflow-y-auto rounded-xl border border-border bg-card shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 dark:bg-card dark:border-border dark:shadow-none"
                 >
                     {filtered.length > 0 ? filtered.map((country) => (
                         <button

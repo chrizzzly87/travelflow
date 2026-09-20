@@ -582,7 +582,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
               * keeps the map controls covered either. */}
             {exampleTripBanner && !isExampleBannerDismissed && (
                 <div className="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+4.75rem)] z-[1450] sm:inset-x-auto sm:right-6 sm:top-auto sm:bottom-6 sm:w-[420px]">
-                    <div className="relative rounded-2xl border border-accent-200 bg-card/95 px-4 py-3 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-card/85 dark:border-accent-400/30">
+                    <div className="relative rounded-2xl border border-accent-200 bg-card/95 px-4 py-3 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-card/85 dark:border-accent-400/30 dark:shadow-none">
                         <button
                             type="button"
                             onClick={() => setIsExampleBannerDismissed(true)}

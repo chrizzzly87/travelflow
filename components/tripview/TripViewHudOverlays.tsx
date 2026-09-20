@@ -113,7 +113,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
 
             {isPaywallLocked && (
                 <div className="fixed inset-0 z-[1490] flex items-end sm:items-center justify-center p-3 sm:p-4 pointer-events-none">
-                    <div className="pointer-events-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+                    <div className="pointer-events-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl dark:shadow-none">
                         <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_320px]">
                             <div className="p-5 sm:p-6">
                                 <div className="flex items-start justify-between gap-4">
@@ -205,7 +205,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="trip-pending-auth-title"
-                        className="w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+                        className="w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl dark:shadow-none"
                     >
                         {pendingAuthModalStage === 'loading' ? (
                             <div className="p-5 sm:p-6">
@@ -299,7 +299,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
 
             {showGenerationOverlay && (
                 <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
-                    <div className="w-full max-w-xl rounded-2xl border border-accent-100 bg-card/95 shadow-xl backdrop-blur-sm px-5 py-4">
+                    <div className="w-full max-w-xl rounded-2xl border border-accent-100 bg-card/95 shadow-xl backdrop-blur-sm px-5 py-4 dark:border-accent-400/25 dark:shadow-none">
                         <div className="flex items-center gap-3">
                             <div className="size-9 rounded-full bg-accent-100 text-accent-600 flex items-center justify-center shrink-0 dark:bg-accent-400/12 dark:text-accent-300">
                                 <Loader2 size={18} className="animate-spin" />
@@ -325,7 +325,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="trip-claim-conflict-title"
-                        className="w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+                        className="w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl dark:shadow-none"
                     >
                         <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_220px]">
                             <div className="p-5 sm:p-6">

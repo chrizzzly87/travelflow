@@ -70,7 +70,7 @@ export const CookiePolicyPage: React.FC = () => {
                     <p className="mt-4 text-sm text-muted-foreground">Last reviewed: {lastReviewed}</p>
                 </section>
 
-                <section className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8">
+                <section className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8 dark:shadow-none">
                     <h2 className="text-xl font-semibold text-foreground md:text-2xl">Manage your consent</h2>
                     <p className="mt-3 text-sm text-foreground">Current choice: {consentLabel}</p>
                     <div className="mt-4 flex flex-wrap gap-3">
@@ -94,7 +94,7 @@ export const CookiePolicyPage: React.FC = () => {
                 </section>
 
                 {categoryBlocks.map(({ category, cookies }) => (
-                    <section key={category} className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8">
+                    <section key={category} className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8 dark:shadow-none">
                         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                             <div>
                                 <p className="text-xs font-semibold uppercase tracking-widest text-accent-600 dark:text-accent-300">{category}</p>

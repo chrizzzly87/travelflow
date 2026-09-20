@@ -131,7 +131,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
     }, [mapPreviewUrl]);
 
     return (
-        <article className="cursor-pointer rounded-2xl border border-border bg-card shadow-sm transition-[box-shadow] duration-200 ease-out hover:shadow-lg dark:border-border dark:bg-card">
+        <article className="cursor-pointer rounded-2xl border border-border bg-card shadow-sm transition-[box-shadow] duration-200 ease-out hover:shadow-lg dark:border-border dark:bg-card dark:shadow-none">
             <div
                 className={`relative h-36 rounded-t-2xl overflow-hidden ${mapImageSrc ? 'bg-secondary dark:bg-secondary' : card.mapColor}`}
                 style={mapViewTransitionName ? ({ viewTransitionName: mapViewTransitionName } as React.CSSProperties) : undefined}

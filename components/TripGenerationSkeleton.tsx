@@ -76,7 +76,7 @@ export const TripGenerationSkeleton: React.FC = () => {
                                      {i < 2 && <div className="absolute left-6 top-16 bottom-[-30px] w-0.5 bg-secondary border-l border-dashed border-border" />}
                                      
                                      {/* City Block */}
-                                     <div className="w-4/5 h-24 bg-secondary rounded-xl animate-pulse border border-border flex items-center p-4 gap-4 shadow-sm">
+                                     <div className="w-4/5 h-24 bg-secondary rounded-xl animate-pulse border border-border flex items-center p-4 gap-4 shadow-sm dark:shadow-none">
                                          <div className="size-12 bg-gray-200 rounded-full shrink-0" />
                                          <div className="space-y-3 flex-1">
                                              <div className="w-1/3 h-4 bg-gray-200 rounded" />
@@ -101,7 +101,7 @@ export const TripGenerationSkeleton: React.FC = () => {
 
                 {/* Central Status Overlay */}
                 <div className="absolute inset-0 bg-card/70 backdrop-blur-[2px] flex items-center justify-center z-50">
-                    <div className="bg-card p-8 rounded-2xl shadow-2xl border border-border max-w-sm w-full text-center flex flex-col items-center gap-5 animate-in zoom-in-95 duration-500">
+                    <div className="bg-card p-8 rounded-2xl shadow-2xl border border-border max-w-sm w-full text-center flex flex-col items-center gap-5 animate-in zoom-in-95 duration-500 dark:shadow-none">
                         <div className="relative">
                             <div className="absolute inset-0 bg-accent-100 rounded-full animate-ping opacity-30 dark:bg-accent-400/12" />
                             <div className="bg-accent-50 p-4 rounded-full text-accent-600 relative z-10 dark:bg-accent-400/12 dark:text-accent-300">

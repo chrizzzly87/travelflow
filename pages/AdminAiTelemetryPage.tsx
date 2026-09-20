@@ -199,7 +199,7 @@ const createProviderChartTooltip = (
         if (!providerId) return null;
 
         return (
-            <div className="rounded-md border border-border bg-card px-2 py-1.5 shadow-lg">
+            <div className="rounded-md border border-border bg-card px-2 py-1.5 shadow-lg dark:shadow-none">
                 <p className="mb-1 text-[11px] font-semibold text-foreground">
                     <ProviderLabel provider={providerId} providerClassName="text-foreground" logoSize={12} />
                 </p>

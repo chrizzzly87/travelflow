@@ -161,7 +161,7 @@ export const UpdatesPage: React.FC = () => {
                 )}
 
                 {releaseEntries.length === 0 && (
-                    <article className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                    <article className="rounded-2xl border border-border bg-card p-6 shadow-sm dark:shadow-none">
                         <p className="text-sm text-muted-foreground">No published updates yet.</p>
                     </article>
                 )}
@@ -175,7 +175,7 @@ export const UpdatesPage: React.FC = () => {
                             className={
                                 isTopNews
                                     ? 'rounded-2xl border border-accent-200/80 bg-card p-6 shadow-accent-glow-md dark:border-accent-400/30 dark:shadow-none'
-                                    : 'rounded-2xl border border-border bg-card p-6 shadow-sm'
+                                    : 'rounded-2xl border border-border bg-card p-6 shadow-sm dark:shadow-none'
                             }
                         >
                             <div className="flex flex-wrap items-start justify-between gap-3">

@@ -347,7 +347,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
             {isOpen && createPortal(
                 <div 
                     ref={calendarRef}
-                    className="fixed bg-card rounded-2xl shadow-2xl border border-border p-4 w-72 z-[9999] dark:bg-card dark:border-border"
+                    className="fixed bg-card rounded-2xl shadow-2xl border border-border p-4 w-72 z-[9999] dark:bg-card dark:border-border dark:shadow-none"
                     style={{ top: position.top, left: position.left }}
                 >
                     

@@ -37,7 +37,7 @@ export const WeekendGetawaysPage: React.FC = () => {
             </section>
 
             <section className="pb-16 md:pb-24">
-                <div className="rounded-3xl border border-border bg-card p-8 shadow-sm">
+                <div className="rounded-3xl border border-border bg-card p-8 shadow-sm dark:shadow-none">
                     <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-900 dark:bg-amber-400/12 dark:text-amber-200">
                         {t('inspirations.subpages.comingSoon')}
                     </span>

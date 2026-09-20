@@ -263,7 +263,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                     trackEvent('navigation__account_menu--toggle', { open: next });
                 }}
                 className={[
-                    'inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm transition-colors dark:border-border dark:bg-card dark:text-foreground',
+                    'inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm transition-colors dark:border-border dark:bg-card dark:text-foreground dark:shadow-none',
                     'hover:border-border hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:hover:border-border dark:hover:text-foreground',
                     compact ? 'h-9 py-1.5' : 'h-10 py-2',
                     fullWidth ? 'w-full justify-between' : '',
@@ -286,7 +286,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                     role="menu"
                     aria-label="Account menu"
                     className={[
-                        'absolute z-[2100] w-[min(92vw,320px)] rounded-xl border border-border bg-card p-1.5 shadow-2xl dark:border-border dark:bg-card',
+                        'absolute z-[2100] w-[min(92vw,320px)] rounded-xl border border-border bg-card p-1.5 shadow-2xl dark:border-border dark:bg-card dark:shadow-none',
                         menuPlacement === 'right-end'
                             ? 'left-[calc(100%+10px)] bottom-0'
                             : 'right-0 top-[calc(100%+8px)]',

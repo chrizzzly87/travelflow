@@ -114,7 +114,7 @@ export const SettingsCard = React.forwardRef<HTMLElement, SettingsCardProps>(
             ref={ref}
             data-slot="settings-card"
             className={cn(
-                'rounded-lg border border-border bg-card px-4 py-5 text-card-foreground shadow-sm sm:px-6',
+                'rounded-lg border border-border bg-card px-4 py-5 text-card-foreground shadow-sm sm:px-6 dark:shadow-none',
                 className,
             )}
             {...props}

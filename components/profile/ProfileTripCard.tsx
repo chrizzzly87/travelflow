@@ -251,7 +251,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               checked={isSelected}
               onCheckedChange={(value) => onSelectionChange(trip, value === true)}
               aria-label={`${labels.selectTrip || 'Select trip'}: ${trip.title}`}
-              className="size-6 cursor-pointer rounded-md border border-white/90 bg-card/95 shadow-sm"
+              className="size-6 cursor-pointer rounded-md border border-white/90 bg-card/95 shadow-sm dark:shadow-none"
               {...(analyticsAttrs ? analyticsAttrs('select') : {})}
             />
           </div>

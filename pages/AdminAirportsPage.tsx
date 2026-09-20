@@ -934,7 +934,7 @@ const AdminAirportTester: React.FC<{
                             </button>
                         </div>
                         {(searchingSuggestions || suggestions.length > 0) && (
-                            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm dark:shadow-none">
                                 {searchingSuggestions && (
                                     <div className="px-3 py-2 text-sm text-muted-foreground">Searching city suggestions…</div>
                                 )}

@@ -140,7 +140,7 @@ const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }
     <Link
         to={prefillUrl}
         onClick={() => trackEvent('inspirations__destination_card', { title: destination.title, country: destination.country })}
-        className={`group block overflow-hidden rounded-2xl border border-border bg-card shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
+        className={`group block overflow-hidden rounded-2xl border border-border bg-card shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg dark:shadow-none`}
         {...getAnalyticsDebugAttributes('inspirations__destination_card', { title: destination.title, country: destination.country })}
     >
         <div className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showPhoto ? 'bg-secondary' : destination.mapColor}`}>
@@ -223,7 +223,7 @@ const FestivalCard: React.FC<{ event: FestivalEventType; nextDate: Date }> = ({ 
     <Link
         to={prefillUrl}
         onClick={() => trackEvent('inspirations__festival_card', { name: event.name, country: event.country })}
-        className={`group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
+        className={`group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg dark:shadow-none`}
         {...getAnalyticsDebugAttributes('inspirations__festival_card', { name: event.name, country: event.country })}
     >
         <div className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showPhoto ? 'bg-secondary' : `${event.mapColor} flex items-center justify-center`}`}>
@@ -292,7 +292,7 @@ const GetawayCard: React.FC<{ getaway: WeekendGetawayType }> = ({ getaway }) => 
     <Link
         to={prefillUrl}
         onClick={() => trackEvent('inspirations__getaway_card', { title: getaway.title, destination: getaway.to })}
-        className={`group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
+        className={`group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg dark:shadow-none`}
         {...getAnalyticsDebugAttributes('inspirations__getaway_card', { title: getaway.title, destination: getaway.to })}
     >
         <div className={`flex size-14 shrink-0 items-center justify-center rounded-xl ${getaway.mapColor}`}>
@@ -322,7 +322,7 @@ const CountryPill: React.FC<{ group: CountryGroup }> = ({ group }) => (
     <Link
         to={`/inspirations/country/${encodeURIComponent(group.country)}`}
         onClick={() => trackEvent('inspirations__country_pill', { country: group.country })}
-        className={`group flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
+        className={`group flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg dark:shadow-none`}
         {...getAnalyticsDebugAttributes('inspirations__country_pill', { country: group.country })}
     >
         <FlagIcon value={group.flag} size="2xl" />
@@ -453,7 +453,7 @@ export const InspirationsPage: React.FC = () => {
 	                        value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder={t('inspirations.searchPlaceholder')}
-                        className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200 transition-shadow"
+                        className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200 transition-shadow dark:shadow-none"
                     />
                     {isSearching && (
                         <span className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-muted-foreground dark:text-foreground">
@@ -515,7 +515,7 @@ export const InspirationsPage: React.FC = () => {
                                     <a
                                         key={s.id}
                                         href={`#${s.id}`}
-                                        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground shadow-sm transition-[border-color,color,box-shadow] duration-150 ease-out hover:border-accent-300 hover:text-accent-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transition-none dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300"
+                                        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground shadow-sm transition-[border-color,color,box-shadow] duration-150 ease-out hover:border-accent-300 hover:text-accent-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transition-none dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300 dark:shadow-none"
                                     >
                                         <SIcon size={14} weight="duotone" />
                                         {s.label}
@@ -539,7 +539,7 @@ export const InspirationsPage: React.FC = () => {
                                         key={idea.label}
                                         to={buildCreateTripUrl({ countries, startDate: toIso(start), endDate: toIso(end), meta: { source: 'inspirations', label: ideaLabel } })}
                                         onClick={() => trackEvent('inspirations__quick_pill', { label: ideaLabel })}
-                                        className="rounded-full border border-border bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground shadow-sm transition-[transform,border-color,color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:border-accent-300 hover:text-accent-700 hover:shadow-md active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300"
+                                        className="rounded-full border border-border bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground shadow-sm transition-[transform,border-color,color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:border-accent-300 hover:text-accent-700 hover:shadow-md active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300 dark:shadow-none"
                                         {...getAnalyticsDebugAttributes('inspirations__quick_pill', { label: ideaLabel })}
                                     >
                                         <span className="inline-flex items-center gap-1.5">
@@ -622,7 +622,7 @@ export const InspirationsPage: React.FC = () => {
 	                                        onClick={() => setSelectedMonthIndex(entry.monthIndex)}
                                         className={`relative px-3.5 py-2 text-sm font-semibold transition-[background-color,color,box-shadow] duration-150 ease-out rounded-lg whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transition-none ${
                                             selectedMonthIndex === entry.monthIndex
-                                                ? 'bg-card text-sky-700 shadow-sm dark:text-sky-200'
+                                                ? 'bg-card text-sky-700 shadow-sm dark:text-sky-200 dark:shadow-none'
                                                 : 'text-muted-foreground hover:text-foreground'
                                         }`}
                                     >
@@ -635,7 +635,7 @@ export const InspirationsPage: React.FC = () => {
                         {/* Month content panel */}
                         <div
                             key={selectedMonthIndex}
-                            className="mt-6 max-w-2xl animate-content-fade-in rounded-2xl border border-border bg-card p-6 shadow-sm"
+                            className="mt-6 max-w-2xl animate-content-fade-in rounded-2xl border border-border bg-card p-6 shadow-sm dark:shadow-none"
                         >
                             <h3 className="text-xl font-semibold text-foreground" style={{ fontFamily: "var(--tf-font-heading)" }}>
                                 {selectedMonth.month}
@@ -724,7 +724,7 @@ export const InspirationsPage: React.FC = () => {
                             <div className="mt-8 text-center">
                                 <Link
                                     to={buildLocalizedMarketingPath('inspirationsFestivals', locale)}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-3 text-sm font-bold text-foreground shadow-sm transition-[border-color,color,box-shadow] duration-150 ease-out hover:border-accent-300 hover:text-accent-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transition-none dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-3 text-sm font-bold text-foreground shadow-sm transition-[border-color,color,box-shadow] duration-150 ease-out hover:border-accent-300 hover:text-accent-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 motion-reduce:transition-none dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300 dark:shadow-none"
                                 >
                                     {t('inspirations.links.viewAllEvents', { count: upcomingFestivals.length })}
                                     <ArrowRight size={14} weight="bold" />
@@ -798,7 +798,7 @@ export const InspirationsPage: React.FC = () => {
                             <Link
                                 to="/create-trip"
                                 onClick={() => trackEvent('inspirations__bottom_cta')}
-                                className="relative mt-8 inline-block rounded-2xl bg-card px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-[transform,background-color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:bg-accent-50 hover:shadow-xl active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-accent-700 motion-reduce:transform-none motion-reduce:transition-none dark:hover:bg-accent-400/12 dark:text-accent-200"
+                                className="relative mt-8 inline-block rounded-2xl bg-card px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-[transform,background-color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:bg-accent-50 hover:shadow-xl active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-accent-700 motion-reduce:transform-none motion-reduce:transition-none dark:hover:bg-accent-400/12 dark:text-accent-200 dark:shadow-none"
                                 {...getAnalyticsDebugAttributes('inspirations__bottom_cta')}
                             >
                                 {t('inspirations.bottomCta.button')}

@@ -2239,7 +2239,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     onValueChange={(value) => setWorkspaceTab(value as 'setup' | 'results' | 'insights')}
                     className="flex flex-col gap-4"
                 >
-                    <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-card/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur dark:ring-0">
+                    <div className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-card/95 p-2 shadow-sm ring-1 ring-slate-200 backdrop-blur dark:ring-0 dark:shadow-none">
                         <TabsList className="grid w-full grid-cols-3 sm:w-auto">
                             <TabsTrigger value="setup">Setup</TabsTrigger>
                             <TabsTrigger value="results">Results · {runs.length}</TabsTrigger>
@@ -2255,7 +2255,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                     <TabsContent value="insights" className="mt-0">
 
-                <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
+                <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5 dark:shadow-none">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <h3 className="text-base font-semibold text-foreground">7-day telemetry quick view</h3>
@@ -2626,7 +2626,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                     <TabsContent value="results" className="mt-0">
 
-                <section ref={resultsSectionRef} className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
+                <section ref={resultsSectionRef} className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5 dark:shadow-none">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h3 className="text-lg font-semibold text-foreground">Benchmark runs</h3>
@@ -3518,7 +3518,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             onClick={() => setPromptModal(null)}
                         />
                         <div
-                            className="relative z-10 w-full max-w-4xl rounded-xl border border-border bg-card shadow-2xl"
+                            className="relative z-10 w-full max-w-4xl rounded-xl border border-border bg-card shadow-2xl dark:shadow-none"
                         >
                             <div className="flex items-center justify-between border-b border-border px-4 py-3">
                                 <div>

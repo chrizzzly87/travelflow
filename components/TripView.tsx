@@ -520,7 +520,7 @@ const TripInfoModalLoadingFallback: React.FC<{ onClose: () => void }> = ({ onClo
                 aria-labelledby="trip-info-loading-title"
                 className="fixed inset-0 z-[1521] pointer-events-none flex items-end sm:items-center justify-center p-3 sm:p-4"
             >
-                <div ref={dialogRef} className="pointer-events-auto bg-card rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[84vh] sm:max-h-[88vh]">
+                <div ref={dialogRef} className="pointer-events-auto bg-card rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[84vh] sm:max-h-[88vh] dark:shadow-none">
                     <div className="p-4 border-b border-border flex items-center justify-between">
                         <div>
                             <h3 id="trip-info-loading-title" className="text-lg font-semibold text-foreground">Trip information</h3>
@@ -3717,7 +3717,7 @@ const useTripViewRender = ({
                         <button
                             type="button"
                             onClick={openTripAgent}
-                            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] end-4 z-[1490] inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-semibold text-foreground shadow-lg transition hover:border-border hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] end-4 z-[1490] inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-semibold text-foreground shadow-lg transition hover:border-border hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:shadow-none"
                             aria-label={t('tripAgent.title')}
                             {...getAnalyticsDebugAttributes('trip_agent__launcher--open', { trip_id: trip.id })}
                         >

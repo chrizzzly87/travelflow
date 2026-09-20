@@ -255,7 +255,7 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
                         type="button"
                         onClick={() => commit(top, 'dismiss')}
                         data-testid="recommendation-dismiss"
-                        className="inline-flex size-14 items-center justify-center rounded-full border-2 border-rose-200 bg-card text-rose-500 shadow-sm transition-transform hover:scale-105 active:scale-95 dark:border-rose-400/30"
+                        className="inline-flex size-14 items-center justify-center rounded-full border-2 border-rose-200 bg-card text-rose-500 shadow-sm transition-transform hover:scale-105 active:scale-95 dark:border-rose-400/30 dark:shadow-none"
                         aria-label={`Skip ${top.title}`}
                         {...getAnalyticsDebugAttributes('trip_view__recommendation--decide', { trip_id: tripId, decision: 'dismiss' })}
                     >
@@ -277,7 +277,7 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
                         type="button"
                         onClick={() => commit(top, 'save')}
                         data-testid="recommendation-save"
-                        className="inline-flex size-14 items-center justify-center rounded-full border-2 border-emerald-200 bg-card text-emerald-600 shadow-sm transition-transform hover:scale-105 active:scale-95 dark:border-emerald-400/30"
+                        className="inline-flex size-14 items-center justify-center rounded-full border-2 border-emerald-200 bg-card text-emerald-600 shadow-sm transition-transform hover:scale-105 active:scale-95 dark:border-emerald-400/30 dark:shadow-none"
                         aria-label={`Keep ${top.title}`}
                         {...getAnalyticsDebugAttributes('trip_view__recommendation--decide', { trip_id: tripId, decision: 'save' })}
                     >

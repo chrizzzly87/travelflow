@@ -34,7 +34,7 @@ interface InfoCardProps {
 }
 
 const InfoCard: React.FC<InfoCardProps> = ({ icon: Icon, title, children }) => (
-  <article className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+  <article className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
     <h3 className="flex items-center gap-2 text-base font-black text-foreground">
       <Icon size={19} weight="duotone" className="text-accent-700 dark:text-accent-200" />
       {title}
@@ -104,7 +104,7 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
         </div>
         <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
               <Fact label={t('inspirations.subpages.guide.currency')} value={profile.currencyCode || undefined} />
               <Fact
                 label={t('inspirations.subpages.guide.exchangeRate')}
@@ -117,7 +117,7 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
             </div>
           </div>
           {profile.weather.length > 0 ? (
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
               <h3 className="flex items-center gap-2 font-black text-foreground"><CloudSun size={19} weight="duotone" className="text-accent-700 dark:text-accent-200" />{t('inspirations.subpages.guide.weather')}</h3>
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
                 {profile.weather.slice(0, 5).map((day) => (
@@ -282,7 +282,7 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
           </div>
           <div className="space-y-3">
             {profile.faqs.map((faq) => (
-              <details key={faq.question} className="group rounded-2xl border border-border bg-card p-5 shadow-sm">
+              <details key={faq.question} className="group rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
                 <summary className="cursor-pointer list-none font-black text-foreground marker:hidden">{faq.question}</summary>
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{faq.answer}</p>
               </details>
@@ -299,7 +299,7 @@ export const DestinationCountryProfileSections: React.FC<DestinationCountryProfi
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             {profile.recentUpdates.map((update) => (
-              <article key={`${update.timestamp || 'update'}-${update.category || 'travel'}-${update.messages.join('|')}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+              <article key={`${update.timestamp || 'update'}-${update.category || 'travel'}-${update.messages.join('|')}`} className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
                 <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-accent-700 dark:text-accent-200">
                   <ClockCounterClockwise size={16} weight="duotone" />
                   {update.category || t('inspirations.subpages.guide.travelUpdate')}

@@ -5,7 +5,7 @@ import { LEGAL_PROFILE } from '../../config/legalProfile';
 import { COOKIE_CATEGORY_COPY, getCookieTableRows } from '../../lib/legal/cookies';
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <section className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8">
+    <section className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8 dark:shadow-none">
         <h2 className="text-xl font-semibold text-foreground md:text-2xl">{title}</h2>
         <div className="mt-4 text-sm leading-6 text-foreground">
             {children}

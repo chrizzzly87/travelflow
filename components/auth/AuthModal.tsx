@@ -598,7 +598,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             />
             <div
                 ref={dialogRef}
-                className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col rounded-2xl border border-border bg-card shadow-2xl sm:max-h-[calc(100dvh-3rem)] dark:border-border dark:bg-card"
+                className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col rounded-2xl border border-border bg-card shadow-2xl sm:max-h-[calc(100dvh-3rem)] dark:border-border dark:bg-card dark:shadow-none"
                 role="dialog"
                 aria-modal="true"
                 aria-label="Authentication modal"
@@ -805,7 +805,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                             <SocialProviderIcon provider={item.provider} size={18} />
                                             <span>{t(item.labelKey)}</span>
                                             {isLastUsed && (
-                                                <span className="pointer-events-none absolute -top-2 right-3 rounded-2xl border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground shadow-sm dark:border-border dark:bg-secondary dark:text-muted-foreground">
+                                                <span className="pointer-events-none absolute -top-2 right-3 rounded-2xl border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground shadow-sm dark:border-border dark:bg-secondary dark:text-muted-foreground dark:shadow-none">
                                                     {t('copy.lastUsedTag')}
                                                 </span>
                                             )}

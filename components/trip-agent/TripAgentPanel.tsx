@@ -717,7 +717,7 @@ const TripAgentChatSession: React.FC<{
                                 className="fixed inset-0 z-10 cursor-default"
                                 onClick={() => setCommandMenu(null)}
                             />
-                            <div className="absolute inset-x-0 bottom-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-xl border border-border bg-card shadow-xl">
+                            <div className="absolute inset-x-0 bottom-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-xl border border-border bg-card shadow-xl dark:shadow-none">
                                 <TripAgentMentionMenu
                                     items={menuItems}
                                     activeIndex={menuIndex}

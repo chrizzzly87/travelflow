@@ -229,7 +229,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                     </div>
                 )}
 
-                <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
+                <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5 dark:shadow-none">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h2 className="text-base font-semibold text-foreground">Publish New Terms Version</h2>
@@ -412,7 +412,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                 </section>
 
                 {draft && (
-                    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
+                    <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5 dark:shadow-none">
                         <h2 className="text-base font-semibold text-foreground">Draft Preview</h2>
                         <div className="mt-3 grid gap-4 lg:grid-cols-2">
                             <article className="rounded-xl border border-border bg-secondary p-3">
@@ -431,7 +431,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                     </section>
                 )}
 
-                <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
+                <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5 dark:shadow-none">
                     <div className="flex items-center justify-between gap-2">
                         <h2 className="text-base font-semibold text-foreground">Version History</h2>
                         {currentVersion && (

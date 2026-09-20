@@ -218,7 +218,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
             }}
         >
             {state.error && (
-                 <div className="mb-4 flex items-start gap-2 rounded-lg border border-yellow-100 bg-yellow-50 p-3 text-sm text-yellow-700 dark:bg-yellow-400/12 dark:text-yellow-200">
+                 <div className="mb-4 flex items-start gap-2 rounded-lg border border-yellow-100 bg-yellow-50 p-3 text-sm text-yellow-700 dark:bg-yellow-400/12 dark:text-yellow-200 dark:border-yellow-400/25">
                     <AlertTriangle size={16} className="mt-0.5 shrink-0" />
                     <div>{state.error}</div>
                 </div>
@@ -260,7 +260,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                         )}
                     </div>
                     {(state.isSearchingSuggestions || state.suggestions.length > 0) && (
-                        <div className="mt-2 rounded-lg border border-border bg-card shadow-sm max-h-44 overflow-y-auto">
+                        <div className="mt-2 rounded-lg border border-border bg-card shadow-sm max-h-44 overflow-y-auto dark:shadow-none">
                             {state.isSearchingSuggestions && (
                                 <div className="px-3 py-2 text-xs text-muted-foreground">Searching cities…</div>
                             )}

@@ -876,7 +876,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                     <p className="max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p>
                 </section>
 
-                <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
+                <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6 dark:shadow-none">
                     {isProfileLoading ? (
                         <div className="space-y-2" aria-hidden="true">
                             <div className="h-10 w-full rounded-lg bg-secondary" />

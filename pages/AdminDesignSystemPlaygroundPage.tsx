@@ -674,13 +674,13 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                             </button>
                             <button
                                 type="button"
-                                className="rounded-2xl border border-border bg-card px-7 py-3 text-base font-bold text-foreground transition-all hover:border-slate-400 hover:text-foreground hover:shadow-sm hover:scale-[1.02] active:scale-[0.98]"
+                                className="rounded-2xl border border-border bg-card px-7 py-3 text-base font-bold text-foreground transition-all hover:border-slate-400 hover:text-foreground hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] dark:shadow-none"
                             >
                                 Hero secondary action
                             </button>
                             <button
                                 type="button"
-                                className="inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-bold text-foreground shadow-sm transition-all hover:border-accent-300 hover:text-accent-700 hover:shadow-md dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300"
+                                className="inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-card px-6 py-3 text-sm font-bold text-foreground shadow-sm transition-all hover:border-accent-300 hover:text-accent-700 hover:shadow-md dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300 dark:shadow-none"
                             >
                                 Inspirations section action
                             </button>
@@ -690,7 +690,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                         <p className={subtleHeadingClassName}>Feature-page highlight CTA</p>
                         <button
                             type="button"
-                            className="rounded-2xl bg-card px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-all hover:bg-accent-50 hover:scale-[1.03] hover:shadow-xl active:scale-[0.98] dark:hover:bg-accent-400/12 dark:text-accent-200"
+                            className="rounded-2xl bg-card px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-all hover:bg-accent-50 hover:scale-[1.03] hover:shadow-xl active:scale-[0.98] dark:hover:bg-accent-400/12 dark:text-accent-200 dark:shadow-none"
                         >
                             Primary
                         </button>
@@ -1153,7 +1153,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">Active</span>
                         </div>
                     </AdminSurfaceCard>
-                    <div className="space-y-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
+                    <div className="space-y-3 rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
                         <p className="text-sm font-semibold text-foreground">Badge + chip stack</p>
                         <div className="flex flex-wrap gap-2">
                             <span className="rounded-full border border-accent-200 bg-accent-50 px-2 py-1 text-[11px] font-semibold text-accent-800 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">Example</span>

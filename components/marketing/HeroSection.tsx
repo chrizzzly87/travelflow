@@ -168,7 +168,7 @@ export const HeroSection: React.FC = () => {
                         <a
                             href="#examples"
                             onClick={() => handleCtaClick('see_examples')}
-                            className="rounded-2xl border border-border bg-card px-7 py-3.5 text-base font-bold text-foreground transition-[scale,border-color,color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:border-slate-400 hover:text-foreground hover:shadow-sm active:scale-[0.96] dark:border-border dark:bg-card dark:text-foreground dark:hover:border-border dark:hover:text-foreground"
+                            className="rounded-2xl border border-border bg-card px-7 py-3.5 text-base font-bold text-foreground transition-[scale,border-color,color,box-shadow] duration-150 ease-out hover:scale-[1.02] hover:border-slate-400 hover:text-foreground hover:shadow-sm active:scale-[0.96] dark:border-border dark:bg-card dark:text-foreground dark:hover:border-border dark:hover:text-foreground dark:shadow-none"
                             {...heroCtaDebugAttributes('see_examples')}
                         >
                             {t('common:buttons.seeExampleTrips')}
@@ -176,15 +176,15 @@ export const HeroSection: React.FC = () => {
                     </div>
 
                     <div className="mt-8 flex flex-wrap gap-2.5 animate-hero-stagger" style={{ '--stagger': '360ms' } as React.CSSProperties}>
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm animate-float dark:border-border dark:bg-card dark:text-muted-foreground" style={{ '--float-delay': '0ms' } as React.CSSProperties}>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm animate-float dark:border-border dark:bg-card dark:text-muted-foreground dark:shadow-none" style={{ '--float-delay': '0ms' } as React.CSSProperties}>
                             <RocketLaunch size={14} weight="duotone" className="text-accent-500" />
                             {t('hero.floating.ai')}
                         </span>
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm animate-float dark:border-border dark:bg-card dark:text-muted-foreground" style={{ '--float-delay': '600ms' } as React.CSSProperties}>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm animate-float dark:border-border dark:bg-card dark:text-muted-foreground dark:shadow-none" style={{ '--float-delay': '600ms' } as React.CSSProperties}>
                             <ShareNetwork size={14} weight="duotone" className="text-accent-500" />
                             {t('hero.floating.share')}
                         </span>
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm animate-float dark:border-border dark:bg-card dark:text-muted-foreground" style={{ '--float-delay': '1200ms' } as React.CSSProperties}>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm animate-float dark:border-border dark:bg-card dark:text-muted-foreground dark:shadow-none" style={{ '--float-delay': '1200ms' } as React.CSSProperties}>
                             <LinkSimple size={14} weight="duotone" className="text-accent-500" />
                             {t('hero.floating.booking')}
                         </span>

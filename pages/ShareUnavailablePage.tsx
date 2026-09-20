@@ -17,7 +17,7 @@ export const ShareUnavailablePage: React.FC = () => {
 
     return (
         <MarketingLayout>
-            <section className="mx-auto max-w-2xl rounded-3xl border border-border bg-card p-8 shadow-sm">
+            <section className="mx-auto max-w-2xl rounded-3xl border border-border bg-card p-8 shadow-sm dark:shadow-none">
                 <div className="inline-flex size-10 items-center justify-center rounded-md border border-accent-200 bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                     <WarningCircle size={20} weight="duotone" />
                 </div>

@@ -440,7 +440,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                                     setPage(1);
                                 }}
                                 placeholder="Search type, dispatch, or failure text"
-                                className="h-8 w-full rounded-md border border-border bg-card ps-9 pe-3 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-border focus:ring-1 focus:ring-slate-200"
+                                className="h-8 w-full rounded-md border border-border bg-card ps-9 pe-3 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-border focus:ring-1 focus:ring-slate-200 dark:shadow-none"
                                 aria-label="Search worker health checks"
                             />
                         </label>

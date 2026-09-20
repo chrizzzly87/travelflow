@@ -441,7 +441,7 @@ export const PublicProfilePage: React.FC = () => {
                                 </NavLink>
                                 <NavLink
                                     to={buildPath('inspirations')}
-                                    className="inline-flex items-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-border hover:bg-secondary"
+                                    className="inline-flex items-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-border hover:bg-secondary dark:shadow-none"
                                 >
                                     {t('publicProfile.ctaGetInspired')}
                                 </NavLink>

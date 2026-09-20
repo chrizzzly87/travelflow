@@ -1515,7 +1515,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     initialMapFocusQuery={generationSummary.mapFocus || generationSummary.destination}
                 />
                 <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
-                    <div className="w-full max-w-xl rounded-3xl border border-accent-100 bg-card/95 px-5 py-4 shadow-xl backdrop-blur-sm dark:bg-card/95">
+                    <div className="w-full max-w-xl rounded-3xl border border-accent-100 bg-card/95 px-5 py-4 shadow-xl backdrop-blur-sm dark:bg-card/95 dark:border-accent-400/25 dark:shadow-none">
                         <div className="flex items-center gap-3">
                             <div className="flex size-10 items-center justify-center rounded-full bg-accent-100 text-accent-600 dark:text-accent-300 dark:bg-accent-400/12">
                                 <Loader2 size={18} className="animate-spin" />

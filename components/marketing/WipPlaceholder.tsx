@@ -10,7 +10,7 @@ export const WipPlaceholder: React.FC<WipPlaceholderProps> = ({ title, descripti
     const { t } = useTranslation('wip');
 
     return (
-        <section className="rounded-3xl border border-border bg-card p-8 shadow-sm">
+        <section className="rounded-3xl border border-border bg-card p-8 shadow-sm dark:shadow-none">
             <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-900 dark:bg-amber-400/12 dark:text-amber-200">
                 {t('label')}
             </span>

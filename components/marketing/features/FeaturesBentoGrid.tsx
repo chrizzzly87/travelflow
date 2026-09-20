@@ -122,7 +122,7 @@ const TimelineVisual: React.FC<BentoVisualProps> = ({ item }) => (
         </div>
         <div className="mt-5 grid gap-3">
             {['Day 03', 'Day 05', 'Day 08'].map((day, index) => (
-                <div key={day} className="flex items-start gap-3 rounded-[12px] border border-border bg-card p-3 shadow-sm dark:border-border dark:bg-card">
+                <div key={day} className="flex items-start gap-3 rounded-[12px] border border-border bg-card p-3 shadow-sm dark:border-border dark:bg-card dark:shadow-none">
                     <div className={cn(
                         'mt-1 size-3 rounded-full',
                         day === 'Day 03' ? 'bg-accent-500' : day === 'Day 05' ? 'bg-slate-400' : 'bg-slate-300',
@@ -181,10 +181,10 @@ const SharingVisual: React.FC<BentoVisualProps> = ({ item }) => (
             ))}
         </div>
         <div className="mt-5 grid gap-3">
-            <div className="rounded-[12px] border border-border bg-card p-3 text-sm text-foreground shadow-sm dark:border-border dark:bg-card dark:text-foreground">
+            <div className="rounded-[12px] border border-border bg-card p-3 text-sm text-foreground shadow-sm dark:border-border dark:bg-card dark:text-foreground dark:shadow-none">
                 “Can we keep one slower day here?”
             </div>
-            <div className="rounded-[12px] border border-border bg-card p-3 text-sm text-foreground shadow-sm dark:border-border dark:bg-card dark:text-foreground">
+            <div className="rounded-[12px] border border-border bg-card p-3 text-sm text-foreground shadow-sm dark:border-border dark:bg-card dark:text-foreground dark:shadow-none">
                 “This route finally makes sense.”
             </div>
         </div>
@@ -194,7 +194,7 @@ const SharingVisual: React.FC<BentoVisualProps> = ({ item }) => (
 const ReliveVisual: React.FC<BentoVisualProps> = ({ item }) => (
     <div className="rounded-[16px] border border-border bg-secondary p-5 dark:border-border dark:bg-secondary">
         <div className="grid gap-3">
-            <div className="rounded-[14px] border border-border bg-card p-4 shadow-sm dark:border-border dark:bg-card">
+            <div className="rounded-[14px] border border-border bg-card p-4 shadow-sm dark:border-border dark:bg-card dark:shadow-none">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground dark:text-muted-foreground">Final handoff</p>
                 <p className="mt-2 text-lg font-bold text-foreground dark:text-foreground">{item.detail}</p>
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -209,7 +209,7 @@ const ReliveVisual: React.FC<BentoVisualProps> = ({ item }) => (
                     </span>
                 </div>
             </div>
-            <div className="rounded-[14px] border border-border bg-card px-4 py-3 text-sm text-muted-foreground shadow-sm dark:border-border dark:bg-card dark:text-muted-foreground">
+            <div className="rounded-[14px] border border-border bg-card px-4 py-3 text-sm text-muted-foreground shadow-sm dark:border-border dark:bg-card dark:text-muted-foreground dark:shadow-none">
                 A shareable plan for the trip and a cleaner memory of how it came together.
             </div>
         </div>
@@ -235,7 +235,7 @@ const BentoVisual: React.FC<BentoVisualProps> = ({ item }) => {
 
 const FeatureCardShell: React.FC<FeatureCardShellProps> = ({ IconComponent, index, item, children, hideEyebrow = false }) => (
     <Card
-        className="group h-full animate-scroll-fade-up overflow-hidden rounded-[18px] border-border bg-card py-0 shadow-sm shadow-slate-200/60 transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200/80 dark:border-border dark:bg-card"
+        className="group h-full animate-scroll-fade-up overflow-hidden rounded-[18px] border-border bg-card py-0 shadow-sm shadow-slate-200/60 transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200/80 dark:border-border dark:bg-card dark:shadow-none"
         style={{ animationDelay: `${index * 90}ms` }}
     >
         <CardContent className="flex h-full flex-col gap-6 px-6 pb-6 pt-6">
@@ -254,7 +254,7 @@ const FeatureCardShell: React.FC<FeatureCardShellProps> = ({ IconComponent, inde
                     </p>
                 </div>
                 {IconComponent ? (
-                    <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary text-accent-700 shadow-sm dark:border-border dark:bg-secondary dark:text-accent-200">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary text-accent-700 shadow-sm dark:border-border dark:bg-secondary dark:text-accent-200 dark:shadow-none">
                         <IconComponent size={20} weight="regular" />
                     </div>
                 ) : null}
@@ -386,7 +386,7 @@ const AirportBentoCard: React.FC<{ index: number; item: FeatureBentoItem }> = ({
             data-testid="features-airport-card"
         >
             <Card
-                className="group h-full animate-scroll-fade-up overflow-hidden rounded-[18px] border-border bg-card py-0 shadow-sm shadow-slate-200/60 transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200/80 dark:border-border dark:bg-card"
+                className="group h-full animate-scroll-fade-up overflow-hidden rounded-[18px] border-border bg-card py-0 shadow-sm shadow-slate-200/60 transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200/80 dark:border-border dark:bg-card dark:shadow-none"
                 style={{ animationDelay: `${index * 90}ms` }}
             >
                 <CardContent className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(420px,auto)] lg:items-center lg:gap-12 xl:grid-cols-[minmax(0,0.95fr)_minmax(500px,auto)]">

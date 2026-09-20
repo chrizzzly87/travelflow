@@ -1350,8 +1350,11 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   --muted-foreground: oklch(0.783 0.003 85);
   --accent: oklch(0.283 0.003 49);
   --accent-foreground: oklch(0.953 0.009 85);
-  --border: oklch(1 0 0 / 13%);
-  --input: oklch(1 0 0 / 16%);
+  /* Deliberately faint. In dark a card separates from the page by its surface,
+   * not by an outline, and a visible hairline around every card reads as noise.
+   * --input stays stronger: a form field does need a discernible edge. */
+  --border: oklch(1 0 0 / 7%);
+  --input: oklch(1 0 0 / 18%);
   --sidebar: oklch(0.257 0.002 68);
   --sidebar-foreground: oklch(0.953 0.009 85);
   --sidebar-accent: oklch(0.283 0.003 49);
@@ -1391,8 +1394,8 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   --muted-foreground: oklch(0.723 0.036 264);
   --accent: oklch(0.294 0.031 266);
   --accent-foreground: oklch(0.958 0.010 267);
-  --border: oklch(0.75 0.05 265 / 16%);
-  --input: oklch(0.75 0.05 265 / 20%);
+  --border: oklch(0.75 0.05 265 / 9%);
+  --input: oklch(0.75 0.05 265 / 22%);
   --sidebar: oklch(0.261 0.028 266);
   --sidebar-foreground: oklch(0.958 0.010 267);
   --sidebar-accent: oklch(0.294 0.031 266);

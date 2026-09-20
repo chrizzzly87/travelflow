@@ -148,7 +148,7 @@ export const ResetPasswordPage: React.FC = () => {
     return (
         <MarketingLayout>
             <div className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-[1fr_320px]">
-                <section className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8">
+                <section className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8 dark:shadow-none">
                     <p className="text-xs font-semibold uppercase tracking-wide text-accent-600 dark:text-accent-300">{t('reset.eyebrow')}</p>
                     <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{t('reset.title')}</h1>
                     <p className="mt-3 text-sm leading-6 text-muted-foreground">{t('reset.description')}</p>
@@ -228,7 +228,7 @@ export const ResetPasswordPage: React.FC = () => {
                     </div>
                 </section>
 
-                <aside className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8">
+                <aside className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8 dark:shadow-none">
                     <h2 className="text-base font-semibold text-foreground">{t('benefits.title')}</h2>
                     <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
                         {(t('benefits.items', { returnObjects: true }) as string[]).map((item) => (

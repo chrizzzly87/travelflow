@@ -440,7 +440,7 @@ const TripRowActionsMenu: React.FC<{
                 <DotsThreeVertical size={16} />
             </button>
             {isOpen && (
-                <div className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[180px] rounded-lg border border-border bg-card p-1 shadow-xl">
+                <div className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[180px] rounded-lg border border-border bg-card p-1 shadow-xl dark:shadow-none">
                     <button
                         type="button"
                         onClick={() => runAction(onPreviewTrip)}
@@ -1818,19 +1818,19 @@ export const AdminTripsPage: React.FC = () => {
             )}
 
             <section className="grid gap-3 md:grid-cols-5">
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total</p>
                     <p className="mt-2 text-2xl font-semibold text-foreground"><AdminCountUpNumber value={summary.total} /></p>
                 </article>
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active</p>
                     <p className="mt-2 text-2xl font-semibold text-emerald-700 dark:text-emerald-200"><AdminCountUpNumber value={summary.active} /></p>
                 </article>
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Expired</p>
                     <p className="mt-2 text-2xl font-semibold text-amber-700 dark:text-amber-200"><AdminCountUpNumber value={summary.expired} /></p>
                 </article>
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Archived</p>
                     <p className="mt-2 text-2xl font-semibold text-foreground"><AdminCountUpNumber value={summary.archived} /></p>
                 </article>
@@ -1850,7 +1850,7 @@ export const AdminTripsPage: React.FC = () => {
                 </article>
             </section>
 
-            <section className="mt-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <section className="mt-4 rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-sm font-semibold text-foreground">Trips</h2>
                     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -2420,7 +2420,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     onChange={(event) => {
                                                         setDrawerExpirationDraft(event.target.value);
                                                     }}
-                                                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm shadow-black/5"
+                                                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm shadow-black/5 dark:shadow-none"
                                                 />
                                             </label>
                                         </div>
@@ -2446,7 +2446,7 @@ export const AdminTripsPage: React.FC = () => {
                                             Loading trip map and itinerary…
                                         </div>
                                     ) : selectedFullTrip && (previewCityStops.length > 0 || previewMapUrl) ? (
-                                        <div className="mt-4 flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                                        <div className="mt-4 flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm dark:shadow-none">
                                             <div className="grid grid-cols-2">
                                                 <div className="border-r border-border p-3.5">
                                                     <div className="space-y-0 h-48 overflow-y-auto">
@@ -2844,7 +2844,7 @@ export const AdminTripsPage: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={() => handleOpenTripPreview(selectedTripForDrawer)}
-                                                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary"
+                                                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary dark:shadow-none"
                                             >
                                                 Preview trip
                                                 <ArrowSquareOut size={16} />
@@ -2855,7 +2855,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     void handleDownloadTripJson(selectedTripForDrawer);
                                                 }}
                                                 disabled={isSaving}
-                                                className="inline-flex items-center justify-center rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                                                className="inline-flex items-center justify-center rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 dark:shadow-none"
                                             >
                                                 Download JSON
                                             </button>
@@ -2995,7 +2995,7 @@ export const AdminTripsPage: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => navigate(`/admin/users?user=${encodeURIComponent(selectedOwnerProfile.user_id)}&drawer=user`)}
-                                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
+                                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 dark:shadow-none"
                                         >
                                             View Full Profile
                                             <ArrowSquareOut size={16} />

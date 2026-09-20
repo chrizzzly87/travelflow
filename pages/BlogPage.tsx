@@ -150,7 +150,7 @@ const BlogCard: React.FC<{
         >
             <div
                 aria-hidden
-                className="pointer-events-none absolute inset-0 rounded-2xl border border-border bg-card shadow-sm transition-[box-shadow,border-color] duration-300 ease-out group-hover:border-border group-hover:shadow-lg"
+                className="pointer-events-none absolute inset-0 rounded-2xl border border-border bg-card shadow-sm transition-[box-shadow,border-color] duration-300 ease-out group-hover:border-border group-hover:shadow-lg dark:shadow-none"
             />
             <div className="relative z-10 flex flex-1 flex-col">
                 <div
@@ -355,7 +355,7 @@ export const BlogPage: React.FC = () => {
 	                            value={search}
                             onChange={(event) => setSearch(event.target.value)}
                             placeholder={t('index.searchPlaceholder')}
-                            className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200 transition-shadow"
+                            className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200 transition-shadow dark:shadow-none"
                         />
                         {isSearching && (
                             <span className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-muted-foreground dark:text-foreground">
@@ -371,7 +371,7 @@ export const BlogPage: React.FC = () => {
                             <Select value={languageFilter} onValueChange={(value) => setLanguageFilterState({ locale, filter: value as BlogLanguageFilter })}>
                                 <SelectTrigger
                                     aria-label={t('index.languageFilterAriaLabel')}
-                                    className="h-auto w-full rounded-xl border-border bg-card py-3 pl-10 pr-10 text-sm font-medium text-foreground shadow-sm focus:border-accent-400 focus:ring-accent-200 transition-shadow"
+                                    className="h-auto w-full rounded-xl border-border bg-card py-3 pl-10 pr-10 text-sm font-medium text-foreground shadow-sm focus:border-accent-400 focus:ring-accent-200 transition-shadow dark:shadow-none"
                                 >
                                     <span>
                                         {languageFilter === 'nativeAndEnglish' && t('index.languageFilter.nativeAndEnglish')}
@@ -466,7 +466,7 @@ export const BlogPage: React.FC = () => {
                     </p>
                     <Link
                         to={buildLocalizedMarketingPath('contact', locale)}
-                        className="relative mt-8 inline-flex items-center gap-2 rounded-2xl bg-card px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-[scale,background-color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:bg-accent-50 hover:shadow-xl active:scale-[0.96] dark:hover:bg-accent-400/12 dark:text-accent-200"
+                        className="relative mt-8 inline-flex items-center gap-2 rounded-2xl bg-card px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-[scale,background-color,box-shadow] duration-150 ease-out hover:scale-[1.03] hover:bg-accent-50 hover:shadow-xl active:scale-[0.96] dark:hover:bg-accent-400/12 dark:text-accent-200 dark:shadow-none"
                     >
                         {t('index.communityCtaButton')}
                         <ArrowRight size={18} weight="bold" />

@@ -241,7 +241,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                             ariaLabel={t('language.label')}
                             value={selectedLocale}
                             onChange={handleLocaleChange}
-                            triggerClassName="h-10 w-full rounded-xl border-border bg-card px-3 py-2.5 text-sm font-semibold text-foreground shadow-sm"
+                            triggerClassName="h-10 w-full rounded-xl border-border bg-card px-3 py-2.5 text-sm font-semibold text-foreground shadow-sm dark:shadow-none"
                             contentAlign="start"
                         />
                         <ThemeToggle variant="row" analyticsSurface="mobile_nav" className="h-10" />

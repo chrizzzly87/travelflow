@@ -204,7 +204,7 @@ export const TripDiscoverOverlay: React.FC<TripDiscoverOverlayProps> = ({
 
     const tabButtonClass = (value: DiscoverTab): string => (
         `inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-semibold transition-colors ${
-            tab === value ? 'bg-card text-accent-600 shadow-sm dark:text-accent-300' : 'text-muted-foreground'
+            tab === value ? 'bg-card text-accent-600 shadow-sm dark:text-accent-300 dark:shadow-none' : 'text-muted-foreground'
         }`
     );
 

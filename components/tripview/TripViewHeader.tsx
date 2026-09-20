@@ -47,7 +47,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
     isTripLockedByExpiry,
 }) => {
     const { t } = useTranslation('common');
-    const headerSecondaryButtonClassName = 'inline-flex min-h-10 items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm transition-[scale,border-color,background-color,color,box-shadow] duration-150 ease-out hover:border-border hover:bg-secondary hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 dark:text-foreground';
+    const headerSecondaryButtonClassName = 'inline-flex min-h-10 items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm transition-[scale,border-color,background-color,color,box-shadow] duration-150 ease-out hover:border-border hover:bg-secondary hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 dark:text-foreground dark:shadow-none';
     const headerPrimaryButtonClassName = 'inline-flex min-h-10 items-center gap-2 rounded-md bg-accent-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-[scale,background-color,box-shadow] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100';
     const titleStyle = titleViewTransitionName
         ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties)
@@ -118,7 +118,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                             </div>
                         )}
                     </div>
-                    <span className="mt-1 hidden shrink-0 items-center gap-1 rounded-full border border-border bg-card/90 px-2 py-1 text-[11px] font-semibold text-muted-foreground opacity-0 shadow-sm transition-[opacity,color,background-color,box-shadow] group-hover:opacity-100 group-focus-visible:opacity-100 md:inline-flex">
+                    <span className="mt-1 hidden shrink-0 items-center gap-1 rounded-full border border-border bg-card/90 px-2 py-1 text-[11px] font-semibold text-muted-foreground opacity-0 shadow-sm transition-[opacity,color,background-color,box-shadow] group-hover:opacity-100 group-focus-visible:opacity-100 md:inline-flex dark:shadow-none">
                         {canManageTripMetadata ? <Pencil size={12} /> : <Info size={12} />}
                         <span className="hidden lg:inline">
                             {canManageTripMetadata ? t('tripView.header.editTitleCta') : t('tripView.header.openDetailsCta')}

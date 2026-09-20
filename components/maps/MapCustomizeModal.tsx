@@ -692,7 +692,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
         event.stopPropagation();
         onClose();
       }}
-      className="fixed bottom-24 end-4 top-20 z-[1400] flex w-[min(92vw,380px)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
+      className="fixed bottom-24 end-4 top-20 z-[1400] flex w-[min(92vw,380px)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl dark:shadow-none"
     >
       <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
         <div className="min-w-0">

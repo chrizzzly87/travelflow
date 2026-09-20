@@ -89,7 +89,7 @@ export const CookieConsentBanner: React.FC = () => {
 
     return (
         <div className="fixed inset-x-0 bottom-4 z-cookie-consent px-4">
-            <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 rounded-2xl border border-border bg-card/95 p-4 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-6 dark:border-border dark:bg-card/95">
+            <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 rounded-2xl border border-border bg-card/95 p-4 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-6 dark:border-border dark:bg-card/95 dark:shadow-none">
                 <p className="text-sm leading-6 text-foreground dark:text-foreground">
                     {t('cookieBanner.message', { appName: APP_NAME })}{' '}
                     <Link to={buildLocalizedMarketingPath('cookies', locale)} className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200 dark:hover:text-accent-300">

@@ -56,7 +56,7 @@ const FestivalCalendarCardComponent: React.FC<FestivalCalendarCardProps> = ({ en
   };
 
   return (
-    <article className="group flex h-full min-h-52 flex-col rounded-3xl border border-border bg-card p-5 shadow-sm transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-1 hover:border-accent-200 hover:shadow-lg dark:hover:border-accent-400/30">
+    <article className="group flex h-full min-h-52 flex-col rounded-3xl border border-border bg-card p-5 shadow-sm transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-1 hover:border-accent-200 hover:shadow-lg dark:hover:border-accent-400/30 dark:shadow-none">
       <div className="flex items-start justify-between gap-3">
         <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-secondary">
           <FlagIcon code={entry.countryCode} size="2xl" label={entry.countryName} />

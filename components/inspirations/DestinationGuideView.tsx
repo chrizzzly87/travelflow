@@ -114,18 +114,18 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
         </p>
 
         <div className="mt-7 flex flex-wrap gap-3">
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm dark:shadow-none">
             <MapPin size={16} weight="duotone" />
             {guide.region}
           </span>
           {guide.suggestedTripDays ? (
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm">
+            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm dark:shadow-none">
               <CalendarDots size={16} weight="duotone" />
               {t('inspirations.subpages.guide.suggestedStay', { count: guide.suggestedTripDays.recommended })}
             </span>
           ) : null}
           {isCountry && children.length > 0 ? (
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm">
+            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm dark:shadow-none">
               <Compass size={16} weight="duotone" />
               {t('inspirations.subpages.guide.destinationsCount', { count: children.length })}
             </span>
@@ -135,7 +135,7 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
 
       {effectiveSeasonality ? (
         <section className="pb-10 animate-hero-stagger" style={{ '--stagger': '80ms' } as React.CSSProperties}>
-          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm md:p-7">
+          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm md:p-7 dark:shadow-none">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-accent-700 dark:text-accent-200">{t('inspirations.subpages.guide.timingEyebrow')}</p>
@@ -208,7 +208,7 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
                   key={child.id}
                   to={path}
                   onClick={() => trackEvent('inspirations__destination_card', payload)}
-                  className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent-200 hover:shadow-md dark:hover:border-accent-400/30"
+                  className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent-200 hover:shadow-md dark:hover:border-accent-400/30 dark:shadow-none"
                   {...getAnalyticsDebugAttributes('inspirations__destination_card', payload)}
                 >
                   <span className="flex min-w-0 items-center gap-3">
@@ -237,7 +237,7 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
         style={{ '--stagger': '200ms' } as React.CSSProperties}
       >
         {guide.highlights.length > 0 ? (
-          <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+          <div className="rounded-3xl border border-border bg-card p-6 shadow-sm dark:shadow-none">
             <h2 className="flex items-center gap-2 text-xl font-black text-foreground"><Sparkle size={20} weight="duotone" className="text-accent-700 dark:text-accent-200" />{t('inspirations.subpages.guide.highlights')}</h2>
             <ul className="mt-4 space-y-3">
               {guide.highlights.map((highlight) => <li key={highlight} className="rounded-xl bg-secondary px-4 py-3 text-sm font-semibold text-foreground">{highlight}</li>)}
@@ -245,12 +245,12 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
           </div>
         ) : null}
         {country.airports.length > 0 ? (
-          <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+          <div className="rounded-3xl border border-border bg-card p-6 shadow-sm dark:shadow-none">
             <h2 className="flex items-center gap-2 text-xl font-black text-foreground"><AirplaneTilt size={20} weight="duotone" className="text-accent-700 dark:text-accent-200" />{t('inspirations.subpages.guide.arrivalAirports')}</h2>
             <ul className="mt-4 space-y-3">
               {country.airports.slice(0, 4).map((airport) => (
                 <li key={airport.iata} className="flex items-center gap-3 rounded-xl bg-secondary px-4 py-3">
-                  <span className="rounded-md bg-card px-2 py-1 font-mono text-xs font-bold text-accent-700 shadow-sm dark:text-accent-200">{airport.iata}</span>
+                  <span className="rounded-md bg-card px-2 py-1 font-mono text-xs font-bold text-accent-700 shadow-sm dark:text-accent-200 dark:shadow-none">{airport.iata}</span>
                   <span className="text-sm font-semibold text-foreground">{airport.name}</span>
                 </li>
               ))}
@@ -267,7 +267,7 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             {effectiveEvents.map((event) => (
-              <article key={event.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+              <article key={event.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
                 <p className="text-xs font-bold uppercase tracking-wider text-accent-700 dark:text-accent-200">{monthLabels[event.month - 1]} · {event.type}</p>
                 <h3 className="mt-2 text-lg font-black text-foreground">{event.name}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{event.summary}</p>
@@ -298,7 +298,7 @@ export const DestinationGuideView: React.FC<DestinationGuideViewProps> = ({ reso
           <Link
             to={planUrl}
             onClick={() => trackEvent('inspirations__destination_plan', { country: country.name, destination: guide.name, kind: guide.kind })}
-            className="mt-6 inline-flex shrink-0 items-center gap-2 rounded-xl bg-card px-5 py-3 text-sm font-bold text-foreground shadow-sm transition-transform hover:-translate-y-0.5 md:mt-0"
+            className="mt-6 inline-flex shrink-0 items-center gap-2 rounded-xl bg-card px-5 py-3 text-sm font-bold text-foreground shadow-sm transition-transform hover:-translate-y-0.5 md:mt-0 dark:shadow-none"
             {...getAnalyticsDebugAttributes('inspirations__destination_plan', { country: country.name, destination: guide.name, kind: guide.kind })}
           >
             {t('inspirations.subpages.guide.planCta')}

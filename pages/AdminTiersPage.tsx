@@ -285,7 +285,7 @@ export const AdminTiersPage: React.FC = () => {
 
             <section className="grid gap-3 md:grid-cols-3">
                 {visibleTierKeys.map((tierKey) => (
-                    <article key={`count-${tierKey}`} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                    <article key={`count-${tierKey}`} className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
                         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tierKey}</p>
                         <p className="mt-1 text-sm font-semibold text-foreground">{PLAN_CATALOG[tierKey].publicName}</p>
                         <p className="mt-2 text-2xl font-semibold text-foreground">
@@ -298,7 +298,7 @@ export const AdminTiersPage: React.FC = () => {
 
             <section className="mt-4 grid gap-3 xl:grid-cols-3">
                 {visibleTierKeys.map((tierKey) => (
-                    <article key={`tier-${tierKey}`} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                    <article key={`tier-${tierKey}`} className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
                         <div className="flex items-center justify-between gap-2">
                             <div>
                                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tierKey}</p>

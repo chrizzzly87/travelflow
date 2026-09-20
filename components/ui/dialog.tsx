@@ -83,7 +83,7 @@ export const DialogContent = React.forwardRef<
                 // A bounded height plus a flex column is what lets DialogBody
                 // scroll while the header and footer stay put.
                 'flex max-h-[min(85dvh,48rem)] flex-col overflow-hidden',
-                'rounded-xl border border-border bg-card p-0 shadow-2xl focus:outline-none',
+                'rounded-xl border border-border bg-card p-0 shadow-2xl focus:outline-none dark:shadow-none',
                 className,
             )}
             {...props}

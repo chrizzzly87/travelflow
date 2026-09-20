@@ -200,7 +200,7 @@ export const TermsPage: React.FC = () => {
                     </section>
                 )}
 
-                <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
+                <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6 dark:shadow-none">
                     <h2 className="text-xl font-semibold tracking-tight text-foreground">{t('termsPage.bindingSectionTitle')}</h2>
                     <div className="mt-4 space-y-3">
                         <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
@@ -209,7 +209,7 @@ export const TermsPage: React.FC = () => {
                     </div>
                 </section>
 
-                <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
+                <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6 dark:shadow-none">
                     <h2 className="text-xl font-semibold tracking-tight text-foreground">{t('termsPage.helperSectionTitle')}</h2>
                     <div className="mt-4 space-y-3">
                         <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>

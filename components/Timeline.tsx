@@ -731,7 +731,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                         aria-hidden="true"
                     >
                         <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px bg-red-400/60" />
-                        <span className="absolute top-1 left-1/2 -translate-x-1/2 rounded-full border border-red-200/90 bg-card/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-red-500 shadow-sm dark:border-red-400/30">
+                        <span className="absolute top-1 left-1/2 -translate-x-1/2 rounded-full border border-red-200/90 bg-card/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-red-500 shadow-sm dark:border-red-400/30 dark:shadow-none">
                             Today
                         </span>
                     </div>
@@ -769,7 +769,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                             {dateHeaders.months?.map((month) => (
                                 <div
                                     key={`${month.name}-${month.startIndex}`}
-                                    className="flex-shrink-0 flex items-center justify-center font-bold text-xs uppercase tracking-widest text-accent-900 border-r border-accent-100 bg-accent-50 last:border-0 dark:bg-accent-400/12 dark:text-accent-200"
+                                    className="flex-shrink-0 flex items-center justify-center font-bold text-xs uppercase tracking-widest text-accent-900 border-r border-accent-100 bg-accent-50 last:border-0 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/25"
                                     style={{ width: `${month.widthPx}px` }}
                                 >
                                     {month.name}
@@ -908,7 +908,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                          <button type="button"
                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; handleAddTravel(); }}
                             disabled={!canEdit}
-                            className={`inline-flex size-10 items-center justify-center rounded-full bg-stone-100 text-stone-700 opacity-0 transition-opacity group-hover/travel:opacity-100 ${canEdit ? 'hover:bg-stone-200' : 'cursor-not-allowed opacity-50'}`}
+                            className={`inline-flex size-10 items-center justify-center rounded-full bg-secondary text-foreground opacity-0 transition-opacity group-hover/travel:opacity-100 ${canEdit ? 'hover:bg-secondary' : 'cursor-not-allowed opacity-50'}`}
                             aria-label="Add transfer"
                             title="Add transfer"
                         >
@@ -1004,7 +1004,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     <button type="button"
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                         className={`absolute z-10 flex min-h-10 -translate-y-1/2 items-center rounded-full border text-[11px] font-semibold transition-colors pointer-events-auto
-                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 shadow-sm opacity-100 ring-2 ring-blue-600 ring-offset-1 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30' : (isUndefinedTransfer ? 'bg-secondary border-border border-dashed text-muted-foreground opacity-65 shadow-none justify-center' : 'bg-card border-border text-muted-foreground shadow-sm')}
+                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 shadow-sm opacity-100 ring-2 ring-blue-600 ring-offset-1 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30' : (isUndefinedTransfer ? 'bg-secondary border-border border-dashed text-muted-foreground opacity-65 shadow-none justify-center' : 'bg-card border-border text-muted-foreground shadow-sm dark:shadow-none')}
                                             ${showIconOnly ? `justify-center gap-0 ${pillPaddingClass}` : `gap-1.5 ${pillPaddingClass}`}
                                             ${travel || canEdit ? 'hover:bg-secondary cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}

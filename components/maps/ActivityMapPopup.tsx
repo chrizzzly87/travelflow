@@ -85,7 +85,7 @@ export const ActivityMapPopup: React.FC<ActivityMapPopupProps> = ({
       aria-label={t('tripView.mapLinks.popupLabel')}
       tabIndex={-1}
       onKeyDown={handleKeyDown}
-      className="pointer-events-auto absolute z-30 rounded-xl border border-border bg-card p-3 shadow-2xl outline-none focus-visible:ring-2 focus-visible:ring-accent-400"
+      className="pointer-events-auto absolute z-30 rounded-xl border border-border bg-card p-3 shadow-2xl outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:shadow-none"
       style={{
         insetInlineStart: `${left}px`,
         top: `${top}px`,

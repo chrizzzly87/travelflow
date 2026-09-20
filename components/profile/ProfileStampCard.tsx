@@ -78,7 +78,7 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
         }
       }}
       className={[
-        "profile-stamp-card group relative flex aspect-square flex-col overflow-hidden rounded-xl border bg-card p-3 text-left shadow-sm transition-all duration-300 hover:scale-[1.03] hover:shadow-md",
+        "profile-stamp-card group relative flex aspect-square flex-col overflow-hidden rounded-xl border bg-card p-3 text-left shadow-sm transition-all duration-300 hover:scale-[1.03] hover:shadow-md dark:shadow-none",
         selected
           ? "border-accent-300 shadow-md shadow-accent-100/60 dark:border-accent-400/30"
           : "border-border hover:border-border",

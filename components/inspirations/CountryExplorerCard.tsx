@@ -63,7 +63,7 @@ const CountryExplorerCardComponent: React.FC<CountryExplorerCardProps> = ({
     <Link
       to={href}
       onClick={() => trackEvent('inspirations__destination_card', payload)}
-      className="group flex min-h-52 flex-col rounded-3xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-accent-200 hover:shadow-lg dark:hover:border-accent-400/30"
+      className="group flex min-h-52 flex-col rounded-3xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-accent-200 hover:shadow-lg dark:hover:border-accent-400/30 dark:shadow-none"
       {...getAnalyticsDebugAttributes('inspirations__destination_card', payload)}
     >
       <div className="flex items-start justify-between gap-4">

@@ -33,7 +33,7 @@ export const DrawerContent = React.forwardRef<
     <DrawerPrimitive.Content
       ref={ref}
       className={[
-        'z-[1601] border border-border bg-card shadow-2xl focus:outline-none',
+        'z-[1601] border border-border bg-card shadow-2xl focus:outline-none dark:shadow-none',
         side === 'right'
           ? 'fixed inset-y-0 right-0 h-screen w-[min(96vw,680px)] rounded-none border-l'
           : 'fixed inset-x-0 bottom-0 mt-24 rounded-t-[18px]',

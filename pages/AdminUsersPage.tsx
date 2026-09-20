@@ -284,7 +284,7 @@ const LOGIN_PILL_DEFINITIONS: Record<LoginPillKey, LoginPillDefinition> = {
     },
     github: {
         label: 'GitHub',
-        className: 'border-zinc-400 bg-zinc-100 text-zinc-800',
+        className: 'border-zinc-400 bg-secondary text-foreground',
         icon: GithubLogo,
     },
     discord: {
@@ -1004,7 +1004,7 @@ const UserRowActionsMenu: React.FC<{
                 <DotsThreeVertical size={16} />
             </button>
             {isOpen && (
-                <div className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[170px] rounded-lg border border-border bg-card p-1 shadow-xl">
+                <div className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[170px] rounded-lg border border-border bg-card p-1 shadow-xl dark:shadow-none">
                     <button
                         type="button"
                         onClick={() => {
@@ -1180,7 +1180,7 @@ const LoginTypeFilterMenu: React.FC<{
                     updateMenuPosition();
                     setIsOpen((current) => !current);
                 }}
-                className={`inline-flex h-8 w-fit items-center justify-center whitespace-nowrap rounded-md border border-dashed border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-secondary focus:outline-none focus:ring-1 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50`}
+                className={`inline-flex h-8 w-fit items-center justify-center whitespace-nowrap rounded-md border border-dashed border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-secondary focus:outline-none focus:ring-1 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 dark:shadow-none`}
                 aria-label="Filter by login type"
                 aria-expanded={isOpen}
             >
@@ -1199,7 +1199,7 @@ const LoginTypeFilterMenu: React.FC<{
             {isOpen && typeof document !== 'undefined' && createPortal(
                 <div
                     ref={menuRef}
-                    className="fixed z-[1700] overflow-hidden rounded-md border border-border bg-card text-foreground shadow-md animate-in fade-in-80"
+                    className="fixed z-[1700] overflow-hidden rounded-md border border-border bg-card text-foreground shadow-md animate-in fade-in-80 dark:shadow-none"
                     style={{
                         top: `${menuPosition.top}px`,
                         left: `${menuPosition.left}px`,
@@ -2818,14 +2818,14 @@ export const AdminUsersPage: React.FC = () => {
             )}
 
             <section className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Total users</p>
                     <p className="mt-2 text-3xl font-semibold text-foreground">
                         <AdminCountUpNumber value={usersSummary.total} />
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">Within active table scope</p>
                 </article>
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Active account ratio</p>
                     <p className="mt-2 inline-flex items-baseline gap-0.5 text-3xl font-semibold text-emerald-700 dark:text-emerald-200">
                         <AdminCountUpNumber value={usersSummary.activeRatioPct} />
@@ -2835,14 +2835,14 @@ export const AdminUsersPage: React.FC = () => {
                         <AdminCountUpNumber value={usersSummary.activeAccounts} /> active accounts
                     </p>
                 </article>
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Pending activation</p>
                     <p className="mt-2 text-3xl font-semibold text-amber-700 dark:text-amber-200">
                         <AdminCountUpNumber value={usersSummary.pendingActivation} />
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">{usersSummary.pendingRatioPct}% of visible users</p>
                 </article>
-                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
                     <div className="flex items-center justify-between">
                         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Activation mix</p>
                         <ChartBarHorizontal size={16} className="text-muted-foreground" />
@@ -3411,7 +3411,7 @@ export const AdminUsersPage: React.FC = () => {
                 </div>
                 {isSaving && (
                     <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-card/45 backdrop-blur-[1px]">
-                        <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground shadow-sm">
+                        <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground shadow-sm dark:shadow-none">
                             <SpinnerGap size={13} className="animate-spin" />
                             Applying changes…
                         </span>

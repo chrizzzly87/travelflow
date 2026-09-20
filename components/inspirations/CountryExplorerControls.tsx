@@ -183,7 +183,7 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
   };
 
   return (
-    <div className="rounded-3xl border border-border bg-card p-5 shadow-sm md:p-6">
+    <div className="rounded-3xl border border-border bg-card p-5 shadow-sm md:p-6 dark:shadow-none">
       <div className="relative">
         <label className="sr-only" htmlFor={searchId}>{t('inspirations.subpages.explorer.searchLabel')}</label>
         <MagnifyingGlass

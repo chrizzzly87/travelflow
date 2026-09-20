@@ -234,7 +234,7 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                         aria-modal="true"
                         aria-labelledby="app-dialog-title"
                         aria-describedby={hasDescriptionContent ? 'app-dialog-description' : undefined}
-                        className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+                        className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl dark:shadow-none"
                     >
                         <div className="px-5 py-4 border-b border-border">
                             <h2 id="app-dialog-title" className="text-base font-semibold text-foreground">

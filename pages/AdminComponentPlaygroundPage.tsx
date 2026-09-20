@@ -701,7 +701,7 @@ const ExampleTripCardPreview: React.FC<{ settings: ExampleTripCardSettings }> = 
     const template = EXAMPLE_TRIP_TEMPLATES[settings.template];
 
     return (
-        <article className="max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <article className="max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:shadow-none">
             <div className={cn('relative h-40 bg-gradient-to-br', template.colorClass)}>
                 <svg className="absolute inset-0 size-full text-muted-foreground/35" viewBox="0 0 320 160" fill="none" preserveAspectRatio="none">
                     <path d="M42 112 C86 34 137 78 167 55 C205 26 234 92 286 48" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray="8 8" />
@@ -750,7 +750,7 @@ const BlogPostCardPreview: React.FC<{ settings: BlogCardSettings }> = ({ setting
     const category = BLOG_CARD_CATEGORIES[settings.category];
 
     return (
-        <article className="group max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <article className="group max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:shadow-none">
             <div className={cn('h-40 bg-gradient-to-br', category.imageClass)} />
             <div className="space-y-3 p-4">
                 <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-muted-foreground">
@@ -821,7 +821,7 @@ const StampCardPreview: React.FC<{ settings: StampCardSettings }> = ({ settings 
             type="button"
             aria-pressed={settings.selected}
             className={cn(
-                'flex aspect-square max-w-56 flex-col overflow-hidden rounded-xl border bg-card p-3 text-left shadow-sm transition',
+                'flex aspect-square max-w-56 flex-col overflow-hidden rounded-xl border bg-card p-3 text-left shadow-sm transition dark:shadow-none',
                 settings.selected ? 'border-accent-300 shadow-accent-100 dark:border-accent-400/30' : 'border-border',
                 settings.achieved ? '' : 'opacity-80 saturate-50',
             )}
@@ -867,7 +867,7 @@ const AdminSurfacePreview: React.FC<{ settings: AdminSurfaceSettings }> = ({ set
     const state = ADMIN_SURFACE_COPY[settings.state];
 
     return (
-        <article className="max-w-md rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <article className="max-w-md rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admin card</p>
@@ -903,7 +903,7 @@ const CalendarCardPreview: React.FC<{ settings: CalendarCardSettings }> = ({ set
     const scope = CALENDAR_SCOPE_COPY[settings.scope];
 
     return (
-        <section className="max-w-xl rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <section className="max-w-xl rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex min-w-0 items-start gap-3">
                     <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-700 ring-1 ring-accent-200 dark:bg-accent-400/12 dark:text-accent-200 dark:ring-0">

@@ -344,7 +344,7 @@ export const PricingPage: React.FC = () => {
                                     label: t(`tiers.${tier.publicSlug}.cta`),
                                     href: freeTierTarget,
                                     disabled: false,
-                                    className: 'block w-full rounded-xl border border-border bg-card px-4 py-3 text-center text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary',
+                                    className: 'block w-full rounded-xl border border-border bg-card px-4 py-3 text-center text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary dark:shadow-none',
                                     analyticsId: `pricing__tier--${tier.publicSlug}`,
                                     helperText: null as string | null,
                                 };
@@ -434,7 +434,7 @@ export const PricingPage: React.FC = () => {
                                     label: t('shared.manageBillingCta'),
                                     href: `${buildPath('profileSettings')}#billing-management`,
                                     disabled: false,
-                                    className: 'block w-full rounded-xl border border-border bg-card px-4 py-3 text-center text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary',
+                                    className: 'block w-full rounded-xl border border-border bg-card px-4 py-3 text-center text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary dark:shadow-none',
                                     analyticsId: billingDecision.reason === 'downgrade_requires_management'
                                         ? 'pricing__plan_cta--downgrade_manage'
                                         : 'pricing__plan_cta--manage_billing',
@@ -458,7 +458,7 @@ export const PricingPage: React.FC = () => {
                             <article
                                 key={tier.key}
                                 className={cn(
-                                    'group flex h-full flex-col overflow-hidden rounded-2xl bg-card shadow-sm transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lg',
+                                    'group flex h-full flex-col overflow-hidden rounded-2xl bg-card shadow-sm transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lg dark:shadow-none',
                                     style.surfaceClass,
                                 )}
                             >

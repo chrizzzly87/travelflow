@@ -1402,7 +1402,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 <Palette size={14} />
                             </button>
                             {isColorPickerOpen && (
-                                <div className="absolute top-full left-0 mt-2 p-3 bg-card rounded-xl shadow-xl border border-border z-50 w-[280px] space-y-3">
+                                <div className="absolute top-full left-0 mt-2 p-3 bg-card rounded-xl shadow-xl border border-border z-50 w-[280px] space-y-3 dark:shadow-none">
                                     <div>
                                         <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Palettes</div>
                                         <div className="grid grid-cols-2 gap-2">
@@ -1670,7 +1670,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
           {/* Body */}
           <div className="p-4 sm:p-6 space-y-6 flex-1 overflow-y-auto min-w-0">
              {isActivity && isDurationEditorOpen && (
-                <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4">
+                <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4 dark:shadow-none">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Schedule</h3>
                         <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded dark:bg-accent-400/12 dark:text-accent-300">
@@ -1751,7 +1751,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isActivity && isActivityLocationEditorOpen && (
-                <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4">
+                <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4 dark:shadow-none">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Location</h3>
                         <div className="text-xs text-muted-foreground">Search with Google Places</div>
@@ -1770,7 +1770,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                         <Search size={14} className="absolute left-3 top-3.5 text-muted-foreground" />
                     </div>
                     {(isSearchingActivityLocations || activityLocationSuggestions.length > 0) && (
-                        <div className="mt-2 rounded-lg border border-border bg-card shadow-sm max-h-44 overflow-y-auto">
+                        <div className="mt-2 rounded-lg border border-border bg-card shadow-sm max-h-44 overflow-y-auto dark:shadow-none">
                             {isSearchingActivityLocations && (
                                 <div className="px-3 py-2 text-xs text-muted-foreground">Searching places…</div>
                             )}
@@ -1814,7 +1814,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isCity && isValidDate && isDurationEditorOpen && (
-                <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4">
+                <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4 dark:shadow-none">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Schedule</h3>
                         <div className="flex items-center gap-2">
@@ -1902,13 +1902,13 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isCity && isCityEditorOpen && (
-                <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4">
+                <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4 dark:shadow-none">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">City</h3>
                         <div className="text-xs text-muted-foreground">Search with Google Places</div>
                     </div>
                     {citySearchError && (
-                        <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-700 flex items-start gap-2 dark:bg-amber-400/12 dark:text-amber-200">
+                        <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-700 flex items-start gap-2 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/25">
                             <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
                             <div>{citySearchError}</div>
                         </div>
@@ -1927,7 +1927,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                         <Search size={14} className="absolute left-3 top-3.5 text-muted-foreground" />
                     </div>
                     {(isSearchingCities || citySuggestions.length > 0) && (
-                        <div className="mt-2 rounded-lg border border-border bg-card shadow-sm max-h-44 overflow-y-auto">
+                        <div className="mt-2 rounded-lg border border-border bg-card shadow-sm max-h-44 overflow-y-auto dark:shadow-none">
                             {isSearchingCities && (
                                 <div className="px-3 py-2 text-xs text-muted-foreground">Searching cities…</div>
                             )}
@@ -1967,7 +1967,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isCity && (
-                 <div className="bg-card p-5 rounded-2xl shadow-sm border border-border">
+                 <div className="bg-card p-5 rounded-2xl shadow-sm border border-border dark:shadow-none">
                      <div className="flex justify-between items-center mb-4">
                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5"><Hotel size={14} /> Accomodation</h3>
                          <button type="button"
@@ -1979,7 +1979,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                          </button>
                      </div>
                      <div className="mb-4 relative">
-                        {hotelSearchUnavailable ? <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 flex items-start gap-2 dark:bg-red-400/12"><AlertTriangle size={14} className="mt-0.5 flex-shrink-0" /><div><strong>Maps Search Unavailable</strong><br/>Try again in a moment or add hotels manually.</div></div> : (
+                        {hotelSearchUnavailable ? <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 flex items-start gap-2 dark:bg-red-400/12 dark:border-red-400/25"><AlertTriangle size={14} className="mt-0.5 flex-shrink-0" /><div><strong>Maps Search Unavailable</strong><br/>Try again in a moment or add hotels manually.</div></div> : (
                             <>
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
@@ -2110,7 +2110,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isActivity && (
-                 <div className="bg-card p-5 rounded-2xl shadow-sm border border-border">
+                 <div className="bg-card p-5 rounded-2xl shadow-sm border border-border dark:shadow-none">
                      <div className="mb-4 flex justify-end">
                          <button
                              type="button"
@@ -2151,7 +2151,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                  </div>
              )}
 
-             <div className="bg-card p-5 rounded-2xl shadow-sm border border-border flex-1">
+             <div className="bg-card p-5 rounded-2xl shadow-sm border border-border flex-1 dark:shadow-none">
                 <div className="flex justify-between items-center mb-2"><h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Notes</h3></div>
                 <Suspense
                     fallback={<div className="rounded-lg border border-border bg-secondary px-3 py-2 text-xs text-muted-foreground">Loading notes editor…</div>}
@@ -2172,13 +2172,13 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     />
                 </Suspense>
                 {aiError && (
-                    <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 dark:bg-red-400/12">
+                    <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 dark:bg-red-400/12 dark:border-red-400/25">
                         {aiError}
                     </div>
                 )}
                 {isCity && pendingNotesProposal && (
-                    <div className="mt-4 border border-accent-100 rounded-xl bg-accent-50/40 overflow-hidden dark:bg-accent-400/12">
-                        <div className="px-4 py-3 border-b border-accent-100 bg-card/80">
+                    <div className="mt-4 border border-accent-100 rounded-xl bg-accent-50/40 overflow-hidden dark:bg-accent-400/12 dark:border-accent-400/25">
+                        <div className="px-4 py-3 border-b border-accent-100 bg-card/80 dark:border-accent-400/25">
                             <div className="text-xs font-semibold text-accent-700 dark:text-accent-200">AI Draft Preview</div>
                             <div className="text-[11px] text-accent-600 mt-1 dark:text-accent-300">
                                 Action: {pendingNotesProposal.actionLabel}
@@ -2191,7 +2191,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 <LazyMarkdownEditor value={proposedNotesPreview} readOnly />
                             </Suspense>
                         </div>
-                        <div className="px-4 py-3 bg-accent-50 border-t border-accent-100 flex items-center justify-end gap-2 dark:bg-accent-400/12">
+                        <div className="px-4 py-3 bg-accent-50 border-t border-accent-100 flex items-center justify-end gap-2 dark:bg-accent-400/12 dark:border-accent-400/25">
                             <button type="button"
                                 onClick={handleDeclineNotesProposal}
                                 disabled={!canEdit}
@@ -2210,7 +2210,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     </div>
                 )}
                 {(aiDetails || loading) && isActivity && (
-                    <div className="bg-gradient-to-br from-accent-50 to-accent-100 border border-accent-100 rounded-xl p-4 mt-6">
+                    <div className="bg-gradient-to-br from-accent-50 to-accent-100 border border-accent-100 rounded-xl p-4 mt-6 dark:border-accent-400/25">
                         <div className="flex items-center mb-3 justify-between">
                             <div className="flex items-center gap-2">
                                 <Sparkles size={16} className="text-accent-500 animate-pulse" />
@@ -2228,15 +2228,15 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <div className="text-sm text-accent-600/70 py-2">Loading…</div>
                         ) : (
                             <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
-                                <div className="bg-card p-3 rounded-lg border border-accent-100 shadow-sm">
+                                <div className="bg-card p-3 rounded-lg border border-accent-100 shadow-sm dark:border-accent-400/25 dark:shadow-none">
                                     <span className="text-[10px] font-bold text-accent-400 uppercase">Cost</span>
                                     <span className="text-sm font-medium">{aiDetails?.cost || 'N/A'}</span>
                                 </div>
-                                <div className="bg-card p-3 rounded-lg border border-accent-100 shadow-sm">
+                                <div className="bg-card p-3 rounded-lg border border-accent-100 shadow-sm dark:border-accent-400/25 dark:shadow-none">
                                     <span className="text-[10px] font-bold text-accent-400 uppercase">Best Time</span>
                                     <span className="text-sm font-medium">{aiDetails?.bestTime || 'N/A'}</span>
                                 </div>
-                                <div className="bg-card p-3 rounded-lg border border-accent-100 shadow-sm" style={{ gridColumn: '1 / -1' }}>
+                                <div className="bg-card p-3 rounded-lg border border-accent-100 shadow-sm dark:border-accent-400/25 dark:shadow-none" style={{ gridColumn: '1 / -1' }}>
                                     <span className="text-[10px] font-bold text-accent-400 uppercase">Tip</span>
                                     <span className="text-sm font-medium">{aiDetails?.tips || 'N/A'}</span>
                                 </div>
@@ -2264,7 +2264,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
             onClick={handleClosePanel}
         />
         <div
-            className={`bg-secondary shadow-2xl flex flex-col pointer-events-auto will-change-transform absolute w-full h-[85vh] bottom-0 rounded-t-[20px] left-0 right-0 sm:top-2 sm:bottom-2 sm:right-2 sm:w-[450px] sm:h-auto sm:rounded-2xl sm:left-auto`}
+            className={`bg-secondary shadow-2xl flex flex-col pointer-events-auto will-change-transform absolute w-full h-[85vh] bottom-0 rounded-t-[20px] left-0 right-0 sm:top-2 sm:bottom-2 sm:right-2 sm:w-[450px] sm:h-auto sm:rounded-2xl sm:left-auto dark:shadow-none`}
             style={{ transform: window.innerWidth < 640 ? `translateY(${!isVisible ? '100%' : `${dragOffset}px`})` : `translateX(${!isVisible ? '110%' : '0%'})`, transition: isDragging ? 'none' : 'transform 300ms cubic-bezier(0.32, 0.72, 0, 1)' }}
         >
           {Content}

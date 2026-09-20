@@ -517,7 +517,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                             Enhance with AI
                         </button>
                         {hasAiActions && isAiPopoverOpen && (
-                            <div className="absolute top-full right-0 mt-2 w-72 bg-card border border-border rounded-lg shadow-xl z-40">
+                            <div className="absolute top-full right-0 mt-2 w-72 bg-card border border-border rounded-lg shadow-xl z-40 dark:shadow-none">
                                 <div className="px-3 py-2 border-b border-border text-xs font-semibold text-muted-foreground">
                                     What should AI add?
                                 </div>
@@ -543,7 +543,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             </div>
 
             {aiStatus && (
-                <div className="px-3 py-1.5 bg-accent-50/80 border-b border-accent-100 text-[11px] text-accent-700 dark:bg-accent-400/12 dark:text-accent-200">
+                <div className="px-3 py-1.5 bg-accent-50/80 border-b border-accent-100 text-[11px] text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/25">
                     {aiStatus}
                 </div>
             )}

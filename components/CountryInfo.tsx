@@ -75,7 +75,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
             : amount / exchangeRate;
 
     return (
-        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm dark:bg-card">
+        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm dark:bg-card dark:shadow-none">
             <div className="bg-secondary px-4 py-3 border-b border-border flex items-center justify-between">
                 <h3 className="font-semibold text-foreground text-sm uppercase tracking-wider flex items-center gap-2">
                     <Globe size={16} className="text-accent-600 dark:text-accent-300"/> Destination Info
@@ -136,7 +136,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                     </p>
                     <div className="flex flex-wrap gap-1">
                         {languages.map((lang) => (
-                            <span key={lang} className="px-2 py-1 bg-accent-50 text-accent-700 text-xs font-medium rounded-md border border-accent-100 whitespace-nowrap dark:bg-accent-400/15 dark:text-accent-200">
+                            <span key={lang} className="px-2 py-1 bg-accent-50 text-accent-700 text-xs font-medium rounded-md border border-accent-100 whitespace-nowrap dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/25">
                                 {lang}
                             </span>
                         ))}

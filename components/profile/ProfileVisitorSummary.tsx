@@ -180,7 +180,7 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
     <section className="grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
       {profileIdentityCard}
 
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6 dark:shadow-none">
         <ProfileSummaryStats stats={stats} locale={locale} />
         <div className="mt-6">
           <ProfileMetaPanel

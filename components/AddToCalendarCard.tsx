@@ -31,7 +31,7 @@ export const AddToCalendarCard: React.FC<AddToCalendarCardProps> = ({ config, po
     }, [icsSource]);
 
     return (
-        <section className="my-10 rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6 lg:-mx-8 lg:rounded-3xl lg:px-7 xl:-mx-10">
+        <section className="my-10 rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6 lg:-mx-8 lg:rounded-3xl lg:px-7 xl:-mx-10 dark:shadow-none">
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0 flex items-start gap-3">
                     <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-700 ring-1 ring-accent-200 dark:bg-accent-400/12 dark:text-accent-200 dark:ring-0">

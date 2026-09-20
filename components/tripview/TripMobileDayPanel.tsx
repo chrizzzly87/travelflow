@@ -53,7 +53,7 @@ const ScheduleRow: React.FC<{
 }> = ({ icon, title, detail, time, onClick, action, analytics, analyticsId }) => {
     const body = (
         <>
-            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm">
+            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm dark:shadow-none">
                 {icon}
             </span>
             <span className="min-w-0 flex-1">

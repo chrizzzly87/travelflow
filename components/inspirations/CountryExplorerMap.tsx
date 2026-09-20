@@ -331,7 +331,7 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
       <div
         // Geographic, so it must not mirror: east stays east in RTL locales.
         dir="ltr"
-        className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-b from-sky-50 to-card"
+        className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-b from-sky-50 to-card dark:border-transparent dark:bg-none dark:bg-card"
       >
         <svg
           ref={svgRef}
@@ -394,7 +394,7 @@ const CountryExplorerMapComponent: React.FC<CountryExplorerMapProps> = ({
         {hoveredCountryCode && hoveredName && hoveredPoint ? (
           <div
             role="presentation"
-            className="pointer-events-none absolute z-10 w-max max-w-56 -translate-x-1/2 -translate-y-[calc(100%+10px)] rounded-xl border border-border bg-card/95 px-3 py-2 shadow-lg backdrop-blur-sm"
+            className="pointer-events-none absolute z-10 w-max max-w-56 -translate-x-1/2 -translate-y-[calc(100%+10px)] rounded-xl border border-border bg-card/95 px-3 py-2 shadow-lg backdrop-blur-sm dark:shadow-none"
             style={{
               left: `${(hoveredPoint.x / PROJECTION.width) * 100}%`,
               top: `${(hoveredPoint.y / PROJECTION.height) * 100}%`,

@@ -510,7 +510,7 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                             inputMode="decimal"
                             value={latitudeInput}
                             onChange={(event) => setLatitudeInput(event.target.value)}
-                            className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                            className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 dark:shadow-none"
                             placeholder="52.5200"
                         />
                     </label>
@@ -521,7 +521,7 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                             inputMode="decimal"
                             value={longitudeInput}
                             onChange={(event) => setLongitudeInput(event.target.value)}
-                            className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                            className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 dark:shadow-none"
                             placeholder="13.4050"
                         />
                     </label>
@@ -532,7 +532,7 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                             inputMode="numeric"
                             value={limitInput}
                             onChange={(event) => setLimitInput(event.target.value)}
-                            className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                            className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 dark:shadow-none"
                             placeholder="10"
                         />
                     </label>
@@ -1747,7 +1747,7 @@ export const OnPageDebugger: React.FC = () => {
             )}
 
             <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[1600] px-3">
-                <div className="pointer-events-auto mx-auto w-full max-w-6xl overflow-hidden rounded-xl border border-border bg-card/95 shadow-2xl backdrop-blur">
+                <div className="pointer-events-auto mx-auto w-full max-w-6xl overflow-hidden rounded-xl border border-border bg-card/95 shadow-2xl backdrop-blur dark:shadow-none">
                     <div className="flex flex-wrap items-center gap-2 p-2">
                         <span className="inline-flex items-center gap-1 rounded-md bg-slate-900 px-2 py-1 text-xs font-semibold text-white">
                             <Flask size={13} weight="duotone" />

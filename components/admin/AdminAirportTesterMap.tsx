@@ -333,7 +333,7 @@ const AirportTesterDetailCard: React.FC<{
     <div
       role="dialog"
       aria-label={`${buildAirportTesterDetailTitle(point)} details`}
-      className="absolute inset-x-3 bottom-3 z-20 max-h-[calc(100%-1.5rem)] overflow-y-auto rounded-2xl border border-border bg-card/97 p-3 shadow-xl backdrop-blur"
+      className="absolute inset-x-3 bottom-3 z-20 max-h-[calc(100%-1.5rem)] overflow-y-auto rounded-2xl border border-border bg-card/97 p-3 shadow-xl backdrop-blur dark:shadow-none"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="text-sm font-semibold text-foreground">{buildAirportTesterDetailTitle(point)}</div>

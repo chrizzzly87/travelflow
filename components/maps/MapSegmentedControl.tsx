@@ -63,7 +63,7 @@ export const MapSegmentedControl = <T extends string | number>({
             wrap ? 'flex-col justify-center py-2' : 'flex-1',
             disabled ? 'cursor-not-allowed' : '',
             isSelected
-              ? 'bg-card text-accent-700 shadow-sm ring-1 ring-accent-300 dark:text-accent-200'
+              ? 'bg-card text-accent-700 shadow-sm ring-1 ring-accent-300 dark:text-accent-200 dark:shadow-none'
               : 'text-muted-foreground hover:text-foreground',
             wrap && !isSelected ? 'border border-border bg-card' : '',
           ].filter(Boolean).join(' ')}

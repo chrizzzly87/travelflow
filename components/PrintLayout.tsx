@@ -294,7 +294,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
         <div className="p-8 max-w-[1400px] mx-auto print:p-0 print:max-w-none print:w-full print:h-auto print:overflow-visible">
 
             {/* Navigation Bar (Hidden on Print) */}
-            <div className="fixed top-0 left-0 right-0 h-16 bg-card border-b border-border shadow-sm flex items-center justify-between px-8 print:hidden z-50">
+            <div className="fixed top-0 left-0 right-0 h-16 bg-card border-b border-border shadow-sm flex items-center justify-between px-8 print:hidden z-50 dark:shadow-none">
                 <h1 className="font-semibold text-lg text-foreground">Trip List View</h1>
                 <div className="flex gap-4">
                     <button
@@ -541,7 +541,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                                     {day.activities.length > 0 ? (
                                                         <div className="space-y-3">
                                                             {day.activities.map(act => (
-                                                                <div key={act.id} className="bg-card rounded-lg p-3 border border-border shadow-sm flex gap-3">
+                                                                <div key={act.id} className="bg-card rounded-lg p-3 border border-border shadow-sm flex gap-3 dark:shadow-none">
                                                                     <div className="flex-1">
                                                                         <div className="font-bold text-sm text-foreground">{act.title}</div>
                                                                         {act.description && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{act.description}</div>}

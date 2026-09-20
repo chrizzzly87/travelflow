@@ -77,7 +77,7 @@ export const FeaturesPage: React.FC = () => {
                             <Link
                                 to={inspirationsPath}
                                 onClick={() => trackEvent('features__hero_cta--see_examples')}
-                                className="rounded-lg border border-border bg-card px-7 py-3.5 text-base font-bold text-foreground shadow-sm transition-[scale,translate,border-color,color,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:border-slate-400 hover:text-foreground hover:shadow-md active:scale-[0.96] active:translate-y-0 dark:border-border dark:bg-card dark:text-foreground dark:hover:border-border dark:hover:text-foreground"
+                                className="rounded-lg border border-border bg-card px-7 py-3.5 text-base font-bold text-foreground shadow-sm transition-[scale,translate,border-color,color,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:border-slate-400 hover:text-foreground hover:shadow-md active:scale-[0.96] active:translate-y-0 dark:border-border dark:bg-card dark:text-foreground dark:hover:border-border dark:hover:text-foreground dark:shadow-none"
                                 {...getAnalyticsDebugAttributes('features__hero_cta--see_examples')}
                             >
                                 {t('hero.secondaryCta')}
@@ -124,7 +124,7 @@ export const FeaturesPage: React.FC = () => {
                                 return (
                                     <article
                                         key={`${step.step}-${step.title}`}
-                                        className="animate-scroll-fade-up rounded-[18px] border border-border bg-card p-5 shadow-sm shadow-slate-200/70 transition-transform hover:-translate-y-0.5 dark:border-border dark:bg-card"
+                                        className="animate-scroll-fade-up rounded-[18px] border border-border bg-card p-5 shadow-sm shadow-slate-200/70 transition-transform hover:-translate-y-0.5 dark:border-border dark:bg-card dark:shadow-none"
                                         style={{ animationDelay: `${index * 90}ms` }}
                                     >
                                         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
@@ -146,7 +146,7 @@ export const FeaturesPage: React.FC = () => {
                         </div>
                     </div>
 
-                    <Card className="animate-scroll-scale-in overflow-hidden rounded-[18px] border-border bg-card py-0 shadow-sm shadow-slate-200/70 dark:border-border dark:bg-card">
+                    <Card className="animate-scroll-scale-in overflow-hidden rounded-[18px] border-border bg-card py-0 shadow-sm shadow-slate-200/70 dark:border-border dark:bg-card dark:shadow-none">
                         <div className="relative h-56 overflow-hidden border-b border-border/80 dark:border-border/80">
                             <img
                                 src="/images/trip-maps/japan-spring.png"
@@ -180,7 +180,7 @@ export const FeaturesPage: React.FC = () => {
             </section>
 
             <section className="pb-16 md:pb-24 animate-scroll-scale-in">
-                <div className="relative overflow-hidden rounded-[18px] border border-border bg-secondary px-8 py-14 text-center shadow-sm shadow-slate-200/70 md:px-16 md:py-20 dark:border-border dark:bg-secondary">
+                <div className="relative overflow-hidden rounded-[18px] border border-border bg-secondary px-8 py-14 text-center shadow-sm shadow-slate-200/70 md:px-16 md:py-20 dark:border-border dark:bg-secondary dark:shadow-none">
                     <h2
                         className="relative text-balance text-3xl font-semibold text-foreground md:text-5xl dark:text-foreground"
                         style={{ fontFamily: 'var(--tf-font-heading)' }}

@@ -439,7 +439,7 @@ export const LoginPage: React.FC = () => {
     return (
         <MarketingLayout>
             <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_360px]">
-                <section className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8">
+                <section className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8 dark:shadow-none">
                     <p className="text-xs font-semibold uppercase tracking-wide text-accent-600 dark:text-accent-300">{t('hero.eyebrow')}</p>
                     <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{t('hero.title')}</h1>
                     <p className="mt-3 text-sm leading-6 text-muted-foreground">{t('hero.description')}</p>
@@ -454,7 +454,7 @@ export const LoginPage: React.FC = () => {
                             type="button"
                             onClick={() => handleModeChange('login')}
                             className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                                mode === 'login' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                mode === 'login' ? 'bg-card text-foreground shadow-sm dark:shadow-none' : 'text-muted-foreground hover:text-foreground'
                             }`}
                             {...getAnalyticsDebugAttributes('auth__tab--login')}
                         >
@@ -464,7 +464,7 @@ export const LoginPage: React.FC = () => {
                             type="button"
                             onClick={() => handleModeChange('register')}
                             className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                                mode === 'register' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                mode === 'register' ? 'bg-card text-foreground shadow-sm dark:shadow-none' : 'text-muted-foreground hover:text-foreground'
                             }`}
                             {...getAnalyticsDebugAttributes('auth__tab--register')}
                         >
@@ -616,7 +616,7 @@ export const LoginPage: React.FC = () => {
                                     <SocialProviderIcon provider={item.provider} size={18} />
                                     <span>{t(item.labelKey)}</span>
                                     {isLastUsed && (
-                                        <span className="pointer-events-none absolute -top-2 right-3 rounded-2xl border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground shadow-sm">
+                                        <span className="pointer-events-none absolute -top-2 right-3 rounded-2xl border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground shadow-sm dark:shadow-none">
                                             {t('copy.lastUsedTag')}
                                         </span>
                                     )}
@@ -672,7 +672,7 @@ export const LoginPage: React.FC = () => {
                     )}
                 </section>
 
-                <aside className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8">
+                <aside className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8 dark:shadow-none">
                     <h2 className="text-base font-semibold text-foreground">{t('benefits.title')}</h2>
                     <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
                         {(t('benefits.items', { returnObjects: true }) as string[]).map((item) => (

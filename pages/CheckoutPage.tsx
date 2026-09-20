@@ -196,7 +196,7 @@ const resolveDiscountBadgeLabel = (
     return fallbackCode ? fallbackCode.toUpperCase() : null;
 };
 
-const checkoutInputClassName = 'mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus-visible:ring-rose-200';
+const checkoutInputClassName = 'mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus-visible:ring-rose-200 dark:shadow-none';
 const checkoutFieldLabelClassName = 'text-sm font-medium text-foreground';
 const checkoutActionClassName = 'inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 const checkoutSectionLabelClassName = 'text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground';
@@ -1960,7 +1960,7 @@ export const CheckoutPage: React.FC = () => {
                         ) : (
                         <div className="space-y-6">
                             {isSubscriptionSummaryLoading ? (
-                                <div className="rounded-2xl border border-border bg-card px-6 py-8 shadow-sm">
+                                <div className="rounded-2xl border border-border bg-card px-6 py-8 shadow-sm dark:shadow-none">
                                     <div className="inline-flex items-center gap-3 text-sm font-medium text-muted-foreground">
                                         <SpinnerGap size={18} className="animate-spin" />
                                         {t('checkout.loadingSubscriptionState', { ns: 'pricing' })}
@@ -1975,7 +1975,7 @@ export const CheckoutPage: React.FC = () => {
                                     title={t('checkout.upgradeTitle', { ns: 'pricing' })}
                                 >
                                     <div className="max-w-3xl space-y-6">
-                                        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                                        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
                                             <p className={checkoutSectionLabelClassName}>{t('checkout.upgradeSummaryLabel', { ns: 'pricing' })}</p>
                                             <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
                                                 <div>
@@ -2049,7 +2049,7 @@ export const CheckoutPage: React.FC = () => {
                                         : t('checkout.manageBillingTitle', { ns: 'pricing' })}
                                 >
                                     <div className="max-w-3xl space-y-5">
-                                        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                                        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
                                             <p className="text-sm leading-6 text-muted-foreground">
                                                 {isCurrentPlanFlow
                                                     ? t('checkout.currentPlanDescription', {
@@ -2095,7 +2095,7 @@ export const CheckoutPage: React.FC = () => {
 
                     <aside className="order-2 lg:order-2">
                         <div className="lg:sticky lg:top-28">
-                            <div className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8">
+                            <div className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8 dark:shadow-none">
                                 <section className="space-y-4">
                                 <p className={checkoutSectionLabelClassName}>{t('checkout.planSummaryTitle', { ns: 'pricing' })}</p>
                                 <div className="border-b border-border">
@@ -2182,7 +2182,7 @@ export const CheckoutPage: React.FC = () => {
                                                         onChange={(event) => handleDiscountInputChange(event.target.value)}
                                                         placeholder={t('voucher.placeholder', { ns: 'pricing' })}
                                                         autoCapitalize="characters"
-                                                        className="h-11 flex-1 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                                        className="h-11 flex-1 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:shadow-none"
                                                     />
                                                     <button
                                                         type="button"

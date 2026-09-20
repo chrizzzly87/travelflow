@@ -185,7 +185,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                     <div
                         id={listboxId}
                         role="listbox"
-                        className="absolute inset-x-0 z-20 mt-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-card py-1 shadow-lg"
+                        className="absolute inset-x-0 z-20 mt-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-card py-1 shadow-lg dark:shadow-none"
                     >
                         {options.length === 0 ? (
                             <p className="px-3 py-2 text-xs text-muted-foreground">{emptyLabel}</p>

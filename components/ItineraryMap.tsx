@@ -3626,7 +3626,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         onClick={onClearSelection}
                         data-testid="map-clear-city-focus"
                         data-floating-map-control="true"
-                        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-border bg-card/95 ps-3 pe-4 py-2 text-xs font-semibold text-foreground shadow-lg backdrop-blur transition-colors hover:border-accent-300 hover:bg-card hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300"
+                        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-border bg-card/95 ps-3 pe-4 py-2 text-xs font-semibold text-foreground shadow-lg backdrop-blur transition-colors hover:border-accent-300 hover:bg-card hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:hover:text-accent-300 dark:shadow-none"
                         {...getAnalyticsDebugAttributes('trip_view__map_city_focus--clear', { surface: 'map_canvas' })}
                     >
                         <Route size={15} />
@@ -3644,7 +3644,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                             onClick={onMapDockModeToggle}
                             data-testid="map-dock-toggle-button"
                             data-floating-map-control="true"
-                            className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300"
+                            className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300 dark:shadow-none"
                             aria-label={mapDockMode === 'docked' ? 'Minimize map preview' : 'Maximize map preview'}
                             {...getAnalyticsDebugAttributes(
                                 mapDockMode === 'docked' ? 'trip_view__map_preview--minimize' : 'trip_view__map_preview--maximize',
@@ -3673,7 +3673,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     {onToggleExpanded && (
                         <button type="button"
                             onClick={onToggleExpanded}
-                            className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300"
+                            className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300 dark:shadow-none"
                             title={isExpanded ? 'Shrink map' : 'Expand map'}
                             aria-label={isExpanded ? 'Shrink map' : 'Expand map'}
                         >
@@ -3684,7 +3684,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     <button type="button"
                         onClick={handleFit}
                         disabled={mapActionsDisabled}
-                        className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-card disabled:hover:text-gray-300 dark:hover:text-accent-300"
+                        className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-card disabled:hover:text-gray-300 dark:hover:text-accent-300 dark:shadow-none"
                         aria-label="Fit to itinerary"
                     ><Focus size={18} /></button>
                     

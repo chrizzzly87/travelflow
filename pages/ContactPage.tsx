@@ -540,7 +540,7 @@ export const ContactPage: React.FC = () => {
                                     type="button"
                                     disabled
                                     aria-label={label}
-                                    className="inline-flex size-10 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-accent-50 hover:text-accent-700 disabled:cursor-not-allowed dark:hover:bg-accent-400/12 dark:hover:text-accent-200 dark:ring-0 dark:hover:text-accent-300"
+                                    className="inline-flex size-10 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-accent-50 hover:text-accent-700 disabled:cursor-not-allowed dark:hover:bg-accent-400/12 dark:hover:text-accent-200 dark:ring-0 dark:hover:text-accent-300 dark:shadow-none"
                                 >
                                     <Icon size={18} weight="duotone" />
                                 </button>
@@ -549,7 +549,7 @@ export const ContactPage: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="self-start rounded-3xl bg-card p-6 shadow-sm ring-1 ring-slate-200 md:p-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto dark:ring-0">
+                <div className="self-start rounded-3xl bg-card p-6 shadow-sm ring-1 ring-slate-200 md:p-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto dark:ring-0 dark:shadow-none">
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                         {t('contact.form.title')}
                     </p>
@@ -825,7 +825,7 @@ export const ContactPage: React.FC = () => {
                     onClick={() => trackEvent(CONTACT_FAQ_LINK_FULL_PAGE_EVENT, {
                         source: 'contact_page',
                     })}
-                    className="mt-5 inline-flex items-center rounded-lg bg-card px-3 py-2 text-sm font-semibold text-accent-700 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-secondary dark:text-accent-200 dark:ring-0"
+                    className="mt-5 inline-flex items-center rounded-lg bg-card px-3 py-2 text-sm font-semibold text-accent-700 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-secondary dark:text-accent-200 dark:ring-0 dark:shadow-none"
                     {...getAnalyticsDebugAttributes(CONTACT_FAQ_LINK_FULL_PAGE_EVENT, {
                         source: 'contact_page',
                     })}

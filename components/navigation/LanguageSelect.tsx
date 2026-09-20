@@ -34,7 +34,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = ({
                 side="bottom"
                 align={contentAlign}
                 sideOffset={8}
-                className="rounded-xl border-border bg-card p-1 shadow-xl dark:border-border dark:bg-card"
+                className="rounded-xl border-border bg-card p-1 shadow-xl dark:border-border dark:bg-card dark:shadow-none"
             >
                 {LOCALE_DROPDOWN_ORDER.map((locale) => (
                     <SelectItem key={locale} value={locale} indicatorPosition="right" className="rounded-lg py-2.5">

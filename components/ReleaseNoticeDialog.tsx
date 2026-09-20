@@ -69,7 +69,7 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
                 aria-label="Close release update"
                 onClick={dismissReleaseNotice}
             />
-            <div ref={dialogRef} className="relative w-full max-w-lg rounded-3xl border border-accent-100 bg-card shadow-2xl">
+            <div ref={dialogRef} className="relative w-full max-w-lg rounded-3xl border border-accent-100 bg-card shadow-2xl dark:border-accent-400/25 dark:shadow-none">
                 <div className="rounded-t-3xl border-b border-border bg-gradient-to-r from-accent-50 to-accent-100 px-6 py-5">
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-700 dark:text-accent-200">
                         Latest release · {latestInAppRelease.version}

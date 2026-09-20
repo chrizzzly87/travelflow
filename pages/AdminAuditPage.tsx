@@ -1710,7 +1710,7 @@ export const AdminAuditPage: React.FC = () => {
                 </DialogContent>
             </Dialog>
 
-            <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <section className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3 text-xs text-muted-foreground">
                     <p>
                         {selectedEntryKeys.length} selected • {visibleLogs.length} matching entr{visibleLogs.length === 1 ? 'y' : 'ies'}

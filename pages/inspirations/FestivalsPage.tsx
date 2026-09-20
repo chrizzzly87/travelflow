@@ -146,7 +146,7 @@ export const FestivalsPage: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="rounded-3xl border border-border bg-card p-8 text-sm text-muted-foreground shadow-sm">
+          <div className="rounded-3xl border border-border bg-card p-8 text-sm text-muted-foreground shadow-sm dark:shadow-none">
             {t('inspirations.subpages.festivals.emptyState')}
           </div>
         )}

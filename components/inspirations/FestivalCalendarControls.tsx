@@ -60,7 +60,7 @@ export const FestivalCalendarControls: React.FC<FestivalCalendarControlsProps> =
   };
 
   return (
-    <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-3xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="inline-flex items-center gap-2 text-sm font-bold text-foreground">
           <Funnel size={16} weight="duotone" className="text-accent-600 dark:text-accent-300" />

@@ -497,7 +497,7 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
     });
 
     return (
-        <section className="my-12 rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
+        <section className="my-12 rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6 dark:shadow-none">
             <h3 className="text-lg font-semibold text-foreground">
                 {config.title}
             </h3>
@@ -674,7 +674,7 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
         const resolvedAlt = deriveMarkdownImageAlt(alt, resolvedSrc, mapContext.articleTitle);
         return (
             <figure className="mb-7">
-                <div className="overflow-hidden rounded-2xl border border-border bg-secondary shadow-sm">
+                <div className="overflow-hidden rounded-2xl border border-border bg-secondary shadow-sm dark:shadow-none">
                     <div className="relative w-full overflow-hidden bg-secondary" style={{ aspectRatio: '3 / 2' }}>
                         <ProgressiveImage
                             src={resolvedSrc}
@@ -721,7 +721,7 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
         );
     },
     blockquote: ({ children }) => (
-        <blockquote className="mb-4 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 italic text-muted-foreground dark:bg-accent-400/12">{children}</blockquote>
+        <blockquote className="mb-4 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 italic text-muted-foreground dark:bg-accent-400/12 dark:border-accent-400/25">{children}</blockquote>
     ),
     table: ({ children }) => (
         <div className="mb-4 overflow-x-auto">
@@ -1101,7 +1101,7 @@ export const BlogPostPage: React.FC = () => {
                                 ))}
                             </div>
 
-                            <p className="mt-6 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 text-lg leading-relaxed text-muted-foreground dark:bg-accent-400/12">
+                            <p className="mt-6 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 text-lg leading-relaxed text-muted-foreground dark:bg-accent-400/12 dark:border-accent-400/25">
                                 {post.summary}
                             </p>
 
@@ -1177,7 +1177,7 @@ export const BlogPostPage: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className="rounded-2xl border border-border bg-gradient-to-br from-accent-50 to-card p-5">
+                            <div className="rounded-2xl border border-border bg-gradient-to-br from-accent-50 to-card p-5 dark:border-transparent dark:from-accent-400/14 dark:to-card">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Compass size={18} weight="duotone" className="text-accent-500" />
                                     <h4 className="text-sm font-semibold text-foreground">{t('post.planTripTitle')}</h4>
@@ -1227,7 +1227,7 @@ export const BlogPostPage: React.FC = () => {
                                     to={buildLocalizedMarketingPath('blogPost', locale, { slug: related.slug })}
                                     lang={related.language}
                                     data-blog-related-lang={related.language}
-                                    className="group flex items-start gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
+                                    className="group flex items-start gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 dark:shadow-none"
                                 >
                                     <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${related.coverColor}`}>
                                         <ArrowRight size={16} weight="bold" className="text-muted-foreground group-hover:text-accent-600 transition-colors dark:group-hover:text-accent-300" />
