@@ -555,7 +555,7 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                         </div>
 
                         {nearbyAirportsState.response.airports.length > 0 ? (
-                            <ul className="divide-y divide-slate-200">
+                            <ul className="divide-y divide-border">
                                 {nearbyAirportsState.response.airports.map((entry) => (
                                     <li key={`${entry.airport.ident}:${entry.rank}`} className="px-3 py-2">
                                         <div className="flex flex-wrap items-center justify-between gap-2">

@@ -420,7 +420,7 @@ const AirportTicketPreviewCard: React.FC<{
 
     if (isVertical) {
         return (
-            <div className={cn('select-none overflow-hidden rounded-[16px] border border-border bg-[linear-gradient(180deg,#f7f4eb_0%,#fcfbf7_100%)]', TICKET_CARD_SHADOW)}>
+            <div className={cn('select-none overflow-hidden rounded-[16px] border border-border bg-[linear-gradient(180deg,#f7f4eb_0%,#fcfbf7_100%)] dark:bg-[linear-gradient(180deg,var(--card)_0%,var(--background)_100%)]', TICKET_CARD_SHADOW)}>
                 <div className="h-2.5 bg-[linear-gradient(90deg,#0f172a_0%,#334155_100%)]" />
                 <div className="space-y-5 p-5">
                     <div className="flex items-start justify-between gap-3">
@@ -479,7 +479,7 @@ const AirportTicketPreviewCard: React.FC<{
     }
 
     return (
-        <div className={cn('select-none overflow-hidden rounded-[16px] border border-border bg-[linear-gradient(180deg,#f7f4eb_0%,#fcfbf7_100%)]', TICKET_CARD_SHADOW)}>
+        <div className={cn('select-none overflow-hidden rounded-[16px] border border-border bg-[linear-gradient(180deg,#f7f4eb_0%,#fcfbf7_100%)] dark:bg-[linear-gradient(180deg,var(--card)_0%,var(--background)_100%)]', TICKET_CARD_SHADOW)}>
             <div className="flex items-center justify-between gap-3 border-b border-border bg-[linear-gradient(90deg,#0f172a_0%,#334155_100%)] px-5 py-3 text-white">
                 <div className="min-w-0">
                     <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/60">Digital Boarding Pass</div>

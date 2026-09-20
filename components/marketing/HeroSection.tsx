@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 import { Sparkle, ShareNetwork, LinkSimple, RocketLaunch } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { GradientShimmer, type GradientStop } from 'gradient-shimmer';
@@ -102,6 +103,23 @@ export const HeroSection: React.FC = () => {
     const { t } = useTranslation('home');
     const [showPlaneWindow, setShowPlaneWindow] = useState(true);
 
+    // Homepage only, and re-evaluated on every route change.
+    //
+    // An earlier version read window.location.pathname inside useMemo([]), which
+    // snapshots the path once at mount and never looks again. If the hero mounts
+    // while the app is still on '/', it stays "home" forever — which is how the
+    // plane window ended up baked into the prerendered /features HTML and showed
+    // up on a direct load of that page but not when navigating to it. Reading the
+    // router location keeps this honest across navigations.
+    const heroLocation = useSafeRouteLocation();
+    const isHomeRoute = useMemo(() => {
+        const pathname = heroLocation.pathname
+            || (typeof window !== 'undefined' ? window.location.pathname : '/');
+        const segments = (pathname || '/').split('/').filter(Boolean);
+        // '/' or a bare locale prefix such as '/de'.
+        return segments.length === 0 || (segments.length === 1 && /^[a-z]{2}$/.test(segments[0]));
+    }, [heroLocation.pathname]);
+
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
@@ -192,7 +210,7 @@ export const HeroSection: React.FC = () => {
                 </div>
 
                 <div className="hidden lg:block w-[280px] xl:w-[320px] shrink-0 animate-hero-stagger" style={{ '--stagger': '400ms' } as React.CSSProperties}>
-                    {showPlaneWindow ? <PlaneWindow /> : null}
+                    {showPlaneWindow && isHomeRoute ? <PlaneWindow /> : null}
                 </div>
             </div>
         </section>

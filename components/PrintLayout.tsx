@@ -514,7 +514,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                         )}
 
                                         {/* Editable Notes Area */}
-                                        <div className="border border-border rounded-lg p-4 bg-[linear-gradient(white_29px,#eee_30px)] bg-[length:100%_30px] pt-1">
+                                        <div className="border border-border rounded-lg p-4 bg-[linear-gradient(white_29px,#eee_30px)] dark:bg-[linear-gradient(var(--card)_29px,var(--border)_30px)] bg-[length:100%_30px] pt-1">
                                             <div className="text-xs text-muted-foreground font-bold uppercase mb-1 flex items-center gap-1"><StickyNote size={12}/> Notes</div>
                                             <Suspense fallback={<div className="rounded border border-border bg-card px-3 py-2 text-xs text-muted-foreground">Loading notes…</div>}>
                                                 <LazyMarkdownEditor

@@ -20,11 +20,11 @@ type ReleaseTypeKey = ReleaseNoteItem['typeKey'];
  * tinted background, where AA wants 4.5.
  */
 const PILL_CLASSES: Record<ReleaseTypeKey, string> = {
-    new: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-400/20 dark:text-emerald-200 dark:border-emerald-400/35',
-    improved: 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-400/20 dark:text-sky-200 dark:border-sky-400/35',
-    fixed: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-400/20 dark:text-amber-200 dark:border-amber-400/35',
-    internal: 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-400/20 dark:text-rose-200 dark:border-rose-400/35',
-    update: 'bg-accent-100 text-accent-800 border-accent-200 dark:bg-accent-400/20 dark:text-accent-200 dark:border-accent-400/35',
+    new: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-400/20 dark:text-emerald-200 dark:border-emerald-400/35 dark:bg-emerald-400/12 dark:border-emerald-400/30',
+    improved: 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-400/20 dark:text-sky-200 dark:border-sky-400/35 dark:bg-sky-400/12 dark:border-sky-400/30',
+    fixed: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-400/20 dark:text-amber-200 dark:border-amber-400/35 dark:bg-amber-400/12 dark:border-amber-400/30',
+    internal: 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-400/20 dark:text-rose-200 dark:border-rose-400/35 dark:bg-rose-400/12 dark:border-rose-400/30',
+    update: 'bg-accent-100 text-accent-800 border-accent-200 dark:bg-accent-400/20 dark:text-accent-200 dark:border-accent-400/35 dark:bg-accent-400/12 dark:border-accent-400/30',
 };
 
 const BASE =

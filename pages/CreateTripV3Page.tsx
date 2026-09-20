@@ -1908,7 +1908,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     )}
 
                     <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
-                        <span className="inline-flex items-center rounded-full border border-accent-200 bg-accent-50 px-3 py-1 font-medium text-accent-700 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30">
+                        <span className="inline-flex items-center rounded-full border border-accent-200 bg-accent-50 px-3 py-1 font-medium text-accent-700 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30 dark:bg-accent-400/12">
                             {dateInputMode === 'exact'
                                 ? t('wizard.dates.exactLength', { days: exactTripSpan?.days ?? totalDays, nights: exactTripSpan?.nights ?? totalNights })
                                 : t('wizard.dates.flexLength', { weeks: flexWeeks, days: totalDays })}
@@ -1984,7 +1984,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         className={[
                                             'rounded-2xl border p-3 text-start transition-all',
                                             active
-                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none dark:text-accent-200'
+                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none dark:text-accent-200 dark:bg-accent-400/12'
                                                 : 'border-border bg-card text-foreground hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-accent-400/15 dark:hover:bg-accent-400/12 dark:hover:border-accent-400/30',
                                         ].join(' ')}
                                     >
@@ -2012,7 +2012,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         className={[
                                             'rounded-2xl border p-3 text-start transition-all',
                                             active
-                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none dark:text-accent-200'
+                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none dark:text-accent-200 dark:bg-accent-400/12'
                                                 : 'border-border bg-card text-foreground hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-accent-400/15 dark:hover:bg-accent-400/12 dark:hover:border-accent-400/30',
                                         ].join(' ')}
                                     >
@@ -2040,7 +2040,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         className={[
                                             'rounded-2xl border p-3 text-start transition-all',
                                             active
-                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none dark:text-accent-200'
+                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100 dark:bg-accent-400/15 dark:shadow-none dark:text-accent-200 dark:bg-accent-400/12'
                                                 : 'border-border bg-card text-foreground hover:border-accent-300 hover:bg-accent-50/60 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-accent-400/15 dark:hover:bg-accent-400/12 dark:hover:border-accent-400/30',
                                         ].join(' ')}
                                     >

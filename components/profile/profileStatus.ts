@@ -12,19 +12,19 @@ const STATUS_BY_TIER: Record<PlanTierKey, ProfileStatus> = {
     key: 'backpacker',
     label: 'Backpacker',
     orbitLabel: 'Backpacker',
-    ringClassName: 'text-amber-700',
+    ringClassName: 'text-amber-700 dark:text-amber-200',
   },
   tier_mid: {
     key: 'explorer',
     label: 'Explorer',
     orbitLabel: 'Explorer',
-    ringClassName: 'text-sky-700',
+    ringClassName: 'text-sky-700 dark:text-sky-200',
   },
   tier_premium: {
     key: 'globetrotter',
     label: 'Globetrotter',
     orbitLabel: 'Globetrotter',
-    ringClassName: 'text-emerald-700',
+    ringClassName: 'text-emerald-700 dark:text-emerald-200',
   },
 };
 

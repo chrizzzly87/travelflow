@@ -283,7 +283,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
             }
         } else if (inRange) {
              // Range State: Indigo text
-            base += "bg-accent-50 text-accent-700 rounded-none dark:bg-accent-400/15 dark:text-accent-200";
+            base += "bg-accent-50 text-accent-700 rounded-none dark:bg-accent-400/15 dark:text-accent-200 dark:bg-accent-400/12";
              if (!isCurrent) base += "opacity-40 ";
         } else {
              // Default State

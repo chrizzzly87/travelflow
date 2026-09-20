@@ -39,7 +39,7 @@ export const SettingsPanel = React.forwardRef<HTMLDivElement, React.ComponentPro
             ref={ref}
             data-slot="settings-panel"
             className={cn(
-                'divide-y divide-slate-200 overflow-hidden rounded-lg border border-border bg-card',
+                'divide-y divide-border overflow-hidden rounded-lg border border-border bg-card',
                 className,
             )}
             {...props}
@@ -92,7 +92,7 @@ export const SettingsSection = React.forwardRef<HTMLElement, SettingsSectionProp
             {...props}
         >
             <SettingsHeading title={title} description={description} icon={icon} aside={aside} />
-            <div className="mt-3 divide-y divide-slate-100">{children}</div>
+            <div className="mt-3 divide-y divide-border">{children}</div>
         </section>
     ),
 );
@@ -120,7 +120,7 @@ export const SettingsCard = React.forwardRef<HTMLElement, SettingsCardProps>(
             {...props}
         >
             <SettingsHeading title={title} description={description} icon={icon} aside={aside} />
-            <div className="mt-3 divide-y divide-slate-100">{children}</div>
+            <div className="mt-3 divide-y divide-border">{children}</div>
         </section>
     ),
 );

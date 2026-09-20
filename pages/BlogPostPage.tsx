@@ -547,7 +547,7 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                                 </span>
                             </AccordionTrigger>
                             <AccordionContent className="px-2 pb-2">
-                                <div className="divide-y divide-slate-200/80">
+                                <div className="divide-y divide-border/80">
                                     {category.spots.map((spot, spotIndex) => {
                                         const mapsSearchUrl = buildGoogleMapsSearchUrl(spot.query);
                                         return (

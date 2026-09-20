@@ -55,6 +55,18 @@ const AUDIT = () => {
     if (L !== null && L > 0.55) {
       light.push({ cls: (el.className||'').toString().slice(0,110), bg: cs.backgroundColor, w: Math.round(r.width), h: Math.round(r.height) });
     }
+    // ...and the same in a gradient. backgroundColor stays transparent when the
+    // fill is a gradient, so a backgroundColor-only check misses these entirely
+    // — which is how a full-page white radial wash on /create-trip survived a
+    // clean audit run. Sample the colour stops out of backgroundImage instead.
+    const bgImage = cs.backgroundImage;
+    if (bgImage && bgImage !== 'none' && /gradient/.test(bgImage)) {
+      const stops = bgImage.match(/(?:rgba?|oklch|oklab|color)\([^)]*\)|#[0-9a-fA-F]{3,8}/g) || [];
+      const lightStops = stops.map(lum).filter((x) => x !== null && x > 0.55);
+      if (lightStops.length) {
+        light.push({ cls: (el.className||'').toString().slice(0,110), bg: `gradient(${lightStops.length} light stops)`, w: Math.round(r.width), h: Math.round(r.height) });
+      }
+    }
     // Leaf text nodes whose colour barely separates from their backdrop.
     if (el.children.length === 0) {
       const txt = (el.textContent||'').trim();

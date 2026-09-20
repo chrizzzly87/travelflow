@@ -42,6 +42,26 @@ const shouldRenderScene = (): boolean => {
     }
 };
 
+/**
+ * The window belongs to the homepage hero and nowhere else.
+ *
+ * This guard lives here, not only in HeroSection, because HeroSection itself has
+ * been observed mounting on /features alongside FeaturesPage — the window's
+ * ancestor chain there is HeroSection's own <section>, next to the features h1.
+ * That is a routing bug worth fixing separately; until it is, the window must
+ * not be able to render off the homepage, because the prerenderer snapshots the
+ * live DOM and bakes it into that route's HTML, which is why a direct load of
+ * /features showed it and a client-side navigation did not.
+ *
+ * Evaluated on every render rather than memoised: a value captured once at mount
+ * stays "home" forever if the component mounted while the app was still on '/'.
+ */
+const isHomePathname = (): boolean => {
+    if (typeof window === 'undefined') return true;
+    const segments = (window.location.pathname || '/').split('/').filter(Boolean);
+    return segments.length === 0 || (segments.length === 1 && /^[a-z]{2}$/.test(segments[0]));
+};
+
 export const PlaneWindow: React.FC = () => {
     const { t } = useTranslation('home');
     const { shade, dragging, isDark, handlers, shadeElRef, frameElRef } = useWindowShade();
@@ -111,6 +131,8 @@ export const PlaneWindow: React.FC = () => {
     }, [shade]);
 
     const label = isDark ? t('hero.window.open', 'Open the window shade') : t('hero.window.close', 'Close the window shade');
+
+    if (!isHomePathname()) return null;
 
     return (
         <div

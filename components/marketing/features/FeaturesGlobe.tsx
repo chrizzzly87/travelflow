@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../../lib/utils';
+import { useTheme } from '../../../contexts/theme/useTheme';
 import {
     ensureRuntimeLocationLoaded,
     getRuntimeLocationSnapshot,
@@ -156,6 +157,11 @@ export const FeaturesGlobe: React.FC = () => {
     const phoneLayout = displaySize.width < 440;
     const compactLayout = displaySize.width < 560;
     const globeRenderConfig = useMemo(() => getGlobeRenderConfig(displaySize.width), [displaySize.width]);
+
+    // cobe bakes its palette in when the globe is created, so a theme change has
+    // to rebuild it — hence isDarkTheme in the effect's dependencies below.
+    const { resolvedTheme } = useTheme();
+    const isDarkTheme = resolvedTheme === 'dark';
     const originLocation = getRuntimeCoordinates(runtimeLocation) ?? DEFAULT_ORIGIN_LOCATION;
 
     const markerConfigs = useMemo<MarkerConfig[]>(() => ([
@@ -387,15 +393,19 @@ export const FeaturesGlobe: React.FC = () => {
                     height: canvasSize.height,
                     phi: rotationRef.current.phi,
                     theta: rotationRef.current.theta,
-                    dark: 0,
-                    diffuse: 1.3,
+                    // cobe bakes its palette in at creation, so the globe has to
+                    // be told which theme it is being drawn for. Left at dark: 0
+                    // with a near-white base and glow it renders as a bright disc
+                    // on a dark page.
+                    dark: isDarkTheme ? 1 : 0,
+                    diffuse: isDarkTheme ? 1.1 : 1.3,
                     mapSamples: canvasSize.width > 900 ? 26000 : 19000,
-                    mapBrightness: 6.1,
-                    mapBaseBrightness: 0.06,
-                    baseColor: [0.975, 0.978, 0.986],
-                    markerColor: [0.38, 0.31, 0.9],
-                    glowColor: [0.995, 0.995, 0.995],
-                    arcColor: [0.38, 0.31, 0.9],
+                    mapBrightness: isDarkTheme ? 3.4 : 6.1,
+                    mapBaseBrightness: isDarkTheme ? 0.02 : 0.06,
+                    baseColor: isDarkTheme ? [0.22, 0.22, 0.26] : [0.975, 0.978, 0.986],
+                    markerColor: [0.48, 0.51, 1.0],
+                    glowColor: isDarkTheme ? [0.16, 0.16, 0.2] : [0.995, 0.995, 0.995],
+                    arcColor: isDarkTheme ? [0.55, 0.58, 1.0] : [0.38, 0.31, 0.9],
                     arcWidth: globeRenderConfig.arcWidth,
                     arcHeight: globeRenderConfig.arcHeight,
                     markerElevation: globeRenderConfig.markerElevation,
@@ -446,7 +456,7 @@ export const FeaturesGlobe: React.FC = () => {
             cancelAnimationFrame(animationFrameId);
             globe?.destroy?.();
         };
-    }, [canvasSize.height, canvasSize.width, compactLayout, displaySize.height, displaySize.width, globeRenderConfig.arcHeight, globeRenderConfig.arcWidth, globeRenderConfig.markerElevation, globeRenderConfig.offset, globeRenderConfig.scale, overlayConfigs, phoneLayout, prefersReducedMotion]);
+    }, [canvasSize.height, canvasSize.width, compactLayout, displaySize.height, displaySize.width, globeRenderConfig.arcHeight, globeRenderConfig.arcWidth, globeRenderConfig.markerElevation, globeRenderConfig.offset, globeRenderConfig.scale, isDarkTheme, overlayConfigs, phoneLayout, prefersReducedMotion]);
 
     const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
         dragRef.current = {

@@ -9,7 +9,7 @@ const CATEGORY_ORDER: CookieCategory[] = ['essential', 'analytics', 'marketing']
 
 const Table: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="overflow-x-auto rounded-2xl border border-border">
-        <table className="min-w-full divide-y divide-slate-200">
+        <table className="min-w-full divide-y divide-border">
             <thead className="bg-secondary">
                 <tr>
                     <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">Cookie / Storage</th>
@@ -18,7 +18,7 @@ const Table: React.FC<{ children: React.ReactNode }> = ({ children }) => (
                     <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">Provider</th>
                 </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-card text-sm text-foreground">
+            <tbody className="divide-y divide-border bg-card text-sm text-foreground">
                 {children}
             </tbody>
         </table>

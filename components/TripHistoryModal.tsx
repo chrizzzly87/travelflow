@@ -111,7 +111,7 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                         {items.length === 0 ? (
                             <div className="p-6 text-sm text-muted-foreground">No history entries yet.</div>
                         ) : (
-                            <ul className="divide-y divide-gray-100">
+                            <ul className="divide-y divide-border">
                                 {items.map((item, index) => {
                                     const Icon = item.meta.Icon;
                                     const showUnsyncedBadge = hasUnsyncedChanges && index === 0;

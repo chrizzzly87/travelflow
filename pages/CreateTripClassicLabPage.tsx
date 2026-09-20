@@ -1468,7 +1468,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     className={[
                                         'rounded-xl border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors',
                                         soloComfort === value
-                                            ? 'border-accent-300 bg-accent-50 text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30'
+                                            ? 'border-accent-300 bg-accent-50 text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30 dark:bg-accent-400/12'
                                             : 'border-border bg-card text-muted-foreground hover:border-border dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:border-border',
                                     ].join(' ')}
                                 >
@@ -1603,7 +1603,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     className={[
                                         'rounded-xl border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors',
                                         friendsEnergy === value
-                                            ? 'border-accent-300 bg-accent-50 text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30'
+                                            ? 'border-accent-300 bg-accent-50 text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30 dark:bg-accent-400/12'
                                             : 'border-border bg-card text-muted-foreground hover:border-border dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:border-border',
                                     ].join(' ')}
                                 >
@@ -2048,7 +2048,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     };
 
     return (
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#eef2ff_0%,#f8fafc_50%,#ffffff_100%)] text-foreground dark:text-foreground">
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#eef2ff_0%,#f8fafc_50%,#ffffff_100%)] dark:bg-[radial-gradient(circle_at_top_left,color-mix(in_oklab,var(--tf-accent-600)_14%,var(--background))_0%,var(--background)_55%,var(--background)_100%)] text-foreground dark:text-foreground">
             <div className="pointer-events-none fixed inset-0 opacity-60">
                 <div className="absolute -left-16 top-12 size-56 rounded-full bg-accent-200/50 dark:bg-accent-500/12 blur-3xl" />
                 <div className="absolute right-0 top-24 size-64 rounded-full bg-cyan-200/40 dark:bg-cyan-500/12 blur-3xl" />
@@ -2066,7 +2066,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
                 <main className="mx-auto w-full max-w-[1260px] px-4 pb-28 pt-8 sm:px-6 sm:pb-32 lg:px-8 lg:pb-14">
                     {prefillMeta?.label && (
-                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-medium text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30">
+                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-medium text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30 dark:bg-accent-400/12">
                             <Sparkle size={13} weight="duotone" />
                             <span>{t('prefillBadge', { label: prefillMeta.label })}</span>
                         </div>
@@ -2203,7 +2203,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         className={[
                                                             'inline-flex items-center gap-2 rounded-lg border bg-card px-2.5 py-1 text-sm font-medium text-foreground shadow-sm dark:bg-card dark:text-foreground dark:shadow-none',
                                                             isStartStop
-                                                                ? 'border-accent-400 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200'
+                                                                ? 'border-accent-400 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200 dark:bg-accent-400/12'
                                                                 : 'border-border dark:border-border',
                                                             routeLock ? 'cursor-grab active:cursor-grabbing' : '',
                                                             dragActive ? 'ring-2 ring-accent-200 dark:ring-0' : '',
@@ -2464,7 +2464,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         className={[
                                                             'group relative rounded-xl border p-3 text-left transition-colors',
                                                             active
-                                                                ? 'border-accent-400 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200'
+                                                                ? 'border-accent-400 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200 dark:bg-accent-400/12'
                                                                 : 'border-border bg-secondary text-foreground hover:border-border dark:border-border dark:bg-secondary dark:text-foreground dark:hover:border-border',
                                                         ].join(' ')}
                                                     >
@@ -2531,7 +2531,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         className={[
                                                             'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
                                                             active
-                                                                ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30'
+                                                                ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30 dark:bg-accent-400/12'
                                                                 : 'border-border bg-card text-muted-foreground hover:border-border dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:border-border',
                                                         ].join(' ')}
                                                     >
@@ -2578,7 +2578,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         className={[
                                                             'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
                                                             active
-                                                                ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30'
+                                                                ? 'border-accent-300 bg-accent-50 text-accent-900 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30 dark:bg-accent-400/12'
                                                                 : 'border-border bg-card text-muted-foreground hover:border-border dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:border-border',
                                                         ].join(' ')}
                                                     >

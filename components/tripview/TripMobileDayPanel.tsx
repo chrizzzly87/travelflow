@@ -166,7 +166,7 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
             {hasSchedule && (
                 <div
                     data-testid="planner-mobile-day-schedule"
-                    className="mt-3 divide-y divide-slate-200/70 overflow-hidden rounded-2xl border border-border bg-secondary/80"
+                    className="mt-3 divide-y divide-border/70 overflow-hidden rounded-2xl border border-border bg-secondary/80"
                 >
                     {day.legs.map((leg) => (
                         <ScheduleRow

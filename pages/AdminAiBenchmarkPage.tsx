@@ -2367,7 +2367,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         </div>
                     </CardHeader>
 
-                    <CardContent className="divide-y divide-slate-200 px-0">
+                    <CardContent className="divide-y divide-border px-0">
                         <section className="grid gap-4 p-4 md:grid-cols-[minmax(220px,0.8fr)_minmax(240px,1fr)_minmax(300px,1.4fr)] md:p-6">
                             <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-foreground">
                                 Trip template

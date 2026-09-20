@@ -67,46 +67,46 @@ export const getToneMeta = (tone: ChangeTone): ToneMeta => {
         case 'add':
             return {
                 label: 'Added',
-                iconClass: 'bg-emerald-100 text-emerald-700',
-                badgeClass: 'bg-emerald-100 text-emerald-700',
-                toastBorderClass: 'border-emerald-200',
-                toastTitleClass: 'text-emerald-700',
+                iconClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200',
+                badgeClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200',
+                toastBorderClass: 'border-emerald-200 dark:border-emerald-400/30',
+                toastTitleClass: 'text-emerald-700 dark:text-emerald-200',
                 Icon: Plus,
             };
         case 'remove':
             return {
                 label: 'Removed',
-                iconClass: 'bg-red-100 text-red-700',
-                badgeClass: 'bg-red-100 text-red-700',
-                toastBorderClass: 'border-red-200',
-                toastTitleClass: 'text-red-700',
+                iconClass: 'bg-red-100 text-red-700 dark:bg-red-400/12 dark:text-red-200',
+                badgeClass: 'bg-red-100 text-red-700 dark:bg-red-400/12 dark:text-red-200',
+                toastBorderClass: 'border-red-200 dark:border-red-400/30',
+                toastTitleClass: 'text-red-700 dark:text-red-200',
                 Icon: Trash2,
             };
         case 'update':
             return {
                 label: 'Updated',
-                iconClass: 'bg-accent-100 text-accent-700 dark:text-accent-300',
-                badgeClass: 'bg-accent-100 text-accent-700 dark:text-accent-300',
-                toastBorderClass: 'border-accent-200',
-                toastTitleClass: 'text-accent-700 dark:text-accent-300',
+                iconClass: 'bg-accent-100 text-accent-700 dark:text-accent-300 dark:bg-accent-400/12 dark:text-accent-200',
+                badgeClass: 'bg-accent-100 text-accent-700 dark:text-accent-300 dark:bg-accent-400/12 dark:text-accent-200',
+                toastBorderClass: 'border-accent-200 dark:border-accent-400/30',
+                toastTitleClass: 'text-accent-700 dark:text-accent-300 dark:text-accent-200',
                 Icon: Pencil,
             };
         case 'neutral':
             return {
                 label: 'Notice',
-                iconClass: 'bg-amber-100 text-amber-700',
-                badgeClass: 'bg-amber-100 text-amber-700',
-                toastBorderClass: 'border-amber-200',
-                toastTitleClass: 'text-amber-700',
+                iconClass: 'bg-amber-100 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200',
+                badgeClass: 'bg-amber-100 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200',
+                toastBorderClass: 'border-amber-200 dark:border-amber-400/30',
+                toastTitleClass: 'text-amber-700 dark:text-amber-200',
                 Icon: Info,
             };
         default:
             return {
                 label: 'Saved',
-                iconClass: 'bg-slate-100 text-slate-700',
-                badgeClass: 'bg-slate-100 text-slate-700',
-                toastBorderClass: 'border-slate-200',
-                toastTitleClass: 'text-slate-700',
+                iconClass: 'bg-secondary text-foreground',
+                badgeClass: 'bg-secondary text-foreground',
+                toastBorderClass: 'border-border',
+                toastTitleClass: 'text-foreground',
                 Icon: Info,
             };
     }

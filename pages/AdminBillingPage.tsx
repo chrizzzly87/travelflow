@@ -673,7 +673,7 @@ export const AdminBillingPage: React.FC = () => {
                             )}
                         </div>
                     ) : (
-                        <div className="divide-y divide-slate-200">
+                        <div className="divide-y divide-border">
                             {filteredEvents.map((record) => (
                                 <article key={record.event_id} className="py-4 first:pt-5 last:pb-0">
                                     <div className="space-y-2">

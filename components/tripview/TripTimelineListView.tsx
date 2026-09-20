@@ -675,7 +675,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                     No activities planned yet.
                                                 </p>
                                             ) : (
-                                                <ol className="divide-y divide-slate-200/80">
+                                                <ol className="divide-y divide-border/80">
                                                     {section.activities.map((activity) => {
                                                         const markerId = `activity-${activity.item.id}`;
                                                         const isSelected = selectedItemId === activity.item.id;

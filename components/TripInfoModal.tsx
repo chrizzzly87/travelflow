@@ -532,7 +532,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                                             {t('tripView.generation.tripInfo.recentAttempts')}
                                         </p>
-                                        <ul className="divide-y divide-slate-200 border-y border-border">
+                                        <ul className="divide-y divide-border border-y border-border">
                                             {recentAttempts.map((attempt) => (
                                                 <li key={attempt.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm text-muted-foreground">
                                                     <span className="font-semibold text-foreground">{attempt.state}</span>
@@ -673,7 +673,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                     {visibleHistoryItems.length === 0 ? (
                                         <div className="p-6 text-sm text-muted-foreground">{t('tripView.infoDialog.history.empty')}</div>
                                     ) : (
-                                        <ul className="divide-y divide-slate-100">
+                                        <ul className="divide-y divide-border">
                                             {visibleHistoryItems.map((item, index) => {
                                                 const Icon = item.meta.Icon;
                                                 const showUnsyncedBadge = hasUnsyncedChanges && index === 0;
@@ -719,7 +719,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                     </TabsContent>
 
                     <TabsContent value="export" className="space-y-4">
-                        <div className="divide-y divide-slate-200 border-y border-border">
+                        <div className="divide-y divide-border border-y border-border">
                             <ActionCard
                                 title={t('tripView.infoDialog.export.activities.title')}
                                 description={t('tripView.infoDialog.export.activities.description')}
