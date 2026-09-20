@@ -27,10 +27,10 @@ interface AdminJsonDiffModalProps {
 }
 
 const lineCellClassName = (type: JsonDiffLineType): string => {
-    if (type === 'removed') return 'bg-rose-50 text-rose-900';
-    if (type === 'added') return 'bg-emerald-50 text-emerald-900';
-    if (type === 'empty') return 'bg-slate-50 text-slate-300';
-    return 'bg-white text-slate-700';
+    if (type === 'removed') return 'bg-rose-50 text-rose-900 dark:bg-rose-400/12 dark:text-rose-200';
+    if (type === 'added') return 'bg-emerald-50 text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200';
+    if (type === 'empty') return 'bg-secondary text-slate-300';
+    return 'bg-card text-foreground';
 };
 
 const isChangedRow = (row: JsonDiffRow): boolean => (
@@ -113,12 +113,12 @@ const formatJsonLine = (value: string | null, keyPrefix: string): React.ReactNod
 };
 
 const JSON_TOKEN_CLASSNAMES = [
-    '[&_.token.property]:!text-sky-700',
-    '[&_.token.string]:!text-emerald-700',
-    '[&_.token.number]:!text-fuchsia-700',
-    '[&_.token.boolean]:!text-amber-700',
-    '[&_.token.null]:!text-slate-500',
-    '[&_.token.punctuation]:!text-slate-500',
+    '[&_.token.property]:!text-sky-700 dark:text-sky-200',
+    '[&_.token.string]:!text-emerald-700 dark:text-emerald-200',
+    '[&_.token.number]:!text-fuchsia-700 dark:text-fuchsia-200',
+    '[&_.token.boolean]:!text-amber-700 dark:text-amber-200',
+    '[&_.token.null]:!text-muted-foreground',
+    '[&_.token.punctuation]:!text-muted-foreground',
 ].join(' ');
 
 export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
@@ -181,28 +181,28 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
             closeLabel="Close diff modal"
         >
             {errorMessage && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                     {errorMessage}
                 </div>
             )}
             {isLoading ? (
-                <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
                     <SpinnerGap size={14} className="animate-spin" />
                     Loading snapshots…
                 </div>
             ) : (
                 <>
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-600">
-                            <span className="inline-flex rounded-full border border-slate-300 bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                            <span className="inline-flex rounded-full border border-border bg-secondary px-2 py-0.5 font-semibold text-foreground">
                                 {diff.changedRowCount} changed line{diff.changedRowCount === 1 ? '' : 's'}
                             </span>
-                            <span className="inline-flex rounded-full border border-slate-300 bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">
+                            <span className="inline-flex rounded-full border border-border bg-secondary px-2 py-0.5 font-semibold text-foreground">
                                 {diff.rows.length} total line{diff.rows.length === 1 ? '' : 's'}
                             </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                            <div className="inline-flex h-8 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700">
+                            <div className="inline-flex h-8 items-center gap-2 rounded-md border border-border bg-card px-3 text-xs font-semibold text-foreground">
                                 <Checkbox
                                     checked={!focusedOnly}
                                     onCheckedChange={(checked) => setFocusedOnly(!Boolean(checked))}
@@ -214,14 +214,14 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
                     </div>
 
                     {focusedOnly && (
-                        <span className="inline-flex rounded-full border border-slate-300 bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">
+                        <span className="inline-flex rounded-full border border-border bg-secondary px-2 py-0.5 font-semibold text-foreground">
                             Showing focused context around changed lines
                         </span>
                     )}
 
                     <div className="grid grid-cols-1 gap-1 lg:grid-cols-2">
-                        <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
-                            <header className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+                        <section className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
+                            <header className="border-b border-border bg-secondary px-3 py-2 text-xs font-semibold text-foreground">
                                 {beforeLabel}
                             </header>
                             <div
@@ -237,7 +237,7 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
                                                     <tr key={`before-${entry.key}`}>
                                                         <td
                                                             colSpan={2}
-                                                            className="border-y border-slate-200 bg-slate-100 px-3 py-1 text-center text-[11px] font-semibold text-slate-500"
+                                                            className="border-y border-border bg-secondary px-3 py-1 text-center text-[11px] font-semibold text-muted-foreground"
                                                         >
                                                             {entry.hiddenCount} unchanged line{entry.hiddenCount === 1 ? '' : 's'} collapsed
                                                         </td>
@@ -249,7 +249,7 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
                                             const rowIndex = entry.index;
                                             return (
                                                 <tr key={`json-diff-before-row-${rowIndex}`} className="align-top">
-                                                    <td className={`w-12 border-r border-slate-100 px-2 py-0.5 text-right font-mono text-[10px] ${lineCellClassName(row.leftType)}`}>
+                                                    <td className={`w-12 border-r border-border px-2 py-0.5 text-right font-mono text-[10px] ${lineCellClassName(row.leftType)}`}>
                                                         {row.leftLineNumber ?? ''}
                                                     </td>
                                                     <td className={`min-w-[420px] px-2 py-0.5 font-mono ${lineCellClassName(row.leftType)} ${JSON_TOKEN_CLASSNAMES}`}>
@@ -265,8 +265,8 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
                             </div>
                         </section>
 
-                        <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
-                            <header className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+                        <section className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
+                            <header className="border-b border-border bg-secondary px-3 py-2 text-xs font-semibold text-foreground">
                                 {afterLabel}
                             </header>
                             <div
@@ -282,7 +282,7 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
                                                     <tr key={`after-${entry.key}`}>
                                                         <td
                                                             colSpan={2}
-                                                            className="border-y border-slate-200 bg-slate-100 px-3 py-1 text-center text-[11px] font-semibold text-slate-500"
+                                                            className="border-y border-border bg-secondary px-3 py-1 text-center text-[11px] font-semibold text-muted-foreground"
                                                         >
                                                             {entry.hiddenCount} unchanged line{entry.hiddenCount === 1 ? '' : 's'} collapsed
                                                         </td>
@@ -294,7 +294,7 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
                                             const rowIndex = entry.index;
                                             return (
                                                 <tr key={`json-diff-after-row-${rowIndex}`} className="align-top">
-                                                    <td className={`w-12 border-r border-slate-100 px-2 py-0.5 text-right font-mono text-[10px] ${lineCellClassName(row.rightType)}`}>
+                                                    <td className={`w-12 border-r border-border px-2 py-0.5 text-right font-mono text-[10px] ${lineCellClassName(row.rightType)}`}>
                                                         {row.rightLineNumber ?? ''}
                                                     </td>
                                                     <td className={`min-w-[420px] px-2 py-0.5 font-mono ${lineCellClassName(row.rightType)} ${JSON_TOKEN_CLASSNAMES}`}>

@@ -26,7 +26,7 @@ const AdminGlobalSettingsPage = lazyWithRecovery('AdminGlobalSettingsPage', () =
 const AdminLegalTermsPage = lazyWithRecovery('AdminLegalTermsPage', () => import('./AdminLegalTermsPage').then((module) => ({ default: module.AdminLegalTermsPage })));
 
 const RouteLoadingFallback: React.FC = () => (
-    <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />
+    <div className="min-h-[42vh] w-full bg-secondary" aria-hidden="true" />
 );
 
 export const AdminWorkspaceRouter: React.FC = () => (

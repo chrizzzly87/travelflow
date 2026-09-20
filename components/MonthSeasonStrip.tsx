@@ -29,9 +29,9 @@ export const MonthSeasonStrip: React.FC<MonthSeasonStripProps> = ({
                 const isShoulder = hasMonth(shoulderMonths, month);
                 const isHighlighted = hasMonth(highlightedMonths, month);
 
-                let colorClass = 'bg-gray-100 text-gray-500 border-gray-200';
-                if (isIdeal) colorClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
-                else if (isShoulder) colorClass = 'bg-amber-100 text-amber-800 border-amber-300';
+                let colorClass = 'bg-secondary text-muted-foreground border-border dark:bg-secondary dark:text-muted-foreground dark:border-border';
+                if (isIdeal) colorClass = 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
+                else if (isShoulder) colorClass = 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
 
                 return (
                     <div

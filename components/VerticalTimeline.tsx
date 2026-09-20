@@ -560,7 +560,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
   return (
     <div
-      className="h-full overflow-auto bg-white relative timeline-scroll"
+      className="h-full overflow-auto bg-card relative timeline-scroll"
       ref={containerRef}
       role="presentation"
       onClick={() => handleBlockSelect(null)}
@@ -587,7 +587,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                         aria-hidden="true"
                     >
                         <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-red-400/60" />
-                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-red-200/90 bg-white/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-red-500 shadow-sm">
+                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-red-200/90 bg-card/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-red-500 shadow-sm dark:border-red-400/30 dark:shadow-none">
                             Today
                         </span>
                     </div>
@@ -596,15 +596,15 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
             {/* Header (Dates) - Vertical Column */}
             <div
-                className="sticky left-0 z-20 flex h-full flex-shrink-0 border-r border-gray-200 bg-white shadow-sm"
+                className="sticky left-0 z-20 flex h-full flex-shrink-0 border-r border-border bg-card shadow-sm dark:shadow-none"
                 style={{ width: `${leftRailWidthPx}px` }}
             >
                 {showMonthRail && (
                     <div
-                        className="relative flex h-full flex-shrink-0 flex-col border-r border-gray-100 bg-slate-50/80"
+                        className="relative flex h-full flex-shrink-0 flex-col border-r border-border bg-secondary/80"
                         style={{ width: `${VERTICAL_MONTH_RAIL_WIDTH_PX}px` }}
                     >
-                        <div className="sticky top-0 z-10 h-8 border-b border-gray-100 bg-slate-50/90 backdrop-blur" />
+                        <div className="sticky top-0 z-10 h-8 border-b border-border bg-secondary/90 backdrop-blur" />
                         <div className="relative w-full flex-1">
                             {renderedDaySlots.map((slot) => {
                                 const isToday = slot.isToday;
@@ -612,8 +612,8 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                 return (
                                     <div
                                         key={`month-rail-${slot.index}`}
-                                        className={`absolute inset-x-0 border-b border-gray-100 ${
-                                            isToday ? 'bg-red-50/70' : slot.isWeekend ? 'bg-gray-50' : 'bg-slate-50/80'
+                                        className={`absolute inset-x-0 border-b border-border ${
+                                            isToday ? 'bg-red-50/70 dark:bg-red-400/12' : slot.isWeekend ? 'bg-secondary' : 'bg-secondary/80'
                                         }`}
                                         style={{
                                             height: `${slot.size}px`,
@@ -633,7 +633,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                 return (
                                     <span
                                         key={`month-rail-label-${month.startIndex}`}
-                                        className="pointer-events-none absolute left-1/2 z-[1] origin-center -translate-x-1/2 -rotate-90 whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400"
+                                        className="pointer-events-none absolute left-1/2 z-[1] origin-center -translate-x-1/2 -rotate-90 whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground"
                                         style={{
                                             top: `${Math.max(0, labelTop)}px`,
                                             maxWidth: `${Math.max(18, month.widthPx - VERTICAL_MONTH_LABEL_PADDING_PX)}px`,
@@ -652,8 +652,8 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                     className="flex h-full flex-shrink-0 flex-col"
                     style={{ width: `${VERTICAL_DAY_RAIL_WIDTH_PX}px` }}
                 >
-                    <div className="sticky top-0 z-40 flex h-8 flex-shrink-0 items-center justify-center border-b border-gray-100 bg-white/95 backdrop-blur">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Day</span>
+                    <div className="sticky top-0 z-40 flex h-8 flex-shrink-0 items-center justify-center border-b border-border bg-card/95 backdrop-blur">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Day</span>
                     </div>
 
                     <div className="relative w-full flex-1">
@@ -663,8 +663,8 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                             return (
                                 <div
                                     key={slot.index}
-                                    className={`absolute flex w-full select-none items-center justify-center border-b border-gray-100 px-1 ${
-                                        isToday ? 'bg-red-50/70' : slot.isWeekend ? 'bg-gray-50' : 'bg-white'
+                                    className={`absolute flex w-full select-none items-center justify-center border-b border-border px-1 ${
+                                        isToday ? 'bg-red-50/70 dark:bg-red-400/12' : slot.isWeekend ? 'bg-secondary' : 'bg-card'
                                     }`}
                                     style={{
                                         height: `${slot.size}px`,
@@ -674,31 +674,31 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                 >
                                     {isUltraZoomedOut ? (
                                         <div className="flex size-full items-center justify-center gap-1.5 text-center">
-                                            <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                            <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-muted-foreground'}`}>
                                                 {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
                                             </span>
-                                            <span className={`text-sm font-semibold leading-none ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
+                                            <span className={`text-sm font-semibold leading-none ${isToday ? 'text-red-700 dark:text-red-200' : 'text-foreground'}`}>
                                                 {slot.dayNum}
                                             </span>
                                         </div>
                                     ) : isZoomedOut ? (
                                         <div className="flex size-full flex-col items-center justify-center text-center">
-                                            <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                            <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-muted-foreground'}`}>
                                                 {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
                                             </span>
-                                            <span className={`text-sm font-semibold leading-tight ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
+                                            <span className={`text-sm font-semibold leading-tight ${isToday ? 'text-red-700 dark:text-red-200' : 'text-foreground'}`}>
                                                 {slot.dayNum}
                                             </span>
                                         </div>
                                     ) : (
                                         <div className="text-center">
-                                            <span className={`block text-[10px] font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                            <span className={`block text-[10px] font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-muted-foreground'}`}>
                                                 {slot.dayName}
                                             </span>
-                                            <span className={`block text-lg font-bold leading-tight ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
+                                            <span className={`block text-lg font-bold leading-tight ${isToday ? 'text-red-700 dark:text-red-200' : 'text-foreground'}`}>
                                                 {slot.dayNum}
                                             </span>
-                                            <span className={`text-[10px] uppercase leading-none ${isToday ? 'text-red-500' : 'text-gray-400'}`}>
+                                            <span className={`text-[10px] uppercase leading-none ${isToday ? 'text-red-500' : 'text-muted-foreground'}`}>
                                                 {slot.monthShort}
                                             </span>
                                         </div>
@@ -715,7 +715,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                 {renderedDaySlots.map((slot) => (
                     <div
                         key={slot.index}
-                        className="flex-shrink-0 border-b border-dashed border-gray-100 w-full"
+                        className="flex-shrink-0 border-b border-dashed border-border w-full"
                         style={{ height: `${slot.size}px` }}
                     />
                 ))}
@@ -725,14 +725,14 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
             <div className="relative z-10 flex h-full min-w-0 flex-1 flex-row">
 
                 {/* Cities Column */}
-                <div className="relative flex min-h-0 w-32 flex-shrink-0 flex-col border-r border-gray-100 group/cities">
+                <div className="relative flex min-h-0 w-32 flex-shrink-0 flex-col border-r border-border group/cities">
                      {/* Sticky Header */}
-                     <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
-                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Stays</span>
+                     <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-card/90 backdrop-blur w-full border-b border-border">
+                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Stays</span>
                          <button type="button"
                              onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddCity(); }}
                              disabled={!canEdit}
-                             className={`opacity-0 group-hover/cities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-accent-100' : 'opacity-50 cursor-not-allowed'}`}
+                             className={`opacity-0 group-hover/cities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-accent-100 dark:hover:bg-accent-400/12' : 'opacity-50 cursor-not-allowed'}`}
                          >
                              <Plus size={12} />
                          </button>
@@ -805,13 +805,13 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                 </div>
 
                 {/* Travel Column */}
-                <div className="relative flex min-h-0 w-40 flex-shrink-0 flex-col overflow-visible border-r border-gray-100 group/travel">
-                     <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
-                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transfer</span>
+                <div className="relative flex min-h-0 w-40 flex-shrink-0 flex-col overflow-visible border-r border-border group/travel">
+                     <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-card/90 backdrop-blur w-full border-b border-border">
+                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Transfer</span>
                          <button type="button"
                              onClick={(e) => { e.stopPropagation(); if (!canEdit) return; handleAddTravel(); }}
                              disabled={!canEdit}
-                             className={`opacity-0 group-hover/travel:opacity-100 transition-opacity ml-1 bg-stone-100 text-stone-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-stone-200' : 'opacity-50 cursor-not-allowed'}`}
+                             className={`opacity-0 group-hover/travel:opacity-100 transition-opacity ml-1 bg-secondary text-muted-foreground rounded-full p-0.5 ${canEdit ? 'hover:bg-secondary' : 'opacity-50 cursor-not-allowed'}`}
                              aria-label="Add transfer"
                              title="Add transfer"
                          >
@@ -919,17 +919,17 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                      <button type="button"
                                          onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                          className={`absolute z-10 left-1/2 -translate-x-1/2 px-4 rounded-xl border text-[11px] font-semibold flex items-center justify-between gap-2 shadow-sm transition-colors pointer-events-auto
-                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 ring-2 ring-blue-600 ring-offset-1' : (isUnsetTransport ? 'bg-slate-50/70 border-slate-200 border-dashed text-slate-400' : 'bg-white border-gray-200 text-gray-600')}
-                                             ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
+                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 ring-2 ring-blue-600 ring-offset-1 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30' : (isUnsetTransport ? 'bg-secondary/70 border-border border-dashed text-muted-foreground' : 'bg-card border-border text-muted-foreground')}
+                                             ${travel || canEdit ? 'hover:bg-secondary cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                          `}
                                          style={{ top: chipTop, height: chipHeight, width: chipWidth }}
 	                                         title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
 	                                         disabled={!travel && !canEdit}
 	                                     >
-                                         {!isUnsetTransport && <span className="text-gray-500 shrink-0">{getTransportIcon(mode)}</span>}
+                                         {!isUnsetTransport && <span className="text-muted-foreground shrink-0">{getTransportIcon(mode)}</span>}
                                          <span className="uppercase tracking-wider truncate flex-1 text-left">{mode === 'na' ? 'N/A' : mode}</span>
                                          {durationHours !== null && (
-                                             <span className="text-[10px] font-medium text-gray-400 shrink-0">{durationHours}h</span>
+                                             <span className="text-[10px] font-medium text-muted-foreground shrink-0">{durationHours}h</span>
                                          )}
                                      </button>
                                  </div>
@@ -941,12 +941,12 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                 {/* Activities Column (Expands) */}
                 {/* Activities Column (Expands) */}
                 <div className="relative flex min-h-0 min-w-[200px] flex-1 flex-col group/activities">
-                     <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
-                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Activities</span>
+                     <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-card/90 backdrop-blur w-full border-b border-border">
+                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Activities</span>
                          <button type="button"
                              onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(visualStartOffset); }}
                              disabled={!canEdit}
-                             className={`opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-accent-100' : 'opacity-50 cursor-not-allowed'}`}
+                             className={`opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-accent-100 dark:hover:bg-accent-400/12' : 'opacity-50 cursor-not-allowed'}`}
                              aria-label="Add activity"
                          >
                              <Plus size={12} />

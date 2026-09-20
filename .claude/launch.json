@@ -1,0 +1,1 @@
+{"version":"0.0.1","configurations":[{"name":"travelflow-dark","runtimeExecutable":"npx","runtimeArgs":["vite"],"port":5173,"autoPort":true}]}

@@ -31,7 +31,7 @@ const PRESET_PATHS = [
 const OG_PLAYGROUND_PATH = '/api/og/playground';
 const OG_PLAYGROUND_TITLE = 'TravelFlow OG Playground';
 
-const fieldClassName = 'w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-accent-400 focus:ring-2 focus:ring-accent-100';
+const fieldClassName = 'w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm outline-none transition focus:border-accent-400 focus:ring-2 focus:ring-accent-100 dark:shadow-none';
 
 const formatModeLabel = (value: OgInspectionResult['mode']): string => {
     if (value === 'static') return 'Static (pre-generated image)';
@@ -137,26 +137,26 @@ export const AdminOgToolsPage: React.FC = () => {
             showDateRange={false}
         >
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'analyzer' | 'playground')}>
-                <TabsList variant="default" className="mb-3 border border-slate-200 bg-slate-100 p-1">
+                <TabsList variant="default" className="mb-3 border border-border bg-secondary p-1">
                     <TabsTrigger value="analyzer">URL Analyzer</TabsTrigger>
                     <TabsTrigger value="playground">OG Playground</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="analyzer" className="space-y-6">
-                    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
                         <header className="mb-4 flex items-start justify-between gap-3">
                             <div>
-                                <h2 className="text-base font-semibold text-slate-900">URL Inspector</h2>
-                                <p className="mt-1 text-sm text-slate-600">
+                                <h2 className="text-base font-semibold text-foreground">URL Inspector</h2>
+                                <p className="mt-1 text-sm text-muted-foreground">
                                     Reads the real rendered page metadata and previews the exact `og:image` URL output.
                                 </p>
                             </div>
                             {inspectResult?.mode === 'static' ? (
-                                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+                                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                                     <CheckCircle size={14} /> Static mode
                                 </span>
                             ) : inspectResult?.mode === 'dynamic' ? (
-                                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+                                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                     <WarningCircle size={14} /> Dynamic mode
                                 </span>
                             ) : null}
@@ -195,7 +195,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                         setUrlInput(preset);
                                         void runInspect(preset);
                                     }}
-                                    className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
+                                    className="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-medium text-foreground transition hover:border-slate-400 hover:bg-secondary"
                                 >
                                     {preset}
                                 </button>
@@ -203,7 +203,7 @@ export const AdminOgToolsPage: React.FC = () => {
                         </div>
 
                         {inspectError && (
-                            <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+                            <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                 {inspectError}
                             </p>
                         )}
@@ -212,58 +212,58 @@ export const AdminOgToolsPage: React.FC = () => {
                             <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
                                 <div className="space-y-3">
                                     <div className="grid gap-3 md:grid-cols-3">
-                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">HTTP status</div>
-                                            <div className="mt-1 text-sm font-semibold text-slate-900">{inspectResult.status} ({inspectResult.ok ? 'OK' : 'Error'})</div>
+                                        <div className="rounded-xl border border-border bg-secondary px-3 py-2">
+                                            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">HTTP status</div>
+                                            <div className="mt-1 text-sm font-semibold text-foreground">{inspectResult.status} ({inspectResult.ok ? 'OK' : 'Error'})</div>
                                         </div>
-                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">OG source</div>
-                                            <div className="mt-1 text-sm font-semibold text-slate-900">{inspectResult.sourceHeader || 'header not set'}</div>
+                                        <div className="rounded-xl border border-border bg-secondary px-3 py-2">
+                                            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">OG source</div>
+                                            <div className="mt-1 text-sm font-semibold text-foreground">{inspectResult.sourceHeader || 'header not set'}</div>
                                         </div>
-                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Image mode</div>
-                                            <div className="mt-1 text-sm font-semibold text-slate-900">{formatModeLabel(inspectResult.mode)}</div>
+                                        <div className="rounded-xl border border-border bg-secondary px-3 py-2">
+                                            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Image mode</div>
+                                            <div className="mt-1 text-sm font-semibold text-foreground">{formatModeLabel(inspectResult.mode)}</div>
                                         </div>
                                     </div>
 
                                     <dl className="grid gap-2 text-sm">
-                                        <div className="rounded-xl border border-slate-200 px-3 py-2">
-                                            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Requested URL</dt>
-                                            <dd className="mt-1 break-all text-slate-800">{inspectResult.requestUrl}</dd>
+                                        <div className="rounded-xl border border-border px-3 py-2">
+                                            <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Requested URL</dt>
+                                            <dd className="mt-1 break-all text-foreground">{inspectResult.requestUrl}</dd>
                                         </div>
-                                        <div className="rounded-xl border border-slate-200 px-3 py-2">
-                                            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Final URL</dt>
-                                            <dd className="mt-1 break-all text-slate-800">{inspectResult.finalUrl}</dd>
+                                        <div className="rounded-xl border border-border px-3 py-2">
+                                            <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Final URL</dt>
+                                            <dd className="mt-1 break-all text-foreground">{inspectResult.finalUrl}</dd>
                                         </div>
-                                        <div className="rounded-xl border border-slate-200 px-3 py-2">
-                                            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Canonical</dt>
-                                            <dd className="mt-1 break-all text-slate-800">{inspectResult.metadata.canonical || 'missing'}</dd>
+                                        <div className="rounded-xl border border-border px-3 py-2">
+                                            <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Canonical</dt>
+                                            <dd className="mt-1 break-all text-foreground">{inspectResult.metadata.canonical || 'missing'}</dd>
                                         </div>
-                                        <div className="rounded-xl border border-slate-200 px-3 py-2">
-                                            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">OG title</dt>
-                                            <dd className="mt-1 text-slate-800">{inspectResult.metadata.ogTitle || 'missing'}</dd>
+                                        <div className="rounded-xl border border-border px-3 py-2">
+                                            <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">OG title</dt>
+                                            <dd className="mt-1 text-foreground">{inspectResult.metadata.ogTitle || 'missing'}</dd>
                                         </div>
-                                        <div className="rounded-xl border border-slate-200 px-3 py-2">
-                                            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">OG description</dt>
-                                            <dd className="mt-1 text-slate-800">{inspectResult.metadata.ogDescription || 'missing'}</dd>
+                                        <div className="rounded-xl border border-border px-3 py-2">
+                                            <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">OG description</dt>
+                                            <dd className="mt-1 text-foreground">{inspectResult.metadata.ogDescription || 'missing'}</dd>
                                         </div>
-                                        <div className="rounded-xl border border-slate-200 px-3 py-2">
-                                            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">OG image</dt>
-                                            <dd className="mt-1 break-all text-slate-800">{inspectResult.metadata.ogImage || 'missing'}</dd>
-                                            <div className="mt-1 text-xs text-slate-500">{formatKindLabel(inspectResult.imageKind)}</div>
+                                        <div className="rounded-xl border border-border px-3 py-2">
+                                            <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">OG image</dt>
+                                            <dd className="mt-1 break-all text-foreground">{inspectResult.metadata.ogImage || 'missing'}</dd>
+                                            <div className="mt-1 text-xs text-muted-foreground">{formatKindLabel(inspectResult.imageKind)}</div>
                                         </div>
                                     </dl>
                                 </div>
 
-                                <aside className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                <aside className="rounded-2xl border border-border bg-secondary p-3">
                                     <div className="mb-2 flex items-center justify-between gap-2">
-                                        <h3 className="text-sm font-semibold text-slate-900">Rendered OG image</h3>
+                                        <h3 className="text-sm font-semibold text-foreground">Rendered OG image</h3>
                                         {inspectResult.resolvedOgImageUrl && (
                                             <a
                                                 href={inspectResult.resolvedOgImageUrl}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="text-xs font-semibold text-accent-700 hover:text-accent-800"
+                                                className="text-xs font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
                                             >
                                                 Open image
                                             </a>
@@ -273,11 +273,11 @@ export const AdminOgToolsPage: React.FC = () => {
                                         <img
                                             src={inspectResult.resolvedOgImageUrl}
                                             alt="Rendered open graph preview"
-                                            className="h-auto w-full rounded-xl border border-slate-200 bg-white"
+                                            className="h-auto w-full rounded-xl border border-border bg-card"
                                             loading="lazy"
                                         />
                                     ) : (
-                                        <div className="rounded-xl border border-dashed border-slate-300 bg-white px-3 py-6 text-center text-xs text-slate-500">
+                                        <div className="rounded-xl border border-dashed border-border bg-card px-3 py-6 text-center text-xs text-muted-foreground">
                                             No renderable `og:image` URL found for this page.
                                         </div>
                                     )}
@@ -286,25 +286,25 @@ export const AdminOgToolsPage: React.FC = () => {
                         )}
                     </section>
 
-                    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
                         <header className="mb-4">
-                            <h2 className="text-base font-semibold text-slate-900">Static OG Build Command Builder</h2>
-                            <p className="mt-1 text-sm text-slate-600">
+                            <h2 className="text-base font-semibold text-foreground">Static OG Build Command Builder</h2>
+                            <p className="mt-1 text-sm text-muted-foreground">
                                 Build command-line filters for static OG generation. Leave inputs empty for the default priority scope.
                             </p>
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p className="mt-1 text-xs text-muted-foreground">
                                 RTL locales (`fa`, `ur`) currently render via dynamic `/api/og/site` for font shaping/layout fidelity, so RTL-only filtered builds no-op by design.
                             </p>
                         </header>
 
-                        <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                        <div className="mb-4 rounded-xl border border-border bg-secondary px-3 py-2 text-xs text-foreground">
                             Default static scope pre-generates only localized home, localized blog overview, localized inspirations overview, and `/example/*` template cards.
                             Example routes still resolve dynamic trip OG output at runtime for card-layout parity, and all other routes stay dynamic with edge caching unless you run the full-scope command below.
                         </div>
 
                         <div className="grid gap-3 md:grid-cols-2">
                             <label htmlFor="og-locales-input" className="space-y-1 block">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Locales (CSV)</span>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Locales (CSV)</span>
                                 <input
                                     id="og-locales-input"
                                     aria-label="Locales (CSV)"
@@ -315,7 +315,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                 />
                             </label>
                             <label htmlFor="og-include-paths-input" className="space-y-1 block">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Include paths (CSV)</span>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Include paths (CSV)</span>
                                 <input
                                     id="og-include-paths-input"
                                     aria-label="Include paths (CSV)"
@@ -326,7 +326,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                 />
                             </label>
                             <label htmlFor="og-include-prefixes-input" className="space-y-1 block">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Include prefixes (CSV)</span>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Include prefixes (CSV)</span>
                                 <input
                                     id="og-include-prefixes-input"
                                     aria-label="Include prefixes (CSV)"
@@ -337,7 +337,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                 />
                             </label>
                             <label htmlFor="og-exclude-paths-input" className="space-y-1 block">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Exclude paths (CSV)</span>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Exclude paths (CSV)</span>
                                 <input
                                     id="og-exclude-paths-input"
                                     aria-label="Exclude paths (CSV)"
@@ -348,7 +348,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                 />
                             </label>
                             <label htmlFor="og-exclude-prefixes-input" className="space-y-1 block md:col-span-2">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Exclude prefixes (CSV)</span>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Exclude prefixes (CSV)</span>
                                 <input
                                     id="og-exclude-prefixes-input"
                                     aria-label="Exclude prefixes (CSV)"
@@ -361,7 +361,7 @@ export const AdminOgToolsPage: React.FC = () => {
                         </div>
 
                         <div className="mt-4 space-y-3">
-                            <div className="rounded-xl border border-slate-200 bg-slate-900 p-3 text-slate-100">
+                            <div className="rounded-xl border border-border bg-slate-900 p-3 text-slate-100">
                                 <div className="mb-2 flex items-center justify-between gap-2">
                                     <div className="text-xs font-semibold uppercase tracking-wide text-slate-300">Build command</div>
                                     <button
@@ -376,7 +376,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                 <code className="block overflow-x-auto whitespace-pre text-xs">{commands.buildCommand}</code>
                             </div>
 
-                            <div className="rounded-xl border border-slate-200 bg-slate-900 p-3 text-slate-100">
+                            <div className="rounded-xl border border-border bg-slate-900 p-3 text-slate-100">
                                 <div className="mb-2 flex items-center justify-between gap-2">
                                     <div className="text-xs font-semibold uppercase tracking-wide text-slate-300">Validation command</div>
                                     <button
@@ -391,19 +391,19 @@ export const AdminOgToolsPage: React.FC = () => {
                                 <code className="block overflow-x-auto whitespace-pre text-xs">{commands.validateCommand}</code>
                             </div>
 
-                            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                                <div className="mb-1 flex items-center gap-1 font-semibold text-slate-800">
+                            <div className="rounded-xl border border-border bg-secondary px-3 py-2 text-sm text-foreground">
+                                <div className="mb-1 flex items-center gap-1 font-semibold text-foreground">
                                     <LinkSimpleHorizontal size={14} /> Release-safe default run
                                 </div>
-                                <code className="text-xs text-slate-700">{commands.releaseSafeCommand}</code>
+                                <code className="text-xs text-foreground">{commands.releaseSafeCommand}</code>
                                 {commands.hasFilters && (
-                                    <p className="mt-2 text-xs text-slate-600">
+                                    <p className="mt-2 text-xs text-muted-foreground">
                                         Filtered builds only regenerate selected route keys. Run the default release-safe command before final deploy checks.
                                     </p>
                                 )}
                             </div>
 
-                            <div className="rounded-xl border border-slate-200 bg-slate-900 p-3 text-slate-100">
+                            <div className="rounded-xl border border-border bg-slate-900 p-3 text-slate-100">
                                 <div className="mb-2 flex items-center justify-between gap-2">
                                     <div className="text-xs font-semibold uppercase tracking-wide text-slate-300">Full-scope override command</div>
                                     <button
@@ -422,11 +422,11 @@ export const AdminOgToolsPage: React.FC = () => {
                 </TabsContent>
 
                 <TabsContent value="playground">
-                    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
                         <header className="mb-3 flex items-center justify-between gap-3">
                             <div>
-                                <h2 className="text-base font-semibold text-slate-900">OG Playground</h2>
-                                <p className="mt-1 text-sm text-slate-600">
+                                <h2 className="text-base font-semibold text-foreground">OG Playground</h2>
+                                <p className="mt-1 text-sm text-muted-foreground">
                                     Full legacy playground for `/api/og/site` and `/api/og/trip` with all original query controls.
                                 </p>
                             </div>
@@ -440,7 +440,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                     className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
                                         playgroundMode === 'trip'
                                             ? 'border-accent-500 bg-accent-600 text-white'
-                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            : 'border-border bg-card text-foreground hover:bg-secondary'
                                     }`}
                                 >
                                     Trip mode
@@ -454,7 +454,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                     className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
                                         playgroundMode === 'site'
                                             ? 'border-accent-500 bg-accent-600 text-white'
-                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            : 'border-border bg-card text-foreground hover:bg-secondary'
                                     }`}
                                 >
                                     Site mode
@@ -463,7 +463,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                     href={playgroundSrc}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="rounded-lg border border-accent-300 bg-accent-50 px-3 py-1.5 text-xs font-semibold text-accent-800 hover:bg-accent-100"
+                                    className="rounded-lg border border-accent-300 bg-accent-50 px-3 py-1.5 text-xs font-semibold text-accent-800 hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                                 >
                                     Open standalone
                                 </a>
@@ -471,7 +471,7 @@ export const AdminOgToolsPage: React.FC = () => {
                         </header>
 
                         {playgroundLoadIssue && (
-                            <p className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+                            <p className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                 {playgroundLoadIssue}
                             </p>
                         )}
@@ -480,7 +480,7 @@ export const AdminOgToolsPage: React.FC = () => {
                             ref={playgroundFrameRef}
                             title="TravelFlow OG Playground"
                             src={playgroundSrc}
-                            className="h-[980px] w-full rounded-xl border border-slate-200 bg-white"
+                            className="h-[980px] w-full rounded-xl border border-border bg-card"
                             onLoad={validatePlaygroundEmbed}
                         />
                     </section>

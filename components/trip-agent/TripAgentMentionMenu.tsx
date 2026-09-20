@@ -32,7 +32,7 @@ export const TripAgentMentionMenu: React.FC<{
     }, [activeIndex]);
 
     if (items.length === 0) {
-        return <p className="px-3 py-4 text-center text-xs text-slate-500">{emptyLabel}</p>;
+        return <p className="px-3 py-4 text-center text-xs text-muted-foreground">{emptyLabel}</p>;
     }
 
     let lastGroup: string | null = null;
@@ -48,7 +48,7 @@ export const TripAgentMentionMenu: React.FC<{
                         {showGroup && (
                             <li
                                 aria-hidden="true"
-                                className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500"
+                                className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
                             >
                                 {item.group}
                             </li>
@@ -64,15 +64,15 @@ export const TripAgentMentionMenu: React.FC<{
                                 onSelect(index);
                             }}
                             className={`flex cursor-pointer items-center gap-2 px-3 py-1.5 ${
-                                isActive ? 'bg-accent-50 text-accent-900' : 'text-slate-700'
+                                isActive ? 'bg-accent-50 text-accent-900 dark:bg-accent-400/12 dark:text-accent-200' : 'text-foreground'
                             }`}
                         >
                             {item.icon}
                             <span className="min-w-0 flex-1">
                                 <span className="block truncate text-sm">{item.label}</span>
-                                {item.meta && <span className="block truncate text-[11px] text-slate-500">{item.meta}</span>}
+                                {item.meta && <span className="block truncate text-[11px] text-muted-foreground">{item.meta}</span>}
                             </span>
-                            {item.isSelected && <span className="text-[11px] font-medium text-accent-600">✓</span>}
+                            {item.isSelected && <span className="text-[11px] font-medium text-accent-600 dark:text-accent-300">✓</span>}
                         </li>
                     </React.Fragment>
                 );

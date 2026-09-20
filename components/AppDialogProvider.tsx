@@ -234,10 +234,10 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                         aria-modal="true"
                         aria-labelledby="app-dialog-title"
                         aria-describedby={hasDescriptionContent ? 'app-dialog-description' : undefined}
-                        className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl"
+                        className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl dark:shadow-none"
                     >
-                        <div className="px-5 py-4 border-b border-gray-100">
-                            <h2 id="app-dialog-title" className="text-base font-semibold text-gray-900">
+                        <div className="px-5 py-4 border-b border-border">
+                            <h2 id="app-dialog-title" className="text-base font-semibold text-foreground">
                                 {activeRequest.options.title || (activeRequest.kind === 'confirm' ? 'Confirm Action' : 'Input Required')}
                             </h2>
                         </div>
@@ -245,7 +245,7 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                             {descriptionNode && (
                                 <div
                                     id="app-dialog-description"
-                                    className="space-y-3 text-sm leading-relaxed text-gray-600 [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5 [&_strong]:font-semibold [&_em]:italic"
+                                    className="space-y-3 text-sm leading-relaxed text-muted-foreground [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5 [&_strong]:font-semibold [&_em]:italic"
                                 >
                                     {descriptionNode}
                                 </div>
@@ -253,7 +253,7 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                             {activeRequest.kind === 'prompt' && (
                                 <div className="space-y-1.5">
                                     {activeRequest.options.label && (
-                                        <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                             {activeRequest.options.label}
                                         </label>
                                     )}
@@ -266,7 +266,7 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                                             setPromptValue(event.target.value);
                                             if (promptError) setPromptError(null);
                                         }}
-                                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-2 focus:ring-accent-300 focus:border-accent-500 outline-none"
+                                        className="w-full px-3 py-2.5 border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-accent-300 focus:border-accent-500 outline-none"
                                         placeholder={activeRequest.options.placeholder}
                                         onKeyDown={(event) => {
                                             if (event.key === 'Enter') {
@@ -281,12 +281,12 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                                 </div>
                             )}
                         </div>
-                        <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2">
+                        <div className="px-5 py-3 bg-secondary border-t border-border flex items-center justify-end gap-2">
                             <button
                                 ref={cancelButtonRef}
                                 type="button"
                                 onClick={() => closeWithResult(activeRequest.kind === 'confirm' ? false : null)}
-                                className="px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                                className="px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-card border border-border rounded-md hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-gray-300 dark:text-foreground"
                             >
                                 {activeRequest.options.cancelLabel || 'Cancel'}
                             </button>

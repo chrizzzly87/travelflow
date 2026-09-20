@@ -11,11 +11,11 @@ export const TripAgentWorkingIndicator: React.FC<{ label: string; hint?: string 
     const { t } = useTranslation('common');
 
     return (
-        <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 px-2.5 py-2" role="status">
+        <div className="flex items-center gap-2.5 rounded-xl border border-border bg-secondary/70 px-2.5 py-2" role="status">
             <ThinkingOrb state="searching" size={20} aria-label={t('tripAgent.activityWorking')} />
             <span className="min-w-0">
-                <span className="block truncate text-xs font-medium text-slate-700">{label}</span>
-                {hint && <span className="block truncate text-[11px] text-slate-500">{hint}</span>}
+                <span className="block truncate text-xs font-medium text-foreground">{label}</span>
+                {hint && <span className="block truncate text-[11px] text-muted-foreground">{hint}</span>}
             </span>
         </div>
     );

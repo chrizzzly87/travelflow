@@ -85,7 +85,7 @@ export const ActivityMapPopup: React.FC<ActivityMapPopupProps> = ({
       aria-label={t('tripView.mapLinks.popupLabel')}
       tabIndex={-1}
       onKeyDown={handleKeyDown}
-      className="pointer-events-auto absolute z-30 rounded-xl border border-gray-200 bg-white p-3 shadow-2xl outline-none focus-visible:ring-2 focus-visible:ring-accent-400"
+      className="pointer-events-auto absolute z-30 rounded-xl border border-border bg-card p-3 shadow-2xl outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:shadow-none"
       style={{
         insetInlineStart: `${left}px`,
         top: `${top}px`,
@@ -102,13 +102,13 @@ export const ActivityMapPopup: React.FC<ActivityMapPopupProps> = ({
           <ActivityTypeIcon type={primaryType} size={14} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-gray-900" title={item.title}>{item.title}</p>
-          <p className="text-[11px] font-medium text-gray-500">{formatActivityTypeLabel(primaryType)}</p>
+          <p className="truncate text-sm font-semibold text-foreground" title={item.title}>{item.title}</p>
+          <p className="text-[11px] font-medium text-muted-foreground">{formatActivityTypeLabel(primaryType)}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="-me-1 -mt-1 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+          className="-me-1 -mt-1 rounded-md p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-muted-foreground dark:text-foreground"
           aria-label={t('tripView.mapLinks.close')}
         >
           <X size={14} />
@@ -116,7 +116,7 @@ export const ActivityMapPopup: React.FC<ActivityMapPopupProps> = ({
       </div>
 
       {item.location && (
-        <p className="mt-2 flex items-start gap-1.5 text-xs text-gray-600">
+        <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
           <MapPin size={13} className="mt-0.5 shrink-0 text-accent-500" aria-hidden="true" />
           <span className="min-w-0 break-words">{item.location}</span>
         </p>
@@ -139,7 +139,7 @@ export const ActivityMapPopup: React.FC<ActivityMapPopupProps> = ({
       <button
         type="button"
         onClick={() => onOpenDetails(item.id)}
-        className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-accent-600 transition-colors hover:text-accent-700"
+        className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-accent-600 transition-colors hover:text-accent-700 dark:hover:text-accent-200 dark:text-accent-300"
       >
         {t('tripView.mapLinks.openDetails')}
         <ArrowRight size={12} aria-hidden="true" />

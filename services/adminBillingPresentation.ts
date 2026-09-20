@@ -202,9 +202,9 @@ export const resolveAdminBillingStatusTone = (status: string | null | undefined)
 };
 
 export const adminBillingStatusClassName = (tone: AdminBillingStatusTone): string => {
-    if (tone === 'accent') return 'border-accent-200 bg-accent-50 text-accent-800';
-    if (tone === 'success') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
-    if (tone === 'warning') return 'border-amber-200 bg-amber-50 text-amber-800';
-    if (tone === 'danger') return 'border-rose-200 bg-rose-50 text-rose-800';
-    return 'border-slate-200 bg-slate-100 text-slate-700';
+    if (tone === 'accent') return 'border-accent-200 bg-accent-50 text-accent-800 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30';
+    if (tone === 'success') return 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
+    if (tone === 'warning') return 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
+    if (tone === 'danger') return 'border-rose-200 bg-rose-50 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
+    return 'border-border bg-secondary text-foreground';
 };

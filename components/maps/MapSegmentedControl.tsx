@@ -48,7 +48,7 @@ export const MapSegmentedControl = <T extends string | number>({
     aria-disabled={disabled || undefined}
     className={[
       'w-full',
-      wrap ? 'grid grid-cols-3 gap-1.5' : 'inline-flex w-full rounded-md border border-slate-200 bg-slate-50 p-0.5',
+      wrap ? 'grid grid-cols-3 gap-1.5' : 'inline-flex w-full rounded-md border border-border bg-secondary p-0.5',
       disabled ? 'opacity-50' : '',
       className,
     ].filter(Boolean).join(' ')}
@@ -63,9 +63,9 @@ export const MapSegmentedControl = <T extends string | number>({
             wrap ? 'flex-col justify-center py-2' : 'flex-1',
             disabled ? 'cursor-not-allowed' : '',
             isSelected
-              ? 'bg-white text-accent-700 shadow-sm ring-1 ring-accent-300'
-              : 'text-slate-600 hover:text-slate-900',
-            wrap && !isSelected ? 'border border-slate-200 bg-white' : '',
+              ? 'bg-card text-accent-700 shadow-sm ring-1 ring-accent-300 dark:text-accent-200 dark:shadow-none'
+              : 'text-muted-foreground hover:text-foreground',
+            wrap && !isSelected ? 'border border-border bg-card' : '',
           ].filter(Boolean).join(' ')}
         >
           {/*

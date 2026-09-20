@@ -80,10 +80,10 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
   const fallbackBio = labels.bioFallback.trim();
 
   const profileIdentityCard = (
-    <article className={`relative flex h-full flex-col rounded-2xl border border-slate-200 bg-white px-6 pb-6 pt-16 text-center shadow-sm ${compactCard ? 'min-h-[320px]' : 'min-h-[480px]'}`}>
+    <article className={`relative flex h-full flex-col rounded-2xl border border-border bg-card px-6 pb-6 pt-16 text-center shadow-sm ${compactCard ? 'min-h-[320px]' : 'min-h-[480px]'}`}>
       <div className="absolute inset-x-0 top-0 -translate-y-1/2">
         <div className={`relative mx-auto size-24 ${status.ringClassName}`}>
-          <span className="absolute inset-0 inline-flex items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-semibold text-accent-800 shadow-md ring-2 ring-current">
+          <span className="absolute inset-0 inline-flex items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-semibold text-accent-800 shadow-md ring-2 ring-current dark:bg-accent-400/12 dark:text-accent-200">
             {initials}
           </span>
           {showAvatarOrbitText && (
@@ -91,15 +91,15 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
           )}
         </div>
       </div>
-      <h2 className="mt-6 text-3xl font-semibold tracking-tight text-slate-900">{displayName}</h2>
-      <p className="mt-1 text-sm font-semibold text-slate-600">
+      <h2 className="mt-6 text-3xl font-semibold tracking-tight text-foreground">{displayName}</h2>
+      <p className="mt-1 text-sm font-semibold text-muted-foreground">
         {labels.usernamePrefix}
         {username || 'traveler'}
       </p>
       <p className={`mt-2 text-xs font-semibold uppercase tracking-[0.16em] ${status.ringClassName}`}>{status.label}</p>
       {visibilityBadgeLabel ? (
         <p className="mt-2">
-          <span className="inline-flex items-center rounded-full border border-slate-300 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700">
+          <span className="inline-flex items-center rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-foreground">
             {visibilityBadgeLabel}
           </span>
         </p>
@@ -108,15 +108,15 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
       {showDetails ? (
         <div className="mt-4 space-y-3 text-left">
           {(resolvedBio || fallbackBio) ? (
-            <p className="text-sm leading-6 text-slate-700">{resolvedBio || fallbackBio}</p>
+            <p className="text-sm leading-6 text-foreground">{resolvedBio || fallbackBio}</p>
           ) : null}
           <div className="flex flex-col gap-2">
-            <p className="flex w-full items-center gap-2 text-sm font-semibold text-slate-800">
-              <MapPin size={15} weight="duotone" className="text-accent-600" />
+            <p className="flex w-full items-center gap-2 text-sm font-semibold text-foreground">
+              <MapPin size={15} weight="duotone" className="text-accent-600 dark:text-accent-300" />
               <span>{location}</span>
             </p>
-            <p className="flex w-full items-center gap-2 text-sm font-semibold text-slate-800">
-              <Mountains size={15} weight="duotone" className="text-accent-600" />
+            <p className="flex w-full items-center gap-2 text-sm font-semibold text-foreground">
+              <Mountains size={15} weight="duotone" className="text-accent-600 dark:text-accent-300" />
               <span>{distanceLabel}</span>
             </p>
           </div>
@@ -157,7 +157,7 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
             <button
               type="button"
               disabled
-              className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 opacity-75"
+              className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground opacity-75"
             >
               <ChatTeardropText size={15} weight="duotone" />
               {labels.message}
@@ -180,7 +180,7 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
     <section className="grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
       {profileIdentityCard}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6 dark:shadow-none">
         <ProfileSummaryStats stats={stats} locale={locale} />
         <div className="mt-6">
           <ProfileMetaPanel

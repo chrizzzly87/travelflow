@@ -302,6 +302,9 @@ async function main() {
 
   let failedRoutes = 0;
 
+  /** Held back so the clean SPA template stays the fallback for the whole run. */
+  let deferredIndexHtml = null;
+
   for (const route of ROUTES) {
     const dests = route.dests || [route.dest];
     console.log(`Pre-rendering route: ${route.path} -> ${dests.map((dest) => `dist/${dest}`).join(', ')}`);
@@ -446,6 +449,21 @@ async function main() {
       console.log(`Injected ${preloadHrefs.length} modulepreload hints for ${route.path}`);
 
       for (const dest of dests) {
+        // dist/index.html is vite preview's SPA fallback for every URL that has
+        // no file yet. Writing the prerendered homepage into it mid-loop means
+        // every LATER route boots from homepage markup, and preact's hydration
+        // does not fully clear the mismatch — leftover homepage DOM ends up
+        // captured into that route's HTML. That is the same failure the host
+        // catch-all avoids in production by rewriting deep links to /spa.html;
+        // vite preview applies no such rewrite, so the prerender run hits it.
+        //
+        // Buffer the homepage and write it once the loop is done.
+        if (dest === 'index.html') {
+          deferredIndexHtml = outputHtml;
+          console.log('Buffered dist/index.html (written after all routes, so it cannot become the SPA fallback mid-run)');
+          continue;
+        }
+
         const destPath = path.join(projectRoot, 'dist', dest);
         const destDir = path.dirname(destPath);
         
@@ -460,6 +478,12 @@ async function main() {
       failedRoutes += 1;
       console.error(`Error pre-rendering route ${route.path}:`, err.message);
     }
+  }
+
+  // Now that no further route can be served the homepage as a fallback, commit it.
+  if (deferredIndexHtml) {
+    fs.writeFileSync(path.join(projectRoot, 'dist', 'index.html'), deferredIndexHtml, 'utf8');
+    console.log('Successfully pre-rendered dist/index.html');
   }
 
   console.log('Pre-rendering complete! Closing browser and server...');

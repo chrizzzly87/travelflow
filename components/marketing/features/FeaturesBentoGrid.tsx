@@ -71,43 +71,43 @@ const iconMap: Record<FeatureBentoItem['id'], Icon> = {
 };
 
 const ItineraryVisual: React.FC<BentoVisualProps> = ({ item }) => (
-    <div className="rounded-[16px] border border-slate-200 bg-slate-50 p-5">
-        <div className="flex flex-wrap gap-2 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-500">
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Lisbon</span>
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Porto</span>
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Bilbao</span>
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1">Bordeaux</span>
+    <div className="rounded-[16px] border border-border bg-secondary p-5 dark:border-border dark:bg-secondary">
+        <div className="flex flex-wrap gap-2 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground dark:text-muted-foreground">
+            <span className="rounded-full border border-border bg-card px-3 py-1 dark:border-border dark:bg-card">Lisbon</span>
+            <span className="rounded-full border border-border bg-card px-3 py-1 dark:border-border dark:bg-card">Porto</span>
+            <span className="rounded-full border border-border bg-card px-3 py-1 dark:border-border dark:bg-card">Bilbao</span>
+            <span className="rounded-full border border-border bg-card px-3 py-1 dark:border-border dark:bg-card">Bordeaux</span>
         </div>
         <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px]">
-            <div className="rounded-[14px] border border-slate-200 bg-white p-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+            <div className="rounded-[14px] border border-border bg-card p-4 dark:border-border dark:bg-card">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground dark:text-muted-foreground">
                     Draft route
                 </div>
-                <div className="mt-4 flex items-center gap-3 text-sm font-medium text-slate-700">
+                <div className="mt-4 flex items-center gap-3 text-sm font-medium text-foreground dark:text-foreground">
                     <span>Coast cities</span>
-                    <span className="h-px flex-1 bg-slate-200" />
+                    <span className="h-px flex-1 bg-slate-200 dark:bg-secondary" />
                     <span>Train-friendly</span>
-                    <span className="h-px flex-1 bg-slate-200" />
+                    <span className="h-px flex-1 bg-slate-200 dark:bg-secondary" />
                     <span>Late sunsets</span>
                 </div>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-[12px] bg-slate-50 p-3">
-                        <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Trip rhythm</p>
-                        <p className="mt-2 text-lg font-bold text-slate-950">Slow mornings, packed evenings</p>
+                    <div className="rounded-[12px] bg-secondary p-3 dark:bg-secondary">
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground dark:text-muted-foreground">Trip rhythm</p>
+                        <p className="mt-2 text-lg font-bold text-foreground dark:text-foreground">Slow mornings, packed evenings</p>
                     </div>
-                    <div className="rounded-[12px] border border-accent-200 bg-accent-50 p-3 text-accent-800">
-                        <p className="text-xs uppercase tracking-[0.18em] text-accent-700">Ready in</p>
+                    <div className="rounded-[12px] border border-accent-200 bg-accent-50 p-3 text-accent-800 dark:bg-accent-400/15 dark:text-accent-200 dark:border-accent-400/30">
+                        <p className="text-xs uppercase tracking-[0.18em] text-accent-700 dark:text-accent-200">Ready in</p>
                         <p className="mt-2 text-3xl font-black">26s</p>
                     </div>
                 </div>
             </div>
-            <div className="rounded-[14px] border border-slate-200 bg-white p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Why it lands</p>
-                <p className="mt-3 text-lg font-bold text-slate-950">{item.detail}</p>
-                <div className="mt-4 grid gap-2 text-sm text-slate-700">
-                    <span className="rounded-full bg-slate-50 px-3 py-2">AI route draft</span>
-                    <span className="rounded-full bg-slate-50 px-3 py-2">Activity context</span>
-                    <span className="rounded-full bg-slate-50 px-3 py-2">Booking-ready notes</span>
+            <div className="rounded-[14px] border border-border bg-card p-4 dark:border-border dark:bg-card">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground dark:text-muted-foreground">Why it lands</p>
+                <p className="mt-3 text-lg font-bold text-foreground dark:text-foreground">{item.detail}</p>
+                <div className="mt-4 grid gap-2 text-sm text-foreground dark:text-foreground">
+                    <span className="rounded-full bg-secondary px-3 py-2 dark:bg-secondary">AI route draft</span>
+                    <span className="rounded-full bg-secondary px-3 py-2 dark:bg-secondary">Activity context</span>
+                    <span className="rounded-full bg-secondary px-3 py-2 dark:bg-secondary">Booking-ready notes</span>
                 </div>
             </div>
         </div>
@@ -115,22 +115,22 @@ const ItineraryVisual: React.FC<BentoVisualProps> = ({ item }) => (
 );
 
 const TimelineVisual: React.FC<BentoVisualProps> = ({ item }) => (
-    <div className="rounded-[16px] border border-slate-200 bg-slate-50 p-5">
-        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+    <div className="rounded-[16px] border border-border bg-secondary p-5 dark:border-border dark:bg-secondary">
+        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground dark:text-muted-foreground">
             <span>Route edits</span>
             <span>{item.detail}</span>
         </div>
         <div className="mt-5 grid gap-3">
             {['Day 03', 'Day 05', 'Day 08'].map((day, index) => (
-                <div key={day} className="flex items-start gap-3 rounded-[12px] border border-slate-200 bg-white p-3 shadow-sm">
+                <div key={day} className="flex items-start gap-3 rounded-[12px] border border-border bg-card p-3 shadow-sm dark:border-border dark:bg-card dark:shadow-none">
                     <div className={cn(
                         'mt-1 size-3 rounded-full',
                         day === 'Day 03' ? 'bg-accent-500' : day === 'Day 05' ? 'bg-slate-400' : 'bg-slate-300',
                     )}
                     />
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">{day}</p>
-                        <p className="mt-1 text-sm font-medium text-slate-700">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground dark:text-muted-foreground">{day}</p>
+                        <p className="mt-1 text-sm font-medium text-foreground dark:text-foreground">
                             {index === 0 ? 'Stretch beach time in Porto' : index === 1 ? 'Swap train for ferry' : 'Pull dinner closer to the hotel'}
                         </p>
                     </div>
@@ -141,7 +141,7 @@ const TimelineVisual: React.FC<BentoVisualProps> = ({ item }) => (
 );
 
 const InspirationVisual: React.FC<BentoVisualProps> = ({ item }) => (
-    <div className="overflow-hidden rounded-[16px] border border-slate-200 bg-white">
+    <div className="overflow-hidden rounded-[16px] border border-border bg-card dark:border-border dark:bg-card">
         <div className="relative h-48 overflow-hidden">
             <img
                 src="/images/inspirations/cherry-blossom-trail-480.webp"
@@ -152,17 +152,17 @@ const InspirationVisual: React.FC<BentoVisualProps> = ({ item }) => (
                 className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                 loading="lazy"
             />
-            <div className="absolute inset-x-4 bottom-4 rounded-[12px] border border-slate-200 bg-white/96 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-700">{item.detail}</p>
-                <p className="mt-2 text-lg font-bold text-slate-950">Fork a route that already feels believable</p>
+            <div className="absolute inset-x-4 bottom-4 rounded-[12px] border border-border bg-card/96 p-4 dark:border-border dark:bg-card/96">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-700 dark:text-accent-200">{item.detail}</p>
+                <p className="mt-2 text-lg font-bold text-foreground dark:text-foreground">Fork a route that already feels believable</p>
             </div>
         </div>
     </div>
 );
 
 const SharingVisual: React.FC<BentoVisualProps> = ({ item }) => (
-    <div className="rounded-[16px] border border-slate-200 bg-slate-50 p-5">
-        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+    <div className="rounded-[16px] border border-border bg-secondary p-5 dark:border-border dark:bg-secondary">
+        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground dark:text-muted-foreground">
             <span>Crew loop</span>
             <span>{item.detail}</span>
         </div>
@@ -173,7 +173,7 @@ const SharingVisual: React.FC<BentoVisualProps> = ({ item }) => (
                     className={cn(
                         'flex size-11 items-center justify-center rounded-full border-2 border-white text-sm font-bold text-white shadow-sm',
                         index > 0 && '-ms-2',
-                        index === 0 ? 'bg-accent-600' : index === 1 ? 'bg-slate-500' : index === 2 ? 'bg-slate-400' : 'bg-slate-300',
+                        index === 0 ? 'bg-accent-600 dark:bg-accent-400' : index === 1 ? 'bg-slate-500' : index === 2 ? 'bg-slate-400' : 'bg-slate-300',
                     )}
                 >
                     {letter}
@@ -181,10 +181,10 @@ const SharingVisual: React.FC<BentoVisualProps> = ({ item }) => (
             ))}
         </div>
         <div className="mt-5 grid gap-3">
-            <div className="rounded-[12px] border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-sm">
+            <div className="rounded-[12px] border border-border bg-card p-3 text-sm text-foreground shadow-sm dark:border-border dark:bg-card dark:text-foreground dark:shadow-none">
                 “Can we keep one slower day here?”
             </div>
-            <div className="rounded-[12px] border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-sm">
+            <div className="rounded-[12px] border border-border bg-card p-3 text-sm text-foreground shadow-sm dark:border-border dark:bg-card dark:text-foreground dark:shadow-none">
                 “This route finally makes sense.”
             </div>
         </div>
@@ -192,24 +192,24 @@ const SharingVisual: React.FC<BentoVisualProps> = ({ item }) => (
 );
 
 const ReliveVisual: React.FC<BentoVisualProps> = ({ item }) => (
-    <div className="rounded-[16px] border border-slate-200 bg-slate-50 p-5">
+    <div className="rounded-[16px] border border-border bg-secondary p-5 dark:border-border dark:bg-secondary">
         <div className="grid gap-3">
-            <div className="rounded-[14px] border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Final handoff</p>
-                <p className="mt-2 text-lg font-bold text-slate-900">{item.detail}</p>
+            <div className="rounded-[14px] border border-border bg-card p-4 shadow-sm dark:border-border dark:bg-card dark:shadow-none">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground dark:text-muted-foreground">Final handoff</p>
+                <p className="mt-2 text-lg font-bold text-foreground dark:text-foreground">{item.detail}</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:bg-secondary dark:text-muted-foreground dark:text-foreground">
                         Print view
                     </span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:bg-secondary dark:text-muted-foreground dark:text-foreground">
                         Notes intact
                     </span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:bg-secondary dark:text-muted-foreground dark:text-foreground">
                         Links attached
                     </span>
                 </div>
             </div>
-            <div className="rounded-[14px] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+            <div className="rounded-[14px] border border-border bg-card px-4 py-3 text-sm text-muted-foreground shadow-sm dark:border-border dark:bg-card dark:text-muted-foreground dark:shadow-none">
                 A shareable plan for the trip and a cleaner memory of how it came together.
             </div>
         </div>
@@ -235,26 +235,26 @@ const BentoVisual: React.FC<BentoVisualProps> = ({ item }) => {
 
 const FeatureCardShell: React.FC<FeatureCardShellProps> = ({ IconComponent, index, item, children, hideEyebrow = false }) => (
     <Card
-        className="group h-full animate-scroll-fade-up overflow-hidden rounded-[18px] border-slate-200 bg-white py-0 shadow-sm shadow-slate-200/60 transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200/80"
+        className="group h-full animate-scroll-fade-up overflow-hidden rounded-[18px] border-border bg-card py-0 shadow-sm shadow-slate-200/60 transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200/80 dark:border-border dark:bg-card dark:shadow-none"
         style={{ animationDelay: `${index * 90}ms` }}
     >
         <CardContent className="flex h-full flex-col gap-6 px-6 pb-6 pt-6">
             <div className="flex items-start justify-between gap-4">
                 <div>
                     {!hideEyebrow && item.eyebrow ? (
-                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-accent-700">
+                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-accent-700 dark:text-accent-200">
                             {item.eyebrow}
                         </p>
                     ) : null}
-                    <h3 className={cn('text-balance text-2xl font-black text-slate-950', hideEyebrow ? '' : 'mt-2')}>
+                    <h3 className={cn('text-balance text-2xl font-black text-foreground dark:text-foreground', hideEyebrow ? '' : 'mt-2')}>
                         {item.title}
                     </h3>
-                    <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600">
+                    <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground dark:text-muted-foreground">
                         {item.description}
                     </p>
                 </div>
                 {IconComponent ? (
-                    <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-accent-700 shadow-sm">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary text-accent-700 shadow-sm dark:border-border dark:bg-secondary dark:text-accent-200 dark:shadow-none">
                         <IconComponent size={20} weight="regular" />
                     </div>
                 ) : null}
@@ -386,15 +386,15 @@ const AirportBentoCard: React.FC<{ index: number; item: FeatureBentoItem }> = ({
             data-testid="features-airport-card"
         >
             <Card
-                className="group h-full animate-scroll-fade-up overflow-hidden rounded-[18px] border-slate-200 bg-white py-0 shadow-sm shadow-slate-200/60 transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200/80"
+                className="group h-full animate-scroll-fade-up overflow-hidden rounded-[18px] border-border bg-card py-0 shadow-sm shadow-slate-200/60 transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200/80 dark:border-border dark:bg-card dark:shadow-none"
                 style={{ animationDelay: `${index * 90}ms` }}
             >
                 <CardContent className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(420px,auto)] lg:items-center lg:gap-12 xl:grid-cols-[minmax(0,0.95fr)_minmax(500px,auto)]">
                     <div className="min-w-0">
-                        <h3 className="text-balance text-2xl font-semibold text-slate-950">
+                        <h3 className="text-balance text-2xl font-semibold text-foreground dark:text-foreground">
                             {item.title}
                         </h3>
-                        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 md:text-base">
+                        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base dark:text-muted-foreground">
                             {item.description}
                         </p>
                     </div>

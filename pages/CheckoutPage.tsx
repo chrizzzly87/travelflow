@@ -196,10 +196,10 @@ const resolveDiscountBadgeLabel = (
     return fallbackCode ? fallbackCode.toUpperCase() : null;
 };
 
-const checkoutInputClassName = 'mt-1 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus-visible:ring-rose-200';
-const checkoutFieldLabelClassName = 'text-sm font-medium text-slate-700';
+const checkoutInputClassName = 'mt-1 h-11 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus-visible:ring-rose-200 dark:shadow-none';
+const checkoutFieldLabelClassName = 'text-sm font-medium text-foreground';
 const checkoutActionClassName = 'inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
-const checkoutSectionLabelClassName = 'text-xs font-semibold uppercase tracking-[0.14em] text-slate-500';
+const checkoutSectionLabelClassName = 'text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground';
 
 const normalizeAuthErrorCode = (error: unknown): string => {
     if (!error || typeof error !== 'object') return 'default';
@@ -222,23 +222,23 @@ const normalizeAuthErrorCode = (error: unknown): string => {
 };
 
 const CheckoutStepSection: React.FC<CheckoutStepSectionProps> = ({ step, state, title, children }) => (
-    <section className="border-b border-slate-200 py-8 last:border-b-0 last:pb-0 first:pt-0">
+    <section className="border-b border-border py-8 last:border-b-0 last:pb-0 first:pt-0">
         <div className="flex items-start gap-4">
             <div
                 className={cn(
                     'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
                     state === 'complete'
-                        ? 'bg-accent-50 text-accent-700 ring-1 ring-accent-200'
+                        ? 'bg-accent-50 text-accent-700 ring-1 ring-accent-200 dark:bg-accent-400/12 dark:text-accent-200 dark:ring-0'
                         : state === 'active'
-                            ? 'border border-slate-900 text-slate-900'
-                            : 'border border-slate-300 text-slate-400'
+                            ? 'border border-slate-900 text-foreground'
+                            : 'border border-border text-muted-foreground'
                 )}
                 aria-hidden="true"
             >
                 {state === 'complete' ? <CheckCircle size={28} weight="duotone" aria-hidden="true" /> : step}
             </div>
             <div className="min-w-0 flex-1">
-                <h2 className="text-xl font-semibold tracking-tight text-slate-900">{title}</h2>
+                <h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
                 <div className="mt-5">{children}</div>
             </div>
         </div>
@@ -945,51 +945,51 @@ export const CheckoutPage: React.FC = () => {
 
     const completedPanel = checkoutCompleted ? (
         <div ref={inlineCheckoutSectionRef} className="space-y-5">
-            <div className="rounded-2xl bg-emerald-50 p-6 shadow-sm ring-1 ring-emerald-100">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+            <div className="rounded-2xl bg-emerald-50 p-6 shadow-sm ring-1 ring-emerald-100 dark:bg-emerald-400/12 dark:ring-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">
                     {t('checkout.successEyebrow', { ns: 'pricing' })}
                 </p>
-                <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">
+                <h3 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
                     {completedFlowMode === 'upgrade'
                         ? t('checkout.upgradeCompletedTitle', { ns: 'pricing' })
                         : t('checkout.paymentCompletedTitle', { ns: 'pricing' })}
                 </h3>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700">
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-foreground">
                     {completedFlowMode === 'upgrade'
                         ? t('checkout.upgradeCompletedDescription', { ns: 'pricing' })
                         : t('checkout.successDescription', { ns: 'pricing' })}
                 </p>
 
                 {completedFlowMode === 'acquisition' && postPaymentSyncState === 'syncing' ? (
-                    <div className="mt-5 flex items-center gap-3 rounded-xl bg-white/80 px-4 py-3 text-sm text-slate-700 ring-1 ring-emerald-100">
-                        <SpinnerGap size={16} className="animate-spin text-accent-600" />
+                    <div className="mt-5 flex items-center gap-3 rounded-xl bg-card/80 px-4 py-3 text-sm text-foreground ring-1 ring-emerald-100 dark:ring-0">
+                        <SpinnerGap size={16} className="animate-spin text-accent-600 dark:text-accent-300" />
                         <span>{t('checkout.paymentSyncingMessage', { ns: 'pricing' })}</span>
                     </div>
                 ) : null}
 
                 {completedFlowMode === 'acquisition' && postPaymentSyncState === 'delayed' ? (
-                    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                         <p className="font-semibold">{t('checkout.paymentSyncDelayedTitle', { ns: 'pricing' })}</p>
                         <p className="mt-1">{t('checkout.paymentSyncDelayedDescription', { ns: 'pricing' })}</p>
                     </div>
                 ) : null}
 
                 {completedFlowMode === 'acquisition' && postPaymentSyncState === 'synced' ? (
-                    <div className="mt-5 rounded-xl bg-white/80 px-4 py-3 text-sm text-slate-700 ring-1 ring-emerald-100">
-                        <span className="font-semibold text-emerald-800">{t('checkout.paymentSyncReadyTitle', { ns: 'pricing' })}</span>{' '}
+                    <div className="mt-5 rounded-xl bg-card/80 px-4 py-3 text-sm text-foreground ring-1 ring-emerald-100 dark:ring-0">
+                        <span className="font-semibold text-emerald-800 dark:text-emerald-200">{t('checkout.paymentSyncReadyTitle', { ns: 'pricing' })}</span>{' '}
                         {t('checkout.paymentSyncReadyDescription', { ns: 'pricing' })}
                     </div>
                 ) : null}
 
                 {postPaymentClaimState === 'processing' ? (
-                    <div className="mt-5 flex items-center gap-3 rounded-xl bg-white/80 px-4 py-3 text-sm text-slate-700 ring-1 ring-emerald-100">
-                        <SpinnerGap size={16} className="animate-spin text-accent-600" />
+                    <div className="mt-5 flex items-center gap-3 rounded-xl bg-card/80 px-4 py-3 text-sm text-foreground ring-1 ring-emerald-100 dark:ring-0">
+                        <SpinnerGap size={16} className="animate-spin text-accent-600 dark:text-accent-300" />
                         <span>{t('checkout.successClaimProcessing', { ns: 'pricing' })}</span>
                     </div>
                 ) : null}
 
                 {postPaymentClaimState === 'error' && postPaymentClaimErrorMessage ? (
-                    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                         <p className="font-semibold">{t('checkout.successClaimNeedsAttention', { ns: 'pricing' })}</p>
                         <p className="mt-1">{postPaymentClaimErrorMessage}</p>
                     </div>
@@ -1011,7 +1011,7 @@ export const CheckoutPage: React.FC = () => {
                     {shouldShowTripReturnAction ? (
                         <Link
                             to={returnToPath}
-                            className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
+                            className={cn(checkoutActionClassName, 'border border-border bg-card text-foreground hover:bg-secondary')}
                             onClick={() => trackEvent('checkout__success_cta--return_trip', { tier: selectedTierKey, source })}
                             {...getAnalyticsDebugAttributes('checkout__success_cta--return_trip')}
                         >
@@ -1022,7 +1022,7 @@ export const CheckoutPage: React.FC = () => {
 
                     <Link
                         to={createTripPath}
-                        className={cn(checkoutActionClassName, shouldShowPostPaymentTripAction ? 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50' : 'bg-accent-600 text-white hover:bg-accent-700')}
+                        className={cn(checkoutActionClassName, shouldShowPostPaymentTripAction ? 'border border-border bg-card text-foreground hover:bg-secondary' : 'bg-accent-600 text-white hover:bg-accent-700')}
                         onClick={() => trackEvent('checkout__success_cta--create_trip', { tier: selectedTierKey, source })}
                         {...getAnalyticsDebugAttributes('checkout__success_cta--create_trip')}
                     >
@@ -1033,7 +1033,7 @@ export const CheckoutPage: React.FC = () => {
                     {shouldShowProfileAction ? (
                         <Link
                             to={profileActionPath}
-                            className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
+                            className={cn(checkoutActionClassName, 'border border-border bg-card text-foreground hover:bg-secondary')}
                             onClick={() => trackEvent('checkout__success_cta--profile', { tier: selectedTierKey, source })}
                             {...getAnalyticsDebugAttributes('checkout__success_cta--profile')}
                         >
@@ -1607,13 +1607,13 @@ export const CheckoutPage: React.FC = () => {
     ]);
 
     return (
-        <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+        <div className="flex min-h-screen flex-col bg-secondary text-foreground">
             <SiteHeader hideCreateTrip />
             <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 pb-16 pt-8 md:px-8 md:pt-10">
-                <div className="border-b border-slate-200 pb-6">
+                <div className="border-b border-border pb-6">
                     <Link
                         to={returnToPath}
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition-colors hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
                         onClick={() => trackEvent(fromTripCheckout ? 'checkout__return--trip' : 'checkout__return--pricing', { tier: selectedTierKey })}
                     >
                         <ArrowLeft size={14} weight="bold" />
@@ -1625,12 +1625,12 @@ export const CheckoutPage: React.FC = () => {
                             <p className={checkoutSectionLabelClassName}>{t('checkout.tripEntryDescription', { ns: 'pricing' })}</p>
                         ) : null}
                         <h1
-                            className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl"
+                            className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl"
                             style={{ fontFamily: 'var(--tf-font-heading)' }}
                         >
                             {t('checkout.eyebrow', { ns: 'pricing' })}
                         </h1>
-                        <p className="text-sm text-slate-600">
+                        <p className="text-sm text-muted-foreground">
                             {t(`tiers.${selectedTier.publicSlug}.name`, { ns: 'pricing' })} · ${selectedTier.monthlyPriceUsd}{t('shared.perMonth', { ns: 'pricing' })}
                         </p>
                     </div>
@@ -1639,7 +1639,7 @@ export const CheckoutPage: React.FC = () => {
                 <section className="mt-8 grid gap-10 xl:gap-16 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_440px] lg:items-start">
                     <div className="order-1 min-w-0">
                         {paddlePublicConfig?.issues.length ? (
-                            <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                            <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                 <p className="font-semibold">{t('checkout.errorTitle', { ns: 'pricing' })}</p>
                                 <p className="mt-1">{t('checkout.errorConfig', { ns: 'pricing' })}</p>
                             </div>
@@ -1654,13 +1654,13 @@ export const CheckoutPage: React.FC = () => {
                         >
                             {!isEligibleAccount ? (
                                 <div className="w-full max-w-4xl space-y-6">
-                                    <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+                                    <div className="flex flex-wrap gap-2 border-b border-border pb-2">
                                         <button
                                             type="button"
                                             onClick={() => handleAuthModeChange('login')}
                                             className={cn(
                                                 'inline-flex h-9 items-center rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2',
-                                                authMode === 'login' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'
+                                                authMode === 'login' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground'
                                             )}
                                             {...getAnalyticsDebugAttributes('checkout__auth_tab--login')}
                                         >
@@ -1671,7 +1671,7 @@ export const CheckoutPage: React.FC = () => {
                                             onClick={() => handleAuthModeChange('register')}
                                             className={cn(
                                                 'inline-flex h-9 items-center rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2',
-                                                authMode === 'register' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'
+                                                authMode === 'register' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground'
                                             )}
                                             {...getAnalyticsDebugAttributes('checkout__auth_tab--register')}
                                         >
@@ -1680,7 +1680,7 @@ export const CheckoutPage: React.FC = () => {
                                     </div>
 
                                     <form className="space-y-4" onSubmit={handleAccountSubmit}>
-                                        <p className="text-sm text-slate-600">{t('checkout.accountDescription', { ns: 'pricing' })}</p>
+                                        <p className="text-sm text-muted-foreground">{t('checkout.accountDescription', { ns: 'pricing' })}</p>
 
                                         <div className="grid gap-4 md:grid-cols-2">
                                             <label className="block">
@@ -1717,7 +1717,7 @@ export const CheckoutPage: React.FC = () => {
                                         </div>
 
                                         {authMode === 'register' ? (
-                                            <label className="flex items-start gap-3 text-sm text-slate-700">
+                                            <label className="flex items-start gap-3 text-sm text-foreground">
                                                 <Checkbox
                                                     checked={hasAcceptedTerms}
                                                     onCheckedChange={(checked) => setHasAcceptedTerms(checked === true)}
@@ -1726,11 +1726,11 @@ export const CheckoutPage: React.FC = () => {
                                                 />
                                                 <span className="leading-6">
                                                     {t('copy.termsConsentPrefix', { ns: 'auth' })}{' '}
-                                                    <Link className="font-semibold text-accent-700 hover:underline" to={termsPath} target="_blank" rel="noreferrer">
+                                                    <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={termsPath} target="_blank" rel="noreferrer">
                                                         {t('copy.termsConsentTerms', { ns: 'auth' })}
                                                     </Link>{' '}
                                                     {t('copy.termsConsentJoiner', { ns: 'auth' })}{' '}
-                                                    <Link className="font-semibold text-accent-700 hover:underline" to={privacyPath} target="_blank" rel="noreferrer">
+                                                    <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={privacyPath} target="_blank" rel="noreferrer">
                                                         {t('copy.termsConsentPrivacy', { ns: 'auth' })}
                                                     </Link>
                                                     .
@@ -1739,11 +1739,11 @@ export const CheckoutPage: React.FC = () => {
                                         ) : null}
 
                                         {showAuthSupportMessage ? (
-                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                                 <p className="font-semibold">{t('errors.auth_unavailable_title', { ns: 'auth' })}</p>
                                                 <p className="mt-1">{t('errors.auth_unavailable_body', { ns: 'auth' })}</p>
                                                 <Link
-                                                    className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4"
+                                                    className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4 dark:text-rose-200"
                                                     to={contactPath}
                                                     target="_blank"
                                                     rel="noreferrer"
@@ -1754,12 +1754,12 @@ export const CheckoutPage: React.FC = () => {
                                                 </Link>
                                             </div>
                                         ) : authErrorMessage ? (
-                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                                 {authErrorMessage}
                                             </div>
                                         ) : null}
                                         {authInfoMessage ? (
-                                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                                                 {authInfoMessage}
                                             </div>
                                         ) : null}
@@ -1780,8 +1780,8 @@ export const CheckoutPage: React.FC = () => {
                                     </form>
                                 </div>
                             ) : (
-                                <div className="flex flex-col gap-1 text-sm text-slate-700">
-                                    <p className="font-medium text-slate-900">{accountEmail || '—'}</p>
+                                <div className="flex flex-col gap-1 text-sm text-foreground">
+                                    <p className="font-medium text-foreground">{accountEmail || '—'}</p>
                                     <p>{t('checkout.accountReadyDescription', { ns: 'pricing', email: accountEmail || '—' })}</p>
                                 </div>
                             )}
@@ -1793,11 +1793,11 @@ export const CheckoutPage: React.FC = () => {
                             title={t('checkout.travelerDetailsTitle', { ns: 'pricing' })}
                         >
                             {!isEligibleAccount ? (
-                                <p className="text-sm text-slate-500">{t('checkout.detailsLocked', { ns: 'pricing' })}</p>
+                                <p className="text-sm text-muted-foreground">{t('checkout.detailsLocked', { ns: 'pricing' })}</p>
                             ) : (
                                 <div className="w-full max-w-4xl space-y-6">
                                     <div className="flex items-start justify-between gap-4">
-                                        <p className="text-sm text-slate-600">
+                                        <p className="text-sm text-muted-foreground">
                                             {travelerDetailsLocked
                                                 ? t('checkout.travelerDetailsLockedDescription', { ns: 'pricing' })
                                                 : t('checkout.travelerDetailsDescription', { ns: 'pricing' })}
@@ -1806,7 +1806,7 @@ export const CheckoutPage: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={handleEditTravelerDetails}
-                                                className="inline-flex items-center gap-1 text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                                className="inline-flex items-center gap-1 text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:text-accent-200 dark:hover:text-accent-200"
                                                 {...getAnalyticsDebugAttributes('checkout__traveler_details--edit')}
                                             >
                                                 <NotePencil size={16} weight="duotone" />
@@ -1816,7 +1816,7 @@ export const CheckoutPage: React.FC = () => {
                                     </div>
 
                                     {checkoutErrorMessage ? (
-                                        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                             {checkoutErrorMessage}
                                         </div>
                                     ) : null}
@@ -1875,7 +1875,7 @@ export const CheckoutPage: React.FC = () => {
 
                                     {travelerDetailsLocked ? (
                                         <div className="space-y-3">
-                                            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                                            <div className="rounded-xl border border-border bg-secondary px-4 py-3 text-sm text-muted-foreground">
                                                 {hasInlineCheckout
                                                     ? t('checkout.travelerDetailsPaymentReady', { ns: 'pricing' })
                                                     : shouldAutoContinueLockedDetails
@@ -1903,7 +1903,7 @@ export const CheckoutPage: React.FC = () => {
                                                 type="button"
                                                 disabled={isTravelerDetailsSaving || isSubmitting}
                                                 onClick={() => void handleSaveTravelerDetails()}
-                                                className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
+                                                className={cn(checkoutActionClassName, 'border border-border bg-card text-foreground hover:bg-secondary')}
                                                 {...getAnalyticsDebugAttributes('checkout__traveler_details--save')}
                                             >
                                                 {isTravelerDetailsSaving ? <SpinnerGap size={18} className="animate-spin" /> : null}
@@ -1931,22 +1931,22 @@ export const CheckoutPage: React.FC = () => {
                             title={t('checkout.paymentTitle', { ns: 'pricing' })}
                         >
                             {!hasInlineCheckout ? (
-                                <p className="text-sm text-slate-500">{t('checkout.paymentLocked', { ns: 'pricing' })}</p>
+                                <p className="text-sm text-muted-foreground">{t('checkout.paymentLocked', { ns: 'pricing' })}</p>
                             ) : checkoutCompleted ? (
                                 completedPanel
                             ) : (
                                 <div ref={inlineCheckoutSectionRef} className="space-y-5">
-                                    <div className="relative overflow-hidden rounded-md border border-slate-200 bg-white">
+                                    <div className="relative overflow-hidden rounded-md border border-border bg-card">
                                         {isInlineCheckoutLoading ? (
-                                            <div className="pointer-events-none absolute inset-0 z-10 bg-white/95">
+                                            <div className="pointer-events-none absolute inset-0 z-10 bg-card/95">
                                                 <div className="flex h-full flex-col gap-4 p-6">
-                                                    <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                                    <div className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
                                                         <SpinnerGap size={16} className="animate-spin" />
                                                         {t('checkout.loading', { ns: 'pricing' })}
                                                     </div>
-                                                    <div className="h-12 w-full animate-pulse rounded-md bg-slate-100" />
-                                                    <div className="h-12 w-full animate-pulse rounded-md bg-slate-100" />
-                                                    <div className="h-48 w-full animate-pulse rounded-md bg-slate-100" />
+                                                    <div className="h-12 w-full animate-pulse rounded-md bg-secondary" />
+                                                    <div className="h-12 w-full animate-pulse rounded-md bg-secondary" />
+                                                    <div className="h-48 w-full animate-pulse rounded-md bg-secondary" />
                                                     <div className="mt-auto h-12 w-full animate-pulse rounded-md bg-slate-200" />
                                                 </div>
                                             </div>
@@ -1960,8 +1960,8 @@ export const CheckoutPage: React.FC = () => {
                         ) : (
                         <div className="space-y-6">
                             {isSubscriptionSummaryLoading ? (
-                                <div className="rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-sm">
-                                    <div className="inline-flex items-center gap-3 text-sm font-medium text-slate-600">
+                                <div className="rounded-2xl border border-border bg-card px-6 py-8 shadow-sm dark:shadow-none">
+                                    <div className="inline-flex items-center gap-3 text-sm font-medium text-muted-foreground">
                                         <SpinnerGap size={18} className="animate-spin" />
                                         {t('checkout.loadingSubscriptionState', { ns: 'pricing' })}
                                     </div>
@@ -1975,43 +1975,43 @@ export const CheckoutPage: React.FC = () => {
                                     title={t('checkout.upgradeTitle', { ns: 'pricing' })}
                                 >
                                     <div className="max-w-3xl space-y-6">
-                                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                                        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
                                             <p className={checkoutSectionLabelClassName}>{t('checkout.upgradeSummaryLabel', { ns: 'pricing' })}</p>
                                             <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
                                                 <div>
-                                                    <p className="text-sm text-slate-500">
+                                                    <p className="text-sm text-muted-foreground">
                                                         {t('checkout.upgradeFromTo', {
                                                             ns: 'pricing',
                                                             currentPlan: currentPaidTierName || '—',
                                                             targetPlan: t(`tiers.${selectedTier.publicSlug}.name`, { ns: 'pricing' }),
                                                         })}
                                                     </p>
-                                                    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+                                                    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
                                                         {t('checkout.upgradeReviewTitle', { ns: 'pricing' })}
                                                     </h2>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-sm text-slate-500">{t('checkout.newRecurringTotal', { ns: 'pricing' })}</p>
-                                                    <p className="text-2xl font-semibold text-slate-900">
+                                                    <p className="text-sm text-muted-foreground">{t('checkout.newRecurringTotal', { ns: 'pricing' })}</p>
+                                                    <p className="text-2xl font-semibold text-foreground">
                                                         {upgradePreview?.recurringAmount !== null && upgradePreview?.recurringAmount !== undefined
                                                             ? `${upgradePreview.recurringCurrency || ''} ${(upgradePreview.recurringAmount / 100).toFixed(2)}`
                                                             : `$${selectedTier.monthlyPriceUsd.toFixed(2)}`}
                                                     </p>
                                                 </div>
                                             </div>
-                                            <p className="mt-4 text-sm leading-6 text-slate-600">
+                                            <p className="mt-4 text-sm leading-6 text-muted-foreground">
                                                 {upgradePreview?.prorationMessage || t('checkout.upgradePreviewDescription', { ns: 'pricing' })}
                                             </p>
                                             {upgradePreview?.immediateAmount !== null && upgradePreview?.immediateAmount !== undefined ? (
-                                                <div className="mt-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-slate-700">
-                                                    <span className="font-semibold text-slate-900">{t('checkout.dueNowLabel', { ns: 'pricing' })}</span>{' '}
+                                                <div className="mt-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-foreground dark:bg-accent-400/12 dark:border-accent-400/30">
+                                                    <span className="font-semibold text-foreground">{t('checkout.dueNowLabel', { ns: 'pricing' })}</span>{' '}
                                                     {`${upgradePreview.immediateCurrency || ''} ${(upgradePreview.immediateAmount / 100).toFixed(2)}`}
                                                 </div>
                                             ) : null}
                                         </div>
 
                                         {checkoutErrorMessage ? (
-                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                                                 {checkoutErrorMessage}
                                             </div>
                                         ) : null}
@@ -2031,7 +2031,7 @@ export const CheckoutPage: React.FC = () => {
                                                 type="button"
                                                 onClick={() => void handleOpenBillingManagement('manage')}
                                                 disabled={isBillingManagementLoading}
-                                                className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
+                                                className={cn(checkoutActionClassName, 'border border-border bg-card text-foreground hover:bg-secondary')}
                                                 {...getAnalyticsDebugAttributes('checkout__upgrade--manage_billing')}
                                             >
                                                 {isBillingManagementLoading ? <SpinnerGap size={18} className="animate-spin" /> : <ArrowSquareOut size={18} weight="duotone" />}
@@ -2049,8 +2049,8 @@ export const CheckoutPage: React.FC = () => {
                                         : t('checkout.manageBillingTitle', { ns: 'pricing' })}
                                 >
                                     <div className="max-w-3xl space-y-5">
-                                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                                            <p className="text-sm leading-6 text-slate-600">
+                                        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
+                                            <p className="text-sm leading-6 text-muted-foreground">
                                                 {isCurrentPlanFlow
                                                     ? t('checkout.currentPlanDescription', {
                                                         ns: 'pricing',
@@ -2059,7 +2059,7 @@ export const CheckoutPage: React.FC = () => {
                                                     : t('checkout.manageBillingDescription', { ns: 'pricing' })}
                                             </p>
                                             {subscriptionSummary?.currentPeriodEnd ? (
-                                                <p className="mt-3 text-sm text-slate-500">
+                                                <p className="mt-3 text-sm text-muted-foreground">
                                                     {t('checkout.renewalDateLabel', { ns: 'pricing' })}: {formatCheckoutRenewalDate(subscriptionSummary.currentPeriodEnd)}
                                                 </p>
                                             ) : null}
@@ -2070,7 +2070,7 @@ export const CheckoutPage: React.FC = () => {
                                                 <button
                                                     type="button"
                                                     disabled
-                                                    className={cn(checkoutActionClassName, 'cursor-not-allowed border border-accent-200 bg-accent-50 text-accent-700')}
+                                                    className={cn(checkoutActionClassName, 'cursor-not-allowed border border-accent-200 bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30')}
                                                 >
                                                     {t('checkout.currentPlanCta', { ns: 'pricing' })}
                                                 </button>
@@ -2095,10 +2095,10 @@ export const CheckoutPage: React.FC = () => {
 
                     <aside className="order-2 lg:order-2">
                         <div className="lg:sticky lg:top-28">
-                            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+                            <div className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8 dark:shadow-none">
                                 <section className="space-y-4">
                                 <p className={checkoutSectionLabelClassName}>{t('checkout.planSummaryTitle', { ns: 'pricing' })}</p>
-                                <div className="border-b border-slate-200">
+                                <div className="border-b border-border">
                                     <div className="-mb-px flex items-center gap-8">
                                         {PAID_TIER_ORDER.map((tierKey) => {
                                             const tier = PLAN_CATALOG[tierKey];
@@ -2113,8 +2113,8 @@ export const CheckoutPage: React.FC = () => {
                                                     className={cn(
                                                         'inline-flex h-11 appearance-none cursor-pointer items-center whitespace-nowrap border-0 border-b-2 bg-transparent px-0 pb-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed',
                                                         isActive
-                                                            ? 'border-accent-600 text-accent-700'
-                                                            : 'border-transparent text-slate-400 hover:text-slate-900',
+                                                            ? 'border-accent-600 text-accent-700 dark:text-accent-200'
+                                                            : 'border-transparent text-muted-foreground hover:text-foreground',
                                                         Boolean(paddlePublicConfig) && !tierAvailable ? 'text-slate-300 hover:text-slate-300' : null,
                                                     )}
                                                     aria-pressed={isActive}
@@ -2127,14 +2127,14 @@ export const CheckoutPage: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex items-end justify-between gap-4 border-b border-slate-200 pb-5">
+                                <div className="flex items-end justify-between gap-4 border-b border-border pb-5">
                                     <div>
-                                        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">{t(`tiers.${selectedTier.publicSlug}.name`, { ns: 'pricing' })}</h2>
-                                        <p className="mt-1 text-sm text-slate-600">{t(`tiers.${selectedTier.publicSlug}.description`, { ns: 'pricing' })}</p>
+                                        <h2 className="text-2xl font-semibold tracking-tight text-foreground">{t(`tiers.${selectedTier.publicSlug}.name`, { ns: 'pricing' })}</h2>
+                                        <p className="mt-1 text-sm text-muted-foreground">{t(`tiers.${selectedTier.publicSlug}.description`, { ns: 'pricing' })}</p>
                                     </div>
                                     <div className="shrink-0 text-right">
-                                        <div className="text-3xl font-semibold tracking-tight text-slate-900">${selectedTier.monthlyPriceUsd}</div>
-                                        <div className="text-sm text-slate-500">{t('shared.perMonth', { ns: 'pricing' })}</div>
+                                        <div className="text-3xl font-semibold tracking-tight text-foreground">${selectedTier.monthlyPriceUsd}</div>
+                                        <div className="text-sm text-muted-foreground">{t('shared.perMonth', { ns: 'pricing' })}</div>
                                     </div>
                                 </div>
                                 </section>
@@ -2143,8 +2143,8 @@ export const CheckoutPage: React.FC = () => {
                                     <p className={checkoutSectionLabelClassName}>{t('checkout.whatsIncluded', { ns: 'pricing' })}</p>
                                     <ul className="mt-4 space-y-3">
                                         {planFeatures.map((feature) => (
-                                            <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
-                                                <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
+                                            <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-foreground">
+                                                <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600 dark:text-accent-300" />
                                                 <span>{feature}</span>
                                             </li>
                                         ))}
@@ -2152,12 +2152,12 @@ export const CheckoutPage: React.FC = () => {
                                 </section>
 
                                 {shouldShowAcquisitionFlow ? (
-                                    <section className="mt-8 border-t border-slate-200 pt-4">
+                                    <section className="mt-8 border-t border-border pt-4">
                                         <p className={checkoutSectionLabelClassName}>{t('voucher.eyebrow', { ns: 'pricing' })}</p>
                                         <div className="mt-4 flex flex-col gap-3">
                                             {hasAppliedDiscountCode ? (
                                                 <div className="flex flex-wrap items-center gap-2">
-                                                    <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                                    <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                                                         {isDiscountPreviewLoading ? (
                                                             <SpinnerGap size={12} className="animate-spin" />
                                                         ) : null}
@@ -2165,7 +2165,7 @@ export const CheckoutPage: React.FC = () => {
                                                         <button
                                                             type="button"
                                                             onClick={handleClearVoucher}
-                                                            className="inline-flex size-5 items-center justify-center rounded-full text-emerald-700 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+                                                            className="inline-flex size-5 items-center justify-center rounded-full text-emerald-700 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 dark:hover:bg-emerald-400/12 dark:text-emerald-200"
                                                             aria-label={t('voucher.clearCta', { ns: 'pricing' })}
                                                             {...getAnalyticsDebugAttributes('checkout__voucher--clear')}
                                                         >
@@ -2182,7 +2182,7 @@ export const CheckoutPage: React.FC = () => {
                                                         onChange={(event) => handleDiscountInputChange(event.target.value)}
                                                         placeholder={t('voucher.placeholder', { ns: 'pricing' })}
                                                         autoCapitalize="characters"
-                                                        className="h-11 flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                                        className="h-11 flex-1 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:shadow-none"
                                                     />
                                                     <button
                                                         type="button"
@@ -2201,12 +2201,12 @@ export const CheckoutPage: React.FC = () => {
                                                 </div>
                                             )}
                                             {!hasAppliedDiscountCode && normalizedDiscountInput && !isDiscountPreviewLoading && activeDiscountErrorMessage ? (
-                                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                                     {activeDiscountErrorMessage}
                                                 </div>
                                             ) : null}
                                             {hasAppliedDiscountCode && activeDiscountErrorMessage ? (
-                                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                                     {activeDiscountErrorMessage}
                                                 </div>
                                             ) : null}
@@ -2214,7 +2214,7 @@ export const CheckoutPage: React.FC = () => {
                                     </section>
                                 ) : null}
 
-                                <p className="mt-8 border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500">
+                                <p className="mt-8 border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
                                     {t('checkout.planSummaryBilling', { ns: 'pricing' })}
                                 </p>
                             </div>

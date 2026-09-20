@@ -33,7 +33,7 @@ export const DrawerContent = React.forwardRef<
     <DrawerPrimitive.Content
       ref={ref}
       className={[
-        'z-[1601] border border-gray-200 bg-white shadow-2xl focus:outline-none',
+        'z-[1601] border border-border bg-card shadow-2xl focus:outline-none dark:shadow-none',
         side === 'right'
           ? 'fixed inset-y-0 right-0 h-screen w-[min(96vw,680px)] rounded-none border-l'
           : 'fixed inset-x-0 bottom-0 mt-24 rounded-t-[18px]',
@@ -64,7 +64,7 @@ export const DrawerTitle = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Title>
 >(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Title ref={ref} className={`text-lg font-semibold text-gray-900 ${className ?? ''}`.trim()} {...props} />
+  <DrawerPrimitive.Title ref={ref} className={`text-lg font-semibold text-foreground ${className ?? ''}`.trim()} {...props} />
 ));
 DrawerTitle.displayName = DrawerPrimitive.Title.displayName;
 
@@ -72,6 +72,6 @@ export const DrawerDescription = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Description>
 >(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Description ref={ref} className={`text-sm text-gray-500 ${className ?? ''}`.trim()} {...props} />
+  <DrawerPrimitive.Description ref={ref} className={`text-sm text-muted-foreground ${className ?? ''}`.trim()} {...props} />
 ));
 DrawerDescription.displayName = DrawerPrimitive.Description.displayName;

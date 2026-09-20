@@ -149,11 +149,11 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                     updateMenuPosition();
                     setIsOpen((current) => !current);
                 }}
-                className={`inline-flex h-8 w-fit items-center justify-center whitespace-nowrap rounded-md border border-dashed border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 ${className || ''}`}
+                className={`inline-flex h-8 w-fit items-center justify-center whitespace-nowrap rounded-md border border-dashed border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-secondary focus:outline-none focus:ring-1 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 ${className || ''}`}
                 aria-label={`Filter by ${label.toLowerCase()}`}
                 aria-expanded={isOpen}
             >
-                {icon || <PlusCircle size={14} className="mr-2 text-slate-500 shrink-0" weight="duotone" />}
+                {icon || <PlusCircle size={14} className="mr-2 text-muted-foreground shrink-0" weight="duotone" />}
                 <span>{label}</span>
                 
                 {(selectedCount > 0 || (selectedCount === 0 && !allowMultiple)) && (
@@ -167,7 +167,7 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                         {selectedLabels.map((selectedLabel) => (
                             <span
                                 key={`${label}-${selectedLabel}`}
-                                className="inline-flex items-center rounded-sm bg-slate-100 px-1 font-normal text-slate-800"
+                                className="inline-flex items-center rounded-sm bg-secondary px-1 font-normal text-foreground"
                             >
                                 {selectedLabel}
                             </span>
@@ -176,35 +176,35 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                 )}
                 
                 {selectedCount > 2 && (
-                    <span className="inline-flex items-center rounded-sm bg-slate-100 px-1 font-normal text-slate-800">
+                    <span className="inline-flex items-center rounded-sm bg-secondary px-1 font-normal text-foreground">
                         {selectedCount} selected
                     </span>
                 )}
                 
                 {selectedCount === 0 && !allowMultiple && (
-                    <span className="font-normal text-slate-500">All</span>
+                    <span className="font-normal text-muted-foreground">All</span>
                 )}
             </button>
 
             {isOpen && typeof document !== 'undefined' && createPortal(
                 <div
                     ref={menuRef}
-                    className="fixed z-[1700] overflow-hidden rounded-md border border-slate-200 bg-white text-slate-950 shadow-md animate-in fade-in-80"
+                    className="fixed z-[1700] overflow-hidden rounded-md border border-border bg-card text-foreground shadow-md animate-in fade-in-80 dark:shadow-none"
                     style={{
                         top: `${menuPosition.top}px`,
                         left: `${menuPosition.left}px`,
                         width: `${menuPosition.width}px`,
                     }}
                 >
-                    <div className="px-2 py-1.5 text-xs font-medium text-slate-500">
+                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
                         {label}
                     </div>
-                    <div className="h-px bg-slate-100" />
+                    <div className="h-px bg-secondary" />
                     <div className="max-h-72 overflow-y-auto p-1">
                         {groupedOptions.map((group, groupIndex) => (
                             <div key={`${label}-${group.id}`}>
                                 {group.label && (
-                                    <div className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                    <div className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                         {group.label}
                                     </div>
                                 )}
@@ -213,7 +213,7 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                                     return (
                                         <label
                                             key={`${label}-${option.value}`}
-                                            className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group"
+                                            className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-secondary hover:text-foreground group"
                                         >
                                             <div className="mr-2 flex size-4 items-center justify-center shrink-0">
                                                 <Checkbox
@@ -225,20 +225,20 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                                             </div>
                                             <span className="truncate">{option.label}</span>
                                             {typeof option.count === 'number' && (
-                                                <span className="ml-auto text-xs text-slate-500">{option.count}</span>
+                                                <span className="ml-auto text-xs text-muted-foreground">{option.count}</span>
                                             )}
                                         </label>
                                     );
                                 })}
                                 {group.label && groupIndex < groupedOptions.length - 1 && (
-                                    <div className="my-1 h-px bg-slate-100" />
+                                    <div className="my-1 h-px bg-secondary" />
                                 )}
                             </div>
                         ))}
                     </div>
                     {allowMultiple && showBulkActions && options.length > 0 && (
                         <>
-                            <div className="h-px bg-slate-100" />
+                            <div className="h-px bg-secondary" />
                             <div className="grid grid-cols-2 gap-1 p-1">
                                 <button
                                     type="button"
@@ -247,7 +247,7 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                                         onSelectedValuesChange(allValues);
                                     }}
                                     disabled={allSelected}
-                                    className="relative flex w-full select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="relative flex w-full select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     {selectAllLabel}
                                 </button>
@@ -257,7 +257,7 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                                         onSelectedValuesChange([]);
                                     }}
                                     disabled={selectedCount === 0}
-                                    className="relative flex w-full select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="relative flex w-full select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     {clearLabel}
                                 </button>

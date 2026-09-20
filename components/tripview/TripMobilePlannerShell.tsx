@@ -313,7 +313,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
             <div
                 ref={mapViewportRef}
                 data-testid="planner-mobile-map-pane"
-                className={`absolute inset-x-0 top-0 bg-gray-100 ${dragHeightPx === null && isHeightAnimated ? 'transition-[bottom] duration-300 ease-out motion-reduce:transition-none' : ''}`}
+                className={`absolute inset-x-0 top-0 bg-secondary ${dragHeightPx === null && isHeightAnimated ? 'transition-[bottom] duration-300 ease-out motion-reduce:transition-none' : ''}`}
                 style={{ bottom: Math.max(0, sheetHeight - MAP_UNDERLAP_PX) }}
             >
                 {mapNode}
@@ -323,7 +323,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                 data-testid="planner-mobile-sheet"
                 data-snap={snap}
                 aria-label="Trip days"
-                className={`absolute inset-x-0 bottom-0 z-[60] flex touch-manipulation flex-col overflow-hidden rounded-t-3xl border-t border-slate-200 bg-white shadow-[0_-12px_40px_rgba(15,23,42,0.18)] ${dragHeightPx === null && isHeightAnimated ? 'transition-[height] duration-300 ease-out motion-reduce:transition-none' : ''}`}
+                className={`absolute inset-x-0 bottom-0 z-[60] flex touch-manipulation flex-col overflow-hidden rounded-t-3xl border-t border-border bg-card shadow-[0_-12px_40px_rgba(15,23,42,0.18)] dark:shadow-[0_-12px_40px_rgba(0,0,0,0.5)] ${dragHeightPx === null && isHeightAnimated ? 'transition-[height] duration-300 ease-out motion-reduce:transition-none' : ''}`}
                 style={{ height: sheetHeight }}
             >
                 <div
@@ -341,11 +341,11 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                         className="absolute left-1/2 top-2.5 h-1.5 w-11 -translate-x-1/2 rounded-full bg-slate-300"
                     />
                     <div className="flex h-9 items-center justify-between">
-                        <div className="inline-flex shrink-0 items-center rounded-full bg-slate-100 p-0.5">
+                        <div className="inline-flex shrink-0 items-center rounded-full bg-secondary p-0.5">
                             <button
                                 type="button"
                                 onClick={() => setPanelMode('days')}
-                                className={`inline-flex size-8 items-center justify-center rounded-full transition-colors ${panelMode === 'days' ? 'bg-white text-accent-600 shadow-sm' : 'text-slate-500'}`}
+                                className={`inline-flex size-8 items-center justify-center rounded-full transition-colors ${panelMode === 'days' ? 'bg-card text-accent-600 shadow-sm dark:text-accent-300 dark:shadow-none' : 'text-muted-foreground'}`}
                                 aria-label="Day by day"
                                 aria-pressed={panelMode === 'days'}
                                 {...getAnalyticsDebugAttributes('trip_view__mobile_panel--days', { trip_id: tripId })}
@@ -355,7 +355,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                             <button
                                 type="button"
                                 onClick={() => setPanelMode('timeline')}
-                                className={`inline-flex size-8 items-center justify-center rounded-full transition-colors ${panelMode === 'timeline' ? 'bg-white text-accent-600 shadow-sm' : 'text-slate-500'}`}
+                                className={`inline-flex size-8 items-center justify-center rounded-full transition-colors ${panelMode === 'timeline' ? 'bg-card text-accent-600 shadow-sm dark:text-accent-300 dark:shadow-none' : 'text-muted-foreground'}`}
                                 aria-label="Full itinerary"
                                 aria-pressed={panelMode === 'timeline'}
                                 {...getAnalyticsDebugAttributes('trip_view__mobile_panel--timeline', { trip_id: tripId })}
@@ -368,7 +368,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                                 type="button"
                                 onClick={onOpenDiscover}
                                 data-testid="mobile-open-discover"
-                                className="ms-auto me-1 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 text-xs font-semibold text-accent-700 transition-colors hover:bg-accent-100"
+                                className="ms-auto me-1 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 text-xs font-semibold text-accent-700 transition-colors hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                                 {...getAnalyticsDebugAttributes('trip_view__recommendations--open', { trip_id: tripId })}
                             >
                                 <Sparkles size={14} />
@@ -379,7 +379,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                             type="button"
                             onClick={toggleSheet}
                             data-testid="planner-mobile-sheet-toggle"
-                            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100"
+                            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary dark:text-foreground"
                             aria-label={isFullyExpanded ? 'Collapse day panel' : 'Expand day panel'}
                             aria-expanded={isFullyExpanded}
                             {...getAnalyticsDebugAttributes('trip_view__mobile_sheet--toggle', { trip_id: tripId })}
@@ -401,7 +401,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                 )}
 
                 {panelMode === 'timeline' && (
-                    <div className="flex shrink-0 justify-end border-t border-slate-100 px-3 py-2">
+                    <div className="flex shrink-0 justify-end border-t border-border px-3 py-2">
                         {timelineControls}
                     </div>
                 )}
@@ -409,7 +409,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                 <div
                     ref={contentRef}
                     data-testid="planner-mobile-day-content"
-                    className={`min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-slate-100 ${isPaywallLocked ? 'pointer-events-none select-none' : ''}`}
+                    className={`min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-border ${isPaywallLocked ? 'pointer-events-none select-none' : ''}`}
                 >
                     {panelMode === 'timeline' ? (
                         <div className="relative h-full w-full">{timelineCanvas}</div>
@@ -423,7 +423,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                             onAddActivity={onAddActivity}
                         />
                     ) : (
-                        <p className="px-4 py-8 text-sm text-slate-500">This trip has no planned days yet.</p>
+                        <p className="px-4 py-8 text-sm text-muted-foreground">This trip has no planned days yet.</p>
                     )}
                 </div>
             </section>

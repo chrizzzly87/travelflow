@@ -105,7 +105,7 @@ const StackCard: React.FC<{
             animate={{ scale: stackScale(depth), y: stackOffset(depth), opacity: 1 }}
             transition={STACK_TRANSITION}
             exit="exit"
-            className={`absolute inset-0 flex select-none flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white ${
+            className={`absolute inset-0 flex select-none flex-col overflow-hidden rounded-3xl border border-border bg-card ${
                 isTop
                     ? 'cursor-grab touch-pan-y shadow-xl active:cursor-grabbing'
                     : 'pointer-events-none shadow-md'
@@ -116,14 +116,14 @@ const StackCard: React.FC<{
                     <m.span
                         aria-hidden="true"
                         style={{ opacity: keepOpacity }}
-                        className="absolute top-4 start-4 z-10 rounded-lg border-[3px] border-emerald-500 bg-white/80 px-2.5 py-0.5 text-sm font-black uppercase tracking-wider text-emerald-600"
+                        className="absolute top-4 start-4 z-10 rounded-lg border-[3px] border-emerald-500 bg-card/80 px-2.5 py-0.5 text-sm font-black uppercase tracking-wider text-emerald-600"
                     >
                         Keep
                     </m.span>
                     <m.span
                         aria-hidden="true"
                         style={{ opacity: skipOpacity }}
-                        className="absolute top-4 end-4 z-10 rounded-lg border-[3px] border-rose-500 bg-white/80 px-2.5 py-0.5 text-sm font-black uppercase tracking-wider text-rose-600"
+                        className="absolute top-4 end-4 z-10 rounded-lg border-[3px] border-rose-500 bg-card/80 px-2.5 py-0.5 text-sm font-black uppercase tracking-wider text-rose-600"
                     >
                         Skip
                     </m.span>
@@ -189,8 +189,8 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
             <div data-testid="recommendation-deck-empty" className="flex flex-1 flex-col items-center justify-center px-6 text-center">
                 {emptyState ?? (
                     <>
-                        <p className="text-base font-semibold text-slate-900">That is everything for now</p>
-                        <p className="mt-1 text-sm text-slate-500">
+                        <p className="text-base font-semibold text-foreground">That is everything for now</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
                             You have been through every idea we have for this trip.
                         </p>
                     </>
@@ -199,7 +199,7 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
                     <button
                         type="button"
                         onClick={onUndo}
-                        className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                        className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
                     >
                         <RotateCcw size={15} />
                         Undo last
@@ -214,7 +214,7 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
             <div className="flex flex-1 flex-col" onKeyDown={handleKeyDown}>
                 <p
                     data-testid="recommendation-remaining"
-                    className="shrink-0 pt-1 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400"
+                    className="shrink-0 pt-1 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
                 >
                     {remainingLabel}
                 </p>
@@ -255,7 +255,7 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
                         type="button"
                         onClick={() => commit(top, 'dismiss')}
                         data-testid="recommendation-dismiss"
-                        className="inline-flex size-14 items-center justify-center rounded-full border-2 border-rose-200 bg-white text-rose-500 shadow-sm transition-transform hover:scale-105 active:scale-95"
+                        className="inline-flex size-14 items-center justify-center rounded-full border-2 border-rose-200 bg-card text-rose-500 shadow-sm transition-transform hover:scale-105 active:scale-95 dark:border-rose-400/30 dark:shadow-none"
                         aria-label={`Skip ${top.title}`}
                         {...getAnalyticsDebugAttributes('trip_view__recommendation--decide', { trip_id: tripId, decision: 'dismiss' })}
                     >
@@ -267,7 +267,7 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
                         onClick={onUndo}
                         disabled={!canUndo || !onUndo}
                         data-testid="recommendation-undo"
-                        className="inline-flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-40"
+                        className="inline-flex size-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:bg-secondary disabled:opacity-40 dark:text-foreground"
                         aria-label="Undo last decision"
                     >
                         <RotateCcw size={16} />
@@ -277,7 +277,7 @@ export const RecommendationSwipeDeck: React.FC<RecommendationSwipeDeckProps> = (
                         type="button"
                         onClick={() => commit(top, 'save')}
                         data-testid="recommendation-save"
-                        className="inline-flex size-14 items-center justify-center rounded-full border-2 border-emerald-200 bg-white text-emerald-600 shadow-sm transition-transform hover:scale-105 active:scale-95"
+                        className="inline-flex size-14 items-center justify-center rounded-full border-2 border-emerald-200 bg-card text-emerald-600 shadow-sm transition-transform hover:scale-105 active:scale-95 dark:border-emerald-400/30 dark:shadow-none"
                         aria-label={`Keep ${top.title}`}
                         {...getAnalyticsDebugAttributes('trip_view__recommendation--decide', { trip_id: tripId, decision: 'save' })}
                     >

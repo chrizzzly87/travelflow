@@ -318,7 +318,7 @@ export const MessageBranchPage = ({
 
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
-// Chat answers are prose and lists: the math, mermaid and shiki plugins only
+// Chat answers are prose dark:prose-invert and lists: the math, mermaid and shiki plugins only
 // added weight and a focus crash inside the panel.
 const streamdownPlugins = { cjk };
 

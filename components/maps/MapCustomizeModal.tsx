@@ -134,7 +134,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
         <button
           type="button"
           onClick={switchToMapbox}
-          className="font-semibold text-accent-700 underline underline-offset-2 hover:text-accent-800"
+          className="font-semibold text-accent-700 underline underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
           {...getAnalyticsDebugAttributes('trip_view__map_customize--switch_mapbox', { surface: 'map_customize' })}
         >
           {key('switchToMapbox', 'Switch to Mapbox')}
@@ -190,7 +190,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
    */
   const presetRow = (
     <div className="pb-3">
-      <span className="mb-1.5 block text-xs font-medium text-slate-600">
+      <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
         {key('presetSet.label', 'Start from')}
       </span>
       <MapSegmentedControl
@@ -216,7 +216,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
         }}
       />
       {activePreferencePreset === null && (
-        <span className="mt-1.5 block text-xs text-slate-500">
+        <span className="mt-1.5 block text-xs text-muted-foreground">
           {key('presetSet.customNote', 'Your own mix of settings.')}
         </span>
       )}
@@ -611,7 +611,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
       onValueChange={(value) => setActiveTab(value as TabKey)}
       className="flex min-h-0 flex-1 flex-col gap-0"
     >
-      <div className="shrink-0 border-b border-slate-100 px-4 pb-3 pt-3">
+      <div className="shrink-0 border-b border-border px-4 pb-3 pt-3">
         {presetRow}
         <TabsList className="w-full">
           {TAB_ORDER.map((tab) => (
@@ -655,10 +655,10 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
           data-testid="map-customize-sheet"
         >
           <div className="flex max-h-[58vh] min-h-0 flex-col">
-            <h2 className="shrink-0 px-4 pb-1 pt-2 text-base font-semibold text-slate-900">{title}</h2>
+            <h2 className="shrink-0 px-4 pb-1 pt-2 text-base font-semibold text-foreground">{title}</h2>
             {tabbedBody}
           </div>
-          <div className="border-t border-slate-200 px-4 py-3">{footer}</div>
+          <div className="border-t border-border px-4 py-3">{footer}</div>
         </DrawerContent>
       </Drawer>
     );
@@ -692,24 +692,24 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
         event.stopPropagation();
         onClose();
       }}
-      className="fixed bottom-24 end-4 top-20 z-[1400] flex w-[min(92vw,380px)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
+      className="fixed bottom-24 end-4 top-20 z-[1400] flex w-[min(92vw,380px)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl dark:shadow-none"
     >
-      <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
+      <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-          <p className="mt-0.5 text-xs text-slate-500">{description}</p>
+          <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
           aria-label={key('close', 'Close')}
-          className="-me-1 -mt-1 inline-flex size-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+          className="-me-1 -mt-1 inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground dark:text-foreground"
         >
           <X size={16} />
         </button>
       </div>
       {tabbedBody}
-      <div className="border-t border-slate-200 px-4 py-3">{footer}</div>
+      <div className="border-t border-border px-4 py-3">{footer}</div>
     </div>
   );
 };

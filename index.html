@@ -32,6 +32,50 @@
     <!-- Default Latin fonts: static preloads start during HTML parse (JS-injected ones start after). -->
     <link rel="preload" href="/fonts/bricolage-grotesque/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/space-grotesk/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <script data-tf-theme-boot>
+      (() => {
+        // Restore the chosen theme before the first paint.
+        //
+        // Inline and synchronous by necessity: marketing routes are prerendered,
+        // so the served HTML is already painted markup and doing this from the
+        // bundle would flash light on every one of them.
+        //
+        // No stored value means "follow the device", which is also the default
+        // for someone who has never touched the toggle.
+        //
+        // Deliberately does NOT seed --background and friends inline. index.css
+        // is a render-blocking <link> in this same <head>, so :root and .dark are
+        // already applied on frame one. Seeding them inline broke light mode
+        // outright once: an inline style outranks every rule, so the dark values
+        // kept winning after `.dark` came off and the page stayed dark forever.
+        //
+        // These literals are duplicated from THEME_BOOT_KEYS in
+        // contexts/theme/themeStore.ts; the unit test asserts they still match.
+        try {
+          let stored = null;
+          try {
+            stored = window.localStorage.getItem('tf_theme_preference_v1');
+          } catch (e) {
+            // Private mode, blocked storage, or a locked-down embed.
+          }
+          const dark =
+            stored === 'dark' ||
+            (stored !== 'light' &&
+              typeof window.matchMedia === 'function' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          const root = document.documentElement;
+          root.setAttribute('data-dark-tone', 'warm');
+          if (dark) {
+            root.classList.add('dark');
+            root.style.colorScheme = 'dark';
+          } else {
+            root.style.colorScheme = 'light';
+          }
+        } catch (e) {
+          // Never let the theme stop the page from rendering.
+        }
+      })();
+    </script>
     <script>
       (() => {
         // The default Latin fonts are statically preloaded above; this script only
@@ -90,8 +134,10 @@
       body {
         overscroll-behavior-y: none;
         margin: 0;
-        background: #ffffff;
-        color: #0f172a;
+        /* Unlayered inline CSS outranks Tailwind's @layer base, so hardcoding
+           white here made body white in dark mode on every route. */
+        background: var(--background, #ffffff);
+        color: var(--foreground, #0f172a);
       }
 
       #root {
@@ -104,15 +150,15 @@
         position: fixed;
         inset: 0;
         z-index: 2147483000;
-        background: #ffffff;
+        background: var(--background, #ffffff);
         overflow: hidden;
       }
 
       .tf-boot-shell {
         min-height: 100vh;
         width: 100%;
-        background: #ffffff;
-        color: #0f172a;
+        background: var(--background, #ffffff);
+        color: var(--foreground, #0f172a);
         font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 
         --tf-bone: #e4eaf2;
@@ -122,8 +168,20 @@
         --tf-bone-accent: rgba(79, 70, 229, 0.14);
       }
 
+      /* The skeleton palette in dark. Named values like the light set above,
+         not alpha arithmetic — and deliberately close together so the loader
+         reads as quiet shapes rather than a set of outlined boxes. */
+      .dark .tf-boot-shell {
+        --tf-bone-sweep: rgba(255, 255, 255, 0.06);
+        --tf-bone: #302e2c;
+        --tf-bone-quiet: #2a2827;
+        --tf-bone-edge: #383533;
+        --tf-bone-hairline: #2c2a29;
+        --tf-bone-accent: rgba(123, 131, 255, 0.18);
+      }
+
       .tf-boot-shell[data-tf-surface-mode="neutral"] {
-        background: #f8fafc;
+        background: var(--secondary, #f8fafc);
       }
 
       /*
@@ -147,7 +205,7 @@
         background-image: linear-gradient(
           90deg,
           rgba(255, 255, 255, 0) 0%,
-          rgba(255, 255, 255, 0.72) 50%,
+          var(--tf-bone-sweep, rgba(255, 255, 255, 0.72)) 50%,
           rgba(255, 255, 255, 0) 100%
         );
         transform: translate3d(-160%, 0, 0);
@@ -171,7 +229,7 @@
 
       .tf-boot-header {
         border-bottom: 1px solid rgba(226, 232, 240, 0.7);
-        background: rgba(255, 255, 255, 0.9);
+        background: color-mix(in oklab, var(--card, #fff) 90%, transparent);
         backdrop-filter: blur(8px);
       }
 
@@ -273,7 +331,7 @@
       .tf-boot-control-skeleton--cta {
         width: 68px;
         height: 12px;
-        background-color: rgba(255, 255, 255, 0.72);
+        background-color: color-mix(in oklab, var(--card, #fff) 72%, transparent);
       }
 
       .tf-boot-control-skeleton--cta::after {
@@ -314,7 +372,7 @@
         justify-content: center;
         flex: 0 0 auto;
         border: 1px solid #e2e8f0;
-        background-color: rgba(255, 255, 255, 0.96);
+        background-color: color-mix(in oklab, var(--card, #fff) 96%, transparent);
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
         border-radius: 8px;
         white-space: nowrap;
@@ -371,7 +429,7 @@
 
       .tf-boot-trip-header {
         border-bottom: 1px solid #e5e7eb;
-        background: #ffffff;
+        background: var(--background, #ffffff);
       }
 
       .tf-boot-trip-header-inner {
@@ -457,7 +515,7 @@
         display: flex;
         height: calc(100vh - 76px);
         height: calc(100dvh - 76px);
-        background: #ffffff;
+        background: var(--background, #ffffff);
         /* `both` holds the placeholders invisible through the delay, so a load
            that resolves inside ~150ms never flashes a skeleton at all.
            --tf-boot-epoch discounts the time an earlier shell in the same
@@ -520,7 +578,7 @@
         width: 40px;
         border-radius: 8px;
         border: 1px solid var(--tf-bone-edge);
-        background: #ffffff;
+        background: var(--background, #ffffff);
         box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07);
       }
 
@@ -535,7 +593,7 @@
         min-width: 0;
         min-height: 0;
         overflow: hidden;
-        background: #ffffff;
+        background: var(--background, #ffffff);
         border-inline-end: 1px solid #e5e7eb;
       }
 
@@ -688,7 +746,7 @@
         border-top: 1px solid #e2e8f0;
         border-start-start-radius: 24px;
         border-start-end-radius: 24px;
-        background: #ffffff;
+        background: var(--background, #ffffff);
         box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.18);
       }
 
@@ -778,7 +836,7 @@
         align-items: center;
         justify-content: center;
         border: 2px solid var(--tf-bone-edge);
-        background: #ffffff;
+        background: var(--background, #ffffff);
       }
 
       .tf-boot-sheet-day-weekday {

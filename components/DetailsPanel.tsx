@@ -1350,8 +1350,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const effectiveColor = isActivity ? getActivityColorByTypes(displayItem.activityType) : displayItem.color;
   const usesClassColor = (isActivity || isTransport) ? true : isTailwindCityColorValue(effectiveColor);
   const colorParts = usesClassColor && effectiveColor ? effectiveColor.split(' ') : [];
-  const bgClass = colorParts.find(part => part.startsWith('bg-')) || 'bg-gray-100';
-  const textClass = colorParts.find(part => part.startsWith('text-')) || 'text-gray-800';
+  const bgClass = colorParts.find(part => part.startsWith('bg-')) || 'bg-secondary';
+  const textClass = colorParts.find(part => part.startsWith('text-')) || 'text-foreground';
   const effectiveColorHex = getHexFromColorClass(effectiveColor || '');
   const customBadgeBackgroundColor = shiftHexColor(effectiveColorHex, 52);
   const effectiveTextColor = getContrastTextColor(customBadgeBackgroundColor);
@@ -1366,10 +1366,10 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const isItemApproved = supportsApproval ? displayItem.isApproved !== false : true;
 
   const Content = (
-      <div className={`flex flex-col size-full min-w-0 bg-gray-50 ${variant === 'sidebar' ? 'border-l border-gray-200' : 'rounded-t-[20px] sm:rounded-2xl'}`}>
+      <div className={`flex flex-col size-full min-w-0 bg-secondary ${variant === 'sidebar' ? 'border-l border-border' : 'rounded-t-[20px] sm:rounded-2xl'}`}>
           <style>{`.pac-container { z-index: 10000 !important; }`}</style>
           {/* Header */}
-          <div className="bg-white p-4 sm:p-6 border-b border-gray-100 pb-6 relative flex-shrink-0">
+          <div className="bg-card p-4 sm:p-6 border-b border-border pb-6 relative flex-shrink-0">
              {variant === 'overlay' && (
                 <div
                     className="w-full flex sm:hidden items-center justify-center p-3 cursor-grab absolute top-0 left-0 right-0"
@@ -1396,15 +1396,15 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button type="button"
                                 onClick={() => { if (!canEdit) return; setIsColorPickerOpen(!isColorPickerOpen); }}
                                 disabled={!canEdit}
-                                className={`p-1 rounded-full text-gray-400 transition-colors ${canEdit ? 'hover:bg-gray-100 hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1 rounded-full text-muted-foreground transition-colors ${canEdit ? 'hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                                 aria-label={isColorPickerOpen ? 'Close color picker' : 'Open color picker'}
                             >
                                 <Palette size={14} />
                             </button>
                             {isColorPickerOpen && (
-                                <div className="absolute top-full left-0 mt-2 p-3 bg-white rounded-xl shadow-xl border border-gray-100 z-50 w-[280px] space-y-3">
+                                <div className="absolute top-full left-0 mt-2 p-3 bg-card rounded-xl shadow-xl border border-border z-50 w-[280px] space-y-3 dark:shadow-none">
                                     <div>
-                                        <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Palettes</div>
+                                        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Palettes</div>
                                         <div className="grid grid-cols-2 gap-2">
                                             {CITY_COLOR_PALETTES.map((palette) => (
                                                 <button
@@ -1412,7 +1412,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                                     type="button"
                                                     onClick={() => { void handlePaletteSelection(palette.id); }}
                                                     disabled={!canEdit}
-                                                    className={`rounded-lg border p-1 transition-colors ${cityColorPaletteId === palette.id ? 'border-accent-400 bg-accent-50' : 'border-gray-200 hover:border-gray-300'} ${canEdit ? '' : 'opacity-50 cursor-not-allowed'}`}
+                                                    className={`rounded-lg border p-1 transition-colors ${cityColorPaletteId === palette.id ? 'border-accent-400 bg-accent-50 dark:bg-accent-400/12' : 'border-border hover:border-border'} ${canEdit ? '' : 'opacity-50 cursor-not-allowed'}`}
                                                     title={palette.name}
                                                 >
                                                     <div className="flex h-5 w-full gap-[2px]">
@@ -1430,7 +1430,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                     </div>
 
                                     <div>
-                                        <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Palette colors</div>
+                                        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Palette colors</div>
                                         <div className="grid grid-cols-8 gap-1.5">
                                             {activeCityPalette.colors.map((paletteColor) => {
                                                 const normalizedSwatchHex = getHexFromColorClass(paletteColor).toLowerCase();
@@ -1441,7 +1441,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                                         onClick={() => { if (!canEdit) return; handleUpdate(displayItem.id, { color: paletteColor }); }}
                                                         disabled={!canEdit}
                                                         aria-label={`Apply palette color ${normalizedSwatchHex}`}
-                                                        className={`size-6 rounded-full border-2 transition-transform ${isSelected ? 'border-gray-900 shadow-inner' : 'border-transparent'} ${canEdit ? 'hover:scale-110 hover:border-gray-200' : 'opacity-50 cursor-not-allowed'}`}
+                                                        className={`size-6 rounded-full border-2 transition-transform ${isSelected ? 'border-gray-900 shadow-inner' : 'border-transparent'} ${canEdit ? 'hover:scale-110 hover:border-border' : 'opacity-50 cursor-not-allowed'}`}
                                                         style={{ backgroundColor: paletteColor }}
                                                         title="Palette color"
                                                     />
@@ -1450,8 +1450,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2 border-t border-gray-100 pt-3">
-                                        <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Custom color</div>
+                                    <div className="space-y-2 border-t border-border pt-3">
+                                        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Custom color</div>
                                         <HexColorPicker
                                             color={customColorHex}
                                             onChange={(nextColor) => {
@@ -1471,7 +1471,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                                     if (customColorError) setCustomColorError(null);
                                                 }}
                                                 placeholder="#F43F5E or rgb(244,63,94)"
-                                                className="flex-1 rounded-md border border-gray-200 px-2 py-1.5 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-accent-400"
+                                                className="flex-1 rounded-md border border-border px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent-400"
                                             />
                                             <button
                                                 type="button"
@@ -1496,7 +1496,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                           <button type="button"
                               onClick={() => { if (!canEdit) return; handleDeleteItem(displayItem.id); handleClosePanel(); }}
                               disabled={!canEdit}
-                              className={`p-2 bg-red-50 text-red-500 rounded-full transition-colors sm:hidden ${canEdit ? 'hover:bg-red-100' : 'opacity-50 cursor-not-allowed'}`}
+                              className={`p-2 bg-red-50 text-red-500 rounded-full transition-colors sm:hidden ${canEdit ? 'hover:bg-red-100 dark:hover:bg-red-400/12' : 'opacity-50 cursor-not-allowed'}`}
                               aria-label="Delete item"
                           >
                               <Trash2 size={20} />
@@ -1510,13 +1510,13 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                           </button>
                       </>
                   )}
-                  {variant === 'overlay' && <div className="hidden sm:flex absolute top-4 right-4 z-10"><button type="button" onClick={handleClosePanel} className="p-2 bg-gray-200 hover:bg-gray-300 rounded-full text-gray-600" aria-label="Close details"><X size={18} /></button></div>}
+                  {variant === 'overlay' && <div className="hidden sm:flex absolute top-4 right-4 z-10"><button type="button" onClick={handleClosePanel} className="p-2 bg-gray-200 hover:bg-gray-300 rounded-full text-muted-foreground" aria-label="Close details"><X size={18} /></button></div>}
                   {variant === 'sidebar' && (
                       <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 flex items-center gap-5">
                           <button type="button"
                               onClick={() => { if (!canEdit) return; handleDeleteItem(displayItem.id); handleClosePanel(); }}
                               disabled={!canEdit}
-                              className={`p-2 bg-red-50 text-red-500 rounded-full transition-colors ${canEdit ? 'hover:bg-red-100' : 'opacity-50 cursor-not-allowed'}`}
+                              className={`p-2 bg-red-50 text-red-500 rounded-full transition-colors ${canEdit ? 'hover:bg-red-100 dark:hover:bg-red-400/12' : 'opacity-50 cursor-not-allowed'}`}
                               aria-label="Delete item"
                               title="Delete"
                           >
@@ -1524,7 +1524,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                           </button>
                           <button type="button"
                               onClick={handleClosePanel}
-                              className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500"
+                              className="p-2 bg-secondary hover:bg-gray-200 rounded-full text-muted-foreground dark:text-foreground"
                               aria-label="Close details"
                               title="Close"
                           >
@@ -1538,13 +1538,13 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
 	                value={displayItem.title}
                 onChange={canEdit ? ((e) => handleUpdate(displayItem.id, { title: e.target.value })) : undefined}
                 readOnly={!canEdit}
-                className={`text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent border-none placeholder-gray-300 focus:ring-0 p-0 w-full resize-none overflow-hidden leading-tight ${canEdit ? '' : 'cursor-not-allowed opacity-70'}`}
+                className={`text-2xl sm:text-3xl font-bold text-foreground bg-transparent border-none placeholder-gray-300 focus:ring-0 p-0 w-full resize-none overflow-hidden leading-tight ${canEdit ? '' : 'cursor-not-allowed opacity-70'}`}
                 rows={1} placeholder="Title"
                 style={{ fieldSizing: 'content', minHeight: '2.5rem' } as any}
              />
 
              <div className="flex flex-col gap-3 mt-4">
-                 <div className="flex items-start text-gray-600">
+                 <div className="flex items-start text-muted-foreground">
                     <Clock size={18} className="mr-3 text-accent-500 mt-0.5" />
                     {isTransport ? (
                         <div className="flex flex-col gap-1">
@@ -1556,13 +1556,13 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                     value={Math.round(displayItem.duration * 24 * 10) / 10}
                                     onChange={canEdit ? ((e) => { const h = parseFloat(e.target.value); if (!isNaN(h) && h > 0) handleUpdate(displayItem.id, { duration: h / 24 }); }) : undefined}
                                     disabled={!canEdit}
-                                    className={`h-auto w-16 rounded-none border-0 border-b border-gray-300 bg-transparent px-0 py-1 text-center font-bold text-gray-900 shadow-none ring-0 ${canEdit ? 'focus-visible:border-accent-500' : 'cursor-not-allowed opacity-70'}`}
-                                    overlayClassName="justify-center px-0 font-bold text-gray-900"
+                                    className={`h-auto w-16 rounded-none border-0 border-b border-border bg-transparent px-0 py-1 text-center font-bold text-foreground shadow-none ring-0 ${canEdit ? 'focus-visible:border-accent-500' : 'cursor-not-allowed opacity-70'}`}
+                                    overlayClassName="justify-center px-0 font-bold text-foreground"
                                     format={{ maximumFractionDigits: 1 }}
                                 />
                                 <span className="font-medium text-sm">hours</span>
                             </div>
-                            <span className="text-[11px] text-gray-400">
+                            <span className="text-[11px] text-muted-foreground">
                                 Estimated {estimatedLabel ?? '—'}
                             </span>
                         </div>
@@ -1577,7 +1577,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 <button type="button"
                                     onClick={openDurationEditor}
                                     disabled={!canEdit}
-                                    className={`p-1 rounded text-gray-400 transition-colors ${canEdit ? 'hover:bg-gray-100 hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                    className={`p-1 rounded text-muted-foreground transition-colors ${canEdit ? 'hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                                     title="Edit duration"
                                     aria-label="Edit duration"
                                 >
@@ -1588,12 +1588,12 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     )}
                  </div>
                  {isTransport && (
-                    <div className="flex items-start text-gray-600">
+                    <div className="flex items-start text-muted-foreground">
                         <MapPin size={18} className="mr-3 text-accent-500 mt-0.5" />
                         <div className="flex flex-col gap-0.5">
                             <span className="font-medium">Air distance: {airDistanceLabel ?? '—'}</span>
                             {showRouteDistance && (
-                                <span className="text-[11px] text-gray-400">
+                                <span className="text-[11px] text-muted-foreground">
                                     Route distance ({routeModeLabel}): {routeDistanceText}
                                 </span>
                             )}
@@ -1601,14 +1601,14 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     </div>
                  )}
                  {(isCity || isActivity || displayItem.location) && (
-                    <div className="flex items-start text-gray-600">
+                    <div className="flex items-start text-muted-foreground">
                         <MapPin size={18} className="mr-3 text-accent-500 mt-0.5" />
                         <div className="min-w-0">
                             <div className="flex items-center gap-2">
                                 {countryCodeForDisplay && !(isActivity && !displayedActivityLocation) && (
                                     <FlagIcon code={countryCodeForDisplay} size="sm" fallback={null} />
                                 )}
-                                <span className={`font-medium ${isActivity && !displayedActivityLocation ? 'text-gray-400' : ''}`}>
+                                <span className={`font-medium ${isActivity && !displayedActivityLocation ? 'text-muted-foreground' : ''}`}>
                                     {isCity
                                         ? (cityDisplayName || 'No city selected')
                                         : isActivity
@@ -1619,7 +1619,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                     <button type="button"
                                         onClick={openCityEditor}
                                         disabled={!canEdit}
-                                        className={`p-1 rounded text-gray-400 transition-colors ${canEdit ? 'hover:bg-gray-100 hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                        className={`p-1 rounded text-muted-foreground transition-colors ${canEdit ? 'hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                                         title="Edit city"
                                     >
                                         <Pencil size={13} />
@@ -1629,7 +1629,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                     <button type="button"
                                         onClick={openActivityLocationEditor}
                                         disabled={!canEdit}
-                                        className={`p-1 rounded text-gray-400 transition-colors ${canEdit ? 'hover:bg-gray-100 hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                        className={`p-1 rounded text-muted-foreground transition-colors ${canEdit ? 'hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                                         title="Edit location"
                                         aria-label="Edit location"
                                     >
@@ -1638,7 +1638,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 )}
                             </div>
                             {isCity && countryNameForDisplay && (
-                                <div className="text-xs text-gray-500 mt-0.5">{countryNameForDisplay}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5">{countryNameForDisplay}</div>
                             )}
                             <MapAppLinks
                                 title={isCity ? (cityDisplayName || displayItem.title) : displayItem.title}
@@ -1650,7 +1650,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 className="mt-2"
                             />
                             {supportsApproval && (
-                                <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
+                                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                                     <Switch
                                         checked={isItemApproved}
                                         onCheckedChange={handleSetItemApproved}
@@ -1670,34 +1670,34 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
           {/* Body */}
           <div className="p-4 sm:p-6 space-y-6 flex-1 overflow-y-auto min-w-0">
              {isActivity && isDurationEditorOpen && (
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+                <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4 dark:shadow-none">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
-                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Schedule</h3>
-                        <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Schedule</h3>
+                        <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded dark:bg-accent-400/12 dark:text-accent-300">
                             {formatActivityDuration(previewDuration)}
                         </div>
                     </div>
                     <div className="flex items-center justify-between">
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase">Day {activityDayNumber}</span>
-                            <span className="text-sm font-bold text-gray-800">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">Day {activityDayNumber}</span>
+                            <span className="text-sm font-bold text-foreground">
                                 {isValidDate ? formatDate(itemStartDate) : '—'}
                             </span>
                         </div>
-                        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
+                        <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
                             <button type="button"
                                 onClick={() => updateActivityDayDraft(-1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                                 aria-label="Move activity one day earlier"
                             >
                                 <Minus size={14} />
                             </button>
-                            <span className="text-[10px] font-bold text-gray-400 px-1 select-none">DAY</span>
+                            <span className="text-[10px] font-bold text-muted-foreground px-1 select-none">DAY</span>
                             <button type="button"
                                 onClick={() => updateActivityDayDraft(1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                                 aria-label="Move activity one day later"
                             >
                                 <Plus size={14} />
@@ -1706,8 +1706,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     </div>
                     <div className="flex items-center justify-between">
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase">Duration</span>
-                            <span className="text-sm font-bold text-gray-800">{formatActivityDuration(previewDuration)}</span>
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">Duration</span>
+                            <span className="text-sm font-bold text-foreground">{formatActivityDuration(previewDuration)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <NumberInput
@@ -1720,17 +1720,17 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 }) : undefined}
                                 disabled={!canEdit}
                                 aria-label="Activity duration in hours"
-                                className={`h-auto w-16 rounded-none border-0 border-b border-gray-300 bg-transparent px-0 py-1 text-center font-bold text-gray-900 shadow-none ring-0 ${canEdit ? 'focus-visible:border-accent-500' : 'cursor-not-allowed opacity-70'}`}
-                                overlayClassName="justify-center px-0 font-bold text-gray-900"
+                                className={`h-auto w-16 rounded-none border-0 border-b border-border bg-transparent px-0 py-1 text-center font-bold text-foreground shadow-none ring-0 ${canEdit ? 'focus-visible:border-accent-500' : 'cursor-not-allowed opacity-70'}`}
+                                overlayClassName="justify-center px-0 font-bold text-foreground"
                                 format={{ maximumFractionDigits: 1 }}
                             />
-                            <span className="font-medium text-sm text-gray-600">hours</span>
+                            <span className="font-medium text-sm text-muted-foreground">hours</span>
                         </div>
                     </div>
                     <div className="pt-2 border-t border-gray-50 flex items-center justify-end gap-2">
                         <button type="button"
                             onClick={() => closeDurationEditor()}
-                            className={`px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-md ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
+                            className={`px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-card border border-border rounded-md ${canEdit ? 'hover:bg-secondary' : 'opacity-50 cursor-not-allowed'}`}
                             disabled={!canEdit}
                         >
                             Cancel
@@ -1740,7 +1740,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                                 canEdit && hasDurationDraftChanges
                                     ? 'text-white bg-accent-600 hover:bg-accent-700'
-                                    : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                                    : 'text-muted-foreground bg-secondary cursor-not-allowed'
                             }`}
                             disabled={!canEdit || !hasDurationDraftChanges}
                         >
@@ -1751,10 +1751,10 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isActivity && isActivityLocationEditorOpen && (
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+                <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4 dark:shadow-none">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
-                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Location</h3>
-                        <div className="text-xs text-gray-500">Search with Google Places</div>
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Location</h3>
+                        <div className="text-xs text-muted-foreground">Search with Google Places</div>
                     </div>
                     <div className="relative">
                         <input
@@ -1765,35 +1765,35 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             onChange={canEdit ? ((e) => handleActivityLocationInputChange(e.target.value)) : undefined}
                             placeholder="e.g. Fushimi Inari Shrine, Kyoto"
                             disabled={!canEdit}
-                            className={`w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none ${canEdit ? 'focus:ring-1 focus:ring-accent-500' : 'opacity-60 cursor-not-allowed'}`}
+                            className={`w-full pl-10 pr-4 py-3 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none ${canEdit ? 'focus:ring-1 focus:ring-accent-500' : 'opacity-60 cursor-not-allowed'}`}
                         />
-                        <Search size={14} className="absolute left-3 top-3.5 text-gray-400" />
+                        <Search size={14} className="absolute left-3 top-3.5 text-muted-foreground" />
                     </div>
                     {(isSearchingActivityLocations || activityLocationSuggestions.length > 0) && (
-                        <div className="mt-2 rounded-lg border border-gray-200 bg-white shadow-sm max-h-44 overflow-y-auto">
+                        <div className="mt-2 rounded-lg border border-border bg-card shadow-sm max-h-44 overflow-y-auto dark:shadow-none">
                             {isSearchingActivityLocations && (
-                                <div className="px-3 py-2 text-xs text-gray-500">Searching places…</div>
+                                <div className="px-3 py-2 text-xs text-muted-foreground">Searching places…</div>
                             )}
                             {!isSearchingActivityLocations && activityLocationSuggestions.map((suggestion) => (
                                 <button
                                     key={suggestion.id}
                                     type="button"
                                     onClick={() => handleSelectActivityLocationSuggestion(suggestion)}
-                                    className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                                    className="w-full text-left px-3 py-2 hover:bg-secondary border-b border-border last:border-b-0"
                                 >
-                                    <div className="text-sm font-semibold text-gray-800">{suggestion.name}</div>
-                                    <div className="text-xs text-gray-500 truncate">{suggestion.label}</div>
+                                    <div className="text-sm font-semibold text-foreground">{suggestion.name}</div>
+                                    <div className="text-xs text-muted-foreground truncate">{suggestion.label}</div>
                                 </button>
                             ))}
                         </div>
                     )}
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                         Pick a suggestion to store the exact spot, or keep your own wording and apply.
                     </p>
                     <div className="pt-2 border-t border-gray-50 flex items-center justify-end gap-2">
                         <button type="button"
                             onClick={closeActivityLocationEditor}
-                            className={`px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-md ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
+                            className={`px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-card border border-border rounded-md ${canEdit ? 'hover:bg-secondary' : 'opacity-50 cursor-not-allowed'}`}
                             disabled={!canEdit}
                         >
                             Cancel
@@ -1803,7 +1803,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                                 canEdit && hasActivityLocationDraftChanges
                                     ? 'text-white bg-accent-600 hover:bg-accent-700'
-                                    : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                                    : 'text-muted-foreground bg-secondary cursor-not-allowed'
                             }`}
                             disabled={!canEdit || !hasActivityLocationDraftChanges}
                         >
@@ -1814,16 +1814,16 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isCity && isValidDate && isDurationEditorOpen && (
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+                <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4 dark:shadow-none">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
-                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Schedule</h3>
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Schedule</h3>
                         <div className="flex items-center gap-2">
-                            <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded">{Number(previewDuration.toFixed(1))} Nights</div>
+                            <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded dark:bg-accent-400/12 dark:text-accent-300">{Number(previewDuration.toFixed(1))} Nights</div>
                             {onForceFill && forceFillLabel && (
                                 <button type="button"
                                     onClick={() => { if (!canEdit) return; handleForceFillDraft(); }}
                                     disabled={!canEdit}
-                                    className={`px-2 py-1 rounded text-gray-500 flex items-center gap-1 text-[10px] font-semibold ${canEdit ? 'hover:bg-gray-100 hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                    className={`px-2 py-1 rounded text-muted-foreground flex items-center gap-1 text-[10px] font-semibold ${canEdit ? 'hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                                     title={forceFillLabel || 'Occupy available space'}
                                 >
                                     {(forceFillMode === 'shrink') ? <Minimize size={12} /> : <Maximize size={12} />}
@@ -1834,22 +1834,22 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     </div>
                     <div className="flex items-center justify-between">
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase">Arrival</span>
-                            <span className="text-sm font-bold text-gray-800">{formatDate(itemStartDate)}</span>
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">Arrival</span>
+                            <span className="text-sm font-bold text-foreground">{formatDate(itemStartDate)}</span>
                         </div>
-                        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
+                        <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
                             <button type="button"
                                 onClick={() => updateDurationStartDraft(-1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Minus size={14} />
                             </button>
-                            <span className="text-[10px] font-bold text-gray-400 px-1 select-none">START</span>
+                            <span className="text-[10px] font-bold text-muted-foreground px-1 select-none">START</span>
                             <button type="button"
                                 onClick={() => updateDurationStartDraft(1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Plus size={14} />
                             </button>
@@ -1857,22 +1857,22 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     </div>
                     <div className="flex items-center justify-between">
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase">Departure</span>
-                            <span className="text-sm font-bold text-gray-800">{formatDate(itemEndDate)}</span>
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">Departure</span>
+                            <span className="text-sm font-bold text-foreground">{formatDate(itemEndDate)}</span>
                         </div>
-                        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
+                        <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
                             <button type="button"
                                 onClick={() => updateDurationEndDraft(-1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Minus size={14} />
                             </button>
-                            <span className="text-[10px] font-bold text-gray-400 px-1 select-none">END</span>
+                            <span className="text-[10px] font-bold text-muted-foreground px-1 select-none">END</span>
                             <button type="button"
                                 onClick={() => updateDurationEndDraft(1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-muted-foreground ${canEdit ? 'hover:bg-card hover:shadow-sm hover:text-accent-600 dark:hover:text-accent-300' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Plus size={14} />
                             </button>
@@ -1881,7 +1881,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     <div className="pt-2 border-t border-gray-50 flex items-center justify-end gap-2">
                         <button type="button"
                             onClick={closeDurationEditor}
-                            className={`px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-md ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
+                            className={`px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-card border border-border rounded-md ${canEdit ? 'hover:bg-secondary' : 'opacity-50 cursor-not-allowed'}`}
                             disabled={!canEdit}
                         >
                             Cancel
@@ -1891,7 +1891,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                                 canEdit && hasDurationDraftChanges
                                     ? 'text-white bg-accent-600 hover:bg-accent-700'
-                                    : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                                    : 'text-muted-foreground bg-secondary cursor-not-allowed'
                             }`}
                             disabled={!canEdit || !hasDurationDraftChanges}
                         >
@@ -1902,13 +1902,13 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isCity && isCityEditorOpen && (
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+                <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4 dark:shadow-none">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
-                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">City</h3>
-                        <div className="text-xs text-gray-500">Search with Google Places</div>
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">City</h3>
+                        <div className="text-xs text-muted-foreground">Search with Google Places</div>
                     </div>
                     {citySearchError && (
-                        <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-700 flex items-start gap-2">
+                        <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-700 flex items-start gap-2 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/25">
                             <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
                             <div>{citySearchError}</div>
                         </div>
@@ -1922,35 +1922,35 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             onChange={canEdit ? ((e) => handleCityInputChange(e.target.value)) : undefined}
                             placeholder="e.g. Kyoto, Japan"
                             disabled={!canEdit}
-                            className={`w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none ${canEdit ? 'focus:ring-1 focus:ring-accent-500' : 'opacity-60 cursor-not-allowed'}`}
+                            className={`w-full pl-10 pr-4 py-3 bg-secondary border border-border rounded-xl text-sm text-foreground outline-none ${canEdit ? 'focus:ring-1 focus:ring-accent-500' : 'opacity-60 cursor-not-allowed'}`}
                         />
-                        <Search size={14} className="absolute left-3 top-3.5 text-gray-400" />
+                        <Search size={14} className="absolute left-3 top-3.5 text-muted-foreground" />
                     </div>
                     {(isSearchingCities || citySuggestions.length > 0) && (
-                        <div className="mt-2 rounded-lg border border-gray-200 bg-white shadow-sm max-h-44 overflow-y-auto">
+                        <div className="mt-2 rounded-lg border border-border bg-card shadow-sm max-h-44 overflow-y-auto dark:shadow-none">
                             {isSearchingCities && (
-                                <div className="px-3 py-2 text-xs text-gray-500">Searching cities…</div>
+                                <div className="px-3 py-2 text-xs text-muted-foreground">Searching cities…</div>
                             )}
                             {!isSearchingCities && citySuggestions.map((suggestion) => (
                                 <button
                                     key={suggestion.id}
                                     type="button"
                                     onClick={() => handleSelectCitySuggestion(suggestion)}
-                                    className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                                    className="w-full text-left px-3 py-2 hover:bg-secondary border-b border-border last:border-b-0"
                                 >
-                                    <div className="text-sm font-semibold text-gray-800">{suggestion.name}</div>
-                                    <div className="text-xs text-gray-500 truncate">{suggestion.label}</div>
+                                    <div className="text-sm font-semibold text-foreground">{suggestion.name}</div>
+                                    <div className="text-xs text-muted-foreground truncate">{suggestion.label}</div>
                                 </button>
                             ))}
                         </div>
                     )}
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                         Search for a city and pick a suggestion, then apply.
                     </p>
                     <div className="pt-2 border-t border-gray-50 flex items-center justify-end gap-2">
                         <button type="button"
                             onClick={closeCityEditor}
-                            className={`px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-md ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
+                            className={`px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-card border border-border rounded-md ${canEdit ? 'hover:bg-secondary' : 'opacity-50 cursor-not-allowed'}`}
                             disabled={!canEdit}
                         >
                             Cancel
@@ -1967,19 +1967,19 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isCity && (
-                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                 <div className="bg-card p-5 rounded-2xl shadow-sm border border-border dark:shadow-none">
                      <div className="flex justify-between items-center mb-4">
-                         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5"><Hotel size={14} /> Accomodation</h3>
+                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5"><Hotel size={14} /> Accomodation</h3>
                          <button type="button"
                              onClick={addHotel}
                              disabled={!canEdit}
-                             className={`text-accent-600 p-1 rounded transition-colors text-xs font-medium ${canEdit ? 'hover:text-accent-800 hover:bg-accent-50' : 'opacity-50 cursor-not-allowed'}`}
+                             className={`text-accent-600 p-1 rounded transition-colors text-xs font-medium ${canEdit ? 'hover:text-accent-800 hover:bg-accent-50 dark:hover:bg-accent-400/12 dark:hover:text-accent-200' : 'opacity-50 cursor-not-allowed'}`}
                          >
                              + Manual
                          </button>
                      </div>
                      <div className="mb-4 relative">
-                        {hotelSearchUnavailable ? <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 flex items-start gap-2"><AlertTriangle size={14} className="mt-0.5 flex-shrink-0" /><div><strong>Maps Search Unavailable</strong><br/>Try again in a moment or add hotels manually.</div></div> : (
+                        {hotelSearchUnavailable ? <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 flex items-start gap-2 dark:bg-red-400/12 dark:border-red-400/25"><AlertTriangle size={14} className="mt-0.5 flex-shrink-0" /><div><strong>Maps Search Unavailable</strong><br/>Try again in a moment or add hotels manually.</div></div> : (
                             <>
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
@@ -1996,9 +1996,9 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                             }) : undefined}
                                             placeholder="Search hotels…"
                                             disabled={!canEdit}
-                                            className={`w-full pl-8 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 outline-none ${canEdit ? 'focus:ring-1 focus:ring-accent-500' : 'opacity-60 cursor-not-allowed'}`}
+                                            className={`w-full pl-8 pr-4 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground outline-none ${canEdit ? 'focus:ring-1 focus:ring-accent-500' : 'opacity-60 cursor-not-allowed'}`}
                                         />
-                                        <Search size={14} className="absolute left-2.5 top-2.5 text-gray-400" />
+                                        <Search size={14} className="absolute left-2.5 top-2.5 text-muted-foreground" />
                                     </div>
                                     <button type="button"
                                         onClick={() => void handleHotelSearch()}
@@ -2016,10 +2016,10 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                                 type="button"
                                                 onClick={() => selectHotelResult(result)}
                                                 disabled={!canEdit}
-                                                className={`w-full text-left bg-gray-50 border border-gray-200 rounded-lg p-2 transition-all ${canEdit ? 'hover:bg-accent-50 hover:border-accent-200 cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
+                                                className={`w-full text-left bg-secondary border border-border rounded-lg p-2 transition-all ${canEdit ? 'hover:bg-accent-50 hover:border-accent-200 cursor-pointer dark:hover:bg-accent-400/12 dark:hover:border-accent-400/30' : 'cursor-not-allowed opacity-60'}`}
                                             >
-                                                <div className="font-bold text-sm text-gray-800">{result.name}</div>
-                                                <div className="text-xs text-gray-500 truncate">{result.address}</div>
+                                                <div className="font-bold text-sm text-foreground">{result.name}</div>
+                                                <div className="text-xs text-muted-foreground truncate">{result.address}</div>
                                             </button>
                                         ))}
                                     </div>
@@ -2029,7 +2029,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                      </div>
                      <div className="space-y-6">
                         {displayItem.hotels?.map((hotel) => (
-                            <div key={hotel.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200 group">
+                            <div key={hotel.id} className="bg-secondary rounded-lg p-3 border border-border group">
                                 <div className="flex justify-between items-start mb-2">
 	                                    <input
 	                                        type="text"
@@ -2039,18 +2039,18 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                         placeholder="Hotel Name"
                                         readOnly={!canEdit}
                                         disabled={!canEdit}
-                                        className={`font-bold text-gray-800 bg-transparent border-none p-0 focus:ring-0 w-full placeholder-gray-400 text-sm ${canEdit ? '' : 'cursor-not-allowed opacity-70'}`}
+                                        className={`font-bold text-foreground bg-transparent border-none p-0 focus:ring-0 w-full placeholder-gray-400 text-sm ${canEdit ? '' : 'cursor-not-allowed opacity-70'}`}
                                     />
                                     <button type="button"
                                         onClick={() => removeHotel(hotel.id)}
                                         disabled={!canEdit}
-                                        className={`text-gray-400 opacity-0 group-hover:opacity-100 ${canEdit ? 'hover:text-red-500' : 'opacity-50 cursor-not-allowed'}`}
+                                        className={`text-muted-foreground opacity-0 group-hover:opacity-100 ${canEdit ? 'hover:text-red-500' : 'opacity-50 cursor-not-allowed'}`}
                                     >
                                         <Trash2 size={14} />
                                     </button>
                                 </div>
                                 <div className="flex items-start gap-2 mb-3">
-                                    <MapPin size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                                    <MapPin size={14} className="text-muted-foreground mt-0.5 flex-shrink-0" />
 	                                    <input
 	                                        type="text"
 	                                        aria-label="Hotel address"
@@ -2059,11 +2059,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                         placeholder="Address"
                                         readOnly={!canEdit}
                                         disabled={!canEdit}
-                                        className={`text-xs text-gray-600 bg-transparent border-none p-0 focus:ring-0 w-full placeholder-gray-400 ${canEdit ? '' : 'cursor-not-allowed opacity-70'}`}
+                                        className={`text-xs text-muted-foreground bg-transparent border-none p-0 focus:ring-0 w-full placeholder-gray-400 ${canEdit ? '' : 'cursor-not-allowed opacity-70'}`}
                                     />
                                 </div>
                                 {hotel.address && (
-                                    <div className="rounded-lg overflow-hidden h-32 w-full bg-gray-200 border border-gray-300 relative">
+                                    <div className="rounded-lg overflow-hidden h-32 w-full bg-gray-200 border border-border relative">
                                         <iframe width="100%" height="100%" frameBorder="0" style={{ border: 0 }} src={`https://maps.google.com/maps?q=${encodeURIComponent(hotel.address)}&t=&z=13&ie=UTF8&iwloc=&output=embed&hl=${encodeURIComponent(mapLanguage)}`} sandbox="allow-scripts allow-same-origin allow-popups" title="Hotel"></iframe>
                                     </div>
                                 )}
@@ -2080,15 +2080,15 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             </div>
                         ))}
                         {(!displayItem.hotels || displayItem.hotels.length === 0) && (
-                            <div className="text-xs text-center text-gray-400 py-2 border-2 border-dashed border-gray-100 rounded-lg">No accomodation</div>
+                            <div className="text-xs text-center text-muted-foreground py-2 border-2 border-dashed border-border rounded-lg">No accomodation</div>
                         )}
                      </div>
                  </div>
              )}
 
              {isTransport && (
-                 <div className={`bg-white p-5 rounded-2xl shadow-sm border ${normalizedTransportMode === 'na' ? 'border-gray-200 bg-gray-50/40' : 'border-gray-100'}`}>
-                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Transportation Mode</h3>
+                 <div className={`bg-card p-5 rounded-2xl shadow-sm border ${normalizedTransportMode === 'na' ? 'border-border bg-secondary/40' : 'border-border'}`}>
+                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Transportation Mode</h3>
                      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))' }}>
                          {(TRANSPORT_MODE_UI_ORDER as TransportMode[]).map(mode => (
                              <button type="button"
@@ -2097,9 +2097,9 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                  disabled={!canEdit || normalizedTransportMode === mode}
                                  className={`flex flex-col items-center justify-center w-full h-20 rounded-xl border-2 transition-all ${
                                     normalizedTransportMode === mode
-                                        ? (mode === 'na' ? 'bg-gray-50 border-gray-300 text-gray-500' : 'bg-accent-50 border-accent-500 text-accent-700')
-                                        : (mode === 'na' ? 'bg-gray-50 border-gray-200 text-gray-400' : 'bg-gray-50 border-gray-100 text-gray-400')
-                                 } ${(canEdit && normalizedTransportMode !== mode) ? 'hover:border-gray-200' : 'opacity-60 cursor-not-allowed'}`}
+                                        ? (mode === 'na' ? 'bg-secondary border-border text-muted-foreground' : 'bg-accent-50 border-accent-500 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200')
+                                        : (mode === 'na' ? 'bg-secondary border-border text-muted-foreground' : 'bg-secondary border-border text-muted-foreground')
+                                 } ${(canEdit && normalizedTransportMode !== mode) ? 'hover:border-border' : 'opacity-60 cursor-not-allowed'}`}
                              >
                                  <TransportModeIcon mode={mode} size={24} />
                                  <span className="text-[10px] font-bold mt-2 uppercase">{mode === 'na' ? 'N/A' : mode}</span>
@@ -2110,7 +2110,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isActivity && (
-                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                 <div className="bg-card p-5 rounded-2xl shadow-sm border border-border dark:shadow-none">
                      <div className="mb-4 flex justify-end">
                          <button
                              type="button"
@@ -2118,8 +2118,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                              disabled={!onExportActivityCalendar}
                              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
                                  onExportActivityCalendar
-                                     ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100 hover:border-accent-300'
-                                     : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                                     ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100 hover:border-accent-300 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30 dark:hover:border-accent-400/30'
+                                     : 'border-border bg-secondary text-muted-foreground cursor-not-allowed'
                              }`}
                              {...getAnalyticsDebugAttributes('trip_view__calendar_export--activity', {
                                  source: 'details_panel',
@@ -2129,7 +2129,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                              Export to calendar (.ics)
                          </button>
                      </div>
-                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Activity Types</h3>
+                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Activity Types</h3>
                      <div className="flex flex-wrap gap-2 mb-6">
                         {ALL_ACTIVITY_TYPES.map(type => {
                             const isSelectedType = selectedActivityTypes.includes(type);
@@ -2146,15 +2146,15 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             );
                         })}
                      </div>
-                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Check Availability</h3>
+                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Check Availability</h3>
                      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}><button type="button" onClick={() => openExternalLink('gyg')} className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-[#ff5533]/5 text-[#ff5533] border border-[#ff5533]/20 hover:bg-[#ff5533]/10 font-medium text-xs">GYG <ExternalLink size={12} /></button><button type="button" onClick={() => openExternalLink('tripadvisor')} className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-[#34e0a1]/10 text-[#00aa6c] border border-[#34e0a1]/20 hover:bg-[#34e0a1]/20 font-medium text-xs">TripAdvisor <ExternalLink size={12} /></button></div>
                  </div>
              )}
 
-             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex-1">
-                <div className="flex justify-between items-center mb-2"><h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Notes</h3></div>
+             <div className="bg-card p-5 rounded-2xl shadow-sm border border-border flex-1 dark:shadow-none">
+                <div className="flex justify-between items-center mb-2"><h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Notes</h3></div>
                 <Suspense
-                    fallback={<div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">Loading notes editor…</div>}
+                    fallback={<div className="rounded-lg border border-border bg-secondary px-3 py-2 text-xs text-muted-foreground">Loading notes editor…</div>}
                 >
                     <LazyMarkdownEditor
                         key={displayItem.id}
@@ -2172,30 +2172,30 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     />
                 </Suspense>
                 {aiError && (
-                    <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                    <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 dark:bg-red-400/12 dark:border-red-400/25">
                         {aiError}
                     </div>
                 )}
                 {isCity && pendingNotesProposal && (
-                    <div className="mt-4 border border-accent-100 rounded-xl bg-accent-50/40 overflow-hidden">
-                        <div className="px-4 py-3 border-b border-accent-100 bg-white/80">
-                            <div className="text-xs font-semibold text-accent-700">AI Draft Preview</div>
-                            <div className="text-[11px] text-accent-600 mt-1">
+                    <div className="mt-4 border border-accent-100 rounded-xl bg-accent-50/40 overflow-hidden dark:bg-accent-400/12 dark:border-accent-400/25">
+                        <div className="px-4 py-3 border-b border-accent-100 bg-card/80 dark:border-accent-400/25">
+                            <div className="text-xs font-semibold text-accent-700 dark:text-accent-200">AI Draft Preview</div>
+                            <div className="text-[11px] text-accent-600 mt-1 dark:text-accent-300">
                                 Action: {pendingNotesProposal.actionLabel}
                             </div>
                         </div>
-                        <div className="p-4 bg-white">
+                        <div className="p-4 bg-card">
                             <Suspense
-                                fallback={<div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">Loading preview…</div>}
+                                fallback={<div className="rounded-lg border border-border bg-secondary px-3 py-2 text-xs text-muted-foreground">Loading preview…</div>}
                             >
                                 <LazyMarkdownEditor value={proposedNotesPreview} readOnly />
                             </Suspense>
                         </div>
-                        <div className="px-4 py-3 bg-accent-50 border-t border-accent-100 flex items-center justify-end gap-2">
+                        <div className="px-4 py-3 bg-accent-50 border-t border-accent-100 flex items-center justify-end gap-2 dark:bg-accent-400/12 dark:border-accent-400/25">
                             <button type="button"
                                 onClick={handleDeclineNotesProposal}
                                 disabled={!canEdit}
-                                className={`px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-md ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-card border border-border rounded-md ${canEdit ? 'hover:bg-secondary' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 Decline
                             </button>
@@ -2210,16 +2210,16 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     </div>
                 )}
                 {(aiDetails || loading) && isActivity && (
-                    <div className="bg-gradient-to-br from-accent-50 to-accent-100 border border-accent-100 rounded-xl p-4 mt-6">
+                    <div className="bg-gradient-to-br from-accent-50 to-accent-100 border border-accent-100 rounded-xl p-4 mt-6 dark:border-accent-400/25">
                         <div className="flex items-center mb-3 justify-between">
                             <div className="flex items-center gap-2">
                                 <Sparkles size={16} className="text-accent-500 animate-pulse" />
-                                <h3 className="text-sm font-semibold text-accent-900">AI Insights</h3>
+                                <h3 className="text-sm font-semibold text-accent-900 dark:text-accent-200">AI Insights</h3>
                             </div>
                             <button type="button"
                                 onClick={fetchDetails}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-full text-accent-500 ${loading ? 'animate-spin' : ''} ${canEdit ? 'hover:bg-white' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-full text-accent-500 ${loading ? 'animate-spin' : ''} ${canEdit ? 'hover:bg-card' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <RefreshCw size={16} />
                             </button>
@@ -2228,15 +2228,15 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <div className="text-sm text-accent-600/70 py-2">Loading…</div>
                         ) : (
                             <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
-                                <div className="bg-white p-3 rounded-lg border border-accent-100 shadow-sm">
+                                <div className="bg-card p-3 rounded-lg border border-accent-100 shadow-sm dark:border-accent-400/25 dark:shadow-none">
                                     <span className="text-[10px] font-bold text-accent-400 uppercase">Cost</span>
                                     <span className="text-sm font-medium">{aiDetails?.cost || 'N/A'}</span>
                                 </div>
-                                <div className="bg-white p-3 rounded-lg border border-accent-100 shadow-sm">
+                                <div className="bg-card p-3 rounded-lg border border-accent-100 shadow-sm dark:border-accent-400/25 dark:shadow-none">
                                     <span className="text-[10px] font-bold text-accent-400 uppercase">Best Time</span>
                                     <span className="text-sm font-medium">{aiDetails?.bestTime || 'N/A'}</span>
                                 </div>
-                                <div className="bg-white p-3 rounded-lg border border-accent-100 shadow-sm" style={{ gridColumn: '1 / -1' }}>
+                                <div className="bg-card p-3 rounded-lg border border-accent-100 shadow-sm dark:border-accent-400/25 dark:shadow-none" style={{ gridColumn: '1 / -1' }}>
                                     <span className="text-[10px] font-bold text-accent-400 uppercase">Tip</span>
                                     <span className="text-sm font-medium">{aiDetails?.tips || 'N/A'}</span>
                                 </div>
@@ -2264,7 +2264,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
             onClick={handleClosePanel}
         />
         <div
-            className={`bg-gray-100 shadow-2xl flex flex-col pointer-events-auto will-change-transform absolute w-full h-[85vh] bottom-0 rounded-t-[20px] left-0 right-0 sm:top-2 sm:bottom-2 sm:right-2 sm:w-[450px] sm:h-auto sm:rounded-2xl sm:left-auto`}
+            className={`bg-secondary shadow-2xl flex flex-col pointer-events-auto will-change-transform absolute w-full h-[85vh] bottom-0 rounded-t-[20px] left-0 right-0 sm:top-2 sm:bottom-2 sm:right-2 sm:w-[450px] sm:h-auto sm:rounded-2xl sm:left-auto dark:shadow-none`}
             style={{ transform: window.innerWidth < 640 ? `translateY(${!isVisible ? '100%' : `${dragOffset}px`})` : `translateX(${!isVisible ? '110%' : '0%'})`, transition: isDragging ? 'none' : 'transform 300ms cubic-bezier(0.32, 0.72, 0, 1)' }}
         >
           {Content}

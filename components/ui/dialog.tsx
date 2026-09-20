@@ -83,7 +83,7 @@ export const DialogContent = React.forwardRef<
                 // A bounded height plus a flex column is what lets DialogBody
                 // scroll while the header and footer stay put.
                 'flex max-h-[min(85dvh,48rem)] flex-col overflow-hidden',
-                'rounded-xl border border-slate-200 bg-white p-0 shadow-2xl focus:outline-none',
+                'rounded-xl border border-border bg-card p-0 shadow-2xl focus:outline-none dark:shadow-none',
                 className,
             )}
             {...props}
@@ -92,7 +92,7 @@ export const DialogContent = React.forwardRef<
             {showCloseButton && (
                 <DialogPrimitive.Close
                     aria-label={closeLabel}
-                    className="absolute end-3 top-3 inline-flex size-8 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:outline-none"
+                    className="absolute end-3 top-3 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:outline-none dark:text-foreground"
                 >
                     <X size={16} weight="bold" />
                 </DialogPrimitive.Close>
@@ -112,7 +112,7 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({ className, divided =
         data-slot="dialog-header"
         className={cn(
             'flex shrink-0 flex-col gap-1.5 px-5 pb-4 pt-5',
-            divided && 'border-b border-slate-200',
+            divided && 'border-b border-border',
             className,
         )}
         {...props}
@@ -165,7 +165,7 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({ className, sticky = 
         data-slot="dialog-footer"
         className={cn(
             'flex shrink-0 flex-wrap items-center justify-end gap-2 px-5 pb-5 pt-4',
-            sticky && 'border-t border-slate-200 bg-white',
+            sticky && 'border-t border-border bg-card',
             className,
         )}
         {...props}
@@ -178,7 +178,7 @@ export const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <DialogPrimitive.Title
         ref={ref}
-        className={cn('text-lg font-semibold text-slate-900', className)}
+        className={cn('text-lg font-semibold text-foreground', className)}
         {...props}
     />
 ));
@@ -190,7 +190,7 @@ export const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <DialogPrimitive.Description
         ref={ref}
-        className={cn('text-sm text-slate-500', className)}
+        className={cn('text-sm text-muted-foreground', className)}
         {...props}
     />
 ));

@@ -9,6 +9,8 @@
     "createTrip": "Reise erstellen",
     "myTrips": "Meine Reisen",
     "openMenu": "Menü öffnen",
+    "themeToDark": "Zu dunklem Design wechseln",
+    "themeToLight": "Zu hellem Design wechseln",
     "admin": "Admin",
     "logout": "Abmelden"
   },

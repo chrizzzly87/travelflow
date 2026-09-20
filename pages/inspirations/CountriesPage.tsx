@@ -152,25 +152,25 @@ export const CountriesPage: React.FC = () => {
       <section className="pt-8 pb-6 md:pt-14 md:pb-8 animate-hero-entrance">
         <Link
           to={buildLocalizedMarketingPath('inspirations', locale)}
-          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-accent-700"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-accent-700 dark:hover:text-accent-200"
         >
           <ArrowLeft className="rtl:rotate-180" size={14} weight="bold" />
           {t('inspirations.subpages.backToInspirations')}
         </Link>
-        <span className="flex w-fit items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700">
+        <span className="flex w-fit items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
           <Globe size={14} weight="duotone" />
           {t('inspirations.subpages.countries.pill')}
         </span>
         <h1
-          className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-6xl"
+          className="mt-5 text-4xl font-black tracking-tight text-foreground md:text-6xl"
           style={{ fontFamily: 'var(--tf-font-heading)' }}
         >
           {t('inspirations.subpages.countries.title')}
         </h1>
-        <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
+        <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           {t('inspirations.subpages.countries.description')}
         </p>
-        <p className="mt-4 text-sm font-semibold text-accent-700">
+        <p className="mt-4 text-sm font-semibold text-accent-700 dark:text-accent-200">
           {t('inspirations.subpages.guide.countryCount', { count: countryEntries.length })}
         </p>
       </section>
@@ -183,7 +183,7 @@ export const CountriesPage: React.FC = () => {
           No spinner and no reserved skeleton copy: the grid below is the real content, and a map
           that never arrives should cost the page nothing but the picture.
         */}
-        <Suspense fallback={<div className="aspect-[1000/389] w-full rounded-3xl bg-slate-100" />}>
+        <Suspense fallback={<div className="aspect-[1000/389] w-full rounded-3xl bg-secondary" />}>
           <CountryExplorerMap
             entries={countryEntries}
             visibleCountryCodes={visibleCountryCodes}
@@ -212,7 +212,7 @@ export const CountriesPage: React.FC = () => {
       </section>
 
       {distanceSortInactive ? (
-        <p className="mb-6 text-sm font-semibold text-amber-700" role="status">
+        <p className="mb-6 text-sm font-semibold text-amber-700 dark:text-amber-200" role="status">
           {t('inspirations.subpages.explorer.origin.sortInactive')}
         </p>
       ) : null}
@@ -233,12 +233,12 @@ export const CountriesPage: React.FC = () => {
         </section>
       ) : (
         <section className="pb-16 md:pb-24">
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center">
+          <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
             <Compass className="mx-auto text-slate-300" size={36} weight="duotone" />
-            <h2 className="mt-4 text-lg font-black text-slate-900">
+            <h2 className="mt-4 text-lg font-black text-foreground">
               {t('inspirations.subpages.explorer.emptyTitle')}
             </h2>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               {t('inspirations.subpages.explorer.emptyDescription')}
             </p>
             <button

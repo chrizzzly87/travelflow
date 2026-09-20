@@ -152,7 +152,7 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                     {isDirty && (
                         <>
-                            <span className="hidden text-xs text-slate-500 sm:inline">Unsaved changes</span>
+                            <span className="hidden text-xs text-muted-foreground sm:inline">Unsaved changes</span>
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -188,7 +188,7 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                 )}
 
                 {!draft ? (
-                    <p className="text-sm text-slate-500">Loading the current settings…</p>
+                    <p className="text-sm text-muted-foreground">Loading the current settings…</p>
                 ) : (
                     <SettingsGroup>
                         <SettingsCard
@@ -327,7 +327,7 @@ export const AdminGlobalSettingsPage: React.FC = () => {
                 )}
 
                 {settings?.updatedAt && (
-                    <p className="mt-3 text-xs text-slate-500">
+                    <p className="mt-3 text-xs text-muted-foreground">
                         Last changed {new Date(settings.updatedAt).toLocaleString()}.
                     </p>
                 )}

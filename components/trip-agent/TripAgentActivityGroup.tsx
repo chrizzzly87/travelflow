@@ -29,7 +29,7 @@ const isFailedState = (state: TripAgentActivityState): boolean => (
 const StepIcon: React.FC<{ state: TripAgentActivityState }> = ({ state }) => {
     if (isFailedState(state)) return <AlertTriangle className="size-3 text-rose-600" />;
     if (state === 'output-available') return <Check className="size-3 text-emerald-600" />;
-    return <Loader2 className="size-3 animate-spin text-slate-500" />;
+    return <Loader2 className="size-3 animate-spin text-muted-foreground" />;
 };
 
 /**
@@ -88,26 +88,26 @@ export const TripAgentActivityGroup: React.FC<{
         <Collapsible
             open={isOpen}
             onOpenChange={setIsOpen}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50/70"
+            className="w-full rounded-xl border border-border bg-secondary/70"
         >
-            <CollapsibleTrigger className="flex w-full items-center gap-2 px-2.5 py-2 text-start text-xs text-slate-600 transition-colors hover:text-slate-900">
+            <CollapsibleTrigger className="flex w-full items-center gap-2 px-2.5 py-2 text-start text-xs text-muted-foreground transition-colors hover:text-foreground">
                 {isStreaming
-                    ? <Loader2 className="size-3.5 shrink-0 animate-spin text-slate-500" />
+                    ? <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
                     : hasFailure
                         ? <AlertTriangle className="size-3.5 shrink-0 text-rose-600" />
-                        : <Brain className="size-3.5 shrink-0 text-slate-500" />}
+                        : <Brain className="size-3.5 shrink-0 text-muted-foreground" />}
                 <span className="min-w-0 flex-1 truncate">
                     {isStreaming ? <Shimmer duration={1}>{label}</Shimmer> : label}
                 </span>
                 <ChevronDown className={`size-3.5 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </CollapsibleTrigger>
             {isStreaming && elapsedSeconds >= 20 && (
-                <p className="px-2.5 pb-2 text-[11px] text-slate-500" role="status">{t('tripAgent.activityStillWorking')}</p>
+                <p className="px-2.5 pb-2 text-[11px] text-muted-foreground" role="status">{t('tripAgent.activityStillWorking')}</p>
             )}
             <CollapsibleContent>
-                <div className="space-y-2 border-t border-slate-200/70 px-2.5 py-2">
+                <div className="space-y-2 border-t border-border/70 px-2.5 py-2">
                     {reasoningText.trim() && (
-                        <div className="text-xs leading-5 text-slate-600">
+                        <div className="text-xs leading-5 text-muted-foreground">
                             <MessageResponse>{reasoningText}</MessageResponse>
                         </div>
                     )}
@@ -121,8 +121,8 @@ export const TripAgentActivityGroup: React.FC<{
                                         aria-expanded={openStepKey === step.key}
                                         className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors ${
                                             isFailedState(step.state)
-                                                ? 'border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100'
-                                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                                                ? 'border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30'
+                                                : 'border-border bg-card text-foreground hover:bg-secondary'
                                         }`}
                                     >
                                         <StepIcon state={step.state} />
@@ -133,7 +133,7 @@ export const TripAgentActivityGroup: React.FC<{
                         </ul>
                     )}
                     {steps.map((step) => (openStepKey === step.key && step.detail ? (
-                        <p key={`${step.key}-detail`} className="break-words rounded-lg bg-white px-2 py-1.5 text-[11px] leading-5 text-slate-600">
+                        <p key={`${step.key}-detail`} className="break-words rounded-lg bg-card px-2 py-1.5 text-[11px] leading-5 text-muted-foreground">
                             {step.detail}
                         </p>
                     ) : null))}

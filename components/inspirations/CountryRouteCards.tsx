@@ -57,9 +57,9 @@ const CountryRouteCard: React.FC<{ route: CountryRoute; locale: AppLanguage }> =
         <ExampleTripCard card={card} miniCalendar={miniCalendar} />
       </Link>
       <div className="px-1">
-        <p className="text-sm leading-relaxed text-slate-600">{localized.pitch}</p>
-        <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-          <CalendarBlank size={14} weight="duotone" className="text-accent-600" />
+        <p className="text-sm leading-relaxed text-muted-foreground">{localized.pitch}</p>
+        <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+          <CalendarBlank size={14} weight="duotone" className="text-accent-600 dark:text-accent-300" />
           {t('inspirations.subpages.guide.routes.bestMonths', { months: formatBestMonths(route.bestMonths, locale) })}
         </p>
       </div>
@@ -77,17 +77,17 @@ export const CountryRouteCards: React.FC<CountryRouteCardsProps> = ({ countryVal
     <section className="pb-10 animate-hero-stagger" style={{ '--stagger': '170ms' } as React.CSSProperties}>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-accent-700">
+          <p className="text-xs font-bold uppercase tracking-wider text-accent-700 dark:text-accent-200">
             {t('inspirations.subpages.guide.routes.eyebrow')}
           </p>
-          <h2 className="mt-1 text-2xl font-black text-slate-900">
+          <h2 className="mt-1 text-2xl font-black text-foreground">
             {t('inspirations.subpages.guide.routes.title', { destination: countryName })}
           </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
             {t('inspirations.subpages.guide.routes.subtitle')}
           </p>
         </div>
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
           {t('inspirations.subpages.guide.routes.hint')}
           <ArrowRight className="rtl:rotate-180" size={13} weight="bold" />
         </span>

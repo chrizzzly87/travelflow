@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ADMIN_SURFACE_CARD_BASE_CLASS = 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm';
+const ADMIN_SURFACE_CARD_BASE_CLASS = 'rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none';
 
 interface AdminSurfaceCardProps extends React.HTMLAttributes<HTMLDivElement> {
     className?: string;

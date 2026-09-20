@@ -28,6 +28,7 @@ import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { getAuthRequestTimeoutMs, getAuthRestoreTimeoutMs } from '../../services/networkStatus';
 import { normalizeAppLanguage } from '../../utils';
 import { SocialProviderIcon } from './SocialProviderIcon';
+import { SegmentedControl } from '../ui/segmented-control';
 
 type AuthMode = 'login' | 'register';
 
@@ -51,19 +52,19 @@ const BASE_OAUTH_BUTTONS: OAuthButtonConfig[] = [
     {
         provider: 'google',
         labelKey: 'actions.oauthGoogle',
-        buttonClassName: 'hover:border-[#ea4335]/40 hover:bg-[#fff7f7]',
+        buttonClassName: 'hover:border-[#ea4335]/40 hover:bg-[#fff7f7] dark:hover:bg-[#ea4335]/12 dark:hover:border-[#ea4335]/50',
     },
     {
         provider: 'facebook',
         labelKey: 'actions.oauthFacebook',
-        buttonClassName: 'hover:border-[#1877f2]/40 hover:bg-[#f3f8ff]',
+        buttonClassName: 'hover:border-[#1877f2]/40 hover:bg-[#f3f8ff] dark:hover:bg-[#1877f2]/14 dark:hover:border-[#1877f2]/50',
     },
 ];
 
 const KAKAO_OAUTH_BUTTON: OAuthButtonConfig = {
     provider: 'kakao',
     labelKey: 'actions.oauthKakao',
-    buttonClassName: 'hover:border-[#FFE812]/60 hover:bg-[#fffde6]',
+    buttonClassName: 'hover:border-[#FFE812]/60 hover:bg-[#fffde6] dark:hover:bg-[#FFE812]/12 dark:hover:border-[#FFE812]/50',
 };
 
 const getOAuthButtons = (language: string): OAuthButtonConfig[] => {
@@ -177,7 +178,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const emailInputId = 'auth-modal-email';
     const secondaryInputId = 'auth-modal-secondary';
     const rememberLoginInputId = 'auth-modal-remember-login';
-    const fieldClassName = 'mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus:ring-rose-200';
+    const fieldClassName = 'mt-1 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-accent-500 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus:ring-rose-200 dark:border-border dark:bg-card dark:text-foreground';
 
     const updateAuthFeedback = useCallback((patch: Partial<AuthFeedbackState>) => {
         setAuthFeedback((current) => ({ ...current, ...patch }));
@@ -597,21 +598,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             />
             <div
                 ref={dialogRef}
-                className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl sm:max-h-[calc(100dvh-3rem)]"
+                className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col rounded-2xl border border-border bg-card shadow-2xl sm:max-h-[calc(100dvh-3rem)] dark:border-border dark:bg-card dark:shadow-none"
                 role="dialog"
                 aria-modal="true"
                 aria-label="Authentication modal"
             >
-                <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-3 sm:py-4">
+                <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border px-5 py-3 sm:py-4 dark:border-border">
                     <div className="min-w-0">
-                        <p className="hidden text-xs font-semibold uppercase tracking-wide text-accent-600 sm:block">{t('hero.eyebrow')}</p>
-                        <h2 className="text-base font-semibold text-slate-900 sm:mt-1 sm:text-lg">{t('hero.title')}</h2>
-                        <p className="mt-1 hidden text-sm text-slate-600 sm:block">{t('hero.description')}</p>
+                        <p className="hidden text-xs font-semibold uppercase tracking-wide text-accent-600 sm:block dark:text-accent-300">{t('hero.eyebrow')}</p>
+                        <h2 className="text-base font-semibold text-foreground sm:mt-1 sm:text-lg dark:text-foreground">{t('hero.title')}</h2>
+                        <p className="mt-1 hidden text-sm text-muted-foreground sm:block dark:text-muted-foreground">{t('hero.description')}</p>
                     </div>
                     <button
                         ref={closeButtonRef}
                         type="button"
-                        className="inline-flex size-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                        className="inline-flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary hover:text-foreground dark:border-border dark:text-muted-foreground dark:hover:bg-secondary dark:hover:text-foreground dark:text-foreground"
                         onClick={() => {
                             if (sessionRestoreState === 'restoring') return;
                             trackEvent('auth__modal--close', { source, reason: 'dismiss' });
@@ -626,13 +627,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                 <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                     {!isOnline && (
-                        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" aria-live="polite">
+                        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30" aria-live="polite">
                             <p className="font-semibold">{t('states.offlineNoticeTitle')}</p>
                             <p className="mt-1">{t('states.offlineNoticeBody')}</p>
                         </div>
                     )}
                     {sessionRestoreState === 'restoring' && (
-                        <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900" aria-live="polite">
+                        <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30" aria-live="polite">
                             <span className="inline-flex items-center gap-2 font-semibold">
                                 <Loader2 size={14} className="animate-spin" />
                                 {t('states.restoringSession')}
@@ -640,41 +641,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         </div>
                     )}
                     {sessionRestoreState === 'restored' && (
-                        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" aria-live="polite">
+                        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30" aria-live="polite">
                             <p className="font-semibold">{t('states.sessionRestored')}</p>
                         </div>
                     )}
 
                     {sessionRestoreState !== 'restored' && (
                         <>
-                            <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1">
-                                <button
-                                    type="button"
-                                    onClick={() => handleModeChange('login')}
-                                    disabled={isSubmitting || isRestoreBlocked}
-                                    className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                                        mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                                    }`}
-                                >
-                                    {t('tabs.login')}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleModeChange('register')}
-                                    disabled={isSubmitting || isRestoreBlocked}
-                                    className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                                        mode === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                                    }`}
-                                >
-                                    {t('tabs.register')}
-                                </button>
-                            </div>
+                            <SegmentedControl
+                                name="tf-auth-mode"
+                                label={t('tabs.login')}
+                                size="md"
+                                value={mode === 'register' ? 'register' : 'login'}
+                                disabled={isSubmitting || isRestoreBlocked}
+                                onChange={(next) => handleModeChange(next as 'login' | 'register')}
+                                options={[
+                                    { value: 'login', label: t('tabs.login') },
+                                    { value: 'register', label: t('tabs.register') },
+                                ]}
+                            />
 
                             <form className="mt-5 space-y-4" onSubmit={handlePasswordSubmit} onKeyDown={handleFormKeyDown}>
                                 <div className="block">
                                     <label
                                         htmlFor={emailInputId}
-                                        className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                                        className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground dark:text-muted-foreground"
                                     >
                                         {t('labels.email')}
                                     </label>
@@ -698,7 +689,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 <div className="block">
                                     <label
                                         htmlFor={secondaryInputId}
-                                        className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                                        className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground dark:text-muted-foreground"
                                     >
                                         {t('labels.password')}
                                     </label>
@@ -720,7 +711,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                     <div className="space-y-2">
                                         <label
                                             htmlFor={rememberLoginInputId}
-                                            className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-800"
+                                            className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-foreground dark:text-foreground"
                                         >
                                             <Checkbox
                                                 id={rememberLoginInputId}
@@ -737,7 +728,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                                 type="button"
                                                 onClick={() => void handlePasswordResetRequest('forgot_password')}
                                                 disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200"
                                                 {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'forgot_password' })}
                                             >
                                                 {t('actions.forgotPassword')}
@@ -746,7 +737,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                                 type="button"
                                                 onClick={() => void handlePasswordResetRequest('set_password')}
                                                 disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200"
                                                 {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'set_password' })}
                                             >
                                                 {t('actions.setPasswordSocial')}
@@ -755,7 +746,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                     </div>
                                 )}
                                 {mode === 'register' && (
-                                    <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                                    <label className="flex items-start gap-2 rounded-lg border border-border bg-secondary px-3 py-2 text-xs text-foreground dark:border-border dark:bg-secondary dark:text-foreground">
                                         <input
                                             type="checkbox"
                                             checked={hasAcceptedTerms}
@@ -763,16 +754,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                                 setHasAcceptedTerms(event.target.checked);
                                                 trackEvent(event.target.checked ? 'auth__terms_consent--accept' : 'auth__terms_consent--reject', { source: 'auth_modal' });
                                             }}
-                                            className="mt-0.5 size-4 rounded border-slate-300"
+                                            className="mt-0.5 size-4 rounded border-border dark:border-border"
                                             {...getAnalyticsDebugAttributes('auth__terms_consent--accept', { source: 'auth_modal' })}
                                         />
                                         <span>
                                             {t('copy.termsConsentPrefix')}{' '}
-                                            <Link className="font-semibold text-accent-700 hover:underline" to={termsPath} target="_blank" rel="noreferrer">
+                                            <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={termsPath} target="_blank" rel="noreferrer">
                                                 {t('copy.termsConsentTerms')}
                                             </Link>{' '}
                                             {t('copy.termsConsentJoiner')}{' '}
-                                            <Link className="font-semibold text-accent-700 hover:underline" to={privacyPath} target="_blank" rel="noreferrer">
+                                            <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={privacyPath} target="_blank" rel="noreferrer">
                                                 {t('copy.termsConsentPrivacy')}
                                             </Link>
                                             .
@@ -783,17 +774,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 <button
                                     type="submit"
                                     disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-accent-400 dark:hover:bg-accent-500 dark:text-background"
                                 >
                                     {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                                     {isSubmitting ? t('actions.submitting') : mode === 'login' ? t('actions.submitLogin') : t('actions.submitRegister')}
                                 </button>
                             </form>
 
-                            <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wide text-slate-400">
-                                <span className="h-px flex-1 bg-slate-200" />
+                            <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground dark:text-muted-foreground">
+                                <span className="h-px flex-1 bg-slate-200 dark:bg-secondary" />
                                 {t('copy.oauthDivider')}
-                                <span className="h-px flex-1 bg-slate-200" />
+                                <span className="h-px flex-1 bg-slate-200 dark:bg-secondary" />
                             </div>
 
                             <div className="space-y-2">
@@ -805,16 +796,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                             type="button"
                                             onClick={() => void handleOAuthLogin(item.provider)}
                                             disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                            className={`relative inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                                            className={`relative inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                                                 isLastUsed
-                                                    ? 'border-slate-400 bg-white'
-                                                    : 'border-slate-300 bg-white'
+                                                    ? 'border-slate-400 bg-card dark:border-border dark:bg-card'
+                                                    : 'border-border bg-card dark:border-border dark:bg-card'
                                             } ${item.buttonClassName}`}
                                         >
                                             <SocialProviderIcon provider={item.provider} size={18} />
                                             <span>{t(item.labelKey)}</span>
                                             {isLastUsed && (
-                                                <span className="pointer-events-none absolute -top-2 right-3 rounded-2xl border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 shadow-sm">
+                                                <span className="pointer-events-none absolute -top-2 right-3 rounded-2xl border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground shadow-sm dark:border-border dark:bg-secondary dark:text-muted-foreground dark:shadow-none">
                                                     {t('copy.lastUsedTag')}
                                                 </span>
                                             )}
@@ -826,7 +817,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     )}
 
                     {showAuthSupportMessage ? (
-                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             <p className="font-semibold">{t('errors.auth_unavailable_title')}</p>
                             <p className="mt-1">{t('errors.auth_unavailable_body')}</p>
                             <Link
@@ -834,19 +825,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 target="_blank"
                                 rel="noreferrer"
                                 onClick={() => trackEvent('auth__config_error--contact', { source: 'modal' })}
-                                className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4"
+                                className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4 dark:text-rose-200"
                                 {...getAnalyticsDebugAttributes('auth__config_error--contact', { source: 'modal' })}
                             >
                                 {t('actions.contactSupport')}
                             </Link>
                         </div>
                     ) : errorMessage ? (
-                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             {errorMessage}
                         </div>
                     ) : null}
                     {infoMessage && (
-                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                             {infoMessage}
                         </div>
                     )}

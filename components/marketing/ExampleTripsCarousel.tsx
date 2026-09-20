@@ -448,17 +448,17 @@ export const ExampleTripsCarousel: React.FC = () => {
     return (
         <section id="examples" className="py-16 md:py-24 overflow-x-hidden md:overflow-x-visible">
             <div className="animate-scroll-blur-in">
-                <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
+                <h2 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl dark:text-foreground">
                     {t('examples.title')}
                 </h2>
-                <p className="mt-3 max-w-xl text-base text-slate-600">
+                <p className="mt-3 max-w-xl text-base text-muted-foreground dark:text-muted-foreground">
                     {t('examples.subtitle')}
                 </p>
             </div>
 
             <div className="relative mt-12 -mx-5 md:-mx-8 lg:mx-[calc(-50vw+50%)] overflow-hidden">
-                <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-10 bg-gradient-to-r from-slate-50 via-slate-50/85 to-transparent sm:w-14 md:w-24" />
-                <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-10 bg-gradient-to-l from-slate-50 via-slate-50/85 to-transparent sm:w-14 md:w-24" />
+                <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-10 bg-gradient-to-r from-secondary via-secondary/85 to-transparent sm:w-14 md:w-24 dark:from-background dark:via-background/85" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-10 bg-gradient-to-l from-secondary via-secondary/85 to-transparent sm:w-14 md:w-24 dark:from-background dark:via-background/85" />
 
                 <div
                     ref={containerRef}
@@ -571,7 +571,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                 <Link
                     to={INSPIRATIONS_LINK}
                     onClick={() => trackEvent('home__carousel_cta--inspirations')}
-                    className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800"
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800 dark:text-accent-300 dark:hover:text-accent-200"
                     {...getAnalyticsDebugAttributes('home__carousel_cta--inspirations')}
                 >
                     {uiCopy.moreInspirationsCta}

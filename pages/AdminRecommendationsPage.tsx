@@ -38,11 +38,11 @@ const STATUS_LABEL: Record<RecommendationStatus, string> = {
 };
 
 const STATUS_TONE: Record<string, string> = {
-    published: 'bg-emerald-100 text-emerald-800',
-    in_review: 'bg-amber-100 text-amber-800',
-    draft: 'bg-slate-100 text-slate-600',
-    rejected: 'bg-red-100 text-red-800',
-    retired: 'bg-slate-200 text-slate-500',
+    published: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-400/12 dark:text-emerald-200',
+    in_review: 'bg-amber-100 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200',
+    draft: 'bg-secondary text-muted-foreground',
+    rejected: 'bg-red-100 text-red-800 dark:bg-red-400/12 dark:text-red-200',
+    retired: 'bg-slate-200 text-muted-foreground',
 };
 
 /** The editor works on strings; the table works on JSON. This is the seam. */
@@ -319,7 +319,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                         type="button"
                         onClick={() => void importBundled()}
                         disabled={saving || loading}
-                        className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                        className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-secondary disabled:opacity-50"
                     >
                         <DownloadSimple size={16} /> Import bundled
                     </button>
@@ -327,7 +327,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                         type="button"
                         onClick={() => void load(country)}
                         disabled={loading}
-                        className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                        className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-secondary disabled:opacity-50"
                     >
                         <ArrowsClockwise size={16} className={loading ? 'animate-spin' : ''} /> Refresh
                     </button>
@@ -351,8 +351,8 @@ export const AdminRecommendationsPage: React.FC = () => {
                     ] as const).map(([label, value]) => (
                         <AdminSurfaceCard key={label} className="flex items-center justify-between">
                             <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
-                                <div className="mt-1 text-2xl font-bold text-slate-950">{value}</div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
+                                <div className="mt-1 text-2xl font-bold text-foreground">{value}</div>
                             </div>
                             <MapPin size={24} />
                         </AdminSurfaceCard>
@@ -360,7 +360,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                 </div>
 
                 {error && (
-                    <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                    <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-400/12 dark:text-red-200 dark:border-red-400/30">
                         <WarningCircle size={18} className="mt-0.5 shrink-0" />
                         {error}
                     </div>
@@ -368,7 +368,7 @@ export const AdminRecommendationsPage: React.FC = () => {
 
                 <div className="grid min-h-[640px] gap-4 xl:grid-cols-[minmax(340px,0.8fr)_minmax(520px,1.2fr)]">
                     <AdminSurfaceCard className="flex min-h-0 flex-col p-0">
-                        <div className="grid gap-2 border-b border-slate-200 p-4 sm:grid-cols-2">
+                        <div className="grid gap-2 border-b border-border p-4 sm:grid-cols-2">
                             <Select value={country} onValueChange={setCountry}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
@@ -390,12 +390,12 @@ export const AdminRecommendationsPage: React.FC = () => {
 
                         <div className="max-h-[720px] flex-1 overflow-y-auto p-2">
                             {loading && (
-                                <div className="flex h-48 items-center justify-center text-slate-500">
+                                <div className="flex h-48 items-center justify-center text-muted-foreground">
                                     <SpinnerGap size={24} className="animate-spin" />
                                 </div>
                             )}
                             {!loading && filtered.length === 0 && (
-                                <div className="px-4 py-10 text-center text-sm text-slate-500">
+                                <div className="px-4 py-10 text-center text-sm text-muted-foreground">
                                     Nothing here yet. Use <strong>Import bundled</strong> to seed this country, or <strong>New</strong> to write one.
                                 </div>
                             )}
@@ -408,13 +408,13 @@ export const AdminRecommendationsPage: React.FC = () => {
                                     className={cn(
                                         'mb-1 flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-3 text-start transition-colors',
                                         selectedId === row.id
-                                            ? 'border-accent-300 bg-accent-50'
-                                            : 'border-transparent hover:border-slate-200 hover:bg-slate-50',
+                                            ? 'border-accent-300 bg-accent-50 dark:bg-accent-400/12 dark:border-accent-400/30'
+                                            : 'border-transparent hover:border-border hover:bg-secondary',
                                     )}
                                 >
                                     <div className="min-w-0">
-                                        <div className="truncate font-semibold text-slate-900">{row.title}</div>
-                                        <div className="mt-0.5 truncate text-xs uppercase tracking-wide text-slate-500">
+                                        <div className="truncate font-semibold text-foreground">{row.title}</div>
+                                        <div className="mt-0.5 truncate text-xs uppercase tracking-wide text-muted-foreground">
                                             {[row.city_name, row.country_code, row.image ? 'photo' : 'no photo'].filter(Boolean).join(' · ')}
                                         </div>
                                     </div>
@@ -427,13 +427,13 @@ export const AdminRecommendationsPage: React.FC = () => {
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard className="min-w-0">
-                        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
                             <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                     {selectedId ? 'Edit recommendation' : 'New recommendation'}
                                 </div>
-                                <h2 className="mt-1 text-xl font-bold text-slate-950">{editor.title || 'Untitled'}</h2>
-                                {editor.id && <div className="mt-1 font-mono text-xs text-slate-500">{editor.id}</div>}
+                                <h2 className="mt-1 text-xl font-bold text-foreground">{editor.title || 'Untitled'}</h2>
+                                {editor.id && <div className="mt-1 font-mono text-xs text-muted-foreground">{editor.id}</div>}
                             </div>
                             {selectedId && editor.status !== 'published' && (
                                 <button
@@ -442,7 +442,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                                         const row = rows.find((entry) => entry.id === selectedId);
                                         if (row) void changeStatus(row, 'published');
                                     }}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-400/12 dark:hover:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30"
                                 >
                                     Publish now
                                 </button>
@@ -451,19 +451,19 @@ export const AdminRecommendationsPage: React.FC = () => {
 
                         <div className="mt-4 space-y-4">
                             <div className="grid gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 text-sm font-semibold text-slate-700">
+                                <label className="space-y-1 text-sm font-semibold text-foreground">
                                     Title
                                     <Input value={editor.title} onChange={field('title')} placeholder="Din Tai Fung (Xinsheng Branch)" />
                                 </label>
-                                <label className="space-y-1 text-sm font-semibold text-slate-700">
+                                <label className="space-y-1 text-sm font-semibold text-foreground">
                                     City
                                     <Input value={editor.cityName} onChange={field('cityName')} placeholder="Taipei" />
                                 </label>
-                                <label className="space-y-1 text-sm font-semibold text-slate-700">
+                                <label className="space-y-1 text-sm font-semibold text-foreground">
                                     Country code
                                     <Input value={editor.countryCode} onChange={field('countryCode')} placeholder="TW" maxLength={2} />
                                 </label>
-                                <label className="space-y-1 text-sm font-semibold text-slate-700">
+                                <label className="space-y-1 text-sm font-semibold text-foreground">
                                     Status
                                     <Select value={editor.status} onValueChange={(value) => setEditor((current) => ({ ...current, status: value as RecommendationStatus }))}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
@@ -476,43 +476,43 @@ export const AdminRecommendationsPage: React.FC = () => {
                                 </label>
                             </div>
 
-                            <label className="block space-y-1 text-sm font-semibold text-slate-700">
+                            <label className="block space-y-1 text-sm font-semibold text-foreground">
                                 One-line summary
                                 <Input value={editor.summary} onChange={field('summary')} placeholder="Famous soup dumplings, expect a queue" />
                             </label>
 
-                            <label className="block space-y-1 text-sm font-semibold text-slate-700">
+                            <label className="block space-y-1 text-sm font-semibold text-foreground">
                                 Description
                                 <textarea
                                     value={editor.description}
                                     onChange={field('description')}
                                     rows={6}
-                                    className="w-full resize-y rounded-xl border border-slate-300 p-3 text-sm font-normal leading-6 outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
+                                    className="w-full resize-y rounded-xl border border-border p-3 text-sm font-normal leading-6 outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
                                     placeholder="A paragraph or two. This is what the card shows."
                                 />
                             </label>
 
-                            <label className="block space-y-1 text-sm font-semibold text-slate-700">
+                            <label className="block space-y-1 text-sm font-semibold text-foreground">
                                 Recommendations — one per line
                                 <textarea
                                     value={editor.highlights}
                                     onChange={field('highlights')}
                                     rows={5}
-                                    className="w-full resize-y rounded-xl border border-slate-300 p-3 text-sm font-normal leading-6 outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
+                                    className="w-full resize-y rounded-xl border border-border p-3 text-sm font-normal leading-6 outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100"
                                     placeholder={'Order the xiaolongbao\nGo before noon to skip the queue'}
                                 />
                             </label>
 
                             <div className="grid gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 text-sm font-semibold text-slate-700">
+                                <label className="space-y-1 text-sm font-semibold text-foreground">
                                     Activity types — comma separated
                                     <Input value={editor.activityTypes} onChange={field('activityTypes')} placeholder="food, sightseeing" />
                                 </label>
-                                <label className="space-y-1 text-sm font-semibold text-slate-700">
+                                <label className="space-y-1 text-sm font-semibold text-foreground">
                                     Tags — comma separated
                                     <Input value={editor.tags} onChange={field('tags')} placeholder="food-drink, taipei" />
                                 </label>
-                                <label className="space-y-1 text-sm font-semibold text-slate-700">
+                                <label className="space-y-1 text-sm font-semibold text-foreground">
                                     Cost
                                     <Select
                                         value={editor.costBand || 'none'}
@@ -527,7 +527,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                                         </SelectContent>
                                     </Select>
                                 </label>
-                                <label className="space-y-1 text-sm font-semibold text-slate-700">
+                                <label className="space-y-1 text-sm font-semibold text-foreground">
                                     Typical duration (minutes)
                                     <Input
                                         value={editor.typicalDurationMinutes}
@@ -538,28 +538,28 @@ export const AdminRecommendationsPage: React.FC = () => {
                                 </label>
                             </div>
 
-                            <label className="block space-y-1 text-sm font-semibold text-slate-700">
+                            <label className="block space-y-1 text-sm font-semibold text-foreground">
                                 Address
                                 <Input value={editor.address} onChange={field('address')} placeholder="No. 277, Section 2, Xinyi Rd, Taipei" />
                             </label>
 
                             <div className="grid gap-3 sm:grid-cols-3">
-                                <label className="space-y-1 text-sm font-semibold text-slate-700">
+                                <label className="space-y-1 text-sm font-semibold text-foreground">
                                     Latitude
                                     <Input value={editor.lat} onChange={field('lat')} inputMode="decimal" placeholder="25.033889" />
                                 </label>
-                                <label className="space-y-1 text-sm font-semibold text-slate-700">
+                                <label className="space-y-1 text-sm font-semibold text-foreground">
                                     Longitude
                                     <Input value={editor.lng} onChange={field('lng')} inputMode="decimal" placeholder="121.532134" />
                                 </label>
-                                <label className="space-y-1 text-sm font-semibold text-slate-700">
+                                <label className="space-y-1 text-sm font-semibold text-foreground">
                                     Google place id
                                     <Input value={editor.googlePlaceId} onChange={field('googlePlaceId')} placeholder="ChIJ..." />
                                 </label>
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 text-sm font-semibold text-slate-700">
+                                <label className="space-y-1 text-sm font-semibold text-foreground">
                                     Photo URL
                                     <Input
                                         value={editor.imageUrl}
@@ -567,18 +567,18 @@ export const AdminRecommendationsPage: React.FC = () => {
                                         placeholder="/api/place-photo?ref=places/.../photos/..."
                                     />
                                 </label>
-                                <label className="space-y-1 text-sm font-semibold text-slate-700">
+                                <label className="space-y-1 text-sm font-semibold text-foreground">
                                     Photo credit
                                     <Input value={editor.imageAttribution} onChange={field('imageAttribution')} placeholder="Photographer name" />
                                 </label>
                             </div>
-                            <p className="text-xs leading-5 text-slate-500">
+                            <p className="text-xs leading-5 text-muted-foreground">
                                 Photos are referenced, never copied. Paste a
-                                {' '}<code className="rounded bg-slate-100 px-1">/api/place-photo?ref=places/&lt;placeId&gt;/photos/&lt;photoId&gt;</code>{' '}
+                                {' '}<code className="rounded bg-secondary px-1">/api/place-photo?ref=places/&lt;placeId&gt;/photos/&lt;photoId&gt;</code>{' '}
                                 path and credit the photographer. Leave the coordinates filled in and the card draws its own map.
                             </p>
 
-                            <div className="flex flex-wrap gap-2 border-t border-slate-200 pt-4">
+                            <div className="flex flex-wrap gap-2 border-t border-border pt-4">
                                 <button
                                     type="button"
                                     onClick={() => void save()}
@@ -593,7 +593,7 @@ export const AdminRecommendationsPage: React.FC = () => {
                                         type="button"
                                         onClick={() => void remove()}
                                         disabled={saving}
-                                        className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                                        className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-400/12 dark:text-red-200 dark:border-red-400/30"
                                     >
                                         <Trash size={17} /> Delete
                                     </button>

@@ -103,10 +103,10 @@ const ModelSearchList: React.FC<{
 
             <div ref={listRef} className={cn('mt-3 min-h-0 flex-1 overflow-y-auto', inset)}>
                 {flat.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-slate-500">{emptyLabel}</p>
+                    <p className="py-8 text-center text-sm text-muted-foreground">{emptyLabel}</p>
                 ) : Object.entries(grouped).map(([providerLabel, providerModels]: [string, AiModelCatalogItem[]]) => (
                     <div key={providerLabel} className="mb-3 last:mb-0">
-                        <p className="sticky top-0 z-10 bg-white/95 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 backdrop-blur">
+                        <p className="sticky top-0 z-10 bg-card/95 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground backdrop-blur">
                             {providerLabel}
                         </p>
                         <ul className="space-y-0.5">
@@ -120,22 +120,22 @@ const ModelSearchList: React.FC<{
                                             onMouseEnter={() => setActiveIndex(flat.indexOf(model))}
                                             onClick={() => onPick(model)}
                                             className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-start transition ${
-                                                active?.id === model.id ? 'bg-slate-100' : 'hover:bg-slate-50'
+                                                active?.id === model.id ? 'bg-secondary' : 'hover:bg-secondary'
                                             }`}
                                         >
                                             <AiProviderLogo provider={model.provider} model={model.model} size={18} />
                                             <span className="min-w-0 flex-1">
-                                                <span className="block truncate text-sm font-medium text-slate-900">
+                                                <span className="block truncate text-sm font-medium text-foreground">
                                                     {model.label}
                                                 </span>
-                                                <span className="block truncate font-mono text-[11px] text-slate-500">
+                                                <span className="block truncate font-mono text-[11px] text-muted-foreground">
                                                     {model.model}
                                                 </span>
                                             </span>
                                             {model.availability !== 'active' && (
                                                 <Badge variant="secondary" className="shrink-0">Planned</Badge>
                                             )}
-                                            {selected && <Check weight="bold" className="size-4 shrink-0 text-accent-600" />}
+                                            {selected && <Check weight="bold" className="size-4 shrink-0 text-accent-600 dark:text-accent-300" />}
                                         </button>
                                     </li>
                                 );
@@ -179,16 +179,16 @@ export const AiModelPicker: React.FC<{
             <button
                 type="button"
                 onClick={openPicker}
-                className="flex min-h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 transition hover:border-slate-400 focus-visible:border-accent-400 focus-visible:outline-none"
+                className="flex min-h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-sm text-foreground transition hover:border-slate-400 focus-visible:border-accent-400 focus-visible:outline-none"
             >
                 <span className="flex min-w-0 items-center gap-2">
                     <AiProviderLogo provider={selected?.provider || provider} model={selected?.model || model} size={18} />
                     <span className="min-w-0 text-start">
                         <span className="block truncate font-medium">{selected?.label || model || 'Pick a model'}</span>
-                        <span className="block truncate font-mono text-[11px] text-slate-500">{value}</span>
+                        <span className="block truncate font-mono text-[11px] text-muted-foreground">{value}</span>
                     </span>
                 </span>
-                <CaretUpDown weight="bold" className="size-4 shrink-0 text-slate-500" />
+                <CaretUpDown weight="bold" className="size-4 shrink-0 text-muted-foreground" />
             </button>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -222,10 +222,10 @@ export const AiModelPicker: React.FC<{
                                 size={18}
                             />
                             <span className="min-w-0 text-start">
-                                <span className="block truncate text-sm font-medium text-slate-900">
+                                <span className="block truncate text-sm font-medium text-foreground">
                                     {pending?.label || pendingId || 'No model selected'}
                                 </span>
-                                <span className="block truncate font-mono text-[11px] text-slate-500">
+                                <span className="block truncate font-mono text-[11px] text-muted-foreground">
                                     {pendingId}
                                 </span>
                             </span>
@@ -279,7 +279,7 @@ export const ApprovedOpenRouterModelsField: React.FC<{
                 <Badge variant="secondary">{value.length} approved</Badge>
             </div>
 
-            <div className="rounded-lg border border-slate-200 p-2">
+            <div className="rounded-lg border border-border p-2">
                 <div className="flex h-72 flex-col">
                     <ModelSearchList
                         models={openRouterModels}
@@ -298,14 +298,14 @@ export const ApprovedOpenRouterModelsField: React.FC<{
                     {extras.map((model) => (
                         <span
                             key={model}
-                            className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 py-1 ps-2.5 pe-1 font-mono text-[11px] text-slate-700"
+                            className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary py-1 ps-2.5 pe-1 font-mono text-[11px] text-foreground"
                         >
                             {model}
                             <button
                                 type="button"
                                 aria-label={`Remove ${model}`}
                                 onClick={() => onChange(value.filter((entry) => entry !== model))}
-                                className="rounded-full p-0.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
+                                className="rounded-full p-0.5 text-muted-foreground transition hover:bg-slate-200 hover:text-foreground"
                             >
                                 <X weight="bold" className="size-3" />
                             </button>

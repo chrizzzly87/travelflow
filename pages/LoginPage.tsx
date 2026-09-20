@@ -106,7 +106,7 @@ const buildLoginRedirectUrl = (claimRequestId: string | null, nextPath: string):
 const LOGIN_PAGE_EMAIL_INPUT_ID = 'login-page-email';
 const LOGIN_PAGE_SECONDARY_INPUT_ID = 'login-page-secondary';
 const LOGIN_PAGE_REMEMBER_CHECKBOX_ID = 'login-page-remember-login';
-const AUTH_INPUT_CLASS_NAME = 'mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus:ring-rose-200';
+const AUTH_INPUT_CLASS_NAME = 'mt-1 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-accent-500 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus:ring-rose-200';
 
 export const LoginPage: React.FC = () => {
     const { t, i18n } = useTranslation('auth');
@@ -439,22 +439,22 @@ export const LoginPage: React.FC = () => {
     return (
         <MarketingLayout>
             <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_360px]">
-                <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">{t('hero.eyebrow')}</p>
-                    <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">{t('hero.title')}</h1>
-                    <p className="mt-3 text-sm leading-6 text-slate-600">{t('hero.description')}</p>
+                <section className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8 dark:shadow-none">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-accent-600 dark:text-accent-300">{t('hero.eyebrow')}</p>
+                    <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{t('hero.title')}</h1>
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">{t('hero.description')}</p>
                     {claimRequestId && (
-                        <div className="mt-4 rounded-2xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900">
+                        <div className="mt-4 rounded-2xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                             {t('copy.queueHint')}
                         </div>
                     )}
 
-                    <div className="mt-6 inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1">
+                    <div className="mt-6 inline-flex rounded-xl border border-border bg-secondary p-1">
                         <button
                             type="button"
                             onClick={() => handleModeChange('login')}
                             className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                                mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                mode === 'login' ? 'bg-card text-foreground shadow-sm dark:shadow-none' : 'text-muted-foreground hover:text-foreground'
                             }`}
                             {...getAnalyticsDebugAttributes('auth__tab--login')}
                         >
@@ -464,7 +464,7 @@ export const LoginPage: React.FC = () => {
                             type="button"
                             onClick={() => handleModeChange('register')}
                             className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                                mode === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                mode === 'register' ? 'bg-card text-foreground shadow-sm dark:shadow-none' : 'text-muted-foreground hover:text-foreground'
                             }`}
                             {...getAnalyticsDebugAttributes('auth__tab--register')}
                         >
@@ -476,7 +476,7 @@ export const LoginPage: React.FC = () => {
                         <div className="block">
                             <label
                                 htmlFor={LOGIN_PAGE_EMAIL_INPUT_ID}
-                                className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                                className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                             >
                                 {t('labels.email')}
                             </label>
@@ -499,7 +499,7 @@ export const LoginPage: React.FC = () => {
                         <div className="block">
                             <label
                                 htmlFor={LOGIN_PAGE_SECONDARY_INPUT_ID}
-                                className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                                className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                             >
                                 {t('labels.password')}
                             </label>
@@ -520,7 +520,7 @@ export const LoginPage: React.FC = () => {
                             <div className="space-y-2">
                                 <label
                                     htmlFor={LOGIN_PAGE_REMEMBER_CHECKBOX_ID}
-                                    className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-800"
+                                    className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-foreground"
                                 >
                                     <Checkbox
                                         id={LOGIN_PAGE_REMEMBER_CHECKBOX_ID}
@@ -537,7 +537,7 @@ export const LoginPage: React.FC = () => {
                                         type="button"
                                         onClick={() => void handlePasswordResetRequest('forgot_password')}
                                         disabled={isSubmitting || isPostAuthProcessing}
-                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200"
                                         {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'page', intent: 'forgot_password' })}
                                     >
                                         {t('actions.forgotPassword')}
@@ -546,7 +546,7 @@ export const LoginPage: React.FC = () => {
                                         type="button"
                                         onClick={() => void handlePasswordResetRequest('set_password')}
                                         disabled={isSubmitting || isPostAuthProcessing}
-                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60 dark:text-accent-200 dark:hover:text-accent-200"
                                         {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'page', intent: 'set_password' })}
                                     >
                                         {t('actions.setPasswordSocial')}
@@ -555,7 +555,7 @@ export const LoginPage: React.FC = () => {
                             </div>
                         )}
                         {mode === 'register' && (
-                            <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                            <label className="flex items-start gap-2 rounded-lg border border-border bg-secondary px-3 py-2 text-xs text-foreground">
                                 <input
                                     type="checkbox"
                                     checked={hasAcceptedTerms}
@@ -563,16 +563,16 @@ export const LoginPage: React.FC = () => {
                                         setHasAcceptedTerms(event.target.checked);
                                         trackEvent(event.target.checked ? 'auth__terms_consent--accept' : 'auth__terms_consent--reject', { source: 'login_page' });
                                     }}
-                                    className="mt-0.5 size-4 rounded border-slate-300"
+                                    className="mt-0.5 size-4 rounded border-border"
                                     {...getAnalyticsDebugAttributes('auth__terms_consent--accept', { source: 'login_page' })}
                                 />
                                 <span>
                                     {t('copy.termsConsentPrefix')}{' '}
-                                    <Link className="font-semibold text-accent-700 hover:underline" to={termsPath} target="_blank" rel="noreferrer">
+                                    <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={termsPath} target="_blank" rel="noreferrer">
                                         {t('copy.termsConsentTerms')}
                                     </Link>{' '}
                                     {t('copy.termsConsentJoiner')}{' '}
-                                    <Link className="font-semibold text-accent-700 hover:underline" to={privacyPath} target="_blank" rel="noreferrer">
+                                    <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={privacyPath} target="_blank" rel="noreferrer">
                                         {t('copy.termsConsentPrivacy')}
                                     </Link>
                                     .
@@ -591,7 +591,7 @@ export const LoginPage: React.FC = () => {
                         </button>
                     </form>
 
-                    <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wide text-slate-400">
+                    <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
                         <span className="h-px flex-1 bg-slate-200" />
                         {t('copy.oauthDivider')}
                         <span className="h-px flex-1 bg-slate-200" />
@@ -606,17 +606,17 @@ export const LoginPage: React.FC = () => {
                                     type="button"
                                     onClick={() => void handleOAuthLogin(item.provider)}
                                     disabled={isSubmitting || isPostAuthProcessing}
-                                    className={`relative inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                                    className={`relative inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                                         isLastUsed
-                                            ? 'border-slate-400 bg-white'
-                                            : 'border-slate-300 bg-white'
+                                            ? 'border-slate-400 bg-card'
+                                            : 'border-border bg-card'
                                     } ${item.buttonClassName}`}
                                     {...getAnalyticsDebugAttributes(`auth__oauth--${item.provider}`)}
                                 >
                                     <SocialProviderIcon provider={item.provider} size={18} />
                                     <span>{t(item.labelKey)}</span>
                                     {isLastUsed && (
-                                        <span className="pointer-events-none absolute -top-2 right-3 rounded-2xl border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 shadow-sm">
+                                        <span className="pointer-events-none absolute -top-2 right-3 rounded-2xl border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground shadow-sm dark:shadow-none">
                                             {t('copy.lastUsedTag')}
                                         </span>
                                     )}
@@ -625,12 +625,12 @@ export const LoginPage: React.FC = () => {
                         })}
                     </div>
 
-                    <div className="mt-5 text-sm text-slate-600">
+                    <div className="mt-5 text-sm text-muted-foreground">
                         {mode === 'login' ? (
                             <button
                                 type="button"
                                 onClick={() => handleModeChange('register')}
-                                className="font-semibold text-accent-700 hover:text-accent-800"
+                                className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
                             >
                                 {t('copy.switchToRegister')}
                             </button>
@@ -638,7 +638,7 @@ export const LoginPage: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => handleModeChange('login')}
-                                className="font-semibold text-accent-700 hover:text-accent-800"
+                                className="font-semibold text-accent-700 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200"
                             >
                                 {t('copy.switchToLogin')}
                             </button>
@@ -646,7 +646,7 @@ export const LoginPage: React.FC = () => {
                     </div>
 
                     {showAuthSupportMessage ? (
-                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             <p className="font-semibold">{t('errors.auth_unavailable_title')}</p>
                             <p className="mt-1">{t('errors.auth_unavailable_body')}</p>
                             <Link
@@ -654,29 +654,29 @@ export const LoginPage: React.FC = () => {
                                 target="_blank"
                                 rel="noreferrer"
                                 onClick={() => trackEvent('auth__config_error--contact', { source: 'page' })}
-                                className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4"
+                                className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4 dark:text-rose-200"
                                 {...getAnalyticsDebugAttributes('auth__config_error--contact', { source: 'page' })}
                             >
                                 {t('actions.contactSupport')}
                             </Link>
                         </div>
                     ) : errorMessage ? (
-                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             {errorMessage}
                         </div>
                     ) : null}
                     {infoMessage && (
-                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                             {infoMessage}
                         </div>
                     )}
                 </section>
 
-                <aside className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-                    <h2 className="text-base font-semibold text-slate-900">{t('benefits.title')}</h2>
-                    <ul className="mt-4 space-y-3 text-sm text-slate-600">
+                <aside className="rounded-3xl border border-border bg-card p-6 shadow-sm md:p-8 dark:shadow-none">
+                    <h2 className="text-base font-semibold text-foreground">{t('benefits.title')}</h2>
+                    <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
                         {(t('benefits.items', { returnObjects: true }) as string[]).map((item) => (
-                            <li key={item} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                            <li key={item} className="rounded-xl border border-border bg-secondary px-3 py-2">
                                 {item}
                             </li>
                         ))}

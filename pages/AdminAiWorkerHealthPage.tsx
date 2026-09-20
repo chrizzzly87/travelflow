@@ -57,15 +57,15 @@ const STATUS_ORDER: Record<AdminAsyncWorkerHealthStatus, number> = {
 const STATUS_META: Record<AdminAsyncWorkerHealthStatus, { label: string; className: string }> = {
     ok: {
         label: 'Healthy',
-        className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        className: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30',
     },
     warning: {
         label: 'Warning',
-        className: 'border-amber-200 bg-amber-50 text-amber-700',
+        className: 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
     },
     failed: {
         label: 'Failed',
-        className: 'border-rose-200 bg-rose-50 text-rose-700',
+        className: 'border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30',
     },
 };
 
@@ -154,7 +154,7 @@ const WorkerHealthInfoButton: React.FC<{
         aria-label={ariaLabel}
         title={tooltip}
         data-tooltip={tooltip}
-        className="inline-flex size-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700"
+        className="inline-flex size-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-border hover:text-foreground"
     >
         <Info size={12} weight="bold" />
     </button>
@@ -185,9 +185,9 @@ const SummaryCard: React.FC<{
     hint?: React.ReactNode;
 }> = ({ label, value, hint }) => (
     <AdminSurfaceCard className="space-y-2">
-        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{label}</div>
-        <div className="text-2xl font-black tracking-tight text-slate-900">{value}</div>
-        {hint ? <p className="text-sm text-slate-500">{hint}</p> : null}
+        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</div>
+        <div className="text-2xl font-black tracking-tight text-foreground">{value}</div>
+        {hint ? <p className="text-sm text-muted-foreground">{hint}</p> : null}
     </AdminSurfaceCard>
 );
 
@@ -302,7 +302,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <Link
                         to="/admin/ai-benchmark/telemetry"
-                        className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
+                        className="inline-flex h-9 items-center rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground"
                     >
                         Open AI Telemetry
                     </Link>
@@ -312,7 +312,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
         >
             <div className="space-y-5">
                 {error ? (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                         {error}
                     </div>
                 ) : null}
@@ -388,29 +388,29 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
 
                 <AdminSurfaceCard className="grid gap-4 md:grid-cols-3">
                     <div className="space-y-1">
-                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
+                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
                             <span>Heartbeat</span>
                             <WorkerHealthInfoButton ariaLabel="Explain heartbeat checks" tooltip={WORKER_HEALTH_TOOLTIPS.heartbeat} />
                         </div>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-muted-foreground">
                             Scheduled cron proof. If heartbeats stop, the worker loop itself may no longer be running.
                         </p>
                     </div>
                     <div className="space-y-1">
-                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
+                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
                             <span>Watchdog</span>
                             <WorkerHealthInfoButton ariaLabel="Explain watchdog checks" tooltip={WORKER_HEALTH_TOOLTIPS.selfHeal} />
                         </div>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-muted-foreground">
                             Stale-queue detector. It only records when queued work looked stuck and the normal worker path was re-kicked once.
                         </p>
                     </div>
                     <div className="space-y-1">
-                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
+                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
                             <span>Canary</span>
                             <WorkerHealthInfoButton ariaLabel="Explain canary checks" tooltip={WORKER_HEALTH_TOOLTIPS.canary} />
                         </div>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-muted-foreground">
                             Safe end-to-end probe. Healthy means queueing, dispatch, claiming, execution, and terminal writes all completed on the live path.
                         </p>
                     </div>
@@ -419,19 +419,19 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                 <AdminSurfaceCard className="space-y-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <h2 className="text-lg font-semibold text-slate-900">Recent checks</h2>
-                            <p className="text-sm text-slate-500">
+                            <h2 className="text-lg font-semibold text-foreground">Recent checks</h2>
+                            <p className="text-sm text-muted-foreground">
                                 Newest rows first. Heartbeats show cron health, watchdog rows capture stale-queue incidents, and canaries prove the drain path end to end.
                             </p>
                         </div>
-                        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                             {checks.length.toLocaleString()} rows loaded
                         </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
                         <label className="relative min-w-[260px] flex-1 sm:flex-none">
-                            <MagnifyingGlass size={14} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <MagnifyingGlass size={14} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
                                 value={searchQuery}
@@ -440,7 +440,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                                     setPage(1);
                                 }}
                                 placeholder="Search type, dispatch, or failure text"
-                                className="h-8 w-full rounded-md border border-slate-200 bg-white ps-9 pe-3 text-sm text-slate-700 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-slate-300 focus:ring-1 focus:ring-slate-200"
+                                className="h-8 w-full rounded-md border border-border bg-card ps-9 pe-3 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-border focus:ring-1 focus:ring-slate-200 dark:shadow-none"
                                 aria-label="Search worker health checks"
                             />
                         </label>
@@ -465,18 +465,18 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={resetTableState}
-                            className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100"
+                            className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
                         >
                             <X size={14} />
                             Reset
                         </button>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-white">
+                    <div className="rounded-xl border border-border bg-card">
                         <Table>
-                            <TableHeader className="bg-slate-50">
+                            <TableHeader className="bg-secondary">
                                 <TableRow>
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${sortColumn === 'checkType' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${sortColumn === 'checkType' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Type"
                                             isActive={sortColumn === 'checkType'}
@@ -484,7 +484,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                                             onClick={() => handleSort('checkType')}
                                         />
                                     </TableHead>
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${sortColumn === 'status' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${sortColumn === 'status' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Status"
                                             isActive={sortColumn === 'status'}
@@ -492,7 +492,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                                             onClick={() => handleSort('status')}
                                         />
                                     </TableHead>
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${sortColumn === 'startedAt' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${sortColumn === 'startedAt' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Started"
                                             isActive={sortColumn === 'startedAt'}
@@ -500,7 +500,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                                             onClick={() => handleSort('startedAt')}
                                         />
                                     </TableHead>
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${sortColumn === 'staleQueuedCount' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${sortColumn === 'staleQueuedCount' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Stale queued"
                                             isActive={sortColumn === 'staleQueuedCount'}
@@ -508,7 +508,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                                             onClick={() => handleSort('staleQueuedCount')}
                                         />
                                     </TableHead>
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${sortColumn === 'dispatch' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${sortColumn === 'dispatch' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Dispatch"
                                             isActive={sortColumn === 'dispatch'}
@@ -516,7 +516,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                                             onClick={() => handleSort('dispatch')}
                                         />
                                     </TableHead>
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${sortColumn === 'failure' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${sortColumn === 'failure' ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Failure"
                                             isActive={sortColumn === 'failure'}
@@ -529,47 +529,47 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                             <TableBody>
                                 {pagedChecks.length === 0 && !loading ? (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
+                                        <TableCell colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
                                             {hasActiveTableControls ? 'No checks match your filters.' : 'No worker health rows yet.'}
                                         </TableCell>
                                     </TableRow>
                                 ) : null}
                                 {loading && checks.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
+                                        <TableCell colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
                                             Loading worker health…
                                         </TableCell>
                                     </TableRow>
                                 ) : null}
                                 {pagedChecks.map((row) => (
                                     <TableRow key={row.id} className={`${ADMIN_TABLE_ROW_SURFACE_CLASS} align-top`}>
-                                        <TableCell className={`px-4 py-3 font-semibold text-slate-900 ${sortColumn === 'checkType' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                        <TableCell className={`px-4 py-3 font-semibold text-foreground ${sortColumn === 'checkType' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                             {CHECK_TYPE_LABELS[row.checkType]}
                                         </TableCell>
                                         <TableCell className={`px-4 py-3 ${sortColumn === 'status' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                             <StatusBadge status={row.status} />
                                         </TableCell>
-                                        <TableCell className={`px-4 py-3 text-slate-700 ${sortColumn === 'startedAt' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                        <TableCell className={`px-4 py-3 text-foreground ${sortColumn === 'startedAt' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                             <div>{formatTimestamp(row.startedAt)}</div>
-                                            <div className="text-xs text-slate-500">
+                                            <div className="text-xs text-muted-foreground">
                                                 Finished: {formatTimestamp(row.finishedAt)}
                                             </div>
                                         </TableCell>
-                                        <TableCell className={`px-4 py-3 text-slate-700 ${sortColumn === 'staleQueuedCount' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                        <TableCell className={`px-4 py-3 text-foreground ${sortColumn === 'staleQueuedCount' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                             <div>{row.staleQueuedCount.toLocaleString()}</div>
-                                            <div className="text-xs text-slate-500">
+                                            <div className="text-xs text-muted-foreground">
                                                 Oldest: {formatDuration(row.oldestQueuedAgeMs)}
                                             </div>
                                         </TableCell>
-                                        <TableCell className={`px-4 py-3 text-slate-700 ${sortColumn === 'dispatch' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                        <TableCell className={`px-4 py-3 text-foreground ${sortColumn === 'dispatch' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                             <div>{formatDispatchStatus(row)}</div>
-                                            <div className="text-xs text-slate-500">
+                                            <div className="text-xs text-muted-foreground">
                                                 Canary latency: {formatDuration(row.canaryLatencyMs)}
                                             </div>
                                         </TableCell>
-                                        <TableCell className={`px-4 py-3 text-slate-700 ${sortColumn === 'failure' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                        <TableCell className={`px-4 py-3 text-foreground ${sortColumn === 'failure' ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                             <div>{row.failureCode || '—'}</div>
-                                            <div className="max-w-[340px] text-xs text-slate-500">
+                                            <div className="max-w-[340px] text-xs text-muted-foreground">
                                                 {row.failureMessage || 'No failure recorded.'}
                                             </div>
                                         </TableCell>
@@ -579,7 +579,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                         </Table>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-slate-500">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>
                             {sortedChecks.length === 0
                                 ? 'Showing 0 checks'
@@ -590,7 +590,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                                 type="button"
                                 onClick={() => setPage((current) => Math.max(current - 1, 1))}
                                 disabled={page === 1}
-                                className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
+                                className="rounded border border-border px-2 py-1 disabled:opacity-50"
                             >
                                 Prev
                             </button>
@@ -599,7 +599,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                                 type="button"
                                 onClick={() => setPage((current) => Math.min(current + 1, pageCount))}
                                 disabled={page >= pageCount}
-                                className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
+                                className="rounded border border-border px-2 py-1 disabled:opacity-50"
                             >
                                 Next
                             </button>

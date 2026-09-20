@@ -20,7 +20,10 @@ vi.mock('../../components/marketing/MarketingLayout', () => ({
 }));
 
 vi.mock('../../components/marketing/ReleasePill', () => ({
-  ReleasePill: ({ item }: { item: { typeLabel: string } }) => React.createElement('span', null, item.typeLabel),
+  // ReleasePill also takes a bare typeKey + label now, so the inline "Internal"
+  // badge can go through the same component instead of duplicating its markup.
+  ReleasePill: ({ item, label }: { item?: { typeLabel: string }; label?: string }) =>
+    React.createElement('span', null, item?.typeLabel ?? label ?? ''),
 }));
 
 vi.mock('../../services/releaseNotesService', async () => {

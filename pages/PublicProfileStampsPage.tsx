@@ -177,14 +177,14 @@ export const PublicProfileStampsPage: React.FC = () => {
     : buildPath('inspirations');
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-secondary">
       <SiteHeader hideCreateTrip />
       <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-5 pb-14 pt-8 md:px-8 md:pt-10">
-        <nav className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600">
-          <CaretLeft size={14} weight="bold" className="text-slate-500" />
+        <nav className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <CaretLeft size={14} weight="bold" className="text-muted-foreground" />
           <NavLink
             to={publicProfilePath}
-            className="transition-colors hover:text-accent-700"
+            className="transition-colors hover:text-accent-700 dark:hover:text-accent-200"
             onClick={() => trackEvent('public_profile__stamps_back--profile')}
             {...getAnalyticsDebugAttributes('public_profile__stamps_back--profile')}
           >
@@ -193,34 +193,34 @@ export const PublicProfileStampsPage: React.FC = () => {
         </nav>
 
         {state.status === 'loading' ? (
-          <section className="h-28 animate-pulse rounded-2xl border border-slate-200 bg-white" />
+          <section className="h-28 animate-pulse rounded-2xl border border-border bg-card" />
         ) : null}
 
         {state.status === 'private' ? (
-          <section className="rounded-2xl border border-slate-200 bg-white px-5 py-8 text-center">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">{t('publicProfile.privateTitle')}</h1>
-            <p className="mt-2 text-sm text-slate-600">{t('publicProfile.privateDescription')}</p>
+          <section className="rounded-2xl border border-border bg-card px-5 py-8 text-center">
+            <h1 className="text-2xl font-black tracking-tight text-foreground">{t('publicProfile.privateTitle')}</h1>
+            <p className="mt-2 text-sm text-muted-foreground">{t('publicProfile.privateDescription')}</p>
           </section>
         ) : null}
 
         {state.status === 'not_found' ? (
-          <section className="rounded-2xl border border-slate-200 bg-white px-5 py-8 text-center">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">{t('publicProfile.notFoundTitle')}</h1>
-            <p className="mt-2 text-sm text-slate-600">{t('publicProfile.notFoundDescription')}</p>
+          <section className="rounded-2xl border border-border bg-card px-5 py-8 text-center">
+            <h1 className="text-2xl font-black tracking-tight text-foreground">{t('publicProfile.notFoundTitle')}</h1>
+            <p className="mt-2 text-sm text-muted-foreground">{t('publicProfile.notFoundDescription')}</p>
           </section>
         ) : null}
 
         {state.status === 'found' && state.profile ? (
           <>
             <header className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-700">{t('stamps.eyebrow')}</p>
-              <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">{t('stamps.title')}</h1>
-              <p className="max-w-3xl text-sm text-slate-600">{t('stamps.description', { name: displayName })}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-700 dark:text-accent-200">{t('stamps.eyebrow')}</p>
+              <h1 className="text-4xl font-black tracking-tight text-foreground md:text-5xl">{t('stamps.title')}</h1>
+              <p className="max-w-3xl text-sm text-muted-foreground">{t('stamps.description', { name: displayName })}</p>
             </header>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
-                <IdentificationCard size={14} weight="duotone" className="text-accent-600" />
+            <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5 dark:shadow-none">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:text-foreground">
+                <IdentificationCard size={14} weight="duotone" className="text-accent-600 dark:text-accent-300" />
                 {t('summary.stampsTitle')}
               </div>
               <ProfileStampBookViewer

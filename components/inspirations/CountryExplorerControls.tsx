@@ -41,7 +41,7 @@ const chipClass = (isActive: boolean): string => [
   'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors',
   isActive
     ? 'border-accent-500 bg-accent-500 text-white'
-    : 'border-slate-200 bg-white text-slate-600 hover:border-accent-300 hover:text-accent-700',
+    : 'border-border bg-card text-muted-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30',
 ].join(' ');
 
 const FacetGroup: React.FC<{
@@ -55,7 +55,7 @@ const FacetGroup: React.FC<{
   if (values.length === 0) return null;
   return (
     <fieldset className="min-w-0">
-      <legend className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">{legend}</legend>
+      <legend className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{legend}</legend>
       <div className="flex flex-wrap gap-2">
         {values.map((value) => {
           const isActive = activeValues.includes(value);
@@ -90,8 +90,8 @@ const OriginNotice: React.FC<{ origin: CountryExplorerOriginControl }> = ({ orig
   const place = [inferredCity, inferredCountry].filter(Boolean).join(', ');
 
   const tone = status === 'ready'
-    ? 'border-accent-200 bg-accent-50 text-accent-800'
-    : 'border-amber-200 bg-amber-50 text-amber-900';
+    ? 'border-accent-200 bg-accent-50 text-accent-800 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
+    : 'border-amber-200 bg-amber-50 text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
 
   return (
     <div
@@ -114,7 +114,7 @@ const OriginNotice: React.FC<{ origin: CountryExplorerOriginControl }> = ({ orig
             trackEvent('inspirations__country_sort--origin_dismiss');
             origin.onDismiss();
           }}
-          className="shrink-0 rounded-full border border-accent-300 px-2.5 py-1 text-[11px] font-bold transition-colors hover:bg-white"
+          className="shrink-0 rounded-full border border-accent-300 px-2.5 py-1 text-[11px] font-bold transition-colors hover:bg-card dark:border-accent-400/30"
           {...getAnalyticsDebugAttributes('inspirations__country_sort--origin_dismiss')}
         >
           {t('inspirations.subpages.explorer.origin.notMe')}
@@ -127,7 +127,7 @@ const OriginNotice: React.FC<{ origin: CountryExplorerOriginControl }> = ({ orig
             trackEvent('inspirations__country_sort--origin_restore');
             origin.onRestore();
           }}
-          className="shrink-0 rounded-full border border-amber-300 px-2.5 py-1 text-[11px] font-bold transition-colors hover:bg-white"
+          className="shrink-0 rounded-full border border-amber-300 px-2.5 py-1 text-[11px] font-bold transition-colors hover:bg-card dark:border-amber-400/30"
           {...getAnalyticsDebugAttributes('inspirations__country_sort--origin_restore')}
         >
           {t('inspirations.subpages.explorer.origin.useAnyway')}
@@ -183,11 +183,11 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
   };
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+    <div className="rounded-3xl border border-border bg-card p-5 shadow-sm md:p-6 dark:shadow-none">
       <div className="relative">
         <label className="sr-only" htmlFor={searchId}>{t('inspirations.subpages.explorer.searchLabel')}</label>
         <MagnifyingGlass
-          className="pointer-events-none absolute start-4 top-1/2 -translate-y-1/2 text-slate-400"
+          className="pointer-events-none absolute start-4 top-1/2 -translate-y-1/2 text-muted-foreground"
           size={18}
           weight="bold"
         />
@@ -205,7 +205,7 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
           }}
           placeholder={t('inspirations.subpages.explorer.searchPlaceholder')}
           autoComplete="off"
-          className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pe-11 ps-12 text-start text-sm font-semibold text-slate-900 outline-none transition-colors placeholder:font-medium placeholder:text-slate-400 focus:border-accent-400 focus:bg-white"
+          className="w-full rounded-2xl border border-border bg-secondary py-3 pe-11 ps-12 text-start text-sm font-semibold text-foreground outline-none transition-colors placeholder:font-medium placeholder:text-muted-foreground focus:border-accent-400 focus:bg-card"
           {...getAnalyticsDebugAttributes('inspirations__country_search')}
         />
         {state.query ? (
@@ -213,7 +213,7 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
             type="button"
             onClick={() => dispatch({ type: 'set-query', query: '' })}
             aria-label={t('inspirations.subpages.explorer.clearSearch')}
-            className="absolute end-3 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full bg-slate-200 text-slate-600 transition-colors hover:bg-slate-300"
+            className="absolute end-3 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full bg-slate-200 text-muted-foreground transition-colors hover:bg-slate-300"
           >
             <X size={13} weight="bold" />
           </button>
@@ -221,11 +221,11 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
       </div>
 
       <section className="mt-6">
-        <h2 className="flex items-center gap-2 text-base font-black text-slate-900">
-          <CalendarHeart className="text-accent-600" size={18} weight="duotone" />
+        <h2 className="flex items-center gap-2 text-base font-black text-foreground">
+          <CalendarHeart className="text-accent-600 dark:text-accent-300" size={18} weight="duotone" />
           {t('inspirations.subpages.explorer.monthTitle')}
         </h2>
-        <p className="mt-1 text-sm text-slate-500">{t('inspirations.subpages.explorer.monthSubtitle')}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{t('inspirations.subpages.explorer.monthSubtitle')}</p>
         <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1">
           <button
             type="button"
@@ -251,18 +251,18 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
           })}
         </div>
         {state.month !== null ? (
-          <p className="mt-3 text-xs leading-relaxed text-slate-400">
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
             {t('inspirations.subpages.explorer.dataDisclaimer')}
           </p>
         ) : null}
       </section>
 
-      <details className="group mt-6 border-t border-slate-100 pt-5" open={activeFilterCount > 0}>
-        <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-bold text-slate-700 marker:content-['']">
-          <Funnel className="text-slate-400" size={16} weight="duotone" />
+      <details className="group mt-6 border-t border-border pt-5" open={activeFilterCount > 0}>
+        <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-bold text-foreground marker:content-['']">
+          <Funnel className="text-muted-foreground" size={16} weight="duotone" />
           {t('inspirations.subpages.explorer.filtersTitle')}
           {activeFilterCount > 0 ? (
-            <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-black text-accent-700">
+            <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-black text-accent-700 dark:bg-accent-400/12 dark:text-accent-200">
               {activeFilterCount}
             </span>
           ) : null}
@@ -299,18 +299,18 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
         </div>
       </details>
 
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-        <p className="text-sm font-bold text-slate-700" aria-live="polite">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+        <p className="text-sm font-bold text-foreground" aria-live="polite">
           {t('inspirations.subpages.explorer.resultCount', { count: resultCount, total: totalCount })}
         </p>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-xs font-bold text-slate-500" htmlFor={sortId}>
+          <label className="flex items-center gap-2 text-xs font-bold text-muted-foreground" htmlFor={sortId}>
             {t('inspirations.subpages.explorer.sortLabel')}
             <select
               id={sortId}
               value={state.sort}
               onChange={(event) => handleSort(event.target.value as CountryExplorerSort)}
-              className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-accent-400"
+              className="rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs font-bold text-foreground outline-none focus:border-accent-400"
             >
               {COUNTRY_EXPLORER_SORTS.map((sort) => (
                 <option
@@ -332,7 +332,7 @@ export const CountryExplorerControls: React.FC<CountryExplorerControlsProps> = (
                 trackEvent('inspirations__country_filter--reset');
                 dispatch({ type: 'reset' });
               }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
               {...getAnalyticsDebugAttributes('inspirations__country_filter--reset')}
             >
               <ArrowsClockwise size={13} weight="bold" />

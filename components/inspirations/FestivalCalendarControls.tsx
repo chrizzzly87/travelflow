@@ -25,7 +25,7 @@ const chipClass = (isActive: boolean): string => [
   'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors',
   isActive
     ? 'border-accent-500 bg-accent-500 text-white'
-    : 'border-slate-200 bg-white text-slate-600 hover:border-accent-300 hover:text-accent-700',
+    : 'border-border bg-card text-muted-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30',
 ].join(' ');
 
 /**
@@ -60,10 +60,10 @@ export const FestivalCalendarControls: React.FC<FestivalCalendarControlsProps> =
   };
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-3xl border border-border bg-card p-5 shadow-sm dark:shadow-none">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="inline-flex items-center gap-2 text-sm font-bold text-slate-700">
-          <Funnel size={16} weight="duotone" className="text-accent-600" />
+        <p className="inline-flex items-center gap-2 text-sm font-bold text-foreground">
+          <Funnel size={16} weight="duotone" className="text-accent-600 dark:text-accent-300" />
           {t('inspirations.subpages.festivals.resultSummary', {
             count: resultCount,
             total: totalCount,
@@ -76,7 +76,7 @@ export const FestivalCalendarControls: React.FC<FestivalCalendarControlsProps> =
               dispatch({ type: 'clear-filters' });
               trackEvent('inspirations__festival_filter--clear', { active_filters: activeFilterCount });
             }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-500 transition-colors hover:border-accent-300 hover:text-accent-700"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30"
             {...getAnalyticsDebugAttributes('inspirations__festival_filter--clear', { active_filters: activeFilterCount })}
           >
             <ArrowsClockwise size={14} weight="bold" />
@@ -86,7 +86,7 @@ export const FestivalCalendarControls: React.FC<FestivalCalendarControlsProps> =
       </div>
 
       <fieldset className="mt-5 min-w-0">
-        <legend className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+        <legend className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
           {t('inspirations.subpages.festivals.filterRegion')}
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -109,7 +109,7 @@ export const FestivalCalendarControls: React.FC<FestivalCalendarControlsProps> =
       </fieldset>
 
       <fieldset className="mt-5 min-w-0">
-        <legend className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+        <legend className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
           <CalendarHeart size={13} weight="duotone" />
           {t('inspirations.subpages.festivals.filterMonth')}
         </legend>

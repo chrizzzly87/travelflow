@@ -209,7 +209,7 @@ export const useTripItemMutationHandlers = ({
             title: itemProps.title || 'New City',
             startDateOffset: lastOffset,
             duration: itemProps.duration || 2,
-            color: itemProps.color || 'bg-emerald-100 border-emerald-200 text-emerald-700',
+            color: itemProps.color || 'bg-emerald-100 border-emerald-200 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30',
             loading: false,
             ...itemProps,
         } as ITimelineItem;

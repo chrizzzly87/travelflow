@@ -7,7 +7,7 @@ export const AdminAccessDeniedPage: React.FC = () => {
     const { isLoading, isAdmin } = useAuth();
 
     if (isLoading) {
-        return <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />;
+        return <div className="min-h-[42vh] w-full bg-secondary" aria-hidden="true" />;
     }
 
     if (isAdmin) {
@@ -16,15 +16,15 @@ export const AdminAccessDeniedPage: React.FC = () => {
 
     return (
         <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-            <section className="rounded-2xl border border-amber-200 bg-white p-6 shadow-sm sm:p-8">
-                <div className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-800">
+            <section className="rounded-2xl border border-amber-200 bg-card p-6 shadow-sm sm:p-8 dark:border-amber-400/30 dark:shadow-none">
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                     <ShieldWarning size={14} />
                     Access denied
                 </div>
-                <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-900">
+                <h1 className="mt-4 text-2xl font-black tracking-tight text-foreground">
                     You do not have access to the admin workspace.
                 </h1>
-                <p className="mt-3 text-sm leading-6 text-slate-600">
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
                     Your account is signed in, but it does not include admin permissions for this area.
                 </p>
                 <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -36,7 +36,7 @@ export const AdminAccessDeniedPage: React.FC = () => {
                     </Link>
                     <Link
                         to="/"
-                        className="inline-flex items-center gap-1 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        className="inline-flex items-center gap-1 rounded-xl border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary"
                     >
                         <ArrowLeft size={14} />
                         Back home

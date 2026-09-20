@@ -314,15 +314,15 @@ const formatAccountStatusLabel = (status: string | null | undefined): string => 
 };
 
 const getLifecyclePillClassName = (status: TripStatus): string => {
-    if (status === 'archived') return 'border-slate-300 bg-slate-100 text-slate-700';
-    if (status === 'expired') return 'border-amber-200 bg-amber-50 text-amber-700';
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    if (status === 'archived') return 'border-border bg-secondary text-foreground';
+    if (status === 'expired') return 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
 };
 
 const getGenerationPillClassName = (state: TripGenerationState): string => {
-    if (state === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700';
-    if (state === 'running' || state === 'queued') return 'border-amber-200 bg-amber-50 text-amber-700';
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    if (state === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
+    if (state === 'running' || state === 'queued') return 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
 };
 
 const getGenerationStateLabel = (state: TripGenerationState): string => {
@@ -333,10 +333,10 @@ const getGenerationStateLabel = (state: TripGenerationState): string => {
 };
 
 const getGenerationJobPillClassName = (state: TripGenerationJobSummary['state']): string => {
-    if (state === 'dead') return 'border-rose-300 bg-rose-100 text-rose-800';
-    if (state === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700';
-    if (state === 'queued' || state === 'leased') return 'border-amber-200 bg-amber-50 text-amber-700';
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    if (state === 'dead') return 'border-rose-300 bg-rose-100 text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
+    if (state === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
+    if (state === 'queued' || state === 'leased') return 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30';
 };
 
 const resolveTripGenerationState = (trip: AdminTripRecord): TripGenerationState => {
@@ -434,47 +434,47 @@ const TripRowActionsMenu: React.FC<{
                 type="button"
                 onClick={() => setIsOpen((current) => !current)}
                 disabled={disabled}
-                className="inline-flex size-8 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 dark:text-foreground"
                 aria-label="Open trip actions"
             >
                 <DotsThreeVertical size={16} />
             </button>
             {isOpen && (
-                <div className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[180px] rounded-lg border border-slate-200 bg-white p-1 shadow-xl">
+                <div className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[180px] rounded-lg border border-border bg-card p-1 shadow-xl dark:shadow-none">
                     <button
                         type="button"
                         onClick={() => runAction(onPreviewTrip)}
-                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-secondary"
                     >
                         Preview trip
                     </button>
                     <button
                         type="button"
                         onClick={() => runAction(onDuplicateTrip)}
-                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-secondary"
                     >
                         Duplicate trip
                     </button>
                     <button
                         type="button"
                         onClick={() => runAction(onTransferTrip)}
-                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-secondary"
                     >
                         Transfer owner
                     </button>
                     <button
                         type="button"
                         onClick={() => runAction(onDownloadTripJson)}
-                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-secondary"
                     >
                         Download JSON
                     </button>
-                    <div className="my-1 h-px bg-slate-100" />
+                    <div className="my-1 h-px bg-secondary" />
                     <button
                         type="button"
                         onClick={() => runAction(onSoftDeleteTrip)}
                         className={`flex w-full items-center rounded-md px-3 py-2 text-left text-sm ${
-                            isArchived ? 'text-emerald-800 hover:bg-emerald-50' : 'text-amber-800 hover:bg-amber-50'
+                            isArchived ? 'text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-400/12 dark:text-emerald-200' : 'text-amber-800 hover:bg-amber-50 dark:hover:bg-amber-400/12 dark:text-amber-200'
                         }`}
                     >
                         {isArchived ? 'Restore trip' : 'Soft-delete trip'}
@@ -482,7 +482,7 @@ const TripRowActionsMenu: React.FC<{
                     <button
                         type="button"
                         onClick={() => runAction(onHardDeleteTrip)}
-                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-rose-800 hover:bg-rose-50"
+                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-rose-800 hover:bg-rose-50 dark:hover:bg-rose-400/12 dark:text-rose-200"
                     >
                         Hard delete trip
                     </button>
@@ -1802,57 +1802,57 @@ export const AdminTripsPage: React.FC = () => {
             )}
         >
             {errorMessage && (
-                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                     {errorMessage}
                 </section>
             )}
             {dataSourceNotice && (
-                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                     {dataSourceNotice}
                 </section>
             )}
             {message && (
-                <section className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                <section className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                     {message}
                 </section>
             )}
 
             <section className="grid gap-3 md:grid-cols-5">
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
-                    <p className="mt-2 text-2xl font-semibold text-slate-900"><AdminCountUpNumber value={summary.total} /></p>
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total</p>
+                    <p className="mt-2 text-2xl font-semibold text-foreground"><AdminCountUpNumber value={summary.total} /></p>
                 </article>
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Active</p>
-                    <p className="mt-2 text-2xl font-semibold text-emerald-700"><AdminCountUpNumber value={summary.active} /></p>
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active</p>
+                    <p className="mt-2 text-2xl font-semibold text-emerald-700 dark:text-emerald-200"><AdminCountUpNumber value={summary.active} /></p>
                 </article>
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Expired</p>
-                    <p className="mt-2 text-2xl font-semibold text-amber-700"><AdminCountUpNumber value={summary.expired} /></p>
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Expired</p>
+                    <p className="mt-2 text-2xl font-semibold text-amber-700 dark:text-amber-200"><AdminCountUpNumber value={summary.expired} /></p>
                 </article>
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Archived</p>
-                    <p className="mt-2 text-2xl font-semibold text-slate-700"><AdminCountUpNumber value={summary.archived} /></p>
+                <article className="rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Archived</p>
+                    <p className="mt-2 text-2xl font-semibold text-foreground"><AdminCountUpNumber value={summary.archived} /></p>
                 </article>
-                <article className="rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm">
+                <article className="rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm dark:bg-rose-400/12 dark:border-rose-400/30">
                     <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">Failed generation</p>
-                    <p className="mt-2 text-2xl font-semibold text-rose-700"><AdminCountUpNumber value={summary.failedGeneration} /></p>
+                    <p className="mt-2 text-2xl font-semibold text-rose-700 dark:text-rose-200"><AdminCountUpNumber value={summary.failedGeneration} /></p>
                     <button
                         type="button"
                         onClick={() => {
                             setGenerationStateFilters(['failed']);
                             setPage(1);
                         }}
-                        className="mt-2 inline-flex h-7 items-center rounded-md border border-rose-300 bg-white px-2.5 text-[11px] font-semibold text-rose-700 hover:bg-rose-100"
+                        className="mt-2 inline-flex h-7 items-center rounded-md border border-rose-300 bg-card px-2.5 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                     >
                         Filter failed
                     </button>
                 </article>
             </section>
 
-            <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <section className="mt-4 rounded-2xl border border-border bg-card p-4 shadow-sm dark:shadow-none">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <h2 className="text-sm font-semibold text-slate-900">Trips</h2>
+                    <h2 className="text-sm font-semibold text-foreground">Trips</h2>
                     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                         <AdminFilterMenu
                             label="Status"
@@ -1902,7 +1902,7 @@ export const AdminTripsPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={resetTripFilters}
-                            className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                            className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-sm font-semibold text-foreground hover:bg-secondary"
                         >
                             <X size={14} />
                             Reset
@@ -1910,13 +1910,13 @@ export const AdminTripsPage: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                    <span className="text-xs font-semibold text-slate-700">{selectedVisibleTrips.length} selected</span>
+                <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2">
+                    <span className="text-xs font-semibold text-foreground">{selectedVisibleTrips.length} selected</span>
                     <button
                         type="button"
                         onClick={() => void handleBulkSoftDeleteTrips()}
                         disabled={isSaving || selectedVisibleTrips.length === 0}
-                        className="inline-flex h-8 items-center rounded-lg border border-amber-300 px-3 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-8 items-center rounded-lg border border-amber-300 px-3 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                     >
                         Soft-delete selected
                     </button>
@@ -1924,7 +1924,7 @@ export const AdminTripsPage: React.FC = () => {
                         type="button"
                         onClick={() => void handleBulkHardDeleteTrips()}
                         disabled={isSaving || selectedVisibleTrips.length === 0}
-                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-rose-300 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-rose-300 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                     >
                         <Trash size={12} />
                         Hard delete selected
@@ -1933,16 +1933,16 @@ export const AdminTripsPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => setSelectedTripIds(new Set())}
-                            className="inline-flex h-8 items-center rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                            className="inline-flex h-8 items-center rounded-lg border border-border px-3 text-xs font-semibold text-foreground hover:bg-secondary"
                         >
                             Clear
                         </button>
                     )}
                 </div>
 
-                <div ref={tripsTableScrollRef} className="rounded-xl border border-slate-200 bg-white">
+                <div ref={tripsTableScrollRef} className="rounded-xl border border-border bg-card">
                     <Table className="w-[max(100%,1160px)]">
-                        <TableHeader className="bg-slate-50">
+                        <TableHeader className="bg-secondary">
                             <TableRow>
                                 <TableHead
                                     className={`sticky left-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-4 py-3 ${getAdminStickyHeaderCellClass({
@@ -1958,7 +1958,7 @@ export const AdminTripsPage: React.FC = () => {
                                     />
                                 </TableHead>
                                 <TableHead
-                                    className={`sticky left-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] px-4 py-3 font-semibold text-slate-700 ${getAdminStickyHeaderCellClass({
+                                    className={`sticky left-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] px-4 py-3 font-semibold text-foreground ${getAdminStickyHeaderCellClass({
                                         isScrolled: isTripsTableScrolledHorizontally,
                                         isFirst: false,
                                         isSorted: isTripSortedColumn('trip'),
@@ -1973,7 +1973,7 @@ export const AdminTripsPage: React.FC = () => {
                                     />
                                 </TableHead>
                                 {isTripColumnVisible('owner') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('owner') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isTripSortedColumn('owner') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Owner"
                                             isActive={isTripSortedColumn('owner')}
@@ -1983,7 +1983,7 @@ export const AdminTripsPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isTripColumnVisible('lifecycle') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('lifecycle') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isTripSortedColumn('lifecycle') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Lifecycle"
                                             isActive={isTripSortedColumn('lifecycle')}
@@ -1993,7 +1993,7 @@ export const AdminTripsPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isTripColumnVisible('generation') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('generation') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isTripSortedColumn('generation') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Generation"
                                             isActive={isTripSortedColumn('generation')}
@@ -2003,7 +2003,7 @@ export const AdminTripsPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isTripColumnVisible('source') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('source') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isTripSortedColumn('source') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Source"
                                             isActive={isTripSortedColumn('source')}
@@ -2013,7 +2013,7 @@ export const AdminTripsPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isTripColumnVisible('expires') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('expires') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isTripSortedColumn('expires') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Expires"
                                             isActive={isTripSortedColumn('expires')}
@@ -2023,7 +2023,7 @@ export const AdminTripsPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isTripColumnVisible('updated') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('updated') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isTripSortedColumn('updated') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Last update"
                                             isActive={isTripSortedColumn('updated')}
@@ -2033,7 +2033,7 @@ export const AdminTripsPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isTripColumnVisible('created') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('created') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isTripSortedColumn('created') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Created"
                                             isActive={isTripSortedColumn('created')}
@@ -2043,7 +2043,7 @@ export const AdminTripsPage: React.FC = () => {
                                     </TableHead>
                                 )}
                                 {isTripColumnVisible('archived') && (
-                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('archived') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                    <TableHead className={`px-4 py-3 font-semibold text-foreground ${isTripSortedColumn('archived') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
                                             label="Archived at"
                                             isActive={isTripSortedColumn('archived')}
@@ -2052,7 +2052,7 @@ export const AdminTripsPage: React.FC = () => {
                                         />
                                     </TableHead>
                                 )}
-                                <TableHead className="px-4 py-3 text-right font-semibold text-slate-700">Actions</TableHead>
+                                <TableHead className="px-4 py-3 text-right font-semibold text-foreground">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -2101,11 +2101,11 @@ export const AdminTripsPage: React.FC = () => {
                                         >
                                             <div
                                                 title="Open trip details drawer"
-                                                className="inline-flex xl:max-w-full items-center gap-1.5 truncate text-left text-sm font-semibold text-slate-800 group-hover:text-accent-700 group-hover:underline"
+                                                className="inline-flex xl:max-w-full items-center gap-1.5 truncate text-left text-sm font-semibold text-foreground group-hover:text-accent-700 group-hover:underline dark:group-hover:text-accent-200"
                                             >
                                                 <span className="truncate">{trip.title || trip.trip_id}</span>
                                             </div>
-                                            <div className="mt-1 text-xs text-slate-500">
+                                            <div className="mt-1 text-xs text-muted-foreground">
                                                 <CopyableUuid
                                                     value={trip.trip_id}
                                                     textClassName="max-w-full truncate text-xs"
@@ -2114,17 +2114,17 @@ export const AdminTripsPage: React.FC = () => {
                                             </div>
                                         </TableCell>
                                         {isTripColumnVisible('owner') && (
-                                            <TableCell className={`max-w-[240px] px-4 py-3 text-xs text-slate-600 ${isTripSortedColumn('owner') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                            <TableCell className={`max-w-[240px] px-4 py-3 text-xs text-muted-foreground ${isTripSortedColumn('owner') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 <button
                                                     type="button"
                                                     onClick={() => openOwnerDrawer(trip.owner_id)}
                                                     title="Open owner details"
                                                     className="group block w-full cursor-pointer text-left"
                                                 >
-                                                    <span className="block truncate text-sm font-medium text-slate-700 group-hover:text-accent-700 group-hover:underline">
+                                                    <span className="block truncate text-sm font-medium text-foreground group-hover:text-accent-700 group-hover:underline dark:group-hover:text-accent-200">
                                                         {trip.owner_email || trip.owner_id}
                                                     </span>
-                                                    <span className="mt-0.5 block text-[11px] text-slate-500">
+                                                    <span className="mt-0.5 block text-[11px] text-muted-foreground">
                                                         <CopyableUuid
                                                             value={trip.owner_id}
                                                             focusable={false}
@@ -2151,17 +2151,17 @@ export const AdminTripsPage: React.FC = () => {
                                         )}
                                         {isTripColumnVisible('source') && (
                                             <TableCell className={`px-4 py-3 ${isTripSortedColumn('source') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <div className="text-xs font-medium text-slate-700">{formatSourceKindLabel(normalizedSource)}</div>
-                                                <div className="text-[11px] text-slate-500">{normalizedSource}</div>
+                                                <div className="text-xs font-medium text-foreground">{formatSourceKindLabel(normalizedSource)}</div>
+                                                <div className="text-[11px] text-muted-foreground">{normalizedSource}</div>
                                             </TableCell>
                                         )}
                                         {isTripColumnVisible('expires') && (
                                             <TableCell className={`px-4 py-3 ${isTripSortedColumn('expires') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <div className="text-xs font-semibold text-slate-700">
+                                                <div className="text-xs font-semibold text-foreground">
                                                     {formatRelativeTimestamp(trip.trip_expires_at, 'No expiration')}
                                                 </div>
                                                 {hasExpiration && (
-                                                    <div className="text-[11px] text-slate-500">
+                                                    <div className="text-[11px] text-muted-foreground">
                                                         {formatTimestamp(trip.trip_expires_at, 'Not set')}
                                                     </div>
                                                 )}
@@ -2169,31 +2169,31 @@ export const AdminTripsPage: React.FC = () => {
                                         )}
                                         {isTripColumnVisible('updated') && (
                                             <TableCell className={`px-4 py-3 ${isTripSortedColumn('updated') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <div className="text-xs font-semibold text-slate-700">
+                                                <div className="text-xs font-semibold text-foreground">
                                                     {formatRelativeTimestamp(trip.updated_at, 'No update')}
                                                 </div>
-                                                <div className="text-[11px] text-slate-500">
+                                                <div className="text-[11px] text-muted-foreground">
                                                     {formatTimestamp(trip.updated_at, 'No update')}
                                                 </div>
                                             </TableCell>
                                         )}
                                         {isTripColumnVisible('created') && (
                                             <TableCell className={`px-4 py-3 ${isTripSortedColumn('created') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <div className="text-xs font-semibold text-slate-700">
+                                                <div className="text-xs font-semibold text-foreground">
                                                     {formatRelativeTimestamp(trip.created_at, 'No timestamp')}
                                                 </div>
-                                                <div className="text-[11px] text-slate-500">
+                                                <div className="text-[11px] text-muted-foreground">
                                                     {formatTimestamp(trip.created_at, 'No timestamp')}
                                                 </div>
                                             </TableCell>
                                         )}
                                         {isTripColumnVisible('archived') && (
                                             <TableCell className={`px-4 py-3 ${isTripSortedColumn('archived') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                <div className="text-xs font-semibold text-slate-700">
+                                                <div className="text-xs font-semibold text-foreground">
                                                     {formatRelativeTimestamp(trip.archived_at, 'Not archived')}
                                                 </div>
                                                 {hasArchivedAt && (
-                                                    <div className="text-[11px] text-slate-500">
+                                                    <div className="text-[11px] text-muted-foreground">
                                                         {formatTimestamp(trip.archived_at, 'Not archived')}
                                                     </div>
                                                 )}
@@ -2226,16 +2226,16 @@ export const AdminTripsPage: React.FC = () => {
                             })}
                             {sortedVisibleTrips.length === 0 && !isLoading && (
                                 <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={tripsTableColumnCount}>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-muted-foreground" colSpan={tripsTableColumnCount}>
                                         No trips match the current filters.
                                     </TableCell>
                                 </TableRow>
                             )}
                             {isLoading && (
                                 <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={tripsTableColumnCount}>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-muted-foreground" colSpan={tripsTableColumnCount}>
                                         <span className="inline-flex items-center gap-2 font-medium">
-                                            <SpinnerGap size={16} className="animate-spin text-slate-400" />
+                                            <SpinnerGap size={16} className="animate-spin text-muted-foreground" />
                                             Loading trips…
                                         </span>
                                     </TableCell>
@@ -2244,7 +2244,7 @@ export const AdminTripsPage: React.FC = () => {
                         </TableBody>
                     </Table>
                 </div>
-                <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
                     <span>
                         {sortedVisibleTrips.length === 0
                             ? 'Showing 0 trips'
@@ -2255,7 +2255,7 @@ export const AdminTripsPage: React.FC = () => {
                             type="button"
                             onClick={() => setPage((current) => Math.max(current - 1, 1))}
                             disabled={page === 1}
-                            className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
+                            className="rounded border border-border px-2 py-1 disabled:opacity-50"
                         >
                             Prev
                         </button>
@@ -2264,14 +2264,14 @@ export const AdminTripsPage: React.FC = () => {
                             type="button"
                             onClick={() => setPage((current) => Math.min(current + 1, tripPageCount))}
                             disabled={page >= tripPageCount}
-                            className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
+                            className="rounded border border-border px-2 py-1 disabled:opacity-50"
                         >
                             Next
                         </button>
                     </div>
                 </div>
                 {isSaving && (
-                    <p className="mt-2 text-xs text-slate-500">Saving changes…</p>
+                    <p className="mt-2 text-xs text-muted-foreground">Saving changes…</p>
                 )}
             </section>
 
@@ -2298,16 +2298,16 @@ export const AdminTripsPage: React.FC = () => {
                     accessibleDescription="Inspect selected trip metadata and jump to related owner details."
                 >
                     <div className="flex h-full flex-col">
-                        <div className="border-b border-slate-200 px-5 py-4">
-                            <h2 className="text-base font-semibold text-slate-900">Trip details</h2>
-                            <p className="truncate text-sm text-slate-600">
+                        <div className="border-b border-border px-5 py-4">
+                            <h2 className="text-base font-semibold text-foreground">Trip details</h2>
+                            <p className="truncate text-sm text-muted-foreground">
                                 {selectedTripForDrawer ? (selectedTripForDrawer.title || selectedTripForDrawer.trip_id) : 'No trip selected'}
                             </p>
                             {selectedTripForDrawer && (
                                 <button
                                     type="button"
                                     onClick={() => handleOpenTripPreview(selectedTripForDrawer)}
-                                    className="mt-3 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-accent-300 bg-accent-50 px-3 text-sm font-semibold text-accent-800 hover:bg-accent-100"
+                                    className="mt-3 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-accent-300 bg-accent-50 px-3 text-sm font-semibold text-accent-800 hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                                 >
                                     Open trip page
                                     <ArrowSquareOut size={14} />
@@ -2316,28 +2316,28 @@ export const AdminTripsPage: React.FC = () => {
                         </div>
                         <div className="flex-1 overflow-y-auto p-4">
                             {!selectedTripForDrawer ? (
-                                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                <div className="rounded-xl border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
                                     No trip found for the selected audit target.
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
-                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Trip Information</h3>
+                                    <section className="space-y-3 rounded-xl border border-border bg-card p-4">
+                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Trip Information</h3>
                                         <div className="grid gap-2 sm:grid-cols-2">
-                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">Trip ID</span>
-                                                <CopyableUuid value={selectedTripForDrawer.trip_id} textClassName="break-all text-sm font-medium text-slate-800" />
+                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
+                                                <span className="text-xs font-semibold text-muted-foreground">Trip ID</span>
+                                                <CopyableUuid value={selectedTripForDrawer.trip_id} textClassName="break-all text-sm font-medium text-foreground" />
                                             </div>
-                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">Owner ID</span>
+                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
+                                                <span className="text-xs font-semibold text-muted-foreground">Owner ID</span>
                                                 <div className="flex flex-col gap-2">
-                                                    <CopyableUuid value={selectedTripForDrawer.owner_id} textClassName="break-all text-sm font-medium text-slate-800" />
-                                                    <span className="text-xs text-slate-600">{selectedTripForDrawer.owner_email || 'No owner email'}</span>
+                                                    <CopyableUuid value={selectedTripForDrawer.owner_id} textClassName="break-all text-sm font-medium text-foreground" />
+                                                    <span className="text-xs text-muted-foreground">{selectedTripForDrawer.owner_email || 'No owner email'}</span>
                                                     <div className="flex flex-wrap items-center gap-2">
                                                         <button
                                                             type="button"
                                                             onClick={() => openOwnerDrawer(selectedTripForDrawer.owner_id)}
-                                                            className="shrink-0 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                                            className="shrink-0 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-secondary"
                                                         >
                                                             View owner
                                                         </button>
@@ -2347,53 +2347,53 @@ export const AdminTripsPage: React.FC = () => {
                                                                 void handleTransferTrip(selectedTripForDrawer);
                                                             }}
                                                             disabled={isSaving}
-                                                            className="shrink-0 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            className="shrink-0 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                                         >
                                                             Transfer owner
                                                         </button>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">Lifecycle</span>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
+                                                <span className="text-xs font-semibold text-muted-foreground">Lifecycle</span>
                                                 <span className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${getLifecyclePillClassName(selectedTripForDrawer.status)}`}>
                                                     {selectedTripForDrawer.status}
                                                 </span>
                                             </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">Generation</span>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
+                                                <span className="text-xs font-semibold text-muted-foreground">Generation</span>
                                                 <span className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${getGenerationPillClassName(selectedTripGenerationState)}`}>
                                                     {getGenerationStateLabel(selectedTripGenerationState)}
                                                 </span>
                                             </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">Source</span>
-                                                <span className="text-sm font-medium text-slate-800">{formatSourceKindLabel(selectedTripForDrawer.source_kind)}</span>
-                                                <span className="text-[11px] text-slate-500">{(selectedTripForDrawer.source_kind || '').trim() || 'unknown'}</span>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
+                                                <span className="text-xs font-semibold text-muted-foreground">Source</span>
+                                                <span className="text-sm font-medium text-foreground">{formatSourceKindLabel(selectedTripForDrawer.source_kind)}</span>
+                                                <span className="text-[11px] text-muted-foreground">{(selectedTripForDrawer.source_kind || '').trim() || 'unknown'}</span>
                                             </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">Created At</span>
-                                                <span className="text-sm font-medium text-slate-800">{formatRelativeTimestamp(selectedTripForDrawer.created_at, 'n/a')}</span>
-                                                <span className="text-[11px] text-slate-500">{formatTimestamp(selectedTripForDrawer.created_at, 'n/a')}</span>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
+                                                <span className="text-xs font-semibold text-muted-foreground">Created At</span>
+                                                <span className="text-sm font-medium text-foreground">{formatRelativeTimestamp(selectedTripForDrawer.created_at, 'n/a')}</span>
+                                                <span className="text-[11px] text-muted-foreground">{formatTimestamp(selectedTripForDrawer.created_at, 'n/a')}</span>
                                             </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">Updated At</span>
-                                                <span className="text-sm font-medium text-slate-800">{formatRelativeTimestamp(selectedTripForDrawer.updated_at, 'n/a')}</span>
-                                                <span className="text-[11px] text-slate-500">{formatTimestamp(selectedTripForDrawer.updated_at, 'n/a')}</span>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
+                                                <span className="text-xs font-semibold text-muted-foreground">Updated At</span>
+                                                <span className="text-sm font-medium text-foreground">{formatRelativeTimestamp(selectedTripForDrawer.updated_at, 'n/a')}</span>
+                                                <span className="text-[11px] text-muted-foreground">{formatTimestamp(selectedTripForDrawer.updated_at, 'n/a')}</span>
                                             </div>
-                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">Expires At</span>
-                                                <span className="text-sm font-medium text-slate-800">{formatRelativeTimestamp(selectedTripForDrawer.trip_expires_at, 'No expiration')}</span>
-                                                <span className="text-[11px] text-slate-500">{formatTimestamp(selectedTripForDrawer.trip_expires_at, 'No expiration')}</span>
+                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
+                                                <span className="text-xs font-semibold text-muted-foreground">Expires At</span>
+                                                <span className="text-sm font-medium text-foreground">{formatRelativeTimestamp(selectedTripForDrawer.trip_expires_at, 'No expiration')}</span>
+                                                <span className="text-[11px] text-muted-foreground">{formatTimestamp(selectedTripForDrawer.trip_expires_at, 'No expiration')}</span>
                                             </div>
                                         </div>
                                     </section>
 
-                                    <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
-                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Lifecycle Controls</h3>
+                                    <section className="space-y-3 rounded-xl border border-border bg-card p-4">
+                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Lifecycle Controls</h3>
                                         <div className="grid gap-3 sm:grid-cols-2">
                                             <div className="flex flex-col gap-1">
-                                                <span className="text-xs font-semibold text-slate-500">Lifecycle status</span>
+                                                <span className="text-xs font-semibold text-muted-foreground">Lifecycle status</span>
                                                 <Select
                                                     value={drawerLifecycleDraft}
                                                     onValueChange={(value) => {
@@ -2411,7 +2411,7 @@ export const AdminTripsPage: React.FC = () => {
                                                 </Select>
                                             </div>
                                             <label htmlFor="trip-lifecycle-expiration" className="flex flex-col gap-1">
-                                                <span className="text-xs font-semibold text-slate-500">Expiration timestamp</span>
+                                                <span className="text-xs font-semibold text-muted-foreground">Expiration timestamp</span>
 	                                                <input
 	                                                    id="trip-lifecycle-expiration"
 	                                                    type="datetime-local"
@@ -2420,12 +2420,12 @@ export const AdminTripsPage: React.FC = () => {
                                                     onChange={(event) => {
                                                         setDrawerExpirationDraft(event.target.value);
                                                     }}
-                                                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm shadow-black/5"
+                                                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm shadow-black/5 dark:shadow-none"
                                                 />
                                             </label>
                                         </div>
-                                        <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-                                            <p className="text-xs text-slate-600">
+                                        <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-secondary px-3 py-2">
+                                            <p className="text-xs text-muted-foreground">
                                                 Changes here are applied only after you save.
                                             </p>
                                             <button
@@ -2434,7 +2434,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     void handleSaveDrawerLifecycle();
                                                 }}
                                                 disabled={isSaving || !hasDrawerLifecycleChanges}
-                                                className="inline-flex h-8 items-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                className="inline-flex h-8 items-center rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                                             >
                                                 Save lifecycle settings
                                             </button>
@@ -2442,16 +2442,16 @@ export const AdminTripsPage: React.FC = () => {
                                     </section>
                                     
                                     {isLoadingFullTrip ? (
-                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-center text-sm text-slate-500">
+                                        <div className="rounded-xl border border-border bg-secondary px-3 py-4 text-center text-sm text-muted-foreground">
                                             Loading trip map and itinerary…
                                         </div>
                                     ) : selectedFullTrip && (previewCityStops.length > 0 || previewMapUrl) ? (
-                                        <div className="mt-4 flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                                        <div className="mt-4 flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm dark:shadow-none">
                                             <div className="grid grid-cols-2">
-                                                <div className="border-r border-gray-100 p-3.5">
+                                                <div className="border-r border-border p-3.5">
                                                     <div className="space-y-0 h-48 overflow-y-auto">
                                                         {previewCityStops.length === 0 ? (
-                                                            <div className="text-[11px] text-gray-400">No city stops found</div>
+                                                            <div className="text-[11px] text-muted-foreground">No city stops found</div>
                                                         ) : (
                                                             previewCityStops.map((stop, idx) => {
                                                                 const isStart = idx === 0;
@@ -2474,7 +2474,7 @@ export const AdminTripsPage: React.FC = () => {
                                                                             )}
                                                                         </div>
                                                                         <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-                                                                            <span className="break-words text-[15px] font-medium leading-5 text-gray-700">{stop.title}</span>
+                                                                            <span className="break-words text-[15px] font-medium leading-5 text-foreground">{stop.title}</span>
                                                                             <span className="text-[12px] font-medium leading-5 text-indigo-500/75">
                                                                                 {Math.max(1, Math.ceil(stop.duration))} nights
                                                                             </span>
@@ -2485,8 +2485,8 @@ export const AdminTripsPage: React.FC = () => {
                                                         )}
                                                     </div>
                                                 </div>
-                                                <div className="bg-gray-50 p-2">
-                                                    <div className="relative h-48 w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
+                                                <div className="bg-secondary p-2">
+                                                    <div className="relative h-48 w-full overflow-hidden rounded-lg border border-border bg-secondary">
                                                         {previewMapUrl ? (
                                                             <img
                                                                 src={previewMapUrl}
@@ -2495,7 +2495,7 @@ export const AdminTripsPage: React.FC = () => {
                                                                 loading="lazy"
                                                             />
                                                         ) : (
-                                                            <div className="flex size-full items-center justify-center text-[11px] text-gray-500">
+                                                            <div className="flex size-full items-center justify-center text-[11px] text-muted-foreground">
                                                                 Map preview unavailable
                                                             </div>
                                                         )}
@@ -2504,30 +2504,30 @@ export const AdminTripsPage: React.FC = () => {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-center text-sm text-slate-500">
+                                        <div className="rounded-xl border border-border bg-secondary px-3 py-4 text-center text-sm text-muted-foreground">
                                             Trip preview is unavailable for this record.
                                         </div>
                                     )}
 
-                                    <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                                    <section className="space-y-3 rounded-xl border border-border bg-card p-4">
                                         <div className="flex items-center justify-between gap-3">
-                                            <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Generation Diagnostics</h3>
+                                            <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Generation Diagnostics</h3>
                                             <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getGenerationPillClassName(selectedTripGenerationState)}`}>
                                                 {getGenerationStateLabel(selectedTripGenerationState)}
                                             </span>
                                         </div>
                                         <dl className="grid gap-2 sm:grid-cols-2">
-                                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <dt className="text-xs font-semibold text-slate-500">Retries</dt>
-                                                <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripRetryCount}</dd>
+                                            <div className="rounded-lg border border-border bg-secondary p-3">
+                                                <dt className="text-xs font-semibold text-muted-foreground">Retries</dt>
+                                                <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripRetryCount}</dd>
                                             </div>
-                                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <dt className="text-xs font-semibold text-slate-500">Dead-letter jobs</dt>
-                                                <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripDeadLetterJobCount}</dd>
+                                            <div className="rounded-lg border border-border bg-secondary p-3">
+                                                <dt className="text-xs font-semibold text-muted-foreground">Dead-letter jobs</dt>
+                                                <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripDeadLetterJobCount}</dd>
                                             </div>
-                                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <dt className="text-xs font-semibold text-slate-500">Latest state transition</dt>
-                                                <dd className="mt-1 text-sm font-medium text-slate-800">
+                                            <div className="rounded-lg border border-border bg-secondary p-3">
+                                                <dt className="text-xs font-semibold text-muted-foreground">Latest state transition</dt>
+                                                <dd className="mt-1 text-sm font-medium text-foreground">
                                                     {selectedTripGenerationMeta?.lastFailedAt
                                                         ? `${formatRelativeTimestamp(selectedTripGenerationMeta.lastFailedAt, 'n/a')} (${formatTimestamp(selectedTripGenerationMeta.lastFailedAt, 'n/a')})`
                                                         : selectedTripGenerationMeta?.lastSucceededAt
@@ -2535,25 +2535,25 @@ export const AdminTripsPage: React.FC = () => {
                                                             : 'n/a'}
                                                 </dd>
                                             </div>
-                                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <dt className="text-xs font-semibold text-slate-500">Retry requested at</dt>
-                                                <dd className="mt-1 text-sm font-medium text-slate-800">
+                                            <div className="rounded-lg border border-border bg-secondary p-3">
+                                                <dt className="text-xs font-semibold text-muted-foreground">Retry requested at</dt>
+                                                <dd className="mt-1 text-sm font-medium text-foreground">
                                                     {selectedTripGenerationMeta?.retryRequestedAt
                                                         ? `${formatRelativeTimestamp(selectedTripGenerationMeta.retryRequestedAt, 'n/a')} (${formatTimestamp(selectedTripGenerationMeta.retryRequestedAt, 'n/a')})`
                                                         : 'n/a'}
                                                 </dd>
                                             </div>
-                                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <dt className="text-xs font-semibold text-slate-500">Input snapshot</dt>
-                                                <dd className="mt-1 text-sm font-medium text-slate-800">
+                                            <div className="rounded-lg border border-border bg-secondary p-3">
+                                                <dt className="text-xs font-semibold text-muted-foreground">Input snapshot</dt>
+                                                <dd className="mt-1 text-sm font-medium text-foreground">
                                                     {selectedTripGenerationMeta?.inputSnapshot
                                                         ? `${selectedTripGenerationMeta.inputSnapshot.flow} (${formatTimestamp(selectedTripGenerationMeta.inputSnapshot.createdAt, 'n/a')})`
                                                         : 'Unavailable'}
                                                 </dd>
                                             </div>
-                                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <dt className="text-xs font-semibold text-slate-500">Latest queue job</dt>
-                                                <dd className="mt-1 text-sm font-medium text-slate-800">
+                                            <div className="rounded-lg border border-border bg-secondary p-3">
+                                                <dt className="text-xs font-semibold text-muted-foreground">Latest queue job</dt>
+                                                <dd className="mt-1 text-sm font-medium text-foreground">
                                                     {selectedTripLatestGenerationJob
                                                         ? `${selectedTripLatestGenerationJob.state} (${formatRelativeTimestamp(selectedTripLatestGenerationJob.createdAt, 'n/a')})`
                                                         : 'n/a'}
@@ -2561,125 +2561,125 @@ export const AdminTripsPage: React.FC = () => {
                                             </div>
                                         </dl>
                                         {isLoadingTripAttemptLogRows && (
-                                            <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                            <div className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
                                                 Loading attempt history…
                                             </div>
                                         )}
                                         {selectedTripLatestAttempt ? (
                                             <dl className="grid gap-2 sm:grid-cols-2">
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Flow</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttempt.flow}</dd>
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Flow</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripLatestAttempt.flow}</dd>
                                                 </div>
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Attempt source</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttempt.source}</dd>
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Attempt source</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripLatestAttempt.source}</dd>
                                                 </div>
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Provider</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttempt.provider || 'n/a'}</dd>
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Provider</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripLatestAttempt.provider || 'n/a'}</dd>
                                                 </div>
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Model</dt>
-                                                    <dd className="mt-1 break-all text-sm font-medium text-slate-800">{selectedTripLatestAttempt.model || 'n/a'}</dd>
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Model</dt>
+                                                    <dd className="mt-1 break-all text-sm font-medium text-foreground">{selectedTripLatestAttempt.model || 'n/a'}</dd>
                                                 </div>
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Provider model</dt>
-                                                    <dd className="mt-1 break-all text-sm font-medium text-slate-800">{selectedTripLatestAttempt.providerModel || 'n/a'}</dd>
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Provider model</dt>
+                                                    <dd className="mt-1 break-all text-sm font-medium text-foreground">{selectedTripLatestAttempt.providerModel || 'n/a'}</dd>
                                                 </div>
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">HTTP status</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">HTTP status</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-foreground">
                                                         {typeof selectedTripLatestAttempt.statusCode === 'number' ? selectedTripLatestAttempt.statusCode : 'n/a'}
                                                     </dd>
                                                 </div>
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Request ID</dt>
-                                                    <dd className="mt-1 break-all font-mono text-xs text-slate-700">{selectedTripLatestAttempt.requestId || 'n/a'}</dd>
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Request ID</dt>
+                                                    <dd className="mt-1 break-all font-mono text-xs text-foreground">{selectedTripLatestAttempt.requestId || 'n/a'}</dd>
                                                 </div>
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Execution mode</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripOrchestrationMode || 'n/a'}</dd>
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Execution mode</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripOrchestrationMode || 'n/a'}</dd>
                                                 </div>
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Duration</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Duration</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-foreground">
                                                         {formatDurationMs(selectedTripLatestAttempt.durationMs)}
                                                     </dd>
                                                 </div>
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Started at</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Started at</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-foreground">
                                                         {formatRelativeTimestamp(selectedTripLatestAttempt.startedAt, 'n/a')} ({formatTimestamp(selectedTripLatestAttempt.startedAt, 'n/a')})
                                                     </dd>
                                                 </div>
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Finished at</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Finished at</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-foreground">
                                                         {selectedTripLatestAttempt.finishedAt
                                                             ? `${formatRelativeTimestamp(selectedTripLatestAttempt.finishedAt, 'n/a')} (${formatTimestamp(selectedTripLatestAttempt.finishedAt, 'n/a')})`
                                                             : 'n/a'}
                                                     </dd>
                                                 </div>
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Failure kind</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttempt.failureKind || 'n/a'}</dd>
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Failure kind</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripLatestAttempt.failureKind || 'n/a'}</dd>
                                                 </div>
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Error code</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttempt.errorCode || 'n/a'}</dd>
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Error code</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-foreground">{selectedTripLatestAttempt.errorCode || 'n/a'}</dd>
                                                 </div>
-                                                <div className="sm:col-span-2 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Error message</dt>
-                                                    <dd className="mt-1 break-words text-sm font-medium text-slate-800">{selectedTripLatestAttempt.errorMessage || 'n/a'}</dd>
+                                                <div className="sm:col-span-2 rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Error message</dt>
+                                                    <dd className="mt-1 break-words text-sm font-medium text-foreground">{selectedTripLatestAttempt.errorMessage || 'n/a'}</dd>
                                                 </div>
-                                                <div className="sm:col-span-2 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Attempt metadata details</dt>
-                                                    <dd className="mt-1 break-words text-sm font-medium text-slate-800">{selectedTripLatestAttemptDetails || 'n/a'}</dd>
+                                                <div className="sm:col-span-2 rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Attempt metadata details</dt>
+                                                    <dd className="mt-1 break-words text-sm font-medium text-foreground">{selectedTripLatestAttemptDetails || 'n/a'}</dd>
                                                 </div>
                                             </dl>
                                         ) : (
-                                            <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                            <div className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
                                                 No generation attempts captured yet.
                                             </div>
                                         )}
                                         {selectedTripLatestGenerationJob && (
                                             <dl className="grid gap-2 sm:grid-cols-2">
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Job started at</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Job started at</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-foreground">
                                                         {selectedTripLatestGenerationJob.startedAt
                                                             ? `${formatRelativeTimestamp(selectedTripLatestGenerationJob.startedAt, 'n/a')} (${formatTimestamp(selectedTripLatestGenerationJob.startedAt, 'n/a')})`
                                                             : 'n/a'}
                                                     </dd>
                                                 </div>
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Job finished at</dt>
-                                                    <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Job finished at</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-foreground">
                                                         {selectedTripLatestGenerationJob.finishedAt
                                                             ? `${formatRelativeTimestamp(selectedTripLatestGenerationJob.finishedAt, 'n/a')} (${formatTimestamp(selectedTripLatestGenerationJob.finishedAt, 'n/a')})`
                                                             : 'n/a'}
                                                     </dd>
                                                 </div>
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Job last error code</dt>
-                                                    <dd className="mt-1 break-words text-sm font-medium text-slate-800">{selectedTripLatestGenerationJob.lastErrorCode || 'n/a'}</dd>
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Job last error code</dt>
+                                                    <dd className="mt-1 break-words text-sm font-medium text-foreground">{selectedTripLatestGenerationJob.lastErrorCode || 'n/a'}</dd>
                                                 </div>
-                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                    <dt className="text-xs font-semibold text-slate-500">Job last error message</dt>
-                                                    <dd className="mt-1 break-words text-sm font-medium text-slate-800">{selectedTripLatestGenerationJob.lastErrorMessage || 'n/a'}</dd>
+                                                <div className="rounded-lg border border-border bg-secondary p-3">
+                                                    <dt className="text-xs font-semibold text-muted-foreground">Job last error message</dt>
+                                                    <dd className="mt-1 break-words text-sm font-medium text-foreground">{selectedTripLatestGenerationJob.lastErrorMessage || 'n/a'}</dd>
                                                 </div>
                                             </dl>
                                         )}
                                         {selectedTripGenerationAttempts.length > 0 && (
-                                            <div className="space-y-1 rounded-lg border border-slate-100 bg-slate-50 p-2">
-                                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Recent attempts</p>
+                                            <div className="space-y-1 rounded-lg border border-border bg-secondary p-2">
+                                                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Recent attempts</p>
                                                 {selectedTripGenerationAttempts.map((attempt) => (
-                                                    <div key={attempt.id} className="flex items-center justify-between gap-2 rounded-md border border-slate-100 bg-white px-2 py-1 text-[11px]">
-                                                        <span className="font-semibold text-slate-700">{attempt.state}</span>
-                                                        <span className="truncate text-slate-600">{attempt.model || attempt.providerModel || 'n/a'}</span>
-                                                        <span className="truncate text-slate-500">{formatRelativeTimestamp(attempt.startedAt, 'n/a')}</span>
-                                                        <span className="shrink-0 text-slate-500">
+                                                    <div key={attempt.id} className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-2 py-1 text-[11px]">
+                                                        <span className="font-semibold text-foreground">{attempt.state}</span>
+                                                        <span className="truncate text-muted-foreground">{attempt.model || attempt.providerModel || 'n/a'}</span>
+                                                        <span className="truncate text-muted-foreground">{formatRelativeTimestamp(attempt.startedAt, 'n/a')}</span>
+                                                        <span className="shrink-0 text-muted-foreground">
                                                             {formatDurationMs(attempt.durationMs)}
                                                         </span>
                                                     </div>
@@ -2687,25 +2687,25 @@ export const AdminTripsPage: React.FC = () => {
                                             </div>
                                         )}
                                         {isLoadingTripGenerationJobRows && (
-                                            <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                            <div className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
                                                 Loading queue/dead-letter jobs…
                                             </div>
                                         )}
                                         {selectedTripGenerationJobRows.length > 0 && (
-                                            <div className="space-y-1 rounded-lg border border-slate-100 bg-slate-50 p-2">
-                                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Queue jobs</p>
+                                            <div className="space-y-1 rounded-lg border border-border bg-secondary p-2">
+                                                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Queue jobs</p>
                                                 {selectedTripGenerationJobRows.map((job) => (
-                                                    <div key={job.id} className="grid gap-1 rounded-md border border-slate-100 bg-white px-2 py-1.5 text-[11px] sm:grid-cols-[auto,1fr,auto,auto,auto] sm:items-center sm:gap-2">
+                                                    <div key={job.id} className="grid gap-1 rounded-md border border-border bg-card px-2 py-1.5 text-[11px] sm:grid-cols-[auto,1fr,auto,auto,auto] sm:items-center sm:gap-2">
                                                         <span className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 font-semibold ${getGenerationJobPillClassName(job.state)}`}>
                                                             {job.state}
                                                         </span>
-                                                        <span className="truncate text-slate-600">
+                                                        <span className="truncate text-muted-foreground">
                                                             {job.lastErrorCode || job.lastErrorMessage || job.attemptId}
                                                         </span>
-                                                        <span className="shrink-0 text-slate-500">
+                                                        <span className="shrink-0 text-muted-foreground">
                                                             r{job.retryCount}/{job.maxRetries}
                                                         </span>
-                                                        <span className="shrink-0 text-slate-500">
+                                                        <span className="shrink-0 text-muted-foreground">
                                                             {formatRelativeTimestamp(job.createdAt, 'n/a')}
                                                         </span>
                                                         {(job.state === 'dead' || job.state === 'failed') ? (
@@ -2717,7 +2717,7 @@ export const AdminTripsPage: React.FC = () => {
                                                                     void handleRequeueGenerationJob(job);
                                                                 }}
                                                                 disabled={requeueingGenerationJobId === job.id}
-                                                                className="inline-flex h-6 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-[10px] font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                className="inline-flex h-6 items-center justify-center rounded-md border border-border bg-card px-2 text-[10px] font-semibold text-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                                                             >
                                                                 {requeueingGenerationJobId === job.id ? (
                                                                     <>
@@ -2738,33 +2738,33 @@ export const AdminTripsPage: React.FC = () => {
                                         {(selectedTripLatestAttemptMetadata || selectedTripLatestGenerationJobPayload || selectedTripRequestPayload || selectedTripInputSnapshot) && (
                                             <div className="space-y-2">
                                                 {selectedTripLatestAttemptMetadata && (
-                                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
-                                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Attempt metadata JSON</p>
-                                                        <pre className="mt-1 max-h-48 overflow-auto rounded border border-slate-200 bg-slate-900 p-2 text-[10px] text-slate-100">
+                                                    <div className="rounded-lg border border-border bg-secondary p-2">
+                                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Attempt metadata JSON</p>
+                                                        <pre className="mt-1 max-h-48 overflow-auto rounded border border-border bg-slate-900 p-2 text-[10px] text-slate-100">
                                                             {JSON.stringify(selectedTripLatestAttemptMetadata, null, 2)}
                                                         </pre>
                                                     </div>
                                                 )}
                                                 {selectedTripLatestGenerationJobPayload && (
-                                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
-                                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Latest queue job payload JSON</p>
-                                                        <pre className="mt-1 max-h-48 overflow-auto rounded border border-slate-200 bg-slate-900 p-2 text-[10px] text-slate-100">
+                                                    <div className="rounded-lg border border-border bg-secondary p-2">
+                                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Latest queue job payload JSON</p>
+                                                        <pre className="mt-1 max-h-48 overflow-auto rounded border border-border bg-slate-900 p-2 text-[10px] text-slate-100">
                                                             {JSON.stringify(selectedTripLatestGenerationJobPayload, null, 2)}
                                                         </pre>
                                                     </div>
                                                 )}
                                                 {selectedTripRequestPayload && (
-                                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
-                                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Request payload JSON</p>
-                                                        <pre className="mt-1 max-h-48 overflow-auto rounded border border-slate-200 bg-slate-900 p-2 text-[10px] text-slate-100">
+                                                    <div className="rounded-lg border border-border bg-secondary p-2">
+                                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Request payload JSON</p>
+                                                        <pre className="mt-1 max-h-48 overflow-auto rounded border border-border bg-slate-900 p-2 text-[10px] text-slate-100">
                                                             {JSON.stringify(selectedTripRequestPayload, null, 2)}
                                                         </pre>
                                                     </div>
                                                 )}
                                                 {selectedTripInputSnapshot && (
-                                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
-                                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Input snapshot JSON</p>
-                                                        <pre className="mt-1 max-h-48 overflow-auto rounded border border-slate-200 bg-slate-900 p-2 text-[10px] text-slate-100">
+                                                    <div className="rounded-lg border border-border bg-secondary p-2">
+                                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Input snapshot JSON</p>
+                                                        <pre className="mt-1 max-h-48 overflow-auto rounded border border-border bg-slate-900 p-2 text-[10px] text-slate-100">
                                                             {JSON.stringify(selectedTripInputSnapshot, null, 2)}
                                                         </pre>
                                                     </div>
@@ -2774,12 +2774,12 @@ export const AdminTripsPage: React.FC = () => {
                                         <div className="space-y-2">
                                             {ACTIVE_RETRY_MODEL_OPTIONS.length > 0 && (
                                                 <div className="max-w-sm">
-                                                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Retry model</p>
+                                                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Retry model</p>
                                                     {selectedDrawerRetryModelOption && (
-                                                        <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-2 py-0.5 text-[11px] font-semibold text-accent-800">
+                                                        <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-2 py-0.5 text-[11px] font-semibold text-accent-800 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                                                             <AiProviderLogo provider={selectedDrawerRetryModelOption.provider} model={selectedDrawerRetryModelOption.model} size={12} />
                                                             <span>{selectedDrawerRetryModelOption.providerLabel} · {selectedDrawerRetryModelOption.label}</span>
-                                                            <span className="rounded-full border border-accent-300 bg-white px-1.5 text-[10px] uppercase tracking-wide text-accent-700">current</span>
+                                                            <span className="rounded-full border border-accent-300 bg-card px-1.5 text-[10px] uppercase tracking-wide text-accent-700 dark:text-accent-200 dark:border-accent-400/30">current</span>
                                                         </div>
                                                     )}
                                                     <Select
@@ -2797,9 +2797,9 @@ export const AdminTripsPage: React.FC = () => {
                                                                         <SelectItem key={option.id} value={option.id}>
                                                                             <span className="inline-flex items-center gap-2">
                                                                                 <AiProviderLogo provider={option.provider} model={option.model} size={14} />
-                                                                                <span className="font-medium text-slate-800">{option.label}</span>
+                                                                                <span className="font-medium text-foreground">{option.label}</span>
                                                                                 {option.id === drawerRetryModelId && (
-                                                                                    <span className="rounded-full border border-accent-300 bg-accent-50 px-1.5 text-[10px] uppercase tracking-wide text-accent-700">
+                                                                                    <span className="rounded-full border border-accent-300 bg-accent-50 px-1.5 text-[10px] uppercase tracking-wide text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                                                                                         current
                                                                                     </span>
                                                                                 )}
@@ -2822,7 +2822,7 @@ export const AdminTripsPage: React.FC = () => {
                                                         void handleRetryTripGeneration();
                                                     }}
                                                     disabled={!canRetryGenerationInDrawer}
-                                                    className="inline-flex items-center rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-800 transition-colors hover:bg-accent-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    className="inline-flex items-center rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-800 transition-colors hover:bg-accent-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                                                 >
                                                     {isRetryingGeneration ? 'Retrying generation…' : 'Retry generation'}
                                                 </button>
@@ -2831,20 +2831,20 @@ export const AdminTripsPage: React.FC = () => {
                                                 type="button"
                                                 onClick={handleOpenBenchmarkFromDrawer}
                                                 disabled={!selectedTripGenerationMeta?.inputSnapshot}
-                                                className="ml-2 inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                                className="ml-2 inline-flex items-center rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                                             >
                                                 Open in AI Benchmark
                                             </button>
                                         </div>
                                     </section>
 
-                                    <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
-                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Trip Actions</h3>
+                                    <section className="space-y-3 rounded-xl border border-border bg-card p-4">
+                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Trip Actions</h3>
                                         <div className="grid gap-2 sm:grid-cols-2">
                                             <button
                                                 type="button"
                                                 onClick={() => handleOpenTripPreview(selectedTripForDrawer)}
-                                                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:bg-slate-50"
+                                                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary dark:shadow-none"
                                             >
                                                 Preview trip
                                                 <ArrowSquareOut size={16} />
@@ -2855,7 +2855,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     void handleDownloadTripJson(selectedTripForDrawer);
                                                 }}
                                                 disabled={isSaving}
-                                                className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                                className="inline-flex items-center justify-center rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 dark:shadow-none"
                                             >
                                                 Download JSON
                                             </button>
@@ -2865,7 +2865,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     void handleDuplicateTrip(selectedTripForDrawer);
                                                 }}
                                                 disabled={isSaving}
-                                                className="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-800 transition-colors hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                className="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-800 transition-colors hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-400/12 dark:hover:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30"
                                             >
                                                 Duplicate trip
                                             </button>
@@ -2875,7 +2875,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     void handleTransferTrip(selectedTripForDrawer);
                                                 }}
                                                 disabled={isSaving}
-                                                className="inline-flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                className="inline-flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30"
                                             >
                                                 Transfer owner
                                             </button>
@@ -2887,8 +2887,8 @@ export const AdminTripsPage: React.FC = () => {
                                                 disabled={isSaving}
                                                 className={`inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                                                     selectedTripForDrawer.status === 'archived'
-                                                        ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                                                        : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                                        ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-400/12 dark:hover:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
+                                                        : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30'
                                                 }`}
                                             >
                                                 {selectedTripForDrawer.status === 'archived' ? 'Restore trip' : 'Soft-delete trip'}
@@ -2899,7 +2899,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     void handleHardDeleteTrip(selectedTripForDrawer);
                                                 }}
                                                 disabled={isSaving}
-                                                className="inline-flex items-center justify-center rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-800 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                className="inline-flex items-center justify-center rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-800 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                                             >
                                                 Hard delete
                                             </button>
@@ -2936,9 +2936,9 @@ export const AdminTripsPage: React.FC = () => {
                     accessibleDescription="View selected trip owner identity and account context."
                 >
                     <div className="flex h-full flex-col">
-                        <div className="border-b border-slate-200 px-5 py-4">
-                            <h2 className="text-base font-semibold text-slate-900">Owner details</h2>
-                            <p className="truncate text-sm text-slate-600">
+                        <div className="border-b border-border px-5 py-4">
+                            <h2 className="text-base font-semibold text-foreground">Owner details</h2>
+                            <p className="truncate text-sm text-muted-foreground">
                                 {selectedOwnerId
                                     ? <CopyableUuid value={selectedOwnerId} textClassName="max-w-[360px] truncate text-sm" />
                                     : 'No owner selected'}
@@ -2947,7 +2947,7 @@ export const AdminTripsPage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => navigate(`/admin/users?user=${encodeURIComponent(selectedOwnerId)}&drawer=user`)}
-                                    className="mt-3 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-accent-300 bg-accent-50 px-3 text-sm font-semibold text-accent-800 hover:bg-accent-100"
+                                    className="mt-3 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-accent-300 bg-accent-50 px-3 text-sm font-semibold text-accent-800 hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
                                 >
                                     Open user profile
                                     <ArrowSquareOut size={14} />
@@ -2956,37 +2956,37 @@ export const AdminTripsPage: React.FC = () => {
                         </div>
                         <div className="flex-1 overflow-y-auto p-4">
                             {isLoadingOwnerProfile ? (
-                                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                <div className="rounded-xl border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
                                     Loading owner profile…
                                 </div>
                             ) : selectedOwnerProfile ? (
                                 <div className="space-y-4">
-                                    <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
-                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Identity Context</h3>
+                                    <section className="space-y-3 rounded-xl border border-border bg-card p-4">
+                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Identity Context</h3>
                                         <div className="grid gap-2 sm:grid-cols-2">
-                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">User ID</span>
-                                                <CopyableUuid value={selectedOwnerProfile.user_id} textClassName="break-all text-sm font-medium text-slate-800" />
+                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
+                                                <span className="text-xs font-semibold text-muted-foreground">User ID</span>
+                                                <CopyableUuid value={selectedOwnerProfile.user_id} textClassName="break-all text-sm font-medium text-foreground" />
                                             </div>
-                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">Email Address</span>
-                                                <span className="break-all text-sm font-medium text-slate-800">{selectedOwnerProfile.email || '—'}</span>
+                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
+                                                <span className="text-xs font-semibold text-muted-foreground">Email Address</span>
+                                                <span className="break-all text-sm font-medium text-foreground">{selectedOwnerProfile.email || '—'}</span>
                                             </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">Display Name</span>
-                                                <span className="text-sm font-medium text-slate-800">{getUserDisplayName(selectedOwnerProfile) || '—'}</span>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
+                                                <span className="text-xs font-semibold text-muted-foreground">Display Name</span>
+                                                <span className="text-sm font-medium text-foreground">{getUserDisplayName(selectedOwnerProfile) || '—'}</span>
                                             </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">Role</span>
-                                                <span className="text-sm font-medium text-slate-800">{selectedOwnerProfile.system_role === 'admin' ? 'Admin' : 'User'}</span>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
+                                                <span className="text-xs font-semibold text-muted-foreground">Role</span>
+                                                <span className="text-sm font-medium text-foreground">{selectedOwnerProfile.system_role === 'admin' ? 'Admin' : 'User'}</span>
                                             </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">Tier</span>
-                                                <span className="text-sm font-medium text-slate-800">{selectedOwnerProfile.tier_key || '—'}</span>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
+                                                <span className="text-xs font-semibold text-muted-foreground">Tier</span>
+                                                <span className="text-sm font-medium text-foreground">{selectedOwnerProfile.tier_key || '—'}</span>
                                             </div>
-                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">Status</span>
-                                                <span className="text-sm font-medium text-slate-800">{formatAccountStatusLabel(selectedOwnerProfile.account_status)}</span>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-border bg-secondary p-3">
+                                                <span className="text-xs font-semibold text-muted-foreground">Status</span>
+                                                <span className="text-sm font-medium text-foreground">{formatAccountStatusLabel(selectedOwnerProfile.account_status)}</span>
                                             </div>
                                         </div>
                                     </section>
@@ -2995,7 +2995,7 @@ export const AdminTripsPage: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => navigate(`/admin/users?user=${encodeURIComponent(selectedOwnerProfile.user_id)}&drawer=user`)}
-                                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
+                                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 dark:shadow-none"
                                         >
                                             View Full Profile
                                             <ArrowSquareOut size={16} />
@@ -3003,7 +3003,7 @@ export const AdminTripsPage: React.FC = () => {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                <div className="rounded-xl border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
                                     No owner profile found.
                                 </div>
                             )}

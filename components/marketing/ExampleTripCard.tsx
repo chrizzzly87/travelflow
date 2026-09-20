@@ -131,9 +131,9 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
     }, [mapPreviewUrl]);
 
     return (
-        <article className="cursor-pointer rounded-2xl border border-slate-200 bg-white shadow-sm transition-[box-shadow] duration-200 ease-out hover:shadow-lg">
+        <article className="cursor-pointer rounded-2xl border border-border bg-card shadow-sm transition-[box-shadow] duration-200 ease-out hover:shadow-lg dark:border-border dark:bg-card dark:shadow-none">
             <div
-                className={`relative h-36 rounded-t-2xl overflow-hidden ${mapImageSrc ? 'bg-slate-100' : card.mapColor}`}
+                className={`relative h-36 rounded-t-2xl overflow-hidden ${mapImageSrc ? 'bg-secondary dark:bg-secondary' : card.mapColor}`}
                 style={mapViewTransitionName ? ({ viewTransitionName: mapViewTransitionName } as React.CSSProperties) : undefined}
             >
                 {mapImageSrc ? (
@@ -163,7 +163,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                                 stroke="currentColor"
                                 strokeWidth="1.5"
                                 strokeDasharray="4 4"
-                                className="text-slate-400/40"
+                                className="text-muted-foreground/40 dark:text-muted-foreground/40"
                             />
                         </svg>
                     </>
@@ -172,13 +172,13 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
 
             <div className="p-4">
                 <h3
-                    className="text-balance text-base font-semibold text-slate-900"
+                    className="text-balance text-base font-semibold text-foreground dark:text-foreground"
                     style={titleViewTransitionName ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties) : undefined}
                 >
                     {localizedTitle}
                 </h3>
 
-                <div className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-600">
+                <div className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground dark:text-muted-foreground">
                     {card.countries.map((c) => (
                         <span key={c.name} className="inline-flex items-center gap-1">
                             <FlagIcon value={c.flag} />
@@ -187,7 +187,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                     ))}
                 </div>
 
-                <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
+                <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground dark:text-muted-foreground">
                     <span className="inline-flex items-center gap-1 tabular-nums">
                         <Clock size={14} weight="duotone" className="text-accent-500" />
                         {formatExampleTripCountLabel(currentLocale, uiCopy.days, card.durationDays)}
@@ -208,7 +208,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                     {localizedCard.tags.map((tag) => (
                         <span
                             key={tag}
-                            className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600"
+                            className="rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground dark:bg-secondary dark:text-muted-foreground dark:text-foreground"
                         >
                             {tag}
                         </span>
@@ -217,7 +217,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
             </div>
 
             {cityLanes.length > 0 && (
-                <div className="border-t border-slate-100 px-4 py-2.5">
+                <div className="border-t border-border px-4 py-2.5 dark:border-border">
                     <div className="flex items-center gap-[2px]">
                         {cityLanes.map((cityLane, index) => {
                             const routeLane = routeLanes[index];
@@ -262,7 +262,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                 </div>
             )}
 
-            <div className={`${cityLanes.length > 0 ? '' : 'border-t border-slate-100'} px-4 py-3 flex items-center gap-2`}>
+            <div className={`${cityLanes.length > 0 ? '' : 'border-t border-border dark:border-border'} px-4 py-3 flex items-center gap-2`}>
                 <div className={`size-6 rounded-full ${card.avatarColor} flex items-center justify-center text-white text-[10px] font-bold`}>
                     {card.username[0].toUpperCase()}
                 </div>
@@ -275,12 +275,12 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                                 creator_handle: resolvedCreatorHandle,
                             });
                         }}
-                        className="text-xs font-semibold text-slate-600 transition-colors hover:text-accent-700 hover:underline"
+                        className="text-xs font-semibold text-muted-foreground transition-colors hover:text-accent-700 hover:underline dark:text-muted-foreground dark:hover:text-accent-200"
                     >
                         @{resolvedCreatorHandle}
                     </Link>
                 ) : (
-                    <span className="text-xs text-slate-500">{card.username}</span>
+                    <span className="text-xs text-muted-foreground dark:text-muted-foreground">{card.username}</span>
                 )}
             </div>
         </article>

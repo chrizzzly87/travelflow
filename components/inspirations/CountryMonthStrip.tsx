@@ -42,7 +42,7 @@ const CountryMonthStripComponent: React.FC<CountryMonthStripProps> = ({
           key={month}
           aria-hidden="true"
           className={[
-            'flex h-full flex-1 items-end rounded-[3px] bg-slate-100',
+            'flex h-full flex-1 items-end rounded-[3px] bg-secondary',
             isSelected ? 'outline outline-2 outline-offset-1 outline-accent-500' : '',
           ].join(' ').trim()}
         >

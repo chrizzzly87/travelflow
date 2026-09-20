@@ -83,16 +83,16 @@ const buildDesktopNavClass = ({ isActive }: { isActive: boolean }, isCollapsed: 
         ? 'flex items-center justify-center rounded-xl border p-2 text-sm transition-colors'
         : 'flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors';
     if (isActive) {
-        return `${base} border-accent-200 bg-accent-50 font-semibold text-accent-900`;
+        return `${base} border-accent-200 bg-accent-50 font-semibold text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30`;
     }
-    return `${base} border-transparent font-medium text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900`;
+    return `${base} border-transparent font-medium text-muted-foreground hover:border-border hover:bg-secondary hover:text-foreground`;
 };
 
 const buildMobileNavClass = ({ isActive }: { isActive: boolean }) => {
     if (isActive) {
-        return 'flex items-center gap-2 rounded-xl border border-accent-300 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-900';
+        return 'flex items-center gap-2 rounded-xl border border-accent-300 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-900 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30';
     }
-    return 'flex items-center gap-2 rounded-xl border border-transparent px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900';
+    return 'flex items-center gap-2 rounded-xl border border-transparent px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-border hover:bg-secondary hover:text-foreground';
 };
 
 const DATE_RANGE_OPTIONS: Array<{ value: AdminDateRange; label: string }> = [
@@ -121,7 +121,7 @@ const AdminNavItems: React.FC<AdminNavItemsProps> = ({
         {sections.map((section) => (
             <section key={`section-${mode}-${section.id}`} className="space-y-1.5">
                 {(mode === 'mobile' || !isSidebarCollapsed) && (
-                    <div className="px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <div className="px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                         {section.label}
                     </div>
                 )}
@@ -247,7 +247,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     };
 
     return (
-        <div className="min-h-dvh bg-slate-100 text-slate-900 [&_.rounded-full]:select-none">
+        <div className="min-h-dvh bg-secondary text-foreground [&_.rounded-full]:select-none">
             {isMobileSidebarOpen && (
                 <div
                     className="fixed inset-0 z-50 bg-slate-950/45 lg:hidden"
@@ -257,22 +257,22 @@ export const AdminShell: React.FC<AdminShellProps> = ({
             )}
 
             <aside
-                className={`fixed inset-y-0 left-0 z-[60] flex w-72 flex-col border-r border-slate-200 bg-white p-4 shadow-2xl transition-transform duration-200 lg:hidden ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                className={`fixed inset-y-0 left-0 z-[60] flex w-72 flex-col border-r border-border bg-card p-4 shadow-2xl transition-transform duration-200 lg:hidden ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
                 aria-label="Admin navigation"
             >
                 <div className="flex items-center justify-between">
                     <NavLink
                         to="/admin/dashboard"
-                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2"
+                        className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2"
                         onClick={() => emitMenuEvent('brand')}
                         {...getAnalyticsDebugAttributes('admin__menu--brand')}
                     >
-                        <AppBrand wordmarkClassName="text-base font-black tracking-tight text-slate-900" />
+                        <AppBrand wordmarkClassName="text-base font-black tracking-tight text-foreground" />
                     </NavLink>
                     <button
                         type="button"
                         onClick={() => setIsMobileSidebarOpen(false)}
-                        className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                        className="inline-flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-secondary"
                         aria-label="Close navigation"
                     >
                         <X size={16} />
@@ -289,7 +289,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                 </div>
 
                 {isAdmin && (
-                    <div className="mt-3 border-t border-slate-200 pt-3">
+                    <div className="mt-3 border-t border-border pt-3">
                         <AccountMenu
                             email={access?.email || null}
                             userId={access?.userId || null}
@@ -308,16 +308,16 @@ export const AdminShell: React.FC<AdminShellProps> = ({
 
             <div className="flex min-h-dvh w-full">
                 <div className="relative hidden lg:block z-50">
-                    <aside className={`sticky top-0 flex h-dvh shrink-0 flex-col border-r border-slate-200 bg-white/95 p-4 transition-[width] duration-200 ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
+                    <aside className={`sticky top-0 flex h-dvh shrink-0 flex-col border-r border-border bg-card/95 p-4 transition-[width] duration-200 ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
                         <NavLink
                             to="/admin/dashboard"
-                            className={`flex items-center rounded-xl border border-slate-200 bg-white ${isSidebarCollapsed ? 'justify-center p-2' : 'gap-2 px-3 py-2'}`}
+                            className={`flex items-center rounded-xl border border-border bg-card ${isSidebarCollapsed ? 'justify-center p-2' : 'gap-2 px-3 py-2'}`}
                             onClick={() => emitMenuEvent('brand')}
                             {...getAnalyticsDebugAttributes('admin__menu--brand')}
                         >
                             <AppBrand
                                 className={isSidebarCollapsed ? 'gap-0' : undefined}
-                                wordmarkClassName={`text-base font-black tracking-tight text-slate-900 ${isSidebarCollapsed ? 'hidden' : ''}`}
+                                wordmarkClassName={`text-base font-black tracking-tight text-foreground ${isSidebarCollapsed ? 'hidden' : ''}`}
                             />
                         </NavLink>
 
@@ -331,9 +331,9 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                         </div>
 
                         {isAdmin && (
-                            <div className="mt-3 border-t border-slate-200 pt-3">
+                            <div className="mt-3 border-t border-border pt-3">
                                 {!isSidebarCollapsed && (
-                                    <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                    <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                         Account
                                     </div>
                                 )}
@@ -356,7 +356,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <button
                         type="button"
                         onClick={() => setIsSidebarCollapsed((current) => !current)}
-                        className="absolute -right-4 top-6 z-50 inline-flex size-8 items-center justify-center rounded-full border border-accent-300 bg-white text-accent-700 shadow-sm hover:bg-accent-50"
+                        className="absolute -right-4 top-6 z-50 inline-flex size-8 items-center justify-center rounded-full border border-accent-300 bg-card text-accent-700 shadow-sm hover:bg-accent-50 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30 dark:shadow-none"
                         aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                         {...getAnalyticsDebugAttributes('admin__menu--collapse_toggle')}
                     >
@@ -365,23 +365,23 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                 </div>
 
                 <main className="min-w-0 flex-1 min-h-dvh" data-tf-handoff-ready="true">
-                    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+                    <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur">
                         <div className="grid gap-3 p-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
                             <div className="min-w-0 self-start text-left">
                                 <div className="flex items-center gap-2">
                                     <button
                                         type="button"
                                         onClick={() => setIsMobileSidebarOpen(true)}
-                                        className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 lg:hidden"
+                                        className="inline-flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-secondary lg:hidden"
                                         aria-label="Open navigation"
                                     >
                                         <List size={16} />
                                     </button>
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-700">Admin workspace</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-700 dark:text-accent-200">Admin workspace</p>
                                 </div>
-                                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{title}</h1>
+                                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">{title}</h1>
                                 {description && (
-                                    <p className="mt-1 max-w-3xl text-sm text-slate-600">{description}</p>
+                                    <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{description}</p>
                                 )}
                             </div>
                             <div className="mt-3 flex w-full flex-col flex-wrap items-start gap-3 sm:flex-row sm:items-center lg:mt-0 lg:w-auto lg:flex-nowrap lg:self-end">
@@ -396,7 +396,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                             onChange={(event) => onSearchValueChange?.(event.target.value)}
                                             placeholder="Search"
                                             disabled={!onSearchValueChange}
-                                            className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:bg-slate-100 lg:w-[280px]"
+                                            className="h-9 w-full rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:bg-secondary lg:w-[280px]"
                                         />
                                     </div>
                                 )}
@@ -430,7 +430,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     </header>
 
                     {isSimulatedDebugLoginActive && (
-                        <section className="mx-4 mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 md:mx-6">
+                        <section className="mx-4 mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 md:mx-6 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                             <p className="font-semibold">Debug simulated-login mode is active.</p>
                             <p className="mt-1">
                                 Admin pages are showing mock data because the browser debug toggle is on (`{SIMULATED_LOGIN_STORAGE_KEY}=1`).
@@ -439,17 +439,17 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                 <button
                                     type="button"
                                     onClick={handleDisableSimulatedLogin}
-                                    className="inline-flex h-8 items-center rounded-lg border border-amber-400 bg-white px-3 text-xs font-semibold text-amber-900 hover:bg-amber-100"
+                                    className="inline-flex h-8 items-center rounded-lg border border-amber-400 bg-card px-3 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:hover:bg-amber-400/12 dark:text-amber-200"
                                 >
                                     Disable simulated login
                                 </button>
-                                <span className="text-xs text-amber-800">Reload data after disabling to confirm live backend records.</span>
+                                <span className="text-xs text-amber-800 dark:text-amber-200">Reload data after disabling to confirm live backend records.</span>
                             </div>
                         </section>
                     )}
 
                     {!isSimulatedDebugLoginActive && isDevAdminBypassActive && (
-                        <section className="mx-4 mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 md:mx-6">
+                        <section className="mx-4 mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 md:mx-6 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30">
                             <p className="font-semibold">Dev admin bypass is active in this tab.</p>
                             <p className="mt-1">
                                 This session uses the local dev-admin identity instead of your real account.

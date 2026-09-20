@@ -68,7 +68,7 @@ export const IdealTravelTimeline: React.FC<IdealTravelTimelineProps> = ({
                         return (
                             <div key={`tick-${month}`} className="flex flex-col items-center">
                                 <span className="block h-2 w-px bg-slate-400" />
-                                <span className="mt-1 text-[10px] font-medium text-slate-600">{initial}</span>
+                                <span className="mt-1 text-[10px] font-medium text-muted-foreground">{initial}</span>
                             </div>
                         );
                     })}

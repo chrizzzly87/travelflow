@@ -344,7 +344,7 @@ const TicketRouteLine: React.FC<{ vertical?: boolean }> = ({ vertical = false })
         return (
             <div className="relative flex h-24 items-center justify-center" aria-hidden="true">
                 <div className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-slate-300" />
-                <span className="absolute left-1/2 top-1/2 inline-flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-800 shadow-[0_8px_18px_-14px_rgba(15,23,42,0.45)]">
+                <span className="absolute left-1/2 top-1/2 inline-flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-[0_8px_18px_-14px_rgba(15,23,42,0.45)]">
                     <AirplaneTakeoff size={18} weight="fill" className="-rotate-90" />
                 </span>
             </div>
@@ -354,7 +354,7 @@ const TicketRouteLine: React.FC<{ vertical?: boolean }> = ({ vertical = false })
     return (
         <div className="relative flex h-12 items-center justify-center" aria-hidden="true">
             <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-300" />
-            <span className="absolute left-1/2 top-1/2 inline-flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-800 shadow-[0_8px_18px_-14px_rgba(15,23,42,0.45)]">
+            <span className="absolute left-1/2 top-1/2 inline-flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-[0_8px_18px_-14px_rgba(15,23,42,0.45)]">
                 <AirplaneTakeoff size={18} weight="fill" />
             </span>
         </div>
@@ -366,9 +366,9 @@ const TicketMetaPill: React.FC<{
     value: string;
 }> = ({ label, value }) => (
     <div className="min-w-0 space-y-1">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">{label}</div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">{label}</div>
         <div
-            className="font-heading truncate text-[1.05rem] font-black tracking-[-0.04em] text-slate-950"
+            className="font-heading truncate text-[1.05rem] font-black tracking-[-0.04em] text-foreground"
             title={formatTicketMetaValue(value)}
         >
             {formatTicketMetaValue(value)}
@@ -379,7 +379,7 @@ const TicketMetaPill: React.FC<{
 const TicketBarcode: React.FC<{
     bars: Array<{ id: string; width: number; muted: boolean }>;
 }> = ({ bars }) => (
-    <div className="overflow-hidden rounded-[10px] border border-slate-200 bg-white p-3">
+    <div className="overflow-hidden rounded-[10px] border border-border bg-card p-3">
         <div className="flex h-[84px] items-stretch gap-px" aria-hidden="true">
             {bars.map((bar) => (
                 <span
@@ -395,14 +395,14 @@ const TicketBarcode: React.FC<{
 const TicketQrBadge: React.FC<{
     qrCodeUrl: string;
 }> = ({ qrCodeUrl }) => (
-    <div className="flex flex-col items-center gap-2 rounded-[10px] border border-slate-200 bg-white p-3">
+    <div className="flex flex-col items-center gap-2 rounded-[10px] border border-border bg-card p-3">
         <img
             src={qrCodeUrl}
             alt="TravelFlow QR code"
-            className="size-20 rounded-[8px] border border-slate-200 bg-slate-50 object-cover"
+            className="size-20 rounded-[8px] border border-border bg-secondary object-cover"
             draggable={false}
         />
-        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Scan</div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Scan</div>
     </div>
 );
 
@@ -420,26 +420,26 @@ const AirportTicketPreviewCard: React.FC<{
 
     if (isVertical) {
         return (
-            <div className={cn('select-none overflow-hidden rounded-[16px] border border-slate-200 bg-[linear-gradient(180deg,#f7f4eb_0%,#fcfbf7_100%)]', TICKET_CARD_SHADOW)}>
+            <div className={cn('select-none overflow-hidden rounded-[16px] border border-border bg-[linear-gradient(180deg,#f7f4eb_0%,#fcfbf7_100%)] dark:bg-[linear-gradient(180deg,var(--card)_0%,var(--background)_100%)]', TICKET_CARD_SHADOW)}>
                 <div className="h-2.5 bg-[linear-gradient(90deg,#0f172a_0%,#334155_100%)]" />
                 <div className="space-y-5 p-5">
                     <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                            <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">Vertical style</div>
-                            <div className="font-heading mt-2 truncate text-xl font-black tracking-[-0.04em] text-slate-950">{ticket.airlineName}</div>
+                            <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Vertical style</div>
+                            <div className="font-heading mt-2 truncate text-xl font-black tracking-[-0.04em] text-foreground">{ticket.airlineName}</div>
                         </div>
-                        <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                        <div className="rounded-full border border-border bg-card px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                             {ticket.flightNumber}
                         </div>
                     </div>
 
                     <div className="space-y-4">
                         <div className="min-w-0">
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">From</div>
-                            <div className="font-heading mt-1 text-[clamp(3.4rem,14vw,4.8rem)] font-black leading-none tracking-[-0.09em] text-slate-950">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">From</div>
+                            <div className="font-heading mt-1 text-[clamp(3.4rem,14vw,4.8rem)] font-black leading-none tracking-[-0.09em] text-foreground">
                                 {departureCode}
                             </div>
-                            <div className="mt-2 truncate text-sm font-medium text-slate-500" title={formatAirportTicketLocationLabel(ticket.departureAirport)}>
+                            <div className="mt-2 truncate text-sm font-medium text-muted-foreground" title={formatAirportTicketLocationLabel(ticket.departureAirport)}>
                                 {formatAirportTicketLocationLabel(ticket.departureAirport)}
                             </div>
                         </div>
@@ -447,17 +447,17 @@ const AirportTicketPreviewCard: React.FC<{
                         <TicketRouteLine vertical />
 
                         <div className="min-w-0">
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">To</div>
-                            <div className="font-heading mt-1 text-[clamp(3.4rem,14vw,4.8rem)] font-black leading-none tracking-[-0.09em] text-slate-950">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">To</div>
+                            <div className="font-heading mt-1 text-[clamp(3.4rem,14vw,4.8rem)] font-black leading-none tracking-[-0.09em] text-foreground">
                                 {arrivalCode}
                             </div>
-                            <div className="mt-2 truncate text-sm font-medium text-slate-500" title={formatAirportTicketLocationLabel(ticket.arrivalAirport)}>
+                            <div className="mt-2 truncate text-sm font-medium text-muted-foreground" title={formatAirportTicketLocationLabel(ticket.arrivalAirport)}>
                                 {formatAirportTicketLocationLabel(ticket.arrivalAirport)}
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 border-t border-slate-200 pt-4">
+                    <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
                         <TicketMetaPill label="Passenger" value={ticket.passengerName} />
                         <TicketMetaPill label="Date" value={ticket.departureDateLabel} />
                         <TicketMetaPill label="Gate" value={ticket.gate} />
@@ -469,7 +469,7 @@ const AirportTicketPreviewCard: React.FC<{
                         <TicketQrBadge qrCodeUrl={qrCodeUrl} />
                     </div>
 
-                    <div className="flex items-center justify-between gap-3 border-t border-slate-200 pt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    <div className="flex items-center justify-between gap-3 border-t border-border pt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                         <span>{ticket.departureTimeLabel} → {ticket.arrivalTimeLabel}</span>
                         <span>{footerStatusLabel}</span>
                     </div>
@@ -479,13 +479,13 @@ const AirportTicketPreviewCard: React.FC<{
     }
 
     return (
-        <div className={cn('select-none overflow-hidden rounded-[16px] border border-slate-200 bg-[linear-gradient(180deg,#f7f4eb_0%,#fcfbf7_100%)]', TICKET_CARD_SHADOW)}>
-            <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-[linear-gradient(90deg,#0f172a_0%,#334155_100%)] px-5 py-3 text-white">
+        <div className={cn('select-none overflow-hidden rounded-[16px] border border-border bg-[linear-gradient(180deg,#f7f4eb_0%,#fcfbf7_100%)] dark:bg-[linear-gradient(180deg,var(--card)_0%,var(--background)_100%)]', TICKET_CARD_SHADOW)}>
+            <div className="flex items-center justify-between gap-3 border-b border-border bg-[linear-gradient(90deg,#0f172a_0%,#334155_100%)] px-5 py-3 text-white">
                 <div className="min-w-0">
                     <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/60">Digital Boarding Pass</div>
                     <div className="font-heading mt-1 truncate text-xl font-black tracking-[-0.04em]">{ticket.airlineName}</div>
                 </div>
-                <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80">
+                <div className="rounded-full border border-white/15 bg-card/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80">
                     {ticket.flightNumber}
                 </div>
             </div>
@@ -493,11 +493,11 @@ const AirportTicketPreviewCard: React.FC<{
             <div className="space-y-5 p-5">
                 <div className="grid items-end gap-4 md:grid-cols-[minmax(0,1fr)_96px_minmax(0,1fr)]">
                     <div className="min-w-0">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Departure</div>
-                        <div className="font-heading mt-2 text-[clamp(3.1rem,9vw,5rem)] font-black leading-none tracking-[-0.09em] text-slate-950">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Departure</div>
+                        <div className="font-heading mt-2 text-[clamp(3.1rem,9vw,5rem)] font-black leading-none tracking-[-0.09em] text-foreground">
                             {departureCode}
                         </div>
-                        <div className="mt-2 truncate text-base font-medium text-slate-500" title={formatAirportTicketLocationLabel(ticket.departureAirport)}>
+                        <div className="mt-2 truncate text-base font-medium text-muted-foreground" title={formatAirportTicketLocationLabel(ticket.departureAirport)}>
                             {formatAirportTicketLocationLabel(ticket.departureAirport)}
                         </div>
                     </div>
@@ -505,29 +505,29 @@ const AirportTicketPreviewCard: React.FC<{
                     <TicketRouteLine />
 
                     <div className="min-w-0 text-left md:text-right">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Arrival</div>
-                        <div className="font-heading mt-2 text-[clamp(3.1rem,9vw,5rem)] font-black leading-none tracking-[-0.09em] text-slate-950">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Arrival</div>
+                        <div className="font-heading mt-2 text-[clamp(3.1rem,9vw,5rem)] font-black leading-none tracking-[-0.09em] text-foreground">
                             {arrivalCode}
                         </div>
-                        <div className="mt-2 truncate text-base font-medium text-slate-500" title={formatAirportTicketLocationLabel(ticket.arrivalAirport)}>
+                        <div className="mt-2 truncate text-base font-medium text-muted-foreground" title={formatAirportTicketLocationLabel(ticket.arrivalAirport)}>
                             {formatAirportTicketLocationLabel(ticket.arrivalAirport)}
                         </div>
                     </div>
                 </div>
 
-                <div className="grid gap-4 border-t border-slate-200 pt-5 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-4 border-t border-border pt-5 sm:grid-cols-2 xl:grid-cols-4">
                     <TicketMetaPill label="Passenger" value={ticket.passengerName} />
                     <TicketMetaPill label="Date" value={ticket.departureDateLabel} />
                     <TicketMetaPill label="Gate" value={ticket.gate} />
                     <TicketMetaPill label="Seat" value={ticket.seat} />
                 </div>
 
-                <div className="grid gap-3 border-t border-slate-200 pt-5 md:grid-cols-[minmax(0,1fr)_112px]">
+                <div className="grid gap-3 border-t border-border pt-5 md:grid-cols-[minmax(0,1fr)_112px]">
                     <TicketBarcode bars={barcodeBars} />
                     <TicketQrBadge qrCodeUrl={qrCodeUrl} />
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-slate-200 pt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-border pt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     <span>{ticket.departureTimeLabel} → {ticket.arrivalTimeLabel}</span>
                     <span>{ticket.durationLabel}</span>
                     <span>{footerStatusLabel}</span>
@@ -641,7 +641,7 @@ const AirportSourcePill: React.FC<{
 }> = ({ source, databaseAvailable }) => {
     if (source === 'database') {
         return (
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30">
                 <Database size={12} />
                 Database-backed
             </span>
@@ -652,8 +652,8 @@ const AirportSourcePill: React.FC<{
         <span className={cn(
             'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold',
             databaseAvailable
-                ? 'border-amber-200 bg-amber-50 text-amber-800'
-                : 'border-slate-200 bg-slate-100 text-slate-700',
+                ? 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30'
+                : 'border-border bg-secondary text-foreground',
         )}>
             <WarningCircle size={12} />
             {databaseAvailable ? 'Snapshot fallback' : 'Snapshot only'}
@@ -666,10 +666,10 @@ const AirportSummaryMetric: React.FC<{
     value: React.ReactNode;
     hint?: string;
 }> = ({ label, value, hint }) => (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{label}</div>
-        <div className="mt-1 text-xl font-black tracking-tight text-slate-900">{value}</div>
-        {hint ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
+    <div className="rounded-2xl border border-border bg-secondary/80 p-3">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</div>
+        <div className="mt-1 text-xl font-black tracking-tight text-foreground">{value}</div>
+        {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
     </div>
 );
 
@@ -899,8 +899,8 @@ const AdminAirportTester: React.FC<{
         <AdminSurfaceCard className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h2 className="text-lg font-semibold text-slate-900">Nearby Airport Tester</h2>
-                    <p className="text-sm text-slate-600">
+                    <h2 className="text-lg font-semibold text-foreground">Nearby Airport Tester</h2>
+                    <p className="text-sm text-muted-foreground">
                         Search for a city with Google, run the shared nearby-airports endpoint, and preview the result set on a map.
                     </p>
                 </div>
@@ -909,7 +909,7 @@ const AdminAirportTester: React.FC<{
             <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]">
                 <div className="space-y-4">
                     <div className="space-y-2">
-                        <label htmlFor="admin-airports-city-search" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">City Search</label>
+                        <label htmlFor="admin-airports-city-search" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">City Search</label>
                         <div className="relative">
 	                            <Input
 	                                id="admin-airports-city-search"
@@ -927,16 +927,16 @@ const AdminAirportTester: React.FC<{
                             <button
                                 type="button"
                                 onClick={() => void handleResolveCity()}
-                                className="absolute inset-y-1.5 right-1.5 inline-flex w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                className="absolute inset-y-1.5 right-1.5 inline-flex w-8 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:border-border hover:text-foreground"
                                 aria-label="Resolve city"
                             >
                                 {searchingSuggestions ? <SpinnerGap size={16} className="animate-spin" /> : <MagnifyingGlass size={16} />}
                             </button>
                         </div>
                         {(searchingSuggestions || suggestions.length > 0) && (
-                            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm dark:shadow-none">
                                 {searchingSuggestions && (
-                                    <div className="px-3 py-2 text-sm text-slate-500">Searching city suggestions…</div>
+                                    <div className="px-3 py-2 text-sm text-muted-foreground">Searching city suggestions…</div>
                                 )}
                                 {!searchingSuggestions && suggestions.map((suggestion) => (
                                     <button
@@ -952,13 +952,13 @@ const AdminAirportTester: React.FC<{
                                             );
                                             setSuggestions([]);
                                         }}
-                                        className="flex w-full items-start justify-between gap-3 border-b border-slate-100 px-3 py-2 text-left transition-colors hover:bg-slate-50 last:border-b-0"
+                                        className="flex w-full items-start justify-between gap-3 border-b border-border px-3 py-2 text-left transition-colors hover:bg-secondary last:border-b-0"
                                     >
                                         <span>
-                                            <span className="block text-sm font-semibold text-slate-900">{suggestion.name}</span>
-                                            <span className="block text-xs text-slate-500">{suggestion.label}</span>
+                                            <span className="block text-sm font-semibold text-foreground">{suggestion.name}</span>
+                                            <span className="block text-xs text-muted-foreground">{suggestion.label}</span>
                                         </span>
-                                        <MapPin size={16} className="mt-0.5 shrink-0 text-slate-400" />
+                                        <MapPin size={16} className="mt-0.5 shrink-0 text-muted-foreground" />
                                     </button>
                                 ))}
                             </div>
@@ -967,7 +967,7 @@ const AdminAirportTester: React.FC<{
 
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-2">
-                            <label htmlFor="admin-airports-latitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Latitude</label>
+                            <label htmlFor="admin-airports-latitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Latitude</label>
 	                            <Input
 	                                id="admin-airports-latitude"
 	                                type="number"
@@ -979,7 +979,7 @@ const AdminAirportTester: React.FC<{
                             />
                         </div>
                         <div className="space-y-2">
-                            <label htmlFor="admin-airports-longitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Longitude</label>
+                            <label htmlFor="admin-airports-longitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Longitude</label>
 	                            <Input
 	                                id="admin-airports-longitude"
 	                                type="number"
@@ -994,7 +994,7 @@ const AdminAirportTester: React.FC<{
 
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-2">
-                            <div id="admin-airports-passenger-filter-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Passenger Filter</div>
+                            <div id="admin-airports-passenger-filter-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Passenger Filter</div>
                             <Select value={filters.minimumServiceTier} onValueChange={(value) => onFiltersChange({ minimumServiceTier: value as AirportCommercialServiceTier })}>
                                 <SelectTrigger aria-labelledby="admin-airports-passenger-filter-label" className="h-10">
                                     <SelectValue />
@@ -1007,12 +1007,12 @@ const AdminAirportTester: React.FC<{
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-muted-foreground">
                                 {SERVICE_TIER_OPTIONS.find((option) => option.value === filters.minimumServiceTier)?.helper}
                             </p>
                         </div>
                         <div className="space-y-2">
-                            <label htmlFor="admin-airports-result-limit" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Result Limit</label>
+                            <label htmlFor="admin-airports-result-limit" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Result Limit</label>
 	                            <Input
 	                                id="admin-airports-result-limit"
 	                                type="number"
@@ -1036,13 +1036,13 @@ const AdminAirportTester: React.FC<{
                                 toggleLabel="Toggle airport country filter"
                                 onValueChange={(value) => onFiltersChange({ countryFilter: value })}
                             />
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                                 <span>Filter nearby-airport results to one country.</span>
                                 {filters.countryFilter && !filters.sameCountryOnly && (
                                     <button
                                         type="button"
                                         onClick={() => onFiltersChange({ countryFilter: '' })}
-                                        className="font-semibold text-slate-700 underline-offset-2 hover:underline"
+                                        className="font-semibold text-foreground underline-offset-2 hover:underline"
                                     >
                                         Clear country filter
                                     </button>
@@ -1050,10 +1050,10 @@ const AdminAirportTester: React.FC<{
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+                        <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary px-3 py-2">
                             <div>
-                                <div className="text-sm font-semibold text-slate-900">Same-country only</div>
-                                <div className="text-xs text-slate-500">
+                                <div className="text-sm font-semibold text-foreground">Same-country only</div>
+                                <div className="text-xs text-muted-foreground">
                                     {filters.sameCountryOnly
                                         ? `Using ${origin?.countryName || origin?.countryCode || 'the origin country'} as the country filter.`
                                         : 'Keep results in the same country as the selected city or runtime location when possible.'}
@@ -1071,7 +1071,7 @@ const AdminAirportTester: React.FC<{
                         <button
                             type="button"
                             onClick={() => void handleUseRuntimeLocation()}
-                            className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
+                            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground"
                         >
                             <MapPin size={15} />
                             Use runtime location
@@ -1094,10 +1094,10 @@ const AdminAirportTester: React.FC<{
                     </div>
 
                     {origin && (
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                            <div className="font-semibold text-slate-900">Origin</div>
+                        <div className="rounded-2xl border border-border bg-secondary p-3 text-sm text-foreground">
+                            <div className="font-semibold text-foreground">Origin</div>
                             <div>{origin.label}</div>
-                            <div className="text-xs text-slate-500">
+                            <div className="text-xs text-muted-foreground">
                                 {origin.lat.toFixed(5)}, {origin.lng.toFixed(5)}
                                 {origin.countryCode ? ` · ${origin.countryCode}` : ''}
                             </div>
@@ -1105,40 +1105,40 @@ const AdminAirportTester: React.FC<{
                     )}
 
                     {lookupError && (
-                        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+                        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             {lookupError}
                         </div>
                     )}
 
                     {displayLookupResult && (
-                        <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-3">
+                        <div className="space-y-2 rounded-2xl border border-border bg-card p-3">
                             <div className="flex items-center justify-between gap-3">
-                                <div className="text-sm font-semibold text-slate-900">Nearest airports</div>
-                                <div className="text-xs text-slate-500">Data version {displayLookupResult.dataVersion}</div>
+                                <div className="text-sm font-semibold text-foreground">Nearest airports</div>
+                                <div className="text-xs text-muted-foreground">Data version {displayLookupResult.dataVersion}</div>
                             </div>
                             <div className="space-y-2">
                                 {displayLookupResult.airports.map((entry) => (
-                                    <div key={`${entry.airport.ident}-${entry.rank}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                    <div key={`${entry.airport.ident}-${entry.rank}`} className="rounded-xl border border-border bg-secondary p-3">
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
-                                                <div className="text-sm font-semibold text-slate-900">
+                                                <div className="text-sm font-semibold text-foreground">
                                                     {entry.rank}. {entry.airport.name}
                                                 </div>
-                                                <div className="text-xs text-slate-500">
+                                                <div className="text-xs text-muted-foreground">
                                                     {(entry.airport.iataCode || entry.airport.icaoCode || entry.airport.ident)} · {entry.airport.municipality || 'Unknown city'} · {entry.airport.countryName}
                                                 </div>
                                             </div>
-                                            <div className="text-sm font-semibold text-slate-900">{formatDistance(entry.airDistanceKm)}</div>
+                                            <div className="text-sm font-semibold text-foreground">{formatDistance(entry.airDistanceKm)}</div>
                                         </div>
                                         <div className="mt-2 flex flex-wrap gap-2">
-                                            <span className="inline-flex rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700">
+                                            <span className="inline-flex rounded-full border border-border bg-card px-2 py-1 text-[11px] font-semibold text-foreground">
                                                 {formatServiceTierLabel(entry.airport.commercialServiceTier)}
                                             </span>
-                                            <span className="inline-flex rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700">
+                                            <span className="inline-flex rounded-full border border-border bg-card px-2 py-1 text-[11px] font-semibold text-foreground">
                                                 {formatAirportTypeLabel(entry.airport.airportType)}
                                             </span>
                                             {entry.airport.timezone && (
-                                                <span className="inline-flex rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700">
+                                                <span className="inline-flex rounded-full border border-border bg-card px-2 py-1 text-[11px] font-semibold text-foreground">
                                                     {entry.airport.timezone}
                                                 </span>
                                             )}
@@ -1240,8 +1240,8 @@ const AdminAirportBulkEditor: React.FC<{
         <AdminSurfaceCard className="space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                    <h2 className="text-lg font-semibold text-slate-900">Bulk Editor</h2>
-                    <p className="text-sm text-slate-600">
+                    <h2 className="text-lg font-semibold text-foreground">Bulk Editor</h2>
+                    <p className="text-sm text-muted-foreground">
                         Apply the same airport-type, scheduled-service, or timezone correction to many selected airports at once.
                     </p>
                 </div>
@@ -1250,7 +1250,7 @@ const AdminAirportBulkEditor: React.FC<{
                         type="button"
                         onClick={onSelectFiltered}
                         disabled={filteredAirportCount === 0}
-                        className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-9 items-center rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         Select filtered ({filteredAirportCount})
                     </button>
@@ -1258,7 +1258,7 @@ const AdminAirportBulkEditor: React.FC<{
                         type="button"
                         onClick={onClearSelection}
                         disabled={selectedCount === 0}
-                        className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-9 items-center rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         Clear selection
                     </button>
@@ -1278,7 +1278,7 @@ const AdminAirportBulkEditor: React.FC<{
 
             <div className="grid gap-3 md:grid-cols-3">
                 <div className="space-y-2">
-                    <div id="admin-airports-bulk-airport-type-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Airport Type</div>
+                    <div id="admin-airports-bulk-airport-type-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Airport Type</div>
                     <Select value={bulkAirportType} onValueChange={(value) => setBulkAirportType(value as BulkAirportTypeOption)}>
                         <SelectTrigger aria-labelledby="admin-airports-bulk-airport-type-label" className="h-10">
                             <SelectValue />
@@ -1294,7 +1294,7 @@ const AdminAirportBulkEditor: React.FC<{
                 </div>
 
                 <div className="space-y-2">
-                    <div id="admin-airports-bulk-scheduled-service-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Scheduled Service</div>
+                    <div id="admin-airports-bulk-scheduled-service-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Scheduled Service</div>
                     <Select value={bulkScheduledService} onValueChange={(value) => setBulkScheduledService(value as BulkScheduledServiceOption)}>
                         <SelectTrigger aria-labelledby="admin-airports-bulk-scheduled-service-label" className="h-10">
                             <SelectValue />
@@ -1310,7 +1310,7 @@ const AdminAirportBulkEditor: React.FC<{
                 </div>
 
                 <div className="space-y-2">
-                    <div id="admin-airports-bulk-timezone-mode-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Timezone Action</div>
+                    <div id="admin-airports-bulk-timezone-mode-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Timezone Action</div>
                     <Select value={bulkTimezoneMode} onValueChange={(value) => setBulkTimezoneMode(value as BulkTimezoneMode)}>
                         <SelectTrigger aria-labelledby="admin-airports-bulk-timezone-mode-label" className="h-10">
                             <SelectValue />
@@ -1328,7 +1328,7 @@ const AdminAirportBulkEditor: React.FC<{
 
             {bulkTimezoneMode === 'set' && (
                 <div className="space-y-2">
-                    <label htmlFor="admin-airports-bulk-timezone-value" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Timezone Value</label>
+                    <label htmlFor="admin-airports-bulk-timezone-value" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Timezone Value</label>
 	                    <Input
 	                        id="admin-airports-bulk-timezone-value"
 	                        aria-label="Timezone Value"
@@ -1353,13 +1353,13 @@ const AdminAirportBulkEditor: React.FC<{
                     type="button"
                     onClick={() => void onDeleteSelected()}
                     disabled={!databaseBacked || selectedCount === 0 || isDeleting || isApplying}
-                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-rose-300 bg-white px-3 text-sm font-semibold text-rose-700 transition-colors hover:border-rose-400 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-rose-300 bg-card px-3 text-sm font-semibold text-rose-700 transition-colors hover:border-rose-400 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                 >
                     {isDeleting ? <SpinnerGap size={14} className="animate-spin" /> : <Trash size={14} />}
                     Delete selected
                 </button>
                 {!databaseBacked && (
-                    <span className="text-xs text-amber-700">Sync the database catalog first to enable bulk edits.</span>
+                    <span className="text-xs text-amber-700 dark:text-amber-200">Sync the database catalog first to enable bulk edits.</span>
                 )}
             </div>
         </AdminSurfaceCard>
@@ -1474,21 +1474,21 @@ const AdminAirportTicketLab: React.FC<{
         <AdminSurfaceCard className="space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                    <h2 className="text-lg font-semibold text-slate-900">Fake Ticket Lab</h2>
-                    <p className="text-sm text-slate-600">
+                    <h2 className="text-lg font-semibold text-foreground">Fake Ticket Lab</h2>
+                    <p className="text-sm text-muted-foreground">
                         Build a digital boarding-pass preview from the nearest commercial airport so we can validate the future ticket experience against real airport data.
                     </p>
                 </div>
                 {ticket && (
-                    <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                    <span className="inline-flex rounded-full border border-border bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground">
                         {formatCabinClassLabel(ticket.cabinClass)} preview
                     </span>
                 )}
             </div>
 
             {!nearbyResult && fallbackDepartureOption && (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                    <div className="font-semibold text-amber-950">Testing fallback active</div>
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
+                    <div className="font-semibold text-amber-950 dark:text-amber-200">Testing fallback active</div>
                     <div className="mt-1">
                         Using Berlin Brandenburg Airport (BER) as the default ticket departure until you run a nearby-airport lookup.
                     </div>
@@ -1496,7 +1496,7 @@ const AdminAirportTicketLab: React.FC<{
             )}
 
             {!nearbyResult && !fallbackDepartureOption && (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
+                <div className="rounded-2xl border border-dashed border-border bg-secondary p-6 text-sm text-muted-foreground">
                     Run a nearby-airport lookup first, then this lab will use the closest commercial airport as the departure side of the fake ticket.
                 </div>
             )}
@@ -1506,7 +1506,7 @@ const AdminAirportTicketLab: React.FC<{
                     <div className="space-y-4">
                         <div className="grid gap-3 md:grid-cols-2">
                             <div className="space-y-2">
-                                <label htmlFor="admin-airports-ticket-passenger" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Passenger Name</label>
+                                <label htmlFor="admin-airports-ticket-passenger" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Passenger Name</label>
 	                                <Input
 	                                    id="admin-airports-ticket-passenger"
 	                                    aria-label="Passenger Name"
@@ -1516,7 +1516,7 @@ const AdminAirportTicketLab: React.FC<{
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label htmlFor="admin-airports-ticket-date" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Departure Date</label>
+                                <label htmlFor="admin-airports-ticket-date" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Departure Date</label>
 	                                <Input
 	                                    id="admin-airports-ticket-date"
 	                                    type="date"
@@ -1529,7 +1529,7 @@ const AdminAirportTicketLab: React.FC<{
 
                         <div className="grid gap-3 md:grid-cols-2">
                             <div className="space-y-2">
-                                <div id="admin-airports-ticket-departure-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Departure Airport</div>
+                                <div id="admin-airports-ticket-departure-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Departure Airport</div>
                                 <Select value={selectedDeparture?.airport.ident || ''} onValueChange={setSelectedDepartureIdent}>
                                     <SelectTrigger aria-labelledby="admin-airports-ticket-departure-label" className="h-10">
                                         <SelectValue placeholder="Choose a nearby airport" />
@@ -1544,7 +1544,7 @@ const AdminAirportTicketLab: React.FC<{
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <div id="admin-airports-ticket-destination-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Destination Airport</div>
+                                <div id="admin-airports-ticket-destination-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Destination Airport</div>
                                 <Select value={selectedDestination?.ident || ''} onValueChange={setSelectedDestinationIdent}>
                                     <SelectTrigger aria-labelledby="admin-airports-ticket-destination-label" className="h-10">
                                         <SelectValue placeholder="Choose a destination hub" />
@@ -1561,7 +1561,7 @@ const AdminAirportTicketLab: React.FC<{
                         </div>
 
                         <div className="space-y-2">
-                            <div id="admin-airports-ticket-cabin-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Cabin Class</div>
+                            <div id="admin-airports-ticket-cabin-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Cabin Class</div>
                             <Select value={cabinClass} onValueChange={(value) => setCabinClass(value as FakeAirportTicketCabinClass)}>
                                 <SelectTrigger aria-labelledby="admin-airports-ticket-cabin-label" className="h-10">
                                     <SelectValue />
@@ -1577,18 +1577,18 @@ const AdminAirportTicketLab: React.FC<{
                         </div>
 
                         {selectedDeparture && (
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                                <div className="font-semibold text-slate-900">Departure context</div>
+                            <div className="rounded-2xl border border-border bg-secondary p-3 text-sm text-foreground">
+                                <div className="font-semibold text-foreground">Departure context</div>
                                 <div className="mt-1">
                                     {selectedDeparture.airport.name} · {selectedDeparture.airport.municipality || 'Unknown city'}
                                     {selectedDeparture.airportAccessDistanceKm !== null ? ` · ${formatDistance(selectedDeparture.airportAccessDistanceKm)}` : ''}
                                 </div>
                                 {isUsingFallbackDeparture ? (
-                                    <div className="mt-1 text-xs text-slate-500">
+                                    <div className="mt-1 text-xs text-muted-foreground">
                                         BER stays available as a reliable test fallback until a nearby lookup runs.
                                     </div>
                                 ) : origin && (
-                                    <div className="mt-1 text-xs text-slate-500">
+                                    <div className="mt-1 text-xs text-muted-foreground">
                                         Based on {origin.label}
                                     </div>
                                 )}
@@ -1598,7 +1598,7 @@ const AdminAirportTicketLab: React.FC<{
 
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Horizontal style</div>
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Horizontal style</div>
                             <AirportTicketPreviewCard
                                 ticket={ticket}
                                 barcodeBars={ticketBarcodeBars}
@@ -1608,35 +1608,35 @@ const AdminAirportTicketLab: React.FC<{
                             />
                         </div>
                         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.7fr)]">
-                            <div className="rounded-[18px] border border-slate-200 bg-slate-50/90 p-4 text-sm text-slate-600">
+                            <div className="rounded-[18px] border border-border bg-secondary/90 p-4 text-sm text-muted-foreground">
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                    <span className="font-semibold text-slate-900">
+                                    <span className="font-semibold text-foreground">
                                         {isUsingFallbackDeparture ? 'Testing airport:' : 'Closest airport:'}
                                     </span>
                                     <span>{ticket.departureAirport.name}</span>
-                                    <span className="text-slate-400">•</span>
+                                    <span className="text-muted-foreground">•</span>
                                     <span>{ticket.durationLabel}</span>
-                                    <span className="text-slate-400">•</span>
+                                    <span className="text-muted-foreground">•</span>
                                     <span>{formatDistance(ticket.routeDistanceKm)}</span>
                                     {ticket.airportAccessDistanceKm !== null && (
                                         <>
-                                            <span className="text-slate-400">•</span>
+                                            <span className="text-muted-foreground">•</span>
                                             <span>{formatDistance(ticket.airportAccessDistanceKm)} from origin</span>
                                         </>
                                     )}
                                 </div>
                                 {isUsingFallbackDeparture ? (
-                                    <div className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">
+                                    <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
                                         BER fallback stays visible until you run a nearby-airport lookup
                                     </div>
                                 ) : ticket.originLabel && (
-                                    <div className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">
+                                    <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
                                         Based on {ticket.originLabel}
                                     </div>
                                 )}
                             </div>
                             <div className="space-y-2">
-                                <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Vertical style</div>
+                                <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Vertical style</div>
                                 <AirportTicketPreviewCard
                                     ticket={ticket}
                                     barcodeBars={ticketBarcodeBars}
@@ -2350,7 +2350,7 @@ export const AdminAirportsPage: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => void handleStartCreateAirport()}
-                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
+                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground"
                     >
                         <Plus size={14} />
                         New airport
@@ -2370,7 +2370,7 @@ export const AdminAirportsPage: React.FC = () => {
         >
             <div className="space-y-4">
                 {errorMessage && (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                         {errorMessage}
                     </div>
                 )}
@@ -2379,28 +2379,28 @@ export const AdminAirportsPage: React.FC = () => {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="space-y-2">
                             <div className="flex flex-wrap items-center gap-2">
-                                <h2 className="text-lg font-semibold text-slate-900">Catalog Status</h2>
+                                <h2 className="text-lg font-semibold text-foreground">Catalog Status</h2>
                                 {catalog && (
                                     <AirportSourcePill source={catalog.source} databaseAvailable={catalog.databaseAvailable} />
                                 )}
                             </div>
-                            <p className="max-w-3xl text-sm text-slate-600">
+                            <p className="max-w-3xl text-sm text-muted-foreground">
                                 Service tiers are derived from airport size so we can distinguish smaller local commercial airports from regional passenger airports and major commercial hubs.
                             </p>
                         </div>
                         {editorPreviewAirport && (
                             <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">
+                                <span className="inline-flex rounded-full border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground">
                                     {formatServiceTierLabel(editorPreviewAirport.commercialServiceTier)}
                                 </span>
-                                <span className="inline-flex rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">
+                                <span className="inline-flex rounded-full border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground">
                                     {formatAirportTypeLabel(editorPreviewAirport.airportType)}
                                 </span>
                                 <span className={cn(
                                     'inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold',
                                     editorPreviewAirport.isCommercial
-                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                        : 'border-amber-200 bg-amber-50 text-amber-800',
+                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
+                                        : 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
                                 )}>
                                     {editorPreviewAirport.isCommercial ? 'Commercial lookup eligible' : 'Excluded from commercial lookup'}
                                 </span>
@@ -2436,8 +2436,8 @@ export const AdminAirportsPage: React.FC = () => {
                         />
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-                        <span className="font-semibold text-slate-900">Upstream sources:</span>{' '}
+                    <div className="rounded-2xl border border-border bg-secondary p-3 text-sm text-muted-foreground">
+                        <span className="font-semibold text-foreground">Upstream sources:</span>{' '}
                         {catalog?.metadata
                             ? `${catalog.metadata.sources.primary} · ${catalog.metadata.sources.enrichment}`
                             : 'Waiting for airport metadata.'}
@@ -2475,12 +2475,12 @@ export const AdminAirportsPage: React.FC = () => {
                     <AdminSurfaceCard className="space-y-4">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                                <h2 className="text-lg font-semibold text-slate-900">Airport Catalog</h2>
-                                <p className="text-sm text-slate-600">
+                                <h2 className="text-lg font-semibold text-foreground">Airport Catalog</h2>
+                                <p className="text-sm text-muted-foreground">
                                     Browse the full commercial-airport table, filter it by tier or country, and pick a row to edit.
                                 </p>
                             </div>
-                            <div className="space-y-1 text-right text-sm text-slate-500">
+                            <div className="space-y-1 text-right text-sm text-muted-foreground">
                                 <div>
                                     Showing {(safePage - 1) * AIRPORT_TABLE_PAGE_SIZE + 1}-{Math.min(safePage * AIRPORT_TABLE_PAGE_SIZE, filteredAirports.length)} of {filteredAirports.length}
                                 </div>
@@ -2499,12 +2499,12 @@ export const AdminAirportsPage: React.FC = () => {
                                     toggleLabel="Toggle country filter"
                                     onValueChange={handleCountryFilterChange}
                                 />
-                                <div className="text-xs text-slate-500">
+                                <div className="text-xs text-muted-foreground">
                                     {countryFilter ? (
                                         <button
                                             type="button"
                                             onClick={() => handleCountryFilterChange('')}
-                                            className="font-semibold text-slate-700 underline-offset-2 hover:underline"
+                                            className="font-semibold text-foreground underline-offset-2 hover:underline"
                                         >
                                             Clear country filter
                                         </button>
@@ -2512,7 +2512,7 @@ export const AdminAirportsPage: React.FC = () => {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <div id="admin-airports-service-tier-filter-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Service Tier</div>
+                                <div id="admin-airports-service-tier-filter-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Service Tier</div>
                                 <Select value={serviceTierFilter} onValueChange={handleServiceTierFilterChange}>
                                     <SelectTrigger aria-labelledby="admin-airports-service-tier-filter-label" className="h-10">
                                         <SelectValue />
@@ -2527,12 +2527,12 @@ export const AdminAirportsPage: React.FC = () => {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                            <div className="rounded-2xl border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">
                                 Search matches IATA, ICAO, ident, airport name, city, subdivision, and country.
                             </div>
                         </div>
 
-                        <div className="overflow-hidden rounded-2xl border border-slate-200">
+                        <div className="overflow-hidden rounded-2xl border border-border">
                             <Table className="min-w-[980px] table-fixed">
                                 <colgroup>
                                     <col style={{ width: 52 }} />
@@ -2543,7 +2543,7 @@ export const AdminAirportsPage: React.FC = () => {
                                     <col style={{ width: `${columnWidths.type}px` }} />
                                     <col style={{ width: `${columnWidths.timezone}px` }} />
                                 </colgroup>
-                                <TableHeader className="bg-slate-50">
+                                <TableHeader className="bg-secondary">
                                     <TableRow>
                                         <TableHead className="w-[52px]">
                                             <Checkbox
@@ -2642,25 +2642,25 @@ export const AdminAirportsPage: React.FC = () => {
                                                 />
                                             </TableCell>
                                             <TableCell>
-                                                <div className="font-semibold text-slate-900">{airport.iataCode || airport.ident}</div>
-                                                <div className="text-xs text-slate-500">{airport.icaoCode || 'No ICAO'}</div>
+                                                <div className="font-semibold text-foreground">{airport.iataCode || airport.ident}</div>
+                                                <div className="text-xs text-muted-foreground">{airport.icaoCode || 'No ICAO'}</div>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="font-semibold text-slate-900">{airport.name}</div>
-                                                <div className="text-xs text-slate-500">{airport.ident}</div>
+                                                <div className="font-semibold text-foreground">{airport.name}</div>
+                                                <div className="text-xs text-muted-foreground">{airport.ident}</div>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="font-medium text-slate-900">{airport.municipality || 'Unknown city'}</div>
-                                                <div className="text-xs text-slate-500">{airport.countryName}</div>
+                                                <div className="font-medium text-foreground">{airport.municipality || 'Unknown city'}</div>
+                                                <div className="text-xs text-muted-foreground">{airport.countryName}</div>
                                             </TableCell>
                                             <TableCell>
                                                 <span className={cn(
                                                     'inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold',
                                                     airport.commercialServiceTier === 'major'
-                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
                                                         : airport.commercialServiceTier === 'regional'
-                                                            ? 'border-sky-200 bg-sky-50 text-sky-700'
-                                                            : 'border-slate-200 bg-white text-slate-700',
+                                                            ? 'border-sky-200 bg-sky-50 text-sky-700 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'
+                                                            : 'border-border bg-card text-foreground',
                                                 )}>
                                                     {formatServiceTierLabel(airport.commercialServiceTier)}
                                                 </span>
@@ -2671,7 +2671,7 @@ export const AdminAirportsPage: React.FC = () => {
                                     ))}
                                     {pagedAirports.length === 0 && (
                                         <TableRow>
-                                            <TableCell colSpan={7} className="py-10 text-center text-sm text-slate-500">
+                                            <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
                                                 No airports match the current filters.
                                             </TableCell>
                                         </TableRow>
@@ -2681,7 +2681,7 @@ export const AdminAirportsPage: React.FC = () => {
                         </div>
 
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="text-sm text-slate-500">
+                            <div className="text-sm text-muted-foreground">
                                 Page {safePage} of {pageCount}
                             </div>
                             <div className="flex gap-2">
@@ -2689,7 +2689,7 @@ export const AdminAirportsPage: React.FC = () => {
                                     type="button"
                                     onClick={() => setPage((current) => Math.max(1, current - 1))}
                                     disabled={safePage <= 1}
-                                    className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="inline-flex h-9 items-center rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     Previous
                                 </button>
@@ -2697,7 +2697,7 @@ export const AdminAirportsPage: React.FC = () => {
                                     type="button"
                                     onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
                                     disabled={safePage >= pageCount}
-                                    className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="inline-flex h-9 items-center rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     Next
                                 </button>
@@ -2708,8 +2708,8 @@ export const AdminAirportsPage: React.FC = () => {
                     <AdminSurfaceCard className="space-y-4">
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                                <h2 className="text-lg font-semibold text-slate-900">Airport Editor</h2>
-                                <p className="text-sm text-slate-600">
+                                <h2 className="text-lg font-semibold text-foreground">Airport Editor</h2>
+                                <p className="text-sm text-muted-foreground">
                                     {editorMode === 'create'
                                         ? 'Create a new airport row in the database catalog. Commercial flags are derived automatically.'
                                         : 'Edit a selected row and save it back to the database catalog. Commercial flags are derived automatically.'}
@@ -2717,12 +2717,12 @@ export const AdminAirportsPage: React.FC = () => {
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {editorMode === 'create' && (
-                                    <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
+                                    <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30">
                                         New row draft
                                     </span>
                                 )}
                                 {!databaseBacked && (
-                                    <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                                    <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                                         Sync DB first to enable saves
                                     </span>
                                 )}
@@ -2730,7 +2730,7 @@ export const AdminAirportsPage: React.FC = () => {
                         </div>
 
                         {!editorDraft && (
-                            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
+                            <div className="rounded-2xl border border-dashed border-border bg-secondary p-6 text-sm text-muted-foreground">
                                 Select an airport row to inspect and edit its catalog details, or start a new airport draft from the toolbar.
                             </div>
                         )}
@@ -2739,7 +2739,7 @@ export const AdminAirportsPage: React.FC = () => {
                             <>
                                 <div className="grid gap-3 md:grid-cols-2">
                                     <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-ident" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Ident</label>
+                                        <label htmlFor="admin-airports-editor-ident" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Ident</label>
 	                                        <Input
 	                                            id="admin-airports-editor-ident"
 	                                            aria-label="Ident"
@@ -2752,7 +2752,7 @@ export const AdminAirportsPage: React.FC = () => {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <div id="admin-airports-editor-type-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Airport Type</div>
+                                        <div id="admin-airports-editor-type-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Airport Type</div>
                                         <Select
                                             value={editorDraft.airportType}
                                             onValueChange={(value) => {
@@ -2779,14 +2779,14 @@ export const AdminAirportsPage: React.FC = () => {
 
                                 <div className="grid gap-3 md:grid-cols-2">
                                     <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-iata" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">IATA code</label>
+                                        <label htmlFor="admin-airports-editor-iata" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">IATA code</label>
 	                                        <Input id="admin-airports-editor-iata" aria-label="IATA code" value={editorDraft.iataCode} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, iataCode: event.target.value.toUpperCase() } : current);
                                             setEditorDirty(true);
                                         }} />
                                     </div>
                                     <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-icao" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">ICAO code</label>
+                                        <label htmlFor="admin-airports-editor-icao" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">ICAO code</label>
 	                                        <Input id="admin-airports-editor-icao" aria-label="ICAO code" value={editorDraft.icaoCode} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, icaoCode: event.target.value.toUpperCase() } : current);
                                             setEditorDirty(true);
@@ -2795,7 +2795,7 @@ export const AdminAirportsPage: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label htmlFor="admin-airports-editor-name" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Airport name</label>
+                                    <label htmlFor="admin-airports-editor-name" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Airport name</label>
 	                                    <Input id="admin-airports-editor-name" aria-label="Airport name" value={editorDraft.name} onChange={(event) => {
                                         setEditorDraft((current) => current ? { ...current, name: event.target.value } : current);
                                         setEditorDirty(true);
@@ -2804,14 +2804,14 @@ export const AdminAirportsPage: React.FC = () => {
 
                                 <div className="grid gap-3 md:grid-cols-2">
                                     <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-municipality" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Municipality</label>
+                                        <label htmlFor="admin-airports-editor-municipality" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Municipality</label>
 	                                        <Input id="admin-airports-editor-municipality" aria-label="Municipality" value={editorDraft.municipality} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, municipality: event.target.value } : current);
                                             setEditorDirty(true);
                                         }} />
                                     </div>
                                     <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-subdivision" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Subdivision name</label>
+                                        <label htmlFor="admin-airports-editor-subdivision" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Subdivision name</label>
 	                                        <Input id="admin-airports-editor-subdivision" aria-label="Subdivision name" value={editorDraft.subdivisionName} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, subdivisionName: event.target.value } : current);
                                             setEditorDirty(true);
@@ -2821,14 +2821,14 @@ export const AdminAirportsPage: React.FC = () => {
 
                                 <div className="grid gap-3 md:grid-cols-2">
                                     <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-region" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Region code</label>
+                                        <label htmlFor="admin-airports-editor-region" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Region code</label>
 	                                        <Input id="admin-airports-editor-region" aria-label="Region code" value={editorDraft.regionCode} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, regionCode: event.target.value.toUpperCase() } : current);
                                             setEditorDirty(true);
                                         }} />
                                     </div>
                                     <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-timezone" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Timezone</label>
+                                        <label htmlFor="admin-airports-editor-timezone" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Timezone</label>
 	                                        <Input id="admin-airports-editor-timezone" aria-label="Timezone" value={editorDraft.timezone} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, timezone: event.target.value } : current);
                                             setEditorDirty(true);
@@ -2838,7 +2838,7 @@ export const AdminAirportsPage: React.FC = () => {
 
                                 <div className="grid gap-3 md:grid-cols-2">
                                     <div className="space-y-2">
-                                        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Country or region</div>
+                                        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Country or region</div>
                                         <ProfileCountryRegionSelect
                                             value={editorDraft.countryCode}
                                             ariaLabel="Country or region"
@@ -2852,27 +2852,27 @@ export const AdminAirportsPage: React.FC = () => {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-country-name" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Country name</label>
+                                        <label htmlFor="admin-airports-editor-country-name" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Country name</label>
 	                                        <Input
 	                                            id="admin-airports-editor-country-name"
 	                                            aria-label="Country name"
 	                                            value={editorDraft.countryName}
                                             readOnly
-                                            className="bg-slate-50 text-slate-600"
+                                            className="bg-secondary text-muted-foreground"
                                         />
                                     </div>
                                 </div>
 
                                 <div className="grid gap-3 md:grid-cols-2">
                                     <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-latitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Latitude</label>
+                                        <label htmlFor="admin-airports-editor-latitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Latitude</label>
 	                                        <Input id="admin-airports-editor-latitude" aria-label="Latitude" type="number" step="0.000001" value={editorDraft.latitude} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, latitude: event.target.value } : current);
                                             setEditorDirty(true);
                                         }} />
                                     </div>
                                     <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-longitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Longitude</label>
+                                        <label htmlFor="admin-airports-editor-longitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Longitude</label>
 	                                        <Input id="admin-airports-editor-longitude" aria-label="Longitude" type="number" step="0.000001" value={editorDraft.longitude} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, longitude: event.target.value } : current);
                                             setEditorDirty(true);
@@ -2880,10 +2880,10 @@ export const AdminAirportsPage: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary px-3 py-2">
                                     <div>
-                                        <div className="text-sm font-semibold text-slate-900">Scheduled passenger service</div>
-                                        <div className="text-xs text-slate-500">Controls whether the airport stays eligible for nearby commercial lookups.</div>
+                                        <div className="text-sm font-semibold text-foreground">Scheduled passenger service</div>
+                                        <div className="text-xs text-muted-foreground">Controls whether the airport stays eligible for nearby commercial lookups.</div>
                                     </div>
                                     <Switch
                                         checked={editorDraft.scheduledService}
@@ -2896,17 +2896,17 @@ export const AdminAirportsPage: React.FC = () => {
                                 </div>
 
                                 {editorPreviewAirport && (
-                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                                        <div className="font-semibold text-slate-900">Derived commercial status</div>
+                                    <div className="rounded-2xl border border-border bg-secondary p-3 text-sm text-foreground">
+                                        <div className="font-semibold text-foreground">Derived commercial status</div>
                                         <div className="mt-2 flex flex-wrap gap-2">
-                                            <span className="inline-flex rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700">
+                                            <span className="inline-flex rounded-full border border-border bg-card px-2 py-1 text-[11px] font-semibold text-foreground">
                                                 {formatServiceTierLabel(editorPreviewAirport.commercialServiceTier)}
                                             </span>
                                             <span className={cn(
                                                 'inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold',
                                                 editorPreviewAirport.isCommercial
-                                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                                    : 'border-amber-200 bg-amber-50 text-amber-800',
+                                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
+                                                    : 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
                                             )}>
                                                 {editorPreviewAirport.isCommercial ? 'Included in nearby-airport results' : 'Excluded from nearby-airport results'}
                                             </span>
@@ -2924,7 +2924,7 @@ export const AdminAirportsPage: React.FC = () => {
                                             setEditorDirty(false);
                                         }}
                                         disabled={!editorDirty}
-                                        className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-slate-400 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                         {editorMode === 'create' ? 'Reset draft' : 'Reset changes'}
                                     </button>
@@ -2933,7 +2933,7 @@ export const AdminAirportsPage: React.FC = () => {
                                             type="button"
                                             onClick={() => void handleDeleteAirport()}
                                             disabled={!databaseBacked || deleting}
-                                            className="inline-flex h-10 items-center gap-2 rounded-lg border border-rose-300 bg-white px-3 text-sm font-semibold text-rose-700 transition-colors hover:border-rose-400 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                            className="inline-flex h-10 items-center gap-2 rounded-lg border border-rose-300 bg-card px-3 text-sm font-semibold text-rose-700 transition-colors hover:border-rose-400 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
                                         >
                                             {deleting ? <SpinnerGap size={16} className="animate-spin" /> : <Trash size={16} />}
                                             Delete airport

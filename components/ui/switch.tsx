@@ -20,7 +20,7 @@ export const Switch = React.forwardRef<React.ElementRef<typeof SwitchPrimitive.R
         >
             <SwitchPrimitive.Thumb
                 className={mergeClasses(
-                    'pointer-events-none block size-5 rounded-full bg-white shadow-lg ring-0 transition-transform',
+                    'pointer-events-none block size-5 rounded-full bg-card shadow-lg ring-0 transition-transform dark:bg-card dark:shadow-none',
                     'data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0'
                 )}
             />

@@ -198,13 +198,13 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
     <article
       ref={cardRef}
       className={[
-        'group relative overflow-hidden rounded-xl border bg-white transition-colors hover:border-slate-300',
-        isGenerationFailed ? 'border-rose-200' : (isExpired ? 'border-amber-200' : 'border-slate-200'),
+        'group relative overflow-hidden rounded-xl border bg-card transition-colors hover:border-border',
+        isGenerationFailed ? 'border-rose-200 dark:border-rose-400/30' : (isExpired ? 'border-amber-200 dark:border-amber-400/30' : 'border-border'),
         !isPublic ? 'opacity-[0.82]' : '',
       ].join(' ')}
       style={{ contentVisibility: 'auto', containIntrinsicSize: '420px' }}
     >
-      <div className={`relative aspect-[16/9] overflow-hidden ${isGenerationFailed ? 'bg-rose-50' : (isExpired ? 'bg-amber-50' : 'bg-slate-100')}`}>
+      <div className={`relative aspect-[16/9] overflow-hidden ${isGenerationFailed ? 'bg-rose-50 dark:bg-rose-400/12' : (isExpired ? 'bg-amber-50 dark:bg-amber-400/12' : 'bg-secondary')}`}>
         <Link
           to={tripDetailPath}
           onClick={() => onOpen(trip)}
@@ -213,13 +213,13 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
           {...(analyticsAttrs ? analyticsAttrs('open') : {})}
         >
           {!isNearViewport ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs font-medium text-slate-500">
+            <div className="absolute inset-0 flex items-center justify-center bg-secondary text-xs font-medium text-muted-foreground">
               {labels.mapLoading}
             </div>
           ) : mapUrl && !mapError ? (
             <>
               {!mapLoaded && (
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs font-medium text-slate-500">
+                <div className="absolute inset-0 flex items-center justify-center bg-secondary text-xs font-medium text-muted-foreground">
                   {labels.mapLoading}
                 </div>
               )}
@@ -233,7 +233,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               />
             </>
           ) : (
-            <div className="flex h-full items-center justify-center px-3 text-center text-xs font-medium text-slate-500">
+            <div className="flex h-full items-center justify-center px-3 text-center text-xs font-medium text-muted-foreground">
               {labels.mapUnavailable}
             </div>
           )}
@@ -251,29 +251,29 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               checked={isSelected}
               onCheckedChange={(value) => onSelectionChange(trip, value === true)}
               aria-label={`${labels.selectTrip || 'Select trip'}: ${trip.title}`}
-              className="size-6 cursor-pointer rounded-md border border-white/90 bg-white/95 shadow-sm"
+              className="size-6 cursor-pointer rounded-md border border-white/90 bg-card/95 shadow-sm dark:shadow-none"
               {...(analyticsAttrs ? analyticsAttrs('select') : {})}
             />
           </div>
         )}
 
         <div className="absolute inset-x-3 top-3 flex flex-wrap items-center justify-between gap-2 pe-10">
-          <span className="rounded-full border border-slate-200 bg-white/95 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700">
+          <span className="rounded-full border border-border bg-card/95 px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
             {sourceLabel}
           </span>
           <div className="flex items-center gap-2">
             {!isPublic && (
-              <span className="rounded-full border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700">
+              <span className="rounded-full border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
                 {labels.hiddenTag || 'Hidden'}
               </span>
             )}
             {isExpired && (
-              <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
+              <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                 {labels.expiredTag || 'Expired'}
               </span>
             )}
             {isGenerationFailed && (
-              <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700">
+              <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                 {(labels.generationFailedTag || 'Generation failed').toLowerCase()}
               </span>
             )}
@@ -290,18 +290,18 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
       )}
 
       <div className="space-y-3 p-4">
-        <h3 className="line-clamp-2 text-2xl font-semibold leading-tight tracking-tight text-slate-900">
+        <h3 className="line-clamp-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
           <Link
             to={tripDetailPath}
             onClick={() => onOpen(trip)}
-            className="inline cursor-pointer transition-colors hover:text-accent-700"
+            className="inline cursor-pointer transition-colors hover:text-accent-700 dark:hover:text-accent-200"
             {...(analyticsAttrs ? analyticsAttrs('open') : {})}
           >
             {displayTitle}
           </Link>
         </h3>
 
-        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <Clock size={15} weight="duotone" className="text-accent-500" />
             {tripSpan.compactLabel}
@@ -310,26 +310,26 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
             <MapPin size={15} weight="duotone" className="text-accent-500" />
             {cityStops.length}
           </span>
-          <span className="inline-flex items-center gap-1.5 text-accent-700">
+          <span className="inline-flex items-center gap-1.5 text-accent-700 dark:text-accent-200">
             <CalendarBlank size={14} weight="duotone" />
             {dateRange}
           </span>
         </div>
 
-        <p className="text-sm text-slate-500">{summaryLine}</p>
+        <p className="text-sm text-muted-foreground">{summaryLine}</p>
 
         {cityStops.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {cityStops.slice(0, 3).map((stop) => (
               <span
                 key={`${trip.id}-stop-${stop.id}`}
-                className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600"
+                className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground dark:text-foreground"
               >
                 {stop.title}
               </span>
             ))}
             {cityStops.length > 3 && (
-              <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-500">
+              <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground dark:text-foreground">
                 +{cityStops.length - 3}
               </span>
             )}
@@ -338,7 +338,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
       </div>
 
       {cityLanes.length > 0 && (
-        <div className="border-t border-slate-100 px-4 py-2.5">
+        <div className="border-t border-border px-4 py-2.5">
           <div className="flex items-center gap-[2px]">
             {cityLanes.map((cityLane, index) => {
               const routeLane = routeLanes[index];
@@ -377,8 +377,8 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
       )}
 
       {hasCreatorAttribution && creatorHandle && creatorProfilePath && (
-        <div className={`${cityLanes.length > 0 ? '' : 'border-t border-slate-100'} border-b border-slate-100 px-4 py-2.5`}>
-          <p className="text-xs text-slate-500">
+        <div className={`${cityLanes.length > 0 ? '' : 'border-t border-border'} border-b border-border px-4 py-2.5`}>
+          <p className="text-xs text-muted-foreground">
             {labels.creatorPrefix || 'By'}{' '}
             <Link
               to={creatorProfilePath}
@@ -389,7 +389,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
                   trip_id: trip.id,
                 });
               }}
-              className="font-semibold text-slate-700 hover:text-accent-700 hover:underline"
+              className="font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
               {...(analyticsAttrs ? analyticsAttrs('creator') : {})}
             >
               @{creatorHandle}
@@ -398,7 +398,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
         </div>
       )}
 
-      <div className={`${cityLanes.length > 0 || hasCreatorAttribution ? '' : 'border-t border-slate-100'} flex items-center justify-between gap-2 px-4 py-3`}>
+      <div className={`${cityLanes.length > 0 || hasCreatorAttribution ? '' : 'border-t border-border'} flex items-center justify-between gap-2 px-4 py-3`}>
         <Link
           to={tripDetailPath}
           onClick={() => onOpen(trip)}
@@ -418,7 +418,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               onClick={() => onArchive(trip)}
               aria-label={labels.archive || 'Archive'}
               title={labels.archive || 'Archive'}
-              className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md border border-rose-200 bg-rose-50 text-rose-700 transition-colors hover:bg-rose-100"
+              className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md border border-rose-200 bg-rose-50 text-rose-700 transition-colors hover:bg-rose-100 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30"
               {...(analyticsAttrs ? analyticsAttrs('archive') : {})}
             >
               <Trash size={16} weight="duotone" />
@@ -434,8 +434,8 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               className={[
                 'inline-flex size-9 cursor-pointer items-center justify-center rounded-md border transition-colors',
                 isPublic
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                  : 'border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200',
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-400/12 dark:hover:bg-emerald-400/12 dark:text-emerald-200 dark:border-emerald-400/30'
+                  : 'border-border bg-secondary text-foreground hover:bg-slate-200',
               ].join(' ')}
               {...(analyticsAttrs ? analyticsAttrs('visibility') : {})}
             >
@@ -452,8 +452,8 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               className={[
                 'inline-flex size-9 cursor-pointer items-center justify-center rounded-md border transition-colors',
                 trip.isFavorite
-                  ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                  : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50',
+                  ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-400/12 dark:hover:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30'
+                  : 'border-border text-foreground hover:border-border hover:bg-secondary',
               ].join(' ')}
               {...(analyticsAttrs ? analyticsAttrs('favorite') : {})}
             >
@@ -470,8 +470,8 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               className={[
                 'inline-flex size-9 cursor-pointer items-center justify-center rounded-md border transition-colors',
                 trip.isPinned
-                  ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
-                  : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50',
+                  ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
+                  : 'border-border text-foreground hover:border-border hover:bg-secondary',
               ].join(' ')}
               {...(analyticsAttrs ? analyticsAttrs('pin') : {})}
             >

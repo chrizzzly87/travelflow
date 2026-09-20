@@ -349,13 +349,13 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   return (
     <div
       className={`absolute transition-all group flex flex-col justify-center select-none timeline-block-item
-        ${isLoadingItem ? 'bg-slate-100 border-slate-200 text-slate-400 animate-pulse' : resolvedColorClass}
+        ${isLoadingItem ? 'bg-secondary border-border text-muted-foreground animate-pulse' : resolvedColorClass}
         ${isCity ? 'rounded-md border-2 cursor-pointer backdrop-blur-[1px]' : 'rounded-lg border shadow-sm'}
         ${isSelected ? 'z-30 opacity-100' : 'z-10'}
         ${(isTravel || isEmptyTravel) ? 'z-20' : 'overflow-hidden'}
         ${isInactiveActivity ? 'border-dashed shadow-none' : ''}
-        ${isUnsetTravelMode ? 'border-dashed border-slate-200 bg-slate-50/70 text-slate-500' : ''}
-        ${isEmptyTravel ? (canEdit ? 'border-dashed cursor-pointer hover:bg-gray-50' : 'border-dashed cursor-not-allowed opacity-70') : ''}
+        ${isUnsetTravelMode ? 'border-dashed border-border bg-secondary/70 text-muted-foreground' : ''}
+        ${isEmptyTravel ? (canEdit ? 'border-dashed cursor-pointer hover:bg-secondary' : 'border-dashed cursor-not-allowed opacity-70') : ''}
         ${isCity && isSelected ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2' : ''}
       `}
       style={finalStyle}
@@ -375,22 +375,22 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         <>
             {bufferBeforePx > 0 && (
                 <div
-                    className="absolute top-1/2 -translate-y-1/2 h-[80%] border-t-2 border-b-2 border-l-2 border-gray-300 border-dashed rounded-l-lg bg-gray-100/40 pointer-events-none"
+                    className="absolute top-1/2 -translate-y-1/2 h-[80%] border-t-2 border-b-2 border-l-2 border-border border-dashed rounded-l-lg bg-secondary/40 pointer-events-none"
                     style={{ right: '100%', width: `${bufferBeforePx}px` }}
                     title={`Buffer before: ${item.bufferBefore}m`}
                 >
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-full text-[8px] text-gray-400 text-center font-bold overflow-hidden">
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-full text-[8px] text-muted-foreground text-center font-bold overflow-hidden">
                         {item.bufferBefore}m
                     </div>
                 </div>
             )}
             {bufferAfterPx > 0 && (
                 <div
-                    className="absolute top-1/2 -translate-y-1/2 h-[80%] border-t-2 border-b-2 border-r-2 border-gray-300 border-dashed rounded-r-lg bg-gray-100/40 pointer-events-none"
+                    className="absolute top-1/2 -translate-y-1/2 h-[80%] border-t-2 border-b-2 border-r-2 border-border border-dashed rounded-r-lg bg-secondary/40 pointer-events-none"
                     style={{ left: '100%', width: `${bufferAfterPx}px` }}
                     title={`Buffer after: ${item.bufferAfter}m`}
                 >
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full text-[8px] text-gray-400 text-center font-bold overflow-hidden">
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full text-[8px] text-muted-foreground text-center font-bold overflow-hidden">
                         {item.bufferAfter}m
                     </div>
                 </div>
@@ -468,7 +468,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         )}
 
         {isEmptyTravel && (
-            <span className="text-[10px] font-medium text-gray-400 select-none">Add</span>
+            <span className="text-[10px] font-medium text-muted-foreground select-none">Add</span>
         )}
 
         {!isTravel && !isEmptyTravel && item.type === 'activity' && !isCompactVerticalActivity && (
@@ -563,7 +563,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 <button type="button"
                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onSwapSelectedCities(); }}
                     disabled={!canEdit}
-                    className={`bg-white text-accent-600 shadow-md border border-gray-200 p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-accent-50 hover:scale-110' : 'cursor-not-allowed opacity-60'}`}
+                    className={`bg-card text-accent-600 shadow-md border border-border p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-accent-50 hover:scale-110 dark:hover:bg-accent-400/12' : 'cursor-not-allowed opacity-60'}`}
                     title={swapSelectedLabel || 'Reverse selected cities'}
                 >
                     {vertical ? <ArrowUpDown size={12} strokeWidth={3} /> : <ArrowLeftRight size={12} strokeWidth={3} />}
@@ -573,7 +573,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 <button type="button"
                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onForceFill(item.id); }}
                     disabled={!canEdit}
-                    className={`bg-white text-accent-600 shadow-md border border-gray-200 p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-accent-50 hover:scale-110' : 'cursor-not-allowed opacity-60'}`}
+                    className={`bg-card text-accent-600 shadow-md border border-border p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-accent-50 hover:scale-110 dark:hover:bg-accent-400/12' : 'cursor-not-allowed opacity-60'}`}
                     title={forceFillLabel || 'Occupy available space'}
                 >
                     {(forceFillMode === 'shrink') ? <Minimize size={12} strokeWidth={3} /> : <Maximize size={12} strokeWidth={3} />}
@@ -596,7 +596,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         >
             <div className={`rounded-full transition-colors shadow-sm flex items-center justify-center
                 ${vertical ? 'w-8 h-1.5' : 'h-8 w-1.5'}
-                ${isSelected ? 'bg-white border border-accent-300 text-accent-500 group-hover/handle:bg-accent-500 group-hover/handle:text-white group-hover/handle:border-accent-600' : 'bg-white/80 border border-gray-200 group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600 group-hover/handle:text-white'}
+                ${isSelected ? 'bg-card border border-accent-300 text-accent-500 group-hover/handle:bg-accent-500 group-hover/handle:text-white group-hover/handle:border-accent-600 dark:border-accent-400/30' : 'bg-card/80 border border-border group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600 group-hover/handle:text-white'}
             `}>
                <div className={`flex gap-[2px] opacity-50 ${vertical ? 'flex-row' : 'flex-col'}`}>
                  <div className="size-0.5 bg-current rounded-full"></div>
@@ -621,7 +621,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         >
             <div className={`rounded-full transition-colors shadow-sm flex items-center justify-center
                 ${vertical ? 'w-8 h-1.5' : 'h-8 w-1.5'}
-                ${isSelected ? 'bg-white border border-accent-300 text-accent-500 group-hover/handle:bg-accent-500 group-hover/handle:text-white group-hover/handle:border-accent-600' : 'bg-white/80 border border-gray-200 group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600 group-hover/handle:text-white'}
+                ${isSelected ? 'bg-card border border-accent-300 text-accent-500 group-hover/handle:bg-accent-500 group-hover/handle:text-white group-hover/handle:border-accent-600 dark:border-accent-400/30' : 'bg-card/80 border border-border group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600 group-hover/handle:text-white'}
             `}>
                <div className={`flex gap-[2px] opacity-50 ${vertical ? 'flex-row' : 'flex-col'}`}>
                  <div className="size-0.5 bg-current rounded-full"></div>

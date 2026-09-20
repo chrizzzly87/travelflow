@@ -89,15 +89,15 @@ const statusPill = (value: string | null | undefined) => {
 const webhookMessageClassName = (status: string | null | undefined) => {
     const normalizedStatus = normalizeAdminBillingStatus(status);
     if (normalizedStatus === 'failed') {
-        return 'mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900';
+        return 'mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30';
     }
     if (normalizedStatus === 'past_due' || normalizedStatus === 'paused' || normalizedStatus === 'ignored') {
-        return 'mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900';
+        return 'mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30';
     }
     if (normalizedStatus === 'processed' || normalizedStatus === 'received') {
-        return 'mt-3 rounded-lg border border-accent-200 bg-accent-50/70 px-3 py-2 text-sm text-slate-800';
+        return 'mt-3 rounded-lg border border-accent-200 bg-accent-50/70 px-3 py-2 text-sm text-foreground dark:bg-accent-400/12 dark:border-accent-400/30';
     }
-    return 'mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700';
+    return 'mt-3 rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground';
 };
 
 const webhookMessageLabel = (status: string | null | undefined): string => {
@@ -349,27 +349,27 @@ export const AdminBillingPage: React.FC = () => {
             )}
         >
             {errorMessage ? (
-                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                     {errorMessage}
                 </section>
             ) : null}
 
             {lastReconcileSummary ? (
-                <section className="mb-4 rounded-2xl border border-accent-200 bg-accent-50/70 p-4 text-sm text-slate-800 shadow-sm">
+                <section className="mb-4 rounded-2xl border border-accent-200 bg-accent-50/70 p-4 text-sm text-foreground shadow-sm dark:bg-accent-400/12 dark:border-accent-400/30">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <p className="font-semibold text-slate-900">Latest Paddle reconciliation</p>
-                            <p className="mt-1 text-slate-600">
+                            <p className="font-semibold text-foreground">Latest Paddle reconciliation</p>
+                            <p className="mt-1 text-muted-foreground">
                                 {lastReconcileSubscriptionId
                                     ? `Fetched ${lastReconcileSubscriptionId} and replayed it through the billing sync.`
                                     : `Fetched ${lastReconcileSummary.fetched} subscriptions and replayed ${lastReconcileSummary.eligible} eligible records through the billing sync.`}
                             </p>
                         </div>
-                        <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
-                            <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">Processed {lastReconcileSummary.processed}</span>
-                            <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">Duplicates {lastReconcileSummary.duplicates}</span>
-                            <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">Unresolved {lastReconcileSummary.unresolved}</span>
-                            <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">Failed {lastReconcileSummary.failed}</span>
+                        <div className="flex flex-wrap gap-2 text-xs font-semibold text-foreground">
+                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Processed {lastReconcileSummary.processed}</span>
+                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Duplicates {lastReconcileSummary.duplicates}</span>
+                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Unresolved {lastReconcileSummary.unresolved}</span>
+                            <span className="rounded-full border border-border bg-card px-2.5 py-1">Failed {lastReconcileSummary.failed}</span>
                         </div>
                     </div>
                 </section>
@@ -379,13 +379,13 @@ export const AdminBillingPage: React.FC = () => {
                 <AdminSurfaceCard>
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-sm font-medium text-slate-600">Active paid</p>
-                            <div className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
+                            <p className="text-sm font-medium text-muted-foreground">Active paid</p>
+                            <div className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
                                 <AdminCountUpNumber value={dashboard?.active_subscriptions ?? metrics.activeSubscriptions} />
                             </div>
-                            <p className="mt-2 text-sm text-slate-500">Current MRR-eligible subscriptions after the latest billing sync.</p>
+                            <p className="mt-2 text-sm text-muted-foreground">Current MRR-eligible subscriptions after the latest billing sync.</p>
                         </div>
-                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-accent-200 bg-accent-50 text-accent-700">
+                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-accent-200 bg-accent-50 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                             <ShieldCheck size={18} weight="duotone" />
                         </span>
                     </div>
@@ -394,13 +394,13 @@ export const AdminBillingPage: React.FC = () => {
                 <AdminSurfaceCard>
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-sm font-medium text-slate-600">Scheduled cancellations</p>
-                            <div className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
+                            <p className="text-sm font-medium text-muted-foreground">Scheduled cancellations</p>
+                            <div className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
                                 <AdminCountUpNumber value={(dashboard?.scheduled_cancellations ?? 0) + (dashboard?.grace_subscriptions ?? metrics.graceSubscriptions)} />
                             </div>
-                            <p className="mt-2 text-sm text-slate-500">Includes subscriptions scheduled to cancel and grace-access accounts.</p>
+                            <p className="mt-2 text-sm text-muted-foreground">Includes subscriptions scheduled to cancel and grace-access accounts.</p>
                         </div>
-                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                             <CreditCard size={18} weight="duotone" />
                         </span>
                     </div>
@@ -409,13 +409,13 @@ export const AdminBillingPage: React.FC = () => {
                 <AdminSurfaceCard>
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-sm font-medium text-slate-600">Failed webhooks</p>
-                            <div className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
+                            <p className="text-sm font-medium text-muted-foreground">Failed webhooks</p>
+                            <div className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
                                 <AdminCountUpNumber value={dashboard?.failed_webhook_events ?? metrics.failedWebhookEvents} />
                             </div>
-                            <p className="mt-2 text-sm text-slate-500">Events that need replay or payload inspection.</p>
+                            <p className="mt-2 text-sm text-muted-foreground">Events that need replay or payload inspection.</p>
                         </div>
-                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700">
+                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">
                             <WarningCircle size={18} weight="duotone" />
                         </span>
                     </div>
@@ -424,13 +424,13 @@ export const AdminBillingPage: React.FC = () => {
                 <AdminSurfaceCard>
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-sm font-medium text-slate-600">Unlinked events</p>
-                            <div className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
+                            <p className="text-sm font-medium text-muted-foreground">Unlinked events</p>
+                            <div className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
                                 <AdminCountUpNumber value={metrics.unlinkedWebhookEvents} />
                             </div>
-                            <p className="mt-2 text-sm text-slate-500">Webhook records that did not resolve to a TravelFlow user.</p>
+                            <p className="mt-2 text-sm text-muted-foreground">Webhook records that did not resolve to a TravelFlow user.</p>
                         </div>
-                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-700">
+                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-border bg-secondary text-foreground">
                             <LinkBreak size={18} weight="duotone" />
                         </span>
                     </div>
@@ -470,7 +470,7 @@ export const AdminBillingPage: React.FC = () => {
                                         className="h-72"
                                     />
                                 ) : (
-                                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+                                    <div className="rounded-xl border border-dashed border-border bg-secondary px-4 py-8 text-sm text-muted-foreground">
                                         No MRR chart data yet.
                                     </div>
                                 )}
@@ -494,7 +494,7 @@ export const AdminBillingPage: React.FC = () => {
                                         })}
                                     />
                                 ) : (
-                                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+                                    <div className="rounded-xl border border-dashed border-border bg-secondary px-4 py-8 text-sm text-muted-foreground">
                                         No at-risk revenue recorded in the selected data set.
                                     </div>
                                 )}
@@ -519,7 +519,7 @@ export const AdminBillingPage: React.FC = () => {
                                         className="h-72"
                                     />
                                 ) : (
-                                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+                                    <div className="rounded-xl border border-dashed border-border bg-secondary px-4 py-8 text-sm text-muted-foreground">
                                         No subscription mix data yet.
                                     </div>
                                 )}
@@ -542,7 +542,7 @@ export const AdminBillingPage: React.FC = () => {
                                         className="h-72"
                                     />
                                 ) : (
-                                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+                                    <div className="rounded-xl border border-dashed border-border bg-secondary px-4 py-8 text-sm text-muted-foreground">
                                         No status mix data yet.
                                     </div>
                                 )}
@@ -569,19 +569,19 @@ export const AdminBillingPage: React.FC = () => {
 
             <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
                 <AdminSurfaceCard className="min-w-0">
-                    <div className="flex items-end justify-between gap-3 border-b border-slate-200 pb-4">
+                    <div className="flex items-end justify-between gap-3 border-b border-border pb-4">
                         <div>
-                            <h2 className="text-lg font-semibold text-slate-900">Subscriptions</h2>
-                            <p className="mt-1 text-sm text-slate-500">Current billing state per user after webhook sync.</p>
+                            <h2 className="text-lg font-semibold text-foreground">Subscriptions</h2>
+                            <p className="mt-1 text-sm text-muted-foreground">Current billing state per user after webhook sync.</p>
                         </div>
-                        <span className="text-sm text-slate-500">{filteredSubscriptions.length} rows</span>
+                        <span className="text-sm text-muted-foreground">{filteredSubscriptions.length} rows</span>
                     </div>
 
                     {filteredSubscriptions.length === 0 ? (
-                        <div className="py-8 text-sm text-slate-500">
+                        <div className="py-8 text-sm text-muted-foreground">
                             <p>No billing subscriptions found for this filter set.</p>
                             {searchValue.trim() || selectedSubscriptionStatuses.length > 0 ? null : (
-                                <p className="mt-2 text-xs leading-5 text-slate-400">
+                                <p className="mt-2 text-xs leading-5 text-muted-foreground">
                                     If a sandbox checkout already completed, replay the latest Paddle notification and confirm this deploy can receive simulation events.
                                 </p>
                             )}
@@ -590,61 +590,61 @@ export const AdminBillingPage: React.FC = () => {
                         <div className="overflow-x-auto">
                             <table className="min-w-[860px] w-full border-separate border-spacing-0 text-left text-sm">
                                 <thead>
-                                    <tr className="text-slate-500">
-                                        <th className="border-b border-slate-200 py-3 pe-4 font-semibold">User</th>
-                                        <th className="border-b border-slate-200 py-3 pe-4 font-semibold">Plan</th>
-                                        <th className="border-b border-slate-200 py-3 pe-4 font-semibold">Status</th>
-                                        <th className="border-b border-slate-200 py-3 pe-4 font-semibold">Amount</th>
-                                        <th className="border-b border-slate-200 py-3 pe-4 font-semibold">Renews</th>
-                                        <th className="border-b border-slate-200 py-3 pe-4 font-semibold">Last event</th>
+                                    <tr className="text-muted-foreground">
+                                        <th className="border-b border-border py-3 pe-4 font-semibold">User</th>
+                                        <th className="border-b border-border py-3 pe-4 font-semibold">Plan</th>
+                                        <th className="border-b border-border py-3 pe-4 font-semibold">Status</th>
+                                        <th className="border-b border-border py-3 pe-4 font-semibold">Amount</th>
+                                        <th className="border-b border-border py-3 pe-4 font-semibold">Renews</th>
+                                        <th className="border-b border-border py-3 pe-4 font-semibold">Last event</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredSubscriptions.map((record) => (
-                                        <tr key={record.user_id} className="align-top text-slate-700">
-                                            <td className="border-b border-slate-200 py-4 pe-4">
+                                        <tr key={record.user_id} className="align-top text-foreground">
+                                            <td className="border-b border-border py-4 pe-4">
                                                 <div className="min-w-0">
                                                     {record.user_id ? (
                                                         <Link
                                                             to={`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`}
-                                                            className="block truncate font-semibold text-slate-900 hover:text-accent-700 hover:underline"
+                                                            className="block truncate font-semibold text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
                                                         >
                                                             {record.email || 'Unknown user'}
                                                         </Link>
                                                     ) : (
-                                                        <span className="block truncate font-semibold text-slate-900">{record.email || 'Unknown user'}</span>
+                                                        <span className="block truncate font-semibold text-foreground">{record.email || 'Unknown user'}</span>
                                                     )}
                                                     <div className="mt-1">
-                                                        <CopyableUuid value={record.user_id} textClassName="text-xs text-slate-500" hintClassName="text-[10px]" />
+                                                        <CopyableUuid value={record.user_id} textClassName="text-xs text-muted-foreground" hintClassName="text-[10px]" />
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="border-b border-slate-200 py-4 pe-4">
-                                                <div className="font-semibold text-slate-900">{humanizeTierKey(record.tier_key)}</div>
-                                                <div className="mt-1 font-mono text-xs text-slate-500">{record.provider_price_id || 'No price id'}</div>
+                                            <td className="border-b border-border py-4 pe-4">
+                                                <div className="font-semibold text-foreground">{humanizeTierKey(record.tier_key)}</div>
+                                                <div className="mt-1 font-mono text-xs text-muted-foreground">{record.provider_price_id || 'No price id'}</div>
                                             </td>
-                                            <td className="border-b border-slate-200 py-4 pe-4">
+                                            <td className="border-b border-border py-4 pe-4">
                                                 <div className="flex flex-col gap-2">
                                                     <span className={statusPill(resolveAdminBillingLifecycleStatus(record))}>
                                                         {humanizeAdminBillingStatus(resolveAdminBillingLifecycleStatus(record))}
                                                     </span>
-                                                    <span className="text-xs text-slate-500">App: {humanizeAdminBillingStatus(record.subscription_status)}</span>
+                                                    <span className="text-xs text-muted-foreground">App: {humanizeAdminBillingStatus(record.subscription_status)}</span>
                                                 </div>
                                             </td>
-                                            <td className="border-b border-slate-200 py-4 pe-4">
-                                                <div className="font-semibold text-slate-900">{formatAdminBillingAmount(record.amount, record.currency)}</div>
-                                                <div className="mt-1 text-xs text-slate-500">{record.provider || 'Provider unknown'}</div>
+                                            <td className="border-b border-border py-4 pe-4">
+                                                <div className="font-semibold text-foreground">{formatAdminBillingAmount(record.amount, record.currency)}</div>
+                                                <div className="mt-1 text-xs text-muted-foreground">{record.provider || 'Provider unknown'}</div>
                                             </td>
-                                            <td className="border-b border-slate-200 py-4 pe-4">
-                                                <div className="font-medium text-slate-900">{formatCompactDate(record.current_period_end)}</div>
+                                            <td className="border-b border-border py-4 pe-4">
+                                                <div className="font-medium text-foreground">{formatCompactDate(record.current_period_end)}</div>
                                                 {record.grace_ends_at ? (
-                                                    <div className="mt-1 text-xs text-amber-700">Grace until {formatCompactDate(record.grace_ends_at)}</div>
+                                                    <div className="mt-1 text-xs text-amber-700 dark:text-amber-200">Grace until {formatCompactDate(record.grace_ends_at)}</div>
                                                 ) : null}
                                             </td>
-                                            <td className="border-b border-slate-200 py-4 pe-4">
-                                                <div className="font-medium text-slate-900">{humanizeEventType(record.last_event_type)}</div>
-                                                <div className="mt-1 text-xs text-slate-500">{formatDateTime(record.last_event_at)}</div>
-                                                <div className="mt-1 truncate font-mono text-[11px] text-slate-400">{record.provider_subscription_id || 'No subscription id'}</div>
+                                            <td className="border-b border-border py-4 pe-4">
+                                                <div className="font-medium text-foreground">{humanizeEventType(record.last_event_type)}</div>
+                                                <div className="mt-1 text-xs text-muted-foreground">{formatDateTime(record.last_event_at)}</div>
+                                                <div className="mt-1 truncate font-mono text-[11px] text-muted-foreground">{record.provider_subscription_id || 'No subscription id'}</div>
                                             </td>
                                         </tr>
                                     ))}
@@ -655,39 +655,39 @@ export const AdminBillingPage: React.FC = () => {
                 </AdminSurfaceCard>
 
                 <AdminSurfaceCard className="min-w-0">
-                    <div className="flex items-end justify-between gap-3 border-b border-slate-200 pb-4">
+                    <div className="flex items-end justify-between gap-3 border-b border-border pb-4">
                         <div>
-                            <h2 className="text-lg font-semibold text-slate-900">Webhook events</h2>
-                            <p className="mt-1 text-sm text-slate-500">Most recent Paddle delivery records stored for replay and debugging.</p>
+                            <h2 className="text-lg font-semibold text-foreground">Webhook events</h2>
+                            <p className="mt-1 text-sm text-muted-foreground">Most recent Paddle delivery records stored for replay and debugging.</p>
                         </div>
-                        <span className="text-sm text-slate-500">{filteredEvents.length} rows</span>
+                        <span className="text-sm text-muted-foreground">{filteredEvents.length} rows</span>
                     </div>
 
                     {filteredEvents.length === 0 ? (
-                        <div className="py-8 text-sm text-slate-500">
+                        <div className="py-8 text-sm text-muted-foreground">
                             <p>No billing webhook events found for this filter set.</p>
                             {searchValue.trim() || selectedEventStatuses.length > 0 ? null : (
-                                <p className="mt-2 text-xs leading-5 text-slate-400">
+                                <p className="mt-2 text-xs leading-5 text-muted-foreground">
                                     This usually means Paddle never reached the webhook endpoint, the notification was not sent for simulation traffic, or signature verification failed before the event could be stored.
                                 </p>
                             )}
                         </div>
                     ) : (
-                        <div className="divide-y divide-slate-200">
+                        <div className="divide-y divide-border">
                             {filteredEvents.map((record) => (
                                 <article key={record.event_id} className="py-4 first:pt-5 last:pb-0">
                                     <div className="space-y-2">
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <span className="font-semibold text-slate-900">{humanizeEventType(record.event_type)}</span>
+                                            <span className="font-semibold text-foreground">{humanizeEventType(record.event_type)}</span>
                                             <span className={statusPill(record.status)}>{humanizeAdminBillingStatus(record.status)}</span>
                                         </div>
-                                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                                             <span>{formatDateTime(record.occurred_at)}</span>
                                             <span>{record.provider}</span>
                                             {record.user_email && record.user_id ? (
                                                 <Link
                                                     to={`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`}
-                                                    className="font-medium text-slate-700 hover:text-accent-700 hover:underline"
+                                                    className="font-medium text-foreground hover:text-accent-700 hover:underline dark:hover:text-accent-200"
                                                 >
                                                     {record.user_email}
                                                 </Link>
@@ -695,9 +695,9 @@ export const AdminBillingPage: React.FC = () => {
                                                 <span>No linked user</span>
                                             )}
                                         </div>
-                                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                                            <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Event ID</div>
-                                            <div className="mt-1 break-all font-mono text-xs leading-5 text-slate-700">
+                                        <div className="rounded-lg border border-border bg-secondary px-3 py-2">
+                                            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Event ID</div>
+                                            <div className="mt-1 break-all font-mono text-xs leading-5 text-foreground">
                                                 {record.event_id}
                                             </div>
                                         </div>
@@ -710,22 +710,22 @@ export const AdminBillingPage: React.FC = () => {
                                         </div>
                                     ) : null}
 
-                                    <div className="mt-3 grid gap-2 text-xs text-slate-500 sm:grid-cols-2">
+                                    <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
                                         <div>
-                                            <span className="font-semibold text-slate-700">Processed:</span> {formatDateTime(record.processed_at)}
+                                            <span className="font-semibold text-foreground">Processed:</span> {formatDateTime(record.processed_at)}
                                         </div>
                                         <div className="truncate">
-                                            <span className="font-semibold text-slate-700">User ID:</span>{' '}
-                                            {record.user_id ? <CopyableUuid value={record.user_id} textClassName="text-xs text-slate-500" hintClassName="text-[10px]" /> : '—'}
+                                            <span className="font-semibold text-foreground">User ID:</span>{' '}
+                                            {record.user_id ? <CopyableUuid value={record.user_id} textClassName="text-xs text-muted-foreground" hintClassName="text-[10px]" /> : '—'}
                                         </div>
                                     </div>
 
                                     {record.payload ? (
-                                        <details className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                                            <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+                                        <details className="mt-3 rounded-lg border border-border bg-secondary px-3 py-2">
+                                            <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                                 Payload JSON
                                             </summary>
-                                            <pre className="mt-3 max-h-56 overflow-auto rounded border border-slate-200 bg-slate-900 p-3 text-[10px] text-slate-100">
+                                            <pre className="mt-3 max-h-56 overflow-auto rounded border border-border bg-slate-900 p-3 text-[10px] text-slate-100">
                                                 {formatPayloadJson(record.payload)}
                                             </pre>
                                         </details>

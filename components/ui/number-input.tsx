@@ -92,8 +92,8 @@ const useNumberStepper = ({ forwardedRef, value, step, min, max, disabled }: Use
 };
 
 const STEPPER_BUTTON_CLASS =
-    'flex flex-1 items-center justify-center text-slate-500 transition-colors '
-    + 'hover:bg-slate-100 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-40';
+    'flex flex-1 items-center justify-center text-muted-foreground transition-colors '
+    + 'hover:bg-secondary hover:text-foreground disabled:pointer-events-none disabled:opacity-40';
 
 /**
  * The increment/decrement column. `tabIndex={-1}` keeps them out of the tab
@@ -105,7 +105,7 @@ const NumberInputSteppers: React.FC<{
     canIncrease: boolean;
     canDecrease: boolean;
 }> = ({ onStep, canIncrease, canDecrease }) => (
-    <div className="absolute inset-y-px end-px flex w-8 flex-col overflow-hidden rounded-e-md border-s border-slate-200">
+    <div className="absolute inset-y-px end-px flex w-8 flex-col overflow-hidden rounded-e-md border-s border-border">
         <button
             type="button"
             tabIndex={-1}
@@ -122,7 +122,7 @@ const NumberInputSteppers: React.FC<{
             aria-label="Decrease"
             disabled={!canDecrease}
             onClick={() => onStep(-1)}
-            className={cn(STEPPER_BUTTON_CLASS, 'border-t border-slate-200')}
+            className={cn(STEPPER_BUTTON_CLASS, 'border-t border-border')}
         >
             <CaretDown weight="bold" className="size-3" />
         </button>
@@ -195,7 +195,7 @@ export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
                     <div
                         aria-hidden="true"
                         className={cn(
-                            'pointer-events-none absolute inset-y-0 start-0 flex w-full items-center ps-3 pe-3 text-sm text-slate-900',
+                            'pointer-events-none absolute inset-y-0 start-0 flex w-full items-center ps-3 pe-3 text-sm text-foreground',
                             steppers && 'pe-9',
                             props.disabled && 'opacity-50',
                             overlayClassName,

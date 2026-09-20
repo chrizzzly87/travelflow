@@ -69,30 +69,30 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
                 aria-label="Close release update"
                 onClick={dismissReleaseNotice}
             />
-            <div ref={dialogRef} className="relative w-full max-w-lg rounded-3xl border border-accent-100 bg-white shadow-2xl">
-                <div className="rounded-t-3xl border-b border-slate-100 bg-gradient-to-r from-accent-50 to-accent-100 px-6 py-5">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-700">
+            <div ref={dialogRef} className="relative w-full max-w-lg rounded-3xl border border-accent-100 bg-card shadow-2xl dark:border-accent-400/25 dark:shadow-none">
+                <div className="rounded-t-3xl border-b border-border bg-gradient-to-r from-accent-50 to-accent-100 px-6 py-5">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-700 dark:text-accent-200">
                         Latest release · {latestInAppRelease.version}
                     </p>
-                    <h2 id="release-update-title" className="mt-2 text-xl font-black text-slate-900">
+                    <h2 id="release-update-title" className="mt-2 text-xl font-black text-foreground">
                         {latestInAppRelease.title}
                     </h2>
-                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         {new Date(latestInAppRelease.publishedAt).toLocaleDateString()}
                     </p>
                 </div>
                 <div className="px-6 py-5">
                     {latestInAppRelease.summary && (
-                        <div className="text-sm leading-6 text-slate-700">
+                        <div className="text-sm leading-6 text-foreground">
                             <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 components={{
                                     p: ({ node, ...props }) => <p {...props} className="m-0" />,
                                     a: ({ node, children, ...props }) => (
-                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800">{children}</a>
+                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200">{children}</a>
                                     ),
                                     code: ({ node, ...props }) => (
-                                        <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />
+                                        <code {...props} className="rounded bg-secondary px-1 py-0.5 text-[0.92em] text-foreground" />
                                     ),
                                 }}
                             >
@@ -105,7 +105,7 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
                             {latestReleaseGroups.map((group, groupIndex) => (
                                 <div key={`${latestInAppRelease.id}-notice-group-${group.typeKey}-${group.typeLabel}-${groupIndex}`}>
                                     <ReleasePill item={group.items[0]} />
-                                    <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700 marker:text-slate-400">
+                                    <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-foreground marker:text-muted-foreground">
                                         {group.items.map((item, itemIndex) => (
                                             <li key={`${latestInAppRelease.id}-notice-item-${group.typeKey}-${group.typeLabel}-${itemIndex}`}>
                                                 <ReactMarkdown
@@ -113,10 +113,10 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
                                                     components={{
                                                         p: ({ node, ...props }) => <p {...props} className="m-0" />,
                                                         a: ({ node, children, ...props }) => (
-                                                            <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800">{children}</a>
+                                                            <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200">{children}</a>
                                                         ),
                                                         code: ({ node, ...props }) => (
-                                                            <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />
+                                                            <code {...props} className="rounded bg-secondary px-1 py-0.5 text-[0.92em] text-foreground" />
                                                         ),
                                                     }}
                                                 >
@@ -130,10 +130,10 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
                         </div>
                     )}
                 </div>
-                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
+                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border px-6 py-4">
                     <Link
                         to="/updates"
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
+                        className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-foreground hover:border-slate-400"
                     >
                         View full changelog
                     </Link>

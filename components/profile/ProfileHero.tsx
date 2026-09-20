@@ -64,8 +64,8 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
   return (
     <section className="py-8 md:py-12">
       <div className="mx-auto max-w-5xl text-center">
-        <h1 className="text-balance text-5xl font-black tracking-tight text-slate-900 sm:text-6xl md:text-7xl">
-          <span className="text-accent-700">
+        <h1 className="text-balance text-5xl font-black tracking-tight text-foreground sm:text-6xl md:text-7xl">
+          <span className="text-accent-700 dark:text-accent-200">
             {greetingGlyphs.map(({ character, animationDelayMs }, index) => (
               <span
                 key={`hero-glyph-${index}-${character}`}
@@ -82,20 +82,20 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
           <span>{`, ${name}`}</span>
         </h1>
 
-        <p className="mt-5 text-base leading-7 text-slate-600 [text-wrap:pretty] md:text-lg">
-          <span className="font-semibold text-accent-700">{transliteration}</span>
+        <p className="mt-5 text-base leading-7 text-muted-foreground [text-wrap:pretty] md:text-lg">
+          <span className="font-semibold text-accent-700 dark:text-accent-200">{transliteration}</span>
           {' '}
-          <span className="font-medium text-accent-600">/{ipa}/</span>
+          <span className="font-medium text-accent-600 dark:text-accent-300">/{ipa}/</span>
           {' '}
           <span>{context}</span>
         </p>
 
-        <p className="mt-3 inline-flex flex-wrap items-center justify-center gap-1.5 text-sm text-slate-600">
+        <p className="mt-3 inline-flex flex-wrap items-center justify-center gap-1.5 text-sm text-muted-foreground">
           <span>{ctaIntroLabel}</span>
           <Link
             to={ctaHref}
             onClick={onCtaClick}
-            className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800 dark:hover:text-accent-200 dark:text-accent-300"
             {...(analyticsAttributes || {})}
           >
             <FlagIcon code={inspirationCountryCode} size="sm" fallback={null} />

@@ -39,11 +39,11 @@ export const QuestionnaireItem = ({ className, ...props }: React.ComponentProps<
 );
 
 export const QuestionnaireTitle = ({ className, ...props }: React.ComponentProps<'legend'>) => (
-    <legend data-slot="questionnaire-title" className={cn('text-sm font-medium text-slate-900', className)} {...props} />
+    <legend data-slot="questionnaire-title" className={cn('text-sm font-medium text-foreground', className)} {...props} />
 );
 
 export const QuestionnaireDescription = ({ className, ...props }: React.ComponentProps<'p'>) => (
-    <p data-slot="questionnaire-description" className={cn('text-xs text-slate-600', className)} {...props} />
+    <p data-slot="questionnaire-description" className={cn('text-xs text-muted-foreground', className)} {...props} />
 );
 
 export interface QuestionnaireChoicesProps extends Omit<React.ComponentProps<'div'>, 'onChange'> {
@@ -118,7 +118,7 @@ export const QuestionnaireChoice = ({
             data-disabled={isDisabled ? '' : undefined}
             className={cn(
                 'relative flex cursor-pointer items-start gap-2.5 rounded-lg border p-2.5 text-start text-sm transition-colors outline-none select-none',
-                isChecked ? 'border-accent-300 bg-accent-50/60' : 'border-slate-200 hover:bg-slate-50',
+                isChecked ? 'border-accent-300 bg-accent-50/60 dark:bg-accent-400/12 dark:border-accent-400/30' : 'border-border hover:bg-secondary',
                 isDisabled && 'pointer-events-none cursor-not-allowed opacity-50',
                 'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent-500',
                 className,
@@ -141,11 +141,11 @@ export const QuestionnaireChoice = ({
                 className={cn(
                     'pointer-events-none mt-px flex size-4 shrink-0 items-center justify-center border',
                     choices.type === 'single' ? 'rounded-full' : 'rounded-[4px]',
-                    isChecked ? 'border-accent-600 bg-accent-600 text-white' : 'border-slate-400 bg-white',
+                    isChecked ? 'border-accent-600 bg-accent-600 text-white' : 'border-slate-400 bg-card',
                 )}
             >
                 {isChecked && (choices.type === 'single'
-                    ? <span data-slot="questionnaire-choice-indicator-dot" className="size-1.5 rounded-full bg-white" />
+                    ? <span data-slot="questionnaire-choice-indicator-dot" className="size-1.5 rounded-full bg-card" />
                     : <Check data-slot="questionnaire-choice-indicator-check" className="size-3 stroke-[3]" />)}
             </span>
             <span data-slot="questionnaire-choice-label" className="flex min-w-0 flex-1 flex-col leading-snug">
@@ -158,7 +158,7 @@ export const QuestionnaireChoice = ({
 export const QuestionnaireChoiceDescription = ({ className, ...props }: React.ComponentProps<'span'>) => (
     <span
         data-slot="questionnaire-choice-description"
-        className={cn('mt-0.5 text-xs text-slate-600', className)}
+        className={cn('mt-0.5 text-xs text-muted-foreground', className)}
         {...props}
     />
 );

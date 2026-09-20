@@ -214,21 +214,73 @@
 }
 
 :root {
+
+  /* Activity-type palette.
+   *
+   * Named tokens, not values computed at the call site. Every one is a SOLID
+   * colour in both themes: the badges stack on a timeline entry, and anything
+   * with alpha visibly darkens where they overlap, which reads as a rendering
+   * bug. The dark values are precomputed blends of the hue against the card, so
+   * nothing is mixed at runtime either.
+   */
+  --tf-activity-general-bg: #f1f5f9;
+  --tf-activity-general-border: #cbd5e1;
+  --tf-activity-general-text: #1e293b;
+  --tf-activity-sightseeing-bg: #e0f2fe;
+  --tf-activity-sightseeing-border: #7dd3fc;
+  --tf-activity-sightseeing-text: #075985;
+  --tf-activity-food-bg: #fef3c7;
+  --tf-activity-food-border: #fcd34d;
+  --tf-activity-food-text: #92400e;
+  --tf-activity-culture-bg: #ede9fe;
+  --tf-activity-culture-border: #c4b5fd;
+  --tf-activity-culture-text: #5b21b6;
+  --tf-activity-relaxation-bg: #ccfbf1;
+  --tf-activity-relaxation-border: #5eead4;
+  --tf-activity-relaxation-text: #115e59;
+  --tf-activity-nightlife-bg: #fae8ff;
+  --tf-activity-nightlife-border: #f0abfc;
+  --tf-activity-nightlife-text: #86198f;
+  --tf-activity-sports-bg: #fee2e2;
+  --tf-activity-sports-border: #fca5a5;
+  --tf-activity-sports-text: #991b1b;
+  --tf-activity-hiking-bg: #d1fae5;
+  --tf-activity-hiking-border: #6ee7b7;
+  --tf-activity-hiking-text: #065f46;
+  --tf-activity-wildlife-bg: #ecfccb;
+  --tf-activity-wildlife-border: #bef264;
+  --tf-activity-wildlife-text: #3f6212;
+  --tf-activity-nature-bg: #dcfce7;
+  --tf-activity-nature-border: #86efac;
+  --tf-activity-nature-text: #166534;
+  --tf-activity-shopping-bg: #fce7f3;
+  --tf-activity-shopping-border: #f9a8d4;
+  --tf-activity-shopping-text: #9d174d;
+  --tf-activity-adventure-bg: #ffedd5;
+  --tf-activity-adventure-border: #fdba74;
+  --tf-activity-adventure-text: #9a3412;
+  --tf-activity-beach-bg: #cffafe;
+  --tf-activity-beach-border: #67e8f9;
+  --tf-activity-beach-text: #155e75;
+
+  --tf-veil-light: #ffffff;
+  --tf-veil-dark: #191817;
+  --tf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --tf-font-heading: "Bricolage Grotesque", "Space Grotesk", "TravelFlow Global Fallback", "Noto Sans", "Avenir Next", "Segoe UI", sans-serif;
   --tf-font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "TravelFlow Global Fallback", "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
   --tf-layer-cookie-consent: 12000;
   /* Global accent currently uses an indigo palette. */
-  --tf-accent-50: #eef2ff;
-  --tf-accent-100: #e0e7ff;
-  --tf-accent-200: #c7d2fe;
-  --tf-accent-300: #a5b4fc;
-  --tf-accent-400: #818cf8;
-  --tf-accent-500: #6366f1;
-  --tf-accent-600: #4f46e5;
-  --tf-accent-700: #4338ca;
-  --tf-accent-800: #3730a3;
-  --tf-accent-900: #312e81;
-  --tf-accent-950: #1e1b4b;
+  --tf-accent-50: #eef1ff;
+  --tf-accent-100: #dfe3ff;
+  --tf-accent-200: #c3caff;
+  --tf-accent-300: #9ea8ff;
+  --tf-accent-400: #7b83ff;
+  --tf-accent-500: #5b5bf7;
+  --tf-accent-600: #4b3df0;
+  --tf-accent-700: #3f2fd6;
+  --tf-accent-800: #3428ab;
+  --tf-accent-900: #2e2688;
+  --tf-accent-950: #1c1652;
   --tf-accent-rgb: 79 70 229;
 
   --tf-primary: var(--tf-accent-600);
@@ -283,6 +335,46 @@ html[lang^="ur-"] {
 }
 
 @theme inline {
+  --color-activity-general-bg: var(--tf-activity-general-bg);
+  --color-activity-general-border: var(--tf-activity-general-border);
+  --color-activity-general-text: var(--tf-activity-general-text);
+  --color-activity-sightseeing-bg: var(--tf-activity-sightseeing-bg);
+  --color-activity-sightseeing-border: var(--tf-activity-sightseeing-border);
+  --color-activity-sightseeing-text: var(--tf-activity-sightseeing-text);
+  --color-activity-food-bg: var(--tf-activity-food-bg);
+  --color-activity-food-border: var(--tf-activity-food-border);
+  --color-activity-food-text: var(--tf-activity-food-text);
+  --color-activity-culture-bg: var(--tf-activity-culture-bg);
+  --color-activity-culture-border: var(--tf-activity-culture-border);
+  --color-activity-culture-text: var(--tf-activity-culture-text);
+  --color-activity-relaxation-bg: var(--tf-activity-relaxation-bg);
+  --color-activity-relaxation-border: var(--tf-activity-relaxation-border);
+  --color-activity-relaxation-text: var(--tf-activity-relaxation-text);
+  --color-activity-nightlife-bg: var(--tf-activity-nightlife-bg);
+  --color-activity-nightlife-border: var(--tf-activity-nightlife-border);
+  --color-activity-nightlife-text: var(--tf-activity-nightlife-text);
+  --color-activity-sports-bg: var(--tf-activity-sports-bg);
+  --color-activity-sports-border: var(--tf-activity-sports-border);
+  --color-activity-sports-text: var(--tf-activity-sports-text);
+  --color-activity-hiking-bg: var(--tf-activity-hiking-bg);
+  --color-activity-hiking-border: var(--tf-activity-hiking-border);
+  --color-activity-hiking-text: var(--tf-activity-hiking-text);
+  --color-activity-wildlife-bg: var(--tf-activity-wildlife-bg);
+  --color-activity-wildlife-border: var(--tf-activity-wildlife-border);
+  --color-activity-wildlife-text: var(--tf-activity-wildlife-text);
+  --color-activity-nature-bg: var(--tf-activity-nature-bg);
+  --color-activity-nature-border: var(--tf-activity-nature-border);
+  --color-activity-nature-text: var(--tf-activity-nature-text);
+  --color-activity-shopping-bg: var(--tf-activity-shopping-bg);
+  --color-activity-shopping-border: var(--tf-activity-shopping-border);
+  --color-activity-shopping-text: var(--tf-activity-shopping-text);
+  --color-activity-adventure-bg: var(--tf-activity-adventure-bg);
+  --color-activity-adventure-border: var(--tf-activity-adventure-border);
+  --color-activity-adventure-text: var(--tf-activity-adventure-text);
+  --color-activity-beach-bg: var(--tf-activity-beach-bg);
+  --color-activity-beach-border: var(--tf-activity-beach-border);
+  --color-activity-beach-text: var(--tf-activity-beach-text);
+
   --color-accent-50: var(--tf-accent-50);
   --color-accent-100: var(--tf-accent-100);
   --color-accent-200: var(--tf-accent-200);
@@ -968,17 +1060,103 @@ h6,
 
 /* ── Plane window clouds animation ── */
 
+/* Static cloud drift, used before the WebGL scene mounts and whenever it is
+ * declined (reduced motion, save-data, software renderer, narrow viewport).
+ *
+ * The old version put two images in a flex row and animated translateX(0) to
+ * translateX(-50%). The flex container was width:100% of the MASK, not of the
+ * two-image strip, so -50% was half the window rather than half the content and
+ * the strip jumped on every cycle. This uses a repeating background instead and
+ * translates by exactly one tile width, which is seamless by construction.
+ *
+ * Three layers at different sizes, speeds and offsets: they share no common
+ * period, so nothing resynchronises into a visible loop. */
 @keyframes clouds-scroll {
   from {
-    transform: translateX(0);
+    background-position: 0 var(--cloud-y, 50%);
   }
   to {
-    transform: translateX(-50%);
+    background-position: var(--cloud-tile, 200px) var(--cloud-y, 50%);
   }
 }
 
 @utility animate-clouds-scroll {
   animation: clouds-scroll 25s linear infinite;
+}
+
+.plane-window-static-clouds {
+  --cloud-puff: radial-gradient(
+    ellipse 38% 26% at 50% 60%,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.72) 42%,
+    rgba(255, 255, 255, 0) 72%
+  );
+  background-image: var(--cloud-puff), var(--cloud-puff), var(--cloud-puff);
+  background-repeat: repeat-x, repeat-x, repeat-x;
+  background-size: 180px 70px, 260px 110px, 340px 150px;
+  background-position: 0 62%, 40px 74%, 90px 86%;
+  animation:
+    clouds-scroll 19s linear infinite,
+    clouds-scroll 31s linear infinite,
+    clouds-scroll 47s linear infinite;
+}
+
+/* The drawn shade. There is no shutter artwork for this window, so it is a
+   panel the colour of the cabin interior with a lit leading edge. */
+.plane-window-shade {
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.22) 0 2px, transparent 2px),
+    linear-gradient(to bottom, #d9d6d1 0%, #cbc7c1 42%, #bdb9b3 100%);
+  box-shadow:
+    inset 0 -14px 22px -14px rgba(28, 25, 22, 0.55),
+    0 6px 14px -6px rgba(28, 25, 22, 0.4);
+  will-change: transform;
+}
+
+/* The grab target, shaped to the glass opening. */
+.plane-window-grip {
+  inset: 15% 15% 14% 15%;
+  border-radius: 46% / 40%;
+  background: none;
+  border: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.plane-window-grip:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+
+/* The theme swap, when the shade commits one. Only colour-ish properties move,
+   and never the window itself — transitioning the frame smears it. */
+.is-recolouring body,
+.is-recolouring body *,
+.is-recolouring body *::before,
+.is-recolouring body *::after {
+  transition-property: color, background-color, border-color, fill, stroke;
+  transition-duration: 520ms;
+  transition-timing-function: var(--tf-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+
+.is-recolouring .plane-window-wrapper,
+.is-recolouring .plane-window-wrapper * {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plane-window-static-clouds {
+    animation: none;
+  }
+
+  .plane-window-shade {
+    transition: none !important;
+  }
+
+  .is-recolouring body,
+  .is-recolouring body * {
+    transition-duration: 120ms;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -993,6 +1171,44 @@ h6,
 .plane-window-clouds-mask {
   inset: 17% 17% 16% 17%;
   border-radius: 42%;
+}
+
+
+/* Scrollbars follow the theme.
+ *
+ * Without this the browser paints its default light track and thumb on every
+ * scrollable dark surface — most visible on the trip page, where the timeline
+ * and the panels both scroll. color-scheme already tells the UA which set of
+ * default controls to use; these rules cover the webkit track explicitly so the
+ * thumb sits on the app's own surfaces rather than the UA's.
+ */
+* {
+  scrollbar-color: var(--muted-foreground) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted-foreground);
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 @utility scrollbar-hide {
@@ -1176,7 +1392,10 @@ h6,
 ::view-transition-old(.blog-card-transition),
 ::view-transition-new(.blog-card-transition) {
   transform-origin: center top;
-  background: rgba(255, 255, 255, 0.98);
+  /* The snapshot needs an opaque backing or the two states show through each
+     other, but hardcoding white meant every blog navigation flashed a white
+     card in dark mode. The card token is opaque in both themes. */
+  background: var(--card);
   border-radius: 1rem;
 }
 
@@ -1218,38 +1437,138 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   animation: blog-card-fade-in 180ms ease-out 40ms both;
 }
 
+/* Dark mode.
+ *
+ * The shadcn scaffold that used to live here was stock achromatic neutral, and
+ * it flipped --primary to near-white — which erased TravelFlow's indigo, so the
+ * brand read as generic. These values keep the accent.
+ *
+ * Two tones are authored. `warm` is the default; `slate` is selected with
+ * data-dark-tone="slate" on the document element. They differ only in surface
+ * and text colour — every accent value below is shared — so switching the
+ * default is a one-line change in the theme store, not a repaint.
+ *
+ * The accent INVERTS DIRECTION between themes, deliberately. Light mode is
+ * indigo-600 fill with white text; dark mode is indigo-400 fill with dark ink.
+ * Please do not "fix" this by making the dark button darker — both alternatives
+ * fail WCAG AA:
+ *   indigo-500 + white -> label 4.47 (needs 4.5)
+ *   indigo-600 + white -> label 6.29, but fill is 2.77 against the page
+ *                         (non-text contrast needs 3.0)
+ * Only indigo-400 + dark ink clears both, at 5.94/5.94.
+ *
+ * Measured ratios, warm / slate:
+ *   body text      15.45 / 15.38
+ *   muted on page   8.95 /  7.09
+ *   muted on card   7.92 /  6.33
+ *   link            5.94 /  5.83
+ */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  /* Surfaces — warm near-black (default tone). */
+  --background: oklch(0.210 0.003 68);
+  --foreground: oklch(0.953 0.009 85);
+  --card: oklch(0.257 0.002 68);
+  --card-foreground: oklch(0.953 0.009 85);
+  --popover: oklch(0.257 0.002 68);
+  --popover-foreground: oklch(0.953 0.009 85);
+  --secondary: oklch(0.283 0.003 49);
+  --secondary-foreground: oklch(0.953 0.009 85);
+  --muted: oklch(0.283 0.003 49);
+  --muted-foreground: oklch(0.783 0.003 85);
+  --accent: oklch(0.283 0.003 49);
+  --accent-foreground: oklch(0.953 0.009 85);
+  /* Deliberately faint. In dark a card separates from the page by its surface,
+   * not by an outline, and a visible hairline around every card reads as noise.
+   * --input stays stronger: a form field does need a discernible edge. */
+  --border: oklch(1 0 0 / 7%);
+  --input: oklch(1 0 0 / 18%);
+  --sidebar: oklch(0.257 0.002 68);
+  --sidebar-foreground: oklch(0.953 0.009 85);
+  --sidebar-accent: oklch(0.283 0.003 49);
+  --sidebar-accent-foreground: oklch(0.953 0.009 85);
+  --sidebar-border: oklch(1 0 0 / 13%);
+
+  /* Activity-type palette, dark. Solid values, see :root for why. */
+  --tf-activity-general-bg: #3a3c3f;
+  --tf-activity-general-border: #545a62;
+  --tf-activity-general-text: #e2e8f0;
+  --tf-activity-sightseeing-bg: #29404a;
+  --tf-activity-sightseeing-border: #2e657d;
+  --tf-activity-sightseeing-text: #bae6fd;
+  --tf-activity-food-bg: #4c4124;
+  --tf-activity-food-border: #7f6624;
+  --tf-activity-food-text: #fde68a;
+  --tf-activity-culture-bg: #3d374b;
+  --tf-activity-culture-border: #5c507e;
+  --tf-activity-culture-text: #ddd6fe;
+  --tf-activity-relaxation-bg: #274440;
+  --tf-activity-relaxation-border: #296e65;
+  --tf-activity-relaxation-text: #99f6e4;
+  --tf-activity-nightlife-bg: #49344a;
+  --tf-activity-nightlife-border: #77487d;
+  --tf-activity-nightlife-text: #f5d0fe;
+  --tf-activity-sports-bg: #4c3332;
+  --tf-activity-sports-border: #7e4544;
+  --tf-activity-sports-text: #fecaca;
+  --tf-activity-hiking-bg: #294439;
+  --tf-activity-hiking-border: #2c6e55;
+  --tf-activity-hiking-text: #a7f3d0;
+  --tf-activity-wildlife-bg: #3c4827;
+  --tf-activity-wildlife-border: #5a762b;
+  --tf-activity-wildlife-text: #d9f99d;
+  --tf-activity-nature-bg: #2c4635;
+  --tf-activity-nature-border: #35734b;
+  --tf-activity-nature-text: #bbf7d0;
+  --tf-activity-shopping-bg: #4b333e;
+  --tf-activity-shopping-border: #7d4561;
+  --tf-activity-shopping-text: #fbcfe8;
+  --tf-activity-adventure-bg: #4c3928;
+  --tf-activity-adventure-border: #7f532e;
+  --tf-activity-adventure-text: #fed7aa;
+  --tf-activity-beach-bg: #254448;
+  --tf-activity-beach-border: #246e79;
+  --tf-activity-beach-text: #a5f3fc;
+
+  /* Accent and state — shared by both tones. */
+  --primary: var(--tf-accent-400);
+  --primary-foreground: var(--background);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --sidebar-primary: var(--tf-accent-400);
+  --sidebar-primary-foreground: var(--background);
+
+  /* Focus rings do NOT inherit --border: at 13% white it resolves to roughly
+   * 1.33 against the page, which is invisible as a focus indicator. */
+  --ring: var(--tf-accent-400);
+  --sidebar-ring: var(--tf-accent-400);
+
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* Cool slate tone. Surfaces and text only — accents come from .dark above. */
+.dark[data-dark-tone='slate'] {
+  --background: oklch(0.218 0.021 268);
+  --foreground: oklch(0.958 0.010 267);
+  --card: oklch(0.261 0.028 266);
+  --card-foreground: oklch(0.958 0.010 267);
+  --popover: oklch(0.261 0.028 266);
+  --popover-foreground: oklch(0.958 0.010 267);
+  --secondary: oklch(0.294 0.031 266);
+  --secondary-foreground: oklch(0.958 0.010 267);
+  --muted: oklch(0.294 0.031 266);
+  --muted-foreground: oklch(0.723 0.036 264);
+  --accent: oklch(0.294 0.031 266);
+  --accent-foreground: oklch(0.958 0.010 267);
+  --border: oklch(0.75 0.05 265 / 9%);
+  --input: oklch(0.75 0.05 265 / 22%);
+  --sidebar: oklch(0.261 0.028 266);
+  --sidebar-foreground: oklch(0.958 0.010 267);
+  --sidebar-accent: oklch(0.294 0.031 266);
+  --sidebar-accent-foreground: oklch(0.958 0.010 267);
+  --sidebar-border: oklch(0.75 0.05 265 / 16%);
 }
 
 @layer base {

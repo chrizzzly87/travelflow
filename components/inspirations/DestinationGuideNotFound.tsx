@@ -9,10 +9,10 @@ export const DestinationGuideNotFound: React.FC<{ locale: AppLanguage; destinati
   const { t } = useTranslation('pages');
   return (
     <section className="py-20 text-center">
-      <h1 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'var(--tf-font-heading)' }}>
+      <h1 className="text-3xl font-black text-foreground" style={{ fontFamily: 'var(--tf-font-heading)' }}>
         {t('inspirations.subpages.country.notFoundTitle')}
       </h1>
-      <p className="mt-4 text-slate-500">
+      <p className="mt-4 text-muted-foreground">
         {t('inspirations.subpages.country.notFoundDescription', { country: decodeURIComponent(destination) })}
       </p>
       <Link to={buildLocalizedMarketingPath('inspirationsCountries', locale)} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-accent-600 px-6 py-3 text-sm font-bold text-white shadow-lg transition-colors hover:bg-accent-700">

@@ -35,13 +35,13 @@ export const ProfileMetaPanel: React.FC<ProfileMetaPanelProps> = ({
   return (
     <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(260px,0.62fr)]">
       <section>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{labels.countries}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{labels.countries}</p>
         {countries.length > 0 ? (
           <div className="mt-2 flex flex-wrap gap-2">
             {countries.map((country) => (
               <span
                 key={`country-${country.name}`}
-                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground"
               >
                 <FlagIcon code={country.code} size="xs" fallback={null} />
                 <span>{country.name}</span>
@@ -49,16 +49,16 @@ export const ProfileMetaPanel: React.FC<ProfileMetaPanelProps> = ({
             ))}
           </div>
         ) : (
-          <p className="mt-1 text-sm text-slate-500">{labels.countriesEmpty}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{labels.countriesEmpty}</p>
         )}
       </section>
 
       {PASSPORT_FEATURE_ENABLED ? (
         <section className="space-y-2">
           <header className="space-y-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{labels.stampsTitle}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{labels.stampsTitle}</p>
             {labels.stampsDescription ? (
-              <p className="text-sm text-slate-600">{labels.stampsDescription}</p>
+              <p className="text-sm text-muted-foreground">{labels.stampsDescription}</p>
             ) : null}
           </header>
           <ProfilePassportBook

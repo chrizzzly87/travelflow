@@ -47,6 +47,14 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'localStorage',
     },
     {
+      name: 'tf_theme_preference_v1',
+      purpose: 'Remembers whether you chose the light or dark appearance, or asked to follow your device.',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+      notes: 'Read by an inline script before first paint so the page does not flash the wrong theme.',
+    },
+    {
       name: 'tf_trip_recommendations_v1',
       purpose: 'Remembers which trip ideas you kept or skipped so they survive a reload.',
       duration: 'Persistent',

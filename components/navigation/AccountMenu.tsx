@@ -263,8 +263,8 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                     trackEvent('navigation__account_menu--toggle', { open: next });
                 }}
                 className={[
-                    'inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors',
-                    'hover:border-slate-300 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2',
+                    'inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm transition-colors dark:border-border dark:bg-card dark:text-foreground dark:shadow-none',
+                    'hover:border-border hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:hover:border-border dark:hover:text-foreground',
                     compact ? 'h-9 py-1.5' : 'h-10 py-2',
                     fullWidth ? 'w-full justify-between' : '',
                     triggerClassName || '',
@@ -274,7 +274,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                 aria-expanded={isOpen}
                 aria-label={!shouldShowLabel ? triggerLabel : undefined}
             >
-                <span className="flex size-7 shrink-0 aspect-square items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
+                <span className="flex size-7 shrink-0 aspect-square items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900 dark:bg-accent-400/12 dark:text-accent-200">
                     {computeInitial(profile, email, userId)}
                 </span>
                 {shouldShowLabel && <span className="truncate">{triggerLabel}</span>}
@@ -286,40 +286,40 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                     role="menu"
                     aria-label="Account menu"
                     className={[
-                        'absolute z-[2100] w-[min(92vw,320px)] rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl',
+                        'absolute z-[2100] w-[min(92vw,320px)] rounded-xl border border-border bg-card p-1.5 shadow-2xl dark:border-border dark:bg-card dark:shadow-none',
                         menuPlacement === 'right-end'
                             ? 'left-[calc(100%+10px)] bottom-0'
                             : 'right-0 top-[calc(100%+8px)]',
                     ].join(' ')}
                 >
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                        <div className="truncate text-sm font-semibold text-slate-800">{accountDisplayName}</div>
+                    <div className="rounded-lg border border-border bg-secondary px-3 py-2 dark:border-border dark:bg-secondary">
+                        <div className="truncate text-sm font-semibold text-foreground dark:text-foreground">{accountDisplayName}</div>
                         {accountIdentityLabel && (
-                            <div className="truncate text-xs text-slate-500">{accountIdentityLabel}</div>
+                            <div className="truncate text-xs text-muted-foreground dark:text-muted-foreground">{accountIdentityLabel}</div>
                         )}
                         {showCurrentPageSummary && (
-                            <div className="text-xs text-slate-500">Current page: {accountLabel}</div>
+                            <div className="text-xs text-muted-foreground dark:text-muted-foreground">Current page: {accountLabel}</div>
                         )}
                     </div>
 
                     {showRecentTripsSection && (
-                        <div className="mt-1.5 space-y-1 border-t border-slate-200 pt-1.5">
-                            <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        <div className="mt-1.5 space-y-1 border-t border-border pt-1.5 dark:border-border">
+                            <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground dark:text-muted-foreground">
                                 Recent trips
                             </div>
                             {recentTrips.length === 0 ? (
-                                <div className="px-3 py-2 text-xs text-slate-500">No recent trips yet.</div>
+                                <div className="px-3 py-2 text-xs text-muted-foreground dark:text-muted-foreground">No recent trips yet.</div>
                             ) : (
                                 recentTrips.map((trip) => (
                                     <button
                                         key={`account-recent-${trip.id}`}
                                         type="button"
                                         onClick={() => navigateToRecentTrip(trip)}
-                                        className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                                        className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-secondary dark:text-foreground dark:hover:bg-secondary"
                                         {...getAnalyticsDebugAttributes('navigation__account_menu--recent_trip', { trip_id: trip.id })}
                                     >
                                         <span className="truncate">{trip.title}</span>
-                                        <span className="text-[11px] text-slate-400">
+                                        <span className="text-[11px] text-muted-foreground dark:text-muted-foreground">
                                             {formatRecentTripDate(trip.createdAt)}
                                         </span>
                                     </button>
@@ -328,7 +328,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                             <button
                                 type="button"
                                 onClick={() => navigateTo('/profile?tab=recent', 'navigation__account_menu--recent_view_all')}
-                                className="mt-0.5 w-full rounded-md border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                                className="mt-0.5 w-full rounded-md border border-border px-3 py-2 text-left text-sm font-semibold text-foreground transition-colors hover:border-border hover:bg-secondary dark:border-border dark:text-foreground dark:hover:border-border dark:hover:bg-secondary"
                                 {...getAnalyticsDebugAttributes('navigation__account_menu--recent_view_all')}
                             >
                                 View all trips
@@ -340,7 +340,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                         <button
                             type="button"
                             onClick={() => navigateTo('/profile', 'navigation__account_menu--profile')}
-                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-secondary dark:text-foreground dark:hover:bg-secondary"
                             {...getAnalyticsDebugAttributes('navigation__account_menu--profile')}
                         >
                             <User size={16} />
@@ -353,23 +353,23 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                                 onFocus={onPrewarmTripManager}
                                 onTouchStart={onPrewarmTripManager}
                                 onClick={openTripManager}
-                                className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                                className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-secondary dark:text-foreground dark:hover:bg-secondary"
                                 {...getAnalyticsDebugAttributes('navigation__account_menu--my_trips')}
                             >
                                 <span className="flex items-center gap-2">
                                     <FolderSimple size={16} />
                                     <span>{t('nav.myTrips')}</span>
                                 </span>
-                                <CaretRight size={14} className="text-slate-400" />
+                                <CaretRight size={14} className="text-muted-foreground dark:text-muted-foreground" />
                             </button>
                         )}
                     </div>
 
-                    <div className="mt-1.5 border-t border-slate-200 pt-1.5">
+                    <div className="mt-1.5 border-t border-border pt-1.5 dark:border-border">
                         <button
                             type="button"
                             onClick={() => navigateTo(buildLocalizedCreateTripPath(activeLocale), 'navigation__account_menu--create_trip')}
-                            className="flex w-full items-center justify-center gap-2 rounded-md bg-accent-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
+                            className="flex w-full items-center justify-center gap-2 rounded-md bg-accent-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-700 dark:bg-accent-400 dark:hover:bg-accent-500 dark:text-background"
                             {...getAnalyticsDebugAttributes('navigation__account_menu--create_trip')}
                         >
                             <AirplaneTakeoff size={16} weight="fill" />
@@ -378,11 +378,11 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                     </div>
 
                     {isAdmin && (
-                        <div className="mt-1.5 space-y-0.5 border-t border-slate-200 pt-1.5">
+                        <div className="mt-1.5 space-y-0.5 border-t border-border pt-1.5 dark:border-border">
                             <button
                                 type="button"
                                 onClick={() => navigateTo('/admin/dashboard', 'navigation__account_menu--admin_workspace')}
-                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-secondary dark:text-foreground dark:hover:bg-secondary"
                                 {...getAnalyticsDebugAttributes('navigation__account_menu--admin_workspace')}
                             >
                                 <ShieldCheck size={15} />
@@ -391,13 +391,13 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                         </div>
                     )}
 
-                    <div className="mt-1.5 border-t border-slate-200 pt-1.5">
+                    <div className="mt-1.5 border-t border-border pt-1.5 dark:border-border">
                         <button
                             type="button"
                             onClick={() => {
                                 void handleLogout();
                             }}
-                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50"
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50 dark:hover:bg-rose-400/12 dark:text-rose-200"
                             {...getAnalyticsDebugAttributes('navigation__account_menu--logout')}
                         >
                             <SignOut size={16} />

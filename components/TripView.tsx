@@ -476,18 +476,18 @@ interface ExampleTransitionLocationState {
 }
 
 const MapLoadingFallback: React.FC = () => (
-    <div className="size-full flex items-center justify-center bg-gray-100 text-xs text-gray-500">
+    <div className="size-full flex items-center justify-center bg-secondary text-xs text-muted-foreground">
         Loading map…
     </div>
 );
 
 const MapDeferredFallback: React.FC<{ onLoadNow: () => void }> = ({ onLoadNow }) => (
-    <div className="size-full flex flex-col items-center justify-center gap-3 bg-gray-100 text-xs text-gray-500">
+    <div className="size-full flex flex-col items-center justify-center gap-3 bg-secondary text-xs text-muted-foreground">
         <span>Preparing map…</span>
         <button
             type="button"
             onClick={onLoadNow}
-            className="inline-flex min-h-10 items-center rounded-md border border-gray-300 bg-white px-3 text-[11px] font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+            className="inline-flex min-h-10 items-center rounded-md border border-border bg-card px-3 text-[11px] font-semibold text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
         >
             Load map now
         </button>
@@ -520,33 +520,33 @@ const TripInfoModalLoadingFallback: React.FC<{ onClose: () => void }> = ({ onClo
                 aria-labelledby="trip-info-loading-title"
                 className="fixed inset-0 z-[1521] pointer-events-none flex items-end sm:items-center justify-center p-3 sm:p-4"
             >
-                <div ref={dialogRef} className="pointer-events-auto bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[84vh] sm:max-h-[88vh]">
-                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <div ref={dialogRef} className="pointer-events-auto bg-card rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[84vh] sm:max-h-[88vh] dark:shadow-none">
+                    <div className="p-4 border-b border-border flex items-center justify-between">
                         <div>
-                            <h3 id="trip-info-loading-title" className="text-lg font-semibold text-gray-900">Trip information</h3>
-                            <p className="text-xs text-gray-500">Plan details, destination info, and history.</p>
+                            <h3 id="trip-info-loading-title" className="text-lg font-semibold text-foreground">Trip information</h3>
+                            <p className="text-xs text-muted-foreground">Plan details, destination info, and history.</p>
                         </div>
-                        <button ref={closeButtonRef} type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
+                        <button ref={closeButtonRef} type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-muted-foreground hover:bg-secondary">
                             Close
                         </button>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                        <div className="rounded-xl border border-gray-200 p-3 space-y-2 animate-pulse">
+                        <div className="rounded-xl border border-border p-3 space-y-2 animate-pulse">
                             <div className="h-5 w-44 rounded bg-gray-200" />
-                            <div className="h-3 w-64 rounded bg-gray-100" />
+                            <div className="h-3 w-64 rounded bg-secondary" />
                         </div>
-                        <div className="rounded-xl border border-gray-200 p-3 space-y-3 animate-pulse">
+                        <div className="rounded-xl border border-border p-3 space-y-3 animate-pulse">
                             <div className="h-4 w-28 rounded bg-gray-200" />
                             <div className="grid grid-cols-2 gap-2">
                                 {TRIP_INFO_FALLBACK_ROWS.map((row) => (
-                                    <div key={`trip-info-fallback-${row}`} className="h-14 rounded-lg bg-gray-100 border border-gray-100" />
+                                    <div key={`trip-info-fallback-${row}`} className="h-14 rounded-lg bg-secondary border border-border" />
                                 ))}
                             </div>
                         </div>
-                        <div className="rounded-xl border border-gray-200 p-3 space-y-2 animate-pulse">
+                        <div className="rounded-xl border border-border p-3 space-y-2 animate-pulse">
                             <div className="h-4 w-20 rounded bg-gray-200" />
-                            <div className="h-10 rounded bg-gray-100 border border-gray-100" />
-                            <div className="h-10 rounded bg-gray-100 border border-gray-100" />
+                            <div className="h-10 rounded bg-secondary border border-border" />
+                            <div className="h-10 rounded bg-secondary border border-border" />
                         </div>
                     </div>
                 </div>
@@ -927,7 +927,7 @@ const renderDetailsPanelContent = ({
     onExportActivityCalendar,
 }: RenderDetailsPanelContentOptions): React.ReactNode => (
     showSelectedCitiesPanel ? (
-        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel…</div>}>
+        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-muted-foreground">Loading selection panel…</div>}>
             <SelectedCitiesPanel
                 selectedCities={selectedCitiesInTimeline}
                 onClose={onCloseSelection}
@@ -938,7 +938,7 @@ const renderDetailsPanelContent = ({
             />
         </Suspense>
     ) : (
-        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details…</div>}>
+        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-muted-foreground">Loading details…</div>}>
             <DetailsPanel
                 item={selectedDetailItem}
                 isOpen={!!selectedItemId}
@@ -3432,7 +3432,7 @@ const useTripViewRender = ({
     if (viewMode === 'print') {
         return (
             <GoogleMapsLoader language={appLanguage}>
-                <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-sm text-gray-500">Preparing print layout…</div>}>
+                <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-sm text-muted-foreground">Preparing print layout…</div>}>
                     <PrintLayout
                         trip={displayTrip}
                         isPaywalled={isPaywallLocked}
@@ -3457,7 +3457,7 @@ const useTripViewRender = ({
     return (
         <MapRuntimeProvider language={appLanguage}>
             <div
-                className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900"
+                className="relative h-screen w-screen flex flex-col bg-secondary overflow-hidden text-foreground font-sans selection:bg-accent-100 selection:text-accent-900 dark:selection:bg-accent-400/12 dark:selection:text-accent-200"
                 data-tf-handoff-ready="true"
             >
                 
@@ -3724,13 +3724,13 @@ const useTripViewRender = ({
                         <button
                             type="button"
                             onClick={openTripAgent}
-                            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] end-4 z-[1490] inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-900 shadow-lg transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] end-4 z-[1490] inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-semibold text-foreground shadow-lg transition hover:border-border hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:shadow-none"
                             aria-label={t('tripAgent.title')}
                             {...getAnalyticsDebugAttributes('trip_agent__launcher--open', { trip_id: trip.id })}
                         >
                             {isTripAgentLocked
-                                ? <Lock className="size-4 text-slate-500" />
-                                : <Sparkles className="size-4 text-accent-600" />}
+                                ? <Lock className="size-4 text-muted-foreground" />
+                                : <Sparkles className="size-4 text-accent-600 dark:text-accent-300" />}
                             <span>{t('tripAgent.title')}</span>
                         </button>
                     )}
@@ -3739,7 +3739,7 @@ const useTripViewRender = ({
                             role="status"
                             className="pointer-events-none fixed inset-x-0 top-2 z-[1600] flex justify-center px-3"
                         >
-                            <p className="pointer-events-auto rounded-full border border-accent-200 bg-accent-50/95 px-3 py-1.5 text-xs font-medium text-accent-900 shadow-sm backdrop-blur">
+                            <p className="pointer-events-auto rounded-full border border-accent-200 bg-accent-50/95 px-3 py-1.5 text-xs font-medium text-accent-900 shadow-sm backdrop-blur dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                                 {t('tripAgent.previewBanner')}
                             </p>
                         </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../../lib/utils';
+import { useTheme } from '../../../contexts/theme/useTheme';
 import {
     ensureRuntimeLocationLoaded,
     getRuntimeLocationSnapshot,
@@ -156,6 +157,11 @@ export const FeaturesGlobe: React.FC = () => {
     const phoneLayout = displaySize.width < 440;
     const compactLayout = displaySize.width < 560;
     const globeRenderConfig = useMemo(() => getGlobeRenderConfig(displaySize.width), [displaySize.width]);
+
+    // cobe bakes its palette in when the globe is created, so a theme change has
+    // to rebuild it — hence isDarkTheme in the effect's dependencies below.
+    const { resolvedTheme } = useTheme();
+    const isDarkTheme = resolvedTheme === 'dark';
     const originLocation = getRuntimeCoordinates(runtimeLocation) ?? DEFAULT_ORIGIN_LOCATION;
 
     const markerConfigs = useMemo<MarkerConfig[]>(() => ([
@@ -387,15 +393,19 @@ export const FeaturesGlobe: React.FC = () => {
                     height: canvasSize.height,
                     phi: rotationRef.current.phi,
                     theta: rotationRef.current.theta,
-                    dark: 0,
-                    diffuse: 1.3,
+                    // cobe bakes its palette in at creation, so the globe has to
+                    // be told which theme it is being drawn for. Left at dark: 0
+                    // with a near-white base and glow it renders as a bright disc
+                    // on a dark page.
+                    dark: isDarkTheme ? 1 : 0,
+                    diffuse: isDarkTheme ? 1.1 : 1.3,
                     mapSamples: canvasSize.width > 900 ? 26000 : 19000,
-                    mapBrightness: 6.1,
-                    mapBaseBrightness: 0.06,
-                    baseColor: [0.975, 0.978, 0.986],
-                    markerColor: [0.38, 0.31, 0.9],
-                    glowColor: [0.995, 0.995, 0.995],
-                    arcColor: [0.38, 0.31, 0.9],
+                    mapBrightness: isDarkTheme ? 3.4 : 6.1,
+                    mapBaseBrightness: isDarkTheme ? 0.02 : 0.06,
+                    baseColor: isDarkTheme ? [0.22, 0.22, 0.26] : [0.975, 0.978, 0.986],
+                    markerColor: [0.48, 0.51, 1.0],
+                    glowColor: isDarkTheme ? [0.16, 0.16, 0.2] : [0.995, 0.995, 0.995],
+                    arcColor: isDarkTheme ? [0.55, 0.58, 1.0] : [0.38, 0.31, 0.9],
                     arcWidth: globeRenderConfig.arcWidth,
                     arcHeight: globeRenderConfig.arcHeight,
                     markerElevation: globeRenderConfig.markerElevation,
@@ -446,7 +456,7 @@ export const FeaturesGlobe: React.FC = () => {
             cancelAnimationFrame(animationFrameId);
             globe?.destroy?.();
         };
-    }, [canvasSize.height, canvasSize.width, compactLayout, displaySize.height, displaySize.width, globeRenderConfig.arcHeight, globeRenderConfig.arcWidth, globeRenderConfig.markerElevation, globeRenderConfig.offset, globeRenderConfig.scale, overlayConfigs, phoneLayout, prefersReducedMotion]);
+    }, [canvasSize.height, canvasSize.width, compactLayout, displaySize.height, displaySize.width, globeRenderConfig.arcHeight, globeRenderConfig.arcWidth, globeRenderConfig.markerElevation, globeRenderConfig.offset, globeRenderConfig.scale, isDarkTheme, overlayConfigs, phoneLayout, prefersReducedMotion]);
 
     const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
         dragRef.current = {
@@ -539,9 +549,9 @@ export const FeaturesGlobe: React.FC = () => {
                                 if (node) overlayRefs.current.set('paris-panel', node);
                                 else overlayRefs.current.delete('paris-panel');
                             }}
-                            className="absolute left-0 top-0 w-[6.8rem] rounded-[11px] border border-[#ddd1ff] bg-[#f7f3ff]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.1rem]"
+                            className="absolute left-0 top-0 w-[6.8rem] rounded-[11px] border border-[#ddd1ff] bg-[#f7f3ff]/96 dark:border-violet-400/30 dark:bg-violet-400/14 px-2 py-1.5 text-foreground will-change-transform sm:w-[7.1rem] dark:text-foreground"
                         >
-                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
+                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-foreground sm:text-[0.7rem] dark:text-foreground">
                                 <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{parisCard.emoji}</span>
                                 <span>{parisCard.title}</span>
                             </p>
@@ -554,9 +564,9 @@ export const FeaturesGlobe: React.FC = () => {
                                 if (node) overlayRefs.current.set('fiji-panel', node);
                                 else overlayRefs.current.delete('fiji-panel');
                             }}
-                            className="absolute left-0 top-0 w-[6.9rem] rounded-[11px] border border-[#cbe9d7] bg-[#eef9f1]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.2rem]"
+                            className="absolute left-0 top-0 w-[6.9rem] rounded-[11px] border border-[#cbe9d7] bg-[#eef9f1]/96 dark:border-emerald-400/30 dark:bg-emerald-400/14 px-2 py-1.5 text-foreground will-change-transform sm:w-[7.2rem] dark:text-foreground"
                         >
-                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
+                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-foreground sm:text-[0.7rem] dark:text-foreground">
                                 <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{fijiCard.emoji}</span>
                                 <span>{fijiCard.title}</span>
                             </p>
@@ -569,9 +579,9 @@ export const FeaturesGlobe: React.FC = () => {
                                 if (node) overlayRefs.current.set('south-africa-panel', node);
                                 else overlayRefs.current.delete('south-africa-panel');
                             }}
-                            className="absolute left-0 top-0 w-[7.1rem] rounded-[11px] border border-[#cfe8ee] bg-[#eef8fb]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.5rem]"
+                            className="absolute left-0 top-0 w-[7.1rem] rounded-[11px] border border-[#cfe8ee] bg-[#eef8fb]/96 dark:border-sky-400/30 dark:bg-sky-400/14 px-2 py-1.5 text-foreground will-change-transform sm:w-[7.5rem] dark:text-foreground"
                         >
-                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
+                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-foreground sm:text-[0.7rem] dark:text-foreground">
                                 <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{southAfricaCard.emoji}</span>
                                 <span>{southAfricaCard.title}</span>
                             </p>
@@ -584,9 +594,9 @@ export const FeaturesGlobe: React.FC = () => {
                                 if (node) overlayRefs.current.set('route66-panel', node);
                                 else overlayRefs.current.delete('route66-panel');
                             }}
-                            className="absolute left-0 top-0 w-[6.8rem] rounded-[11px] border border-[#f0d5bf] bg-[#fff4e9]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.1rem]"
+                            className="absolute left-0 top-0 w-[6.8rem] rounded-[11px] border border-[#f0d5bf] bg-[#fff4e9]/96 dark:border-amber-400/30 dark:bg-amber-400/14 px-2 py-1.5 text-foreground will-change-transform sm:w-[7.1rem] dark:text-foreground"
                         >
-                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
+                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-foreground sm:text-[0.7rem] dark:text-foreground">
                                 <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{route66Card.emoji}</span>
                                 <span>{route66Card.title}</span>
                             </p>
@@ -598,10 +608,10 @@ export const FeaturesGlobe: React.FC = () => {
                             if (node) overlayRefs.current.set('trip-preview', node);
                             else overlayRefs.current.delete('trip-preview');
                         }}
-                        className="absolute left-0 top-0 w-[8.45rem] border border-slate-200 bg-white p-2 shadow-[0_20px_34px_rgba(15,23,42,0.13)] will-change-transform sm:w-[9rem]"
+                        className="absolute left-0 top-0 w-[8.45rem] border border-border bg-card p-2 shadow-[0_20px_34px_rgba(15,23,42,0.13)] dark:shadow-[0_20px_34px_rgba(0,0,0,0.5)] will-change-transform sm:w-[9rem] dark:border-border dark:bg-card"
                         style={{ borderRadius: '14px 14px 18px 18px' }}
                         >
-                            <div className="overflow-hidden rounded-[10px] border border-slate-100">
+                            <div className="overflow-hidden rounded-[10px] border border-border dark:border-border">
                                 <img
                                     src="/images/trip-maps/thailand-islands.png"
                                     alt={preview.alt}
@@ -610,7 +620,7 @@ export const FeaturesGlobe: React.FC = () => {
                                 />
                             </div>
                             <div className="pt-2">
-                                <p className="text-[0.68rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.72rem]">
+                                <p className="text-[0.68rem] font-semibold leading-[1.15] text-foreground sm:text-[0.72rem] dark:text-foreground">
                                     {preview.title}
                                 </p>
                             </div>
@@ -619,11 +629,11 @@ export const FeaturesGlobe: React.FC = () => {
             ) : null}
 
             {isFallback ? (
-                <div className="pointer-events-none absolute inset-x-6 bottom-6 rounded-[16px] border border-slate-200 bg-white p-5 shadow-[0_14px_28px_rgba(15,23,42,0.08)]">
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                <div className="pointer-events-none absolute inset-x-6 bottom-6 rounded-[16px] border border-border bg-card p-5 shadow-[0_14px_28px_rgba(15,23,42,0.08)] dark:shadow-[0_14px_28px_rgba(0,0,0,0.45)] dark:border-border dark:bg-card">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground dark:text-muted-foreground">
                         {t('globe.fallbackTitle')}
                     </p>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground dark:text-muted-foreground">
                         {t('globe.fallbackDescription')}
                     </p>
                 </div>

@@ -174,29 +174,29 @@ const TripManagerLoadingFallback: React.FC<{ isOpen: boolean; onClose: () => voi
             aria-label="Close My Plans panel"
         />
         <div
-            className={`fixed inset-y-0 right-0 w-[380px] max-w-[94vw] bg-white shadow-2xl z-[1200] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+            className={`fixed inset-y-0 right-0 w-[380px] max-w-[94vw] bg-card shadow-2xl z-[1200] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
             style={{ transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}
         >
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-800">My Plans</h2>
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-foreground">My Plans</h2>
                 <button
                     type="button"
                     onClick={onClose}
-                    className="size-8 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    className="size-8 rounded-full text-muted-foreground hover:text-muted-foreground hover:bg-secondary"
                     aria-label="Close"
                 >
                     x
                 </button>
             </div>
-            <div className="px-3 py-2 border-b border-gray-100">
-                <div className="h-9 w-full rounded-md border border-gray-200 bg-gray-50 animate-pulse" />
+            <div className="px-3 py-2 border-b border-border">
+                <div className="h-9 w-full rounded-md border border-border bg-secondary animate-pulse" />
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-2">
                 {TRIP_MANAGER_FALLBACK_ROWS.map((row) => (
-                    <div key={row} className="rounded-lg border border-gray-100 bg-white p-2">
+                    <div key={row} className="rounded-lg border border-border bg-card p-2">
                         <div className="animate-pulse">
                             <div className="h-3.5 w-32 rounded bg-gray-200" />
-                            <div className="mt-2 h-2.5 w-44 rounded bg-gray-100" />
+                            <div className="mt-2 h-2.5 w-44 rounded bg-secondary" />
                         </div>
                     </div>
                 ))}
@@ -983,22 +983,22 @@ const AppContent: React.FC = () => {
             )}
             {shouldRenderTermsNotice && (
                 <section
-                    className={`mx-auto w-full max-w-[1600px] px-4 pt-3 ${shouldShowForceTermsNotice ? 'text-rose-950' : 'text-accent-950'} sm:px-6 lg:px-8`}
+                    className={`mx-auto w-full max-w-[1600px] px-4 pt-3 ${shouldShowForceTermsNotice ? 'text-rose-950 dark:text-rose-200' : 'text-accent-950 dark:text-accent-200'} sm:px-6 lg:px-8`}
                     aria-live={shouldShowForceTermsNotice ? 'assertive' : 'polite'}
                 >
                     <div
                         className={`rounded-2xl border px-4 py-3 shadow-sm sm:flex sm:items-start sm:justify-between sm:gap-4 ${
                             shouldShowForceTermsNotice
-                                ? 'border-rose-200 bg-rose-50'
-                                : 'border-accent-200 bg-accent-50'
+                                ? 'border-rose-200 bg-rose-50 dark:bg-rose-400/12 dark:border-rose-400/30'
+                                : 'border-accent-200 bg-accent-50 dark:bg-accent-400/12 dark:border-accent-400/30'
                         }`}
                     >
                         <div className="flex min-w-0 items-start gap-3">
                             <span
                                 className={`mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-xl border ${
                                     shouldShowForceTermsNotice
-                                        ? 'border-rose-200 bg-rose-100 text-rose-700'
-                                        : 'border-accent-200 bg-accent-100 text-accent-700'
+                                        ? 'border-rose-200 bg-rose-100 text-rose-700 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30'
+                                        : 'border-accent-200 bg-accent-100 text-accent-700 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30'
                                 }`}
                                 aria-hidden="true"
                             >
@@ -1034,7 +1034,7 @@ const AppContent: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => setDismissedTermsNoticeVersion(termsNoticeVersion)}
-                                    className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-900 hover:bg-slate-50"
+                                    className="inline-flex h-9 items-center rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-secondary"
                                 >
                                     {t('termsPage.globalDismissAction', { ns: 'legal' })}
                                 </button>

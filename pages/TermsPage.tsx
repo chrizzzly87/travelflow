@@ -45,15 +45,15 @@ const buildFallbackTermsVersion = (): LegalTermsVersionRecord => {
 
 const MARKDOWN_COMPONENTS: Components = {
     h2: ({ children }) => (
-        <h3 className="mt-6 border-t border-slate-200 pt-4 text-base font-semibold text-slate-900 first:mt-0 first:border-t-0 first:pt-0">{children}</h3>
+        <h3 className="mt-6 border-t border-border pt-4 text-base font-semibold text-foreground first:mt-0 first:border-t-0 first:pt-0">{children}</h3>
     ),
-    p: ({ children }) => <p className="text-sm leading-6 text-slate-700">{children}</p>,
-    ul: ({ children }) => <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">{children}</ul>,
-    ol: ({ children }) => <ol className="list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-700">{children}</ol>,
+    p: ({ children }) => <p className="text-sm leading-6 text-foreground">{children}</p>,
+    ul: ({ children }) => <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-foreground">{children}</ul>,
+    ol: ({ children }) => <ol className="list-decimal space-y-2 pl-5 text-sm leading-6 text-foreground">{children}</ol>,
     li: ({ children }) => <li>{children}</li>,
-    strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
+    strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
     a: ({ href, children }) => (
-        <a className="font-semibold text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800" href={href || '#'} target="_blank" rel="noreferrer">
+        <a className="font-semibold text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800 dark:text-accent-200 dark:hover:text-accent-200" href={href || '#'} target="_blank" rel="noreferrer">
             {children}
         </a>
     ),
@@ -154,28 +154,28 @@ export const TermsPage: React.FC = () => {
     return (
         <MarketingLayout>
             <div className="space-y-6">
-                <section className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm md:p-10">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">{t('termsPage.heroEyebrow')}</p>
-                    <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">{t('termsPage.heroTitle')}</h1>
-                    <p className="mt-4 text-sm leading-6 text-slate-700">
+                <section className="rounded-3xl border border-border bg-gradient-to-br from-card to-secondary p-6 shadow-sm md:p-10">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-accent-600 dark:text-accent-300">{t('termsPage.heroEyebrow')}</p>
+                    <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{t('termsPage.heroTitle')}</h1>
+                    <p className="mt-4 text-sm leading-6 text-foreground">
                         {t('termsPage.heroIntro', { appName: APP_NAME })}
                     </p>
-                    <p className="mt-3 text-sm leading-6 text-slate-700">{t('termsPage.heroBindingNote')}</p>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-600">
-                        <span className="rounded-full border border-slate-300 bg-white px-2.5 py-1 font-semibold">{t('termsPage.versionLabel')}: {termsDoc.version}</span>
-                        <span className="rounded-full border border-slate-300 bg-white px-2.5 py-1 font-semibold">{t('termsPage.lastUpdatedLabel')}: {termsDoc.lastUpdated}</span>
+                    <p className="mt-3 text-sm leading-6 text-foreground">{t('termsPage.heroBindingNote')}</p>
+                    <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        <span className="rounded-full border border-border bg-card px-2.5 py-1 font-semibold">{t('termsPage.versionLabel')}: {termsDoc.version}</span>
+                        <span className="rounded-full border border-border bg-card px-2.5 py-1 font-semibold">{t('termsPage.lastUpdatedLabel')}: {termsDoc.lastUpdated}</span>
                     </div>
-                    <p className="mt-3 text-xs text-slate-600">
+                    <p className="mt-3 text-xs text-muted-foreground">
                         {t('termsPage.controllerInfoLead')}{' '}
-                        <Link className="font-semibold text-accent-700 hover:underline" to={imprintPath}>{t('termsPage.imprintLinkLabel')}</Link>.
+                        <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={imprintPath}>{t('termsPage.imprintLinkLabel')}</Link>.
                         {' '}
                         {t('termsPage.privacyInfoLead')}{' '}
-                        <Link className="font-semibold text-accent-700 hover:underline" to={privacyPath}>{t('termsPage.privacyLinkLabel')}</Link>.
+                        <Link className="font-semibold text-accent-700 hover:underline dark:text-accent-200" to={privacyPath}>{t('termsPage.privacyLinkLabel')}</Link>.
                     </p>
                 </section>
 
                 {canAcceptCurrentTerms && (
-                    <section className={`rounded-2xl p-4 text-sm ${acceptRequired ? 'border border-amber-200 bg-amber-50 text-amber-900' : 'border border-sky-200 bg-sky-50 text-sky-900'}`}>
+                    <section className={`rounded-2xl p-4 text-sm ${acceptRequired ? 'border border-amber-200 bg-amber-50 text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30' : 'border border-sky-200 bg-sky-50 text-sky-900 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30'}`}>
                         <p className="font-semibold">
                             {acceptRequired ? t('termsPage.acceptRequiredTitle') : t('termsPage.acceptOptionalTitle')}
                         </p>
@@ -195,13 +195,13 @@ export const TermsPage: React.FC = () => {
                             </button>
                         </div>
                         {acceptError && (
-                            <p className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{acceptError}</p>
+                            <p className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30">{acceptError}</p>
                         )}
                     </section>
                 )}
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-                    <h2 className="text-xl font-semibold tracking-tight text-slate-900">{t('termsPage.bindingSectionTitle')}</h2>
+                <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6 dark:shadow-none">
+                    <h2 className="text-xl font-semibold tracking-tight text-foreground">{t('termsPage.bindingSectionTitle')}</h2>
                     <div className="mt-4 space-y-3">
                         <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
                             {bindingMarkdown}
@@ -209,8 +209,8 @@ export const TermsPage: React.FC = () => {
                     </div>
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-                    <h2 className="text-xl font-semibold tracking-tight text-slate-900">{t('termsPage.helperSectionTitle')}</h2>
+                <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6 dark:shadow-none">
+                    <h2 className="text-xl font-semibold tracking-tight text-foreground">{t('termsPage.helperSectionTitle')}</h2>
                     <div className="mt-4 space-y-3">
                         <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
                             {helperMarkdown}

@@ -9,6 +9,8 @@
     "createTrip": "Crea viaggio",
     "myTrips": "I miei viaggi",
     "openMenu": "Apri menu",
+    "themeToDark": "Passa alla modalità scura",
+    "themeToLight": "Passa alla modalità chiara",
     "admin": "Admin",
     "logout": "Esci"
   },
