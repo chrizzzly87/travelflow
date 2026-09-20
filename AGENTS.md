@@ -2,6 +2,14 @@
 
 This repository uses markdown release files as the source of truth for product updates.
 
+## TravelFlow deployment target
+
+- This repository is the TravelFlow app (`chrizzzly87/travelflow`).
+- Deploy TravelFlow to Netlify project `travelflowapp`, site ID `1abc3d37-f6af-4810-9097-489b2a282ac6`.
+- Production URL: `https://travelflowapp.netlify.app`.
+- Before deploying, run `netlify status` or `netlify sites:list` and verify that exact project name and ID. Specify the site ID explicitly for CLI deploys.
+- Feature testing uses a deploy preview or branch deploy on this project; publish production only when requested.
+
 ## Agent requirements
 - Follow `docs/UPDATE_FORMAT.md` for all release entries.
 - Follow `docs/UX_COPY_GUIDELINES.md` for any user-facing text changes (marketing pages, CTA copy, planner microcopy).
