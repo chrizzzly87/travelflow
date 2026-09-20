@@ -174,7 +174,7 @@ export const UpdatesPage: React.FC = () => {
                             key={release.id}
                             className={
                                 isTopNews
-                                    ? 'rounded-2xl border border-accent-200/80 bg-gradient-to-b from-accent-50/40 to-white p-6 shadow-accent-glow-md'
+                                    ? 'rounded-2xl border border-accent-200/80 bg-gradient-to-b from-accent-50/40 to-card p-6 shadow-accent-glow-md dark:border-accent-400/30 dark:from-accent-400/10 dark:to-card dark:shadow-none'
                                     : 'rounded-2xl border border-border bg-card p-6 shadow-sm'
                             }
                         >

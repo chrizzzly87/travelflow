@@ -53,6 +53,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../components/ui/drawer';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
+import { SegmentedControl } from '../components/ui/segmented-control';
 import { ConnectivityStatusBanner } from '../components/ConnectivityStatusBanner';
 import { useDbSync } from '../hooks/useDbSync';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
@@ -2302,28 +2303,17 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     />
                                 </div>
 
-                                <div className="mb-3 inline-flex rounded-xl border border-border bg-card p-1 dark:border-border dark:bg-card">
-                                    <button
-                                        type="button"
-                                        onClick={() => setDateInputMode('exact')}
-                                        className={[
-                                            'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
-                                            dateInputMode === 'exact' ? 'bg-accent-50 text-accent-800 dark:bg-accent-400/15' : 'text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground',
-                                        ].join(' ')}
-                                    >
-                                        {t('dates.mode.exact')}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setDateInputMode('flex')}
-                                        className={[
-                                            'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
-                                            dateInputMode === 'flex' ? 'bg-accent-50 text-accent-800 dark:bg-accent-400/15' : 'text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground',
-                                        ].join(' ')}
-                                    >
-                                        {t('dates.mode.flex')}
-                                    </button>
-                                </div>
+                                <SegmentedControl
+                                    name="tf-date-input-mode"
+                                    label={t('dates.mode.exact')}
+                                    className="mb-3"
+                                    value={dateInputMode}
+                                    onChange={(mode) => setDateInputMode(mode as typeof dateInputMode)}
+                                    options={[
+                                        { value: 'exact', label: t('dates.mode.exact') },
+                                        { value: 'flex', label: t('dates.mode.flex') },
+                                    ]}
+                                />
 
                                 {dateInputMode === 'exact' ? (
                                     <div className="space-y-3">

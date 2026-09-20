@@ -75,12 +75,27 @@ export const resolveTheme = (value: ThemePreference, systemPrefersDark: boolean)
 const getSnapshot = (): ThemePreference => preference;
 const getServerSnapshot = (): ThemePreference => 'system';
 
+/**
+ * Custom properties the boot script writes inline on <html> so the boot-shell CSS
+ * is correct on the very first frame, before index.css has loaded.
+ *
+ * They MUST be removed again once a stylesheet is in charge. An inline style
+ * outranks every rule, so leaving the dark values behind pins the page dark
+ * forever: the `.dark` class comes off, the stylesheet switches back to the light
+ * tokens, and the inline ones keep winning. That is exactly what broke light mode.
+ */
+const BOOT_SEEDED_PROPERTIES = ['--background', '--foreground', '--card', '--secondary', '--muted', '--border'];
+
 export const applyTheme = (theme: ResolvedTheme, tone: DarkTone = DEFAULT_DARK_TONE): void => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
     root.classList.toggle(THEME_BOOT_KEYS.darkClass, theme === 'dark');
     root.setAttribute(THEME_BOOT_KEYS.toneAttribute, tone);
     root.style.colorScheme = theme;
+
+    // Hand control back to the stylesheet. Safe to do unconditionally: by the
+    // time this runs index.css has loaded and defines both themes properly.
+    for (const property of BOOT_SEEDED_PROPERTIES) root.style.removeProperty(property);
 };
 
 const notify = (): void => {
@@ -150,6 +165,12 @@ export const subscribe = (listener: () => void): (() => void) => {
         detachMedia?.();
     };
 };
+
+// A previously-cached index.html may still seed those properties inline. Clear
+// them as soon as this module loads so a stale shell cannot pin the theme.
+if (typeof document !== 'undefined') {
+    syncDocument();
+}
 
 export const themeStore = {
     subscribe,

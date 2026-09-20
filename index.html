@@ -69,14 +69,15 @@
             // its light fallback for a frame and the page flashes white before
             // the real tokens arrive. Keep these in step with the warm tone in
             // the .dark block of index.css.
-            // The boot-shell CSS reads these too. Keep in step with the warm
-            // tone in the .dark block of index.css.
-            root.style.setProperty('--background', 'oklch(0.210 0.003 68)');
-            root.style.setProperty('--foreground', 'oklch(0.953 0.009 85)');
-            root.style.setProperty('--card', 'oklch(0.257 0.002 68)');
-            root.style.setProperty('--secondary', 'oklch(0.283 0.003 49)');
-            root.style.setProperty('--muted', 'oklch(0.283 0.003 49)');
-            root.style.setProperty('--border', 'oklch(1 0 0 / 13%)');
+            // Deliberately NOT seeding --background and friends inline here.
+            // index.css is a render-blocking <link> in this same <head>, so its
+            // :root and .dark blocks are already applied before the first paint;
+            // the boot-shell CSS below resolves them fine on frame one.
+            //
+            // Seeding them inline looked harmless and broke light mode outright:
+            // an inline style outranks every rule, so once the dark values were
+            // written they kept winning after `.dark` came off, and the page
+            // stayed dark forever. Setting the class is enough.
           } else {
             root.style.colorScheme = 'light';
           }
