@@ -3,8 +3,8 @@ id: rel-2026-09-20-ci-pipeline-reliability
 version: v0.184.0
 title: "Steadier build checks"
 date: 2026-09-20
-published_at: 2026-09-20T12:00:00Z
-status: draft
+published_at: 2026-09-20T11:08:06Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Internal build checks no longer fail over words that are simply spelled the same in two languages, the whole pipeline can now be run locally before pushing, and the checks run on a supported runtime."
