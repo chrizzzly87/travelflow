@@ -68,6 +68,8 @@ export const PlaneWindow: React.FC = () => {
     const hostRef = useRef<HTMLDivElement | null>(null);
     const sceneRef = useRef<CloudSceneHandle | null>(null);
     const [sceneReady, setSceneReady] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
 
     const planeWindowSrc = buildImageCdnUrl(PLANE_WINDOW_SRC, {
         width: PLANE_WINDOW_IMAGE_WIDTH,
@@ -132,7 +134,18 @@ export const PlaneWindow: React.FC = () => {
 
     const label = isDark ? t('hero.window.open', 'Open the window shade') : t('hero.window.close', 'Close the window shade');
 
-    if (!isHomePathname()) return null;
+    // Client-only, deliberately.
+    //
+    // A pathname check alone was not enough: the window kept being prerendered
+    // into /features even though the guard reads '/features' there, because the
+    // hero subtree is evaluated while the router is still settling and is then
+    // captured by the prerenderer from the live DOM. Rendering nothing until
+    // after mount removes the whole class of problem — the window can no longer
+    // appear in ANY route's prerendered HTML, whatever the router is doing.
+    //
+    // It is pure decoration, so appearing a frame after hydration costs nothing,
+    // and the hero column reserves its space either way.
+    if (!mounted || !isHomePathname()) return null;
 
     return (
         <div

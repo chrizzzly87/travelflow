@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
-import { PlaneWindowAnimation } from '../components/marketing/PlaneWindowAnimation';
 import { DEFAULT_LOCALE } from '../config/locales';
 import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../config/routes';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
@@ -34,8 +33,25 @@ export const NotFoundPage: React.FC = () => {
                     >
                         4
                     </span>
-                    <div className="w-[clamp(8.25rem,24vw,15.5rem)] shrink-0">
-                        <PlaneWindowAnimation />
+                    {/* The "0" of 404, drawn as a porthole.
+                      *
+                      * This used to render PlaneWindowAnimation. That mattered
+                      * beyond styling: on a direct load of a deferred route the
+                      * 404 page renders before the route chunk resolves, and its
+                      * subtree leaked into the resolved page — which is how a
+                      * plane window ended up on /features and got baked into the
+                      * prerendered HTML. A static element with no shared class
+                      * names cannot leak anything recognisable, and the old
+                      * component (with the broken scroll loop) is gone. */}
+                    <div
+                        aria-hidden="true"
+                        className="relative w-[clamp(8.25rem,24vw,15.5rem)] shrink-0"
+                        style={{ aspectRatio: '580 / 850' }}
+                    >
+                        <div className="absolute inset-[6%] overflow-hidden rounded-[46%/40%] bg-gradient-to-b from-sky-400 via-sky-200 to-white shadow-inner dark:from-sky-900 dark:via-sky-800 dark:to-slate-700">
+                            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-white/70 blur-md dark:bg-white/10" />
+                        </div>
+                        <div className="absolute inset-0 rounded-[46%/40%] border-[6px] border-secondary shadow-lg dark:border-border dark:shadow-none" />
                     </div>
                     <span
                         className="pointer-events-none select-none text-[clamp(6.8rem,24vw,17rem)] font-black leading-[0.84] tracking-normal text-muted-foreground/95"
