@@ -91,8 +91,18 @@ Before finalizing, ensure all applicable code changes are represented in release
 - For clickable marketing/planner UI changes, instrument events using `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` per `docs/ANALYTICS_CONVENTION.md`.
 - Use the existing event naming/payload convention; avoid ad-hoc query param tracking when Umami events are available.
 
+## Running the CI gates locally
+- `pnpm ci:local` runs the PR Quality workflow stage for stage (storage, toasts, `test:core`,
+  `build:netlify`, Playwright, the PWA e2e suite). Takes ~3m30s. Run it before pushing.
+- `pnpm ci:local --fast` skips the build and the browser suite (~70s); `--only=<stage>` and
+  `--from=<stage>` target one stage or resume after a failure; `--list` prints the stage names.
+- Keep the STAGES list in `scripts/ci-local.mjs` in step with `.github/workflows/pr-quality.yml`.
+- The runner warns when the local Node major differs from `.node-version` (22, matching Netlify).
+  It is a warning, not a gate — but match it before trusting a local result that disagrees with CI.
+
 ## Development Command Runtimes (for setting timers)
 - `pnpm test:core`: Takes ~50 seconds to complete. Set a 60-second timer.
 - `pnpm run build`: Takes ~85 seconds (runs test:core, generates assets, validates config, and builds). Set a 90-100 second timer.
 - `node scripts/run-lighthouse-audits.mjs`: Takes ~90 seconds (runs 5 sequential audits). Set a 100-second timer.
+- `pnpm ci:local`: Takes ~3m30s end to end. Set a 240-second timer. `--fast` takes ~70s.
 

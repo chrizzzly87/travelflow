@@ -21,10 +21,13 @@ This repository uses markdown release files as the source of truth for product u
 - Tick issue checkboxes against the issue's wording, and audit inherited `Closes #123` claims before pushing to a branch.
 - When adding locale keys for localized user-facing surfaces, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and validate namespace placement (`common/pages/legal` vs route-specific namespace). Admin-only UI copy is excluded unless localization is explicitly requested.
 - Run `pnpm i18n:validate` for locale-related changes before finalizing.
+- `tests/unit/connectivityLocaleCoverage.test.ts` fails only on untranslated **sentences** (multi-word values identical to English). Single-word labels are printed as a note and never fail: an audit of every identical value across all ten locales found only true cognates ("Standard", "Normal", "Base", "Satellite", "Export", "Debug", "Visa", "Offline"), zero real misses. Do not re-add a per-locale allowlist -- that is what made the gate fail on branches that had touched none of the keys.
+- Brand-name keys in that test are *exempt* from the sentence check, never pinned to English. Google and Apple publish localized names for Maps and the locales use them (`Google Карты`, `Google 지도`, `نقشه گوگل`), so asserting they stayed English is wrong.
 - For behavioral code changes (business logic, state flow, permissions, data transforms), add or update Vitest coverage in the same PR.
 - For bug fixes, add a regression test that fails on the pre-fix behavior and passes with the fix.
 - Docs-only, copy-only, and style-only changes are exempt from mandatory new tests.
 - For behavioral changes, run `pnpm test:core` before finalizing whenever feasible.
+- Run `pnpm ci:local` before pushing. It runs the PR Quality workflow stage for stage (~3m30s), so a red pipeline is found here instead of by email. `--fast` (~70s) skips the build and browser suite; `--only=<stage>`/`--from=<stage>` target or resume a stage.
 - In fresh git worktrees, run `pnpm worktree:sync-env` before starting env-dependent tooling if `.env` or `.env.local` is missing. This repo also installs a `post-checkout` hook to copy those files automatically when worktrees are created.
 - For PRs that add new files under `services/` or `config/`, include a corresponding `tests/**` entry in the PR checklist/description.
 - For TripView/route-loader orchestration work, follow `docs/TESTING_PHASE2_SCOPE.md` when planning component/hook regression coverage.
@@ -48,6 +51,20 @@ This repository uses markdown release files as the source of truth for product u
 - For new UI components and layout changes, explicitly check whether direction-aware styling is needed.
 - Prefer CSS logical properties (for example `margin-inline`, `padding-inline`, `inset-inline`) over left/right-specific properties when it makes sense.
 - If it is unclear whether logical properties are appropriate for a change, stop and ask the user for clarification before finalizing.
+
+## CI parity
+- `pnpm ci:local` mirrors `.github/workflows/pr-quality.yml`. When you add a step to that workflow,
+  add it to the STAGES list in `scripts/ci-local.mjs`; the two drifting apart is the whole failure
+  mode this script exists to prevent.
+- Node is pinned to `.node-version` (22), matching `NODE_VERSION` in `netlify.toml`. `ci:local` warns
+  when the local major differs; it is a warning, not a gate, but match it before trusting a local
+  result that disagrees with CI.
+- `pnpm build:netlify` re-encodes two blog images and rewrites generated data on every run.
+  `ci:local` reverts exactly what the build dirtied; if you run the build by hand, check
+  `git status` before `git add -A`.
+- Workflow actions are pinned to their node24 majors (`actions/checkout@v7`, `actions/setup-node@v7`,
+  `actions/upload-artifact@v7`, `pnpm/action-setup@v6`). `cache: pnpm` must stay explicit on
+  `setup-node`: v6 limited automatic cache detection to npm.
 
 ## Scope
 These instructions apply to all coding agents and LLM assistants working in this repo.
