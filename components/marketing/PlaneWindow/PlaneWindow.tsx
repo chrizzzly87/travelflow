@@ -86,7 +86,13 @@ export const PlaneWindow: React.FC = () => {
     // restored in a background tab would sit on the static layer forever. The
     // render loop is paused on visibilitychange instead, which gives the same
     // saving without the way to get stuck.
+    // `mounted` is in the dependencies on purpose. This component renders null
+    // until it is mounted (so it can never be captured into prerendered HTML),
+    // which means on the very first pass there is no host element and this effect
+    // bails. With an empty dependency array it then never ran again and the cloud
+    // scene never mounted at all — the window kept its static fallback forever.
     useEffect(() => {
+        if (!mounted) return;
         if (!hostRef.current || !shouldRenderScene()) return;
 
         let cancelled = false;
@@ -125,7 +131,7 @@ export const PlaneWindow: React.FC = () => {
             handle?.dispose();
             sceneRef.current = null;
         };
-    }, []);
+    }, [mounted]);
 
     // Nothing to animate behind a closed shade, or in a tab nobody is looking at.
     useEffect(() => {
