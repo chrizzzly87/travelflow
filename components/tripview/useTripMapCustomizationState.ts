@@ -80,7 +80,20 @@ export const useTripMapCustomizationState = ({
   // `mapStyle` stays in the dependency list because `resolveMapPreferences`
   // decomposes it into axes for a trip saved before the axes existed.
 
+  /**
+   * Whether "Mine" is the traveller's current pick.
+   *
+   * It cannot be derived from the preferences the way the named presets are.
+   * A saved preset only covers the nested customization — `routeMode`,
+   * `showCityNames` and `colorMode` live on the view settings and are not in it
+   * — so applying it can land on values that also match a named preset, and the
+   * segmented control snapped straight back to "Default" the moment it was
+   * tapped. Remembering the pick is the only honest answer.
+   */
+  const [isSavedPresetActive, setIsSavedPresetActive] = useState(false);
+
   const applyPatch = useCallback((patch: Partial<ResolvedMapPreferences>) => {
+    setIsSavedPresetActive(false);
     // `mapStyle` is no longer edited directly — it is derived from the look's
     // axes and pushed back into the flat field by the owner, so a trip keeps a
     // named style that Google and older readers still understand.
@@ -102,6 +115,7 @@ export const useTripMapCustomizationState = ({
   }, [setColorMode, setCustomization, setRouteMode, setShowCityNames]);
 
   const reset = useCallback(() => {
+    setIsSavedPresetActive(false);
     setCustomization({});
     setRouteMode(DEFAULT_MAP_PREFERENCES.routeMode);
     setShowCityNames(DEFAULT_MAP_PREFERENCES.showCityNames);
@@ -119,6 +133,8 @@ export const useTripMapCustomizationState = ({
     if (!writeUserDefaultMapCustomization(stored)) return;
     setSavedPreset(stored);
     setHasSavedPreset(true);
+    // Saving what is on screen means the map is now showing the saved preset.
+    setIsSavedPresetActive(true);
   }, [preferences]);
 
   /**
@@ -128,6 +144,7 @@ export const useTripMapCustomizationState = ({
    */
   const applySavedPreset = useCallback(() => {
     setCustomization(normalizeMapCustomization(savedPreset));
+    setIsSavedPresetActive(true);
   }, [savedPreset, setCustomization]);
 
   return {
@@ -137,6 +154,7 @@ export const useTripMapCustomizationState = ({
     saveAsDefault,
     applySavedPreset,
     hasSavedPreset,
+    isSavedPresetActive,
     isCustomizeOpen,
     openCustomize: useCallback(() => setIsCustomizeOpen(true), []),
     closeCustomize: useCallback(() => setIsCustomizeOpen(false), []),

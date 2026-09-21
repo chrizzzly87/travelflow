@@ -25,6 +25,7 @@ import {
     MARKDOWN_TASK_TEXT_CLASS,
     remarkHeadsUpBanners,
 } from '../markdownPresentation';
+import { TodayBadge } from '../ui/today-badge';
 
 interface TripTimelineListViewProps {
     trip: ITrip;
@@ -226,12 +227,6 @@ const buildMarkdownComponents = (
     hr: () => <hr className="my-3 border-border" />,
 };
 };
-
-const TODAY_BADGE_CLASS = 'rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-red-700 dark:bg-red-400/12 dark:text-red-200 dark:border-red-400/30';
-
-const TodayBadge: React.FC = () => (
-    <span className={TODAY_BADGE_CLASS}>Today</span>
-);
 
 const scrollNodeIntoView = (node: Element, options: ScrollIntoViewOptions) => {
     if (typeof (node as HTMLElement).scrollIntoView !== 'function') return;

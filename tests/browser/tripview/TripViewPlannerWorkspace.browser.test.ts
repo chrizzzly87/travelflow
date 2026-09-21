@@ -492,12 +492,13 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
 
     render(React.createElement(TripViewPlannerWorkspace, props));
 
-    // An unselected plain day: one ring colour, white inside. The interior
-    // layer is what hides the connecting line, which used to run straight
-    // through the ring's gap.
+    // An unselected plain day: one ring colour, sheet-coloured inside. The
+    // interior layer is what hides the connecting line, which used to run
+    // straight through the ring's gap. It is the `--card` token rather than
+    // hard white so the ring stays an empty ring in dark mode.
     const plainDay = screen.getAllByRole('tab')[2];
-    expect(plainDay.style.background).toContain('rgb(255, 255, 255)) padding-box');
-    expect(plainDay.style.background).toContain('rgb(37, 99, 235)) border-box');
+    expect(plainDay.style.background).toContain('var(--card)) padding-box');
+    expect(plainDay.style.background).toContain('#2563eb) border-box');
     expect(plainDay.style.borderColor).toBe('transparent');
   });
 
@@ -511,12 +512,15 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     // own city's colour, rather than one circle split between them.
     const sintraHalf = screen.getAllByRole('tab')[1];
     const portoHalf = screen.getAllByRole('tab')[2];
-    expect(sintraHalf.style.background).toContain('rgb(22, 163, 74)) border-box');
+    expect(sintraHalf.style.background).toContain('#16a34a) border-box');
     expect(sintraHalf.style.background).not.toContain('to right');
-    expect(portoHalf.style.background).toContain('rgb(37, 99, 235)) border-box');
+    expect(portoHalf.style.background).toContain('#2563eb) border-box');
 
     fireEvent.click(portoHalf);
     expect(screen.getAllByRole('tab')[2].style.background)
+      // A selected day has a colour on both layers, so the shorthand parses
+      // and the browser normalises it — unlike the unselected case above, whose
+      // `var(--card)` interior leaves it as authored.
       .toContain('rgb(37, 99, 235), rgb(37, 99, 235)) padding-box');
   });
 

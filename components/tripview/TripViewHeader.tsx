@@ -1,11 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Info, Pencil, Share2 } from 'lucide-react';
+import { Info, Menu, Pencil, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { AppBrand } from '../navigation/AppBrand';
 import { AccountMenu } from '../navigation/AccountMenu';
+// Deliberately not lazy, for the same reason SiteHeader keeps it eager: on a
+// phone this is the only way out of the planner and into the rest of the app,
+// and a chunk fetch meant the first tap opened nothing.
+import { MobileMenu } from '../navigation/MobileMenu';
 
 interface TripViewHeaderProps {
     isMobile: boolean;
@@ -47,6 +51,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
     isTripLockedByExpiry,
 }) => {
     const { t } = useTranslation('common');
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const headerSecondaryButtonClassName = 'inline-flex min-h-10 items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm transition-[scale,border-color,background-color,color,box-shadow] duration-150 ease-out hover:border-border hover:bg-secondary hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 dark:text-foreground dark:shadow-none';
     const headerPrimaryButtonClassName = 'inline-flex min-h-10 items-center gap-2 rounded-md bg-accent-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-[scale,background-color,box-shadow] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100';
     const titleStyle = titleViewTransitionName
@@ -88,7 +93,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                 >
                     <AppBrand wordmarkClassName="hidden text-lg font-extrabold tracking-tight text-foreground sm:block" />
                 </Link>
-                <div className="mx-0.5 hidden h-6 w-px bg-gray-200 sm:block" />
+                <div className="mx-0.5 hidden h-6 w-px bg-border sm:block" />
                 <button
                     ref={titleAreaRef}
                     type="button"
@@ -173,8 +178,35 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                         {t('nav.login')}
                     </button>
                 )}
+                {/*
+                  * Last in the row, which is where SiteHeader puts it too: the
+                  * burger is the same control on every screen, and a thumb
+                  * reaching for it should not have to find it in a different
+                  * place depending on which page is open.
+                  *
+                  * Also the planner's only way into site navigation — without it
+                  * the trip page is a dead end on a phone, since the logo goes
+                  * home and nothing else in the header leads anywhere.
+                  */}
+                <button
+                    type="button"
+                    onClick={() => setIsMobileMenuOpen(true)}
+                    data-testid="trip-header-menu"
+                    className="inline-flex size-10 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 lg:hidden dark:text-foreground"
+                    aria-label={t('nav.openMenu')}
+                    {...getAnalyticsDebugAttributes('mobile_nav__menu--open', { surface: 'trip_header' })}
+                >
+                    <Menu size={20} />
+                </button>
             </div>
             </div>
+            {isMobileMenuOpen && (
+                <MobileMenu
+                    isOpen={isMobileMenuOpen}
+                    onClose={() => setIsMobileMenuOpen(false)}
+                    onMyTripsClick={onOpenManager}
+                />
+            )}
         </header>
     );
 };

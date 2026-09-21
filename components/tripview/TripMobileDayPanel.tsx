@@ -13,6 +13,7 @@ import { TripDirectionsButton } from './TripDirectionsButton';
 import { buildActivityDirectionsLabel } from '../../shared/mapDirectionsLinks';
 import type { ITimelineItem } from '../../types';
 import type { MobileDayPlanLeg, MobileDayPlanSegment, MobileDayPlanTransfer } from './mobileDayPlanModel';
+import { TodayBadge } from '../ui/today-badge';
 
 interface TripMobileDayPanelProps {
     tripId: string;
@@ -131,11 +132,7 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                     {day.fullDateLabel}
                 </p>
-                {day.isToday && (
-                    <span className="rounded-full bg-accent-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:bg-accent-400/12 dark:text-accent-200">
-                        Today
-                    </span>
-                )}
+                {day.isToday && <TodayBadge />}
             </div>
 
             {city ? (

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { THEME_BOOT_KEYS } from '../../contexts/theme/themeStore';
+import { THEME_BOOT_KEYS, THEME_SURFACE_COLOR } from '../../contexts/theme/themeStore';
 
 describe('index.html theme boot script', () => {
     const html = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf8');
@@ -29,5 +29,21 @@ describe('index.html theme boot script', () => {
         );
         expect(bootScript).not.toContain("setProperty('--background'");
         expect(bootScript).not.toContain("setProperty('--foreground'");
+    });
+
+    it('paints the installed app chrome with the header surface, on the first frame', () => {
+        // The installed app's status-bar strip takes this colour. A fixed brand
+        // value put a purple slab above a white header, which read as a gradient
+        // seam across the top of the app; a value set only from the bundle
+        // arrived a paint late. The literals are duplicated from the store, and
+        // nothing else stops the two drifting apart.
+        expect(html).toContain('<meta name="theme-color" data-tf-theme-color');
+        const bootScript = html.slice(
+            html.indexOf('data-tf-theme-boot'),
+            html.indexOf('</script>', html.indexOf('data-tf-theme-boot')),
+        );
+        expect(bootScript).toContain('meta[data-tf-theme-color]');
+        expect(bootScript).toContain(THEME_SURFACE_COLOR.dark);
+        expect(bootScript).toContain(THEME_SURFACE_COLOR.light);
     });
 });

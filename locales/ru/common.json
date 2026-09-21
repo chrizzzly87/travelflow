@@ -645,7 +645,8 @@
         "realistic": "По дорогам",
         "simple": "Напрямую"
       },
-      "saveAsDefault": "Сохранить как мой пресет",
+      "saveAsDefault": "Сохранить",
+      "saveAsDefaultTooltip": "Сохранить как мой пресет",
       "saved": "Сохранено",
       "switchToMapbox": "Перейти на Mapbox",
       "tab": {

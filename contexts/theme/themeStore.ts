@@ -86,12 +86,33 @@ const getServerSnapshot = (): ThemePreference => 'system';
  */
 const BOOT_SEEDED_PROPERTIES = ['--background', '--foreground', '--card', '--secondary', '--muted', '--border'];
 
+/**
+ * The colour the installed app's own chrome takes — on iOS the status-bar strip
+ * above the header, on Android the task-switcher bar.
+ *
+ * These are `--card` in each theme, resolved to hex: the strip sits directly
+ * above a `bg-card` header, and any other value reads as a gradient seam across
+ * the top of the app. Duplicated verbatim in the inline boot script in
+ * index.html so the very first frame is already right; the unit test asserts
+ * the two still agree.
+ */
+export const THEME_SURFACE_COLOR: Record<ResolvedTheme, string> = {
+    light: '#ffffff',
+    dark: '#242322',
+};
+
+const applyThemeColorMeta = (theme: ResolvedTheme): void => {
+    const meta = document.querySelector('meta[data-tf-theme-color]');
+    if (meta) meta.setAttribute('content', THEME_SURFACE_COLOR[theme]);
+};
+
 export const applyTheme = (theme: ResolvedTheme, tone: DarkTone = DEFAULT_DARK_TONE): void => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
     root.classList.toggle(THEME_BOOT_KEYS.darkClass, theme === 'dark');
     root.setAttribute(THEME_BOOT_KEYS.toneAttribute, tone);
     root.style.colorScheme = theme;
+    applyThemeColorMeta(theme);
 
     // Hand control back to the stylesheet. Safe to do unconditionally: by the
     // time this runs index.css has loaded and defines both themes properly.

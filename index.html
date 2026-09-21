@@ -11,7 +11,12 @@
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#4f46e5" />
+    <!-- The installed app paints its status-bar strip from this, so it carries
+         the header's own surface rather than a brand slab: a strip that is a
+         different colour from the bar beneath it reads as a gradient seam.
+         data-tf-theme-color marks it for the boot script and themeStore, which
+         keep it on whichever theme is actually applied. -->
+    <meta name="theme-color" data-tf-theme-color content="#ffffff" />
     <!-- iOS below 16.4 ignores the web app manifest for home-screen behaviour
          and still needs these two to launch standalone. -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -71,6 +76,11 @@
           } else {
             root.style.colorScheme = 'light';
           }
+          // Literals, not a computed style read: this runs before index.css is
+          // guaranteed to have parsed, and the values are asserted against
+          // THEME_SURFACE_COLOR in contexts/theme/themeStore.ts by a unit test.
+          const themeColorMeta = document.querySelector('meta[data-tf-theme-color]');
+          if (themeColorMeta) themeColorMeta.setAttribute('content', dark ? '#242322' : '#ffffff');
         } catch (e) {
           // Never let the theme stop the page from rendering.
         }
@@ -166,6 +176,28 @@
         --tf-bone-edge: #d7e0ec;
         --tf-bone-hairline: #eef2f7;
         --tf-bone-accent: rgba(79, 70, 229, 0.14);
+
+        /* The surfaces the bones sit on. Named tokens rather than literals at
+           each use site: the bones already had a dark set, but every panel,
+           rule, grid line and label around them was hard-coded light, so the
+           trip placeholder came up as a white page with dark bones on it. */
+        --tf-boot-surface: var(--card, #ffffff);
+        --tf-boot-float: rgba(255, 255, 255, 0.92);
+        --tf-boot-line: #e5e7eb;
+        --tf-boot-line-soft: #f1f5f9;
+        --tf-boot-grid: #f3f6fa;
+        --tf-boot-rail: #f3f4f6;
+        --tf-boot-grip: #cbd5e1;
+        --tf-boot-chip: #f1f5f9;
+        --tf-boot-map: #f1f5f9;
+        --tf-boot-map-sheen: rgba(255, 255, 255, 0.5);
+        --tf-boot-day-cell: rgba(248, 250, 252, 0.7);
+        --tf-boot-month: #eef2ff;
+        --tf-boot-month-line: #e0e7ff;
+        --tf-boot-month-pill: rgba(99, 102, 241, 0.16);
+        --tf-boot-text-strong: #0f172a;
+        --tf-boot-text-mid: #334155;
+        --tf-boot-text-quiet: #94a3b8;
       }
 
       /* The skeleton palette in dark. Named values like the light set above,
@@ -178,6 +210,24 @@
         --tf-bone-edge: #383533;
         --tf-bone-hairline: #2c2a29;
         --tf-bone-accent: rgba(123, 131, 255, 0.18);
+
+        --tf-boot-surface: var(--card, #242322);
+        --tf-boot-float: rgba(36, 35, 34, 0.92);
+        --tf-boot-line: #35322f;
+        --tf-boot-line-soft: #2c2a29;
+        --tf-boot-grid: #2b2928;
+        --tf-boot-rail: #232221;
+        --tf-boot-grip: #4a4744;
+        --tf-boot-chip: #2a2827;
+        --tf-boot-map: #1d1c1b;
+        --tf-boot-map-sheen: rgba(255, 255, 255, 0.03);
+        --tf-boot-day-cell: rgba(255, 255, 255, 0.02);
+        --tf-boot-month: #262530;
+        --tf-boot-month-line: #322f3d;
+        --tf-boot-month-pill: rgba(123, 131, 255, 0.24);
+        --tf-boot-text-strong: #ece9e6;
+        --tf-boot-text-mid: #cfccc8;
+        --tf-boot-text-quiet: #8b8885;
       }
 
       .tf-boot-shell[data-tf-surface-mode="neutral"] {
@@ -228,8 +278,8 @@
       }
 
       .tf-boot-header {
-        border-bottom: 1px solid rgba(226, 232, 240, 0.7);
-        background: color-mix(in oklab, var(--card, #fff) 90%, transparent);
+        border-bottom: 1px solid var(--tf-boot-line);
+        background: color-mix(in oklab, var(--tf-boot-surface) 90%, transparent);
         backdrop-filter: blur(8px);
       }
 
@@ -274,7 +324,7 @@
         line-height: 1.75rem;
         font-weight: 800;
         letter-spacing: -0.025em;
-        color: #0f172a;
+        color: var(--tf-boot-text-strong);
       }
 
       .tf-boot-nav {
@@ -331,7 +381,7 @@
       .tf-boot-control-skeleton--cta {
         width: 68px;
         height: 12px;
-        background-color: color-mix(in oklab, var(--card, #fff) 72%, transparent);
+        background-color: color-mix(in oklab, var(--tf-boot-surface) 72%, transparent);
       }
 
       .tf-boot-control-skeleton--cta::after {
@@ -361,7 +411,7 @@
       .tf-boot-action-burger-icon {
         width: 22px;
         height: 22px;
-        color: #64748b;
+        color: var(--tf-boot-text-quiet);
       }
 
       .tf-boot-action-chip,
@@ -371,8 +421,8 @@
         align-items: center;
         justify-content: center;
         flex: 0 0 auto;
-        border: 1px solid #e2e8f0;
-        background-color: color-mix(in oklab, var(--card, #fff) 96%, transparent);
+        border: 1px solid var(--tf-boot-line);
+        background-color: color-mix(in oklab, var(--tf-boot-surface) 96%, transparent);
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
         border-radius: 8px;
         white-space: nowrap;
@@ -428,8 +478,8 @@
       /* ---- trip header: mirrors components/tripview/TripViewHeader ---- */
 
       .tf-boot-trip-header {
-        border-bottom: 1px solid #e5e7eb;
-        background: var(--background, #ffffff);
+        border-bottom: 1px solid var(--tf-boot-line);
+        background: var(--tf-boot-surface);
       }
 
       .tf-boot-trip-header-inner {
@@ -459,7 +509,7 @@
       .tf-boot-trip-divider {
         height: 24px;
         width: 1px;
-        background: #e5e7eb;
+        background: var(--tf-boot-line);
         margin-inline: 6px;
         flex: 0 0 auto;
       }
@@ -541,7 +591,7 @@
 
       .tf-boot-planner-grip {
         flex: 0 0 auto;
-        background: #f3f4f6;
+        background: var(--tf-boot-rail);
       }
 
       .tf-boot-planner:not([data-tf-boot-layout="vertical"]) > .tf-boot-planner-grip {
@@ -560,8 +610,8 @@
         flex: 1 1 auto;
         min-width: 0;
         min-height: 0;
-        background-color: #f1f5f9;
-        background-image: linear-gradient(170deg, rgba(255, 255, 255, 0.5) 0%, rgba(241, 245, 249, 0) 58%);
+        background-color: var(--tf-boot-map);
+        background-image: linear-gradient(170deg, var(--tf-boot-map-sheen) 0%, transparent 58%);
       }
 
       .tf-boot-map-controls {
@@ -578,7 +628,7 @@
         width: 40px;
         border-radius: 8px;
         border: 1px solid var(--tf-bone-edge);
-        background: var(--background, #ffffff);
+        background: var(--tf-boot-surface);
         box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07);
       }
 
@@ -593,8 +643,8 @@
         min-width: 0;
         min-height: 0;
         overflow: hidden;
-        background: var(--background, #ffffff);
-        border-inline-end: 1px solid #e5e7eb;
+        background: var(--tf-boot-surface);
+        border-inline-end: 1px solid var(--tf-boot-line);
       }
 
       .tf-boot-planner:not([data-tf-boot-layout="vertical"]) > .tf-boot-planner-timeline {
@@ -609,7 +659,7 @@
         height: var(--tf-boot-timeline-height, 400px);
         max-height: 62%;
         border-inline-end: 0;
-        border-top: 1px solid #e5e7eb;
+        border-top: 1px solid var(--tf-boot-line);
       }
 
       /* 32px matches the timeline's own left gutter, so the day grid lands
@@ -629,15 +679,15 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #eef2ff;
-        border-inline-end: 1px solid #e0e7ff;
+        background: var(--tf-boot-month);
+        border-inline-end: 1px solid var(--tf-boot-month-line);
       }
 
       .tf-boot-tl-month > span {
         height: 10px;
         width: 86px;
         border-radius: 999px;
-        background-color: rgba(99, 102, 241, 0.16);
+        background-color: var(--tf-boot-month-pill);
       }
 
       .tf-boot-tl-days {
@@ -652,8 +702,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        border-inline-end: 1px solid #f1f5f9;
-        background: rgba(248, 250, 252, 0.7);
+        border-inline-end: 1px solid var(--tf-boot-line-soft);
+        background: var(--tf-boot-day-cell);
       }
 
       .tf-boot-tl-day > span {
@@ -667,7 +717,7 @@
         position: relative;
         height: calc(100% - 78px);
         padding-top: 26px;
-        background-image: repeating-linear-gradient(90deg, transparent 0 47px, #f3f6fa 47px 48px);
+        background-image: repeating-linear-gradient(90deg, transparent 0 47px, var(--tf-boot-grid) 47px 48px);
       }
 
       .tf-boot-tl-label {
@@ -707,7 +757,7 @@
         padding: 5px;
         border-radius: 8px;
         border: 1px solid var(--tf-bone-edge);
-        background: rgba(255, 255, 255, 0.92);
+        background: var(--tf-boot-float);
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
       }
 
@@ -743,10 +793,10 @@
         height: max(168px, 58%);
         flex-direction: column;
         overflow: hidden;
-        border-top: 1px solid #e2e8f0;
+        border-top: 1px solid var(--tf-boot-line);
         border-start-start-radius: 24px;
         border-start-end-radius: 24px;
-        background: var(--background, #ffffff);
+        background: var(--tf-boot-surface);
         box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.18);
       }
 
@@ -756,7 +806,7 @@
         height: 6px;
         width: 44px;
         border-radius: 999px;
-        background: #cbd5e1;
+        background: var(--tf-boot-grip);
       }
 
       .tf-boot-sheet-head {
@@ -775,7 +825,7 @@
         gap: 2px;
         padding: 2px;
         border-radius: 999px;
-        background: #f1f5f9;
+        background: var(--tf-boot-chip);
       }
 
       .tf-boot-sheet-segment {
@@ -818,7 +868,7 @@
         line-height: 16px;
         letter-spacing: 0.1em;
         text-transform: uppercase;
-        color: #94a3b8;
+        color: var(--tf-boot-text-quiet);
       }
 
       .tf-boot-sheet-day-bubble {
@@ -836,7 +886,7 @@
         align-items: center;
         justify-content: center;
         border: 2px solid var(--tf-bone-edge);
-        background: var(--background, #ffffff);
+        background: var(--tf-boot-surface);
       }
 
       .tf-boot-sheet-day-weekday {
@@ -845,7 +895,7 @@
         line-height: 1;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: #94a3b8;
+        color: var(--tf-boot-text-quiet);
       }
 
       .tf-boot-sheet-day-number {
@@ -853,7 +903,7 @@
         font-weight: 700;
         line-height: 1.25;
         font-variant-numeric: tabular-nums;
-        color: #334155;
+        color: var(--tf-boot-text-mid);
       }
 
       .tf-boot-sheet-day-foot {
@@ -867,7 +917,7 @@
         flex-direction: column;
         gap: 14px;
         overflow: hidden;
-        border-top: 1px solid #f1f5f9;
+        border-top: 1px solid var(--tf-boot-line-soft);
         padding: 14px 16px;
       }
 

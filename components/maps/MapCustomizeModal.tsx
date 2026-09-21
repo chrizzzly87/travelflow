@@ -43,6 +43,8 @@ export interface MapCustomizeModalProps {
   /** True once a personal preset has been saved, which offers it back. */
   hasSavedPreset?: boolean;
   onApplySavedPreset?: () => void;
+  /** True while the saved preset is what the traveller last picked. */
+  isSavedPresetActive?: boolean;
   isMobile?: boolean;
   /** What is drawing now, which is not always what was asked for. */
   activeRenderer: 'google' | 'mapbox';
@@ -81,6 +83,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
   onSaveAsDefault,
   hasSavedPreset = false,
   onApplySavedPreset,
+  isSavedPresetActive = false,
   isMobile = false,
   activeRenderer,
   isMapboxAvailable = true,
@@ -196,7 +199,15 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
       <MapSegmentedControl
         name="map-preference-preset"
         label={key('presetSet.label', 'Start from')}
-        value={activePreferencePreset ?? ('custom' as MapPreferencePresetId | 'custom')}
+        /*
+         * "Mine" wins over whatever the values happen to match. A saved preset
+         * does not carry the three view-settings fields, so it can restore to
+         * something a named preset also matches — and deriving the selection
+         * purely from the values made the tap look like it had been ignored.
+         */
+        value={isSavedPresetActive
+          ? ('custom' as MapPreferencePresetId | 'custom')
+          : (activePreferencePreset ?? ('custom' as MapPreferencePresetId | 'custom'))}
         options={[
           ...MAP_PREFERENCE_PRESETS.map((preset) => ({
             value: preset.id as MapPreferencePresetId | 'custom',
@@ -215,7 +226,7 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
           if (preset) handleChange(preset.values);
         }}
       />
-      {activePreferencePreset === null && (
+      {!isSavedPresetActive && activePreferencePreset === null && (
         <span className="mt-1.5 block text-xs text-muted-foreground">
           {key('presetSet.customNote', 'Your own mix of settings.')}
         </span>
@@ -623,21 +634,37 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
     </Tabs>
   );
 
+  /*
+   * One row, and it stays one row. `flex-wrap` let the three buttons break onto
+   * separate lines as soon as they were a few pixels too wide for a phone, and
+   * a footer that turns into a vertical stack reads as three unrelated
+   * controls. They are short enough to fit now, and `min-w-0` lets them give up
+   * their own padding before the row gives up its shape.
+   */
   const footer = (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <Button type="button" variant="ghost" size="sm" onClick={onReset}>
+    <div className="flex items-center justify-between gap-2">
+      <Button type="button" variant="ghost" size="sm" className="min-w-0 shrink" onClick={onReset}>
         <RotateCcw size={15} />
         {key('reset', 'Reset')}
       </Button>
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={handleCopyPreset}>
+      <div className="flex min-w-0 items-center gap-2">
+        <Button type="button" variant="outline" size="sm" className="min-w-0 shrink" onClick={handleCopyPreset}>
           {didCopyPreset ? <Check size={15} /> : <Copy size={15} />}
           {didCopyPreset ? key('copied', 'Copied') : key('copyPreset', 'Copy')}
         </Button>
         {onSaveAsDefault && (
-          <Button type="button" variant="default" size="sm" onClick={handleSaveAsDefault}>
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            className="min-w-0 shrink"
+            onClick={handleSaveAsDefault}
+            // The button says "Save"; the tooltip says what it saves, which is
+            // the part that does not fit on a phone.
+            title={key('saveAsDefaultTooltip', 'Save as my preset')}
+          >
             {didSaveDefault ? <Check size={15} /> : <Star size={15} />}
-            {didSaveDefault ? key('saved', 'Saved') : key('saveAsDefault', 'Save as my preset')}
+            {didSaveDefault ? key('saved', 'Saved') : key('saveAsDefault', 'Save')}
           </Button>
         )}
       </div>
@@ -651,14 +678,26 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
           hideOverlay
           accessibleTitle={title}
           accessibleDescription={description}
-          className="max-h-[64vh]"
+          /*
+           * `dvh`, not `vh`: on iOS `vh` is the tallest the viewport ever gets,
+           * so a `vh` sheet reaches below the visible screen and the footer is
+           * cut off by the bottom of the display.
+           *
+           * One cap on the sheet, and the body flexes inside it. The body used
+           * to carry a second cap of its own, which the title and the footer
+           * were then stacked on top of — so the sheet always asked for more
+           * room than it was allowed and lost whatever came last.
+           */
+          className="max-h-[min(70dvh,34rem)]"
           data-testid="map-customize-sheet"
         >
-          <div className="flex max-h-[58vh] min-h-0 flex-col">
+          <div className="flex min-h-0 flex-1 flex-col">
             <h2 className="shrink-0 px-4 pb-1 pt-2 text-base font-semibold text-foreground">{title}</h2>
             {tabbedBody}
           </div>
-          <div className="border-t border-border px-4 py-3">{footer}</div>
+          <div className="shrink-0 border-t border-border px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+            {footer}
+          </div>
         </DrawerContent>
       </Drawer>
     );

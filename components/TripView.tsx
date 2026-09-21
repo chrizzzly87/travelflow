@@ -2705,6 +2705,7 @@ const useTripViewRender = ({
         saveAsDefault: saveMapPreferencesAsDefault,
         applySavedPreset: applySavedMapPreset,
         hasSavedPreset: hasSavedMapPreset,
+        isSavedPresetActive: isSavedMapPresetActive,
         isCustomizeOpen: isMapCustomizeOpen,
         openCustomize: openMapCustomize,
         closeCustomize: closeMapCustomize,
@@ -3715,6 +3716,7 @@ const useTripViewRender = ({
                         onSaveAsDefault={saveMapPreferencesAsDefault}
                         hasSavedPreset={hasSavedMapPreset}
                         onApplySavedPreset={applySavedMapPreset}
+                        isSavedPresetActive={isSavedMapPresetActive}
                         isMobile={isMobile}
                         activeRenderer={activeMapRenderer}
                         isMapboxAvailable={isMapboxRendererAvailable}

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 
 import { TransportModeIcon } from '../TransportModeIcon';
+import { TodayBadge } from '../ui/today-badge';
 import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
 import {
     buildMobileDayStripNodes,
@@ -10,8 +11,14 @@ import {
 } from './mobileDayPlanModel';
 
 const DEFAULT_STAY_COLOR = '#64748b';
-const TRANSFER_LINK_COLOR = '#cbd5e1';
-const BUBBLE_INTERIOR_COLOR = '#ffffff';
+/** The connecting line between two days. Theme token, so it survives dark mode. */
+const TRANSFER_LINK_COLOR = 'var(--border)';
+/**
+ * An unselected bubble's interior is the sheet it sits on, not white. Hard
+ * white left every day of the strip glowing as a light disc once the app went
+ * dark, which is the opposite of the "empty ring" the shape is meant to read as.
+ */
+const BUBBLE_INTERIOR_COLOR = 'var(--card)';
 /** Pointer travel past which a drag is a scroll, not a tap. */
 const DRAG_TAP_THRESHOLD_PX = 6;
 
@@ -254,11 +261,7 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                             </button>
                         </div>
                         <span className="flex h-7 items-start justify-center pt-0.5">
-                            {segment.isToday && (
-                                <span className="rounded-full bg-accent-50 px-1.5 py-px text-[9px] font-bold uppercase tracking-[0.08em] text-accent-700 dark:bg-accent-400/12 dark:text-accent-200">
-                                    Today
-                                </span>
-                            )}
+                            {segment.isToday && <TodayBadge size="sm" />}
                         </span>
                     </div>
                 );

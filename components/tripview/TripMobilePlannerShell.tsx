@@ -338,7 +338,7 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                       * matter how many controls sit beside it. */}
                     <span
                         aria-hidden="true"
-                        className="absolute left-1/2 top-2.5 h-1.5 w-11 -translate-x-1/2 rounded-full bg-slate-300"
+                        className="absolute left-1/2 top-2.5 h-1.5 w-11 -translate-x-1/2 rounded-full bg-muted-foreground/30"
                     />
                     <div className="flex h-9 items-center justify-between">
                         <div className="inline-flex shrink-0 items-center rounded-full bg-secondary p-0.5">

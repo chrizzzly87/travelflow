@@ -643,7 +643,8 @@
         "realistic": "سڑکوں پر",
         "simple": "براہِ راست"
       },
-      "saveAsDefault": "میری پیش ترتیب کے طور پر محفوظ کریں",
+      "saveAsDefault": "محفوظ کریں",
+      "saveAsDefaultTooltip": "میری پیش ترتیب کے طور پر محفوظ کریں",
       "saved": "محفوظ ہو گیا",
       "switchToMapbox": "Mapbox پر جائیں",
       "tab": {
