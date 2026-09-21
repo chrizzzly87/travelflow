@@ -35,6 +35,7 @@ const airportVisibilityReducer = (
 };
 
 interface FeaturesAirportBandProps {
+    eyebrow: string;
     title: string;
     description: string;
     originLabel: string;
@@ -42,6 +43,7 @@ interface FeaturesAirportBandProps {
 }
 
 export const FeaturesAirportBand: React.FC<FeaturesAirportBandProps> = ({
+    eyebrow,
     title,
     description,
     originLabel,
@@ -91,7 +93,10 @@ export const FeaturesAirportBand: React.FC<FeaturesAirportBandProps> = ({
         >
             <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(420px,auto)] lg:items-center lg:gap-16">
                 <div className="min-w-0">
-                    <h2 className="text-balance text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+                    <p className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-accent-700 dark:text-accent-300">
+                        {eyebrow}
+                    </p>
+                    <h2 className="mt-4 text-balance text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
                         {title}
                     </h2>
                     <p className="mt-4 max-w-md text-pretty text-base leading-relaxed text-muted-foreground">

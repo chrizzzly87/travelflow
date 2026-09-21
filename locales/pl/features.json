@@ -1,8 +1,9 @@
 {
   "hero": {
-    "titleBefore": "Jedna podróż. Jeden plan.",
-    "titleHighlight": "Jeden link.",
-    "description": "Naszkicuj trasę. Dopracuj ją na mapie. Wyślij wszystkim, którzy jadą.",
+    "eyebrow": "Naszkicuj · Dopracuj · Udostępnij",
+    "titleBefore": "Każda podróż",
+    "titleHighlight": "zaplanowana w jednym miejscu.",
+    "description": "Naszkicuj trasę, dopracuj ją na mapie i wyślij wszystkim, którzy jadą.",
     "primaryCta": "Zacznij planować",
     "secondaryCta": "Zobacz przykładowe wyjazdy"
   },
@@ -47,33 +48,39 @@
     }
   },
   "capabilities": {
+    "eyebrow": "Jak to działa",
     "title": "Jak powstaje podróż",
     "subtitle": "Bez dokumentów. Bez zrzutów ekranu. Bez drugiego narzędzia.",
     "items": [
       {
         "id": "draft",
+        "eyebrow": "Naszkicuj",
         "title": "Szkic w kilka sekund",
         "description": "Powiedz dokąd i na jak długo. Trasa wraca z miastami, tempem i czasem przejazdu."
       },
       {
         "id": "shape",
+        "eyebrow": "Dopracuj",
         "title": "Dopracowana ręcznie",
         "description": "Przesuń przystanek. Wydłuż pobyt. Mapa i oś czasu poruszają się razem."
       },
       {
         "id": "share",
+        "eyebrow": "Udostępnij",
         "title": "Jeden link do udostępnienia",
         "description": "Bez zakładania konta, bez eksportu. Wszyscy widzą ten sam plan."
       }
     ]
   },
   "airport": {
+    "eyebrow": "Twój punkt startowy",
     "title": "Zaczyna się na twoim lotnisku.",
     "description": "TravelFlow znajduje najbliższe i buduje trasę właśnie stamtąd.",
     "originLabel": "Najbliżej ciebie",
     "destinationLabel": "Dokądkolwiek dalej"
   },
   "outcomes": {
+    "eyebrow": "Co dostajesz",
     "title": "Co ci zostaje",
     "items": [
       {

@@ -1,8 +1,9 @@
 {
   "hero": {
-    "titleBefore": "Un voyage. Un plan.",
-    "titleHighlight": "Un lien.",
-    "description": "Tracez l'itinéraire. Ajustez-le sur la carte. Partagez-le avec tous ceux qui viennent.",
+    "eyebrow": "Tracer · Ajuster · Partager",
+    "titleBefore": "Chaque voyage,",
+    "titleHighlight": "planifié au même endroit.",
+    "description": "Tracez l'itinéraire, ajustez-le sur la carte et partagez-le avec tous ceux qui viennent.",
     "primaryCta": "Commencer à planifier",
     "secondaryCta": "Voir des voyages exemples"
   },
@@ -47,33 +48,39 @@
     }
   },
   "capabilities": {
+    "eyebrow": "Comment ça marche",
     "title": "Comment un voyage prend forme",
     "subtitle": "Pas de document. Pas de captures d'écran. Pas de second outil.",
     "items": [
       {
         "id": "draft",
+        "eyebrow": "Tracer",
         "title": "Tracé en quelques secondes",
         "description": "Dites où et combien de temps. L'itinéraire revient avec les villes, le rythme et les temps de trajet."
       },
       {
         "id": "shape",
+        "eyebrow": "Ajuster",
         "title": "Ajusté à la main",
         "description": "Déplacez une étape. Prolongez un séjour. La carte et la frise avancent ensemble."
       },
       {
         "id": "share",
+        "eyebrow": "Partager",
         "title": "Partagé en un lien",
         "description": "Aucun compte à créer, rien à exporter. Tout le monde voit le même plan."
       }
     ]
   },
   "airport": {
+    "eyebrow": "Votre point de départ",
     "title": "Tout commence à votre aéroport.",
     "description": "TravelFlow trouve le plus proche et construit l'itinéraire à partir de là.",
     "originLabel": "Le plus proche de vous",
     "destinationLabel": "N'importe où ensuite"
   },
   "outcomes": {
+    "eyebrow": "Ce que vous obtenez",
     "title": "Ce qu'il vous reste",
     "items": [
       {

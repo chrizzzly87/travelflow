@@ -1,8 +1,9 @@
 {
   "hero": {
-    "titleBefore": "Un viaggio. Un piano.",
-    "titleHighlight": "Un link.",
-    "description": "Traccia il percorso. Modellalo sulla mappa. Condividilo con chi parte con te.",
+    "eyebrow": "Tracciare · Modellare · Condividere",
+    "titleBefore": "Ogni viaggio,",
+    "titleHighlight": "pianificato in un posto solo.",
+    "description": "Traccia il percorso, modellalo sulla mappa e condividilo con chi parte con te.",
     "primaryCta": "Inizia a pianificare",
     "secondaryCta": "Vedi viaggi esempio"
   },
@@ -47,33 +48,39 @@
     }
   },
   "capabilities": {
+    "eyebrow": "Come funziona",
     "title": "Come prende forma un viaggio",
     "subtitle": "Niente documenti. Niente screenshot. Nessun secondo strumento.",
     "items": [
       {
         "id": "draft",
+        "eyebrow": "Tracciare",
         "title": "Tracciato in pochi secondi",
         "description": "Dici dove e per quanto. Il percorso torna con città, ritmo e tempi di viaggio."
       },
       {
         "id": "shape",
+        "eyebrow": "Modellare",
         "title": "Modellato a mano",
         "description": "Sposta una tappa. Allunga un soggiorno. Mappa e timeline si muovono insieme."
       },
       {
         "id": "share",
+        "eyebrow": "Condividere",
         "title": "Condiviso con un link",
         "description": "Nessun account da creare, niente da esportare. Tutti vedono lo stesso piano."
       }
     ]
   },
   "airport": {
+    "eyebrow": "Il tuo punto di partenza",
     "title": "Si parte dal tuo aeroporto.",
     "description": "TravelFlow trova il più vicino e costruisce il percorso da lì.",
     "originLabel": "Il più vicino a te",
     "destinationLabel": "Ovunque poi"
   },
   "outcomes": {
+    "eyebrow": "Cosa ottieni",
     "title": "Cosa ti resta in mano",
     "items": [
       {

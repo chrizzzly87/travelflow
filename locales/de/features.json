@@ -1,8 +1,9 @@
 {
   "hero": {
-    "titleBefore": "Eine Reise. Ein Plan.",
-    "titleHighlight": "Ein Link.",
-    "description": "Route entwerfen. Auf der Karte formen. Mit allen teilen, die mitkommen.",
+    "eyebrow": "Entwerfen · Formen · Teilen",
+    "titleBefore": "Jede Reise,",
+    "titleHighlight": "an einem Ort geplant.",
+    "description": "Entwirf die Route, form sie auf der Karte und teil sie mit allen, die mitkommen.",
     "primaryCta": "Jetzt planen",
     "secondaryCta": "Beispielreisen ansehen"
   },
@@ -47,33 +48,39 @@
     }
   },
   "capabilities": {
+    "eyebrow": "So funktioniert es",
     "title": "Wie eine Reise entsteht",
     "subtitle": "Kein Dokument. Keine Screenshots. Kein zweites Tool.",
     "items": [
       {
         "id": "draft",
+        "eyebrow": "Entwerfen",
         "title": "In Sekunden entworfen",
         "description": "Sag wohin und wie lange. Die Route kommt zurück – mit Städten, Tempo und Fahrzeiten."
       },
       {
         "id": "shape",
+        "eyebrow": "Formen",
         "title": "Von Hand geformt",
         "description": "Stopp verschieben. Aufenthalt verlängern. Karte und Zeitstrahl bewegen sich mit."
       },
       {
         "id": "share",
+        "eyebrow": "Teilen",
         "title": "Als ein Link geteilt",
         "description": "Kein Konto nötig, nichts zu exportieren. Alle sehen denselben Plan."
       }
     ]
   },
   "airport": {
+    "eyebrow": "Dein Startpunkt",
     "title": "Es beginnt an deinem Flughafen.",
     "description": "TravelFlow findet den nächsten und baut die Route von dort aus auf.",
     "originLabel": "Am nächsten bei dir",
     "destinationLabel": "Irgendwohin als Nächstes"
   },
   "outcomes": {
+    "eyebrow": "Was du bekommst",
     "title": "Was am Ende dabei ist",
     "items": [
       {

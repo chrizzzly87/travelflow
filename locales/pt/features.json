@@ -1,8 +1,9 @@
 {
   "hero": {
-    "titleBefore": "Uma viagem. Um plano.",
-    "titleHighlight": "Um link.",
-    "description": "Desenhe a rota. Ajuste-a no mapa. Partilhe com quem vem consigo.",
+    "eyebrow": "Desenhar · Ajustar · Partilhar",
+    "titleBefore": "Cada viagem,",
+    "titleHighlight": "planeada num só lugar.",
+    "description": "Desenhe a rota, ajuste-a no mapa e partilhe com quem vem consigo.",
     "primaryCta": "Começar a planear",
     "secondaryCta": "Ver viagens exemplo"
   },
@@ -47,33 +48,39 @@
     }
   },
   "capabilities": {
+    "eyebrow": "Como funciona",
     "title": "Como uma viagem ganha forma",
     "subtitle": "Sem documentos. Sem capturas de ecrã. Sem uma segunda ferramenta.",
     "items": [
       {
         "id": "draft",
+        "eyebrow": "Desenhar",
         "title": "Desenhada em segundos",
         "description": "Diga para onde e por quanto tempo. A rota volta com cidades, ritmo e tempos de viagem."
       },
       {
         "id": "shape",
+        "eyebrow": "Ajustar",
         "title": "Ajustada à mão",
         "description": "Mova uma paragem. Prolongue uma estadia. O mapa e a linha do tempo movem-se juntos."
       },
       {
         "id": "share",
+        "eyebrow": "Partilhar",
         "title": "Partilhada num link",
         "description": "Sem criar conta, sem exportar nada. Todos veem o mesmo plano."
       }
     ]
   },
   "airport": {
+    "eyebrow": "O seu ponto de partida",
     "title": "Começa no seu aeroporto.",
     "description": "O TravelFlow encontra o mais próximo e constrói a rota a partir daí.",
     "originLabel": "O mais perto de si",
     "destinationLabel": "Para onde quiser"
   },
   "outcomes": {
+    "eyebrow": "O que recebe",
     "title": "O que fica consigo",
     "items": [
       {

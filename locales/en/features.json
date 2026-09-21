@@ -1,8 +1,9 @@
 {
   "hero": {
-    "titleBefore": "One trip. One plan.",
-    "titleHighlight": "One link.",
-    "description": "Draft the route. Shape it on the map. Share it with everyone coming.",
+    "eyebrow": "Draft · Shape · Share",
+    "titleBefore": "Every trip,",
+    "titleHighlight": "planned in one place.",
+    "description": "Draft the route, shape it on the map, and share it with everyone coming.",
     "primaryCta": "Start planning",
     "secondaryCta": "See example trips"
   },
@@ -47,33 +48,39 @@
     }
   },
   "capabilities": {
+    "eyebrow": "How it works",
     "title": "How a trip takes shape",
     "subtitle": "No document. No screenshots. No second tool.",
     "items": [
       {
         "id": "draft",
+        "eyebrow": "Draft",
         "title": "Drafted in seconds",
         "description": "Say where and how long. The route comes back with cities, pacing and travel time in place."
       },
       {
         "id": "shape",
+        "eyebrow": "Shape",
         "title": "Shaped by hand",
         "description": "Drag a stop. Stretch a stay. The map and the timeline move together."
       },
       {
         "id": "share",
+        "eyebrow": "Share",
         "title": "Shared as one link",
         "description": "No account to create, nothing to export. Everyone sees the same plan."
       }
     ]
   },
   "airport": {
+    "eyebrow": "Your starting point",
     "title": "It starts at your airport.",
     "description": "TravelFlow finds the closest one and builds the route out from there.",
     "originLabel": "Nearest to you",
     "destinationLabel": "Anywhere next"
   },
   "outcomes": {
+    "eyebrow": "What you get",
     "title": "What you leave with",
     "items": [
       {

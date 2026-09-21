@@ -1,7 +1,8 @@
 {
   "hero": {
-    "titleBefore": "여행 하나. 계획 하나.",
-    "titleHighlight": "링크 하나.",
+    "eyebrow": "초안 · 다듬기 · 공유",
+    "titleBefore": "모든 여행을",
+    "titleHighlight": "한곳에서.",
     "description": "경로를 잡고, 지도에서 다듬고, 함께 가는 사람 모두와 나누세요.",
     "primaryCta": "여행 계획 시작",
     "secondaryCta": "예시 여행 보기"
@@ -47,33 +48,39 @@
     }
   },
   "capabilities": {
+    "eyebrow": "이렇게 작동합니다",
     "title": "여행이 만들어지는 방식",
     "subtitle": "문서도, 캡처도, 다른 도구도 필요 없습니다.",
     "items": [
       {
         "id": "draft",
+        "eyebrow": "초안",
         "title": "몇 초 만에 나오는 초안",
         "description": "어디로 며칠인지만 알려주세요. 도시와 일정 속도, 이동 시간까지 담긴 경로가 돌아옵니다."
       },
       {
         "id": "shape",
+        "eyebrow": "다듬기",
         "title": "직접 다듬는 경로",
         "description": "정류지를 옮기고 체류를 늘려 보세요. 지도와 타임라인이 함께 움직입니다."
       },
       {
         "id": "share",
+        "eyebrow": "공유",
         "title": "링크 하나로 공유",
         "description": "계정도, 내보내기도 없습니다. 모두가 같은 계획을 봅니다."
       }
     ]
   },
   "airport": {
+    "eyebrow": "출발점",
     "title": "출발은 가장 가까운 공항에서.",
     "description": "TravelFlow가 가장 가까운 공항을 찾아 거기서부터 경로를 세웁니다.",
     "originLabel": "가장 가까운 곳",
     "destinationLabel": "다음 목적지"
   },
   "outcomes": {
+    "eyebrow": "무엇이 남나요",
     "title": "남는 것들",
     "items": [
       {
