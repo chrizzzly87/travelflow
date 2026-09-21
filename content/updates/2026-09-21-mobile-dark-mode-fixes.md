@@ -3,8 +3,8 @@ id: rel-2026-09-21-mobile-dark-mode-fixes
 version: v0.187.0
 title: "The planner in the dark, on a phone"
 date: 2026-09-21
-published_at: 2026-09-21T17:00:00Z
-status: draft
+published_at: 2026-09-21T08:19:16Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Dark mode now reaches the parts of the planner it was missing on a phone: the day circles, the loading screen and the marker for today. The map sheet keeps its buttons on screen, saving your own map look sticks, and the trip page finally has a menu."
