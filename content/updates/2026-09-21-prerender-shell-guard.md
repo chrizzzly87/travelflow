@@ -1,10 +1,10 @@
 ---
-id: rel-2026-09-20-prerender-shell-guard
+id: rel-2026-09-21-prerender-shell-guard
 version: v0.186.0
 title: "A guard on the page capture step"
-date: 2026-09-20
-published_at: 2026-09-20T17:10:00Z
-status: draft
+date: 2026-09-21
+published_at: 2026-09-21T06:43:07Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Internal: the page capture step now proves each page started from a clean shell, so the homepage cannot silently leak into another page again."
