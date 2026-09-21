@@ -1,6 +1,6 @@
 ---
 id: rel-2026-09-21-mobile-dark-mode-fixes
-version: v0.187.0
+version: v0.188.0
 title: "The planner in the dark, on a phone"
 date: 2026-09-21
 published_at: 2026-09-21T08:19:16Z
