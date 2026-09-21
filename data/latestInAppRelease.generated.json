@@ -1,53 +1,35 @@
 {
   "_generated": "Emitted by scripts/generate-latest-in-app-release.mjs — do not edit by hand.",
   "release": {
-    "id": "rel-2026-09-21-faq-page-translations",
-    "version": "v0.187.0",
-    "title": "The FAQ page now speaks your language",
+    "id": "rel-2026-09-21-features-globe-hydration",
+    "version": "v0.189.0",
+    "title": "The globe on the features page shows up again",
     "date": "2026-09-21",
-    "summary": "The help centre was still answering in English on every language version — questions, answers and headings are now translated across all supported languages.",
+    "summary": "Opening the features page directly now shows the spinning globe with its trip cards in place, instead of an empty circle and a stray Paris card parked under it.",
     "status": "published",
-    "publishedAt": "2026-09-21T06:44:58Z",
+    "publishedAt": "2026-09-21T09:20:00Z",
     "notifyInApp": true,
     "inAppHours": 24,
     "items": [
       {
         "visibleOnWebsite": true,
-        "typeLabel": "Improved",
-        "typeKey": "improved",
-        "text": "💬 When an answer tells you which option to pick on the contact form, it now names that option exactly as the form shows it in your language, so you can find it without guessing."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "Improved",
-        "typeKey": "improved",
-        "text": "🧭 The short list of common questions on the contact page is translated too, instead of switching to English halfway down."
-      },
-      {
-        "visibleOnWebsite": true,
         "typeLabel": "Fixed",
         "typeKey": "fixed",
-        "text": "🌍 The help centre answered in English no matter which language you were browsing in. Every heading, question and answer is now translated."
+        "text": "🌍 The globe on the features page now appears when you open that page directly. It was staying invisible, with the Paris card stranded below it and the other trip cards nowhere to be seen — it only looked right if you came in from another page."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "🗂️ Moved the FAQ heading, section titles and all 16 question/answer pairs out of hardcoded component literals into a new `faq` locale namespace across all 11 locale bundles."
+        "text": "💧 FeaturesGlobe renders nothing until it is mounted and stays empty through the prerender capture, so the captured HTML matches the client's first pass; preact/compat's hydrate() does not patch attributes on reused DOM, and the capture (headless, no WebGL) had baked in the fallback branch."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "🔗 Contact-form option names quoted inside FAQ answers are interpolated from the existing `common:contact.form.*` keys rather than re-translated, so the quoted label cannot drift from the form."
-      },
-      {
-        "visibleOnWebsite": false,
-        "typeLabel": "Internal",
-        "typeKey": "internal",
-        "text": "✅ Added regression coverage asserting the FAQ heading resolves from the locale bundle and that a non-English locale renders translated headings and interpolated labels."
+        "text": "🧪 Added jsdom coverage proving the capture pass renders an empty container and a real client fills it after mount."
       }
     ],
-    "sourcePath": "../content/updates/2026-09-21-faq-page-translations.md"
+    "sourcePath": "../content/updates/2026-09-21-features-globe-hydration.md"
   }
 }
