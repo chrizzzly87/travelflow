@@ -1,9 +1,9 @@
 ---
 id: rel-2026-09-21-faq-page-translations
-version: v0.186.0
+version: v0.187.0
 title: "The FAQ page now speaks your language"
 date: 2026-09-21
-published_at: 2026-09-21T06:44:21Z
+published_at: 2026-09-21T06:44:58Z
 status: published
 notify_in_app: true
 in_app_hours: 24

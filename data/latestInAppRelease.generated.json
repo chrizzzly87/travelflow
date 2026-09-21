@@ -1,101 +1,53 @@
 {
   "_generated": "Emitted by scripts/generate-latest-in-app-release.mjs — do not edit by hand.",
   "release": {
-    "id": "rel-2026-09-20-dark-mode-and-plane-window",
-    "version": "v0.185.0",
-    "title": "Dark mode, and a window seat on the homepage",
-    "date": "2026-09-20",
-    "summary": "TravelFlow now has a full dark mode you can switch from any page, and the homepage window looks out over drifting clouds you can shut the blind on.",
+    "id": "rel-2026-09-21-faq-page-translations",
+    "version": "v0.187.0",
+    "title": "The FAQ page now speaks your language",
+    "date": "2026-09-21",
+    "summary": "The help centre was still answering in English on every language version — questions, answers and headings are now translated across all supported languages.",
     "status": "published",
-    "publishedAt": "2026-09-20T15:47:41Z",
+    "publishedAt": "2026-09-21T06:44:58Z",
     "notifyInApp": true,
     "inAppHours": 24,
     "items": [
       {
         "visibleOnWebsite": true,
-        "typeLabel": "New feature",
-        "typeKey": "new",
-        "text": "🌙 Dark mode across the whole app, with a switch in the menu on desktop and mobile. Your choice is remembered, and leaving it alone simply follows your device."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "New feature",
-        "typeKey": "new",
-        "text": "☁️ The homepage window now looks out over clouds that drift past at different depths, so the view never repeats."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "New feature",
-        "typeKey": "new",
-        "text": "🪟 Pull the window blind down to bring on dark mode, and slide it back up for light. The page dims with your hand as you drag."
+        "typeLabel": "Improved",
+        "typeKey": "improved",
+        "text": "💬 When an answer tells you which option to pick on the contact form, it now names that option exactly as the form shows it in your language, so you can find it without guessing."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "Improved",
         "typeKey": "improved",
-        "text": "🎨 A more saturated accent colour throughout, and colours chosen to stay readable in both themes."
+        "text": "🧭 The short list of common questions on the contact page is translated too, instead of switching to English halfway down."
       },
       {
         "visibleOnWebsite": true,
         "typeLabel": "Fixed",
         "typeKey": "fixed",
-        "text": "🔁 The clouds behind the window no longer jump every few seconds."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "Fixed",
-        "typeKey": "fixed",
-        "text": "⚡ Opening a page directly no longer briefly shows pieces of the homepage, which could leave headings off-centre until everything finished loading."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "Fixed",
-        "typeKey": "fixed",
-        "text": "🔆 The logo no longer flashes while a page loads."
-      },
-      {
-        "visibleOnWebsite": true,
-        "typeLabel": "Fixed",
-        "typeKey": "fixed",
-        "text": "🗺️ The country map, the activity badges and the release notes all stay legible in dark mode instead of washing out."
+        "text": "🌍 The help centre answered in English no matter which language you were browsing in. Every heading, question and answer is now translated."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "Replaced the scrolling cloud strip with an imperative three.js scene ported from drei's instanced cloud billboards. react-three-fiber cannot be used here: React is aliased to preact/compat, which has no react-reconciler, so R3F mounts a canvas and silently never attaches a renderer."
+        "text": "🗂️ Moved the FAQ heading, section titles and all 16 question/answer pairs out of hardcoded component literals into a new `faq` locale namespace across all 11 locale bundles."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "Converted light-only utilities to semantic tokens across ~190 files, including families earlier passes could not see: arbitrary variant prefixes, gradient stops, `divide-*`, tinted callouts, Tailwind Typography and class strings held in `.ts` files."
+        "text": "🔗 Contact-form option names quoted inside FAQ answers are interpolated from the existing `common:contact.form.*` keys rather than re-translated, so the quoted label cannot drift from the form."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "Activity-type colours are now named palette tokens defined once for both themes, with solid values so overlapping badges do not darken where they stack."
-      },
-      {
-        "visibleOnWebsite": false,
-        "typeLabel": "Internal",
-        "typeKey": "internal",
-        "text": "Prerenderer no longer writes the homepage into dist/index.html mid-run, which had made it the SPA fallback for every later route and contaminated their HTML."
-      },
-      {
-        "visibleOnWebsite": false,
-        "typeLabel": "Internal",
-        "typeKey": "internal",
-        "text": "Added `pnpm darkmode:audit`, which crawls the built app and fails on light surfaces or text below WCAG AA."
-      },
-      {
-        "visibleOnWebsite": false,
-        "typeLabel": "Internal",
-        "typeKey": "internal",
-        "text": "Theme state reads through useSyncExternalStore; an inline pre-paint script applies the theme before prerendered markup is shown."
+        "text": "✅ Added regression coverage asserting the FAQ heading resolves from the locale bundle and that a non-English locale renders translated headings and interpolated labels."
       }
     ],
-    "sourcePath": "../content/updates/2026-09-20-dark-mode-and-plane-window.md"
+    "sourcePath": "../content/updates/2026-09-21-faq-page-translations.md"
   }
 }
