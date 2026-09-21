@@ -1977,3 +1977,83 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Features page: word reveal + pointer spotlight
+
+   Both are CSS-only on purpose. The app renders through preact/compat, so the
+   React-Bits originals (GSAP / Framer Motion / r3f) are not options here; these
+   reproduce the same two effects with a keyframe and a radial gradient.
+   --------------------------------------------------------------------------- */
+
+@keyframes tf-word-reveal {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(0.35em);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+/* One class per word: the words are grandchildren of `.tf-reveal-words` (the
+   screen-reader copy and the aria-hidden wrapper sit between), so a child
+   combinator would match the wrappers and animate nothing. `--tf-word` carries
+   each word's position and is rendered server-side too, so the prerendered
+   markup animates identically on hydration. */
+.tf-reveal-word {
+  display: inline-block;
+  animation: tf-word-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--tf-reveal-start, 0ms) + 65ms * var(--tf-word, 0));
+}
+
+/* A view() timeline ignores animation-delay, so a row of cards has to stagger by
+   shifting the range instead. The existing `style={{ animationDelay }}` pattern
+   elsewhere on this page was silently inert for the same reason. */
+.tf-stagger-entry > *:nth-child(1) {
+  animation-range: entry 0% entry 32%;
+}
+
+.tf-stagger-entry > *:nth-child(2) {
+  animation-range: entry 7% entry 39%;
+}
+
+.tf-stagger-entry > *:nth-child(3) {
+  animation-range: entry 14% entry 46%;
+}
+
+/* Pointer-tracked highlight. The card sets --tf-spot-x/y on pointermove; with no
+   pointer (touch, keyboard) the gradient stays parked at the top centre. */
+.tf-spotlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+  background: radial-gradient(
+    16rem circle at var(--tf-spot-x, 50%) var(--tf-spot-y, 0%),
+    rgb(var(--tf-accent-rgb) / 0.16),
+    transparent 68%
+  );
+}
+
+.tf-spotlight:hover::after,
+.tf-spotlight:focus-within::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tf-reveal-word {
+    animation: none;
+  }
+
+  .tf-spotlight::after {
+    transition: none;
+  }
+}

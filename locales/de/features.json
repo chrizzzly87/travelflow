@@ -1,16 +1,10 @@
 {
   "hero": {
-    "badge": "Interaktive Reiseplanung",
-    "titleBefore": "Plane Reisen, die sich schon",
-    "titleHighlight": "abflugbereit anfühlen",
-    "description": "TravelFlow macht aus Reiseideen eine Route, auf die dein Team sofort reagieren kann. Erstelle den ersten Plan mit KI, forme ihn auf Karte und Timeline weiter und teile einen Link, der auch dann noch klar wirkt, wenn es konkret wird.",
+    "titleBefore": "Eine Reise. Ein Plan.",
+    "titleHighlight": "Ein Link.",
+    "description": "Route entwerfen. Auf der Karte formen. Mit allen teilen, die mitkommen.",
     "primaryCta": "Jetzt planen",
-    "secondaryCta": "Beispielreisen ansehen",
-    "proof": [
-      "KI-Reiseentwürfe in Sekunden",
-      "Route per Drag-and-Drop feinjustieren",
-      "Ein klarer Link statt chaotischer Gruppenchat-Screenshots"
-    ]
+    "secondaryCta": "Beispielreisen ansehen"
   },
   "globe": {
     "accessibility": "Interaktive Globusvorschau mit Routen von deinem Startpunkt zu farbigen Reiseideen rund um die Welt.",
@@ -52,105 +46,53 @@
       "alt": "Trip-Vorschau fuer 30 Tage in Suedostasien"
     }
   },
-  "bento": {
-    "badge": "Planen mit Flow",
-    "title": "Die wichtigsten Teile der Reiseplanung bleiben endlich zusammen",
-    "subtitle": "Statt zwischen Docs, Karten, Screenshots und halbfertigen Chats zu springen, haelt TravelFlow Route, Timing und Reisekontext in einer Bewegung.",
+  "capabilities": {
+    "title": "Wie eine Reise entsteht",
+    "subtitle": "Kein Dokument. Keine Screenshots. Kein zweites Tool.",
     "items": [
       {
-        "id": "airport",
-        "eyebrow": "",
-        "title": "Der naechste Flug wartet",
-        "description": "TravelFlow hilft dir, die ganze Reise zusammenzuhalten, vom ersten Flug bis zu Transfers, Unterkuenften und den kleinen Plaenen dazwischen. Wir starten mit dem Flughafen in deiner Naehe, damit aus Fernweh leichter eine echte Route wird.",
-        "detail": "Nah starten. Weiter traeumen."
+        "id": "draft",
+        "title": "In Sekunden entworfen",
+        "description": "Sag wohin und wie lange. Die Route kommt zurück – mit Städten, Tempo und Fahrzeiten."
       },
       {
-        "id": "itinerary",
-        "eyebrow": "KI-Entwurf",
-        "title": "Starte mit einer Route statt mit einer leeren Seite",
-        "description": "Beschreibe die Reise in normaler Sprache und erhalte einen glaubwuerdigen ersten Plan, in dem Staedte, Tempo und Aktivitaetskontext bereits zusammenpassen.",
-        "detail": "Ein erster Entwurf, auf den deine Gruppe sofort reagieren kann"
+        "id": "shape",
+        "title": "Von Hand geformt",
+        "description": "Stopp verschieben. Aufenthalt verlängern. Karte und Zeitstrahl bewegen sich mit."
       },
       {
-        "id": "timeline",
-        "eyebrow": "Live auf Karte und Timeline",
-        "title": "Passe den Plan an, ohne ihn zu zerlegen",
-        "description": "Verlaengere Stopps, sortiere Orte um oder veraendere das Tempo. TravelFlow haelt Karte und Timeline synchron, damit jeder Edit stimmig bleibt.",
-        "detail": "Karte und Timing bleiben verbunden"
-      },
-      {
-        "id": "inspiration",
-        "eyebrow": "Inspirationsrouten",
-        "title": "Uebernimm gute Ideen und mach sie zu deiner Reise",
-        "description": "Nutze glaubwuerdige Routen als Startpunkt, statt eine stimmige Reise jedes Mal wieder ganz neu zusammenzusetzen.",
-        "detail": "Starte mit echter Reiseenergie"
-      },
-      {
-        "id": "sharing",
-        "eyebrow": "Crew-Feedback",
-        "title": "Teile etwas, das deine Mitreisenden sofort verstehen",
-        "description": "Verschicke einen Link, in dem Route, Tempo und Notizen schon drin sind, damit Feedback an der Reise selbst ansetzt und nicht an verstreuten Screenshots.",
-        "detail": "Kein Konto noetig"
-      },
-      {
-        "id": "relive",
-        "eyebrow": "Buchung und Uebergabe",
-        "title": "Am Ende bleibt ein Plan, der trotzdem sauber wirkt",
-        "description": "Wenn die Route steht, bleibt auch der praktische Kontext erhalten: Links, Notizen und eine aufgeraeumte Druckansicht fuer die finale Version.",
-        "detail": "Bereit zum Teilen, Speichern oder Drucken"
+        "id": "share",
+        "title": "Als ein Link geteilt",
+        "description": "Kein Konto nötig, nichts zu exportieren. Alle sehen denselben Plan."
       }
-    ],
-    "airportCard": {
-      "label": "Naechster Abflug",
-      "defaultBadge": "Fernweh-Modus",
-      "loadingBadge": "Suchen wir",
-      "readyBadge": "Naeher bei dir",
-      "defaultStatus": "Starte nah bei dir. Von dort kann sich der Rest oeffnen.",
-      "loadingStatus": "Wir suchen den naechsten passenden Abflug in deiner Naehe.",
-      "readyCityStatus": "Start in der Naehe von {city}. Von dort kann sich der Rest oeffnen.",
-      "readyCountryStatus": "Start ab {country}. Von dort kann sich der Rest oeffnen.",
-      "fallbackStatus": "Starte nah bei dir. Von dort kann sich der Rest oeffnen.",
-      "defaultChip": "Deine Seite der Karte",
-      "cityChip": "Rund um {city}",
-      "countryChip": "Ab {country}"
-    }
+    ]
   },
-  "workflow": {
-    "badge": "Von der Idee bis zur gruppentauglichen Route",
-    "title": "Ein gemeinsamer Flow fuer Entwurf, Feinschliff und Teilen",
-    "subtitle": "TravelFlow passt besonders gut, wenn der inspirierende Teil der Planung und der praktische Teil der Planung am selben Ort bleiben sollen.",
-    "steps": [
+  "airport": {
+    "title": "Es beginnt an deinem Flughafen.",
+    "description": "TravelFlow findet den nächsten und baut die Route von dort aus auf.",
+    "originLabel": "Am nächsten bei dir",
+    "destinationLabel": "Irgendwohin als Nächstes"
+  },
+  "outcomes": {
+    "title": "Was am Ende dabei ist",
+    "items": [
       {
-        "step": "01",
-        "title": "Starte mit Ziel, Stimmung oder einer vorhandenen Route",
-        "description": "Beginne mit einer Länderliste, einer Saison-Idee oder einer noch unscharfen Reiserichtung. Die perfekte Reihenfolge musst du noch nicht kennen."
+        "title": "Eine lebendige Route",
+        "description": "Jeder Tag auf der Karte, samt Fahrzeit zwischen den Stopps."
       },
       {
-        "step": "02",
-        "title": "Schleife Tempo und Strecke auf Karte und Timeline ein",
-        "description": "Sieh die Route auf dem Globus und zieh sie auf der Timeline so lange zurecht, bis Transfers, Energielevel und Gruppenwuensche zusammenpassen."
+        "title": "Buchungslinks",
+        "description": "Dort, wo eine Aktivität einen braucht."
       },
       {
-        "step": "03",
-        "title": "Teile eine Version, die schon bewusst gestaltet wirkt",
-        "description": "Sobald Feedback oder Buchungen anstehen, hat derselbe Plan bereits Karte, Struktur und den Zusatzkontext, nach dem sonst immer gefragt wird."
+        "title": "Ein Druck-Layout",
+        "description": "Sauber genug für unterwegs, wenn das Netz wegbricht."
       }
-    ],
-    "glance": {
-      "eyebrow": "Was die Gruppe sieht",
-      "title": "Ein Plan, der schon beim Teilen fertig wirkt",
-      "description": "Karte, Tagesstruktur und praktische Details bleiben zusammen, damit Rueckmeldungen schneller und klarer kommen.",
-      "items": [
-        "Live-Routenansicht mit Tempo-Kontext",
-        "Buchungsnahe Aktivitaetslinks bei Bedarf",
-        "Eine saubere Druckansicht fuer die finale Version"
-      ]
-    }
+    ]
   },
   "cta": {
-    "badge": "Plane, solange die Idee noch frisch ist",
-    "title": "Starte mit der Route. Behalte das Reisegefuehl.",
-    "subtitle": "Entwirf deine naechste Reise in wenigen Minuten und verfeinere sie danach am selben Ort, statt sie ueber mehrere Tools neu zusammenzubauen.",
+    "title": "Beginn mit einem Satz.",
+    "subtitle": "Entwirf die Route in Minuten. Behalte die ganze Reise an einem Ort.",
     "button": "Jetzt planen"
   }
 }

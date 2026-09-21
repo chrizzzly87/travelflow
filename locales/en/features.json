@@ -1,16 +1,10 @@
 {
   "hero": {
-    "badge": "Interactive trip planning",
-    "titleBefore": "Build trips that already feel",
-    "titleHighlight": "ready to go",
-    "description": "TravelFlow turns destination ideas into a route your group can actually react to. Draft the itinerary with AI, shape it on a live map and timeline, then share a link that still feels polished when decisions get real.",
+    "titleBefore": "One trip. One plan.",
+    "titleHighlight": "One link.",
+    "description": "Draft the route. Shape it on the map. Share it with everyone coming.",
     "primaryCta": "Start planning",
-    "secondaryCta": "See example trips",
-    "proof": [
-      "AI itinerary drafts in seconds",
-      "Drag the route until it feels right",
-      "Share one clean link before the group chat gets chaotic"
-    ]
+    "secondaryCta": "See example trips"
   },
   "globe": {
     "accessibility": "Interactive globe preview showing routes from your starting point to colorful trip ideas around the world.",
@@ -52,105 +46,53 @@
       "alt": "30-day Southeast Asia trip preview"
     }
   },
-  "bento": {
-    "badge": "Plan with momentum",
-    "title": "The pieces of trip planning finally stay in one place",
-    "subtitle": "Instead of jumping between docs, maps, screenshots, and half-finished chat threads, TravelFlow keeps the route, timing, and trip context moving together.",
+  "capabilities": {
+    "title": "How a trip takes shape",
+    "subtitle": "No document. No screenshots. No second tool.",
     "items": [
       {
-        "id": "airport",
-        "eyebrow": "",
-        "title": "Next flight awaits",
-        "description": "TravelFlow helps you organize the whole trip, from the first flight to the transfers, stays, and little plans in between. We start with the airport closest to you, so turning a daydream into a real route feels far less chaotic.",
-        "detail": "Start close. Dream bigger."
+        "id": "draft",
+        "title": "Drafted in seconds",
+        "description": "Say where and how long. The route comes back with cities, pacing and travel time in place."
       },
       {
-        "id": "itinerary",
-        "eyebrow": "AI route draft",
-        "title": "Start from a route, not a blank page",
-        "description": "Describe the trip you want in plain language and get a believable first itinerary with city flow, pacing, and activity context already connected.",
-        "detail": "A first draft your group can react to immediately"
+        "id": "shape",
+        "title": "Shaped by hand",
+        "description": "Drag a stop. Stretch a stay. The map and the timeline move together."
       },
       {
-        "id": "timeline",
-        "eyebrow": "Live map edits",
-        "title": "Refine the plan without breaking it",
-        "description": "Stretch a stay, reorder a city, or change the pace. TravelFlow keeps the map and timeline aligned so every edit still feels coherent.",
-        "detail": "Map and timing stay in sync"
-      },
-      {
-        "id": "inspiration",
-        "eyebrow": "Forkable inspiration",
-        "title": "Borrow proven ideas and make them yours",
-        "description": "Use community-style routes and inspiration as a smart starting point instead of rebuilding a believable trip from scratch.",
-        "detail": "Start from real travel energy"
-      },
-      {
-        "id": "sharing",
-        "eyebrow": "Crew review",
-        "title": "Share something your travel crew can understand fast",
-        "description": "Send one link with the route, the pacing, and the notes already in place so feedback happens on the actual trip, not on disconnected screenshots.",
-        "detail": "No account required"
-      },
-      {
-        "id": "relive",
-        "eyebrow": "Booking and handoff",
-        "title": "Leave with a plan that still feels polished",
-        "description": "When the route is ready, the practical context is still there: booking links, notes, and a cleaner print-friendly version for the final handoff.",
-        "detail": "Ready to share, save, or print"
+        "id": "share",
+        "title": "Shared as one link",
+        "description": "No account to create, nothing to export. Everyone sees the same plan."
       }
-    ],
-    "airportCard": {
-      "label": "Closest departure",
-      "defaultBadge": "Dream route",
-      "loadingBadge": "Finding yours",
-      "readyBadge": "Closer to you",
-      "defaultStatus": "Start close to home. Let the rest open up from there.",
-      "loadingStatus": "Looking for the closest takeoff near you.",
-      "readyCityStatus": "Starting near {city}. The rest can open up from there.",
-      "readyCountryStatus": "Starting from {country}. The rest can open up from there.",
-      "fallbackStatus": "Start close to home. Let the rest open up from there.",
-      "defaultChip": "Your side of the map",
-      "cityChip": "Around {city}",
-      "countryChip": "From {country}"
-    }
+    ]
   },
-  "workflow": {
-    "badge": "From spark to group-ready plan",
-    "title": "One flow for drafting, shaping, and sharing",
-    "subtitle": "TravelFlow works best when you want the exciting part of planning and the practical part of planning to live in the same place.",
-    "steps": [
+  "airport": {
+    "title": "It starts at your airport.",
+    "description": "TravelFlow finds the closest one and builds the route out from there.",
+    "originLabel": "Nearest to you",
+    "destinationLabel": "Anywhere next"
+  },
+  "outcomes": {
+    "title": "What you leave with",
+    "items": [
       {
-        "step": "01",
-        "title": "Start with a destination, a vibe, or a copied route",
-        "description": "Begin from a country list, a seasonal idea, or a travel concept that is still fuzzy. You do not need to know the perfect sequence yet."
+        "title": "A live route",
+        "description": "Every day on the map, with the travel time between stops."
       },
       {
-        "step": "02",
-        "title": "Shape the pacing with the map and timeline together",
-        "description": "See the route on the globe, then tighten the trip on the timeline until it feels realistic for transfers, energy, and group preferences."
+        "title": "Booking links",
+        "description": "Attached to the activities that need one."
       },
       {
-        "step": "03",
-        "title": "Share a version that still looks intentional",
-        "description": "When it is time to get feedback or book, the same plan already has the map, the structure, and the extra context people usually ask for."
+        "title": "A print layout",
+        "description": "Clean enough to carry when the signal drops."
       }
-    ],
-    "glance": {
-      "eyebrow": "What your group sees",
-      "title": "A plan that already looks share-ready",
-      "description": "Maps, day-by-day timing, and the practical context stay aligned so reactions come faster and with less confusion.",
-      "items": [
-        "Live route view with pacing context",
-        "Booking-ready activity links when you need them",
-        "A cleaner print layout for the final version"
-      ]
-    }
+    ]
   },
   "cta": {
-    "badge": "Build it while the idea is still fresh",
-    "title": "Start with the route. Keep the travel mood.",
-    "subtitle": "Draft your next trip in minutes, then keep refining it in the same place instead of rebuilding it across five tools.",
+    "title": "Start with a sentence.",
+    "subtitle": "Draft the route in minutes. Keep the whole trip in one place.",
     "button": "Start planning"
   }
 }
