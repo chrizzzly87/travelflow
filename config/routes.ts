@@ -305,7 +305,8 @@ export const getNamespacesForMarketingPath = (pathname: string): string[] => {
     if (stripped === '/pricing') return ['common', 'pricing'];
     if (stripped.startsWith('/blog')) return ['common', 'blog'];
     if (['/imprint', '/privacy', '/terms', '/cookies'].includes(stripped)) return ['common', 'legal'];
-    if (stripped === '/faq') return ['common'];
+    if (stripped === '/faq') return ['common', 'faq'];
+    if (stripped === '/contact') return ['common', 'pages', 'faq'];
     if (stripped === '/login') return ['common', 'auth'];
     return ['common', 'pages'];
 };

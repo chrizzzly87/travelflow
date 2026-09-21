@@ -15,7 +15,8 @@ import { FaqAccordionList } from '../components/marketing/FaqAccordionList';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../config/routes';
 import { DEFAULT_LOCALE } from '../config/locales';
-import { CONTACT_FAQ_EXCERPT_ITEMS, type FaqItemWithSection } from '../data/faqContent';
+import { CONTACT_FAQ_EXCERPT_ITEM_IDS, type FaqItemWithSection } from '../data/faqContent';
+import { useFaqContent } from '../hooks/useFaqContent';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { useAuth } from '../hooks/useAuth';
 import { useSafeRouteLocation } from '../hooks/useSafeRouteLocation';
@@ -188,7 +189,8 @@ const resolvePrefilledContactContextFromSearch = (search: string): PrefilledCont
 const isLikelyQuotaStatus = (status: number): boolean => [402, 403, 409, 429, 503].includes(status);
 
 export const ContactPage: React.FC = () => {
-    const { t } = useTranslation('common');
+    const { t } = useTranslation(['common', 'faq']);
+    const { contactExcerptItems } = useFaqContent();
     const routeLocation = useSafeRouteLocation();
     const locale = extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE;
     const { access, profile } = useAuth();
@@ -212,7 +214,7 @@ export const ContactPage: React.FC = () => {
     const [validationError, setValidationError] = useState<string | null>(null);
     const [isSubReasonSelectOpen, setIsSubReasonSelectOpen] = useState(false);
     const [openContactFaqItemIds, setOpenContactFaqItemIds] = useState<string[]>(() => {
-        const firstItemId = CONTACT_FAQ_EXCERPT_ITEMS[0]?.id;
+        const firstItemId = CONTACT_FAQ_EXCERPT_ITEM_IDS[0];
         return firstItemId ? [firstItemId] : [];
     });
     const [resolvedAccess, setResolvedAccess] = useState<ResolvedAccessContext>({
@@ -779,15 +781,15 @@ export const ContactPage: React.FC = () => {
 
             <section className="mt-14 border-t border-border pt-10 md:mt-16 md:pt-12">
                 <h2 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-                    Frequently asked questions
+                    {t('faq:contactExcerpt.title')}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Here are quick answers to common contact and support topics.
+                    {t('faq:contactExcerpt.description')}
                 </p>
 
                 <div className="mt-5">
                     <FaqAccordionList
-                        items={CONTACT_FAQ_EXCERPT_ITEMS}
+                        items={contactExcerptItems}
                         openItemIds={openContactFaqItemIds}
                         onToggle={handleContactFaqItemToggle}
                         variant="plain"

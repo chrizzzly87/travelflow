@@ -52,7 +52,8 @@
       "common.json:tripAgent.routeDuration",
       "common.json:tripView.infoDialog.tabs.general",
       "common.json:tripView.mapLinks.apple",
-      "common.json:tripView.mapLinks.google"
+      "common.json:tripView.mapLinks.google",
+      "faq.json:sections.general"
     ],
     "fa": [
       "common.json:contact.form.emailPlaceholder"
