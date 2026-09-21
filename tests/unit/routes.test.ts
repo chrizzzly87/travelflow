@@ -115,7 +115,8 @@ describe('config/routes', () => {
     expect(getNamespacesForMarketingPath('/pricing')).toEqual(['common', 'pricing']);
     expect(getNamespacesForMarketingPath('/de/blog/spring-guide')).toEqual(['common', 'blog']);
     expect(getNamespacesForMarketingPath('/terms')).toEqual(['common', 'legal']);
-    expect(getNamespacesForMarketingPath('/faq')).toEqual(['common']);
+    expect(getNamespacesForMarketingPath('/faq')).toEqual(['common', 'faq']);
+    expect(getNamespacesForMarketingPath('/de/contact')).toEqual(['common', 'pages', 'faq']);
     expect(getNamespacesForMarketingPath('/login')).toEqual(['common', 'auth']);
     expect(getNamespacesForMarketingPath('/inspirations')).toEqual(['common', 'pages']);
     expect(getNamespacesForToolPath('/create-trip')).toEqual(['common', 'createTrip']);

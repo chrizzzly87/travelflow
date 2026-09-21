@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { FaqAccordionList } from '../components/marketing/FaqAccordionList';
@@ -9,10 +10,11 @@ import {
     trackEvent,
 } from '../services/analyticsService';
 import {
-    FAQ_SECTIONS,
-    getFaqItemById,
+    FAQ_ITEM_IDS,
+    getFaqSectionIdForItem,
     type FaqItemWithSection,
 } from '../data/faqContent';
+import { useFaqContent } from '../hooks/useFaqContent';
 
 const normalizeHashId = (hash: string): string => (
     decodeURIComponent((hash || '').replace(/^#/, '').trim())
@@ -20,25 +22,15 @@ const normalizeHashId = (hash: string): string => (
 
 export const FaqPage: React.FC = () => {
     const routeLocation = useLocation();
+    const { t } = useTranslation('faq');
+    const { sections: faqSections } = useFaqContent();
     const locale = extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE;
     const [openItemIds, setOpenItemIds] = useState<string[]>(() => {
-        const firstItemId = FAQ_SECTIONS[0]?.items[0]?.id;
+        const firstItemId = FAQ_ITEM_IDS[0];
         return firstItemId ? [firstItemId] : [];
     });
     const didTrackViewRef = useRef(false);
     const lastHashOpenedRef = useRef<string | null>(null);
-
-    const faqSections = useMemo(
-        () => FAQ_SECTIONS.map((section) => ({
-            ...section,
-            itemsWithSection: section.items.map((item): FaqItemWithSection => ({
-                ...item,
-                sectionId: section.id,
-                sectionTitle: section.title,
-            })),
-        })),
-        []
-    );
 
     useEffect(() => {
         if (didTrackViewRef.current) return;
@@ -53,14 +45,14 @@ export const FaqPage: React.FC = () => {
         const hashId = normalizeHashId(rawHash);
         if (!hashId) return;
 
-        const matchedItem = getFaqItemById(hashId);
-        if (matchedItem) {
+        const matchedSectionId = getFaqSectionIdForItem(hashId);
+        if (matchedSectionId) {
             setOpenItemIds((current) => (current.length === 1 && current[0] === hashId ? current : [hashId]));
 
             if (lastHashOpenedRef.current !== hashId) {
                 trackEvent('faq__item--open', {
                     item_id: hashId,
-                    section_id: matchedItem.sectionId,
+                    section_id: matchedSectionId,
                     source: 'hash',
                 });
                 lastHashOpenedRef.current = hashId;
@@ -119,10 +111,10 @@ export const FaqPage: React.FC = () => {
         <MarketingLayout>
             <section className="pb-8 md:pb-12">
                 <h1 className="text-4xl font-semibold tracking-tight text-foreground md:text-6xl">
-                    Frequently asked questions.
+                    {t('hero.title')}
                 </h1>
                 <p className="mt-4 max-w-[100ch] text-sm leading-7 text-muted-foreground md:text-base">
-                    Find quick answers for support, billing, privacy, and planning questions.
+                    {t('hero.description')}
                 </p>
 
                 <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold text-foreground">
@@ -151,7 +143,7 @@ export const FaqPage: React.FC = () => {
                                 {section.title}
                             </h2>
                             <FaqAccordionList
-                                items={section.itemsWithSection}
+                                items={section.items}
                                 openItemIds={openItemIds}
                                 onToggle={handleItemToggle}
                                 variant="plain"
@@ -169,9 +161,9 @@ export const FaqPage: React.FC = () => {
             </div>
 
             <section className="pt-10 md:pt-12">
-                <h2 className="text-xl font-semibold text-foreground md:text-2xl">Still need help?</h2>
+                <h2 className="text-xl font-semibold text-foreground md:text-2xl">{t('help.title')}</h2>
                 <p className="mt-3 max-w-[100ch] text-sm leading-6 text-muted-foreground">
-                    Contact us with your question and we will route it to the right team.
+                    {t('help.description')}
                 </p>
                 <Link
                     to={contactPath}
@@ -179,7 +171,7 @@ export const FaqPage: React.FC = () => {
                     className="mt-4 inline-flex items-center rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
                     {...getAnalyticsDebugAttributes('faq__cta--contact', { source: 'faq_page' })}
                 >
-                    Open Contact
+                    {t('help.cta')}
                 </Link>
             </section>
         </MarketingLayout>
