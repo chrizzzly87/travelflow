@@ -645,7 +645,8 @@
         "realistic": "Suivre les routes",
         "simple": "Direct"
       },
-      "saveAsDefault": "Enregistrer comme mon préréglage",
+      "saveAsDefault": "Enregistrer",
+      "saveAsDefaultTooltip": "Enregistrer comme mon préréglage",
       "saved": "Enregistré",
       "switchToMapbox": "Passer à Mapbox",
       "tab": {

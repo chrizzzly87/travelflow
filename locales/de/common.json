@@ -645,7 +645,8 @@
         "realistic": "Straßen folgen",
         "simple": "Direkt"
       },
-      "saveAsDefault": "Als meine Voreinstellung speichern",
+      "saveAsDefault": "Speichern",
+      "saveAsDefaultTooltip": "Als meine Voreinstellung speichern",
       "saved": "Gespeichert",
       "switchToMapbox": "Zu Mapbox wechseln",
       "tab": {

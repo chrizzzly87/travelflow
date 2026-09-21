@@ -645,7 +645,8 @@
         "realistic": "Seguir estradas",
         "simple": "Direto"
       },
-      "saveAsDefault": "Guardar a minha predefinição",
+      "saveAsDefault": "Guardar",
+      "saveAsDefaultTooltip": "Guardar a minha predefinição",
       "saved": "Guardado",
       "switchToMapbox": "Mudar para Mapbox",
       "tab": {

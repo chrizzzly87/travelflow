@@ -645,7 +645,8 @@
         "realistic": "Follow roads",
         "simple": "Direct"
       },
-      "saveAsDefault": "Save as my preset",
+      "saveAsDefault": "Save",
+      "saveAsDefaultTooltip": "Save as my preset",
       "saved": "Saved",
       "switchToMapbox": "Switch to Mapbox",
       "tab": {

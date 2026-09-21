@@ -645,7 +645,8 @@
         "realistic": "Wzdłuż dróg",
         "simple": "Wprost"
       },
-      "saveAsDefault": "Zapisz jako mój styl",
+      "saveAsDefault": "Zapisz",
+      "saveAsDefaultTooltip": "Zapisz jako mój styl",
       "saved": "Zapisano",
       "switchToMapbox": "Przełącz na Mapbox",
       "tab": {

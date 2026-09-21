@@ -30,6 +30,42 @@ describe('index.html bootstrap shell', () => {
     expect(html).toContain('(?:trip|s|example)');
   });
 
+  it('gives the placeholder a dark set for every surface, not just its bones', () => {
+    /**
+     * The dark block used to redefine only --tf-bone*, so the trip placeholder
+     * came up as a white page with dark bones on it: light panels, light grid
+     * lines, a near-white map pane and slate labels. Every surface token the
+     * light block declares has to have an answer in the dark one.
+     */
+    const blockFor = (selector: string): string => {
+      const start = html.indexOf(selector);
+      expect(start, `${selector} not found`).toBeGreaterThan(-1);
+      return html.slice(start, html.indexOf('}', start));
+    };
+
+    const lightBlock = blockFor('.tf-boot-shell {');
+    const darkBlock = blockFor('.dark .tf-boot-shell {');
+    const surfaceTokens = [...lightBlock.matchAll(/(--tf-boot-[a-z-]+):/g)].map((match) => match[1]);
+
+    expect(surfaceTokens.length).toBeGreaterThan(8);
+    for (const token of surfaceTokens) {
+      expect(darkBlock, `${token} has no dark value`).toContain(`${token}:`);
+    }
+
+    // And the rules themselves go through the tokens rather than naming a
+    // light literal at the use site, which is how they got missed the first
+    // time. Only the rules below the two palette blocks, which are where those
+    // literals are legitimately declared.
+    const shellCss = html.slice(
+      html.indexOf('}', html.indexOf('.dark .tf-boot-shell {')),
+      html.indexOf('</style>', html.indexOf('<style data-tf-boot-shell-css>')),
+    );
+    expect(shellCss).not.toContain('#e5e7eb');
+    expect(shellCss).not.toContain('#f1f5f9');
+    expect(shellCss).not.toContain('#cbd5e1');
+    expect(shellCss).not.toContain('#94a3b8');
+  });
+
   it('keeps the React root outside the bootstrap shell container', () => {
     expect(html).toMatch(/<\/div>\s*<\/div>\s*<div id="root"><\/div>/);
   });

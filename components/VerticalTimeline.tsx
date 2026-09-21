@@ -8,6 +8,7 @@ import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleCityLaneViewTransitionName } from '../shared/viewTransitionNames';
 import { buildRenderedTimelineDaySlots, buildRenderedTimelineMonths } from './tripview/timelineRenderedSlots';
 import { getTimelineVisualCenter, getTimelineVisualRange, getTimelineVisualSpan } from '../utils/timelineVisualLayout';
+import { TodayBadge } from './ui/today-badge';
 
 interface VerticalTimelineProps {
   trip: ITrip;
@@ -568,16 +569,17 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
         <div className="relative flex min-h-full" style={{ height: `${renderedTimelineHeight + 32}px` }}>
             {todaySlot && (
                 <>
+                    {/* A flat tint. The gradient it replaces was built from
+                      * `red-50`, which is all but white and painted a pale band
+                      * across the whole row once the app went dark. */}
                     <div
-                        className="absolute left-0 right-0 pointer-events-none z-[2]"
+                        className="absolute left-0 right-0 pointer-events-none z-[2] bg-[var(--tf-today-wash)]"
                         style={{
                             top: `${32 + todaySlot.start}px`,
                             height: `${todaySlot.size}px`,
                         }}
                         aria-hidden="true"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-b from-red-50/40 via-red-50/15 to-red-50/40" />
-                    </div>
+                    />
                     <div
                         className="absolute left-0 right-0 pointer-events-none z-[25]"
                         style={{
@@ -586,10 +588,11 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                         }}
                         aria-hidden="true"
                     >
-                        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-red-400/60" />
-                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-red-200/90 bg-card/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-red-500 shadow-sm dark:border-red-400/30 dark:shadow-none">
-                            Today
-                        </span>
+                        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-[var(--tf-today-line)]" />
+                        <TodayBadge
+                            size="sm"
+                            className="absolute start-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                        />
                     </div>
                 </>
             )}
@@ -613,7 +616,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                     <div
                                         key={`month-rail-${slot.index}`}
                                         className={`absolute inset-x-0 border-b border-border ${
-                                            isToday ? 'bg-red-50/70 dark:bg-red-400/12' : slot.isWeekend ? 'bg-secondary' : 'bg-secondary/80'
+                                            isToday ? 'bg-[var(--tf-today-cell)]' : slot.isWeekend ? 'bg-secondary' : 'bg-secondary/80'
                                         }`}
                                         style={{
                                             height: `${slot.size}px`,
@@ -664,7 +667,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                 <div
                                     key={slot.index}
                                     className={`absolute flex w-full select-none items-center justify-center border-b border-border px-1 ${
-                                        isToday ? 'bg-red-50/70 dark:bg-red-400/12' : slot.isWeekend ? 'bg-secondary' : 'bg-card'
+                                        isToday ? 'bg-[var(--tf-today-cell)]' : slot.isWeekend ? 'bg-secondary' : 'bg-card'
                                     }`}
                                     style={{
                                         height: `${slot.size}px`,
@@ -674,31 +677,31 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                 >
                                     {isUltraZoomedOut ? (
                                         <div className="flex size-full items-center justify-center gap-1.5 text-center">
-                                            <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-muted-foreground'}`}>
+                                            <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-[var(--tf-today-text)]' : slot.isWeekend ? 'text-red-400' : 'text-muted-foreground'}`}>
                                                 {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
                                             </span>
-                                            <span className={`text-sm font-semibold leading-none ${isToday ? 'text-red-700 dark:text-red-200' : 'text-foreground'}`}>
+                                            <span className={`text-sm font-semibold leading-none ${isToday ? 'text-[var(--tf-today-text-strong)]' : 'text-foreground'}`}>
                                                 {slot.dayNum}
                                             </span>
                                         </div>
                                     ) : isZoomedOut ? (
                                         <div className="flex size-full flex-col items-center justify-center text-center">
-                                            <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-muted-foreground'}`}>
+                                            <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-[var(--tf-today-text)]' : slot.isWeekend ? 'text-red-400' : 'text-muted-foreground'}`}>
                                                 {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
                                             </span>
-                                            <span className={`text-sm font-semibold leading-tight ${isToday ? 'text-red-700 dark:text-red-200' : 'text-foreground'}`}>
+                                            <span className={`text-sm font-semibold leading-tight ${isToday ? 'text-[var(--tf-today-text-strong)]' : 'text-foreground'}`}>
                                                 {slot.dayNum}
                                             </span>
                                         </div>
                                     ) : (
                                         <div className="text-center">
-                                            <span className={`block text-[10px] font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-muted-foreground'}`}>
+                                            <span className={`block text-[10px] font-bold uppercase leading-none ${isToday ? 'text-[var(--tf-today-text)]' : slot.isWeekend ? 'text-red-400' : 'text-muted-foreground'}`}>
                                                 {slot.dayName}
                                             </span>
-                                            <span className={`block text-lg font-bold leading-tight ${isToday ? 'text-red-700 dark:text-red-200' : 'text-foreground'}`}>
+                                            <span className={`block text-lg font-bold leading-tight ${isToday ? 'text-[var(--tf-today-text-strong)]' : 'text-foreground'}`}>
                                                 {slot.dayNum}
                                             </span>
-                                            <span className={`text-[10px] uppercase leading-none ${isToday ? 'text-red-500' : 'text-muted-foreground'}`}>
+                                            <span className={`text-[10px] uppercase leading-none ${isToday ? 'text-[var(--tf-today-text)]' : 'text-muted-foreground'}`}>
                                                 {slot.monthShort}
                                             </span>
                                         </div>

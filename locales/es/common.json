@@ -645,7 +645,8 @@
         "realistic": "Seguir carreteras",
         "simple": "Directo"
       },
-      "saveAsDefault": "Guardar como mi preajuste",
+      "saveAsDefault": "Guardar",
+      "saveAsDefaultTooltip": "Guardar como mi preajuste",
       "saved": "Guardado",
       "switchToMapbox": "Cambiar a Mapbox",
       "tab": {

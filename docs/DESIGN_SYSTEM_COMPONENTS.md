@@ -267,6 +267,25 @@ unconstrained trigger sizes to its content, and two selects then disagree on wid
 
 ---
 
+## `today-badge.tsx`
+
+The "Today" marker, for every surface that marks the current day: both timelines, the
+itinerary list, the phone day strip and the day panel. Use it rather than writing another
+pill — four hand-rolled versions in three different colours is exactly what this replaced.
+
+Sizes are `sm` (inside a timeline column or a day strip) and `md` (beside a heading). The
+colours come from the `--tf-today-badge-*` tokens in `index.css`, which are **solid** on both
+sides: the badge overlaps the day column's own tint and the grid lines behind it, so a
+translucent fill stacks with whatever it lands on.
+
+The rest of the today palette lives beside it — `--tf-today-wash` for the column tint,
+`--tf-today-cell` for the stronger header cell, `--tf-today-line` for the hairline, and
+`--tf-today-text` / `--tf-today-text-strong` for the date itself. Reach for those instead of a
+`red-50` wash: that colour is all but white, and in dark mode it painted a pale slab down the
+middle of the timeline.
+
+---
+
 ## Where to put a new shared component
 
 1. It is a generic primitive with no product knowledge → `components/ui/`, and add a section here.

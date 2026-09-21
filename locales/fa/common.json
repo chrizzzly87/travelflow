@@ -643,7 +643,8 @@
         "realistic": "پیروی از جاده",
         "simple": "مستقیم"
       },
-      "saveAsDefault": "ذخیره به عنوان پیش‌تنظیم من",
+      "saveAsDefault": "ذخیره",
+      "saveAsDefaultTooltip": "ذخیره به عنوان پیش‌تنظیم من",
       "saved": "ذخیره شد",
       "switchToMapbox": "تغییر به Mapbox",
       "tab": {

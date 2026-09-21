@@ -645,7 +645,8 @@
         "realistic": "Segui le strade",
         "simple": "Diretta"
       },
-      "saveAsDefault": "Salva come mia preimpostazione",
+      "saveAsDefault": "Salva",
+      "saveAsDefaultTooltip": "Salva come mia preimpostazione",
       "saved": "Salvato",
       "switchToMapbox": "Passa a Mapbox",
       "tab": {

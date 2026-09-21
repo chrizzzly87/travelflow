@@ -36,7 +36,12 @@ export const DrawerContent = React.forwardRef<
         'z-[1601] border border-border bg-card shadow-2xl focus:outline-none dark:shadow-none',
         side === 'right'
           ? 'fixed inset-y-0 right-0 h-screen w-[min(96vw,680px)] rounded-none border-l'
-          : 'fixed inset-x-0 bottom-0 mt-24 rounded-t-[18px]',
+          // A column, not a stack: a bottom sheet is height-capped, and without
+          // a flex context the panes below a scroll area were simply pushed past
+          // the cap and clipped — which is how the map sheet lost its footer.
+          // Callers own their own bottom inset, so the safe area is not added
+          // here: a second `pb-*` utility would race the one they pass.
+          : 'fixed inset-x-0 bottom-0 mt-24 flex flex-col overflow-hidden rounded-t-[18px]',
         className ?? '',
       ].join(' ')}
       {...props}
@@ -44,7 +49,7 @@ export const DrawerContent = React.forwardRef<
       <DrawerPrimitive.Title className="sr-only">{accessibleTitle}</DrawerPrimitive.Title>
       <DrawerPrimitive.Description className="sr-only">{accessibleDescription}</DrawerPrimitive.Description>
       {side === 'bottom' && (
-        <DrawerPrimitive.Handle className="pointer-events-auto mx-auto mt-3 h-1.5 w-12 rounded-full bg-gray-300" />
+        <DrawerPrimitive.Handle className="pointer-events-auto mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-muted-foreground/30" />
       )}
       {children}
     </DrawerPrimitive.Content>

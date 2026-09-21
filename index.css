@@ -263,6 +263,28 @@
   --tf-activity-beach-border: #67e8f9;
   --tf-activity-beach-text: #155e75;
 
+  /*
+   * "Today" on the timelines and in the day strip.
+   *
+   * Solid values on both sides, and one set for every surface that marks the
+   * current day. It used to be `red-50` washes and `/12` alpha arithmetic,
+   * which in dark mode resolved to a near-white column down the middle of the
+   * timeline and a badge with barely any contrast against the sheet.
+   *
+   * --tf-today-wash is the tint over the whole day column; --tf-today-cell is
+   * the stronger one for the header cell; --tf-today-line is the hairline down
+   * the middle of the column. The badge is solid because it overlaps both the
+   * column and the grid behind it.
+   */
+  --tf-today-wash: #fff1f2;
+  --tf-today-cell: #ffe4e6;
+  --tf-today-line: #fb7185;
+  --tf-today-badge-bg: #fff1f2;
+  --tf-today-badge-border: #fecdd3;
+  --tf-today-badge-text: #be123c;
+  --tf-today-text: #e11d48;
+  --tf-today-text-strong: #9f1239;
+
   --tf-veil-light: #ffffff;
   --tf-veil-dark: #191817;
   --tf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -1487,6 +1509,17 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   --sidebar-accent: oklch(0.283 0.003 49);
   --sidebar-accent-foreground: oklch(0.953 0.009 85);
   --sidebar-border: oklch(1 0 0 / 13%);
+
+  /* "Today", dark. Solid values, see :root for why — the light set's washes
+   * were near-white and became a pale slab down the timeline here. */
+  --tf-today-wash: #2b2220;
+  --tf-today-cell: #382625;
+  --tf-today-line: #e2606f;
+  --tf-today-badge-bg: #3d2527;
+  --tf-today-badge-border: #6b3339;
+  --tf-today-badge-text: #ffc9cf;
+  --tf-today-text: #ff8f9c;
+  --tf-today-text-strong: #ffb3bc;
 
   /* Activity-type palette, dark. Solid values, see :root for why. */
   --tf-activity-general-bg: #3a3c3f;

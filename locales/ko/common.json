@@ -645,7 +645,8 @@
         "realistic": "도로 따라",
         "simple": "직선"
       },
-      "saveAsDefault": "내 프리셋으로 저장",
+      "saveAsDefault": "저장",
+      "saveAsDefaultTooltip": "내 프리셋으로 저장",
       "saved": "저장됨",
       "switchToMapbox": "Mapbox로 전환",
       "tab": {

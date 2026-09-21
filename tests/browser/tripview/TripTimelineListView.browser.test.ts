@@ -478,7 +478,7 @@ describe('components/tripview/TripTimelineListView', () => {
     expect(scrollSpy).toHaveBeenCalled();
   });
 
-  it('renders today pills with red uppercase styling', () => {
+  it('renders today pills from the shared today tokens', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-03-01T12:00:00Z'));
 
@@ -496,12 +496,14 @@ describe('components/tripview/TripTimelineListView', () => {
         }),
       );
 
+      // The shared TodayBadge, which paints from the --tf-today-badge-* tokens
+      // so the marker reads the same on every surface and in both themes.
       const todayPills = screen.getAllByText('Today');
       expect(todayPills.length).toBeGreaterThan(0);
       for (const pill of todayPills) {
         expect(pill).toHaveClass('uppercase');
-        expect(pill).toHaveClass('text-red-700');
-        expect(pill).toHaveClass('bg-red-50');
+        expect(pill).toHaveClass('text-[var(--tf-today-badge-text)]');
+        expect(pill).toHaveClass('bg-[var(--tf-today-badge-bg)]');
       }
     } finally {
       vi.useRealTimers();

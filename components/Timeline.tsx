@@ -18,6 +18,7 @@ import { getExampleCityLaneViewTransitionName } from '../shared/viewTransitionNa
 import { buildRenderedTimelineDaySlots, buildRenderedTimelineMonths } from './tripview/timelineRenderedSlots';
 import { getTimelineVisualCenter, getTimelineVisualRange, getTimelineVisualSpan } from '../utils/timelineVisualLayout';
 import { findPreviousCity } from '../utils/timelineNeighbors';
+import { TodayBadge } from './ui/today-badge';
 
 interface TimelineProps {
   trip: ITrip;
@@ -712,16 +713,17 @@ export const Timeline: React.FC<TimelineProps> = ({
         <div className="relative min-h-full" style={{ minWidth: '100%', width: `${totalWidth}px` }}>
             {todaySlot && (
                 <>
+                    {/* One flat tint, not a gradient of `red-50`: that colour is
+                      * all but white, so in dark mode the "highlight" came out
+                      * as a pale slab down the middle of the timeline. */}
                     <div
-                        className="absolute top-0 bottom-0 pointer-events-none z-[2]"
+                        className="absolute top-0 bottom-0 pointer-events-none z-[2] bg-[var(--tf-today-wash)]"
                         style={{
                             left: `${32 + todaySlot.start}px`,
                             width: `${todaySlot.size}px`,
                         }}
                         aria-hidden="true"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-r from-red-50/40 via-red-50/15 to-red-50/40" />
-                    </div>
+                    />
                     <div
                         className="absolute top-0 bottom-0 pointer-events-none z-[25]"
                         style={{
@@ -730,10 +732,16 @@ export const Timeline: React.FC<TimelineProps> = ({
                         }}
                         aria-hidden="true"
                     >
-                        <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px bg-red-400/60" />
-                        <span className="absolute top-1 left-1/2 -translate-x-1/2 rounded-full border border-red-200/90 bg-card/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-red-500 shadow-sm dark:border-red-400/30 dark:shadow-none">
-                            Today
-                        </span>
+                        {/* The line starts below the sticky header. Run full
+                          * height it crossed the date the badge is about, and
+                          * the badge then sat on top of that same date. */}
+                        <div
+                            className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-px bg-[var(--tf-today-line)] ${isZoomedOut ? 'top-20' : 'top-16'}`}
+                        />
+                        <TodayBadge
+                            size="sm"
+                            className={`absolute left-1/2 -translate-x-1/2 ${isZoomedOut ? 'top-[5.25rem]' : 'top-[4.25rem]'}`}
+                        />
                     </div>
                 </>
             )}
@@ -748,14 +756,14 @@ export const Timeline: React.FC<TimelineProps> = ({
                             <div
                                 key={day.index}
                                 className={`flex-shrink-0 border-r border-border flex flex-col justify-center px-2 select-none relative
-                                    ${day.isToday ? 'bg-red-50/70 dark:bg-red-400/12' : day.isWeekend ? 'bg-secondary' : 'bg-card'}
+                                    ${day.isToday ? 'bg-[var(--tf-today-cell)]' : day.isWeekend ? 'bg-secondary' : 'bg-card'}
                                 `}
                                 style={{ width: `${day.size}px` }}
                             >
-                                <span className={`text-xs font-bold ${day.isToday ? 'text-red-500' : day.isWeekend ? 'text-red-400' : 'text-muted-foreground'}`}>
+                                <span className={`text-xs font-bold ${day.isToday ? 'text-[var(--tf-today-text)]' : day.isWeekend ? 'text-red-400' : 'text-muted-foreground'}`}>
                                     {day.dayName}
                                 </span>
-                                <span className={`text-sm font-semibold whitespace-nowrap ${day.isToday ? 'text-red-700 dark:text-red-200' : 'text-foreground'}`}>
+                                <span className={`text-sm font-semibold whitespace-nowrap ${day.isToday ? 'text-[var(--tf-today-text-strong)]' : 'text-foreground'}`}>
                                     {day.dayNum} {day.monthShort}
                                 </span>
                             </div>
@@ -782,11 +790,11 @@ export const Timeline: React.FC<TimelineProps> = ({
                                 <div
                                     key={day.index}
                                     className={`flex-shrink-0 border-r border-border flex items-center justify-center select-none relative
-                                        ${day.isToday ? 'bg-red-50/70 dark:bg-red-400/12' : day.isWeekend ? 'bg-secondary' : 'bg-card'}
+                                        ${day.isToday ? 'bg-[var(--tf-today-cell)]' : day.isWeekend ? 'bg-secondary' : 'bg-card'}
                                     `}
                                     style={{ width: `${day.size}px` }}
                                 >
-                                    <span className={`text-xs font-semibold ${day.isToday ? 'text-red-600' : day.isWeekend ? 'text-red-500' : 'text-muted-foreground'}`}>
+                                    <span className={`text-xs font-semibold ${day.isToday ? 'text-[var(--tf-today-text)]' : day.isWeekend ? 'text-red-500' : 'text-muted-foreground'}`}>
                                         {day.dayNum}
                                     </span>
                                 </div>
