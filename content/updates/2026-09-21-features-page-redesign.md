@@ -2,9 +2,9 @@
 id: rel-2026-09-21-features-page-redesign
 version: v0.190.0
 title: "A quieter features page"
-date: 2026-09-21
-published_at: 2026-09-21T12:00:00Z
-status: draft
+date: 2026-09-22
+published_at: 2026-09-22T06:46:27Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "The features page is shorter, calmer and says what TravelFlow actually does, with the mock screenshots replaced by real routes and a real share card."
