@@ -1977,3 +1977,229 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Features page: word reveal + pointer spotlight
+
+   Both are CSS-only on purpose. The app renders through preact/compat, so the
+   React-Bits originals (GSAP / Framer Motion / r3f) are not options here; these
+   reproduce the same two effects with a keyframe and a radial gradient.
+   --------------------------------------------------------------------------- */
+
+@keyframes tf-word-reveal {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(0.35em);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+/* One class per word: the words are grandchildren of `.tf-reveal-words` (the
+   screen-reader copy and the aria-hidden wrapper sit between), so a child
+   combinator would match the wrappers and animate nothing. `--tf-word` carries
+   each word's position and is rendered server-side too, so the prerendered
+   markup animates identically on hydration. */
+.tf-reveal-word {
+  display: inline-block;
+  animation: tf-word-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--tf-reveal-start, 0ms) + 65ms * var(--tf-word, 0));
+}
+
+/* A view() timeline ignores animation-delay, so a row of cards has to stagger by
+   shifting the range instead. The existing `style={{ animationDelay }}` pattern
+   elsewhere on this page was silently inert for the same reason. */
+.tf-stagger-entry > *:nth-child(1) {
+  animation-range: entry 0% entry 32%;
+}
+
+.tf-stagger-entry > *:nth-child(2) {
+  animation-range: entry 7% entry 39%;
+}
+
+.tf-stagger-entry > *:nth-child(3) {
+  animation-range: entry 14% entry 46%;
+}
+
+/* Pointer-tracked highlight. The card sets --tf-spot-x/y on pointermove; with no
+   pointer (touch, keyboard) the gradient stays parked at the top centre. */
+.tf-spotlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+  background: radial-gradient(
+    16rem circle at var(--tf-spot-x, 50%) var(--tf-spot-y, 0%),
+    rgb(var(--tf-accent-rgb) / 0.16),
+    transparent 68%
+  );
+}
+
+.tf-spotlight:hover::after,
+.tf-spotlight:focus-within::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tf-reveal-word {
+    animation: none;
+  }
+
+  .tf-spotlight::after {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Features page: one motion per capability verb
+
+   The three cards used to share a single still image, so "shaped" and "shared"
+   were illustrated by the same thing as "drafted". Each visual now moves the way
+   its own verb does, and each runs on the card's own scroll entry.
+   --------------------------------------------------------------------------- */
+
+/* Drafted: the route arrives, wiped in from the start of the line. */
+@keyframes tf-capability-draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0.2;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+.tf-capability-draw {
+  animation: tf-capability-draw 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-timeline: view();
+  animation-range: entry 8% entry 55%;
+}
+
+/* Shaped: the map is handled — nudged and pulled slightly closer. */
+@keyframes tf-capability-handle {
+  from {
+    transform: scale(1.14) translate3d(2.5%, 2%, 0);
+  }
+  to {
+    transform: scale(1.02) translate3d(0, 0, 0);
+  }
+}
+
+.tf-capability-handle {
+  animation: tf-capability-handle 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-timeline: view();
+  animation-range: entry 8% entry 62%;
+}
+
+/* Shared: the card is sent, and settles where it lands. */
+@keyframes tf-capability-settle {
+  from {
+    opacity: 0;
+    transform: translateY(14px) rotate(-2.5deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(-1.5deg);
+  }
+}
+
+.tf-capability-settle {
+  animation: tf-capability-settle 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-timeline: view();
+  animation-range: entry 10% entry 52%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tf-capability-draw,
+  .tf-capability-handle,
+  .tf-capability-settle {
+    animation: none;
+  }
+
+  /* Without the keyframes the share card still needs its resting tilt. */
+  .tf-capability-settle {
+    transform: rotate(-1.5deg);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Features page: section rhythm and the closing banner
+   --------------------------------------------------------------------------- */
+
+/* A full-bleed tinted band behind a section that stays inside the page gutter.
+   Alternating these gives the page chapters instead of one flat column. */
+.tf-section-band {
+  position: relative;
+}
+
+.tf-section-band::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  /* Break out of the centred container to the viewport edges without causing a
+     horizontal scrollbar (100vw would include the scrollbar's width). */
+  inset-inline: calc(50% - 50vw);
+  width: 100vw;
+  z-index: -1;
+  /* Strong enough to actually read as a different surface. At 2% it computed
+     correctly and was still invisible against the page. */
+  background: oklch(0 0 0 / 0.04);
+  border-block: 1px solid var(--border);
+}
+
+:root:not([data-theme='light']) {
+  @media (prefers-color-scheme: dark) {
+    .tf-section-band::before {
+      background: oklch(1 0 0 / 0.05);
+    }
+  }
+}
+
+:root[data-theme='dark'] .tf-section-band::before,
+.dark .tf-section-band::before {
+  background: oklch(1 0 0 / 0.05);
+}
+
+/* The closing call to action: the one accent-carrying surface on the page. */
+.tf-cta-banner {
+  background:
+    radial-gradient(120% 140% at 12% 0%, rgb(var(--tf-accent-rgb) / 0.55), transparent 58%),
+    radial-gradient(100% 120% at 88% 100%, rgb(var(--tf-accent-rgb) / 0.4), transparent 60%),
+    linear-gradient(140deg, var(--tf-accent-700), var(--tf-accent-500));
+  box-shadow: 0 24px 60px -24px rgb(var(--tf-accent-rgb) / 0.55);
+}
+
+/* A slow drifting sheen so the banner is not a flat rectangle of colour. */
+.tf-cta-banner::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(38% 38% at 50% 50%, rgb(255 255 255 / 0.16), transparent 70%);
+  animation: tf-cta-drift 14s ease-in-out infinite alternate;
+}
+
+@keyframes tf-cta-drift {
+  from {
+    transform: translate3d(-12%, -8%, 0);
+  }
+  to {
+    transform: translate3d(12%, 8%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tf-cta-banner::after {
+    animation: none;
+  }
+}

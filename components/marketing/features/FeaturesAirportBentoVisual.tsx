@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, ArrowRight } from '@phosphor-icons/react';
+import { ArrowRight } from '@phosphor-icons/react';
 import { SplitFlap, SPLIT_FLAP_CHARSET_ALPHA } from '../../ui/SplitFlap';
 import type { AirportReference, NearbyAirportResult } from '../../../shared/airportReference';
 import { fetchNearbyAirports } from '../../../services/nearbyAirportsService';
@@ -73,8 +73,6 @@ export const FeaturesAirportBentoVisual: React.FC<{
         resolvedCode: DEFAULT_AIRPORT_CODE,
         phase: 'idle',
     });
-    const isRtl = typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
-    const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
     React.useEffect(() => {
         const intervalId = window.setInterval(() => {
@@ -194,7 +192,12 @@ export const FeaturesAirportBentoVisual: React.FC<{
 
     return (
         <div className="min-w-0 w-full select-none">
+            {/* The whole route reads ltr in every locale: an IATA code is a Latin
+                identifier, and inheriting RTL both reversed DXB into "BXD" and put the
+                destination ahead of the origin. With the row pinned, the arrow always
+                points from origin to destination. */}
             <div
+                dir="ltr"
                 data-testid="features-airport-route"
                 className="flex w-full items-center justify-between gap-3 sm:gap-5 lg:justify-end"
             >
@@ -209,7 +212,7 @@ export const FeaturesAirportBentoVisual: React.FC<{
                     {...ORIGIN_SPLIT_FLAP_PROPS}
                 />
                 <span className="flex shrink-0 items-center justify-center text-muted-foreground dark:text-muted-foreground" aria-hidden="true">
-                    <ArrowIcon size={24} weight="regular" />
+                    <ArrowRight size={24} weight="regular" />
                 </span>
                 <SplitFlap
                     value={destinationCode}

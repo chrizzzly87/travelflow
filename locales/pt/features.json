@@ -1,16 +1,11 @@
 {
   "hero": {
-    "badge": "Planeamento de viagem interativo",
-    "titleBefore": "Crie viagens que já parecem",
-    "titleHighlight": "prontas a partir",
-    "description": "O TravelFlow transforma ideias de destino numa rota à qual o seu grupo consegue realmente reagir. Faça o primeiro rascunho com IA, ajuste-o num mapa e numa timeline em direto e partilhe um link que continua polido quando chega a hora de decidir.",
+    "eyebrow": "Desenhar · Ajustar · Partilhar",
+    "titleBefore": "Cada viagem,",
+    "titleHighlight": "planeada num só lugar.",
+    "description": "Desenhe a rota, ajuste-a no mapa e partilhe com quem vem consigo.",
     "primaryCta": "Começar a planear",
-    "secondaryCta": "Ver viagens exemplo",
-    "proof": [
-      "Rascunhos de itinerário com IA em segundos",
-      "Ajuste a rota até parecer certa",
-      "Um link claro antes de o chat ficar caótico"
-    ]
+    "secondaryCta": "Ver viagens exemplo"
   },
   "globe": {
     "accessibility": "Pré-visualização interativa do globo com rotas desde o seu ponto de partida até ideias de viagem pelo mundo.",
@@ -52,105 +47,59 @@
       "alt": "Pré-visualização de uma viagem de mochila de 30 dias pelo Sudeste Asiático"
     }
   },
-  "bento": {
-    "badge": "Planeie com ritmo",
-    "title": "As peças da viagem finalmente ficam no mesmo sítio",
-    "subtitle": "Em vez de saltar entre docs, mapas, capturas e conversas a meio, o TravelFlow mantém a rota, o ritmo e o contexto juntos.",
+  "capabilities": {
+    "eyebrow": "Como funciona",
+    "title": "Como uma viagem ganha forma",
+    "subtitle": "Sem documentos. Sem capturas de ecrã. Sem uma segunda ferramenta.",
     "items": [
       {
-        "id": "airport",
-        "eyebrow": "",
-        "title": "O próximo voo já espera",
-        "description": "A TravelFlow ajuda-te a organizar a viagem inteira, desde o primeiro voo até aos transfers, estadias e pequenos planos pelo caminho. Começamos pelo aeroporto mais próximo para que transformar uma ideia numa rota real pareça muito menos caótico.",
-        "detail": "Comeca perto. Sonha maior."
+        "id": "draft",
+        "eyebrow": "Desenhar",
+        "title": "Desenhada em segundos",
+        "description": "Diga para onde e por quanto tempo. A rota volta com cidades, ritmo e tempos de viagem."
       },
       {
-        "id": "itinerary",
-        "eyebrow": "Rascunho com IA",
-        "title": "Comece por uma rota, não por uma página em branco",
-        "description": "Descreva a viagem em linguagem natural e receba um primeiro itinerário credível com fluxo entre cidades, ritmo e contexto já ligados.",
-        "detail": "Um primeiro rascunho ao qual o grupo pode reagir de imediato"
+        "id": "shape",
+        "eyebrow": "Ajustar",
+        "title": "Ajustada à mão",
+        "description": "Mova uma paragem. Prolongue uma estadia. O mapa e a linha do tempo movem-se juntos."
       },
       {
-        "id": "timeline",
-        "eyebrow": "Edições em direto",
-        "title": "Ajuste o plano sem o partir",
-        "description": "Alongue uma estadia, troque a ordem de uma cidade ou mude o ritmo. O TravelFlow mantém mapa e timeline alinhados para que cada edição continue coerente.",
-        "detail": "Mapa e tempos continuam sincronizados"
-      },
-      {
-        "id": "inspiration",
-        "eyebrow": "Inspiração reaproveitável",
-        "title": "Pegue em boas ideias e torne-as suas",
-        "description": "Use rotas já convincentes como ponto de partida em vez de reconstruir uma viagem credível do zero sempre que começa.",
-        "detail": "Comece com energia de viagem real"
-      },
-      {
-        "id": "sharing",
-        "eyebrow": "Revisão do grupo",
-        "title": "Partilhe algo que o grupo entende depressa",
-        "description": "Envie um único link com rota, ritmo e notas já no lugar para que o feedback aconteça sobre a viagem real e não sobre capturas espalhadas.",
-        "detail": "Sem conta obrigatória"
-      },
-      {
-        "id": "relive",
-        "eyebrow": "Reserva e entrega",
-        "title": "Acabe com um plano que continua polido",
-        "description": "Quando a rota está pronta, o contexto prático continua lá: links, notas e uma versão mais limpa para a entrega final.",
-        "detail": "Pronto para partilhar, guardar ou imprimir"
+        "id": "share",
+        "eyebrow": "Partilhar",
+        "title": "Partilhada num link",
+        "description": "Sem criar conta, sem exportar nada. Todos veem o mesmo plano."
       }
-    ],
-    "airportCard": {
-      "label": "Partida mais proxima",
-      "defaultBadge": "Rota de sonho",
-      "loadingBadge": "A procurar a tua",
-      "readyBadge": "Mais perto de ti",
-      "defaultStatus": "Comeca perto de casa. A partir dai, o resto pode abrir-se.",
-      "loadingStatus": "A procurar a partida mais proxima de ti.",
-      "readyCityStatus": "A comecar perto de {city}. A partir dai, o resto pode abrir-se.",
-      "readyCountryStatus": "A comecar em {country}. A partir dai, o resto pode abrir-se.",
-      "fallbackStatus": "Comeca perto de casa. A partir dai, o resto pode abrir-se.",
-      "defaultChip": "O teu lado do mapa",
-      "cityChip": "Perto de {city}",
-      "countryChip": "A partir de {country}"
-    }
+    ]
   },
-  "workflow": {
-    "badge": "Da faísca a um plano pronto para o grupo",
-    "title": "Um só fluxo para criar, ajustar e partilhar",
-    "subtitle": "O TravelFlow funciona melhor quando quer manter a parte emocionante e a parte prática do planeamento no mesmo lugar.",
-    "steps": [
+  "airport": {
+    "eyebrow": "O seu ponto de partida",
+    "title": "Começa no seu aeroporto.",
+    "description": "O TravelFlow encontra o mais próximo e constrói a rota a partir daí.",
+    "originLabel": "O mais perto de si",
+    "destinationLabel": "Para onde quiser"
+  },
+  "outcomes": {
+    "eyebrow": "O que recebe",
+    "title": "O que fica consigo",
+    "items": [
       {
-        "step": "01",
-        "title": "Comece com um destino, um mood ou uma rota copiada",
-        "description": "Parta de uma lista de países, de uma ideia sazonal ou de um conceito ainda difuso. Ainda não precisa de saber a sequência perfeita."
+        "title": "Uma rota viva",
+        "description": "Cada dia no mapa, com o tempo de viagem entre paragens."
       },
       {
-        "step": "02",
-        "title": "Acerte o ritmo com mapa e timeline juntos",
-        "description": "Veja a rota no globo e depois aperte-a na timeline até parecer realista para transferes, energia e preferências do grupo."
+        "title": "Links de reserva",
+        "description": "Nas atividades que precisam de um."
       },
       {
-        "step": "03",
-        "title": "Partilhe uma versão que já parece intencional",
-        "description": "Quando chega a hora de pedir feedback ou reservar, o mesmo plano já inclui mapa, estrutura e o contexto extra que as pessoas costumam pedir."
+        "title": "Um layout para imprimir",
+        "description": "Claro o suficiente para levar quando a rede falha."
       }
-    ],
-    "glance": {
-      "eyebrow": "O que o grupo vê",
-      "title": "Um plano que já parece pronto a partilhar",
-      "description": "Mapa, ritmo dia a dia e contexto prático mantêm-se alinhados para que as reações cheguem mais depressa e com menos confusão.",
-      "items": [
-        "Vista de rota em direto com contexto de ritmo",
-        "Links prontos para reservar quando precisa",
-        "Uma versão de impressão mais limpa para o plano final"
-      ]
-    }
+    ]
   },
   "cta": {
-    "badge": "Construa enquanto a ideia ainda está fresca",
-    "title": "Comece pela rota. Guarde o mood da viagem.",
-    "subtitle": "Esboce a sua próxima viagem em minutos e continue a refiná-la no mesmo lugar em vez de a reconstruir em cinco ferramentas.",
+    "title": "Comece com uma frase.",
+    "subtitle": "Desenhe a rota em minutos. Mantenha a viagem toda num só lugar.",
     "button": "Começar a planear"
   }
 }
