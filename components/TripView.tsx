@@ -47,6 +47,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useTripAgentAvailability } from '../hooks/useTripAgentAvailability';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
 import { useTripCopyNoticeToast } from './tripview/useTripCopyNoticeToast';
+import { TRIP_AGENT_LAUNCHER_POSITION_CLASS } from './tripview/tripBottomDock';
 import { useGenerationProgressMessage } from './tripview/useGenerationProgressMessage';
 import { useReleaseNoticeReady } from './tripview/useReleaseNoticeReady';
 import { useTripExpiryLifecycle } from './tripview/useTripExpiryLifecycle';
@@ -3727,7 +3728,7 @@ const useTripViewRender = ({
                         <button
                             type="button"
                             onClick={openTripAgent}
-                            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] end-4 z-[1490] inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-semibold text-foreground shadow-lg transition hover:border-border hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:shadow-none"
+                            className={`fixed ${TRIP_AGENT_LAUNCHER_POSITION_CLASS} z-[1490] inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-semibold text-foreground shadow-lg transition hover:border-border hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:shadow-none`}
                             aria-label={t('tripAgent.title')}
                             {...getAnalyticsDebugAttributes('trip_agent__launcher--open', { trip_id: trip.id })}
                         >
@@ -3881,6 +3882,7 @@ const useTripViewRender = ({
                         }}
                         shareStatus={shareStatus}
                         onCopyTrip={onCopyTrip}
+                        isAgentLauncherVisible={isTripAgentRolledOut && !isTripAgentOpen}
                         expirationLabel={expirationLabel}
                         tripId={trip.id}
                         paywallActivationMode={paywallActivationMode}

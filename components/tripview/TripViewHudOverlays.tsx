@@ -8,10 +8,14 @@ import { PLAN_CATALOG } from '../../config/planCatalog';
 import type { TripPaywallActivationMode } from '../../config/paywall';
 import type { ShareMode } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import { CopyTripButton } from './CopyTripButton';
+import { tripDockCardBottomClass } from './tripBottomDock';
 
 interface TripViewHudOverlaysProps {
     shareStatus?: ShareMode;
     onCopyTrip?: () => void;
+    /** True while the "Plan with AI" launcher shares the bottom-end corner. */
+    isAgentLauncherVisible?: boolean;
     isPaywallLocked: boolean;
     expirationLabel: string | null;
     tripId: string;
@@ -39,6 +43,7 @@ interface TripViewHudOverlaysProps {
 export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
     shareStatus,
     onCopyTrip,
+    isAgentLauncherVisible = false,
     isPaywallLocked,
     expirationLabel,
     tripId,
@@ -91,7 +96,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
     return (
         <>
             {shareStatus === 'view' && onCopyTrip && (
-                <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-sm z-[1400]">
+                <div className={`fixed left-4 right-4 sm:left-auto sm:right-6 sm:max-w-sm z-[1400] ${tripDockCardBottomClass(isAgentLauncherVisible)}`} data-testid="view-only-trip-card">
                     <div className="rounded-2xl border border-amber-200 bg-amber-50/95 backdrop-blur px-4 py-3 shadow-lg text-amber-900 text-sm dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                         <div className="font-semibold">View-only trip</div>
                         <div className="text-xs text-amber-800 mt-1 dark:text-amber-200">
@@ -99,13 +104,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                         </div>
                         <div className="mt-3 flex items-center justify-between gap-3">
                             <span className="text-[11px] text-amber-700 dark:text-amber-200">Copy to edit your own version.</span>
-                            <button
-                                type="button"
-                                onClick={onCopyTrip}
-                                className="px-3 py-1.5 rounded-lg bg-amber-200 text-amber-900 text-xs font-semibold hover:bg-amber-300 dark:text-amber-200"
-                            >
-                                Copy trip
-                            </button>
+                            <CopyTripButton onCopyTrip={onCopyTrip} surface="view_only_card" />
                         </div>
                     </div>
                 </div>

@@ -12,6 +12,8 @@ import type { ShareMode, TripGenerationState } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import type { ConnectivityState } from '../../services/supabaseHealthMonitor';
 import { Spinner } from '../ui/spinner';
+import { CopyTripButton } from './CopyTripButton';
+import { tripDockCardSmBottomClass } from './tripBottomDock';
 
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
@@ -365,13 +367,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                         {shareStatus === 'view' ? 'View-only shared trip' : 'Shared trip · Editing enabled'}
                     </span>
                     {shareStatus === 'view' && onCopyTrip && (
-                        <button
-                            type="button"
-                            onClick={onCopyTrip}
-                            className="px-3 py-1 rounded-md bg-amber-200 text-amber-900 text-xs font-semibold hover:bg-amber-300 dark:bg-amber-300 dark:text-amber-950 dark:hover:bg-amber-200"
-                        >
-                            Copy trip
-                        </button>
+                        <CopyTripButton onCopyTrip={onCopyTrip} surface="share_strip" />
                     )}
                 </div>
             )}
@@ -586,12 +582,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
               * keeps the map controls covered either. */}
             {exampleTripBanner && !isExampleBannerDismissed && (
                 <div
-                    className={`fixed inset-x-3 top-[calc(env(safe-area-inset-top)+4.75rem)] z-[1450] sm:inset-x-auto sm:right-6 sm:top-auto sm:w-[420px] ${
-                        // Launcher: bottom max(1rem, safe area) + min-h-11 (2.75rem); keep a 0.75rem gap above it.
-                        isAgentLauncherVisible
-                            ? 'sm:bottom-[calc(max(1rem,env(safe-area-inset-bottom))+3.5rem)]'
-                            : 'sm:bottom-6'
-                    }`}
+                    className={`fixed inset-x-3 top-[calc(env(safe-area-inset-top)+4.75rem)] z-[1450] sm:inset-x-auto sm:right-6 sm:top-auto sm:w-[420px] ${tripDockCardSmBottomClass(isAgentLauncherVisible)}`}
                     data-testid="example-trip-banner"
                 >
                     <div className="relative rounded-2xl border border-accent-200 bg-card/95 px-4 py-3 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-card/85 dark:border-accent-400/30 dark:shadow-none">
