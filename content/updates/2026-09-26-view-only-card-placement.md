@@ -3,8 +3,8 @@ id: rel-2026-09-26-view-only-card-placement
 version: v0.193.0
 title: "The view-only card makes room for Plan with AI"
 date: 2026-09-26
-published_at: 2026-09-26T14:00:00Z
-status: draft
+published_at: 2026-09-26T13:14:02Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "On shared view-only trips, the notice card now sits above the Plan with AI button and stays readable over any map style in dark mode."
