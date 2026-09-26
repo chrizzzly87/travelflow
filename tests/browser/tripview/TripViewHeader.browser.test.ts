@@ -186,4 +186,19 @@ describe('components/tripview/TripViewHeader', () => {
     expect(props.onHeaderAuthAction).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId('account-menu')).not.toBeInTheDocument();
   });
+
+  it('offers the dark-mode toggle on desktop, as the site header does', () => {
+    // Below lg the burger's menu carries the toggle; above it the trip page used
+    // to have no way to switch theme at all.
+    render(
+      React.createElement(MemoryRouter, null,
+        React.createElement(TripViewHeader, buildProps()),
+      ),
+    );
+
+    const toggle = screen.getByRole('button', { name: 'nav.themeToDark' });
+    expect(toggle.className).toContain('lg:inline-flex');
+    fireEvent.click(toggle);
+    expect(analyticsMocks.trackEvent).toHaveBeenCalledWith('trip_view__theme--toggle', { to: 'dark' });
+  });
 });

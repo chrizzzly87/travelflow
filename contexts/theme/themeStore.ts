@@ -106,9 +106,28 @@ const applyThemeColorMeta = (theme: ResolvedTheme): void => {
     if (meta) meta.setAttribute('content', THEME_SURFACE_COLOR[theme]);
 };
 
+// Elements with `transition-colors` would otherwise animate their own colours
+// for ~150ms after the flip while everything else switches at once, leaving a
+// visibly half-dark, half-light page. Suppress transitions for that one frame.
+const suppressTransitionsForThemeFlip = (): void => {
+    const style = document.createElement('style');
+    style.setAttribute('data-tf-theme-flip', '');
+    style.textContent = '*,*::before,*::after{transition:none!important}';
+    document.head.appendChild(style);
+    // Two frames: the first style recalc applies the new colours with
+    // transitions off; only after it has painted is the override removed.
+    window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => style.remove());
+    });
+};
+
 export const applyTheme = (theme: ResolvedTheme, tone: DarkTone = DEFAULT_DARK_TONE): void => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
+    const isFlip = root.classList.contains(THEME_BOOT_KEYS.darkClass) !== (theme === 'dark');
+    if (isFlip && document.body && typeof window.requestAnimationFrame === 'function') {
+        suppressTransitionsForThemeFlip();
+    }
     root.classList.toggle(THEME_BOOT_KEYS.darkClass, theme === 'dark');
     root.setAttribute(THEME_BOOT_KEYS.toneAttribute, tone);
     root.style.colorScheme = theme;

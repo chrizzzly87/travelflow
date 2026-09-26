@@ -42,6 +42,11 @@ interface TimelineProps {
 }
 
 const EMPTY_SELECTED_CITY_IDS: string[] = [];
+// Shared by the city and transfer lane "+" buttons so both sit beside their
+// label and look the same in either theme. Revealed on lane hover, and on
+// keyboard focus so it is reachable without a mouse; the ::after extends the
+// 28px circle to a 40px hit area without growing the label row.
+const laneAddButtonClassName = 'relative inline-flex size-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition-[opacity,color,border-color,background-color] after:absolute after:-inset-1.5 hover:border-accent-300 hover:bg-accent-50 hover:text-accent-700 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 group-hover/cities:opacity-100 group-hover/travel:opacity-100 dark:bg-secondary dark:text-foreground dark:shadow-none dark:hover:border-accent-400/50 dark:hover:bg-accent-400/12 dark:hover:text-accent-200';
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 // Set to >0 if you want a visible gap below city cards before connectors start.
 const TRANSFER_CONNECTOR_TOP_GAP_PX = 0;
@@ -821,18 +826,21 @@ export const Timeline: React.FC<TimelineProps> = ({
                 {/* Cities Lane */}
                 <div className="relative w-full group/cities z-20">
                     {/* Lane Label */}
-                    <div className="sticky left-0 mb-1 flex items-center justify-between z-20 w-64 pointer-events-auto">
+                    <div className="sticky left-0 mb-1 flex h-7 w-fit items-center gap-2 z-20 pointer-events-auto">
                          <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest bg-card/80 pr-2 backdrop-blur-sm rounded">
                              Cities & Stays
                          </span>
-                         <button type="button"
-                            onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddCity(); }}
-                            disabled={!canEdit}
-                            className={`inline-flex size-10 items-center justify-center rounded-full bg-accent-100 text-accent-700 opacity-0 transition-opacity group-hover/cities:opacity-100 ${canEdit ? 'hover:bg-accent-200' : 'cursor-not-allowed opacity-50'}`}
-                            aria-label="Add city to end"
-                        >
-                             <Plus size={14} />
-                        </button>
+                         {/* Not rendered at all without edit rights: a disabled "+" on a view-only trip only suggests something the viewer cannot do. */}
+                         {canEdit && (
+                             <button type="button"
+                                onClick={(e) => { e.stopPropagation(); onAddCity(); }}
+                                className={laneAddButtonClassName}
+                                aria-label="Add city to end"
+                                title="Add city to end"
+                            >
+                                 <Plus size={14} />
+                            </button>
+                         )}
                     </div>
                     <div
                         ref={cityCardsRowRef}
@@ -909,19 +917,20 @@ export const Timeline: React.FC<TimelineProps> = ({
 
                 {/* Travel Lane */}
                 <div className="relative w-full group/travel z-10">
-                    <div className="sticky left-0 mb-0.5 flex items-center justify-between z-20 w-64 pointer-events-auto">
+                    <div className="sticky left-0 mb-0.5 flex h-7 w-fit items-center gap-2 z-20 pointer-events-auto">
                          <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest bg-card/80 pr-2 backdrop-blur-sm rounded">
                              Transfer
                          </span>
-                         <button type="button"
-                            onClick={(e) => { e.stopPropagation(); if (!canEdit) return; handleAddTravel(); }}
-                            disabled={!canEdit}
-                            className={`inline-flex size-10 items-center justify-center rounded-full bg-secondary text-foreground opacity-0 transition-opacity group-hover/travel:opacity-100 ${canEdit ? 'hover:bg-secondary' : 'cursor-not-allowed opacity-50'}`}
-                            aria-label="Add transfer"
-                            title="Add transfer"
-                        >
-                             <Plus size={14} />
-                        </button>
+                         {canEdit && (
+                             <button type="button"
+                                onClick={(e) => { e.stopPropagation(); handleAddTravel(); }}
+                                className={laneAddButtonClassName}
+                                aria-label="Add transfer"
+                                title="Add transfer"
+                            >
+                                 <Plus size={14} />
+                            </button>
+                         )}
                     </div>
 
                     <div
@@ -1046,6 +1055,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                     </div>
 
                     {/* Day Column Add Buttons */}
+                    {canEdit && (
                     <div className="relative mb-2 flex h-10 w-full pointer-events-none">
                          {dateHeaders.days.map((day) => (
                              <div
@@ -1057,9 +1067,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                                 }}
                              >
                                  <button type="button"
-                                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(day.dayOffset); }}
-                                     disabled={!canEdit}
-                                     className={`mx-1 flex size-full min-h-10 items-center justify-center rounded-md border border-dashed border-transparent text-gray-300 transition-[border-color,background-color,color] ${canEdit ? 'hover:border-border hover:bg-secondary hover:text-accent-500' : 'cursor-not-allowed opacity-40'}`}
+                                     onClick={(e) => { e.stopPropagation(); onAddActivity(day.dayOffset); }}
+                                     className="mx-1 flex size-full min-h-10 items-center justify-center rounded-md border border-dashed border-transparent text-gray-300 transition-[border-color,background-color,color] hover:border-border hover:bg-secondary hover:text-accent-500 dark:text-muted-foreground"
                                      aria-label={`Add activity for ${day.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`}
                                  >
                                      <Plus size={16} />
@@ -1067,6 +1076,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                              </div>
                          ))}
                     </div>
+                    )}
 
                     <div className="flex flex-col gap-3">
                         {activityLanes.map((lane, laneIdx) => (
