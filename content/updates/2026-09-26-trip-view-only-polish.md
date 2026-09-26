@@ -3,8 +3,8 @@ id: rel-2026-09-26-trip-view-only-polish
 version: v0.191.0
 title: "Dark mode on the trip page, tidier view-only trips"
 date: 2026-09-26
-published_at: 2026-09-26T12:00:00Z
-status: draft
+published_at: 2026-09-26T11:19:19Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Switch between light and dark right from the trip page, and shared view-only trips no longer show buttons you cannot use."
