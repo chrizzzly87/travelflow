@@ -3,8 +3,8 @@ id: rel-2026-09-26-trip-stale-chunk-recovery
 version: v0.192.0
 title: "Trips open reliably after an update, and a readable view-only card"
 date: 2026-09-26
-published_at: 2026-09-26T13:00:00Z
-status: draft
+published_at: 2026-09-26T12:06:45Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "A trip left open across an update no longer fails to load, and the view-only card on shared trips is readable in dark mode and no longer hides under the Plan with AI button."
