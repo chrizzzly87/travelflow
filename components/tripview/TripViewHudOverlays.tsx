@@ -15,7 +15,7 @@ interface TripViewHudOverlaysProps {
     shareStatus?: ShareMode;
     onCopyTrip?: () => void;
     /** True while the "Plan with AI" launcher shares the bottom-end corner. */
-    isAgentLauncherVisible?: boolean;
+    isAgentLauncherVisible: boolean;
     isPaywallLocked: boolean;
     expirationLabel: string | null;
     tripId: string;
@@ -43,7 +43,7 @@ interface TripViewHudOverlaysProps {
 export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
     shareStatus,
     onCopyTrip,
-    isAgentLauncherVisible = false,
+    isAgentLauncherVisible,
     isPaywallLocked,
     expirationLabel,
     tripId,
@@ -97,7 +97,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
         <>
             {shareStatus === 'view' && onCopyTrip && (
                 <div className={`fixed left-4 right-4 sm:left-auto sm:right-6 sm:max-w-sm z-[1400] ${tripDockCardBottomClass(isAgentLauncherVisible)}`} data-testid="view-only-trip-card">
-                    <div className="rounded-2xl border border-amber-200 bg-amber-50/95 backdrop-blur px-4 py-3 shadow-lg text-amber-900 text-sm dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50/95 backdrop-blur px-4 py-3 shadow-lg text-amber-900 text-sm dark:bg-card/95 dark:text-amber-200 dark:border-amber-400/30 dark:shadow-none">
                         <div className="font-semibold">View-only trip</div>
                         <div className="text-xs text-amber-800 mt-1 dark:text-amber-200">
                             You can change visual settings, but edits to the itinerary are disabled.

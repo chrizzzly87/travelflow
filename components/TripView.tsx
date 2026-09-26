@@ -630,6 +630,8 @@ interface TripViewModalLayerProps {
     onHistoryGo: (item: any) => void;
     shareStatus?: ShareMode;
     onCopyTrip?: () => void;
+    /** Forwarded to TripViewHudOverlays so the view-only card clears the AI launcher. */
+    isAgentLauncherVisible: boolean;
     expirationLabel: string | null;
     tripId: string;
     paywallActivationMode: TripPaywallActivationMode;
@@ -726,6 +728,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     onHistoryGo,
     shareStatus,
     onCopyTrip,
+    isAgentLauncherVisible,
     expirationLabel,
     tripId,
     paywallActivationMode,
@@ -856,6 +859,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
         <TripViewHudOverlays
             shareStatus={shareStatus}
             onCopyTrip={onCopyTrip}
+            isAgentLauncherVisible={isAgentLauncherVisible}
             isPaywallLocked={isPaywallLocked}
             expirationLabel={expirationLabel}
             tripId={tripId}
