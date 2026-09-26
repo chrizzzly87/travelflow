@@ -10,6 +10,7 @@ import { AccountMenu } from '../navigation/AccountMenu';
 // phone this is the only way out of the planner and into the rest of the app,
 // and a chunk fetch meant the first tap opened nothing.
 import { MobileMenu } from '../navigation/MobileMenu';
+import { ThemeToggle } from '../ui/ThemeToggle';
 
 interface TripViewHeaderProps {
     isMobile: boolean;
@@ -178,6 +179,8 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                         {t('nav.login')}
                     </button>
                 )}
+                {/* Desktop only, like SiteHeader: below lg the burger's menu carries the toggle. */}
+                <ThemeToggle analyticsSurface="trip_view" className="hidden size-10 lg:inline-flex" />
                 {/*
                   * Last in the row, which is where SiteHeader puts it too: the
                   * burger is the same control on every screen, and a thumb

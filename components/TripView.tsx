@@ -3557,6 +3557,7 @@ const useTripViewRender = ({
                         void handleRetryGeneration('trip_strip');
                     }}
                     exampleTripBanner={exampleTripBanner}
+                    isAgentLauncherVisible={isTripAgentRolledOut && !isTripAgentOpen}
                 />
 
                 {/* Main Content */}

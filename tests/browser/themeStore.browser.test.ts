@@ -83,4 +83,20 @@ describe('contexts/theme/themeStore', () => {
         setPreference('light');
         expect(getResolvedTheme()).toBe('light');
     });
+
+    it('switches every colour at once instead of letting transitions lag behind the flip', async () => {
+        // Elements with transition-colors used to animate on their own for a
+        // moment after a toggle, leaving the page half dark and half light.
+        applyTheme('light');
+        applyTheme('dark');
+        expect(document.head.querySelector('style[data-tf-theme-flip]')).not.toBeNull();
+
+        await new Promise((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(document.head.querySelector('style[data-tf-theme-flip]')).toBeNull();
+
+        // Re-applying the same theme is not a flip and must not touch transitions.
+        applyTheme('dark');
+        expect(document.head.querySelector('style[data-tf-theme-flip]')).toBeNull();
+    });
 });

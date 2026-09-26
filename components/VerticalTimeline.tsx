@@ -732,13 +732,14 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                      {/* Sticky Header */}
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-card/90 backdrop-blur w-full border-b border-border">
                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Stays</span>
+                         {canEdit && (
                          <button type="button"
-                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddCity(); }}
-                             disabled={!canEdit}
-                             className={`opacity-0 group-hover/cities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-accent-100 dark:hover:bg-accent-400/12' : 'opacity-50 cursor-not-allowed'}`}
+                             onClick={(e) => { e.stopPropagation(); onAddCity(); }}
+                             className="opacity-0 group-hover/cities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 hover:bg-accent-100 dark:bg-accent-400/12 dark:text-accent-200 dark:hover:bg-accent-400/25"
                          >
                              <Plus size={12} />
                          </button>
+                         )}
                      </div>
 
                      <div className="relative min-h-0 flex-1">
@@ -811,15 +812,16 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                 <div className="relative flex min-h-0 w-40 flex-shrink-0 flex-col overflow-visible border-r border-border group/travel">
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-card/90 backdrop-blur w-full border-b border-border">
                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Transfer</span>
+                         {canEdit && (
                          <button type="button"
-                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; handleAddTravel(); }}
-                             disabled={!canEdit}
-                             className={`opacity-0 group-hover/travel:opacity-100 transition-opacity ml-1 bg-secondary text-muted-foreground rounded-full p-0.5 ${canEdit ? 'hover:bg-secondary' : 'opacity-50 cursor-not-allowed'}`}
+                             onClick={(e) => { e.stopPropagation(); handleAddTravel(); }}
+                             className="opacity-0 group-hover/travel:opacity-100 transition-opacity ml-1 bg-secondary text-muted-foreground rounded-full p-0.5 hover:bg-secondary"
                              aria-label="Add transfer"
                              title="Add transfer"
                          >
                               <Plus size={12} />
                           </button>
+                         )}
                      </div>
 
                     <div className="relative min-h-0 flex-1 overflow-visible" ref={travelLaneRef}>
@@ -946,14 +948,15 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                 <div className="relative flex min-h-0 min-w-[200px] flex-1 flex-col group/activities">
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-card/90 backdrop-blur w-full border-b border-border">
                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Activities</span>
+                         {canEdit && (
                          <button type="button"
-                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(visualStartOffset); }}
-                             disabled={!canEdit}
-                             className={`opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-accent-100 dark:hover:bg-accent-400/12' : 'opacity-50 cursor-not-allowed'}`}
+                             onClick={(e) => { e.stopPropagation(); onAddActivity(visualStartOffset); }}
+                             className="opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 hover:bg-accent-100 dark:bg-accent-400/12 dark:text-accent-200 dark:hover:bg-accent-400/25"
                              aria-label="Add activity"
                          >
                              <Plus size={12} />
                          </button>
+                         )}
                      </div>
 
                      {/* Add Buttons per Day (Horizontal Overlay strips?) No, tricky in vertical.
