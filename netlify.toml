@@ -970,6 +970,17 @@ exit 1
   path = "/trip/*"
   function = "trip-og-meta"
 
+# A hashed build asset that is not in this deploy (a tab or cached shell from a
+# previous build asking for an old chunk) must be a real 404. Without this it
+# falls through to the SPA fallback below and comes back as 200 HTML carrying
+# the immutable one-year cache header from /assets/*, so the browser and the
+# service worker both store an HTML page under a .js URL. Not forced, so files
+# that do exist are still served normally. Must stay above the `/*` rule.
+[[redirects]]
+  from = "/assets/*"
+  to = "/asset-not-found"
+  status = 404
+
 # SPA fallback for non-prerendered URLs (deep links like /trip/*, /profile, most
 # locale pages). Points at the clean boot-shell template (dist/spa.html, written
 # by scripts/prerender-routes.mjs) instead of the prerendered homepage so deep
