@@ -17,6 +17,7 @@ summary: "Primary buttons and the AI chat are readable in dark mode again, trans
 - [x] [Fixed] 🖼️ The floating map card has a dark frame in dark mode, and its corners line up with the map inside.
 - [x] [Fixed] ⌨️ The Preview keyboard shortcut hint stays visible in dark mode.
 - [x] [Improved] 🗺️ Map and timeline toggles show clearly which option is on, in both themes, and screen readers now announce it too.
+- [x] [Fixed] 🖱️ Hovering a switched-on map button now changes its background instead of fading the icon, and toolbar buttons all hover the same way.
 - [x] [Fixed] 🔒 A locked trip's Share button and disabled map controls now look disabled in dark mode, not highlighted.
 - [x] [Improved] 🔊 Screen readers announce the AI chat's send and stop buttons in your language.
 - [ ] [Internal] 🎨 `.dark` now overrides `--tf-primary` (what Tailwind's `bg-primary`/`text-primary` resolve through), matching the existing `--primary-foreground` flip; guarded by a unit test.

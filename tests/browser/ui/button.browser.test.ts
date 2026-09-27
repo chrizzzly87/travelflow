@@ -69,6 +69,26 @@ describe('components/ui/button', () => {
       .toContain('aria-pressed:text-primary-foreground');
   });
 
+  it('keeps a pressed control label colour on hover and changes only the fill', () => {
+    // In dark mode the accent icon hover beat the pressed state, so a pressed map
+    // button turned light indigo on indigo when hovered.
+    render(React.createElement(Button, { variant: 'floating', 'aria-pressed': true, 'aria-label': 'Labels' }));
+    const classes = screen.getByRole('button', { name: 'Labels' }).className.split(/\s+/);
+
+    expect(classes).toContain('aria-pressed:hover:bg-primary-hover');
+    expect(classes).toContain('dark:not-aria-pressed:hover:text-accent-300');
+    expect(classes).not.toContain('dark:hover:text-accent-300');
+  });
+
+  it('gives ghost buttons the same solid hover surface in both themes', () => {
+    // A half-strength dark hover made the chat header and "Review again" differ.
+    render(React.createElement(Button, { variant: 'ghost' }, 'Review again'));
+    const className = screen.getByRole('button', { name: 'Review again' }).className;
+
+    expect(className).toContain('hover:bg-secondary');
+    expect(className).not.toContain('accent/50');
+  });
+
   it('forwards refs, which preact/compat drops from a plain function component', () => {
     const ref = React.createRef<HTMLButtonElement>();
     render(React.createElement(Button, { ref, shortcut: 'K' }, 'Go'));
