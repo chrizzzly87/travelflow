@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useTripResizeControls } from '../../../components/tripview/useTripResizeControls';
+import { AUTO_FIT_MIN_ZOOM, resolveAutoFitZoom, useTripResizeControls } from '../../../components/tripview/useTripResizeControls';
 
 const DEFAULT_ZOOM_PRESETS = [0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6, 2.8, 3];
 
@@ -326,6 +326,48 @@ describe('components/tripview/useTripResizeControls', () => {
     expect(setZoomLevel).toHaveBeenCalledTimes(1);
     const zoomUpdater = setZoomLevel.mock.calls[0][0] as (value: number) => number;
     expect(zoomUpdater(2)).toBe(1);
+  });
+
+  it('stops auto-fit at a readable zoom so long trips scroll instead of shrinking to 0.2x', () => {
+    const setZoomLevel = vi.fn();
+    const initialProps = makeHookOptions({
+      setZoomLevel,
+      timelineView: 'vertical',
+      layoutMode: 'horizontal',
+      mapDockMode: 'docked',
+      zoomLevel: 1,
+    });
+    const { result, rerender } = renderHook((props: Parameters<typeof useTripResizeControls>[0]) => useTripResizeControls(props), {
+      initialProps,
+    });
+
+    // A 30-day trip (120px per day at 1x) in a ~640px docked sidebar would need ~0.15x to fit.
+    attachTimelineViewport(result, { width: 640, height: 700, scrollWidth: 3600 });
+    setZoomLevel.mockClear();
+
+    act(() => {
+      rerender({
+        ...initialProps,
+        timelineView: 'horizontal',
+      });
+    });
+
+    expect(setZoomLevel).toHaveBeenCalledTimes(1);
+    const zoomUpdater = setZoomLevel.mock.calls[0][0] as (value: number) => number;
+    expect(zoomUpdater(1)).toBe(AUTO_FIT_MIN_ZOOM);
+  });
+
+  it('resolves auto-fit zoom to the largest fitting preset, never below the readable floor', () => {
+    const clamp = (value: number) => Math.max(0.2, Math.min(3, value));
+
+    expect(resolveAutoFitZoom(1.15, clamp, DEFAULT_ZOOM_PRESETS)).toBe(1);
+    // Slightly too small for the next step: pick the step that fits instead of overflowing.
+    expect(resolveAutoFitZoom(1.1, clamp, DEFAULT_ZOOM_PRESETS)).toBe(1);
+    expect(resolveAutoFitZoom(0.7, clamp, DEFAULT_ZOOM_PRESETS)).toBe(0.6);
+    expect(resolveAutoFitZoom(0.25, clamp, DEFAULT_ZOOM_PRESETS)).toBe(0.6);
+    expect(resolveAutoFitZoom(0.05, clamp, DEFAULT_ZOOM_PRESETS)).toBe(0.6);
+    expect(resolveAutoFitZoom(9, clamp, DEFAULT_ZOOM_PRESETS)).toBe(3);
+    expect(resolveAutoFitZoom(Number.NaN, clamp, DEFAULT_ZOOM_PRESETS)).toBeNaN();
   });
 
   it('clamps sidebar width on resize so the docked map keeps its minimum width', () => {
