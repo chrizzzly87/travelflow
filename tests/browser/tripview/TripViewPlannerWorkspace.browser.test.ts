@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { TripViewPlannerWorkspace } from '../../../components/tripview/TripViewPlannerWorkspace';
+import { loadCommonTranslations, loadEnglishCommonTranslations } from '../../helpers/i18n';
 
 type PlannerProps = React.ComponentProps<typeof TripViewPlannerWorkspace>;
 
@@ -76,6 +77,8 @@ const baseProps = (): PlannerProps => ({
 });
 
 describe('components/tripview/TripViewPlannerWorkspace', () => {
+  beforeAll(loadEnglishCommonTranslations);
+
   beforeEach(() => {
     window.localStorage.clear();
   });
@@ -589,5 +592,39 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
 
     expect(screen.getByTestId('planner-mobile-sheet').className).toContain('touch-manipulation');
     expect(screen.getByTestId('planner-mobile-day-strip').className).toContain('touch-manipulation');
+  });
+});
+
+// These controls were hard-coded English, so a German planner announced
+// "Zoom in timeline" and "Move floating map preview" to screen readers.
+describe('components/tripview/TripViewPlannerWorkspace in German', () => {
+  beforeAll(() => loadCommonTranslations('de'));
+
+  afterAll(loadEnglishCommonTranslations);
+
+  afterEach(() => {
+    cleanup();
+    window.localStorage.clear();
+  });
+
+  it('labels the timeline controls in the app language', () => {
+    render(React.createElement(TripViewPlannerWorkspace, baseProps()));
+
+    expect(screen.getByLabelText('Kalenderansicht')).toBeInTheDocument();
+    expect(screen.getByLabelText('Timeline hineinzoomen')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Calendar view')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Zoom in timeline')).not.toBeInTheDocument();
+  });
+
+  it('labels the floating map controls in the app language', () => {
+    const props = baseProps();
+    props.mapDockMode = 'floating';
+    props.detailsPanelVisible = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    expect(screen.getByTestId('floating-map-drag-handle')).toHaveAttribute('aria-label', 'Schwebende Kartenvorschau verschieben');
+    expect(screen.getByLabelText('Kartenvorschau vergrößern')).toBeInTheDocument();
+    expect(screen.getByLabelText('Detailbereich in der Breite anpassen')).toBeInTheDocument();
   });
 });

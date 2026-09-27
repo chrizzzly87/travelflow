@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ITrip, ITimelineItem, IDragState, RouteStatus } from '../types';
 import {
   buildApprovedCityRoute,
@@ -133,6 +134,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   onNavigateNextCity,
   onToggleDetailsPanel,
 }) => {
+  const { t } = useTranslation('common');
   const canEdit = !readOnly;
   const containerRef = useRef<HTMLDivElement>(null);
   const cityCardsRowRef = useRef<HTMLDivElement>(null);
@@ -835,8 +837,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                              <button type="button"
                                 onClick={(e) => { e.stopPropagation(); onAddCity(); }}
                                 className={laneAddButtonClassName}
-                                aria-label="Add city to end"
-                                title="Add city to end"
+                                aria-label={t('tripView.timeline.addCityToEnd')}
+                                title={t('tripView.timeline.addCityToEnd')}
                             >
                                  <Plus size={14} />
                             </button>
@@ -880,7 +882,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                             const overlapAfter = nextStart !== null ? currentEnd > nextStart + 0.05 : false;
                             const shouldShowForceFill = hasGapOrOverlap || overlapBefore || overlapAfter || gapBefore || gapAfter;
                             const forceFillMode = shouldShowForceFill ? ((overlapBefore && overlapAfter) ? 'shrink' : 'stretch') : undefined;
-                            const forceFillLabel = shouldShowForceFill ? ((overlapBefore && overlapAfter) ? 'Occupy available space' : 'Stretch to fill space') : undefined;
+                            const forceFillLabel = shouldShowForceFill ? ((overlapBefore && overlapAfter) ? t('tripView.timeline.occupySpace') : t('tripView.timeline.stretchToFill')) : undefined;
 
                             return (
                                 <TimelineBlock
@@ -897,7 +899,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     forceFillMode={forceFillMode}
                                     forceFillLabel={forceFillLabel}
                                     showSwapSelectedButton={selectedCityIds.length > 1 && selectedCityIds.includes(city.id)}
-                                    swapSelectedLabel="Reverse selected cities"
+                                    swapSelectedLabel={t('tripView.timeline.reverseSelectedCities')}
                                     pixelsPerDay={pixelsPerDay}
                                     timelineStartOffset={visualStartOffset}
                                     canEdit={canEdit}
@@ -925,8 +927,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                              <button type="button"
                                 onClick={(e) => { e.stopPropagation(); handleAddTravel(); }}
                                 className={laneAddButtonClassName}
-                                aria-label="Add transfer"
-                                title="Add transfer"
+                                aria-label={t('tripView.timeline.addTransfer')}
+                                title={t('tripView.timeline.addTransfer')}
                             >
                                  <Plus size={14} />
                             </button>
@@ -1026,7 +1028,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                             ${travel || canEdit ? 'hover:bg-secondary cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}
                                         style={{ left: chipLeft, width: chipWidth, top: chipCenterY, height: TRANSFER_CHIP_HEIGHT_PX }}
-                                        title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
+                                        title={mode === 'na' ? t('tripView.timeline.transportUndecided') : t('tripView.timeline.transportMode', { mode })}
                                         disabled={!travel && !canEdit}
                                     >
                                         {showTransportIcon && (
@@ -1069,7 +1071,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                  <button type="button"
                                      onClick={(e) => { e.stopPropagation(); onAddActivity(day.dayOffset); }}
                                      className="mx-1 flex size-full min-h-10 items-center justify-center rounded-md border border-dashed border-transparent text-gray-300 transition-[border-color,background-color,color] hover:border-border hover:bg-secondary hover:text-accent-500 dark:text-muted-foreground"
-                                     aria-label={`Add activity for ${day.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`}
+                                     aria-label={t('tripView.timeline.addActivityOn', { date: day.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) })}
                                  >
                                      <Plus size={16} />
                                  </button>

@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { TripTimelineListView } from '../../../components/tripview/TripTimelineListView';
 import { makeActivityItem, makeCityItem, makeTravelItem, makeTrip } from '../../helpers/tripFixtures';
+import { loadEnglishCommonTranslations } from '../../helpers/i18n';
 
 const analyticsMocks = vi.hoisted(() => ({
   trackEvent: vi.fn(),
@@ -25,6 +26,8 @@ vi.mock('../../../services/analyticsService', () => ({
 }));
 
 describe('components/tripview/TripTimelineListView', () => {
+  beforeAll(loadEnglishCommonTranslations);
+
   it('renders timeline interactions with hover affordances and analytics events', () => {
     analyticsMocks.trackEvent.mockReset();
     const user = userEvent.setup({ pointerEventsCheck: 0 });

@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { ItineraryMap } from '../../components/ItineraryMap';
 import { useGoogleMaps, useMapRuntime } from '../../components/GoogleMapsLoader';
+import { loadEnglishCommonTranslations } from '../helpers/i18n';
 
 vi.mock('../../components/GoogleMapsLoader', () => ({
   useGoogleMaps: vi.fn(),
@@ -15,6 +16,8 @@ const mockedUseGoogleMaps = vi.mocked(useGoogleMaps);
 const mockedUseMapRuntime = vi.mocked(useMapRuntime);
 
 describe('components/ItineraryMap map controls availability', () => {
+  beforeAll(loadEnglishCommonTranslations);
+
   beforeEach(() => {
     mockedUseGoogleMaps.mockReset();
     mockedUseMapRuntime.mockReset();

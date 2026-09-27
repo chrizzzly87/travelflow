@@ -1,4 +1,5 @@
 import React, { forwardRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { cn } from '../../lib/utils';
@@ -17,26 +18,29 @@ interface CopyTripButtonProps {
  * in dark mode. A real forwardRef because the app runs on preact/compat.
  */
 export const CopyTripButton = forwardRef<HTMLButtonElement, CopyTripButtonProps>(
-    ({ onCopyTrip, surface, className }, ref) => (
-        <button
-            ref={ref}
-            type="button"
-            onClick={() => {
-                trackEvent('trip_view__copy_trip--click', { surface });
-                onCopyTrip();
-            }}
-            className={cn(
-                'inline-flex shrink-0 items-center justify-center rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
-                'bg-amber-200 text-amber-900 hover:bg-amber-300',
-                'dark:bg-amber-300 dark:text-amber-950 dark:hover:bg-amber-200',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2',
-                className,
-            )}
-            {...getAnalyticsDebugAttributes('trip_view__copy_trip--click', { surface })}
-        >
-            Copy trip
-        </button>
-    ),
+    ({ onCopyTrip, surface, className }, ref) => {
+        const { t } = useTranslation('common');
+        return (
+            <button
+                ref={ref}
+                type="button"
+                onClick={() => {
+                    trackEvent('trip_view__copy_trip--click', { surface });
+                    onCopyTrip();
+                }}
+                className={cn(
+                    'inline-flex shrink-0 items-center justify-center rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                    'bg-amber-200 text-amber-900 hover:bg-amber-300',
+                    'dark:bg-amber-300 dark:text-amber-950 dark:hover:bg-amber-200',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2',
+                    className,
+                )}
+                {...getAnalyticsDebugAttributes('trip_view__copy_trip--click', { surface })}
+            >
+                {t('tripView.banners.copyTrip')}
+            </button>
+        );
+    },
 );
 
 CopyTripButton.displayName = 'CopyTripButton';

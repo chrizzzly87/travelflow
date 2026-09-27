@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useTranslation } from 'react-i18next';
 import { Hotel, MapPin } from 'lucide-react';
 
 import { TransportModeIcon } from '../TransportModeIcon';
@@ -77,7 +78,8 @@ const buildMarkdownComponents = (
     tripId: string,
     itemId: string,
     markdown: string,
-    onToggleTaskCheckbox?: (itemId: string, taskLineNumber: number, checked: boolean) => void,
+    onToggleTaskCheckbox: ((itemId: string, taskLineNumber: number, checked: boolean) => void) | undefined,
+    taskLabels: { completed: string; open: string },
 ) => {
     const taskLineNumbers = findMarkdownTaskLineNumbers(markdown);
     let renderedTaskCount = 0;
@@ -171,7 +173,7 @@ const buildMarkdownComponents = (
                             checked={resolvedChecked}
                             disabled={!onToggleTaskCheckbox}
                             className="mt-0.5 size-4 shrink-0"
-                            aria-label={resolvedChecked ? 'Completed task' : 'Open task'}
+                            aria-label={resolvedChecked ? taskLabels.completed : taskLabels.open}
                             onClick={(event) => {
                                 event.stopPropagation();
                             }}
@@ -247,6 +249,11 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     selectionVisibilityKey,
     enableScrollActiveCitySelection = true,
 }) => {
+    const { t } = useTranslation('common');
+    const taskLabels = useMemo(() => ({
+        completed: t('tripView.listView.taskCompleted'),
+        open: t('tripView.listView.taskOpen'),
+    }), [t]);
     const model = useMemo(() => buildTimelineListModel(trip), [trip]);
     const sectionContainerRef = useRef<HTMLDivElement | null>(null);
     const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -509,7 +516,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                 if (!transfer.itemId) return;
                                                 transferButtonRefs.current[`transfer-${transfer.itemId}`] = node;
                                             }}
-                                            aria-label={`Open ${transfer.modeLabel} transfer details`}
+                                            aria-label={t('tripView.listView.openTransfer', { mode: transfer.modeLabel })}
                                             className={`pointer-events-auto origin-center -rotate-90 rounded-full border bg-card/95 shadow-sm transition-colors ${
                                                 transfer.itemId
                                                     ? transferSelected
@@ -602,11 +609,11 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                     <div className="flex flex-wrap items-center gap-2">
                                                         <span
                                                             className="rounded-full border border-border px-2.5 py-0.5 text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase"
-                                                            aria-label={`Days ${cityStartDay} - ${cityEndDay}`}
+                                                            aria-label={t('tripView.listView.daysRange', { start: cityStartDay, end: cityEndDay })}
                                                         >
                                                             <AnimatedNumberGroup>
                                                                 <span aria-hidden="true" className="inline-flex items-center gap-1.5">
-                                                                    <span>Days</span>
+                                                                    <span>{t('tripView.listView.days')}</span>
                                                                     <AnimatedNumber
                                                                         value={cityStartDay}
                                                                         format={{ maximumFractionDigits: 0 }}
@@ -631,7 +638,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                             <div className="pb-2 text-sm text-muted-foreground">
                                                 <ReactMarkdown
                                                     remarkPlugins={[remarkGfm, remarkHeadsUpBanners]}
-                                                    components={buildMarkdownComponents(trip.id, section.city.id, citySummaryMarkdown, onToggleTaskCheckbox)}
+                                                    components={buildMarkdownComponents(trip.id, section.city.id, citySummaryMarkdown, onToggleTaskCheckbox, taskLabels)}
                                                 >
                                                     {citySummaryMarkdown}
                                                 </ReactMarkdown>
@@ -715,7 +722,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                                         <div className="mt-2 max-w-3xl text-sm text-muted-foreground">
                                                                             <ReactMarkdown
                                                                                 remarkPlugins={[remarkGfm, remarkHeadsUpBanners]}
-                                                                                components={buildMarkdownComponents(trip.id, activity.item.id, activity.item.description, onToggleTaskCheckbox)}
+                                                                                components={buildMarkdownComponents(trip.id, activity.item.id, activity.item.description, onToggleTaskCheckbox, taskLabels)}
                                                                             >
                                                                                 {activity.item.description}
                                                                             </ReactMarkdown>
