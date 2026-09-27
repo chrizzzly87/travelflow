@@ -3,8 +3,8 @@ id: rel-2026-09-27-trip-calendar-auto-zoom
 version: v0.194.0
 title: "Readable calendar auto-zoom"
 date: 2026-09-27
-published_at: 2026-09-27T12:00:00Z
-status: draft
+published_at: 2026-09-27T18:30:13Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "The trip calendar no longer auto-zooms so far out that days become unreadable."
