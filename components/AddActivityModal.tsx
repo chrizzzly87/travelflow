@@ -45,7 +45,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
     const initialStay = useMemo(() => resolveStayForOffset(dayOffset, stays), [dayOffset, stays]);
     const [kind, setKind] = useState<ActivityKind>('activity');
     const [stayId, setStayId] = useState<string | null>(initialStay?.id ?? null);
-    const [selectedDayOffset, setSelectedDayOffset] = useState<number>(Math.max(0, Math.floor(dayOffset)));
+    const [selectedDayOffset, setSelectedDayOffset] = useState<number>(() => Math.max(0, Math.floor(dayOffset)));
     const [destination, setDestination] = useState('');
     const [returnStayId, setReturnStayId] = useState<string | null>(null);
     const [isResolvingDestination, setIsResolvingDestination] = useState(false);
