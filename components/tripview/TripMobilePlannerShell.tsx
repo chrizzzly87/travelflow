@@ -9,6 +9,7 @@ import {
     findMobileDayPlanSegmentIndexForItem,
     type MobileDayPlanTransfer,
 } from './mobileDayPlanModel';
+import { Button } from '../ui/button';
 import { TripMobileDayPanel } from './TripMobileDayPanel';
 import { TripMobileDayStrip } from './TripMobileDayStrip';
 import { TripMobileTransportModal } from './TripMobileTransportModal';
@@ -342,50 +343,58 @@ export const TripMobilePlannerShell: React.FC<TripMobilePlannerShellProps> = ({
                     />
                     <div className="flex h-9 items-center justify-between">
                         <div className="inline-flex shrink-0 items-center rounded-full bg-secondary p-0.5">
-                            <button
+                            <Button
                                 type="button"
+                                variant="ghost"
+                                size="icon-sm"
                                 onClick={() => setPanelMode('days')}
-                                className={`inline-flex size-8 items-center justify-center rounded-full transition-colors ${panelMode === 'days' ? 'bg-card text-accent-600 shadow-sm dark:text-accent-300 dark:shadow-none' : 'text-muted-foreground'}`}
+                                className={`rounded-full ${panelMode === 'days' ? 'bg-card text-accent-600 shadow-sm hover:bg-card dark:bg-card dark:text-accent-300 dark:shadow-none dark:hover:bg-card' : 'text-muted-foreground'}`}
                                 aria-label="Day by day"
                                 aria-pressed={panelMode === 'days'}
                                 {...getAnalyticsDebugAttributes('trip_view__mobile_panel--days', { trip_id: tripId })}
                             >
                                 <CalendarDays size={15} />
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 type="button"
+                                variant="ghost"
+                                size="icon-sm"
                                 onClick={() => setPanelMode('timeline')}
-                                className={`inline-flex size-8 items-center justify-center rounded-full transition-colors ${panelMode === 'timeline' ? 'bg-card text-accent-600 shadow-sm dark:text-accent-300 dark:shadow-none' : 'text-muted-foreground'}`}
+                                className={`rounded-full ${panelMode === 'timeline' ? 'bg-card text-accent-600 shadow-sm hover:bg-card dark:bg-card dark:text-accent-300 dark:shadow-none dark:hover:bg-card' : 'text-muted-foreground'}`}
                                 aria-label="Full itinerary"
                                 aria-pressed={panelMode === 'timeline'}
                                 {...getAnalyticsDebugAttributes('trip_view__mobile_panel--timeline', { trip_id: tripId })}
                             >
                                 <List size={15} />
-                            </button>
+                            </Button>
                         </div>
                         {onOpenDiscover && (
-                            <button
+                            <Button
                                 type="button"
+                                variant="soft"
+                                size="sm"
                                 onClick={onOpenDiscover}
                                 data-testid="mobile-open-discover"
-                                className="ms-auto me-1 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 text-xs font-semibold text-accent-700 transition-colors hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
+                                className="ms-auto me-1 min-h-9 gap-1.5 rounded-full px-3 text-xs font-semibold"
                                 {...getAnalyticsDebugAttributes('trip_view__recommendations--open', { trip_id: tripId })}
                             >
                                 <Sparkles size={14} />
                                 Ideas
-                            </button>
+                            </Button>
                         )}
-                        <button
+                        <Button
                             type="button"
+                            variant="ghost"
+                            size="icon"
                             onClick={toggleSheet}
                             data-testid="planner-mobile-sheet-toggle"
-                            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary dark:text-foreground"
+                            className="rounded-full text-muted-foreground hover:bg-secondary dark:text-foreground dark:hover:bg-secondary"
                             aria-label={isFullyExpanded ? 'Collapse day panel' : 'Expand day panel'}
                             aria-expanded={isFullyExpanded}
                             {...getAnalyticsDebugAttributes('trip_view__mobile_sheet--toggle', { trip_id: tripId })}
                         >
                             {isFullyExpanded ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
-                        </button>
+                        </Button>
                     </div>
                     <span className="sr-only" role="status" aria-live="polite">{SNAP_LABEL[snap]}</span>
                 </div>

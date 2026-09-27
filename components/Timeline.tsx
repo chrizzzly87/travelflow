@@ -976,7 +976,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                             const routeStatus = travel ? routeStatusById?.[travel.id] : undefined;
                             const isUndefinedTransfer = !travel || travel.type === 'travel-empty' || isUnsetTransport;
                             const shouldDashConnector = !travel || travel.type === 'travel-empty' || isUnsetTransport || routeStatus === 'failed';
-                            const connectorOpacity = isUndefinedTransfer ? 0.45 : 1;
+                            const connectorOpacity = isUndefinedTransfer ? 0.7 : 1;
                             const durationHours = travel ? Math.round(travel.duration * 24 * 10) / 10 : null;
                             const showTransportIcon = !isUnsetTransport && chipWidth >= 14;
                             const showTransportText = !showIconOnly || (isUnsetTransport && chipWidth >= 26);
@@ -1002,7 +1002,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         <path
                                             d={fromPath}
                                             fill="none"
-                                            stroke="var(--color-gray-300)"
+                                            stroke="var(--tf-transfer-line)"
                                             strokeWidth={1.7}
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
@@ -1012,7 +1012,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         <path
                                             d={toPath}
                                             fill="none"
-                                            stroke="var(--color-gray-300)"
+                                            stroke="var(--tf-transfer-line)"
                                             strokeWidth={1.7}
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
@@ -1023,7 +1023,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     <button type="button"
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                         className={`absolute z-10 flex min-h-10 -translate-y-1/2 items-center rounded-full border text-[11px] font-semibold transition-colors pointer-events-auto
-                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 shadow-sm opacity-100 ring-2 ring-blue-600 ring-offset-1 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30' : (isUndefinedTransfer ? 'bg-secondary border-border border-dashed text-muted-foreground opacity-65 shadow-none justify-center' : 'bg-card border-border text-muted-foreground shadow-sm dark:shadow-none')}
+                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 shadow-sm opacity-100 ring-2 ring-blue-600 ring-offset-1 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30' : (isUndefinedTransfer ? 'bg-secondary border-transfer-line border-dashed text-muted-foreground opacity-65 shadow-none justify-center' : 'bg-card border-transfer-line text-muted-foreground shadow-sm dark:shadow-none')}
                                             ${showIconOnly ? `justify-center gap-0 ${pillPaddingClass}` : `gap-1.5 ${pillPaddingClass}`}
                                             ${travel || canEdit ? 'hover:bg-secondary cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}

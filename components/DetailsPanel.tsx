@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Trans, useTranslation } from 'react-i18next';
 import { ITimelineItem, TransportMode, ActivityType, IHotel, RouteMode, ICoordinates } from '../types';
 import { X, MapPin, Clock, Trash2, Hotel, Search, AlertTriangle, ExternalLink, Sparkles, RefreshCw, Maximize, Minimize, Minus, Plus, Palette, Pencil } from 'lucide-react';
+import { Button } from './ui/button';
 import type { CityNotesEnhancementMode } from '../services/aiService';
 import { HexColorPicker } from 'react-colorful';
 import { ALL_ACTIVITY_TYPES, TRAVEL_COLOR, addDays, applyCityPaletteToItems, CITY_COLOR_PALETTES, DEFAULT_CITY_COLOR_PALETTE_ID, formatDate, getContrastTextColor, getHexFromColorClass, getStoredAppLanguage, getActivityColorByTypes, getCityColorPalette, isTailwindCityColorValue, normalizeActivityTypes, normalizeCityColorInput, DEFAULT_DISTANCE_UNIT, estimateTravelHours, formatDistance, formatDurationHours, getTravelLegMetricsForItem, getNormalizedCityName, COUNTRIES, shiftHexColor } from '../utils';
@@ -2192,53 +2193,63 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             </Suspense>
                         </div>
                         <div className="px-4 py-3 bg-accent-50 border-t border-accent-100 flex items-center justify-end gap-2 dark:bg-accent-400/12 dark:border-accent-400/25">
-                            <button type="button"
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
                                 onClick={handleDeclineNotesProposal}
                                 disabled={!canEdit}
-                                className={`px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-card border border-border rounded-md ${canEdit ? 'hover:bg-secondary' : 'opacity-50 cursor-not-allowed'}`}
+                                className="text-xs font-semibold text-muted-foreground"
                             >
                                 Decline
-                            </button>
-                            <button type="button"
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
                                 onClick={handleAcceptNotesProposal}
                                 disabled={!canEdit}
-                                className={`px-3 py-1.5 text-xs font-semibold text-white bg-accent-600 rounded-md ${canEdit ? 'hover:bg-accent-700' : 'opacity-50 cursor-not-allowed'}`}
+                                className="text-xs font-semibold"
                             >
                                 Accept and Apply
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 )}
                 {(aiDetails || loading) && isActivity && (
-                    <div className="bg-gradient-to-br from-accent-50 to-accent-100 border border-accent-100 rounded-xl p-4 mt-6 dark:border-accent-400/25">
+                    <div className="bg-gradient-to-br from-accent-50 to-accent-100 border border-accent-100 rounded-xl p-4 mt-6 dark:from-accent-400/15 dark:to-accent-400/5 dark:border-accent-400/25">
                         <div className="flex items-center mb-3 justify-between">
                             <div className="flex items-center gap-2">
-                                <Sparkles size={16} className="text-accent-500 animate-pulse" />
+                                <Sparkles size={16} className="text-accent-500 animate-pulse dark:text-accent-300" />
                                 <h3 className="text-sm font-semibold text-accent-900 dark:text-accent-200">AI Insights</h3>
                             </div>
-                            <button type="button"
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
                                 onClick={fetchDetails}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-full text-accent-500 ${loading ? 'animate-spin' : ''} ${canEdit ? 'hover:bg-card' : 'opacity-50 cursor-not-allowed'}`}
+                                aria-label="Refresh AI insights"
+                                title="Refresh AI insights"
+                                className={`rounded-full text-accent-600 hover:bg-card hover:text-accent-700 dark:text-accent-300 dark:hover:bg-card dark:hover:text-accent-200 ${loading ? 'animate-spin' : ''}`}
                             >
                                 <RefreshCw size={16} />
-                            </button>
+                            </Button>
                         </div>
                         {loading && !aiDetails ? (
-                            <div className="text-sm text-accent-600/70 py-2">Loading…</div>
+                            <div className="text-sm text-accent-700 py-2 dark:text-accent-200">Loading…</div>
                         ) : (
                             <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
                                 <div className="bg-card p-3 rounded-lg border border-accent-100 shadow-sm dark:border-accent-400/25 dark:shadow-none">
-                                    <span className="text-[10px] font-bold text-accent-400 uppercase">Cost</span>
-                                    <span className="text-sm font-medium">{aiDetails?.cost || 'N/A'}</span>
+                                    <span className="block text-[10px] font-bold uppercase tracking-wide text-accent-700 dark:text-accent-300">Cost</span>
+                                    <span className="mt-1 block text-sm font-medium text-foreground">{aiDetails?.cost || 'N/A'}</span>
                                 </div>
                                 <div className="bg-card p-3 rounded-lg border border-accent-100 shadow-sm dark:border-accent-400/25 dark:shadow-none">
-                                    <span className="text-[10px] font-bold text-accent-400 uppercase">Best Time</span>
-                                    <span className="text-sm font-medium">{aiDetails?.bestTime || 'N/A'}</span>
+                                    <span className="block text-[10px] font-bold uppercase tracking-wide text-accent-700 dark:text-accent-300">Best Time</span>
+                                    <span className="mt-1 block text-sm font-medium text-foreground">{aiDetails?.bestTime || 'N/A'}</span>
                                 </div>
                                 <div className="bg-card p-3 rounded-lg border border-accent-100 shadow-sm dark:border-accent-400/25 dark:shadow-none" style={{ gridColumn: '1 / -1' }}>
-                                    <span className="text-[10px] font-bold text-accent-400 uppercase">Tip</span>
-                                    <span className="text-sm font-medium">{aiDetails?.tips || 'N/A'}</span>
+                                    <span className="block text-[10px] font-bold uppercase tracking-wide text-accent-700 dark:text-accent-300">Tip</span>
+                                    <span className="mt-1 block text-sm font-medium text-foreground">{aiDetails?.tips || 'N/A'}</span>
                                 </div>
                             </div>
                         )}

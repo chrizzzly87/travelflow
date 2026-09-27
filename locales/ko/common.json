@@ -810,6 +810,8 @@
     "searchCommand": "프롬프트 프리셋 검색…",
     "noContext": "일치하는 여행 항목이 없습니다.",
     "closeMenu": "메뉴 닫기",
+    "send": "메시지 보내기",
+    "stop": "응답 중지",
     "contextKinds": {
       "trip": "여행",
       "city": "도시",

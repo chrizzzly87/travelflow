@@ -2,6 +2,7 @@ import { AlertTriangle, Brain, Check, ChevronDown, Loader2 } from 'lucide-react'
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '../ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { Shimmer } from '../ai-elements/shimmer';
 import { MessageResponse } from '../ai-elements/message';
@@ -27,8 +28,8 @@ const isFailedState = (state: TripAgentActivityState): boolean => (
 );
 
 const StepIcon: React.FC<{ state: TripAgentActivityState }> = ({ state }) => {
-    if (isFailedState(state)) return <AlertTriangle className="size-3 text-rose-600" />;
-    if (state === 'output-available') return <Check className="size-3 text-emerald-600" />;
+    if (isFailedState(state)) return <AlertTriangle className="size-3 text-rose-600 dark:text-rose-300" />;
+    if (state === 'output-available') return <Check className="size-3 text-emerald-600 dark:text-emerald-400" />;
     return <Loader2 className="size-3 animate-spin text-muted-foreground" />;
 };
 
@@ -115,19 +116,21 @@ export const TripAgentActivityGroup: React.FC<{
                         <ul className="flex flex-wrap gap-1.5">
                             {steps.map((step) => (
                                 <li key={step.key}>
-                                    <button
+                                    <Button
                                         type="button"
+                                        variant="outline"
+                                        size="xs"
                                         onClick={() => setOpenStepKey((current) => current === step.key ? null : step.key)}
                                         aria-expanded={openStepKey === step.key}
-                                        className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                                        className={`h-auto rounded-full px-2 py-0.5 text-[11px] shadow-none ${
                                             isFailedState(step.state)
-                                                ? 'border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 dark:bg-rose-400/12 dark:hover:bg-rose-400/12 dark:text-rose-200 dark:border-rose-400/30'
-                                                : 'border-border bg-card text-foreground hover:bg-secondary'
+                                                ? 'border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 hover:text-rose-900 dark:border-rose-400/30 dark:bg-rose-400/12 dark:text-rose-200 dark:hover:bg-rose-400/20 dark:hover:text-rose-100'
+                                                : 'bg-card text-foreground hover:bg-secondary dark:bg-card dark:hover:bg-secondary'
                                         }`}
                                     >
                                         <StepIcon state={step.state} />
                                         <span className="truncate">{step.name}</span>
-                                    </button>
+                                    </Button>
                                 </li>
                             ))}
                         </ul>

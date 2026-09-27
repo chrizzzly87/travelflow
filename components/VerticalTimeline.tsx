@@ -896,7 +896,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                              const trackX = Math.max(8, chipAttachX - CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX);
                              const fromPath = buildVerticalConnectorPath(cityConnectorStartX, cityAnchors.fromY, trackX, chipAttachX, fromAttachY);
                              const toPath = buildVerticalConnectorPath(cityConnectorStartX, cityAnchors.toY, trackX, chipAttachX, toAttachY);
-                             const connectorOpacity = isUnsetTransport ? 0.52 : 1;
+                             const connectorOpacity = isUnsetTransport ? 0.7 : 1;
                              const shouldDashConnector = isUnsetTransport;
 
                              return (
@@ -905,7 +905,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                          <path
                                              d={fromPath}
                                              fill="none"
-                                             stroke="var(--color-slate-400)"
+                                             stroke="var(--tf-transfer-line)"
                                              strokeWidth={1.7}
                                              strokeLinecap="round"
                                              strokeLinejoin="round"
@@ -915,7 +915,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                          <path
                                              d={toPath}
                                              fill="none"
-                                             stroke="var(--color-slate-400)"
+                                             stroke="var(--tf-transfer-line)"
                                              strokeWidth={1.7}
                                              strokeLinecap="round"
                                              strokeLinejoin="round"
@@ -926,7 +926,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                      <button type="button"
                                          onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                          className={`absolute z-10 left-1/2 -translate-x-1/2 px-4 rounded-xl border text-[11px] font-semibold flex items-center justify-between gap-2 shadow-sm transition-colors pointer-events-auto
-                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 ring-2 ring-blue-600 ring-offset-1 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30' : (isUnsetTransport ? 'bg-secondary/70 border-border border-dashed text-muted-foreground' : 'bg-card border-border text-muted-foreground')}
+                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 ring-2 ring-blue-600 ring-offset-1 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30' : (isUnsetTransport ? 'bg-secondary/70 border-transfer-line border-dashed text-muted-foreground' : 'bg-card border-transfer-line text-muted-foreground')}
                                              ${travel || canEdit ? 'hover:bg-secondary cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                          `}
                                          style={{ top: chipTop, height: chipHeight, width: chipWidth }}

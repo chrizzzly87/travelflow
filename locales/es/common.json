@@ -810,6 +810,8 @@
     "searchCommand": "Buscar plantillas de prompt…",
     "noContext": "No hay elementos del viaje que coincidan.",
     "closeMenu": "Cerrar menú",
+    "send": "Enviar mensaje",
+    "stop": "Detener respuesta",
     "contextKinds": {
       "trip": "Viaje",
       "city": "Ciudad",

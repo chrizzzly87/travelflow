@@ -810,6 +810,8 @@
     "searchCommand": "Prompt-Vorlagen suchen…",
     "noContext": "Kein passendes Reiseelement.",
     "closeMenu": "Menü schließen",
+    "send": "Nachricht senden",
+    "stop": "Antwort stoppen",
     "contextKinds": {
       "trip": "Reise",
       "city": "Stadt",

@@ -8,6 +8,7 @@ import { PLAN_CATALOG } from '../../config/planCatalog';
 import type { TripPaywallActivationMode } from '../../config/paywall';
 import type { ShareMode } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import { Button } from '../ui/button';
 import { CopyTripButton } from './CopyTripButton';
 import { tripDockCardBottomClass } from './tripBottomDock';
 
@@ -253,8 +254,10 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                         {loadingDestinationSummary} • {tripDateRange} • {tripSpanCompactLabel}
                                     </div>
 
-                                    <button
+                                    <Button
                                         type="button"
+                                        variant="default"
+                                        size="lg"
                                         onClick={() => {
                                             trackEvent('trip_generation__pending_auth_modal--continue', {
                                                 trip_id: tripId,
@@ -263,14 +266,14 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                             onContinuePendingAuth?.();
                                         }}
                                         disabled={isPendingAuthContinueDisabled}
-                                        className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="mt-5 h-11 rounded-xl px-4 font-semibold"
                                         {...getAnalyticsDebugAttributes('trip_generation__pending_auth_modal--continue', {
                                             trip_id: tripId,
                                             source: 'trip_pending_auth_modal',
                                         })}
                                     >
                                         {t('tripView.pendingAuth.cta')}
-                                    </button>
+                                    </Button>
                                 </div>
 
                                 <aside className="border-t border-border bg-secondary/80 p-5 md:border-l md:border-t-0 sm:p-6">
@@ -354,8 +357,10 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
 
                                 <div className="mt-5 flex flex-wrap gap-2">
                                     {claimConflictShowLoginCta && (
-                                        <button
+                                        <Button
                                             type="button"
+                                            variant="default"
+                                            size="lg"
                                             onClick={() => {
                                                 trackEvent('trip_generation__claim_conflict_modal--login', {
                                                     trip_id: tripId,
@@ -363,14 +368,14 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                                 });
                                                 onClaimConflictLogin?.();
                                             }}
-                                            className="inline-flex h-11 items-center justify-center rounded-xl bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                            className="h-11 rounded-xl px-4 font-semibold"
                                             {...getAnalyticsDebugAttributes('trip_generation__claim_conflict_modal--login', {
                                                 trip_id: tripId,
                                                 source: 'trip_claim_conflict_modal',
                                             })}
                                         >
                                             {t('tripView.claimConflict.loginCta')}
-                                        </button>
+                                        </Button>
                                     )}
                                     <Link
                                         to={claimConflictCreateSimilarPath}

@@ -810,6 +810,8 @@
     "searchCommand": "Szukaj gotowych promptów…",
     "noContext": "Brak pasującego elementu podróży.",
     "closeMenu": "Zamknij menu",
+    "send": "Wyślij wiadomość",
+    "stop": "Zatrzymaj odpowiedź",
     "contextKinds": {
       "trip": "Podróż",
       "city": "Miasto",

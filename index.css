@@ -276,6 +276,10 @@
    * the middle of the column. The badge is solid because it overlaps both the
    * column and the grid behind it.
    */
+  /* Transfer connectors and the pills they join share one stroke colour, so a
+   * line reads as part of its pill. Mixed from the theme's own ink and card, so
+   * it is solid (lines cross and overlap) and follows both dark tones. */
+  --tf-transfer-line: color-mix(in oklch, var(--foreground) 18%, var(--card));
   --tf-today-wash: #fff1f2;
   --tf-today-cell: #ffe4e6;
   --tf-today-line: #fb7185;
@@ -357,6 +361,7 @@ html[lang^="ur-"] {
 }
 
 @theme inline {
+  --color-transfer-line: var(--tf-transfer-line);
   --color-activity-general-bg: var(--tf-activity-general-bg);
   --color-activity-general-border: var(--tf-activity-general-border);
   --color-activity-general-text: var(--tf-activity-general-text);
@@ -1565,6 +1570,12 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   /* Accent and state — shared by both tones. */
   --primary: var(--tf-accent-400);
   --primary-foreground: var(--background);
+  /* Tailwind's `bg-primary`/`text-primary` resolve through --tf-primary, not
+   * --primary (see @theme). Without these the dark fill stayed indigo-600 while
+   * --primary-foreground flipped to dark ink: dark text on a dark indigo button. */
+  --tf-primary: var(--tf-accent-400);
+  --tf-primary-hover: var(--tf-accent-300);
+  --tf-primary-contrast: var(--background);
   --destructive: oklch(0.704 0.191 22.216);
   --sidebar-primary: var(--tf-accent-400);
   --sidebar-primary-foreground: var(--background);

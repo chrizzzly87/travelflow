@@ -760,7 +760,13 @@ const TripAgentChatSession: React.FC<{
                                     </span>
                                 )}
                             </div>
-                            <PromptInputSubmit status={status} onStop={stop} disabled={isQuotaReached || !draftText.trim()} />
+                            <PromptInputSubmit
+                                status={status}
+                                onStop={stop}
+                                disabled={isQuotaReached || !draftText.trim()}
+                                aria-label={status === 'submitted' || status === 'streaming' ? t('tripAgent.stop') : t('tripAgent.send')}
+                                title={status === 'submitted' || status === 'streaming' ? t('tripAgent.stop') : t('tripAgent.send')}
+                            />
                         </PromptInputFooter>
                     </PromptInput>
                 </div>
@@ -908,7 +914,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                 onKeyDown={handlePanelKeyDown}
             >
             <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
-                <div className="flex size-9 items-center justify-center rounded-xl bg-slate-950 text-white"><Sparkles className="size-4" /></div>
+                <div aria-hidden="true" className="flex size-9 items-center justify-center rounded-xl bg-foreground text-background"><Sparkles className="size-4" /></div>
                 <div className="min-w-0 flex-1">
                     <h2 className="truncate text-sm font-semibold text-foreground">{t('tripAgent.title')}</h2>
                     <p className="truncate text-xs text-muted-foreground">
@@ -966,7 +972,8 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                                                 setIsHistoryOpen(false);
                                                 void selectThread(thread.id);
                                             }}
-                                            className={`flex w-full items-start gap-2 rounded-xl border px-2.5 py-2 text-start transition-colors ${
+                                            aria-current={thread.id === currentThreadId ? 'true' : undefined}
+                                            className={`flex w-full items-start gap-2 rounded-xl border px-2.5 py-2 text-start outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
                                                 thread.id === currentThreadId
                                                     ? 'border-accent-200 bg-accent-50 dark:bg-accent-400/12 dark:border-accent-400/30'
                                                     : 'border-border hover:bg-secondary'
@@ -982,13 +989,15 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                                             {thread.status === 'archived' && <Archive className="mt-0.5 size-3.5 text-muted-foreground" />}
                                         </button>
                                         {thread.status === 'active' && (
-                                            <button
+                                            <Button
                                                 type="button"
+                                                variant="ghost"
+                                                size="xs"
                                                 onClick={() => void archiveThread(thread.id)}
-                                                className="mt-0.5 w-full rounded-lg px-2.5 py-1 text-start text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground"
+                                                className="mt-0.5 w-full justify-start rounded-lg px-2.5 text-[11px] font-normal text-muted-foreground hover:bg-secondary hover:text-foreground dark:hover:bg-secondary"
                                             >
                                                 {t('tripAgent.archive')}
-                                            </button>
+                                            </Button>
                                         )}
                                     </li>
                                 ))}

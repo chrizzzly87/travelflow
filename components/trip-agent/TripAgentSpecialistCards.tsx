@@ -2,6 +2,7 @@ import { BedDouble, ExternalLink, Route, Star } from 'lucide-react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '../ui/button';
 import type { TripAgentHotelOption, TripAgentRouteAlternative } from '../../shared/tripAgent';
 
 const BUDGET_ORDER: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
@@ -95,13 +96,15 @@ export const TripAgentRouteCards: React.FC<{
                             </p>
                         )}
                         {onAsk && (
-                            <button
+                            <Button
                                 type="button"
+                                variant="link"
+                                size="xs"
                                 onClick={() => onAsk(t('tripAgent.routeAskPrompt', { title: alternative.title }))}
-                                className="mt-1.5 text-[11px] font-medium text-accent-700 underline-offset-2 hover:underline dark:text-accent-200"
+                                className="mt-1.5 h-auto px-0 text-[11px] text-accent-700 dark:text-accent-200"
                             >
                                 {t('tripAgent.routeAsk')}
-                            </button>
+                            </Button>
                         )}
                     </li>
                 ))}
