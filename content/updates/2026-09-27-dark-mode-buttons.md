@@ -17,6 +17,7 @@ summary: "Primary buttons and the AI chat are readable in dark mode again, trans
 - [x] [Fixed] 🖼️ The floating map card has a dark frame in dark mode, and its corners line up with the map inside.
 - [x] [Fixed] ⌨️ The Preview keyboard shortcut hint stays visible in dark mode.
 - [x] [Improved] 🗺️ Map and timeline toggles show clearly which option is on, in both themes, and screen readers now announce it too.
+- [x] [Fixed] 💡 An activity's AI Insights card is readable in dark mode, and its Cost, Best time and Tip labels sit above their text.
 - [x] [Fixed] 🖱️ Hovering a switched-on map button now changes its background instead of fading the icon, and toolbar buttons all hover the same way.
 - [x] [Fixed] 🔒 A locked trip's Share button and disabled map controls now look disabled in dark mode, not highlighted.
 - [x] [Improved] 🔊 Screen readers announce the AI chat's send and stop buttons in your language.
@@ -24,4 +25,5 @@ summary: "Primary buttons and the AI chat are readable in dark mode again, trans
 - [ ] [Internal] 🧩 `Button` gained `shortcut` (renders `Kbd`), plus `toggle`, `floating` and `soft` variants; about 50 hand-rolled buttons across the trip view, map controls and trip agent now use it. Documented in `docs/DESIGN_SYSTEM_COMPONENTS.md`.
 - [ ] [Internal] 🧹 Mapbox overlay markers skipped `marker.remove()` while the style was unreadable (mid-`setStyle`), leaking the previous style's labels; removal is now unconditional, with a regression test.
 - [ ] [Internal] 🎚️ New `--tf-transfer-line` token (solid mix of foreground and card) shared by connector strokes, transfer pill borders and the list-view spine.
+- [ ] [Internal] 📰 The in-app release notice header had the same light-only gradient; it now has a dark variant.
 - [ ] [Internal] 🏷️ New `tripAgent.send` / `tripAgent.stop` keys in all active locales.
