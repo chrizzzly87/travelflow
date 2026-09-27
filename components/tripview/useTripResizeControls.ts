@@ -40,7 +40,10 @@ interface UseTripResizeControlsOptions {
 
 const MIN_AUTO_FIT_TIMELINE_WIDTH = 160;
 const MIN_AUTO_FIT_TIMELINE_HEIGHT = 220;
-const AUTO_FIT_OVERFLOW_TOLERANCE = 0.12;
+// Auto-fit never zooms out past this level: below it day columns get too narrow
+// to read (the calendar switches to compact cards under ~60px per day), so a
+// long trip scrolls instead of being squeezed into the viewport.
+export const AUTO_FIT_MIN_ZOOM = 0.6;
 
 const parseDimensionValue = (value?: string): number | null => {
     if (!value) return null;
@@ -73,37 +76,20 @@ const resolveTimelineContentExtent = (
     return scrollExtent;
 };
 
-const resolveAutoFitZoom = (
+// Largest preset that shows the whole trip, but never below AUTO_FIT_MIN_ZOOM.
+export const resolveAutoFitZoom = (
     targetZoom: number,
     clampZoomLevel: (value: number) => number,
     zoomLevelPresets: number[],
 ): number => {
-    const clampedTarget = clampZoomLevel(targetZoom);
-    if (!Number.isFinite(clampedTarget)) return NaN;
-
-    const normalizedPresets = zoomLevelPresets
-        .flatMap((value) => {
-            const clamped = clampZoomLevel(value);
-            return Number.isFinite(clamped) ? [clamped] : [];
-        })
-        .filter((value, index, values) => values.indexOf(value) === index)
-        .sort((left, right) => left - right);
-
-    if (normalizedPresets.length === 0) return clampedTarget;
-
-    const fittingPreset = [...normalizedPresets]
-        .reverse()
-        .find((presetZoom) => presetZoom <= (clampedTarget + 0.001));
-    const overflowPreset = normalizedPresets.find((presetZoom) => presetZoom > (clampedTarget + 0.001));
-
-    if (fittingPreset && overflowPreset) {
-        const overflowRatio = (overflowPreset - clampedTarget) / Math.max(clampedTarget, 0.001);
-        if (overflowRatio <= AUTO_FIT_OVERFLOW_TOLERANCE) {
-            return overflowPreset;
-        }
-    }
-
-    return fittingPreset ?? normalizedPresets[0];
+    if (!Number.isFinite(targetZoom)) return NaN;
+    const floorZoom = clampZoomLevel(AUTO_FIT_MIN_ZOOM);
+    const fittingPreset = zoomLevelPresets
+        .map(clampZoomLevel)
+        .filter((presetZoom) => presetZoom <= targetZoom + 0.001)
+        .reduce((best, presetZoom) => Math.max(best, presetZoom), -Infinity);
+    const fittedZoom = Number.isFinite(fittingPreset) ? fittingPreset : clampZoomLevel(targetZoom);
+    return Math.max(floorZoom, fittedZoom);
 };
 
 export const useTripResizeControls = ({
