@@ -3,8 +3,8 @@ id: rel-2026-09-27-dark-mode-buttons
 version: v0.196.0
 title: "A calmer, more readable dark mode on the trip page"
 date: 2026-09-27
-published_at: 2026-09-27T12:00:00Z
-status: draft
+published_at: 2026-09-27T19:09:32Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Primary buttons and the AI chat are readable in dark mode again, transfer lines are softer and connect to their pills, and the floating map no longer stacks duplicate city labels."
