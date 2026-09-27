@@ -3,8 +3,8 @@ id: rel-2026-09-27-trip-controls-translated
 version: v0.195.0
 title: "Trip controls speak your language"
 date: 2026-09-27
-published_at: 2026-09-27T12:00:00Z
-status: draft
+published_at: 2026-09-27T18:53:36Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Map, timeline and banner controls on the trip page now follow your app language, including for screen readers."
