@@ -743,6 +743,8 @@
     "searchCommand": "Buscar modelos de prompt…",
     "noContext": "Nenhum item da viagem corresponde.",
     "closeMenu": "Fechar menu",
+    "send": "Enviar mensagem",
+    "stop": "Parar resposta",
     "contextKinds": {
       "trip": "Viagem",
       "city": "Cidade",

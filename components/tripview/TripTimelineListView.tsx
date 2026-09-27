@@ -474,7 +474,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                 )}
                 {model.sections.length > 0 && (
                     <div ref={sectionContainerRef} className="relative">
-                        <div aria-hidden className="absolute inset-y-0 start-8 w-px bg-slate-200" />
+                        <div aria-hidden className="absolute inset-y-0 start-8 w-px bg-transfer-line" />
                         <div className="pointer-events-none absolute inset-0 z-10">
                             {model.sections.map((section, index) => {
                                 if (index === 0 || !section.incomingTransfer) return null;
@@ -514,8 +514,8 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                 transfer.itemId
                                                     ? transferSelected
                                                         ? 'border-accent-500 text-accent-700 ring-2 ring-accent-200 dark:text-accent-200 dark:ring-0'
-                                                        : 'border-border text-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30'
-                                                    : 'border-border text-muted-foreground'
+                                                        : 'border-transfer-line text-foreground hover:border-accent-300 hover:text-accent-700 dark:hover:text-accent-200 dark:hover:border-accent-400/30'
+                                                    : 'border-transfer-line text-muted-foreground'
                                             }`}
                                             {...getAnalyticsDebugAttributes('trip_view__timeline_transfer--open', {
                                                 trip_id: trip.id,
@@ -567,7 +567,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                 markerRefs.current[`city-${section.city.id}`] = node;
                                             }}
                                             data-city-marker-id={section.city.id}
-                                            className="absolute start-8 top-5 z-20 size-3 rounded-full border-2 border-white shadow-sm"
+                                            className="absolute start-8 top-5 z-20 size-3 rounded-full border-2 border-card shadow-sm dark:shadow-none"
                                             style={{
                                                 backgroundColor: section.colorHex,
                                                 transform: 'translateX(-50%)',

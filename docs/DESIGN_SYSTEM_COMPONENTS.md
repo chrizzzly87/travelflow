@@ -256,6 +256,46 @@ the edit register. Do not "simplify" this back to a direct assignment — it wor
 
 ---
 
+## `button.tsx` — the one button
+
+Every clickable action in the planner, the trip page and the AI chat is a `Button`. Do not
+hand-roll `<button className="inline-flex … bg-accent-600 text-white …">`: those copies each
+carried their own colours, and they drifted out of step with the theme (the dark primary fill
+was the light one, a disabled control turned bright grey, pressed toggles lost `aria-pressed`).
+
+| Variant | Use for |
+|---|---|
+| `default` | The one primary action in a group (Apply, Preview, Copy trip, Send). |
+| `outline` | A secondary action beside it. |
+| `ghost` | Tertiary actions and icon-only controls in a toolbar or header. |
+| `secondary` | A quiet filled action; give it tinted colours for status banners. |
+| `soft` | Tinted accent action, quieter than `default` ("Ask AI", "Add activity"). |
+| `toggle` | Segmented controls. Pressed styling comes from `aria-pressed="true"`, so always pass it. |
+| `floating` | Controls sitting on the map: opaque card fill, `aria-pressed` fills with primary, `aria-expanded` tints. |
+| `link` / `destructive` | As named. |
+
+Sizes are `xs`, `sm`, `default`, `lg` and the square `icon-xs`, `icon-sm`, `icon`, `icon-lg`
+(24/32/36/40px). Drop a lucide or Phosphor icon in as a child; the button sizes it unless the
+icon has its own `size-*`.
+
+`shortcut` renders a trailing `<Kbd>` hint that follows the label colour, so it reads on every
+variant in both themes. Pair it with `aria-keyshortcuts` for assistive tech:
+
+```tsx
+<Button size="sm" shortcut="⌘⇧P" aria-keyshortcuts="Meta+Shift+P Control+Shift+P">
+  <Eye className="size-3.5" />Preview
+</Button>
+```
+
+**Dark mode.** `bg-primary` resolves through `--tf-primary`; `.dark` points it at indigo‑400
+and `--primary-foreground` at dark ink. Change the two together, never one — the fill staying
+indigo‑600 while the ink went dark is the bug that made Preview and Send unreadable.
+
+Leave a raw `<button>` only where the element is not a button-shaped action: resize handles,
+whole list rows or cards that act as one target, and click-away backdrops.
+
+---
+
 ## `select.tsx`
 
 Radix select. The trigger renders a Phosphor `CaretDown`; the item indicator is a Phosphor

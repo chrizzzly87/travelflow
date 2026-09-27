@@ -464,7 +464,7 @@ export const TripAgentProposalCard: React.FC<{
                 className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2"
                 aria-label={t('tripAgent.review')}
             >
-                {state === 'applied' ? <Check className="size-4 shrink-0 text-emerald-600" /> : null}
+                {state === 'applied' ? <Check className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" /> : null}
                 <span className="min-w-0 flex-1 text-xs text-foreground">
                     {state === 'applied'
                         ? (applied && applied.count < applied.requested
@@ -536,18 +536,20 @@ export const TripAgentProposalCard: React.FC<{
                                         </QuestionnaireChoice>
                                         {group.operationIds.length > 1 && (
                                             <div className="ps-6">
-                                                <button
+                                                <Button
                                                     type="button"
+                                                    variant="link"
+                                                    size="xs"
                                                     onClick={() => setExpandedGroupId(
                                                         expandedGroupId === group.id ? null : group.id,
                                                     )}
                                                     aria-expanded={expandedGroupId === group.id}
-                                                    className="text-[11px] text-muted-foreground underline-offset-2 hover:underline"
+                                                    className="h-auto px-0 text-[11px] font-normal text-muted-foreground"
                                                 >
                                                     {expandedGroupId === group.id
                                                         ? t('tripAgent.hideOperations')
                                                         : t('tripAgent.showOperations', { count: group.operationIds.length })}
-                                                </button>
+                                                </Button>
                                                 {expandedGroupId === group.id && (
                                                     <ul className="mt-1 space-y-1">
                                                         {group.operationIds.map((operationId) => {
@@ -610,7 +612,7 @@ export const TripAgentProposalCard: React.FC<{
                     <ul className="space-y-1">
                         {groups.filter((group) => selectedGroupIds.includes(group.id)).map((group) => (
                             <li key={group.id} className="flex gap-2 text-xs text-foreground">
-                                <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-600" />
+                                <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                                 <span className="min-w-0">{describeGroup(trip, group, t)}</span>
                             </li>
                         ))}
@@ -666,13 +668,10 @@ export const TripAgentProposalCard: React.FC<{
                             onClick={() => setStage('preview')}
                             disabled={selectedOperationIds.length === 0}
                             title={shortcutEnabled ? previewShortcutLabel() : undefined}
+                            shortcut={shortcutEnabled ? previewShortcutLabel() : undefined}
+                            aria-keyshortcuts={shortcutEnabled ? 'Meta+Shift+P Control+Shift+P' : undefined}
                         >
                             <Eye className="size-3.5" />{t('tripAgent.preview')}
-                            {shortcutEnabled && (
-                                <kbd className="ms-1 rounded border border-white/30 px-1 text-[10px] font-medium opacity-80">
-                                    {previewShortcutLabel()}
-                                </kbd>
-                            )}
                         </Button>
                     </>
                 ) : (

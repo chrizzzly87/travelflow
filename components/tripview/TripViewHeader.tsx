@@ -10,6 +10,7 @@ import { AccountMenu } from '../navigation/AccountMenu';
 // phone this is the only way out of the planner and into the rest of the app,
 // and a chunk fetch meant the first tap opened nothing.
 import { MobileMenu } from '../navigation/MobileMenu';
+import { Button } from '../ui/button';
 import { ThemeToggle } from '../ui/ThemeToggle';
 
 interface TripViewHeaderProps {
@@ -32,6 +33,9 @@ interface TripViewHeaderProps {
     isTripLockedByExpiry: boolean;
 }
 
+// Shared by the header's Share and Log in buttons; colour comes from the Button variant.
+const HEADER_BUTTON_CLASS_NAME = 'min-h-10 gap-2 px-3 py-2 shadow-sm active:scale-[0.96] disabled:active:scale-100 dark:shadow-none';
+
 export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
     isMobile,
     tripTitle,
@@ -53,8 +57,6 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
 }) => {
     const { t } = useTranslation('common');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const headerSecondaryButtonClassName = 'inline-flex min-h-10 items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm transition-[scale,border-color,background-color,color,box-shadow] duration-150 ease-out hover:border-border hover:bg-secondary hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 dark:text-foreground dark:shadow-none';
-    const headerPrimaryButtonClassName = 'inline-flex min-h-10 items-center gap-2 rounded-md bg-accent-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-[scale,background-color,box-shadow] duration-150 ease-out hover:bg-accent-700 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100';
     const titleStyle = titleViewTransitionName
         ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties)
         : undefined;
@@ -135,22 +137,19 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
 
             <div className="flex shrink-0 items-center gap-2">
                 {canShare && (
-                    <button
+                    <Button
                         type="button"
+                        variant="default"
                         onClick={onShare}
                         disabled={isTripLockedByExpiry}
                         title={isTripLockedByExpiry ? t('tripView.header.shareDisabled') : undefined}
-                        className={`${headerPrimaryButtonClassName} ${isMobile ? 'size-10 justify-center px-0' : ''} ${
-                            isTripLockedByExpiry
-                                ? 'bg-gray-200 text-muted-foreground cursor-not-allowed'
-                                : ''
-                        }`}
+                        className={`${HEADER_BUTTON_CLASS_NAME} ${isMobile ? 'size-10 px-0' : ''}`}
                         aria-label={t('tripView.header.share')}
                         data-tooltip={!isMobile ? t('tripView.header.share') : undefined}
                     >
                         <Share2 size={16} />
                         <span className={isMobile ? 'sr-only' : 'hidden sm:inline'}>{t('tripView.header.share')}</span>
-                    </button>
+                    </Button>
                 )}
                 {canUseAuthenticatedSession ? (
                     <AccountMenu
@@ -169,15 +168,16 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                             : 'gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground shadow-sm hover:border-border hover:bg-secondary hover:text-foreground'}
                     />
                 ) : (
-                    <button
+                    <Button
                         type="button"
+                        variant="outline"
                         onClick={onHeaderAuthAction}
                         disabled={isHeaderAuthSubmitting}
-                        className={headerSecondaryButtonClassName}
+                        className={`${HEADER_BUTTON_CLASS_NAME} bg-card text-muted-foreground hover:bg-secondary dark:bg-card dark:text-foreground dark:hover:bg-secondary`}
                         aria-label={t('nav.login')}
                     >
                         {t('nav.login')}
-                    </button>
+                    </Button>
                 )}
                 {/* Desktop only, like SiteHeader: below lg the burger's menu carries the toggle. */}
                 <ThemeToggle analyticsSurface="trip_view" className="hidden size-10 lg:inline-flex" />
@@ -191,16 +191,18 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                   * the trip page is a dead end on a phone, since the logo goes
                   * home and nothing else in the header leads anywhere.
                   */}
-                <button
+                <Button
                     type="button"
+                    variant="ghost"
+                    size="icon-lg"
                     onClick={() => setIsMobileMenuOpen(true)}
                     data-testid="trip-header-menu"
-                    className="inline-flex size-10 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 lg:hidden dark:text-foreground"
+                    className="text-muted-foreground hover:bg-secondary hover:text-foreground lg:hidden dark:text-foreground dark:hover:bg-secondary"
                     aria-label={t('nav.openMenu')}
                     {...getAnalyticsDebugAttributes('mobile_nav__menu--open', { surface: 'trip_header' })}
                 >
                     <Menu size={20} />
-                </button>
+                </Button>
             </div>
             </div>
             {isMobileMenuOpen && (

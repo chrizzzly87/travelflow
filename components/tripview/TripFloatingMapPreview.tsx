@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LazyMotion, animate, domMax, m, useDragControls, useMotionValue, useSpring, type PanInfo } from 'framer-motion';
 import { ArrowsInSimple, ArrowsOutSimple, DeviceRotate } from '@phosphor-icons/react';
 
+import { Button } from '../ui/button';
 import { trackEvent } from '../../services/analyticsService';
 import {
     type FloatingMapOrientation,
@@ -33,6 +34,11 @@ const FLOATING_MAP_ROTATION_VELOCITY_FACTOR = 0.015;
 const FLOATING_MAP_SETTLE_DURATION_MS = 380;
 const FLOATING_MAP_RESIZE_SETTLE_MS = 140;
 const FLOATING_MAP_BORDER_RADIUS = '1rem';
+const FLOATING_MAP_FRAME_WIDTH = '4px';
+// The map sits inside the frame, so its corners are concentric with the outer
+// radius minus the frame, not equal to it. Inheriting 1rem left a light seam in
+// each corner where the map's curve pulled away from the frame's.
+const FLOATING_MAP_INNER_BORDER_RADIUS = `calc(${FLOATING_MAP_BORDER_RADIUS} - ${FLOATING_MAP_FRAME_WIDTH})`;
 const FLOATING_MAP_NAV_TOP_OFFSET = 92;
 const DOCKED_MAP_EDGE_GUARD_PX = 4;
 const FLOATING_MAP_ASPECT_RATIO: Record<FloatingMapOrientation, number> = {
@@ -925,7 +931,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                 }}
                 className={`fixed overflow-hidden bg-transparent transition-[border-radius,box-shadow,border-width] duration-300 ease-out ${
                     mapDockMode === 'floating'
-                        ? `${shouldPromoteMapLayer ? 'z-[84]' : 'z-[80]'} border-[4px] border-white ${
+                        ? `${shouldPromoteMapLayer ? 'z-[84]' : 'z-[80]'} border-[4px] border-card bg-card ${
                             isFloatingMapDragging
                                 ? 'shadow-[0_34px_70px_-28px_rgba(15,23,42,0.72),0_14px_30px_-16px_rgba(15,23,42,0.45)]'
                                 : 'shadow-[0_20px_50px_-22px_rgba(15,23,42,0.58),0_10px_24px_-12px_rgba(15,23,42,0.38)]'
@@ -952,24 +958,26 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                             data-testid="floating-map-drag-handle"
                             data-floating-map-control="true"
                             onPointerDown={beginFloatingMapDrag}
-                            className={`group pointer-events-auto inline-flex h-8 w-24 items-center justify-center rounded-t-none rounded-b-full border-[4px] border-t-0 border-white bg-card shadow-sm touch-none transition-transform ${
+                            className={`group pointer-events-auto inline-flex h-8 w-24 items-center justify-center rounded-t-none rounded-b-full border-[4px] border-t-0 border-card bg-card shadow-sm touch-none dark:shadow-none transition-transform ${
                                 isHandlePressed || isFloatingMapDragging ? 'cursor-grabbing scale-[1.03]' : 'cursor-grab'
                             }`}
                             aria-label="Move floating map preview"
                         >
-                            <span className="inline-block h-1.5 w-14 rounded-full bg-slate-400/65 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] transition-colors group-hover:bg-accent-500" />
+                            <span className="inline-block h-1.5 w-14 rounded-full bg-transfer-line transition-colors group-hover:bg-accent-500" />
                             <span className="sr-only">Move floating map preview</span>
                         </button>
                     </div>
                 )}
                 {mapDockMode === 'floating' && (
                     <div className="pointer-events-none absolute top-0 start-0 z-[92] flex items-start gap-1 ps-1 pt-1">
-                        <button
+                        <Button
                             type="button"
+                            variant="floating"
+                            size="icon-sm"
                             data-testid="floating-map-resize-handle"
                             data-floating-map-control="true"
                             onClick={toggleFloatingMapSize}
-                            className="group pointer-events-auto relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-card text-muted-foreground shadow-sm transition-colors hover:bg-card hover:text-accent-600 dark:hover:text-accent-300 dark:shadow-none"
+                            className="group pointer-events-auto relative rounded-lg border-[4px] border-card shadow-none"
                             aria-label={floatingMapSizePreset === 'lg'
                                 ? 'Use compact floating map size'
                                 : 'Use expanded floating map size'}
@@ -982,13 +990,15 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                                     ? 'Use compact floating map size'
                                     : 'Use expanded floating map size'}
                             </span>
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="button"
+                            variant="floating"
+                            size="icon-sm"
                             data-testid="floating-map-orientation-toggle"
                             data-floating-map-control="true"
                             onClick={toggleFloatingMapOrientation}
-                            className="group pointer-events-auto relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-card text-muted-foreground shadow-sm transition-colors hover:bg-card hover:text-accent-600 dark:hover:text-accent-300 dark:shadow-none"
+                            className="group pointer-events-auto relative rounded-lg border-[4px] border-card shadow-none"
                             aria-label={floatingMapOrientation === 'portrait'
                                 ? 'Switch floating map preview to landscape'
                                 : 'Switch floating map preview to portrait'}
@@ -1005,10 +1015,13 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                                     ? 'Switch floating map preview to landscape'
                                     : 'Switch floating map preview to portrait'}
                             </span>
-                        </button>
+                        </Button>
                     </div>
                 )}
-                <div className="h-full w-full overflow-hidden" style={{ borderRadius: 'inherit' }}>
+                <div
+                    className="h-full w-full overflow-hidden"
+                    style={{ borderRadius: mapDockMode === 'floating' ? FLOATING_MAP_INNER_BORDER_RADIUS : '0px' }}
+                >
                     {children}
                 </div>
                 {isFloatingMapSettling && <span className="sr-only">Settling floating map preview</span>}

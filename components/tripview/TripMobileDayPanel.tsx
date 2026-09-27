@@ -9,6 +9,7 @@ import { TransportModeIcon } from '../TransportModeIcon';
 import { normalizeActivityTypes } from '../../utils';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { MARKDOWN_HEADS_UP_BANNER_CLASS, remarkHeadsUpBanners } from '../markdownPresentation';
+import { Button } from '../ui/button';
 import { TripDirectionsButton } from './TripDirectionsButton';
 import { buildActivityDirectionsLabel } from '../../shared/mapDirectionsLinks';
 import type { ITimelineItem } from '../../types';
@@ -82,16 +83,18 @@ const ScheduleRow: React.FC<{
                 <div className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2.5">{body}</div>
             )}
             {action && (
-                <button
+                <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     onClick={action.onClick}
                     data-testid="mobile-day-transport-edit"
-                    className="me-2 inline-flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-card hover:text-accent-600 dark:hover:text-accent-300"
+                    className="me-2 rounded-full text-muted-foreground hover:bg-card hover:text-accent-600 dark:hover:bg-card dark:hover:text-accent-300"
                     aria-label={action.label}
                     title={action.label}
                 >
                     <SlidersHorizontal size={15} />
-                </button>
+                </Button>
             )}
         </div>
     );
@@ -235,8 +238,10 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                     {day.activities.length > 0 ? 'Activities' : 'No activities yet'}
                 </p>
                 {onAddActivity && (
-                    <button
+                    <Button
                         type="button"
+                        variant="soft"
+                        size="sm"
                         onClick={() => {
                             trackEvent('trip_view__mobile_activity--add', {
                                 trip_id: tripId,
@@ -245,7 +250,7 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                             onAddActivity(day.dayOffset);
                         }}
                         data-testid="mobile-day-add-activity"
-                        className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 text-xs font-semibold text-accent-700 transition-colors hover:bg-accent-100 dark:bg-accent-400/12 dark:hover:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30"
+                        className="min-h-9 gap-1.5 rounded-full px-3 text-xs font-semibold"
                         {...getAnalyticsDebugAttributes('trip_view__mobile_activity--add', {
                             trip_id: tripId,
                             day_offset: day.dayOffset,
@@ -253,7 +258,7 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                     >
                         <Plus size={14} />
                         Add activity
-                    </button>
+                    </Button>
                 )}
             </div>
 

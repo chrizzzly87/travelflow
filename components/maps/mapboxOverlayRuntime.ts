@@ -129,8 +129,15 @@ export const createMapboxOverlayMarker = ({
       }
       if (!isAttached) return;
       isAttached = false;
-      if (!isMapboxMapUsable(map)) return;
-      marker.remove();
+      // A DOM marker does not depend on the style, so remove it even while the
+      // style is unreadable. Gating this on isMapboxMapUsable leaked every label
+      // of the previous style during a setStyle switch: old dark chips stayed
+      // stacked under the new light ones.
+      try {
+        marker.remove();
+      } catch {
+        element.remove();
+      }
     },
     update(updates) {
       if (updates.position) {

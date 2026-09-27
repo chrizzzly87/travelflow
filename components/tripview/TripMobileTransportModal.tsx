@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 
+import { Button } from '../ui/button';
 import { Drawer, DrawerContent } from '../ui/drawer';
 import { TransportModeIcon } from '../TransportModeIcon';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -111,13 +112,15 @@ export const TripMobileTransportModal: React.FC<TripMobileTransportModalProps> =
                         })}
                     </div>
 
-                    <button
+                    <Button
                         type="button"
+                        variant="ghost"
+                        size="lg"
                         onClick={onClose}
-                        className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold text-muted-foreground transition-colors hover:bg-secondary"
+                        className="mt-4 min-h-11 w-full rounded-xl px-4 font-semibold text-muted-foreground hover:bg-secondary dark:hover:bg-secondary"
                     >
                         Cancel
-                    </button>
+                    </Button>
                 </div>
             </DrawerContent>
         </Drawer>
