@@ -4,8 +4,7 @@ import { afterAll, beforeAll, afterEach, beforeEach, describe, expect, it, vi } 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { TripViewPlannerWorkspace } from '../../../components/tripview/TripViewPlannerWorkspace';
-import i18n, { preloadLocaleNamespaces } from '../../../i18n';
-import { loadEnglishCommonTranslations } from '../../helpers/i18n';
+import { loadCommonTranslations, loadEnglishCommonTranslations } from '../../helpers/i18n';
 
 type PlannerProps = React.ComponentProps<typeof TripViewPlannerWorkspace>;
 
@@ -599,10 +598,7 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
 // These controls were hard-coded English, so a German planner announced
 // "Zoom in timeline" and "Move floating map preview" to screen readers.
 describe('components/tripview/TripViewPlannerWorkspace in German', () => {
-  beforeAll(async () => {
-    await preloadLocaleNamespaces('de', ['common']);
-    await i18n.changeLanguage('de');
-  });
+  beforeAll(() => loadCommonTranslations('de'));
 
   afterAll(loadEnglishCommonTranslations);
 

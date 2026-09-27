@@ -1,6 +1,6 @@
 ---
 id: rel-2026-09-27-trip-controls-translated
-version: v0.194.0
+version: v0.195.0
 title: "Trip controls speak your language"
 date: 2026-09-27
 published_at: 2026-09-27T12:00:00Z
