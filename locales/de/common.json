@@ -696,6 +696,73 @@
         "mine": "Meins",
         "customNote": "Deine eigene Mischung aus Einstellungen."
       }
+    },
+    "timelineControls": {
+      "horizontalDirection": "Timeline horizontal anzeigen",
+      "verticalDirection": "Timeline vertikal anzeigen",
+      "zoomOut": "Timeline herauszoomen",
+      "zoomIn": "Timeline hineinzoomen",
+      "calendarView": "Kalenderansicht",
+      "listView": "Listenansicht der Timeline"
+    },
+    "panels": {
+      "resizeDetails": "Detailbereich in der Breite anpassen",
+      "resizeTimelineAndMap": "Timeline und Karte in der Größe anpassen",
+      "resizeTimeline": "Timeline in der Höhe anpassen"
+    },
+    "mapControls": {
+      "minimizePreview": "Kartenvorschau verkleinern",
+      "maximizePreview": "Kartenvorschau vergrößern",
+      "layoutVertical": "Vertikales Layout",
+      "layoutHorizontal": "Horizontales Layout",
+      "fitToItinerary": "Karte an Route anpassen",
+      "shrinkMap": "Karte verkleinern",
+      "expandMap": "Karte vergrößern",
+      "showLabels": "Städtenamen einblenden",
+      "hideLabels": "Städtenamen ausblenden",
+      "showActivityMarkers": "Aktivitäts-Pins einblenden",
+      "hideActivityMarkers": "Aktivitäts-Pins ausblenden"
+    },
+    "floatingMap": {
+      "move": "Schwebende Kartenvorschau verschieben",
+      "useCompactSize": "Kompakte Kartengröße nutzen",
+      "useExpandedSize": "Große Kartengröße nutzen",
+      "switchToLandscape": "Kartenvorschau ins Querformat drehen",
+      "switchToPortrait": "Kartenvorschau ins Hochformat drehen",
+      "settling": "Kartenvorschau wird ausgerichtet"
+    },
+    "banners": {
+      "shareViewOnly": "Geteilte Reise · Nur ansehen",
+      "shareEditable": "Geteilte Reise · Bearbeiten aktiv",
+      "snapshotOlder": "Du siehst einen älteren Stand. Diese Reise wurde inzwischen aktualisiert.",
+      "snapshotCurrent": "Du siehst einen gespeicherten Stand dieser geteilten Reise.",
+      "openLatest": "Neuesten Stand öffnen",
+      "copyTrip": "Reise kopieren"
+    },
+    "exampleBanner": {
+      "eyebrow": "Beispielreise zum Ausprobieren",
+      "title": "Schau dich in Ruhe um. Kopiere die Reise, wenn du sie behalten und bearbeiten willst.",
+      "body": "Diese Route ist nur ein Beispiel und speichert keine Änderungen.",
+      "countryFocus": "Länderfokus: {countries}.",
+      "dismiss": "Hinweis zur Beispielreise schließen"
+    },
+    "listView": {
+      "openTransfer": "Transfer-Details öffnen ({mode})",
+      "taskCompleted": "Erledigte Aufgabe",
+      "taskOpen": "Offene Aufgabe",
+      "days": "Tage",
+      "daysRange": "Tage {start} - {end}"
+    },
+    "timeline": {
+      "addCityToEnd": "Stadt am Ende hinzufügen",
+      "addTransfer": "Transfer hinzufügen",
+      "transportUndecided": "Verkehrsmittel noch offen",
+      "transportMode": "Verkehrsmittel: {mode}",
+      "addActivity": "Aktivität hinzufügen",
+      "addActivityOn": "Aktivität am {date} hinzufügen",
+      "occupySpace": "Freien Platz ausfüllen",
+      "stretchToFill": "Bis zur Lücke strecken",
+      "reverseSelectedCities": "Ausgewählte Städte tauschen"
     }
   },
   "tripRouteShell": {

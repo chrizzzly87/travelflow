@@ -1,6 +1,6 @@
 ---
 id: rel-2026-09-27-dark-mode-buttons
-version: v0.194.0
+version: v0.196.0
 title: "A calmer, more readable dark mode on the trip page"
 date: 2026-09-27
 published_at: 2026-09-27T12:00:00Z

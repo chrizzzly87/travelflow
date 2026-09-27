@@ -375,7 +375,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
             {shareStatus && (
                 <div className="px-4 sm:px-6 py-2 border-b border-amber-200 bg-amber-50 text-amber-900 text-xs flex items-center justify-between dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30">
                     <span>
-                        {shareStatus === 'view' ? 'View-only shared trip' : 'Shared trip · Editing enabled'}
+                        {shareStatus === 'view' ? t('tripView.banners.shareViewOnly') : t('tripView.banners.shareEditable')}
                     </span>
                     {shareStatus === 'view' && onCopyTrip && (
                         <CopyTripButton onCopyTrip={onCopyTrip} surface="share_strip" />
@@ -481,8 +481,8 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                 <div className="px-4 sm:px-6 py-2 border-b border-accent-200 bg-accent-50 text-accent-900 text-xs flex items-center justify-between gap-3 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30">
                     <span>
                         {shareSnapshotMeta.hasNewer
-                            ? 'You are viewing an older snapshot. This trip has newer updates.'
-                            : 'You are viewing a snapshot version of this shared trip.'}
+                            ? t('tripView.banners.snapshotOlder')
+                            : t('tripView.banners.snapshotCurrent')}
                     </span>
                     {shareSnapshotMeta.hasNewer && (
                         <Button
@@ -492,7 +492,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                             onClick={onOpenLatestSnapshot}
                             className="h-auto px-3 py-1 font-semibold bg-accent-100 text-accent-900 hover:bg-accent-200 dark:bg-accent-400/12 dark:text-accent-200 dark:hover:bg-accent-400/20"
                         >
-                            Open latest
+                            {t('tripView.banners.openLatest')}
                         </Button>
                     )}
                 </div>
@@ -607,16 +607,16 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                             size="icon-sm"
                             onClick={() => setIsExampleBannerDismissed(true)}
                             className="absolute end-2 top-2 size-7 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground dark:text-foreground dark:hover:bg-secondary"
-                            aria-label="Dismiss example trip notice"
+                            aria-label={t('tripView.exampleBanner.dismiss')}
                         >
                             <X size={14} />
                         </Button>
-                        <p className="pe-8 text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700 dark:text-accent-200">Example trip playground</p>
-                        <p className="mt-1 text-sm font-semibold text-foreground">Explore freely. Copy when you want to keep and edit.</p>
+                        <p className="pe-8 text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700 dark:text-accent-200">{t('tripView.exampleBanner.eyebrow')}</p>
+                        <p className="mt-1 text-sm font-semibold text-foreground">{t('tripView.exampleBanner.title')}</p>
                         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                            This itinerary is for illustration only and never saves changes.
+                            {t('tripView.exampleBanner.body')}
                             {exampleTripBanner.countries.length > 0 && (
-                                <span> Country focus: {exampleTripBanner.countries.join(', ')}.</span>
+                                <span> {t('tripView.exampleBanner.countryFocus', { countries: exampleTripBanner.countries.join(', ') })}</span>
                             )}
                         </p>
                         <div className="mt-3 flex flex-wrap justify-end gap-2">
@@ -629,7 +629,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                     className="min-h-10 gap-1.5 border-accent-200 bg-card px-3 text-xs font-semibold text-accent-700 shadow-none hover:bg-accent-50 hover:text-accent-800 dark:border-accent-400/30 dark:bg-card dark:text-accent-200 dark:hover:bg-accent-400/12 dark:hover:text-accent-100"
                                 >
                                     <Sparkle size={14} weight="duotone" />
-                                    Create similar trip
+                                    {t('tripView.claimConflict.createSimilarCta')}
                                 </Button>
                             )}
                             {onCopyTrip && (
@@ -641,7 +641,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                     className="min-h-10 gap-1.5 px-3 text-xs font-semibold"
                                 >
                                     <CopySimple size={14} weight="duotone" />
-                                    Copy trip
+                                    {t('tripView.banners.copyTrip')}
                                 </Button>
                             )}
                         </div>

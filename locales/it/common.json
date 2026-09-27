@@ -696,6 +696,73 @@
         "mine": "Mio",
         "customNote": "La tua combinazione di impostazioni."
       }
+    },
+    "timelineControls": {
+      "horizontalDirection": "Timeline orizzontale",
+      "verticalDirection": "Timeline verticale",
+      "zoomOut": "Riduci lo zoom della timeline",
+      "zoomIn": "Aumenta lo zoom della timeline",
+      "calendarView": "Vista calendario",
+      "listView": "Vista elenco"
+    },
+    "panels": {
+      "resizeDetails": "Ridimensiona il pannello dei dettagli",
+      "resizeTimelineAndMap": "Ridimensiona timeline e mappa",
+      "resizeTimeline": "Ridimensiona la timeline"
+    },
+    "mapControls": {
+      "minimizePreview": "Riduci l'anteprima della mappa",
+      "maximizePreview": "Ingrandisci l'anteprima della mappa",
+      "layoutVertical": "Layout verticale",
+      "layoutHorizontal": "Layout orizzontale",
+      "fitToItinerary": "Adatta all'itinerario",
+      "shrinkMap": "Rimpicciolisci la mappa",
+      "expandMap": "Ingrandisci la mappa",
+      "showLabels": "Mostra i nomi delle città",
+      "hideLabels": "Nascondi i nomi delle città",
+      "showActivityMarkers": "Mostra i segnaposto attività",
+      "hideActivityMarkers": "Nascondi i segnaposto attività"
+    },
+    "floatingMap": {
+      "move": "Sposta l'anteprima mobile della mappa",
+      "useCompactSize": "Usa la mappa mobile compatta",
+      "useExpandedSize": "Usa la mappa mobile ingrandita",
+      "switchToLandscape": "Ruota l'anteprima della mappa in orizzontale",
+      "switchToPortrait": "Ruota l'anteprima della mappa in verticale",
+      "settling": "Posizionamento dell'anteprima della mappa"
+    },
+    "banners": {
+      "shareViewOnly": "Viaggio condiviso · Sola lettura",
+      "shareEditable": "Viaggio condiviso · Modifica attiva",
+      "snapshotOlder": "Stai guardando una versione precedente. Questo viaggio ha aggiornamenti più recenti.",
+      "snapshotCurrent": "Stai guardando una versione salvata di questo viaggio condiviso.",
+      "openLatest": "Apri la più recente",
+      "copyTrip": "Copia viaggio"
+    },
+    "exampleBanner": {
+      "eyebrow": "Viaggio di esempio da esplorare",
+      "title": "Esplora liberamente. Copialo quando vuoi tenerlo e modificarlo.",
+      "body": "Questo itinerario è solo un esempio e non salva mai le modifiche.",
+      "countryFocus": "Paesi: {countries}.",
+      "dismiss": "Chiudi l'avviso sul viaggio di esempio"
+    },
+    "listView": {
+      "openTransfer": "Apri i dettagli del trasferimento ({mode})",
+      "taskCompleted": "Attività completata",
+      "taskOpen": "Attività da fare",
+      "days": "Giorni",
+      "daysRange": "Giorni {start} - {end}"
+    },
+    "timeline": {
+      "addCityToEnd": "Aggiungi una città alla fine",
+      "addTransfer": "Aggiungi un trasferimento",
+      "transportUndecided": "Trasporto da decidere",
+      "transportMode": "Trasporto: {mode}",
+      "addActivity": "Aggiungi attività",
+      "addActivityOn": "Aggiungi attività il {date}",
+      "occupySpace": "Occupa lo spazio disponibile",
+      "stretchToFill": "Allunga per riempire",
+      "reverseSelectedCities": "Inverti le città selezionate"
     }
   },
   "tripRouteShell": {

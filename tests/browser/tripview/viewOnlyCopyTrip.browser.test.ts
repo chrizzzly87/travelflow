@@ -69,12 +69,12 @@ describe('view-only "Copy trip" actions', () => {
   // on an amber-200 fill in dark mode, i.e. invisible.
   it('renders the same shared button, readable in dark mode, on the strip and the card', () => {
     const { unmount } = renderStrip();
-    const stripButton = screen.getByRole('button', { name: 'Copy trip' });
+    const stripButton = screen.getByRole('button', { name: 'tripView.banners.copyTrip' });
     const stripClass = stripButton.className;
     unmount();
 
     renderHud(false);
-    const cardButton = within(screen.getByTestId('view-only-trip-card')).getByRole('button', { name: 'Copy trip' });
+    const cardButton = within(screen.getByTestId('view-only-trip-card')).getByRole('button', { name: 'tripView.banners.copyTrip' });
 
     expect(cardButton.className).toBe(stripClass);
     expect(cardButton.className).toContain('dark:text-amber-950');
@@ -84,7 +84,7 @@ describe('view-only "Copy trip" actions', () => {
   it('copies and reports which surface it came from', () => {
     const onCopyTrip = vi.fn();
     renderHud(false, onCopyTrip);
-    fireEvent.click(screen.getByRole('button', { name: 'Copy trip' }));
+    fireEvent.click(screen.getByRole('button', { name: 'tripView.banners.copyTrip' }));
     expect(onCopyTrip).toHaveBeenCalledTimes(1);
     expect(analyticsMocks.trackEvent).toHaveBeenCalledWith('trip_view__copy_trip--click', { surface: 'view_only_card' });
   });

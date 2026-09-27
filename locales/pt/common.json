@@ -696,6 +696,73 @@
         "mine": "Meu",
         "customNote": "A tua própria combinação de definições."
       }
+    },
+    "timelineControls": {
+      "horizontalDirection": "Linha temporal horizontal",
+      "verticalDirection": "Linha temporal vertical",
+      "zoomOut": "Diminuir zoom da linha temporal",
+      "zoomIn": "Aumentar zoom da linha temporal",
+      "calendarView": "Vista de calendário",
+      "listView": "Vista de lista"
+    },
+    "panels": {
+      "resizeDetails": "Redimensionar o painel de detalhes",
+      "resizeTimelineAndMap": "Redimensionar a linha temporal e o mapa",
+      "resizeTimeline": "Redimensionar a linha temporal"
+    },
+    "mapControls": {
+      "minimizePreview": "Minimizar a pré-visualização do mapa",
+      "maximizePreview": "Maximizar a pré-visualização do mapa",
+      "layoutVertical": "Layout vertical",
+      "layoutHorizontal": "Layout horizontal",
+      "fitToItinerary": "Ajustar ao itinerário",
+      "shrinkMap": "Reduzir o mapa",
+      "expandMap": "Expandir o mapa",
+      "showLabels": "Mostrar nomes das cidades",
+      "hideLabels": "Ocultar nomes das cidades",
+      "showActivityMarkers": "Mostrar pins de atividades",
+      "hideActivityMarkers": "Ocultar pins de atividades"
+    },
+    "floatingMap": {
+      "move": "Mover a pré-visualização flutuante do mapa",
+      "useCompactSize": "Usar o mapa flutuante compacto",
+      "useExpandedSize": "Usar o mapa flutuante ampliado",
+      "switchToLandscape": "Rodar a pré-visualização do mapa para paisagem",
+      "switchToPortrait": "Rodar a pré-visualização do mapa para retrato",
+      "settling": "A posicionar a pré-visualização do mapa"
+    },
+    "banners": {
+      "shareViewOnly": "Viagem partilhada · Só leitura",
+      "shareEditable": "Viagem partilhada · Edição ativada",
+      "snapshotOlder": "Estás a ver uma versão anterior. Esta viagem tem atualizações mais recentes.",
+      "snapshotCurrent": "Estás a ver uma versão guardada desta viagem partilhada.",
+      "openLatest": "Abrir a mais recente",
+      "copyTrip": "Copiar viagem"
+    },
+    "exampleBanner": {
+      "eyebrow": "Viagem de exemplo para explorar",
+      "title": "Explora à vontade. Copia quando quiseres guardar e editar.",
+      "body": "Este itinerário é só um exemplo e nunca guarda alterações.",
+      "countryFocus": "Países: {countries}.",
+      "dismiss": "Fechar o aviso da viagem de exemplo"
+    },
+    "listView": {
+      "openTransfer": "Abrir detalhes da deslocação ({mode})",
+      "taskCompleted": "Tarefa concluída",
+      "taskOpen": "Tarefa por fazer",
+      "days": "Dias",
+      "daysRange": "Dias {start} - {end}"
+    },
+    "timeline": {
+      "addCityToEnd": "Adicionar cidade no fim",
+      "addTransfer": "Adicionar deslocação",
+      "transportUndecided": "Transporte por decidir",
+      "transportMode": "Transporte: {mode}",
+      "addActivity": "Adicionar atividade",
+      "addActivityOn": "Adicionar atividade a {date}",
+      "occupySpace": "Ocupar o espaço disponível",
+      "stretchToFill": "Esticar para preencher",
+      "reverseSelectedCities": "Inverter as cidades selecionadas"
     }
   },
   "tripRouteShell": {

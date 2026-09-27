@@ -696,6 +696,73 @@
         "mine": "Mój",
         "customNote": "Twoje własne połączenie ustawień."
       }
+    },
+    "timelineControls": {
+      "horizontalDirection": "Pozioma oś czasu",
+      "verticalDirection": "Pionowa oś czasu",
+      "zoomOut": "Pomniejsz oś czasu",
+      "zoomIn": "Powiększ oś czasu",
+      "calendarView": "Widok kalendarza",
+      "listView": "Widok listy"
+    },
+    "panels": {
+      "resizeDetails": "Zmień szerokość panelu szczegółów",
+      "resizeTimelineAndMap": "Zmień rozmiar osi czasu i mapy",
+      "resizeTimeline": "Zmień wysokość osi czasu"
+    },
+    "mapControls": {
+      "minimizePreview": "Zminimalizuj podgląd mapy",
+      "maximizePreview": "Zmaksymalizuj podgląd mapy",
+      "layoutVertical": "Układ pionowy",
+      "layoutHorizontal": "Układ poziomy",
+      "fitToItinerary": "Dopasuj mapę do trasy",
+      "shrinkMap": "Zmniejsz mapę",
+      "expandMap": "Powiększ mapę",
+      "showLabels": "Pokaż nazwy miast",
+      "hideLabels": "Ukryj nazwy miast",
+      "showActivityMarkers": "Pokaż pinezki aktywności",
+      "hideActivityMarkers": "Ukryj pinezki aktywności"
+    },
+    "floatingMap": {
+      "move": "Przesuń pływający podgląd mapy",
+      "useCompactSize": "Kompaktowy rozmiar mapy",
+      "useExpandedSize": "Powiększony rozmiar mapy",
+      "switchToLandscape": "Obróć podgląd mapy do poziomu",
+      "switchToPortrait": "Obróć podgląd mapy do pionu",
+      "settling": "Ustawianie podglądu mapy"
+    },
+    "banners": {
+      "shareViewOnly": "Udostępniona podróż · Tylko podgląd",
+      "shareEditable": "Udostępniona podróż · Edycja włączona",
+      "snapshotOlder": "Oglądasz starszą wersję. Ta podróż ma nowsze zmiany.",
+      "snapshotCurrent": "Oglądasz zapisaną wersję tej udostępnionej podróży.",
+      "openLatest": "Otwórz najnowszą",
+      "copyTrip": "Skopiuj podróż"
+    },
+    "exampleBanner": {
+      "eyebrow": "Przykładowa podróż do odkrywania",
+      "title": "Rozglądaj się swobodnie. Skopiuj, gdy chcesz ją zachować i edytować.",
+      "body": "Ten plan to tylko przykład i nigdy nie zapisuje zmian.",
+      "countryFocus": "Kraje: {countries}.",
+      "dismiss": "Zamknij informację o przykładowej podróży"
+    },
+    "listView": {
+      "openTransfer": "Otwórz szczegóły przejazdu ({mode})",
+      "taskCompleted": "Zadanie wykonane",
+      "taskOpen": "Zadanie do zrobienia",
+      "days": "Dni",
+      "daysRange": "Dni {start} - {end}"
+    },
+    "timeline": {
+      "addCityToEnd": "Dodaj miasto na końcu",
+      "addTransfer": "Dodaj przejazd",
+      "transportUndecided": "Nie wybrano środka transportu",
+      "transportMode": "Środek transportu: {mode}",
+      "addActivity": "Dodaj aktywność",
+      "addActivityOn": "Dodaj aktywność na {date}",
+      "occupySpace": "Zajmij wolne miejsce",
+      "stretchToFill": "Rozciągnij do wypełnienia",
+      "reverseSelectedCities": "Zamień kolejność wybranych miast"
     }
   },
   "tripRouteShell": {

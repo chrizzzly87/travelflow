@@ -696,6 +696,73 @@
         "mine": "Le mien",
         "customNote": "Votre propre combinaison de réglages."
       }
+    },
+    "timelineControls": {
+      "horizontalDirection": "Frise horizontale",
+      "verticalDirection": "Frise verticale",
+      "zoomOut": "Dézoomer la frise",
+      "zoomIn": "Zoomer la frise",
+      "calendarView": "Vue calendrier",
+      "listView": "Vue liste"
+    },
+    "panels": {
+      "resizeDetails": "Redimensionner le panneau de détails",
+      "resizeTimelineAndMap": "Redimensionner la frise et la carte",
+      "resizeTimeline": "Redimensionner la frise"
+    },
+    "mapControls": {
+      "minimizePreview": "Réduire l'aperçu de la carte",
+      "maximizePreview": "Agrandir l'aperçu de la carte",
+      "layoutVertical": "Disposition verticale",
+      "layoutHorizontal": "Disposition horizontale",
+      "fitToItinerary": "Cadrer l'itinéraire",
+      "shrinkMap": "Réduire la carte",
+      "expandMap": "Agrandir la carte",
+      "showLabels": "Afficher les noms des villes",
+      "hideLabels": "Masquer les noms des villes",
+      "showActivityMarkers": "Afficher les repères d'activités",
+      "hideActivityMarkers": "Masquer les repères d'activités"
+    },
+    "floatingMap": {
+      "move": "Déplacer l'aperçu flottant de la carte",
+      "useCompactSize": "Carte flottante compacte",
+      "useExpandedSize": "Carte flottante agrandie",
+      "switchToLandscape": "Passer l'aperçu de la carte en paysage",
+      "switchToPortrait": "Passer l'aperçu de la carte en portrait",
+      "settling": "Placement de l'aperçu de la carte"
+    },
+    "banners": {
+      "shareViewOnly": "Voyage partagé · Lecture seule",
+      "shareEditable": "Voyage partagé · Modification activée",
+      "snapshotOlder": "Vous consultez une ancienne version. Ce voyage a été mis à jour depuis.",
+      "snapshotCurrent": "Vous consultez une version enregistrée de ce voyage partagé.",
+      "openLatest": "Ouvrir la dernière version",
+      "copyTrip": "Copier le voyage"
+    },
+    "exampleBanner": {
+      "eyebrow": "Voyage d'exemple à explorer",
+      "title": "Explorez librement. Copiez-le pour le garder et le modifier.",
+      "body": "Cet itinéraire sert uniquement d'exemple et n'enregistre jamais les modifications.",
+      "countryFocus": "Pays : {countries}.",
+      "dismiss": "Fermer l'avis sur le voyage d'exemple"
+    },
+    "listView": {
+      "openTransfer": "Ouvrir les détails du trajet ({mode})",
+      "taskCompleted": "Tâche terminée",
+      "taskOpen": "Tâche à faire",
+      "days": "Jours",
+      "daysRange": "Jours {start} - {end}"
+    },
+    "timeline": {
+      "addCityToEnd": "Ajouter une ville à la fin",
+      "addTransfer": "Ajouter un trajet",
+      "transportUndecided": "Transport non défini",
+      "transportMode": "Transport : {mode}",
+      "addActivity": "Ajouter une activité",
+      "addActivityOn": "Ajouter une activité le {date}",
+      "occupySpace": "Occuper l'espace disponible",
+      "stretchToFill": "Étirer pour combler l'espace",
+      "reverseSelectedCities": "Inverser les villes sélectionnées"
     }
   },
   "tripRouteShell": {

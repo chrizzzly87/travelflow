@@ -696,6 +696,73 @@
         "mine": "Mine",
         "customNote": "Your own mix of settings."
       }
+    },
+    "timelineControls": {
+      "horizontalDirection": "Horizontal timeline direction",
+      "verticalDirection": "Vertical timeline direction",
+      "zoomOut": "Zoom out timeline",
+      "zoomIn": "Zoom in timeline",
+      "calendarView": "Calendar view",
+      "listView": "Timeline list view"
+    },
+    "panels": {
+      "resizeDetails": "Resize details panel",
+      "resizeTimelineAndMap": "Resize timeline and map panels",
+      "resizeTimeline": "Resize timeline panel"
+    },
+    "mapControls": {
+      "minimizePreview": "Minimize map preview",
+      "maximizePreview": "Maximize map preview",
+      "layoutVertical": "Vertical layout",
+      "layoutHorizontal": "Horizontal layout",
+      "fitToItinerary": "Fit to itinerary",
+      "shrinkMap": "Shrink map",
+      "expandMap": "Expand map",
+      "showLabels": "Show map labels",
+      "hideLabels": "Hide map labels",
+      "showActivityMarkers": "Show activity markers",
+      "hideActivityMarkers": "Hide activity markers"
+    },
+    "floatingMap": {
+      "move": "Move floating map preview",
+      "useCompactSize": "Use compact floating map size",
+      "useExpandedSize": "Use expanded floating map size",
+      "switchToLandscape": "Switch floating map preview to landscape",
+      "switchToPortrait": "Switch floating map preview to portrait",
+      "settling": "Settling floating map preview"
+    },
+    "banners": {
+      "shareViewOnly": "View-only shared trip",
+      "shareEditable": "Shared trip · Editing enabled",
+      "snapshotOlder": "You are viewing an older snapshot. This trip has newer updates.",
+      "snapshotCurrent": "You are viewing a snapshot version of this shared trip.",
+      "openLatest": "Open latest",
+      "copyTrip": "Copy trip"
+    },
+    "exampleBanner": {
+      "eyebrow": "Example trip playground",
+      "title": "Explore freely. Copy when you want to keep and edit.",
+      "body": "This itinerary is for illustration only and never saves changes.",
+      "countryFocus": "Country focus: {countries}.",
+      "dismiss": "Dismiss example trip notice"
+    },
+    "listView": {
+      "openTransfer": "Open {mode} transfer details",
+      "taskCompleted": "Completed task",
+      "taskOpen": "Open task",
+      "days": "Days",
+      "daysRange": "Days {start} - {end}"
+    },
+    "timeline": {
+      "addCityToEnd": "Add city to end",
+      "addTransfer": "Add transfer",
+      "transportUndecided": "Transport not decided",
+      "transportMode": "Transport: {mode}",
+      "addActivity": "Add activity",
+      "addActivityOn": "Add activity for {date}",
+      "occupySpace": "Occupy available space",
+      "stretchToFill": "Stretch to fill space",
+      "reverseSelectedCities": "Reverse selected cities"
     }
   },
   "tripRouteShell": {

@@ -696,6 +696,73 @@
         "mine": "내 설정",
         "customNote": "직접 조합한 설정입니다."
       }
+    },
+    "timelineControls": {
+      "horizontalDirection": "가로 타임라인",
+      "verticalDirection": "세로 타임라인",
+      "zoomOut": "타임라인 축소",
+      "zoomIn": "타임라인 확대",
+      "calendarView": "캘린더 보기",
+      "listView": "목록 보기"
+    },
+    "panels": {
+      "resizeDetails": "세부 정보 패널 크기 조절",
+      "resizeTimelineAndMap": "타임라인과 지도 크기 조절",
+      "resizeTimeline": "타임라인 크기 조절"
+    },
+    "mapControls": {
+      "minimizePreview": "지도 미리보기 최소화",
+      "maximizePreview": "지도 미리보기 최대화",
+      "layoutVertical": "세로 레이아웃",
+      "layoutHorizontal": "가로 레이아웃",
+      "fitToItinerary": "전체 일정에 맞추기",
+      "shrinkMap": "지도 축소",
+      "expandMap": "지도 확대",
+      "showLabels": "도시 이름 표시",
+      "hideLabels": "도시 이름 숨기기",
+      "showActivityMarkers": "액티비티 핀 표시",
+      "hideActivityMarkers": "액티비티 핀 숨기기"
+    },
+    "floatingMap": {
+      "move": "떠 있는 지도 미리보기 이동",
+      "useCompactSize": "작은 지도 크기 사용",
+      "useExpandedSize": "큰 지도 크기 사용",
+      "switchToLandscape": "지도 미리보기를 가로로 전환",
+      "switchToPortrait": "지도 미리보기를 세로로 전환",
+      "settling": "지도 미리보기 위치 조정 중"
+    },
+    "banners": {
+      "shareViewOnly": "공유 여행 · 보기 전용",
+      "shareEditable": "공유 여행 · 편집 가능",
+      "snapshotOlder": "이전 버전을 보고 있어요. 이 여행에는 더 최근 업데이트가 있어요.",
+      "snapshotCurrent": "공유 여행의 저장된 버전을 보고 있어요.",
+      "openLatest": "최신 버전 열기",
+      "copyTrip": "여행 복사"
+    },
+    "exampleBanner": {
+      "eyebrow": "자유롭게 둘러보는 예시 여행",
+      "title": "마음껏 둘러보세요. 저장하고 편집하려면 복사하세요.",
+      "body": "이 일정은 예시용이라 변경 사항이 저장되지 않아요.",
+      "countryFocus": "국가: {countries}.",
+      "dismiss": "예시 여행 안내 닫기"
+    },
+    "listView": {
+      "openTransfer": "이동 세부 정보 열기 ({mode})",
+      "taskCompleted": "완료된 할 일",
+      "taskOpen": "남은 할 일",
+      "days": "일차",
+      "daysRange": "{start}-{end}일차"
+    },
+    "timeline": {
+      "addCityToEnd": "마지막에 도시 추가",
+      "addTransfer": "이동 추가",
+      "transportUndecided": "이동 수단 미정",
+      "transportMode": "이동 수단: {mode}",
+      "addActivity": "액티비티 추가",
+      "addActivityOn": "{date}에 액티비티 추가",
+      "occupySpace": "빈 공간 채우기",
+      "stretchToFill": "빈 곳까지 늘리기",
+      "reverseSelectedCities": "선택한 도시 순서 뒤집기"
     }
   },
   "tripRouteShell": {

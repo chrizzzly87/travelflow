@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LazyMotion, animate, domMax, m, useDragControls, useMotionValue, useSpring, type PanInfo } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { ArrowsInSimple, ArrowsOutSimple, DeviceRotate } from '@phosphor-icons/react';
 
 import { Button } from '../ui/button';
@@ -279,6 +280,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
     tripId,
     children,
 }) => {
+    const { t } = useTranslation('common');
     // One value carrying both sides, so every position helper below keeps its
     // signature while RTL reserves space on the left instead of the right.
     const reservedRightInset = useMemo<FloatingMapInset>(
@@ -961,10 +963,10 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                             className={`group pointer-events-auto inline-flex h-8 w-24 items-center justify-center rounded-t-none rounded-b-full border-[4px] border-t-0 border-card bg-card shadow-sm touch-none dark:shadow-none transition-transform ${
                                 isHandlePressed || isFloatingMapDragging ? 'cursor-grabbing scale-[1.03]' : 'cursor-grab'
                             }`}
-                            aria-label="Move floating map preview"
+                            aria-label={t('tripView.floatingMap.move')}
                         >
                             <span className="inline-block h-1.5 w-14 rounded-full bg-transfer-line transition-colors group-hover:bg-accent-500" />
-                            <span className="sr-only">Move floating map preview</span>
+                            <span className="sr-only">{t('tripView.floatingMap.move')}</span>
                         </button>
                     </div>
                 )}
@@ -979,16 +981,16 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                             onClick={toggleFloatingMapSize}
                             className="group pointer-events-auto relative rounded-lg border-[4px] border-card shadow-none"
                             aria-label={floatingMapSizePreset === 'lg'
-                                ? 'Use compact floating map size'
-                                : 'Use expanded floating map size'}
+                                ? t('tripView.floatingMap.useCompactSize')
+                                : t('tripView.floatingMap.useExpandedSize')}
                         >
                             {floatingMapSizePreset === 'lg'
                                 ? <ArrowsInSimple size={18} weight="regular" className="-scale-x-100" />
                                 : <ArrowsOutSimple size={18} weight="regular" className="-scale-x-100" />}
                             <span className="sr-only">
                                 {floatingMapSizePreset === 'lg'
-                                    ? 'Use compact floating map size'
-                                    : 'Use expanded floating map size'}
+                                    ? t('tripView.floatingMap.useCompactSize')
+                                    : t('tripView.floatingMap.useExpandedSize')}
                             </span>
                         </Button>
                         <Button
@@ -1000,8 +1002,8 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                             onClick={toggleFloatingMapOrientation}
                             className="group pointer-events-auto relative rounded-lg border-[4px] border-card shadow-none"
                             aria-label={floatingMapOrientation === 'portrait'
-                                ? 'Switch floating map preview to landscape'
-                                : 'Switch floating map preview to portrait'}
+                                ? t('tripView.floatingMap.switchToLandscape')
+                                : t('tripView.floatingMap.switchToPortrait')}
                         >
                             <m.span
                                 animate={{ rotate: floatingMapOrientation === 'landscape' ? 90 : 0 }}
@@ -1012,8 +1014,8 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                             </m.span>
                             <span className="sr-only">
                                 {floatingMapOrientation === 'portrait'
-                                    ? 'Switch floating map preview to landscape'
-                                    : 'Switch floating map preview to portrait'}
+                                    ? t('tripView.floatingMap.switchToLandscape')
+                                    : t('tripView.floatingMap.switchToPortrait')}
                             </span>
                         </Button>
                     </div>
@@ -1024,7 +1026,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                 >
                     {children}
                 </div>
-                {isFloatingMapSettling && <span className="sr-only">Settling floating map preview</span>}
+                {isFloatingMapSettling && <span className="sr-only">{t('tripView.floatingMap.settling')}</span>}
             </m.div>
         </LazyMotion>
     );
