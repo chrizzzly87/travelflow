@@ -696,6 +696,28 @@
         "mine": "Meu",
         "customNote": "A tua própria combinação de definições."
       }
+    },
+    "activityPlan": {
+      "dialogTitle": "Adicionar ao plano",
+      "sectionLabel": "Estadia e dia",
+      "kindLabel": "O que quer adicionar?",
+      "kindActivity": "Atividade",
+      "kindDayTrip": "Passeio de um dia",
+      "stayLabel": "Estadia",
+      "stayPlaceholder": "Escolha uma estadia",
+      "dayLabel": "Dia",
+      "dayOption": "Dia {day} · {date}",
+      "dayOptionShort": "Dia {day}",
+      "destinationLabel": "Destino",
+      "destinationPlaceholder": "ex. Sintra",
+      "routeHint": "Sai de {stay} e volta no mesmo dia.",
+      "routeHintOther": "Sai de {stay} e termina o dia em {returnStay}.",
+      "moreOptions": "Mais opções",
+      "returnLabel": "O dia termina em",
+      "returnSame": "{stay} (volta à mesma estadia)",
+      "dayTripTitlePlaceholder": "ex. Palácios de Sintra",
+      "submitDayTrip": "Adicionar passeio",
+      "findingPlace": "A procurar o local…"
     }
   },
   "tripRouteShell": {

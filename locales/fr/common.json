@@ -696,6 +696,28 @@
         "mine": "Le mien",
         "customNote": "Votre propre combinaison de réglages."
       }
+    },
+    "activityPlan": {
+      "dialogTitle": "Ajouter au programme",
+      "sectionLabel": "Séjour et jour",
+      "kindLabel": "Que voulez-vous ajouter ?",
+      "kindActivity": "Activité",
+      "kindDayTrip": "Excursion d’une journée",
+      "stayLabel": "Séjour",
+      "stayPlaceholder": "Choisir un séjour",
+      "dayLabel": "Jour",
+      "dayOption": "Jour {day} · {date}",
+      "dayOptionShort": "Jour {day}",
+      "destinationLabel": "Destination",
+      "destinationPlaceholder": "ex. Sintra",
+      "routeHint": "Part de {stay} et y revient le jour même.",
+      "routeHintOther": "Part de {stay} et termine la journée à {returnStay}.",
+      "moreOptions": "Plus d’options",
+      "returnLabel": "La journée se termine à",
+      "returnSame": "{stay} (retour au même séjour)",
+      "dayTripTitlePlaceholder": "ex. Palais de Sintra",
+      "submitDayTrip": "Ajouter l’excursion",
+      "findingPlace": "Recherche du lieu…"
     }
   },
   "tripRouteShell": {

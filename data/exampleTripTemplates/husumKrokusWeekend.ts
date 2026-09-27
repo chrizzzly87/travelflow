@@ -1,5 +1,5 @@
 import { ITrip, ITimelineItem } from '../../types';
-import { validateTripSchema } from './_validation';
+import { instantiateTemplateItems, validateTripSchema } from './_validation';
 
 export const HUSUM_KROKUS_WEEKEND_TEMPLATE: Partial<ITrip> = {
     title: 'Husum Krokusblütenfest Wochenende',
@@ -127,11 +127,7 @@ export const createHusumKrokusWeekendTrip = (_startDateStr: string): ITrip => {
         throw new Error(`Test Data Schema Error: ${validation.error}`);
     }
 
-    const items = HUSUM_KROKUS_WEEKEND_TEMPLATE.items!.map((item) => ({
-        ...item,
-        id: `${item.id}-${uniqueSuffix}`,
-        hotels: item.hotels?.map((hotel) => ({ ...hotel, id: `${hotel.id}-${uniqueSuffix}` })),
-    })) as ITimelineItem[];
+    const items = instantiateTemplateItems(HUSUM_KROKUS_WEEKEND_TEMPLATE.items!, uniqueSuffix);
 
     return {
         id: `trip-husum-krokus-${uniqueSuffix}`,

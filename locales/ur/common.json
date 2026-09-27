@@ -694,6 +694,28 @@
         "mine": "میرا",
         "customNote": "آپ کی اپنی ترتیبات کا امتزاج۔"
       }
+    },
+    "activityPlan": {
+      "dialogTitle": "منصوبے میں شامل کریں",
+      "sectionLabel": "قیام اور دن",
+      "kindLabel": "آپ کیا شامل کر رہے ہیں؟",
+      "kindActivity": "سرگرمی",
+      "kindDayTrip": "ایک دن کا سفر",
+      "stayLabel": "قیام",
+      "stayPlaceholder": "قیام منتخب کریں",
+      "dayLabel": "دن",
+      "dayOption": "دن {day} · {date}",
+      "dayOptionShort": "دن {day}",
+      "destinationLabel": "منزل",
+      "destinationPlaceholder": "مثلاً سنترا",
+      "routeHint": "{stay} سے روانہ ہو کر اسی دن واپس آتا ہے۔",
+      "routeHintOther": "{stay} سے روانہ ہو کر دن {returnStay} میں ختم ہوتا ہے۔",
+      "moreOptions": "مزید اختیارات",
+      "returnLabel": "دن ختم ہوتا ہے",
+      "returnSame": "{stay} (اسی قیام پر واپسی)",
+      "dayTripTitlePlaceholder": "مثلاً سنترا کے محلات",
+      "submitDayTrip": "ایک دن کا سفر شامل کریں",
+      "findingPlace": "جگہ تلاش کی جا رہی ہے…"
     }
   },
   "tripRouteShell": {

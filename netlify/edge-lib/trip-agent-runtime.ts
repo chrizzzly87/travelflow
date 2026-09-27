@@ -20,6 +20,7 @@ import {
   toTypedTripChangeOperations,
 } from '../../shared/tripAgentWireOperations.ts';
 import type { ITrip } from '../../types.ts';
+import { resolveActivityStay } from '../../shared/activityStay.ts';
 import { readEnv } from './ai-provider-runtime.ts';
 import { errorName, redactDiagnostic } from './trip-agent-redaction.ts';
 import { resolveTripAgentModel } from './trip-agent-model.ts';
@@ -58,6 +59,24 @@ const messageHasVisibleContent = (message: UIMessage): boolean => message.parts.
   if (part.type === 'text') return part.text.trim().length > 0;
   return part.type.startsWith('tool-');
 });
+
+/**
+ * The trip as the agent reads it: every activity names its city item, even on
+ * older trips that never stored one, so the model can copy a real id instead of
+ * reasoning about date windows. Read-only — nothing here is persisted.
+ */
+export const withResolvedActivityStays = (trip: ITrip): ITrip => {
+  const cities = trip.items.filter((item) => item.type === 'city');
+  if (cities.length === 0) return trip;
+  return {
+    ...trip,
+    items: trip.items.map((item) => {
+      if (item.type !== 'activity' || item.stayCityId) return item;
+      const stay = resolveActivityStay(item, cities);
+      return stay ? { ...item, stayCityId: stay.id } : item;
+    }),
+  };
+};
 
 export const describeTripAgentSelectedContext = (
   trip: ITrip,
@@ -108,7 +127,7 @@ export const streamTripAgentResponse = async (input: {
       description: 'Read the canonical current trip and the message context selected by the user.',
       inputSchema: z.object({}).strict(),
       execute: async () => ({
-        trip: input.trip,
+        trip: withResolvedActivityStays(input.trip),
         selectedContext: input.contextRefs,
         baseTripUpdatedAt: input.trip.updatedAt,
       }),
@@ -287,6 +306,8 @@ Rules:
 - Every operation needs id, kind, rationale and targetLabel, plus the fields its kind requires: remove_item needs itemId; move_item needs itemId and startDateOffset; add_item needs item; update_item needs itemId and itemChanges; add_stay needs cityId and stay; replace_itinerary needs items.
 - Every activity you add or retype needs activityTypes: one to three values from general, sightseeing, food, culture, relaxation, nightlife, sports, hiking, wildlife, nature, shopping, adventure, beach. Pick the ones a traveller would recognise for that specific plan — a night food market is food and nightlife, a temple visit is culture and sightseeing — and keep general only for an activity none of the others fit.
 - startDateOffset counts days from the trip start and begins at 0, so day 1 is 0.
+- Every activity belongs to a city item: set stayCityId to that city item's id (never a hotel id) and keep the activity on one of that city's days. read_trip_context shows the stayCityId of every activity.
+- A day trip is an activity that leaves its city for the day and comes back the same day — Sintra from Lisbon, Miyajima from Hiroshima. Add it with type "activity", isDayTrip true, stayCityId of the base city, location set to the destination and coordinates of the destination; do not add it as a city or a transfer. Only set dayTripReturnCityId when the traveller explicitly wants the day to end in a different city. To turn a day trip back into a normal activity, send isDayTrip false.
 - Reuse the exact item ids from read_trip_context. Never invent an id for an existing item.
 - If create_trip_proposal answers with kind "trip-agent-proposal-invalid", fix exactly the listed fields and call it once more, then explain in plain text if it still fails.
 - Give a concise public plan and rationale in normal text: at most four short sentences. Do not expose private chain-of-thought.

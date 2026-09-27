@@ -694,6 +694,28 @@
         "mine": "مال من",
         "customNote": "ترکیب تنظیمات خودتان."
       }
+    },
+    "activityPlan": {
+      "dialogTitle": "افزودن به برنامه",
+      "sectionLabel": "اقامت و روز",
+      "kindLabel": "چه چیزی اضافه می‌کنید؟",
+      "kindActivity": "فعالیت",
+      "kindDayTrip": "سفر یک‌روزه",
+      "stayLabel": "اقامت",
+      "stayPlaceholder": "یک اقامت انتخاب کنید",
+      "dayLabel": "روز",
+      "dayOption": "روز {day} · {date}",
+      "dayOptionShort": "روز {day}",
+      "destinationLabel": "مقصد",
+      "destinationPlaceholder": "مثلاً سینترا",
+      "routeHint": "از {stay} حرکت می‌کند و همان روز برمی‌گردد.",
+      "routeHintOther": "از {stay} حرکت می‌کند و روز در {returnStay} تمام می‌شود.",
+      "moreOptions": "گزینه‌های بیشتر",
+      "returnLabel": "روز تمام می‌شود در",
+      "returnSame": "{stay} (بازگشت به همان اقامت)",
+      "dayTripTitlePlaceholder": "مثلاً کاخ‌های سینترا",
+      "submitDayTrip": "افزودن سفر یک‌روزه",
+      "findingPlace": "در حال یافتن مکان…"
     }
   },
   "tripRouteShell": {

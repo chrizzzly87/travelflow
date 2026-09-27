@@ -14,6 +14,8 @@ import { buildActivityDirectionsLabel } from '../../shared/mapDirectionsLinks';
 import type { ITimelineItem } from '../../types';
 import type { MobileDayPlanLeg, MobileDayPlanSegment, MobileDayPlanTransfer } from './mobileDayPlanModel';
 import { TodayBadge } from '../ui/today-badge';
+import { isDayTrip } from '../../shared/activityStay';
+import { DayTripBadge } from './DayTripBadge';
 
 interface TripMobileDayPanelProps {
     tripId: string;
@@ -297,6 +299,9 @@ export const TripMobileDayPanel: React.FC<TripMobileDayPanelProps> = ({
                                         item_id: activity.id,
                                     })}
                                 >
+                                    {isDayTrip(activity) && (
+                                        <DayTripBadge destination={activity.location} />
+                                    )}
                                     <p className={`text-[16px] leading-6 ${isSelected ? 'font-semibold text-accent-700 dark:text-accent-200' : 'font-medium text-foreground'}`}>
                                         {activity.title}
                                     </p>

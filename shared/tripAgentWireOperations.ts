@@ -60,6 +60,18 @@ const wireTransportMode = z.string().trim().max(40).optional().transform((value)
         : 'na' as const;
 });
 
+/** Models send `true`, `"true"` or `"yes"`; `z.coerce.boolean` would read "false" as true. */
+const wireBoolean = z.union([z.boolean(), z.string()]).optional().transform((value) => {
+    if (value === undefined) return undefined;
+    if (typeof value === 'boolean') return value;
+    const normalized = value.trim().toLowerCase();
+    if (['true', 'yes', '1'].includes(normalized)) return true;
+    if (['false', 'no', '0', ''].includes(normalized)) return false;
+    return undefined;
+});
+
+const wireCityRef = z.string().trim().max(160).optional();
+
 const wireItemSchema = z.object({
     id: z.string().trim().min(1).max(160).optional(),
     type: z.enum(['city', 'activity', 'travel']),
@@ -76,6 +88,12 @@ const wireItemSchema = z.object({
     transportMode: wireTransportMode,
     departureTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
     activityTypes: wireActivityTypes,
+    // Activities: the stay (city item id) the activity belongs to. A day trip
+    // leaves that stay for `location`/`coordinates` and returns the same day;
+    // `dayTripReturnCityId` is only for the rare day that ends at another stay.
+    stayCityId: wireCityRef,
+    isDayTrip: wireBoolean,
+    dayTripReturnCityId: wireCityRef,
 });
 
 const wireStaySchema = z.object({
@@ -97,6 +115,10 @@ const wireItemChangesSchema = z.object({
     departureTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
     coordinates: wireCoordinatesSchema.optional(),
     activityTypes: wireActivityTypes,
+    stayCityId: wireCityRef,
+    isDayTrip: wireBoolean,
+    /** An empty string clears it: the day trip returns to its own stay again. */
+    dayTripReturnCityId: wireCityRef,
 });
 
 const wireTripChangesSchema = z.object({
@@ -144,16 +166,28 @@ const generateId = (prefix: string): string => (
     `${prefix}-${(globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)).slice(0, 8)}`
 );
 
+const withoutEmpty = <T extends Record<string, unknown>>(value: T): T => (
+    Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined && entry !== '')) as T
+);
+
 const normalizeItem = (item: z.infer<typeof wireItemSchema>) => {
-    const { activityTypes, ...rest } = item;
+    const { activityTypes, isDayTrip, stayCityId, dayTripReturnCityId, ...rest } = item;
     const base = { ...rest, id: item.id || generateId(item.type) };
     if (item.type !== 'activity') {
+        // Stay and day-trip fields only mean something on an activity.
         return { ...base, color: item.color || DEFAULT_ITEM_COLORS[item.type] || '#2563eb' };
     }
     // Every activity carries at least one type, and the timeline colors it from
     // the primary one, so the derived color wins over whatever the model sent.
     const resolved = normalizeActivityTypes(activityTypes);
-    return { ...base, activityType: resolved, color: getActivityColorByTypes(resolved) };
+    return withoutEmpty({
+        ...base,
+        activityType: resolved,
+        color: getActivityColorByTypes(resolved),
+        stayCityId,
+        ...(isDayTrip ? { activityKind: 'day-trip' as const, dayTripReturnCityId } : {}),
+        ...(item.coordinates ? { coordinatesSource: 'agent' as const } : {}),
+    });
 };
 
 /**
@@ -161,10 +195,19 @@ const normalizeItem = (item: z.infer<typeof wireItemSchema>) => {
  * timeline block does not keep the shade of the type it no longer has.
  */
 const normalizeItemChanges = (changes: z.infer<typeof wireItemChangesSchema>) => {
-    const { activityTypes, ...rest } = changes;
-    if (activityTypes === undefined) return rest;
+    const { activityTypes, isDayTrip, stayCityId, dayTripReturnCityId, ...rest } = changes;
+    const next: Record<string, unknown> = { ...rest };
+    if (stayCityId) next.stayCityId = stayCityId;
+    if (isDayTrip === true) next.activityKind = 'day-trip';
+    if (isDayTrip === false) {
+        next.activityKind = 'activity';
+        next.dayTripReturnCityId = undefined;
+    }
+    if (dayTripReturnCityId !== undefined) next.dayTripReturnCityId = dayTripReturnCityId || undefined;
+    if (changes.coordinates) next.coordinatesSource = 'agent';
+    if (activityTypes === undefined) return next;
     const resolved = normalizeActivityTypes(activityTypes);
-    return { ...rest, activityType: resolved, color: getActivityColorByTypes(resolved) };
+    return { ...next, activityType: resolved, color: getActivityColorByTypes(resolved) };
 };
 
 const normalizeStay = (stay: z.infer<typeof wireStaySchema>) => ({
@@ -341,11 +384,27 @@ export const findUnknownOperationTargets = (
         });
     };
 
+    // An activity's stay and a day trip's return stay are city item ids — not
+    // hotel ids — and must exist once the operation has run.
+    const checkCityRefs = (
+        operation: TripChangeOperationV1,
+        fields: { stayCityId?: string; dayTripReturnCityId?: string },
+        pathPrefix: string,
+    ): void => {
+        (['stayCityId', 'dayTripReturnCityId'] as const).forEach((field) => {
+            const target = fields[field];
+            if (target && !cityIds.has(target)) {
+                unknown(operation, `${pathPrefix}${field}`, target, 'Use the id of a city item from read_trip_context, not a hotel id.');
+            }
+        });
+    };
+
     for (const operation of operations) {
         switch (operation.kind) {
             case 'add_item':
                 itemIds.add(operation.item.id);
                 if (operation.item.type === 'city') cityIds.add(operation.item.id);
+                checkCityRefs(operation, operation.item, 'item.');
                 break;
             case 'update_item':
             case 'move_item':
@@ -353,6 +412,7 @@ export const findUnknownOperationTargets = (
                 if (!itemIds.has(operation.itemId)) {
                     unknown(operation, 'itemId', operation.itemId, 'Use an id from read_trip_context.');
                 }
+                if (operation.kind === 'update_item') checkCityRefs(operation, operation.changes, 'itemChanges.');
                 if (operation.kind === 'remove_item') itemIds.delete(operation.itemId);
                 break;
             case 'add_stay':
@@ -377,12 +437,14 @@ export const findUnknownOperationTargets = (
                     itemIds.add(item.id);
                     if (item.type === 'city') cityIds.add(item.id);
                 });
+                operation.items.forEach((item, index) => checkCityRefs(operation, item, `items[${index}].`));
                 break;
             case 'replace_itinerary_segment':
                 operation.items.forEach((item) => {
                     itemIds.add(item.id);
                     if (item.type === 'city') cityIds.add(item.id);
                 });
+                operation.items.forEach((item, index) => checkCityRefs(operation, item, `items[${index}].`));
                 break;
             default:
                 break;

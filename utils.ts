@@ -3,6 +3,7 @@ import { ActivityType, AppLanguage, ICoordinates, ITrip, ITimelineItem, IViewSet
 import { normalizeTransportMode } from './shared/transportModes';
 import { ACTIVITY_TYPE_COLORS as ACTIVITY_TYPE_COLOR_MAP } from './shared/activityTypes';
 import { formatLocalIsoDate } from './shared/tripSpan';
+import { resolveExplicitActivityStay } from './shared/activityStay';
 import { DEFAULT_LOCALE, localeToIntlLocale, normalizeLocale } from './config/locales';
 import { getTimelineVisualRange } from './utils/timelineVisualLayout';
 import { normalizeTrip } from './services/storageService';
@@ -701,10 +702,16 @@ export const removeTimelineItemWithLinkedItems = (
     }
 
     const epsilon = 0.00001;
+    const cityItemsForStay = items.filter(item => item.type === 'city');
     const cityStart = target.startDateOffset;
     const cityEnd = target.startDateOffset + target.duration;
     items.forEach(item => {
         if (item.type !== 'activity') return;
+        const explicitStay = resolveExplicitActivityStay(item, cityItemsForStay);
+        if (explicitStay) {
+            if (explicitStay.id === target.id) idsToRemove.add(item.id);
+            return;
+        }
         if (item.startDateOffset >= (cityStart - epsilon) && item.startDateOffset < (cityEnd - epsilon)) {
             idsToRemove.add(item.id);
         }
@@ -783,7 +790,8 @@ export const reorderSelectedCities = (
             }
 
             if (item.type === 'activity') {
-                const ownerCityId = cityOwnerForOffset(item.startDateOffset);
+                const ownerCityId = resolveExplicitActivityStay(item, cityItems)?.id
+                    ?? cityOwnerForOffset(item.startDateOffset);
                 if (!ownerCityId) return item;
                 const oldStart = oldStartByCityId.get(ownerCityId);
                 const newStart = newStartByCityId.get(ownerCityId);

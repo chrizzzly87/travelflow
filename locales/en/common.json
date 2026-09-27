@@ -696,6 +696,28 @@
         "mine": "Mine",
         "customNote": "Your own mix of settings."
       }
+    },
+    "activityPlan": {
+      "dialogTitle": "Add to your plan",
+      "sectionLabel": "Stay and day",
+      "kindLabel": "What are you adding?",
+      "kindActivity": "Activity",
+      "kindDayTrip": "Day trip",
+      "stayLabel": "Stay",
+      "stayPlaceholder": "Choose a stay",
+      "dayLabel": "Day",
+      "dayOption": "Day {day} · {date}",
+      "dayOptionShort": "Day {day}",
+      "destinationLabel": "Destination",
+      "destinationPlaceholder": "e.g. Sintra",
+      "routeHint": "Leaves from {stay} and returns there the same day.",
+      "routeHintOther": "Leaves from {stay} and ends the day in {returnStay}.",
+      "moreOptions": "More options",
+      "returnLabel": "Day ends in",
+      "returnSame": "{stay} (back to the same stay)",
+      "dayTripTitlePlaceholder": "e.g. Palaces of Sintra",
+      "submitDayTrip": "Add day trip",
+      "findingPlace": "Finding the place…"
     }
   },
   "tripRouteShell": {

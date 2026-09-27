@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityType, ITimelineItem, ITrip } from '../types';
+import { ActivityKind, ActivityType, ITimelineItem, ITrip } from '../types';
 import { Sparkles, Check, AlertTriangle } from 'lucide-react';
-import { ALL_ACTIVITY_TYPES, getActivityColorByTypes, normalizeActivityTypes } from '../utils';
+import { clampDayOffsetToStay, resolveStayForOffset } from '../shared/activityStay';
+import { resolveItemCoordinates } from '../services/activityLocationResolver';
+import { ActivityPlanFields } from './tripview/ActivityPlanFields';
+import { ALL_ACTIVITY_TYPES, getActivityColorByTypes, getStoredAppLanguage, normalizeActivityTypes } from '../utils';
 import { ActivityTypeIcon } from './ActivityTypeVisuals';
 import { formatActivityTypeLabel, getActivityTypeButtonClass, getActivityTypePaletteClass } from './ActivityTypeVisualsUtils';
 import { AppModal } from './ui/app-modal';
@@ -33,6 +36,21 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
     const [title, setTitle] = useState('');
     const [selectedTypes, setSelectedTypes] = useState<ActivityType[]>(['general']);
     const [description, setDescription] = useState('');
+    const stays = useMemo(
+        () => (trip?.items || [])
+            .filter((item) => item.type === 'city')
+            .sort((a, b) => a.startDateOffset - b.startDateOffset),
+        [trip?.items],
+    );
+    const initialStay = useMemo(() => resolveStayForOffset(dayOffset, stays), [dayOffset, stays]);
+    const [kind, setKind] = useState<ActivityKind>('activity');
+    const [stayId, setStayId] = useState<string | null>(initialStay?.id ?? null);
+    const [selectedDayOffset, setSelectedDayOffset] = useState<number>(Math.max(0, Math.floor(dayOffset)));
+    const [destination, setDestination] = useState('');
+    const [returnStayId, setReturnStayId] = useState<string | null>(null);
+    const [isResolvingDestination, setIsResolvingDestination] = useState(false);
+    const stay = stays.find((entry) => entry.id === stayId) ?? null;
+    const stayLocation = stay?.title || location;
     
     // AI State
     const [prompt, setPrompt] = useState('');
@@ -51,18 +69,56 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
         };
     }, [isOpen, mode]);
 
-    const handleManualAdd = () => {
-        if (!title) return;
-        onAdd({
-            title,
+    const handleStayChange = (nextStayId: string) => {
+        const nextStay = stays.find((entry) => entry.id === nextStayId);
+        setStayId(nextStayId);
+        if (nextStay) setSelectedDayOffset(clampDayOffsetToStay(selectedDayOffset, nextStay));
+        if (returnStayId === nextStayId) setReturnStayId(null);
+    };
+
+    const placementFields = (): Partial<ITimelineItem> => ({
+        // On an arrival day the stay only begins in the afternoon; never place
+        // the activity before the traveller is there.
+        startDateOffset: stay ? Math.max(selectedDayOffset, stay.startDateOffset) : selectedDayOffset,
+        ...(stayId ? { stayCityId: stayId } : {}),
+    });
+
+    const isDayTripKind = kind === 'day-trip';
+    const canSubmitManual = Boolean(title.trim()) && (!isDayTripKind || Boolean(destination.trim()));
+
+    const handleManualAdd = async () => {
+        if (!canSubmitManual || isResolvingDestination) return;
+        const base: Partial<ITimelineItem> = {
+            title: title.trim(),
             type: 'activity',
             activityType: normalizeActivityTypes(selectedTypes),
             description,
             color: getActivityColorByTypes(selectedTypes),
-            startDateOffset: dayOffset,
-            duration: 1,
-            location
-        });
+            duration: isDayTripKind ? 0.5 : 1,
+            location: isDayTripKind ? destination.trim() : stayLocation,
+            ...placementFields(),
+        };
+        if (isDayTripKind) {
+            base.activityKind = 'day-trip';
+            if (returnStayId && returnStayId !== stayId) base.dayTripReturnCityId = returnStayId;
+            // A day trip is only drawn on the map once its destination has a
+            // position, so look it up now rather than on the next panel open.
+            setIsResolvingDestination(true);
+            try {
+                const update = await resolveItemCoordinates({
+                    item: { title: destination.trim(), location: destination.trim() },
+                    contextLabel: stay?.countryName || undefined,
+                    bias: stay?.coordinates ?? null,
+                    language: getStoredAppLanguage(),
+                });
+                if (update) Object.assign(base, update);
+            } catch {
+                // Added without a position; the details panel retries the lookup.
+            } finally {
+                setIsResolvingDestination(false);
+            }
+        }
+        onAdd(base);
         onClose();
         reset();
     };
@@ -76,7 +132,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
         const context = {
             tripTitle: trip?.title || "My Trip",
             preferences: notes || "",
-            dayNumber: Math.floor(dayOffset),
+            dayNumber: Math.floor(selectedDayOffset),
             cities: trip?.items.flatMap((item) => (
                 item.type === 'city'
                     ? [{
@@ -99,7 +155,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
 
         try {
             const aiService = await loadAiService();
-            const results = await aiService.generateActivityProposals(prompt, location, context);
+            const results = await aiService.generateActivityProposals(prompt, stayLocation, context);
             if (Array.isArray(results) && results.length > 0) {
                 setProposals(results);
             } else {
@@ -123,9 +179,9 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
             activityType: activityTypes,
             description: proposal.description,
             color: getActivityColorByTypes(activityTypes),
-            startDateOffset: dayOffset,
             duration: 1,
-            location,
+            location: stayLocation,
+            ...placementFields(),
             aiInsights: {
                 cost: proposal.cost,
                 bestTime: proposal.bestTime,
@@ -155,6 +211,9 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
         setProposals([]);
         setGenerationFailed(false);
         setMode('manual');
+        setKind('activity');
+        setDestination('');
+        setReturnStayId(null);
     };
 
     const titleInputId = 'add-activity-title-input';
@@ -165,7 +224,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
         <AppModal
             isOpen={isOpen}
             onClose={onClose}
-            title={`Add Activity for Day ${Math.floor(dayOffset) + 1}`}
+            title={t('tripView.activityPlan.dialogTitle')}
             closeLabel="Close add activity dialog"
             size="lg"
             mobileSheet={false}
@@ -197,6 +256,23 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-6">
+                    <div className="mb-6 border-b border-border pb-6">
+                        <ActivityPlanFields
+                            stays={stays}
+                            tripStartDate={trip?.startDate}
+                            kind={mode === 'manual' ? kind : 'activity'}
+                            showKindSwitch={mode === 'manual'}
+                            stayId={stayId}
+                            dayOffset={selectedDayOffset}
+                            destination={destination}
+                            returnStayId={returnStayId}
+                            onKindChange={setKind}
+                            onStayChange={handleStayChange}
+                            onDayChange={setSelectedDayOffset}
+                            onDestinationChange={setDestination}
+                            onReturnStayChange={setReturnStayId}
+                        />
+                    </div>
                     {mode === 'manual' ? (
                         <div className="space-y-4">
                             <div>
@@ -209,7 +285,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
                                     className="w-full p-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
-                                    placeholder="e.g. Visit Louvre Museum"
+                                    placeholder={isDayTripKind ? t('tripView.activityPlan.dayTripTitlePlaceholder') : 'e.g. Visit Louvre Museum'}
                                 />
                             </div>
                             <fieldset>
@@ -242,11 +318,13 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                             </div>
                             <button 
                                 type="button"
-                                onClick={handleManualAdd}
-                                disabled={!title}
+                                onClick={() => { void handleManualAdd(); }}
+                                disabled={!canSubmitManual || isResolvingDestination}
                                 className="w-full py-3 bg-accent-600 text-white font-bold rounded-xl hover:bg-accent-700 transition-colors disabled:opacity-50"
                             >
-                                Add Activity
+                                {isResolvingDestination
+                                    ? t('tripView.activityPlan.findingPlace')
+                                    : (isDayTripKind ? t('tripView.activityPlan.submitDayTrip') : 'Add Activity')}
                             </button>
                         </div>
                     ) : (

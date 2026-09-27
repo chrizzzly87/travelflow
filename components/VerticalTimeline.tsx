@@ -9,6 +9,7 @@ import { getExampleCityLaneViewTransitionName } from '../shared/viewTransitionNa
 import { buildRenderedTimelineDaySlots, buildRenderedTimelineMonths } from './tripview/timelineRenderedSlots';
 import { getTimelineVisualCenter, getTimelineVisualRange, getTimelineVisualSpan } from '../utils/timelineVisualLayout';
 import { TodayBadge } from './ui/today-badge';
+import { resolveDefaultActivityDayOffset } from '../shared/activityStay';
 
 interface VerticalTimelineProps {
   trip: ITrip;
@@ -944,13 +945,12 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                 </div>
 
                 {/* Activities Column (Expands) */}
-                {/* Activities Column (Expands) */}
                 <div className="relative flex min-h-0 min-w-[200px] flex-1 flex-col group/activities">
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-card/90 backdrop-blur w-full border-b border-border">
                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Activities</span>
                          {canEdit && (
                          <button type="button"
-                             onClick={(e) => { e.stopPropagation(); onAddActivity(visualStartOffset); }}
+                             onClick={(e) => { e.stopPropagation(); onAddActivity(resolveDefaultActivityDayOffset({ items: trip.items, selectedItemId, selectedCityIds })); }}
                              className="opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 hover:bg-accent-100 dark:bg-accent-400/12 dark:text-accent-200 dark:hover:bg-accent-400/25"
                              aria-label="Add activity"
                          >

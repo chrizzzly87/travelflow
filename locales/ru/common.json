@@ -696,6 +696,28 @@
         "mine": "Мой",
         "customNote": "Ваш собственный набор настроек."
       }
+    },
+    "activityPlan": {
+      "dialogTitle": "Добавить в план",
+      "sectionLabel": "Остановка и день",
+      "kindLabel": "Что вы добавляете?",
+      "kindActivity": "Занятие",
+      "kindDayTrip": "Однодневная поездка",
+      "stayLabel": "Остановка",
+      "stayPlaceholder": "Выберите остановку",
+      "dayLabel": "День",
+      "dayOption": "День {day} · {date}",
+      "dayOptionShort": "День {day}",
+      "destinationLabel": "Куда",
+      "destinationPlaceholder": "например, Синтра",
+      "routeHint": "Отправление из {stay} и возвращение туда в тот же день.",
+      "routeHintOther": "Отправление из {stay}, день заканчивается в {returnStay}.",
+      "moreOptions": "Другие параметры",
+      "returnLabel": "День заканчивается в",
+      "returnSame": "{stay} (возвращение туда же)",
+      "dayTripTitlePlaceholder": "например, дворцы Синтры",
+      "submitDayTrip": "Добавить поездку",
+      "findingPlace": "Ищем место…"
     }
   },
   "tripRouteShell": {

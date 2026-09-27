@@ -19,6 +19,7 @@ import { buildRenderedTimelineDaySlots, buildRenderedTimelineMonths } from './tr
 import { getTimelineVisualCenter, getTimelineVisualRange, getTimelineVisualSpan } from '../utils/timelineVisualLayout';
 import { findPreviousCity } from '../utils/timelineNeighbors';
 import { TodayBadge } from './ui/today-badge';
+import { resolveDefaultActivityDayOffset } from '../shared/activityStay';
 
 interface TimelineProps {
   trip: ITrip;
@@ -42,11 +43,11 @@ interface TimelineProps {
 }
 
 const EMPTY_SELECTED_CITY_IDS: string[] = [];
-// Shared by the city and transfer lane "+" buttons so both sit beside their
+// Shared by the city, transfer and activity lane "+" buttons so both sit beside their
 // label and look the same in either theme. Revealed on lane hover, and on
 // keyboard focus so it is reachable without a mouse; the ::after extends the
 // 28px circle to a 40px hit area without growing the label row.
-const laneAddButtonClassName = 'relative inline-flex size-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition-[opacity,color,border-color,background-color] after:absolute after:-inset-1.5 hover:border-accent-300 hover:bg-accent-50 hover:text-accent-700 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 group-hover/cities:opacity-100 group-hover/travel:opacity-100 dark:bg-secondary dark:text-foreground dark:shadow-none dark:hover:border-accent-400/50 dark:hover:bg-accent-400/12 dark:hover:text-accent-200';
+const laneAddButtonClassName = 'relative inline-flex size-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition-[opacity,color,border-color,background-color] after:absolute after:-inset-1.5 hover:border-accent-300 hover:bg-accent-50 hover:text-accent-700 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 group-hover/cities:opacity-100 group-hover/travel:opacity-100 group-hover/activities:opacity-100 dark:bg-secondary dark:text-foreground dark:shadow-none dark:hover:border-accent-400/50 dark:hover:bg-accent-400/12 dark:hover:text-accent-200';
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 // Set to >0 if you want a visible gap below city cards before connectors start.
 const TRANSFER_CONNECTOR_TOP_GAP_PX = 0;
@@ -193,6 +194,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const travelItems = trip.items.filter(i => i.type === 'travel' || i.type === 'travel-empty').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const activities = trip.items.filter(i => i.type === 'activity');
+  const defaultActivityDayOffset = resolveDefaultActivityDayOffset({ items: trip.items, selectedItemId, selectedCityIds });
   const cityStackLayout = React.useMemo(() => buildCityOverlapLayout(cities), [cities]);
   const maxCityStackCount = React.useMemo(() => {
       let maxCount = 1;
@@ -1049,34 +1051,22 @@ export const Timeline: React.FC<TimelineProps> = ({
                 <div className="w-full border-t border-border" />
 
                 {/* Activities Lanes */}
-                <div className="relative pt-2">
-                    <div className="sticky left-0 mb-2 text-xs font-bold text-muted-foreground uppercase tracking-widest bg-card/80 pr-2 backdrop-blur-sm rounded z-20 pointer-events-none w-fit">
-                        Activities
+                <div className="relative pt-2 group/activities">
+                    <div className="sticky left-0 mb-2 flex h-7 w-fit items-center gap-2 z-20 pointer-events-auto">
+                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest bg-card/80 pr-2 backdrop-blur-sm rounded">
+                            Activities
+                        </span>
+                        {canEdit && (
+                            <button type="button"
+                                onClick={(e) => { e.stopPropagation(); onAddActivity(defaultActivityDayOffset); }}
+                                className={laneAddButtonClassName}
+                                aria-label="Add activity"
+                                title="Add activity"
+                            >
+                                <Plus size={14} />
+                            </button>
+                        )}
                     </div>
-
-                    {/* Day Column Add Buttons */}
-                    {canEdit && (
-                    <div className="relative mb-2 flex h-10 w-full pointer-events-none">
-                         {dateHeaders.days.map((day) => (
-                             <div
-                                key={day.index}
-                                className="absolute top-0 bottom-0 flex justify-center items-center pointer-events-auto group"
-                                style={{
-                                    left: `${day.start}px`,
-                                    width: `${day.size}px`
-                                }}
-                             >
-                                 <button type="button"
-                                     onClick={(e) => { e.stopPropagation(); onAddActivity(day.dayOffset); }}
-                                     className="mx-1 flex size-full min-h-10 items-center justify-center rounded-md border border-dashed border-transparent text-gray-300 transition-[border-color,background-color,color] hover:border-border hover:bg-secondary hover:text-accent-500 dark:text-muted-foreground"
-                                     aria-label={`Add activity for ${day.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`}
-                                 >
-                                     <Plus size={16} />
-                                 </button>
-                             </div>
-                         ))}
-                    </div>
-                    )}
 
                     <div className="flex flex-col gap-3">
                         {activityLanes.map((lane, laneIdx) => (

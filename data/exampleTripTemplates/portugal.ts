@@ -1,5 +1,5 @@
 import { ITrip, ITimelineItem } from '../../types';
-import { validateTripSchema } from './_validation';
+import { instantiateTemplateItems, validateTripSchema } from './_validation';
 
 export const PORTUGAL_TEMPLATE: Partial<ITrip> = {
     title: "Atlantic Coast Road Trip",
@@ -18,7 +18,7 @@ export const PORTUGAL_TEMPLATE: Partial<ITrip> = {
             type: 'city',
             title: 'Lisbon',
             startDateOffset: 0,
-            duration: 3,
+            duration: 3.5,
             color: 'bg-sky-200 border-sky-300 text-sky-900 dark:text-sky-200 dark:border-sky-400/30',
             location: 'Lisbon, Portugal',
             coordinates: { lat: 38.7223, lng: -9.1393 },
@@ -44,58 +44,40 @@ export const PORTUGAL_TEMPLATE: Partial<ITrip> = {
             }
         },
         {
-            id: 'travel-lis-sin',
-            type: 'travel',
-            title: 'Train to Sintra',
-            transportMode: 'train',
-            startDateOffset: 3,
-            duration: 0.15,
-            color: 'bg-stone-800 border-stone-600 text-stone-100',
-            description: "40 min train from Rossio station"
-        },
-        {
-            id: 'city-sin',
-            type: 'city',
-            title: 'Sintra',
-            startDateOffset: 3,
-            duration: 1.5,
-            color: 'bg-blue-200 border-blue-300 text-blue-900 dark:text-blue-200 dark:border-blue-400/30',
-            location: 'Sintra, Portugal',
-            coordinates: { lat: 38.7981, lng: -9.3880 },
-            description: "### Must See\n- [ ] Pena Palace\n- [ ] Quinta da Regaleira & Initiation Well\n- [ ] Moorish Castle ruins\n### Must Try\n- [ ] Travesseiros pastry at Piriquita\n- [ ] Queijadas de Sintra\n### Must Do\n- [ ] Walk through the Sintra-Cascais Natural Park\n- [ ] Visit Cabo da Roca (westernmost point of mainland Europe)"
-        },
-        {
-            id: 'act-pena',
+            id: 'act-sintra-daytrip',
             type: 'activity',
-            title: 'Pena Palace Visit',
-            startDateOffset: 3.3,
+            title: 'Sintra Day Trip: Pena Palace & Regaleira',
+            startDateOffset: 2.3,
             duration: 0.6,
             color: 'bg-blue-100 border-blue-300 text-blue-900 dark:bg-blue-400/12 dark:text-blue-200 dark:border-blue-400/30',
-            location: 'Estrada da Pena, Sintra',
+            activityKind: 'day-trip',
+            stayCityId: 'city-lis',
+            location: 'Sintra, Portugal',
+            coordinates: { lat: 38.7981, lng: -9.3880 },
             activityType: ['sightseeing', 'culture'],
-            description: "Explore the colorful Romanticist palace perched on the hilltop of the Sintra Mountains. A UNESCO World Heritage Site with stunning panoramic views.",
+            description: "### Must See\n- [ ] Pena Palace\n- [ ] Quinta da Regaleira & Initiation Well\n- [ ] Moorish Castle ruins\n### Must Try\n- [ ] Travesseiros pastry at Piriquita\n### Must Do\n- [ ] Detour to Cabo da Roca, the westernmost point of mainland Europe",
             aiInsights: {
-                cost: "€14 (palace + park)",
-                bestTime: "09:30 opening — arrive early to avoid crowds",
-                tips: "Buy tickets online in advance. Wear comfortable shoes for the steep paths. The park entrance alone is worth visiting."
+                cost: "~€5 return train + €14-20 per palace",
+                bestTime: "Leave Lisbon by 08:30 to reach Pena Palace for the 09:30 opening",
+                tips: "Take the train from Rossio (40 min) and the 434 bus up the hill. Book palace tickets online and come back to Lisbon for dinner."
             }
         },
         {
-            id: 'travel-sin-prt',
+            id: 'travel-lis-prt',
             type: 'travel',
             title: 'Train to Porto',
             transportMode: 'train',
-            startDateOffset: 4.5,
-            duration: 0.3,
+            startDateOffset: 3.5,
+            duration: 0.13,
             color: 'bg-stone-800 border-stone-600 text-stone-100',
-            description: "~3h high-speed Alfa Pendular train via Lisbon Oriente"
+            description: "~3h high-speed Alfa Pendular train from Lisbon Santa Apolónia"
         },
         {
             id: 'city-prt',
             type: 'city',
             title: 'Porto',
-            startDateOffset: 4.5,
-            duration: 3,
+            startDateOffset: 3.5,
+            duration: 3.5,
             color: 'bg-cyan-200 border-cyan-300 text-cyan-900 dark:text-cyan-200 dark:border-cyan-400/30',
             location: 'Porto, Portugal',
             coordinates: { lat: 41.1579, lng: -8.6291 },
@@ -108,7 +90,7 @@ export const PORTUGAL_TEMPLATE: Partial<ITrip> = {
             id: 'act-port-wine',
             type: 'activity',
             title: 'Port Wine Tasting in Gaia',
-            startDateOffset: 5.5,
+            startDateOffset: 4.5,
             duration: 0.5,
             color: 'bg-cyan-100 border-cyan-300 text-cyan-900 dark:bg-cyan-400/12 dark:text-cyan-200 dark:border-cyan-400/30',
             location: 'Vila Nova de Gaia, Porto',
@@ -125,7 +107,7 @@ export const PORTUGAL_TEMPLATE: Partial<ITrip> = {
             type: 'travel',
             title: 'Drive to Algarve',
             transportMode: 'car',
-            startDateOffset: 7.5,
+            startDateOffset: 7,
             duration: 0.4,
             color: 'bg-stone-800 border-stone-600 text-stone-100',
             description: "~4.5h drive via A2 motorway (or bus/FlixBus alternative)"
@@ -134,8 +116,8 @@ export const PORTUGAL_TEMPLATE: Partial<ITrip> = {
             id: 'city-alg',
             type: 'city',
             title: 'Algarve (Lagos)',
-            startDateOffset: 7.5,
-            duration: 2.5,
+            startDateOffset: 7,
+            duration: 3,
             color: 'bg-slate-200 border-border text-foreground',
             location: 'Lagos, Algarve, Portugal',
             coordinates: { lat: 37.1028, lng: -8.6732 },
@@ -153,11 +135,7 @@ export const createPortugalTrip = (startDateStr: string): ITrip => {
         throw new Error(`Test Data Schema Error: ${validation.error}`);
     }
 
-    const items = PORTUGAL_TEMPLATE.items!.map((item) => ({
-        ...item,
-        id: `${item.id}-${uniqueSuffix}`,
-        hotels: item.hotels?.map(h => ({ ...h, id: `${h.id}-${uniqueSuffix}` }))
-    })) as ITimelineItem[];
+    const items = instantiateTemplateItems(PORTUGAL_TEMPLATE.items!, uniqueSuffix);
 
     return {
         id: `trip-portugal-${uniqueSuffix}`,

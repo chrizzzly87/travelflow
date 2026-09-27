@@ -696,6 +696,28 @@
         "mine": "Mój",
         "customNote": "Twoje własne połączenie ustawień."
       }
+    },
+    "activityPlan": {
+      "dialogTitle": "Dodaj do planu",
+      "sectionLabel": "Pobyt i dzień",
+      "kindLabel": "Co chcesz dodać?",
+      "kindActivity": "Aktywność",
+      "kindDayTrip": "Wycieczka jednodniowa",
+      "stayLabel": "Pobyt",
+      "stayPlaceholder": "Wybierz pobyt",
+      "dayLabel": "Dzień",
+      "dayOption": "Dzień {day} · {date}",
+      "dayOptionShort": "Dzień {day}",
+      "destinationLabel": "Cel",
+      "destinationPlaceholder": "np. Sintra",
+      "routeHint": "Wyjazd z {stay} i powrót tego samego dnia.",
+      "routeHintOther": "Wyjazd z {stay}, dzień kończy się w {returnStay}.",
+      "moreOptions": "Więcej opcji",
+      "returnLabel": "Dzień kończy się w",
+      "returnSame": "{stay} (powrót do tego samego pobytu)",
+      "dayTripTitlePlaceholder": "np. Pałace Sintry",
+      "submitDayTrip": "Dodaj wycieczkę",
+      "findingPlace": "Szukamy miejsca…"
     }
   },
   "tripRouteShell": {

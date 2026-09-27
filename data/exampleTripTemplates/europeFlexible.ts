@@ -1,5 +1,5 @@
 import { ITrip, ITimelineItem } from '../../types';
-import { validateTripSchema } from './_validation';
+import { instantiateTemplateItems, validateTripSchema } from './_validation';
 
 export const EUROPE_FLEXIBLE_TEMPLATE: Partial<ITrip> = {
     title: 'Mediterranean Forked Itinerary',
@@ -101,10 +101,7 @@ export const createEuropeFlexibleTrip = (startDateStr: string): ITrip => {
         throw new Error(`Example Data Schema Error: ${validation.error}`);
     }
 
-    const items = EUROPE_FLEXIBLE_TEMPLATE.items!.map((item) => ({
-        ...item,
-        id: `${item.id}-${uniqueSuffix}`,
-    })) as ITimelineItem[];
+    const items = instantiateTemplateItems(EUROPE_FLEXIBLE_TEMPLATE.items!, uniqueSuffix);
 
     return {
         id: `trip-europe-flexible-${uniqueSuffix}`,

@@ -696,6 +696,28 @@
         "mine": "Mio",
         "customNote": "La tua combinazione di impostazioni."
       }
+    },
+    "activityPlan": {
+      "dialogTitle": "Aggiungi al piano",
+      "sectionLabel": "Soggiorno e giorno",
+      "kindLabel": "Cosa vuoi aggiungere?",
+      "kindActivity": "Attività",
+      "kindDayTrip": "Gita in giornata",
+      "stayLabel": "Soggiorno",
+      "stayPlaceholder": "Scegli un soggiorno",
+      "dayLabel": "Giorno",
+      "dayOption": "Giorno {day} · {date}",
+      "dayOptionShort": "Giorno {day}",
+      "destinationLabel": "Destinazione",
+      "destinationPlaceholder": "es. Sintra",
+      "routeHint": "Parte da {stay} e ci torna in giornata.",
+      "routeHintOther": "Parte da {stay} e termina la giornata a {returnStay}.",
+      "moreOptions": "Altre opzioni",
+      "returnLabel": "La giornata finisce a",
+      "returnSame": "{stay} (ritorno allo stesso soggiorno)",
+      "dayTripTitlePlaceholder": "es. Palazzi di Sintra",
+      "submitDayTrip": "Aggiungi gita",
+      "findingPlace": "Ricerca del luogo…"
     }
   },
   "tripRouteShell": {

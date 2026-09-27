@@ -8,6 +8,7 @@ export type ItemType = 'city' | 'activity' | 'travel' | 'travel-empty';
 export type TransportMode = CanonicalTransportMode;
 export type CityPlanStatus = 'confirmed' | 'uncertain';
 export type ActivityType = CanonicalActivityType;
+export type ActivityKind = 'activity' | 'day-trip';
 
 export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean' | 'cleanDark';
 export type RouteMode = 'simple' | 'realistic';
@@ -309,6 +310,12 @@ export interface ITimelineItem {
   // Specific properties
   transportMode?: TransportMode; 
   activityType?: ActivityType[]; // Array for multi-select
+  /** Activities only. A day trip leaves its stay for `location`/`coordinates` and comes back. */
+  activityKind?: ActivityKind;
+  /** Activities only: the city item (stay) this activity belongs to. */
+  stayCityId?: string;
+  /** Day trips only: the stay the day ends at, when it is not `stayCityId`. */
+  dayTripReturnCityId?: string;
   aiInsights?: IAiInsights;
   hotels?: IHotel[];
   
