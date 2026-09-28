@@ -1,5 +1,5 @@
 import { ITrip, ITimelineItem } from '../../types';
-import { validateTripSchema } from './_validation';
+import { instantiateTemplateItems, validateTripSchema } from './_validation';
 
 export const ICELAND_TEMPLATE: Partial<ITrip> = {
     title: "Ring Road Circuit",
@@ -33,6 +33,9 @@ export const ICELAND_TEMPLATE: Partial<ITrip> = {
             title: 'Golden Circle Day Tour',
             startDateOffset: 0.3,
             duration: 0.7,
+            activityKind: 'day-trip',
+            stayCityId: 'city-rvk',
+            coordinates: { lat: 64.3104, lng: -20.3024 },
             color: 'bg-indigo-100 border-indigo-300 text-indigo-900 dark:bg-indigo-400/12 dark:text-indigo-200 dark:border-indigo-400/30',
             location: 'Þingvellir, Geysir & Gullfoss',
             activityType: ['sightseeing', 'nature'],
@@ -70,6 +73,9 @@ export const ICELAND_TEMPLATE: Partial<ITrip> = {
             title: 'Jökulsárlón Glacier Lagoon',
             startDateOffset: 3,
             duration: 0.6,
+            activityKind: 'day-trip',
+            stayCityId: 'city-vik',
+            coordinates: { lat: 64.0784, lng: -16.2306 },
             color: 'bg-violet-100 border-violet-300 text-violet-900 dark:bg-violet-400/12 dark:text-violet-200 dark:border-violet-400/30',
             location: 'Jökulsárlón, Iceland',
             activityType: ['sightseeing', 'nature'],
@@ -150,11 +156,7 @@ export const createIcelandTrip = (startDateStr: string): ITrip => {
         throw new Error(`Test Data Schema Error: ${validation.error}`);
     }
 
-    const items = ICELAND_TEMPLATE.items!.map((item) => ({
-        ...item,
-        id: `${item.id}-${uniqueSuffix}`,
-        hotels: item.hotels?.map(h => ({ ...h, id: `${h.id}-${uniqueSuffix}` }))
-    })) as ITimelineItem[];
+    const items = instantiateTemplateItems(ICELAND_TEMPLATE.items!, uniqueSuffix);
 
     return {
         id: `trip-iceland-${uniqueSuffix}`,

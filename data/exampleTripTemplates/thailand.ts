@@ -1,5 +1,5 @@
 import { ITrip, ITimelineItem } from '../../types';
-import { validateTripSchema } from './_validation';
+import { instantiateTemplateItems, validateTripSchema } from './_validation';
 
 export const THAILAND_TEMPLATE: Partial<ITrip> = {
     title: "Thailand Explorer (Test Plan)",
@@ -70,6 +70,9 @@ export const THAILAND_TEMPLATE: Partial<ITrip> = {
             title: 'Elephant Nature Park',
             startDateOffset: 5.5,
             duration: 0.8,
+            activityKind: 'day-trip',
+            stayCityId: 'city-cnx',
+            coordinates: { lat: 19.2153, lng: 98.8589 },
             color: 'bg-green-100 border-green-300 text-green-900 dark:bg-green-400/12 dark:text-green-200 dark:border-green-400/30',
             location: 'Chiang Mai Province',
             activityType: ['wildlife', 'nature'],
@@ -208,11 +211,7 @@ export const createThailandTrip = (startDateStr: string): ITrip => {
         throw new Error(`Test Data Schema Error: ${validation.error}`);
     }
 
-    const items = THAILAND_TEMPLATE.items!.map((item) => ({
-        ...item,
-        id: `${item.id}-${uniqueSuffix}`,
-        hotels: item.hotels?.map(h => ({ ...h, id: `${h.id}-${uniqueSuffix}` }))
-    })) as ITimelineItem[];
+    const items = instantiateTemplateItems(THAILAND_TEMPLATE.items!, uniqueSuffix);
 
     return {
         id: `trip-thailand-test-${uniqueSuffix}`,

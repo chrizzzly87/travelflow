@@ -112,6 +112,28 @@ const tripActivityJsonSchema = {
   required: ["title", "cityIndex", "dayOffsetInCity", "duration", "description", "activityTypes"],
 } as const;
 
+const tripDayTripJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    title: { type: "string", minLength: 1 },
+    cityIndex: { type: "integer", minimum: 0, description: "Index of the base city the traveller leaves from and returns to the same day." },
+    dayOffsetInCity: { type: "number", minimum: 0, description: "Whole day within the base city's stay; must be less than the city's days." },
+    duration: { type: "number", exclusiveMinimum: 0, description: "Duration in days, typically 0.5 or 0.75; never more than 1." },
+    destination: { type: "string", minLength: 1, description: "Place visited, e.g. 'Sintra' or 'Miyajima'." },
+    lat: { type: "number", minimum: -90, maximum: 90, description: "Latitude of the destination." },
+    lng: { type: "number", minimum: -180, maximum: 180, description: "Longitude of the destination." },
+    description: { type: "string", minLength: 1, maxLength: 90 },
+    activityTypes: {
+      type: "array",
+      minItems: 1,
+      maxItems: 3,
+      items: { type: "string", enum: [...TRIP_ITINERARY_ACTIVITY_TYPE_VALUES] },
+    },
+  },
+  required: ["title", "cityIndex", "dayOffsetInCity", "duration", "destination", "lat", "lng", "description", "activityTypes"],
+} as const;
+
 export const TRIP_ITINERARY_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -131,8 +153,13 @@ export const TRIP_ITINERARY_JSON_SCHEMA = {
       type: "array",
       items: tripActivityJsonSchema,
     },
+    dayTrips: {
+      type: "array",
+      description: "Single-day excursions from a base city that return the same day. Empty when there are none.",
+      items: tripDayTripJsonSchema,
+    },
   },
-  required: ["tripTitle", "countryInfo", "cities", "travelSegments", "activities"],
+  required: ["tripTitle", "countryInfo", "cities", "travelSegments", "activities", "dayTrips"],
 } as const satisfies Record<string, unknown>;
 
 export const TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA: StructuredOutputJsonSchema = {
@@ -265,6 +292,29 @@ export const createGeminiTripItineraryResponseSchema = <TValue extends string | 
         required: ["title", "cityIndex", "dayOffsetInCity", "duration", "description", "activityTypes"],
       },
     },
+    dayTrips: {
+      type: Type.ARRAY,
+      description: "Single-day excursions from a base city that return the same day. Empty when there are none.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          title: { type: Type.STRING },
+          cityIndex: { type: Type.NUMBER, description: "Index of the base city the traveller leaves from and returns to (0-based)" },
+          dayOffsetInCity: { type: Type.NUMBER, description: "Whole day within the base city's stay; less than the city's days" },
+          duration: { type: Type.NUMBER, description: "Duration in days, typically 0.5 or 0.75; never more than 1" },
+          destination: { type: Type.STRING, description: "Place visited, e.g. Sintra" },
+          lat: { type: Type.NUMBER, description: "Latitude of the destination" },
+          lng: { type: Type.NUMBER, description: "Longitude of the destination" },
+          description: { type: Type.STRING },
+          activityTypes: {
+            type: Type.ARRAY,
+            description: "Array with 1-3 activity types chosen only from the allowed list.",
+            items: { type: Type.STRING, enum: [...TRIP_ITINERARY_ACTIVITY_TYPE_VALUES] },
+          },
+        },
+        required: ["title", "cityIndex", "dayOffsetInCity", "duration", "destination", "lat", "lng", "description", "activityTypes"],
+      },
+    },
   },
-  required: ["tripTitle", "cities", "activities", "travelSegments", "countryInfo"],
+  required: ["tripTitle", "cities", "activities", "travelSegments", "countryInfo", "dayTrips"],
 });

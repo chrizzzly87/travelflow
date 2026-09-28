@@ -1,3 +1,4 @@
+import { isDayTrip, resolveActivityStay } from '../../shared/activityStay';
 import type { ITimelineItem } from '../../types';
 import type { MapImplementation } from '../../shared/mapRuntime';
 import { isFiniteLatLngLiteral } from '../../shared/coordinateUtils';
@@ -79,24 +80,13 @@ const haversineDistanceKm = (
 };
 
 /**
- * Which city an activity belongs to. Activities carry no city id, so ownership
- * is the date range that contains them, with the preceding city as the fallback
- * for anything that falls into a gap.
+ * Which city an activity belongs to: its explicit stay when it has one,
+ * otherwise the date range that contains it (see `shared/activityStay`).
  */
 export const resolveActivityOwnerCity = (
   activity: ITimelineItem,
   cityItems: ITimelineItem[],
-): ITimelineItem | null => {
-  const directOwner = cityItems.find((city) => (
-    activity.startDateOffset >= city.startDateOffset
-    && activity.startDateOffset < city.startDateOffset + Math.max(city.duration, 0)
-  ));
-  if (directOwner) return directOwner;
-
-  const previousCity = [...cityItems].reverse().find((city) => city.startDateOffset <= activity.startDateOffset);
-  if (previousCity) return previousCity;
-  return cityItems[0] || null;
-};
+): ITimelineItem | null => resolveActivityStay(activity, cityItems);
 
 /**
  * The city's own places: activities the traveller pinned to a real coordinate.
@@ -119,6 +109,8 @@ export const collectCityFramingCoordinates = ({
 
   const owned = items.filter((item) => {
     if (item.type !== 'activity') return false;
+    // A day trip is a place you leave the city for; it never widens the city frame.
+    if (isDayTrip(item)) return false;
     if (!isFiniteLatLngLiteral(item.coordinates)) return false;
     return resolveActivityOwnerCity(item, cities)?.id === city.id;
   });

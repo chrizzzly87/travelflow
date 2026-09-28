@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
 import { ITimelineItem } from '../types';
 import { getActivityColorByTypes, getContrastTextColor, getHexFromColorClass, isTailwindCityColorValue, pickPrimaryActivityType, shiftHexColor } from '../utils';
-import { Maximize, Minimize, ArrowLeftRight, ArrowUpDown } from 'lucide-react';
+import { Maximize, Minimize, ArrowLeftRight, ArrowUpDown, Compass } from 'lucide-react';
+import { isDayTrip } from '../shared/activityStay';
 import { ActivityTypeIcon } from './ActivityTypeVisuals';
 import { TransportModeIcon } from './TransportModeIcon';
 import { normalizeTransportMode } from '../shared/transportModes';
@@ -33,6 +34,8 @@ interface TimelineBlockProps {
   onNavigatePreviousCity?: () => void;
   onNavigateNextCity?: () => void;
   onToggleDetailsPanel?: () => void;
+  /** Day trips: the colour of the stay they leave from, shown as a top edge. */
+  stayAccentColorHex?: string;
 }
 
 export const TimelineBlock: React.FC<TimelineBlockProps> = ({
@@ -61,6 +64,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   onNavigatePreviousCity,
   onNavigateNextCity,
   onToggleDetailsPanel,
+  stayAccentColorHex,
 }) => {
   const isTravel = item.type === 'travel';
   const isEmptyTravel = item.type === 'travel-empty';
@@ -85,6 +89,9 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   const primaryActivityType = item.type === 'activity'
     ? pickPrimaryActivityType(item.activityType)
     : undefined;
+  // A day trip reads as an outing, not a thing to do in town: a compass instead
+  // of the activity-type icon.
+  const isDayTripActivity = isDayTrip(item);
   const cityUsesClassColor = item.type === 'city' && isTailwindCityColorValue(item.color);
   const cityPlanStatus = item.type === 'city' ? (item.cityPlanStatus || 'confirmed') : 'confirmed';
   const isUncertainCity = item.type === 'city' && cityPlanStatus === 'uncertain';
@@ -369,7 +376,16 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       data-city-block={isCity ? 'true' : undefined}
       data-city-stack-index={isCity ? String(normalizedCityStackIndex) : undefined}
       data-city-id={isCity ? item.id : undefined}
+      data-day-trip={isDayTripActivity ? 'true' : undefined}
+      data-activity-id={item.type === 'activity' ? item.id : undefined}
     >
+      {isDayTripActivity && stayAccentColorHex && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-[3px]"
+          style={{ backgroundColor: stayAccentColorHex }}
+        />
+      )}
       {/* Visual Buffers (Travel Only) */}
       {isTravel && (
         <>
@@ -403,11 +419,15 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         <div className="relative size-full pointer-events-none overflow-hidden">
           {!isTravel && !isEmptyTravel && item.type === 'activity' && !isCompactVerticalActivity && (
             <div className="absolute inset-x-0 top-1.5 flex justify-center">
-              <ActivityTypeIcon
-                type={primaryActivityType || 'general'}
-                size={14}
-                className={isInactiveActivity ? 'opacity-60' : 'opacity-70'}
-              />
+              {isDayTripActivity ? (
+                <Compass size={14} aria-hidden="true" className={isInactiveActivity ? 'opacity-60' : 'opacity-80'} />
+              ) : (
+                <ActivityTypeIcon
+                  type={primaryActivityType || 'general'}
+                  size={14}
+                  className={isInactiveActivity ? 'opacity-60' : 'opacity-70'}
+                />
+              )}
             </div>
           )}
           {!isEmptyTravel && !shouldRotateVerticalCityLabel && (
@@ -472,11 +492,19 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         )}
 
         {!isTravel && !isEmptyTravel && item.type === 'activity' && !isCompactVerticalActivity && (
+             isDayTripActivity ? (
+                 <Compass
+                     size={14}
+                     aria-hidden="true"
+                     className={`flex-shrink-0 ${isInactiveActivity ? 'opacity-60' : 'opacity-80'} ${vertical && item.duration * pixelsPerDay >= 60 ? 'mb-1' : ''}`}
+                 />
+             ) : (
              <ActivityTypeIcon
                  type={primaryActivityType || 'general'}
                  size={14}
                  className={`${isInactiveActivity ? 'opacity-60' : 'opacity-70'} ${vertical && item.duration * pixelsPerDay >= 60 ? 'mb-1' : ''}`}
              />
+             )
         )}
 
         {!isEmptyTravel && !shouldRotateVerticalCityLabel && (

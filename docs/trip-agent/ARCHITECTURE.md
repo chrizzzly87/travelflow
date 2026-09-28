@@ -123,6 +123,19 @@ fixable answer from inside the tool.
 
 `startDateOffset` counts days from the trip start and begins at 0.
 
+Activities carry `stayCityId` — the id of the **city item** they belong to (not a
+hotel id). A day trip is an activity with `isDayTrip: true` on the wire
+(`activityKind: 'day-trip'` internally) whose `location`/`coordinates` are the
+destination; `dayTripReturnCityId` is only for a day that ends in another city,
+and `isDayTrip: false` turns it back into an ordinary activity.
+`findUnknownOperationTargets` rejects city references that do not exist after the
+operation, and `read_trip_context` shows every activity with its resolved
+`stayCityId`, even on trips that never stored one. The internal
+`timelineItemSchema` also accepts the resolver's `coordinatesSource`,
+`coordinatesQuery` and `placeId` — the whole trip is re-parsed after every
+apply, so any stored field missing there fails every proposal. Details:
+`docs/ACTIVITIES_AND_DAY_TRIPS.md`.
+
 ### Approval path
 
 Nothing is written by the run itself. The panel groups the operations per stop,

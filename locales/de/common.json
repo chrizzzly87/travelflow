@@ -697,6 +697,28 @@
         "customNote": "Deine eigene Mischung aus Einstellungen."
       }
     },
+    "activityPlan": {
+      "dialogTitle": "Zum Plan hinzufügen",
+      "sectionLabel": "Aufenthalt und Tag",
+      "kindLabel": "Was möchtest du hinzufügen?",
+      "kindActivity": "Aktivität",
+      "kindDayTrip": "Tagesausflug",
+      "stayLabel": "Aufenthalt",
+      "stayPlaceholder": "Aufenthalt wählen",
+      "dayLabel": "Tag",
+      "dayOption": "Tag {day} · {date}",
+      "dayOptionShort": "Tag {day}",
+      "destinationLabel": "Ziel",
+      "destinationPlaceholder": "z. B. Sintra",
+      "routeHint": "Startet in {stay} und kehrt am selben Tag dorthin zurück.",
+      "routeHintOther": "Startet in {stay} und endet in {returnStay}.",
+      "moreOptions": "Weitere Optionen",
+      "returnLabel": "Tag endet in",
+      "returnSame": "{stay} (zurück zum selben Aufenthalt)",
+      "dayTripTitlePlaceholder": "z. B. Paläste von Sintra",
+      "submitDayTrip": "Tagesausflug hinzufügen",
+      "findingPlace": "Ort wird gesucht …"
+    },
     "timelineControls": {
       "horizontalDirection": "Timeline horizontal anzeigen",
       "verticalDirection": "Timeline vertikal anzeigen",
@@ -759,7 +781,6 @@
       "transportUndecided": "Verkehrsmittel noch offen",
       "transportMode": "Verkehrsmittel: {mode}",
       "addActivity": "Aktivität hinzufügen",
-      "addActivityOn": "Aktivität am {date} hinzufügen",
       "occupySpace": "Freien Platz ausfüllen",
       "stretchToFill": "Bis zur Lücke strecken",
       "reverseSelectedCities": "Ausgewählte Städte tauschen"
@@ -964,7 +985,12 @@
     "revertToastTitle": "Änderung rückgängig",
     "redo": "Wiederherstellen",
     "revertedHint": "Rückgängig – du kannst erneut prüfen oder wiederherstellen",
-    "reapplyUnavailable": "Dieser Satz kann hier nicht erneut übernommen werden."
+    "reapplyUnavailable": "Dieser Satz kann hier nicht erneut übernommen werden.",
+    "presetDayTrips": "Schlag Tagesausflüge von meinen Aufenthalten vor",
+    "presetDayTripFrom": "Schlag einen Tagesausflug ab {city} vor",
+    "presetMakeDayTrip": "Mach aus {activity} einen Tagesausflug",
+    "presetChangeDayTrip": "Ändere den Tagesausflug {activity}",
+    "presetRemoveDayTrip": "Entferne den Tagesausflug {activity}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Der Gerätespeicher ist voll",

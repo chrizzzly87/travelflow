@@ -1,5 +1,5 @@
 import { ITrip, ITimelineItem } from '../../types';
-import { validateTripSchema } from './_validation';
+import { instantiateTemplateItems, validateTripSchema } from './_validation';
 
 export const JAPAN_TEMPLATE: Partial<ITrip> = {
     title: "Cherry Blossom Trail",
@@ -213,6 +213,8 @@ export const JAPAN_TEMPLATE: Partial<ITrip> = {
             title: "Miyajima Island Day Trip",
             startDateOffset: 13,
             duration: 0.4,
+            activityKind: 'day-trip',
+            stayCityId: 'jp-city-hiroshima',
             color: "bg-sky-100 border-sky-300 text-sky-900 dark:bg-sky-400/12 dark:text-sky-200 dark:border-sky-400/30",
             location: "Miyajima Island, Hiroshima",
             coordinates: { lat: 34.2960, lng: 132.3198 },
@@ -232,11 +234,7 @@ export const createJapanTrip = (startDateStr: string): ITrip => {
     if (!validation.isValid) {
         throw new Error(`Test Data Schema Error: ${validation.error}`);
     }
-    const items = JAPAN_TEMPLATE.items!.map((item) => ({
-        ...item,
-        id: `${item.id}-${uniqueSuffix}`,
-        hotels: item.hotels?.map(h => ({ ...h, id: `${h.id}-${uniqueSuffix}` }))
-    })) as ITimelineItem[];
+    const items = instantiateTemplateItems(JAPAN_TEMPLATE.items!, uniqueSuffix);
     return {
         id: `trip-japan-${uniqueSuffix}`,
         title: JAPAN_TEMPLATE.title!,

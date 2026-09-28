@@ -3,6 +3,7 @@ import { useCallback, useEffect, type Dispatch, type SetStateAction } from 'reac
 import type { ITrip, ITimelineItem } from '../../types';
 import { getActivityColorByTypes, normalizeActivityTypes, removeTimelineItemWithLinkedItems } from '../../utils';
 import { stripHistoryPrefix } from './useTripHistoryPresentation';
+import { resolveStayForOffset } from '../../shared/activityStay';
 
 interface AddActivityState {
     isOpen: boolean;
@@ -148,11 +149,10 @@ export const useTripItemMutationHandlers = ({
     const handleOpenAddActivity = useCallback((dayOffset: number) => {
         if (!requireEdit()) return;
 
-        const city = trip.items.find((item) => (
-            item.type === 'city' &&
-            dayOffset >= item.startDateOffset &&
-            dayOffset < item.startDateOffset + item.duration
-        ));
+        const city = resolveStayForOffset(
+            dayOffset,
+            trip.items.filter((item) => item.type === 'city'),
+        );
 
         setAddActivityState({
             isOpen: true,
@@ -166,23 +166,28 @@ export const useTripItemMutationHandlers = ({
 
         markUserEdit();
         const normalizedTypes = normalizeActivityTypes(itemProps.activityType);
+        const startDateOffset = itemProps.startDateOffset ?? addActivityState.dayOffset;
+        const stayCityId = itemProps.stayCityId
+            ?? resolveStayForOffset(startDateOffset, trip.items.filter((item) => item.type === 'city'))?.id;
         const newItem: ITimelineItem = {
             id: crypto.randomUUID(),
             type: 'activity',
             title: itemProps.title || 'New Activity',
-            startDateOffset: itemProps.startDateOffset || addActivityState.dayOffset,
+            startDateOffset,
             duration: itemProps.duration || (1 / 24),
             description: itemProps.description || '',
             location: itemProps.location || addActivityState.location,
             ...itemProps,
+            ...(stayCityId ? { stayCityId } : {}),
             activityType: normalizedTypes,
             color: itemProps.color || getActivityColorByTypes(normalizedTypes),
         } as ITimelineItem;
 
         onResetSuppressedCommit?.();
-        setPendingLabel(`Data: Added activity "${newItem.title}"`);
+        const isNewDayTrip = newItem.activityKind === 'day-trip';
+        setPendingLabel(`Data: Added ${isNewDayTrip ? 'day trip' : 'activity'} "${newItem.title}"`);
         handleUpdateItems([...trip.items, newItem], { suppressCommitToast: true });
-        showToast(`Activity "${newItem.title}" added`, { tone: 'add', title: 'Added' });
+        showToast(`${isNewDayTrip ? 'Day trip' : 'Activity'} "${newItem.title}" added`, { tone: 'add', title: 'Added' });
     }, [
         addActivityState.dayOffset,
         addActivityState.location,

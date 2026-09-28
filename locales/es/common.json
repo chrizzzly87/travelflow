@@ -697,6 +697,28 @@
         "customNote": "Tu propia combinación de ajustes."
       }
     },
+    "activityPlan": {
+      "dialogTitle": "Añadir al plan",
+      "sectionLabel": "Estancia y día",
+      "kindLabel": "¿Qué quieres añadir?",
+      "kindActivity": "Actividad",
+      "kindDayTrip": "Excursión de un día",
+      "stayLabel": "Estancia",
+      "stayPlaceholder": "Elige una estancia",
+      "dayLabel": "Día",
+      "dayOption": "Día {day} · {date}",
+      "dayOptionShort": "Día {day}",
+      "destinationLabel": "Destino",
+      "destinationPlaceholder": "p. ej. Sintra",
+      "routeHint": "Sale de {stay} y vuelve allí el mismo día.",
+      "routeHintOther": "Sale de {stay} y termina el día en {returnStay}.",
+      "moreOptions": "Más opciones",
+      "returnLabel": "El día termina en",
+      "returnSame": "{stay} (vuelta a la misma estancia)",
+      "dayTripTitlePlaceholder": "p. ej. Palacios de Sintra",
+      "submitDayTrip": "Añadir excursión",
+      "findingPlace": "Buscando el lugar…"
+    },
     "timelineControls": {
       "horizontalDirection": "Línea de tiempo horizontal",
       "verticalDirection": "Línea de tiempo vertical",
@@ -759,7 +781,6 @@
       "transportUndecided": "Transporte sin decidir",
       "transportMode": "Transporte: {mode}",
       "addActivity": "Añadir actividad",
-      "addActivityOn": "Añadir actividad el {date}",
       "occupySpace": "Ocupar el espacio disponible",
       "stretchToFill": "Estirar para llenar el hueco",
       "reverseSelectedCities": "Invertir las ciudades seleccionadas"
@@ -964,7 +985,12 @@
     "revertToastTitle": "Cambio deshecho",
     "redo": "Rehacer",
     "revertedHint": "Deshecho: puedes revisarlo o rehacerlo",
-    "reapplyUnavailable": "Este conjunto no puede aplicarse otra vez aquí."
+    "reapplyUnavailable": "Este conjunto no puede aplicarse otra vez aquí.",
+    "presetDayTrips": "Sugiere excursiones de un día desde mis estancias",
+    "presetDayTripFrom": "Sugiere una excursión de un día desde {city}",
+    "presetMakeDayTrip": "Convierte {activity} en una excursión de un día",
+    "presetChangeDayTrip": "Cambia la excursión {activity}",
+    "presetRemoveDayTrip": "Elimina la excursión {activity}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "El almacenamiento del dispositivo está lleno",

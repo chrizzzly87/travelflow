@@ -697,6 +697,28 @@
         "customNote": "A tua própria combinação de definições."
       }
     },
+    "activityPlan": {
+      "dialogTitle": "Adicionar ao plano",
+      "sectionLabel": "Estadia e dia",
+      "kindLabel": "O que quer adicionar?",
+      "kindActivity": "Atividade",
+      "kindDayTrip": "Passeio de um dia",
+      "stayLabel": "Estadia",
+      "stayPlaceholder": "Escolha uma estadia",
+      "dayLabel": "Dia",
+      "dayOption": "Dia {day} · {date}",
+      "dayOptionShort": "Dia {day}",
+      "destinationLabel": "Destino",
+      "destinationPlaceholder": "ex. Sintra",
+      "routeHint": "Sai de {stay} e volta no mesmo dia.",
+      "routeHintOther": "Sai de {stay} e termina o dia em {returnStay}.",
+      "moreOptions": "Mais opções",
+      "returnLabel": "O dia termina em",
+      "returnSame": "{stay} (volta à mesma estadia)",
+      "dayTripTitlePlaceholder": "ex. Palácios de Sintra",
+      "submitDayTrip": "Adicionar passeio",
+      "findingPlace": "A procurar o local…"
+    },
     "timelineControls": {
       "horizontalDirection": "Linha temporal horizontal",
       "verticalDirection": "Linha temporal vertical",
@@ -759,7 +781,6 @@
       "transportUndecided": "Transporte por decidir",
       "transportMode": "Transporte: {mode}",
       "addActivity": "Adicionar atividade",
-      "addActivityOn": "Adicionar atividade a {date}",
       "occupySpace": "Ocupar o espaço disponível",
       "stretchToFill": "Esticar para preencher",
       "reverseSelectedCities": "Inverter as cidades selecionadas"
@@ -964,7 +985,12 @@
     "revertToastTitle": "Mudança desfeita",
     "redo": "Refazer",
     "revertedHint": "Desfeito — você pode revisar ou refazer",
-    "reapplyUnavailable": "Este conjunto não pode ser aplicado de novo aqui."
+    "reapplyUnavailable": "Este conjunto não pode ser aplicado de novo aqui.",
+    "presetDayTrips": "Sugere passeios de um dia a partir das minhas estadias",
+    "presetDayTripFrom": "Sugere um passeio de um dia a partir de {city}",
+    "presetMakeDayTrip": "Transforma {activity} num passeio de um dia",
+    "presetChangeDayTrip": "Altera o passeio {activity}",
+    "presetRemoveDayTrip": "Remove o passeio {activity}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "O armazenamento do dispositivo está cheio",

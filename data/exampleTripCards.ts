@@ -376,31 +376,31 @@ const CARD_LOCALIZATIONS: Record<string, Partial<Record<AppLanguage, ExampleTrip
   'portugal-coast': {
     es: {
       title: 'Ruta por la costa atlántica',
-      cities: ['Lisboa', 'Sintra', 'Oporto', 'Algarve (Lagos)'],
+      cities: ['Lisboa', 'Oporto', 'Algarve (Lagos)'],
     },
     de: {
       title: 'Atlantik-Küsten-Roadtrip',
-      cities: ['Lissabon', 'Sintra', 'Porto', 'Algarve (Lagos)'],
+      cities: ['Lissabon', 'Porto', 'Algarve (Lagos)'],
     },
     fr: {
       title: 'Road trip sur la côte atlantique',
-      cities: ['Lisbonne', 'Sintra', 'Porto', 'Algarve (Lagos)'],
+      cities: ['Lisbonne', 'Porto', 'Algarve (Lagos)'],
     },
     it: {
       title: 'Road trip sulla costa atlantica',
-      cities: ['Lisbona', 'Sintra', 'Porto', 'Algarve (Lagos)'],
+      cities: ['Lisbona', 'Porto', 'Algarve (Lagos)'],
     },
     pt: {
       title: 'Road trip pela costa atlântica',
-      cities: ['Lisboa', 'Sintra', 'Porto', 'Algarve (Lagos)'],
+      cities: ['Lisboa', 'Porto', 'Algarve (Lagos)'],
     },
     ru: {
       title: 'Роуд-трип по атлантическому побережью',
-      cities: ['Лиссабон', 'Синтра', 'Порту', 'Алгарви (Лагуш)'],
+      cities: ['Лиссабон', 'Порту', 'Алгарви (Лагуш)'],
     },
     pl: {
       title: 'Road trip po atlantyckim wybrzeżu',
-      cities: ['Lizbona', 'Sintra', 'Porto', 'Algarve (Lagos)'],
+      cities: ['Lizbona', 'Porto', 'Algarve (Lagos)'],
     },
   },
   'italy-classic': {
@@ -723,7 +723,7 @@ export const exampleTripCards: ExampleTripCard[] = [
     title: 'Atlantic Coast Road Trip',
     countries: [{ name: 'Portugal', flag: '🇵🇹' }],
     durationDays: 10,
-    cityCount: 4,
+    cityCount: 3,
     mapColor: 'bg-sky-100 dark:bg-sky-400/15',
     mapAccent: 'bg-sky-400',
     username: 'surf_nomad',

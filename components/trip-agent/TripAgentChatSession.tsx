@@ -68,6 +68,8 @@ import { formatTripAgentTimestamp } from './tripAgentTime';
 import { useMinuteTick } from './useMinuteTick';
 import { Button } from '../ui/button';
 import type { TripAgentPanelProps } from './tripAgentPanelTypes';
+import { isDayTrip } from '../../shared/activityStay';
+import { buildTripAgentDayTripPresets } from './tripAgentDayTripPresets';
 
 
 
@@ -424,6 +426,11 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
         t('tripAgent.suggestStays'),
         ...(selectedCity ? [t('tripAgent.suggestCity', { city: selectedCity.label })] : []),
     ], [selectedCity, t]);
+    // The "/" menu offers the chips plus day-trip prompts for the current selection.
+    const commandPresets = useMemo(() => [
+        ...buildTripAgentDayTripPresets({ t, trip, contextRefs }),
+        ...suggestions,
+    ], [contextRefs, suggestions, t, trip]);
     const isGenerating = status === 'submitted' || status === 'streaming';
     const lastMessage = messages.at(-1);
     const hasStreamingAssistantText = lastMessage?.role === 'assistant'
@@ -518,13 +525,16 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
         const item = trip.items.find((candidate) => candidate.id === contextRef.id);
         const city = contextRef.cityId ? trip.items.find((candidate) => candidate.id === contextRef.cityId) : undefined;
         const day = item ? t('tripAgent.dayValue', { day: Math.floor(item.startDateOffset) + 1 }) : null;
-        return [t(`tripAgent.contextKinds.${contextRef.kind}`), city?.title, day].filter(Boolean).join(' · ');
+        const kindLabel = item && isDayTrip(item)
+            ? t('tripView.activityPlan.kindDayTrip')
+            : t(`tripAgent.contextKinds.${contextRef.kind}`);
+        return [kindLabel, city?.title, day].filter(Boolean).join(' · ');
     };
 
     const menuItems = useMemo((): TripAgentMentionItem[] => {
         const query = menuQuery.trim().toLowerCase();
         if (commandMenu === 'commands') {
-            return suggestions
+            return commandPresets
                 .filter((suggestion) => !query || suggestion.toLowerCase().includes(query))
                 .map((suggestion) => ({
                     key: `preset:${suggestion}`,
@@ -548,7 +558,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                 isSelected: activeContextRefs.some((candidate) => contextRefKey(candidate) === contextRefKey(contextRef)),
                 icon: <ContextKindIcon kind={contextRef.kind} className="size-4 shrink-0 text-muted-foreground" />,
             })));
-    }, [activeContextRefs, commandMenu, menuQuery, selectableContextRefs, suggestions, t, trip.items]);
+    }, [activeContextRefs, commandMenu, commandPresets, menuQuery, selectableContextRefs, t, trip.items]);
 
     const selectMenuItem = (index: number) => {
         const item = menuItems[index];

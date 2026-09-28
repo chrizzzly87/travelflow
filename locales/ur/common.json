@@ -695,6 +695,28 @@
         "customNote": "آپ کی اپنی ترتیبات کا امتزاج۔"
       }
     },
+    "activityPlan": {
+      "dialogTitle": "منصوبے میں شامل کریں",
+      "sectionLabel": "قیام اور دن",
+      "kindLabel": "آپ کیا شامل کر رہے ہیں؟",
+      "kindActivity": "سرگرمی",
+      "kindDayTrip": "ایک دن کا سفر",
+      "stayLabel": "قیام",
+      "stayPlaceholder": "قیام منتخب کریں",
+      "dayLabel": "دن",
+      "dayOption": "دن {day} · {date}",
+      "dayOptionShort": "دن {day}",
+      "destinationLabel": "منزل",
+      "destinationPlaceholder": "مثلاً سنترا",
+      "routeHint": "{stay} سے روانہ ہو کر اسی دن واپس آتا ہے۔",
+      "routeHintOther": "{stay} سے روانہ ہو کر دن {returnStay} میں ختم ہوتا ہے۔",
+      "moreOptions": "مزید اختیارات",
+      "returnLabel": "دن ختم ہوتا ہے",
+      "returnSame": "{stay} (اسی قیام پر واپسی)",
+      "dayTripTitlePlaceholder": "مثلاً سنترا کے محلات",
+      "submitDayTrip": "ایک دن کا سفر شامل کریں",
+      "findingPlace": "جگہ تلاش کی جا رہی ہے…"
+    },
     "timelineControls": {
       "horizontalDirection": "افقی ٹائم لائن",
       "verticalDirection": "عمودی ٹائم لائن",
@@ -757,7 +779,6 @@
       "transportUndecided": "سواری طے نہیں",
       "transportMode": "سواری: {mode}",
       "addActivity": "سرگرمی شامل کریں",
-      "addActivityOn": "{date} کے لیے سرگرمی شامل کریں",
       "occupySpace": "دستیاب جگہ بھریں",
       "stretchToFill": "خالی جگہ تک پھیلائیں",
       "reverseSelectedCities": "منتخب شہروں کی ترتیب الٹیں"
@@ -960,7 +981,12 @@
     "revertToastTitle": "تبدیلی واپس لی گئی",
     "redo": "دوبارہ کریں",
     "revertedHint": "واپس لیا — دوبارہ جائزہ یا دوبارہ لاگو کر سکتے ہیں",
-    "reapplyUnavailable": "یہ سیٹ یہاں دوبارہ لاگو نہیں ہو سکتا۔"
+    "reapplyUnavailable": "یہ سیٹ یہاں دوبارہ لاگو نہیں ہو سکتا۔",
+    "presetDayTrips": "میرے قیام سے ایک دن کے سفر تجویز کریں",
+    "presetDayTripFrom": "{city} سے ایک دن کا سفر تجویز کریں",
+    "presetMakeDayTrip": "{activity} کو ایک دن کا سفر بنائیں",
+    "presetChangeDayTrip": "ایک دن کا سفر {activity} تبدیل کریں",
+    "presetRemoveDayTrip": "ایک دن کا سفر {activity} ہٹائیں"
   },
   "storageNotice": {
     "tripsPrunedTitle": "ڈیوائس کی اسٹوریج بھر گئی ہے",

@@ -697,6 +697,28 @@
         "customNote": "Votre propre combinaison de réglages."
       }
     },
+    "activityPlan": {
+      "dialogTitle": "Ajouter au programme",
+      "sectionLabel": "Séjour et jour",
+      "kindLabel": "Que voulez-vous ajouter ?",
+      "kindActivity": "Activité",
+      "kindDayTrip": "Excursion d’une journée",
+      "stayLabel": "Séjour",
+      "stayPlaceholder": "Choisir un séjour",
+      "dayLabel": "Jour",
+      "dayOption": "Jour {day} · {date}",
+      "dayOptionShort": "Jour {day}",
+      "destinationLabel": "Destination",
+      "destinationPlaceholder": "ex. Sintra",
+      "routeHint": "Part de {stay} et y revient le jour même.",
+      "routeHintOther": "Part de {stay} et termine la journée à {returnStay}.",
+      "moreOptions": "Plus d’options",
+      "returnLabel": "La journée se termine à",
+      "returnSame": "{stay} (retour au même séjour)",
+      "dayTripTitlePlaceholder": "ex. Palais de Sintra",
+      "submitDayTrip": "Ajouter l’excursion",
+      "findingPlace": "Recherche du lieu…"
+    },
     "timelineControls": {
       "horizontalDirection": "Frise horizontale",
       "verticalDirection": "Frise verticale",
@@ -759,7 +781,6 @@
       "transportUndecided": "Transport non défini",
       "transportMode": "Transport : {mode}",
       "addActivity": "Ajouter une activité",
-      "addActivityOn": "Ajouter une activité le {date}",
       "occupySpace": "Occuper l'espace disponible",
       "stretchToFill": "Étirer pour combler l'espace",
       "reverseSelectedCities": "Inverser les villes sélectionnées"
@@ -964,7 +985,12 @@
     "revertToastTitle": "Changement annulé",
     "redo": "Rétablir",
     "revertedHint": "Annulé — à revoir ou rétablir",
-    "reapplyUnavailable": "Cet ensemble ne peut pas être réappliqué ici."
+    "reapplyUnavailable": "Cet ensemble ne peut pas être réappliqué ici.",
+    "presetDayTrips": "Propose des excursions d’une journée depuis mes séjours",
+    "presetDayTripFrom": "Propose une excursion d’une journée depuis {city}",
+    "presetMakeDayTrip": "Transforme {activity} en excursion d’une journée",
+    "presetChangeDayTrip": "Modifie l’excursion {activity}",
+    "presetRemoveDayTrip": "Supprime l’excursion {activity}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Le stockage de l'appareil est plein",

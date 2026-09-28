@@ -1,3 +1,4 @@
+import { buildModelActivityPlacementFields } from '../shared/aiTripActivityPlacement';
 import { ICoordinates, ITimelineItem, ITrip, TripGenerationAttemptSummary, TripGenerationFlow, TripGenerationFailureKind } from "../types";
 import type { AiProviderId } from "../config/aiProviderCatalog";
 import { getDefaultCreateTripModel } from "../config/aiModelCatalog";
@@ -278,6 +279,10 @@ const BASE_ITINERARY_RULES_PROMPT = `
          [${TRANSPORT_MODES_PROMPT_LIST}]
       7. Follow strict duration formatting.
          ${DURATION_PROMPT_GUIDANCE.trim()}
+      8. Single-day excursions from a base city (for example Sintra from Lisbon, Miyajima from Hiroshima, the Golden Circle from Reykjavik) go into "dayTrips", NOT into "cities".
+         - cityIndex is the base city the traveller sleeps in; the day starts and ends there, so add no travel segment for it.
+         - Give the destination name plus accurate destination lat/lng. dayOffsetInCity is a whole day inside the base stay; duration is 0.5-1 days.
+         - Only use a day trip when the base stay has a free day for it. Return an empty "dayTrips" array when there are none.
       ${TRANSPORT_MODE_PROMPT_GUIDANCE.trim()}
     `;
 
@@ -303,6 +308,7 @@ const BASE_ITINERARY_RULES_PROMPT_COMPACT = `
          [${TRANSPORT_MODES_PROMPT_LIST}]
       7. Follow strict duration formatting.
          ${DURATION_PROMPT_GUIDANCE.trim()}
+      8. Single-day excursions from a base city go into "dayTrips" (base cityIndex, whole dayOffsetInCity, 0.5-1 day duration, destination with lat/lng), not into "cities". Return [] when there are none.
       ${TRANSPORT_MODE_PROMPT_GUIDANCE.trim()}
     `;
 
@@ -313,6 +319,7 @@ const STRICT_JSON_OBJECT_CONTRACT_PROMPT = `
       - Return one travelSegments entry per consecutive pair of cities, plus the final return leg when round-trip instructions request it; TravelFlow derives indices and labels.
       - Durations are numbers: travel hours and activity days.
       - Every activity fits within its stop: dayOffsetInCity + duration <= cities[cityIndex].days.
+      - dayTrips are same-day excursions from cities[cityIndex]; they are not stops and need no travel segment. Use [] when there are none.
       - countryInfo uses the canonical keys and a numeric exchangeRate for 1 EUR.
       - TravelFlow derives country names, recommendation Markdown, transfer descriptions, and route indices.
     `;
@@ -777,9 +784,10 @@ const buildTripFromModelData = (
     parsedCities.forEach((city, index) => {
         cityOffsets[index] = currentDayOffset;
         cityDurations[index] = city.days;
+        const cityItemId = `city-${index}-${Date.now()}`;
 
         items.push({
-            id: `city-${index}-${Date.now()}`,
+            id: cityItemId,
             type: 'city',
             title: city.name,
             startDateOffset: currentDayOffset,
@@ -812,8 +820,8 @@ const buildTripFromModelData = (
                     duration: activityDuration,
                     color: getActivityColorByTypes(activityTypes),
                     description: act.description || "",
-                    location: city.name,
-                    activityType: activityTypes
+                    activityType: activityTypes,
+                    ...buildModelActivityPlacementFields(act, { id: cityItemId, name: city.name }),
                 });
             });
         }

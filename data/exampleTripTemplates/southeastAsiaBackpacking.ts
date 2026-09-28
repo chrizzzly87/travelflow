@@ -1,5 +1,5 @@
 import { ITrip, ITimelineItem } from '../../types';
-import { validateTripSchema } from './_validation';
+import { instantiateTemplateItems, validateTripSchema } from './_validation';
 
 export const SOUTHEAST_ASIA_BACKPACKING_TEMPLATE: Partial<ITrip> = {
     title: 'Backpacking Southeast Asia',
@@ -37,6 +37,9 @@ export const SOUTHEAST_ASIA_BACKPACKING_TEMPLATE: Partial<ITrip> = {
             title: 'Ayutthaya Ruins Day Trip',
             startDateOffset: 1.7,
             duration: 0.8,
+            activityKind: 'day-trip',
+            stayCityId: 'city-bkk-start',
+            coordinates: { lat: 14.3532, lng: 100.5689 },
             color: 'bg-amber-100 border-amber-300 text-amber-900 dark:bg-amber-400/12 dark:text-amber-200 dark:border-amber-400/30',
             location: 'Ayutthaya, Thailand',
             activityType: ['culture', 'sightseeing'],
@@ -217,6 +220,9 @@ export const SOUTHEAST_ASIA_BACKPACKING_TEMPLATE: Partial<ITrip> = {
             title: 'Cu Chi Tunnels Tour',
             startDateOffset: 10.8,
             duration: 0.5,
+            activityKind: 'day-trip',
+            stayCityId: 'city-hcmc',
+            coordinates: { lat: 11.0624, lng: 106.5318 },
             color: 'bg-blue-100 border-blue-300 text-blue-900 dark:bg-blue-400/12 dark:text-blue-200 dark:border-blue-400/30',
             location: 'Cu Chi District, Ho Chi Minh City',
             activityType: ['culture', 'sightseeing'],
@@ -233,6 +239,9 @@ export const SOUTHEAST_ASIA_BACKPACKING_TEMPLATE: Partial<ITrip> = {
             title: 'Mekong Delta Day Trip',
             startDateOffset: 11.7,
             duration: 0.8,
+            activityKind: 'day-trip',
+            stayCityId: 'city-hcmc',
+            coordinates: { lat: 10.36, lng: 106.365 },
             color: 'bg-green-100 border-green-300 text-green-900 dark:bg-green-400/12 dark:text-green-200 dark:border-green-400/30',
             location: 'Mekong Delta, Vietnam',
             activityType: ['nature', 'food', 'culture'],
@@ -519,6 +528,9 @@ export const SOUTHEAST_ASIA_BACKPACKING_TEMPLATE: Partial<ITrip> = {
             title: 'Kuang Si Waterfall Day Trip',
             startDateOffset: 28.9,
             duration: 0.6,
+            activityKind: 'day-trip',
+            stayCityId: 'city-luang-prabang',
+            coordinates: { lat: 19.7497, lng: 101.9933 },
             color: 'bg-cyan-100 border-cyan-300 text-cyan-900 dark:bg-cyan-400/12 dark:text-cyan-200 dark:border-cyan-400/30',
             location: 'Kuang Si Falls, Luang Prabang',
             activityType: ['nature', 'relaxation'],
@@ -572,6 +584,9 @@ export const SOUTHEAST_ASIA_BACKPACKING_TEMPLATE: Partial<ITrip> = {
             title: 'Bua Tong Sticky Waterfall Day Trip',
             startDateOffset: 33.1,
             duration: 0.5,
+            activityKind: 'day-trip',
+            stayCityId: 'city-chiang-mai',
+            coordinates: { lat: 19.0578, lng: 99.0775 },
             color: 'bg-blue-100 border-blue-300 text-blue-900 dark:bg-blue-400/12 dark:text-blue-200 dark:border-blue-400/30',
             location: 'Bua Tong Waterfalls, Chiang Mai',
             activityType: ['nature', 'adventure'],
@@ -588,6 +603,9 @@ export const SOUTHEAST_ASIA_BACKPACKING_TEMPLATE: Partial<ITrip> = {
             title: 'Pai Day Trip',
             startDateOffset: 33.8,
             duration: 0.7,
+            activityKind: 'day-trip',
+            stayCityId: 'city-chiang-mai',
+            coordinates: { lat: 19.3589, lng: 98.4406 },
             color: 'bg-orange-100 border-orange-300 text-orange-900 dark:bg-orange-400/12 dark:text-orange-200 dark:border-orange-400/30',
             location: 'Pai, Mae Hong Son, Thailand',
             activityType: ['adventure', 'nature'],
@@ -631,11 +649,7 @@ export const createSoutheastAsiaBackpackingTrip = (startDateStr: string): ITrip 
         throw new Error(`Test Data Schema Error: ${validation.error}`);
     }
 
-    const items = SOUTHEAST_ASIA_BACKPACKING_TEMPLATE.items!.map((item) => ({
-        ...item,
-        id: `${item.id}-${uniqueSuffix}`,
-        hotels: item.hotels?.map((hotel) => ({ ...hotel, id: `${hotel.id}-${uniqueSuffix}` })),
-    })) as ITimelineItem[];
+    const items = instantiateTemplateItems(SOUTHEAST_ASIA_BACKPACKING_TEMPLATE.items!, uniqueSuffix);
 
     return {
         id: `trip-southeast-asia-backpacking-${uniqueSuffix}`,

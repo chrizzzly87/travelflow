@@ -1,5 +1,5 @@
 import { ITrip, ITimelineItem } from '../../types';
-import { validateTripSchema } from './_validation';
+import { instantiateTemplateItems, validateTripSchema } from './_validation';
 
 export const NEW_ZEALAND_TEMPLATE: Partial<ITrip> = {
     title: "South Island Wilderness",
@@ -269,11 +269,7 @@ export const createNewZealandTrip = (startDateStr: string): ITrip => {
         throw new Error(`Test Data Schema Error: ${validation.error}`);
     }
 
-    const items = NEW_ZEALAND_TEMPLATE.items!.map((item) => ({
-        ...item,
-        id: `${item.id}-${uniqueSuffix}`,
-        hotels: item.hotels?.map(h => ({ ...h, id: `${h.id}-${uniqueSuffix}` }))
-    })) as ITimelineItem[];
+    const items = instantiateTemplateItems(NEW_ZEALAND_TEMPLATE.items!, uniqueSuffix);
 
     return {
         id: `trip-new-zealand-${uniqueSuffix}`,

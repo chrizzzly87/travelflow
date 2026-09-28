@@ -484,6 +484,11 @@ export const buildMobileDayPlanSegments = (days: MobileDayPlanDay[]): MobileDayP
             // The day's first and last stay also take anything falling outside
             // every window, so nothing can drop off the plan.
             const activities = day.activities.filter((activity) => {
+                // An explicit stay wins when it is one of today's stays: a day
+                // trip on the departure morning belongs to the city being left.
+                if (activity.stayCityId && stays.some((candidate) => candidate.id === activity.stayCityId)) {
+                    return activity.stayCityId === stay.id;
+                }
                 const at = activity.startDateOffset;
                 if (at >= stay.startOffset - OFFSET_EPSILON && at < stay.endOffset - OFFSET_EPSILON) return true;
                 if (isFirst && at < stay.startOffset) return true;

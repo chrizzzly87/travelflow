@@ -27,6 +27,8 @@ import {
     remarkHeadsUpBanners,
 } from '../markdownPresentation';
 import { TodayBadge } from '../ui/today-badge';
+import { isDayTrip } from '../../shared/activityStay';
+import { DayTripBadge } from './DayTripBadge';
 
 interface TripTimelineListViewProps {
     trip: ITrip;
@@ -715,6 +717,9 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                                             <TodayBadge />
                                                                         )}
                                                                     </div>
+                                                                    {isDayTrip(activity.item) && (
+                                                                        <DayTripBadge destination={activity.item.location} className="mt-1.5" />
+                                                                    )}
                                                                     <p className={`mt-1 inline-flex cursor-pointer text-[17px] leading-7 underline-offset-4 decoration-2 transition-[color,text-decoration-color,translate] ${titleHoverShiftClass} group-hover:underline ${isSelected ? 'font-semibold text-accent-700 decoration-accent-400 dark:text-accent-200' : 'font-medium text-foreground decoration-slate-300'}`}>
                                                                         {activity.item.title}
                                                                     </p>

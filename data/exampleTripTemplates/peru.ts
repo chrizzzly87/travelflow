@@ -1,5 +1,5 @@
 import { ITrip, ITimelineItem } from '../../types';
-import { validateTripSchema } from './_validation';
+import { instantiateTemplateItems, validateTripSchema } from './_validation';
 
 export const PERU_TEMPLATE: Partial<ITrip> = {
     title: "Andes & Amazon Explorer",
@@ -73,6 +73,9 @@ export const PERU_TEMPLATE: Partial<ITrip> = {
             title: 'Rainbow Mountain Trek',
             startDateOffset: 4.5,
             duration: 1,
+            activityKind: 'day-trip',
+            stayCityId: 'city-cusco',
+            coordinates: { lat: -13.8694, lng: -71.3031 },
             color: 'bg-yellow-100 border-yellow-300 text-yellow-900 dark:bg-yellow-400/12 dark:text-yellow-200 dark:border-yellow-400/30',
             location: 'Vinicunca, Cusipata',
             activityType: ['hiking', 'nature'],
@@ -221,11 +224,7 @@ export const createPeruTrip = (startDateStr: string): ITrip => {
         throw new Error(`Test Data Schema Error: ${validation.error}`);
     }
 
-    const items = PERU_TEMPLATE.items!.map((item) => ({
-        ...item,
-        id: `${item.id}-${uniqueSuffix}`,
-        hotels: item.hotels?.map(h => ({ ...h, id: `${h.id}-${uniqueSuffix}` }))
-    })) as ITimelineItem[];
+    const items = instantiateTemplateItems(PERU_TEMPLATE.items!, uniqueSuffix);
 
     return {
         id: `trip-peru-${uniqueSuffix}`,

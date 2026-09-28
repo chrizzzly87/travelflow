@@ -504,6 +504,23 @@ export const validateModelData = (data: Record<string, unknown>, options: Valida
     errors.push("One or more travel segments have invalid city index values");
   }
 
+  // Day trips are optional and never block a run: preparation downgrades one
+  // without a usable destination position to an ordinary activity. The
+  // benchmark still reports how many came through and how many were lost.
+  const dayTripEntries = activities.filter((activity) => isRecord(activity) && hasOwn(activity, "isDayTrip"));
+  const dayTripCount = dayTripEntries.filter((activity) => (activity as Record<string, unknown>).isDayTrip === true).length;
+  const dayTripsDowngraded = dayTripEntries.length - dayTripCount;
+  const dayTripsPlaceable = dayTripEntries.every((activity) => {
+    const entry = activity as Record<string, unknown>;
+    if (entry.isDayTrip !== true) return true;
+    const lat = Number(entry.lat);
+    const lng = Number(entry.lng);
+    return hasText(entry.destination) && Number.isFinite(lat) && Number.isFinite(lng);
+  });
+  if (dayTripsDowngraded > 0) {
+    warnings.push(`${dayTripsDowngraded} day trip(s) had no usable destination position and were kept as ordinary activities`);
+  }
+
   const checks = {
     topLevelContractValid,
     cityCountValid,
@@ -522,6 +539,8 @@ export const validateModelData = (data: Record<string, unknown>, options: Valida
     travelDurationFormatValid: travelSegments.length === 0 ? true : travelDurationFormatValid,
     travelDurationCanonicalTypeValid: travelSegments.length === 0 ? true : travelDurationCanonicalTypeValid,
     travelSegmentIndicesValid: travelSegments.length === 0 ? true : travelSegmentIndicesValid,
+    dayTripsPlaceable,
+    dayTripCount,
     warningCount: warnings.length,
     validationWarnings: warnings,
   };
