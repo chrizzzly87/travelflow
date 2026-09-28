@@ -697,6 +697,28 @@
         "customNote": "La tua combinazione di impostazioni."
       }
     },
+    "activityPlan": {
+      "dialogTitle": "Aggiungi al piano",
+      "sectionLabel": "Soggiorno e giorno",
+      "kindLabel": "Cosa vuoi aggiungere?",
+      "kindActivity": "Attività",
+      "kindDayTrip": "Gita in giornata",
+      "stayLabel": "Soggiorno",
+      "stayPlaceholder": "Scegli un soggiorno",
+      "dayLabel": "Giorno",
+      "dayOption": "Giorno {day} · {date}",
+      "dayOptionShort": "Giorno {day}",
+      "destinationLabel": "Destinazione",
+      "destinationPlaceholder": "es. Sintra",
+      "routeHint": "Parte da {stay} e ci torna in giornata.",
+      "routeHintOther": "Parte da {stay} e termina la giornata a {returnStay}.",
+      "moreOptions": "Altre opzioni",
+      "returnLabel": "La giornata finisce a",
+      "returnSame": "{stay} (ritorno allo stesso soggiorno)",
+      "dayTripTitlePlaceholder": "es. Palazzi di Sintra",
+      "submitDayTrip": "Aggiungi gita",
+      "findingPlace": "Ricerca del luogo…"
+    },
     "timelineControls": {
       "horizontalDirection": "Timeline orizzontale",
       "verticalDirection": "Timeline verticale",
@@ -759,7 +781,6 @@
       "transportUndecided": "Trasporto da decidere",
       "transportMode": "Trasporto: {mode}",
       "addActivity": "Aggiungi attività",
-      "addActivityOn": "Aggiungi attività il {date}",
       "occupySpace": "Occupa lo spazio disponibile",
       "stretchToFill": "Allunga per riempire",
       "reverseSelectedCities": "Inverti le città selezionate"
@@ -956,7 +977,12 @@
     "revertToastTitle": "Modifica annullata",
     "redo": "Ripristina",
     "revertedHint": "Annullato — puoi rivederlo o ripristinarlo",
-    "reapplyUnavailable": "Questo gruppo non può essere applicato di nuovo qui."
+    "reapplyUnavailable": "Questo gruppo non può essere applicato di nuovo qui.",
+    "presetDayTrips": "Suggerisci gite in giornata dai miei soggiorni",
+    "presetDayTripFrom": "Suggerisci una gita in giornata da {city}",
+    "presetMakeDayTrip": "Trasforma {activity} in una gita in giornata",
+    "presetChangeDayTrip": "Modifica la gita {activity}",
+    "presetRemoveDayTrip": "Rimuovi la gita {activity}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "La memoria del dispositivo è piena",

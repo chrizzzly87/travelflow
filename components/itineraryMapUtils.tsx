@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react';
+import { resolveActivityStay } from '../shared/activityStay';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type mapboxgl from 'mapbox-gl';
@@ -946,17 +947,7 @@ type ResolvedActivityMarker = {
 const resolveActivityOwnerCity = (
     activity: ITimelineItem,
     cityItems: ITimelineItem[],
-): ITimelineItem | null => {
-    const directOwner = cityItems.find((city) => (
-        activity.startDateOffset >= city.startDateOffset
-        && activity.startDateOffset < city.startDateOffset + Math.max(city.duration, 0)
-    ));
-    if (directOwner) return directOwner;
-
-    const previousCity = [...cityItems].reverse().find((city) => city.startDateOffset <= activity.startDateOffset);
-    if (previousCity) return previousCity;
-    return cityItems[0] || null;
-};
+): ITimelineItem | null => resolveActivityStay(activity, cityItems);
 
 export const resolveActivityMarkerPositions = (
     items: ITimelineItem[],

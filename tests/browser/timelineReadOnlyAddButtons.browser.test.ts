@@ -48,7 +48,23 @@ describe('timeline add buttons on view-only trips', () => {
 
     expect(screen.getByRole('button', { name: 'Add city to end' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Add transfer' })).toBeEnabled();
-    expect(screen.getAllByRole('button', { name: /^Add activity for / }).length).toBeGreaterThan(0);
+    // One "+" for the whole activities lane, like cities and transfers — not one per day.
+    expect(screen.getAllByRole('button', { name: 'Add activity' })).toHaveLength(1);
+    expect(screen.queryAllByRole('button', { name: /^Add activity for / })).toHaveLength(0);
+  });
+
+  it('adds an activity on the selected stay\'s first day, or on day 1 without a selection', () => {
+    // Selecting a stay scrolls it into view, which jsdom does not implement.
+    Element.prototype.scrollTo = vi.fn() as unknown as typeof Element.prototype.scrollTo;
+    const onAddActivity = vi.fn();
+    const { unmount } = render(React.createElement(Timeline, { ...baseProps, onAddActivity, readOnly: false }));
+    screen.getByRole('button', { name: 'Add activity' }).click();
+    expect(onAddActivity).toHaveBeenLastCalledWith(0);
+    unmount();
+
+    render(React.createElement(Timeline, { ...baseProps, onAddActivity, selectedItemId: 'city-2', readOnly: false }));
+    screen.getByRole('button', { name: 'Add activity' }).click();
+    expect(onAddActivity).toHaveBeenLastCalledWith(3);
   });
 
   it('renders no add buttons at all in the horizontal timeline when read-only', () => {
@@ -56,7 +72,7 @@ describe('timeline add buttons on view-only trips', () => {
 
     expect(screen.queryByRole('button', { name: 'Add city to end' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add transfer' })).toBeNull();
-    expect(screen.queryAllByRole('button', { name: /^Add activity for / })).toHaveLength(0);
+    expect(screen.queryByRole('button', { name: 'Add activity' })).toBeNull();
   });
 
   it('renders no add buttons in the vertical timeline when read-only', () => {

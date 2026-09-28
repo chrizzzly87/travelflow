@@ -697,6 +697,28 @@
         "customNote": "Ваш собственный набор настроек."
       }
     },
+    "activityPlan": {
+      "dialogTitle": "Добавить в план",
+      "sectionLabel": "Остановка и день",
+      "kindLabel": "Что вы добавляете?",
+      "kindActivity": "Занятие",
+      "kindDayTrip": "Однодневная поездка",
+      "stayLabel": "Остановка",
+      "stayPlaceholder": "Выберите остановку",
+      "dayLabel": "День",
+      "dayOption": "День {day} · {date}",
+      "dayOptionShort": "День {day}",
+      "destinationLabel": "Куда",
+      "destinationPlaceholder": "например, Синтра",
+      "routeHint": "Отправление из {stay} и возвращение туда в тот же день.",
+      "routeHintOther": "Отправление из {stay}, день заканчивается в {returnStay}.",
+      "moreOptions": "Другие параметры",
+      "returnLabel": "День заканчивается в",
+      "returnSame": "{stay} (возвращение туда же)",
+      "dayTripTitlePlaceholder": "например, дворцы Синтры",
+      "submitDayTrip": "Добавить поездку",
+      "findingPlace": "Ищем место…"
+    },
     "timelineControls": {
       "horizontalDirection": "Горизонтальный таймлайн",
       "verticalDirection": "Вертикальный таймлайн",
@@ -759,7 +781,6 @@
       "transportUndecided": "Транспорт не выбран",
       "transportMode": "Транспорт: {mode}",
       "addActivity": "Добавить занятие",
-      "addActivityOn": "Добавить занятие на {date}",
       "occupySpace": "Занять свободное место",
       "stretchToFill": "Растянуть до соседей",
       "reverseSelectedCities": "Поменять выбранные города местами"
@@ -956,7 +977,12 @@
     "revertToastTitle": "Изменение отменено",
     "redo": "Вернуть",
     "revertedHint": "Отменено — можно посмотреть снова или вернуть",
-    "reapplyUnavailable": "Этот набор нельзя применить здесь повторно."
+    "reapplyUnavailable": "Этот набор нельзя применить здесь повторно.",
+    "presetDayTrips": "Предложи однодневные поездки из моих остановок",
+    "presetDayTripFrom": "Предложи однодневную поездку из {city}",
+    "presetMakeDayTrip": "Сделай {activity} однодневной поездкой",
+    "presetChangeDayTrip": "Измени поездку {activity}",
+    "presetRemoveDayTrip": "Удали поездку {activity}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Память устройства заполнена",

@@ -697,6 +697,28 @@
         "customNote": "Twoje własne połączenie ustawień."
       }
     },
+    "activityPlan": {
+      "dialogTitle": "Dodaj do planu",
+      "sectionLabel": "Pobyt i dzień",
+      "kindLabel": "Co chcesz dodać?",
+      "kindActivity": "Aktywność",
+      "kindDayTrip": "Wycieczka jednodniowa",
+      "stayLabel": "Pobyt",
+      "stayPlaceholder": "Wybierz pobyt",
+      "dayLabel": "Dzień",
+      "dayOption": "Dzień {day} · {date}",
+      "dayOptionShort": "Dzień {day}",
+      "destinationLabel": "Cel",
+      "destinationPlaceholder": "np. Sintra",
+      "routeHint": "Wyjazd z {stay} i powrót tego samego dnia.",
+      "routeHintOther": "Wyjazd z {stay}, dzień kończy się w {returnStay}.",
+      "moreOptions": "Więcej opcji",
+      "returnLabel": "Dzień kończy się w",
+      "returnSame": "{stay} (powrót do tego samego pobytu)",
+      "dayTripTitlePlaceholder": "np. Pałace Sintry",
+      "submitDayTrip": "Dodaj wycieczkę",
+      "findingPlace": "Szukamy miejsca…"
+    },
     "timelineControls": {
       "horizontalDirection": "Pozioma oś czasu",
       "verticalDirection": "Pionowa oś czasu",
@@ -759,7 +781,6 @@
       "transportUndecided": "Nie wybrano środka transportu",
       "transportMode": "Środek transportu: {mode}",
       "addActivity": "Dodaj aktywność",
-      "addActivityOn": "Dodaj aktywność na {date}",
       "occupySpace": "Zajmij wolne miejsce",
       "stretchToFill": "Rozciągnij do wypełnienia",
       "reverseSelectedCities": "Zamień kolejność wybranych miast"
@@ -956,7 +977,12 @@
     "revertToastTitle": "Zmiana cofnięta",
     "redo": "Ponów",
     "revertedHint": "Cofnięte — możesz przejrzeć lub ponowić",
-    "reapplyUnavailable": "Tego zestawu nie można tu zastosować ponownie."
+    "reapplyUnavailable": "Tego zestawu nie można tu zastosować ponownie.",
+    "presetDayTrips": "Zaproponuj jednodniowe wycieczki z moich pobytów",
+    "presetDayTripFrom": "Zaproponuj jednodniową wycieczkę z {city}",
+    "presetMakeDayTrip": "Zamień {activity} w wycieczkę jednodniową",
+    "presetChangeDayTrip": "Zmień wycieczkę {activity}",
+    "presetRemoveDayTrip": "Usuń wycieczkę {activity}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Pamięć urządzenia jest pełna",

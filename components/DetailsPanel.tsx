@@ -1,7 +1,9 @@
 import React, { Suspense, lazy, useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Trans, useTranslation } from 'react-i18next';
-import { ITimelineItem, TransportMode, ActivityType, IHotel, RouteMode, ICoordinates } from '../types';
+import { ITimelineItem, TransportMode, ActivityType, ActivityKind, IHotel, RouteMode, ICoordinates } from '../types';
+import { clampDayOffsetToStay, isDayTrip, resolveActivityStay, resolveDayTripReturnStay } from '../shared/activityStay';
+import { ActivityPlanFields } from './tripview/ActivityPlanFields';
 import { X, MapPin, Clock, Trash2, Hotel, Search, AlertTriangle, ExternalLink, Sparkles, RefreshCw, Maximize, Minimize, Minus, Plus, Palette, Pencil } from 'lucide-react';
 import { Button } from './ui/button';
 import type { CityNotesEnhancementMode } from '../services/aiService';
@@ -1145,15 +1147,16 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       const target = displayItem;
       if (!target || target.type !== 'activity') return;
 
-      const ownerCity = [...tripItems]
-          .filter((entry) => entry.type === 'city')
-          .sort((a, b) => a.startDateOffset - b.startDateOffset)
-          .reverse()
-          .find((entry) => entry.startDateOffset <= target.startDateOffset) || null;
+      const ownerCity = resolveActivityStay(target, tripItems.filter((entry) => entry.type === 'city'));
+      // A day trip's destination sits outside its stay, so the stay's name
+      // would only mislead the lookup; the country still disambiguates.
+      const targetIsDayTrip = isDayTrip(target);
 
       const input = {
-          item: target,
-          contextLabel: ownerCity?.title || ownerCity?.location,
+          item: targetIsDayTrip ? { ...target, title: target.location || target.title } : target,
+          contextLabel: targetIsDayTrip
+              ? (ownerCity?.countryName || undefined)
+              : (ownerCity?.title || ownerCity?.location),
           bias: ownerCity?.coordinates ?? null,
           language: getStoredAppLanguage(),
       };
@@ -1324,6 +1327,47 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const displayedActivityLocation = isActivity && isActivityLocationEditorOpen
       ? (activityLocationInputValue || activityLocationDraft?.location || displayItem.location || '')
       : (displayItem.location || '');
+  // Stay, day and day-trip settings. Each edit also stamps `stayCityId`, so an
+  // older activity gains its explicit stay the first time someone touches it,
+  // never merely by being viewed.
+  const planStays = isActivity
+      ? tripItems.filter((entry) => entry.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset)
+      : [];
+  const planStay = isActivity ? resolveActivityStay(displayItem, planStays) : null;
+  const planKind: ActivityKind = isDayTrip(displayItem) ? 'day-trip' : 'activity';
+  const planReturnStay = planKind === 'day-trip' ? resolveDayTripReturnStay(displayItem, planStays) : null;
+  const planTimeOfDay = displayItem.startDateOffset - Math.floor(displayItem.startDateOffset);
+  const updateActivityPlan = (updates: Partial<ITimelineItem>, label: string) => {
+      if (!canEdit) return;
+      applyItemChanges([{
+          id: displayItem.id,
+          updates: { ...(planStay ? { stayCityId: planStay.id } : {}), ...updates },
+      }], { label });
+  };
+  const handlePlanKindChange = (kind: ActivityKind) => {
+      if (kind === 'day-trip') {
+          updateActivityPlan({ activityKind: 'day-trip' }, `Data: Made "${displayItem.title}" a day trip`);
+          return;
+      }
+      updateActivityPlan({ activityKind: undefined, dayTripReturnCityId: undefined }, `Data: Made "${displayItem.title}" a regular activity`);
+  };
+  const handlePlanStayChange = (stayId: string) => {
+      const nextStay = planStays.find((entry) => entry.id === stayId);
+      if (!nextStay) return;
+      updateActivityPlan({
+          stayCityId: stayId,
+          startDateOffset: Math.max(nextStay.startDateOffset, clampDayOffsetToStay(displayItem.startDateOffset, nextStay) + planTimeOfDay),
+          ...(displayItem.dayTripReturnCityId === stayId ? { dayTripReturnCityId: undefined } : {}),
+      }, `Data: Moved "${displayItem.title}" to ${nextStay.title}`);
+  };
+  const handlePlanDayChange = (dayOffset: number) => {
+      const startDateOffset = planStay ? Math.max(planStay.startDateOffset, dayOffset + planTimeOfDay) : dayOffset + planTimeOfDay;
+      updateActivityPlan({ startDateOffset }, `Data: Moved "${displayItem.title}" to day ${dayOffset + 1}`);
+  };
+  const handlePlanReturnStayChange = (stayId: string | null) => {
+      updateActivityPlan({ dayTripReturnCityId: stayId ?? undefined }, `Data: Changed where "${displayItem.title}" ends`);
+  };
+
   const activityLocationBaseline = activityLocationBaselineRef.current;
   const trimmedActivityLocationInput = (activityLocationDraft?.location || activityLocationInputValue).trim();
   const hasActivityLocationDraftChanges = !!(
@@ -1616,6 +1660,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                             ? (displayedActivityLocation || 'No location set')
                                             : displayItem.location}
                                 </span>
+                                {isActivity && isDayTrip(displayItem) && (
+                                    <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                                        {t('tripView.activityPlan.destinationLabel')}
+                                    </span>
+                                )}
                                 {isCity && (
                                     <button type="button"
                                         onClick={openCityEditor}
@@ -1670,6 +1719,29 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
 
           {/* Body */}
           <div className="p-4 sm:p-6 space-y-6 flex-1 overflow-y-auto min-w-0">
+             {isActivity && planStays.length > 0 && (
+                <section
+                    aria-label={t('tripView.activityPlan.sectionLabel')}
+                    className="bg-card rounded-2xl p-5 shadow-sm border border-border dark:shadow-none"
+                >
+                    <ActivityPlanFields
+                        stays={planStays}
+                        tripStartDate={tripStartDate}
+                        kind={planKind}
+                        stayId={planStay?.id ?? null}
+                        dayOffset={Math.floor(displayItem.startDateOffset)}
+                        destination={displayItem.location || ''}
+                        returnStayId={planReturnStay && planReturnStay.id !== planStay?.id ? planReturnStay.id : null}
+                        onKindChange={handlePlanKindChange}
+                        onStayChange={handlePlanStayChange}
+                        onDayChange={handlePlanDayChange}
+                        onDestinationChange={() => undefined}
+                        onReturnStayChange={handlePlanReturnStayChange}
+                        showDestinationInput={false}
+                        disabled={!canEdit}
+                    />
+                </section>
+             )}
              {isActivity && isDurationEditorOpen && (
                 <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4 dark:shadow-none">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">

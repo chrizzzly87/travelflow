@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { ITrip, ITimelineItem } from '../types';
 import { ACTIVITY_TYPE_VALUES } from './activityTypes.ts';
 import { TRANSPORT_MODE_VALUES } from './transportModes.ts';
+import { resolveExplicitActivityStay } from './activityStay.ts';
 
 export const TRIP_AGENT_SCHEMA_VERSION = 1 as const;
 
@@ -41,6 +42,12 @@ const timelineItemSchema = z.object({
     link: z.string().url().max(2_000).optional(),
     location: z.string().trim().max(500).optional(),
     coordinates: coordinatesSchema.optional(),
+    // Resolver provenance. Stored items carry these, and the whole trip is
+    // re-parsed after every apply, so leaving them out fails any agent edit on
+    // a trip whose activities were ever located.
+    coordinatesSource: z.enum(['ai', 'agent', 'places', 'user']).optional(),
+    coordinatesQuery: z.string().max(500).optional(),
+    placeId: z.string().trim().max(300).optional(),
     imageUrl: z.string().url().max(2_000).optional(),
     cost: z.string().trim().max(240).optional(),
     countryCode: z.string().trim().max(8).optional(),
@@ -51,6 +58,9 @@ const timelineItemSchema = z.object({
     isApproved: z.boolean().optional(),
     transportMode: z.enum(TRANSPORT_MODE_VALUES).optional(),
     activityType: z.array(z.enum(ACTIVITY_TYPE_VALUES)).max(ACTIVITY_TYPE_VALUES.length).optional(),
+    activityKind: z.enum(['activity', 'day-trip']).optional(),
+    stayCityId: z.string().trim().min(1).max(160).optional(),
+    dayTripReturnCityId: z.string().trim().min(1).max(160).optional(),
     aiInsights: z.object({
         cost: z.string().max(240),
         bestTime: z.string().max(500),
@@ -465,15 +475,19 @@ export const buildTripAgentContextRefs = (
 
 export const buildTripAgentSelectableContextRefs = (trip: ITrip): TripAgentContextRef[] => {
     const cities = trip.items.filter((item) => item.type === 'city');
-    const owningCity = (item: ITimelineItem): ITimelineItem | undefined => cities.find((city) => (
-        item.id === city.id
-        || (item.startDateOffset >= city.startDateOffset
-            && item.startDateOffset < city.startDateOffset + city.duration)
+    const owningCity = (item: ITimelineItem): ITimelineItem | undefined => {
+        if (item.type === 'city') return item;
+        if (item.type === 'activity') return resolveExplicitActivityStay(item, cities) ?? undefined;
+        return undefined;
+    };
+    const owningCityByWindow = (item: ITimelineItem): ITimelineItem | undefined => cities.find((city) => (
+        item.startDateOffset >= city.startDateOffset
+        && item.startDateOffset < city.startDateOffset + city.duration
     ));
     const itemRefs = trip.items
         .filter((item) => item.type !== 'travel-empty')
         .map((item) => {
-            const city = owningCity(item);
+            const city = owningCity(item) ?? owningCityByWindow(item);
             return {
                 kind: item.type === 'city' ? 'city' as const : item.type === 'activity' ? 'activity' as const : 'travel' as const,
                 id: item.id,

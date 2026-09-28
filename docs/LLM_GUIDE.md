@@ -45,6 +45,7 @@ This doc is a compact, structured overview of the app to help future agents make
 - City items carry `coordinates`, `color`, `duration`, `startDateOffset`.
 - Travel items carry `transportMode`, `duration`, `startDateOffset`.
 - Activities have `activityType`, `startDateOffset`, `duration`.
+- Activities belong to a stay via `stayCityId` (resolve with `shared/activityStay.ts`). A day trip is an activity with `activityKind: 'day-trip'` whose `location`/`coordinates` are the destination; see `docs/ACTIVITIES_AND_DAY_TRIPS.md`.
 
 **URL Persistence (Important)**
 - Always persist view state changes in the URL via `compressTrip(trip, viewSettings)` in `App.tsx`.

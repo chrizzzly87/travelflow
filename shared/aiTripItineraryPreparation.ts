@@ -132,13 +132,86 @@ const validateCountryInfo = (value: unknown, errors: string[]): Record<string, u
   return value;
 };
 
+const coerceNumber = (value: unknown): number | null => {
+  if (isStrictNumber(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value.trim());
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
+const DEFAULT_DAY_TRIP_DURATION_DAYS = 0.5;
+
+/**
+ * Day trips are a bonus, never a reason to fail or repair a whole trip: a
+ * malformed one is dropped, and one without a usable position becomes an
+ * ordinary activity in its stay. Valid ones join `activities` carrying
+ * `isDayTrip`, `destination`, `lat` and `lng` for the item builder.
+ */
+export const prepareDayTrips = (
+  value: unknown,
+  cities: Array<{ days: unknown; name?: unknown }>,
+): Array<Record<string, unknown>> => {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (!isRecord(entry)) return [];
+    const cityIndex = coerceNumber(entry.cityIndex);
+    if (cityIndex === null || !Number.isInteger(cityIndex) || cityIndex < 0 || cityIndex >= cities.length) return [];
+    const cityDays = Number(cities[cityIndex].days);
+    if (!Number.isFinite(cityDays) || cityDays <= 0) return [];
+    const rawOffset = coerceNumber(entry.dayOffsetInCity) ?? 0;
+    const dayOffsetInCity = Math.min(Math.max(0, Math.floor(rawOffset)), Math.max(0, Math.ceil(cityDays) - 1));
+    const rawDuration = coerceNumber(entry.duration) ?? DEFAULT_DAY_TRIP_DURATION_DAYS;
+    const duration = Math.min(Math.max(0.125, rawDuration), 1, cityDays - dayOffsetInCity);
+    if (!(duration > 0)) return [];
+    const destination = hasText(entry.destination) ? entry.destination.trim() : "";
+    const title = hasText(entry.title) ? entry.title.trim() : (destination ? `Day trip to ${destination}` : "");
+    if (!title) return [];
+    const lat = coerceNumber(entry.lat);
+    const lng = coerceNumber(entry.lng);
+    const hasPosition = lat !== null && lng !== null && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180
+      && !(lat === 0 && lng === 0);
+    const activityTypes = Array.isArray(entry.activityTypes)
+      ? entry.activityTypes.filter((type): type is string => (
+        hasText(type)
+        && TRIP_ITINERARY_ACTIVITY_TYPE_VALUES.includes(type as (typeof TRIP_ITINERARY_ACTIVITY_TYPE_VALUES)[number])
+      )).slice(0, 3)
+      : [];
+    const description = (hasText(entry.description)
+      ? entry.description.trim().split("\n")[0]
+      : (destination ? `Day trip to ${destination}` : title)).slice(0, 90);
+    return [{
+      title,
+      cityIndex,
+      dayOffsetInCity,
+      duration,
+      description,
+      activityTypes: activityTypes.length > 0 ? activityTypes : ["sightseeing"],
+      isDayTrip: hasPosition && Boolean(destination),
+      destination: destination || null,
+      lat: hasPosition ? lat : null,
+      lng: hasPosition ? lng : null,
+    }];
+  });
+};
+
 export const prepareTripItineraryModelData = (
   draft: Record<string, unknown>,
   options: TripItineraryPreparationOptions = {},
 ): TripItineraryPreparationResult => {
   const errors: string[] = [];
   const minimumRecommendations = options.minimumRecommendations ?? 3;
-  hasExactKeys(draft, ["tripTitle", "countryInfo", "cities", "travelSegments", "activities"], "root", errors);
+  // `dayTrips` is optional: older prompts, cached drafts and repair passes do
+  // not produce it, and a trip without day trips is still a complete trip.
+  hasExactKeys(
+    draft,
+    "dayTrips" in draft
+      ? ["tripTitle", "countryInfo", "cities", "travelSegments", "activities", "dayTrips"]
+      : ["tripTitle", "countryInfo", "cities", "travelSegments", "activities"],
+    "root",
+    errors,
+  );
   if (!hasText(draft.tripTitle) || draft.tripTitle.length > 80) errors.push("tripTitle must be a non-empty string up to 80 characters");
   if (!Array.isArray(draft.cities)) errors.push("cities must be an array");
   const rawCities = Array.isArray(draft.cities) ? draft.cities : [];
@@ -265,12 +338,14 @@ export const prepareTripItineraryModelData = (
   const countryInfo = validateCountryInfo(draft.countryInfo, errors);
   if (errors.length > 0 || !countryInfo) return { ok: false, errors };
 
+  const dayTripActivities = prepareDayTrips(draft.dayTrips, cities);
+
   const data: Record<string, unknown> = {
     tripTitle: String(draft.tripTitle).trim(),
     countryInfo,
     cities,
     travelSegments,
-    activities,
+    activities: [...activities, ...dayTripActivities],
   };
   return {
     ok: true,

@@ -697,6 +697,28 @@
         "customNote": "Your own mix of settings."
       }
     },
+    "activityPlan": {
+      "dialogTitle": "Add to your plan",
+      "sectionLabel": "Stay and day",
+      "kindLabel": "What are you adding?",
+      "kindActivity": "Activity",
+      "kindDayTrip": "Day trip",
+      "stayLabel": "Stay",
+      "stayPlaceholder": "Choose a stay",
+      "dayLabel": "Day",
+      "dayOption": "Day {day} · {date}",
+      "dayOptionShort": "Day {day}",
+      "destinationLabel": "Destination",
+      "destinationPlaceholder": "e.g. Sintra",
+      "routeHint": "Leaves from {stay} and returns there the same day.",
+      "routeHintOther": "Leaves from {stay} and ends the day in {returnStay}.",
+      "moreOptions": "More options",
+      "returnLabel": "Day ends in",
+      "returnSame": "{stay} (back to the same stay)",
+      "dayTripTitlePlaceholder": "e.g. Palaces of Sintra",
+      "submitDayTrip": "Add day trip",
+      "findingPlace": "Finding the place…"
+    },
     "timelineControls": {
       "horizontalDirection": "Horizontal timeline direction",
       "verticalDirection": "Vertical timeline direction",
@@ -759,7 +781,6 @@
       "transportUndecided": "Transport not decided",
       "transportMode": "Transport: {mode}",
       "addActivity": "Add activity",
-      "addActivityOn": "Add activity for {date}",
       "occupySpace": "Occupy available space",
       "stretchToFill": "Stretch to fill space",
       "reverseSelectedCities": "Reverse selected cities"
@@ -956,7 +977,12 @@
     "revertToastTitle": "Change reverted",
     "redo": "Redo",
     "revertedHint": "Reverted — you can review or redo it",
-    "reapplyUnavailable": "This set cannot be applied again here."
+    "reapplyUnavailable": "This set cannot be applied again here.",
+    "presetDayTrips": "Suggest day trips from my stays",
+    "presetDayTripFrom": "Suggest a day trip from {city}",
+    "presetMakeDayTrip": "Turn {activity} into a day trip",
+    "presetChangeDayTrip": "Change the day trip {activity}",
+    "presetRemoveDayTrip": "Remove the day trip {activity}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Device storage is full",

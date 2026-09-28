@@ -6,6 +6,7 @@ This repository uses markdown release files as the source of truth for product u
 - Follow `docs/UPDATE_FORMAT.md` for all release entries.
 - Follow `docs/UX_COPY_GUIDELINES.md` for any user-facing text changes (marketing pages, CTA copy, planner microcopy).
 - Follow `docs/I18N_PAGE_WORKFLOW.md` for locale/translation/namespace changes.
+- Follow `docs/ACTIVITIES_AND_DAY_TRIPS.md` for any change to activity placement, day trips, the add-activity dialog, the map's activity layers, trip generation schemas, the Trip Agent item schema, or example trips. Resolve an activity's stay only through `shared/activityStay.ts`, and add every new `ITimelineItem` field to the Trip Agent's strict `timelineItemSchema` as well.
 - Follow `docs/MAPS_INTEGRATION_WORKFLOW.md` for all new or updated map surfaces (planner, profile/admin cards, blog/marketing).
 - Keep route slugs English-only for canonical URLs. Do not add localized slug aliases or compatibility redirects (for example `/impressum`) unless a dedicated issue explicitly requests it. Locale support is prefix-only (`/{locale}/...`) on top of English slugs.
 - Treat `lib/legal/cookies.config.ts` as the single source of truth for browser persistence disclosures (cookies + localStorage + sessionStorage). Any new/changed/removed storage key must be updated there and reflected by the legal cookie policy page.

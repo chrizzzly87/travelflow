@@ -1,5 +1,6 @@
 import { parseFlexibleDurationDays, parseFlexibleDurationHours } from "../../shared/durationParsing.ts";
 import { parseAiTripCityLocation } from "../../shared/aiTripCityLocation.ts";
+import { buildModelActivityPlacementFields } from "../../shared/aiTripActivityPlacement.ts";
 import { normalizeTransportMode } from "../../shared/transportModes.ts";
 import {
   BENCHMARK_ACTIVITY_TYPES as ACTIVITY_TYPES,
@@ -581,9 +582,10 @@ const buildTripFromModelData = (
   parsedCities.forEach((city, index) => {
     cityOffsets[index] = currentDayOffset;
     cityDurations[index] = city.days;
+    const cityItemId = `city-${index}-${Date.now()}`;
 
     items.push({
-      id: `city-${index}-${Date.now()}`,
+      id: cityItemId,
       type: "city",
       title: city.name,
       startDateOffset: currentDayOffset,
@@ -621,8 +623,8 @@ const buildTripFromModelData = (
           duration: activityDuration,
           color: getActivityColor(activityTypes),
           description: String(typed.description || ""),
-          location: city.name,
           activityType: activityTypes,
+          ...buildModelActivityPlacementFields(typed, { id: cityItemId, name: city.name }),
         });
       });
     }

@@ -697,6 +697,28 @@
         "customNote": "직접 조합한 설정입니다."
       }
     },
+    "activityPlan": {
+      "dialogTitle": "일정에 추가",
+      "sectionLabel": "숙박지와 날짜",
+      "kindLabel": "무엇을 추가할까요?",
+      "kindActivity": "활동",
+      "kindDayTrip": "당일치기 여행",
+      "stayLabel": "숙박지",
+      "stayPlaceholder": "숙박지 선택",
+      "dayLabel": "날짜",
+      "dayOption": "{day}일차 · {date}",
+      "dayOptionShort": "{day}일차",
+      "destinationLabel": "목적지",
+      "destinationPlaceholder": "예: 신트라",
+      "routeHint": "{stay}에서 출발해 같은 날 돌아옵니다.",
+      "routeHintOther": "{stay}에서 출발해 {returnStay}에서 하루를 마칩니다.",
+      "moreOptions": "추가 옵션",
+      "returnLabel": "하루가 끝나는 곳",
+      "returnSame": "{stay} (같은 숙박지로 복귀)",
+      "dayTripTitlePlaceholder": "예: 신트라의 궁전들",
+      "submitDayTrip": "당일치기 추가",
+      "findingPlace": "장소를 찾는 중…"
+    },
     "timelineControls": {
       "horizontalDirection": "가로 타임라인",
       "verticalDirection": "세로 타임라인",
@@ -759,7 +781,6 @@
       "transportUndecided": "이동 수단 미정",
       "transportMode": "이동 수단: {mode}",
       "addActivity": "액티비티 추가",
-      "addActivityOn": "{date}에 액티비티 추가",
       "occupySpace": "빈 공간 채우기",
       "stretchToFill": "빈 곳까지 늘리기",
       "reverseSelectedCities": "선택한 도시 순서 뒤집기"
@@ -956,7 +977,12 @@
     "revertToastTitle": "변경 되돌림",
     "redo": "다시 실행",
     "revertedHint": "되돌림 — 다시 검토하거나 되돌릴 수 있습니다",
-    "reapplyUnavailable": "이 묶음은 여기서 다시 적용할 수 없습니다."
+    "reapplyUnavailable": "이 묶음은 여기서 다시 적용할 수 없습니다.",
+    "presetDayTrips": "내 숙박지에서 갈 당일치기 여행 추천",
+    "presetDayTripFrom": "{city}에서 갈 당일치기 여행 추천",
+    "presetMakeDayTrip": "{activity}을(를) 당일치기 여행으로 바꾸기",
+    "presetChangeDayTrip": "당일치기 여행 {activity} 변경",
+    "presetRemoveDayTrip": "당일치기 여행 {activity} 삭제"
   },
   "storageNotice": {
     "tripsPrunedTitle": "기기 저장 공간이 가득 찼습니다",

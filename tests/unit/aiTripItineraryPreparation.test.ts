@@ -160,3 +160,69 @@ describe('prepareTripItineraryModelData', () => {
     expect((result.value.data.travelSegments as Array<Record<string, unknown>>)[0].description).toBe('2h Train');
   });
 });
+
+describe('day trips from the model', () => {
+  const nara = {
+    title: 'Deer park and Todai-ji',
+    cityIndex: 1,
+    dayOffsetInCity: 1,
+    duration: 0.5,
+    destination: 'Nara',
+    lat: 34.6851,
+    lng: 135.8048,
+    description: 'Temples and tame deer, back in Kyoto for dinner.',
+    activityTypes: ['culture', 'sightseeing'],
+  };
+
+  it('still accepts a draft without dayTrips', () => {
+    expect(prepareTripItineraryModelData(buildDraft()).ok).toBe(true);
+  });
+
+  it('joins valid day trips to the activities of their base stay', () => {
+    const result = prepareTripItineraryModelData({ ...buildDraft(), dayTrips: [nara] });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const activities = result.value.data.activities as Array<Record<string, unknown>>;
+    expect(activities).toHaveLength(2);
+    expect(activities[1]).toMatchObject({
+      title: 'Deer park and Todai-ji',
+      cityIndex: 1,
+      dayOffsetInCity: 1,
+      isDayTrip: true,
+      destination: 'Nara',
+      lat: 34.6851,
+      lng: 135.8048,
+    });
+  });
+
+  it('coerces numeric strings and clamps a day trip into its stay instead of failing the trip', () => {
+    const result = prepareTripItineraryModelData({
+      ...buildDraft(),
+      dayTrips: [{ ...nara, cityIndex: '1', dayOffsetInCity: '7', duration: '3', lat: '34.6851', lng: '135.8048' }],
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const dayTrip = (result.value.data.activities as Array<Record<string, unknown>>)[1];
+    expect(dayTrip).toMatchObject({ cityIndex: 1, dayOffsetInCity: 2, duration: 1, isDayTrip: true, lat: 34.6851 });
+  });
+
+  it('keeps a day trip without a usable position as an ordinary activity', () => {
+    const result = prepareTripItineraryModelData({ ...buildDraft(), dayTrips: [{ ...nara, lat: 0, lng: 0 }] });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const dayTrip = (result.value.data.activities as Array<Record<string, unknown>>)[1];
+    expect(dayTrip.isDayTrip).toBe(false);
+    expect(dayTrip.lat).toBeNull();
+  });
+
+  it('drops day trips that point at a stop that does not exist', () => {
+    const result = prepareTripItineraryModelData({ ...buildDraft(), dayTrips: [{ ...nara, cityIndex: 9 }, 'junk'] });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.data.activities as unknown[]).toHaveLength(1);
+  });
+});

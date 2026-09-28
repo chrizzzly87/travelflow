@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
+import { buildDayTripMarkerHtml, buildTripMapDayTripDescriptors, collectDayTripMarkerIds, isDayTripRoundTrip } from './maps/tripMapDayTripModel';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Button } from './ui/button';
 import type mapboxgl from 'mapbox-gl';
@@ -1022,6 +1023,7 @@ type ResolvedActivityMarker = {
 
 const resolveActivityMarkerPositions = (
     items: ITimelineItem[],
+    skipActivityIds: ReadonlySet<string> = new Set(),
 ): ResolvedActivityMarker[] => {
     const cityItems = items
         .filter((item): item is ITimelineItem => item.type === 'city' && isFiniteLatLngLiteral(item.coordinates))
@@ -1042,6 +1044,8 @@ const resolveActivityMarkerPositions = (
         endDayOffset: number;
     }> = [];
     for (const activity of activities) {
+        // Day trips with a destination get their own pin and route.
+        if (skipActivityIds.has(activity.id)) continue;
         const activityCoordinates = isFiniteLatLngLiteral(activity.coordinates) ? activity.coordinates : null;
         const ownerCity = activityCoordinates ? null : resolveActivityOwnerCity(activity, cityItems);
         const baseCoordinates = activityCoordinates || ownerCity?.coordinates || null;
@@ -1988,7 +1992,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             .join('||');
         const activitySignature = items.reduce<string[]>((parts, item) => {
             if (item.type === 'activity') {
-                parts.push(`${item.id}|${item.startDateOffset}|${item.duration}|${item.coordinates?.lat},${item.coordinates?.lng}`);
+                parts.push(`${item.id}|${item.startDateOffset}|${item.duration}|${item.coordinates?.lat},${item.coordinates?.lng}|${item.activityKind ?? ''}|${item.stayCityId ?? ''}|${item.dayTripReturnCityId ?? ''}|${item.activityKind === 'day-trip' ? (item.location ?? '') : ''}`);
             }
             return parts;
         }, []).join('||');
@@ -2342,7 +2346,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             return { outerOutline, outline, main };
         };
 
-        const drawRoutePath = (path: google.maps.LatLngLiteral[], color: string, weight = 3) => {
+        const drawRoutePath = (
+            path: google.maps.LatLngLiteral[],
+            color: string,
+            weight = 3,
+            options?: { dashed?: boolean; arrows?: boolean },
+        ) => {
             if (!isEffectActive()) return null;
             // The traveller's thickness multiplier rides on top of the render
             // profile's own scale rather than replacing it, so a dense map still
@@ -2367,11 +2376,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 strokeWeight: Math.max(1.2, weight * routeScale),
                 scale: 2.2,
             };
+            const isDashed = options?.dashed ?? dashedRoutes;
+            const withArrows = options?.arrows ?? showRouteArrows;
             const routeIcons: google.maps.IconSequence[] = [];
-            if (dashedRoutes) {
+            if (isDashed) {
                 routeIcons.push({ icon: dashSymbol as any, offset: '0', repeat: '14px' });
             }
-            if (showRouteArrows) {
+            if (withArrows) {
                 routeIcons.push(
                     { icon: arrowIcon, offset: '25%' },
                     { icon: arrowIcon, offset: '75%' },
@@ -2382,7 +2393,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 path,
                 geodesic: true,
                 strokeColor: color,
-                strokeOpacity: dashedRoutes ? 0 : 0.7,
+                strokeOpacity: isDashed ? 0 : 0.7,
                 strokeWeight: Math.max(1.2, weight * routeScale),
                 clickable: false,
                 icons: routeIcons.length > 0 ? routeIcons : undefined,
@@ -2569,7 +2580,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 isEnabled: activityMarkersEnabledRef.current,
                 zoom: resolvedZoomLevel,
             });
-            const activityMarkers = resolveActivityMarkerPositions(items);
+            const dayTripDescriptors = buildTripMapDayTripDescriptors(items);
+            const activityMarkers = resolveActivityMarkerPositions(items, collectDayTripMarkerIds(dayTripDescriptors));
             activityMarkers.forEach((activityMarker) => {
                 if (!isEffectActive()) return;
                 const isSelected = activityMarker.id === selectedActivityId;
@@ -2607,6 +2619,44 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     isVisible: shouldAttachActivityMarkers,
                 });
                 activityMarkerPositionByIdRef.current.set(activityMarker.id, activityMarker.position);
+            });
+
+            // Day trips: a dashed loop from the stay to the destination and
+            // back, plus a pin that stays visible at every zoom level. Drawn
+            // straight (no directions lookup) — it shows where the day goes,
+            // not the road there.
+            dayTripDescriptors.forEach((dayTrip) => {
+                if (!isEffectActive()) return;
+                const color = resolveMapColor(dayTrip.stayColor);
+                drawRoutePath(dayTrip.outboundPath, color, 2.4, { dashed: true, arrows: false });
+                if (!isDayTripRoundTrip(dayTrip)) {
+                    drawRoutePath(dayTrip.returnPath, color, 2.4, { dashed: true, arrows: false });
+                }
+                const isSelected = dayTrip.id === selectedActivityId;
+                const marker = createOverlayMarker({
+                    position: dayTrip.destination,
+                    html: dimIfPast(
+                        buildDayTripMarkerHtml({
+                            label: dayTrip.destinationLabel,
+                            color,
+                            size: effectiveMarkerRenderProfile.activity.size + 6,
+                            isSelected,
+                            selectedOutlineColor: resolveCssColorVar('--tf-accent-500', '#2563eb'),
+                            showLabel: showCityNames,
+                        }),
+                        dayTrip.endDayOffset,
+                    ),
+                    zIndex: isSelected ? ACTIVITY_MARKER_SELECTED_Z_INDEX : ACTIVITY_MARKER_Z_INDEX,
+                    clickable: true,
+                    onClick: () => {
+                        onActivityMarkerSelectRef.current?.(dayTrip.id);
+                        setPopupActivityId(dayTrip.id);
+                    },
+                    tooltipText: dayTrip.title,
+                    markerDomId: `activity:${dayTrip.id}`,
+                });
+                markersRef.current.push(marker);
+                activityMarkerPositionByIdRef.current.set(dayTrip.id, dayTrip.destination);
             });
         }
 
