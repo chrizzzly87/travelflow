@@ -16,9 +16,9 @@ const trip = {
 describe('buildTripAgentExamples', () => {
   it('names the first stop as an @mention when nothing is selected', () => {
     const examples = buildTripAgentExamples({ t, trip, contextRefs: [] });
-    expect(examples.map((example) => example.key)).toEqual(['pace', 'stays', 'route', 'dayTrip', 'review']);
-    expect(examples[0].prompt).toBe('examples.pace.prompt|@Tokyo');
-    expect(examples[2].prompt).toBe('examples.route.prompt');
+    expect(examples.map((example) => example.key)).toEqual(['activities', 'food', 'stays', 'dayTrip', 'review']);
+    expect(examples[0].prompt).toBe('examples.activities.prompt|@Tokyo');
+    expect(examples[4].prompt).toBe('examples.review.prompt');
   });
 
   it('prefers the city selected in the planner', () => {
@@ -32,6 +32,6 @@ describe('buildTripAgentExamples', () => {
 
   it('offers only trip-wide examples for a trip without stops', () => {
     const examples = buildTripAgentExamples({ t, trip: { items: [] } as never, contextRefs: [] });
-    expect(examples.map((example) => example.key)).toEqual(['route', 'review']);
+    expect(examples.map((example) => example.key)).toEqual(['review']);
   });
 });

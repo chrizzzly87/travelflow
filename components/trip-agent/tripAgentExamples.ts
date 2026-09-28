@@ -3,7 +3,7 @@ import type { TFunction } from 'i18next';
 import type { TripAgentContextRef } from '../../shared/tripAgent';
 import type { ITrip } from '../../types';
 
-export type TripAgentExampleKey = 'pace' | 'stays' | 'route' | 'dayTrip' | 'review';
+export type TripAgentExampleKey = 'activities' | 'food' | 'stays' | 'dayTrip' | 'review';
 
 export interface TripAgentExample {
     key: TripAgentExampleKey;
@@ -13,9 +13,14 @@ export interface TripAgentExample {
     prompt: string;
 }
 
-/** Examples that name a stop, so they show how an @mention narrows a request. */
-const CITY_EXAMPLES: TripAgentExampleKey[] = ['pace', 'stays', 'dayTrip'];
-const TRIP_EXAMPLES: TripAgentExampleKey[] = ['route', 'review'];
+/**
+ * Most useful first. The planner already builds a sensible route, so the
+ * examples lean towards filling it (things to do, food, stays, day trips)
+ * rather than reworking it. Those name a stop, which shows how an @mention
+ * narrows a request.
+ */
+const CITY_EXAMPLES: TripAgentExampleKey[] = ['activities', 'food', 'stays', 'dayTrip'];
+const TRIP_EXAMPLES: TripAgentExampleKey[] = ['review'];
 
 /**
  * Starting points for the empty chat, written into the prompt instead of sent,
@@ -34,9 +39,7 @@ export const buildTripAgentExamples = ({
     const selectedCity = contextRefs.find((contextRef) => contextRef.kind === 'city')?.label;
     const firstCity = trip.items.find((item) => item.type === 'city')?.title;
     const city = (selectedCity || firstCity || '').trim();
-    const keys: TripAgentExampleKey[] = city
-        ? ['pace', 'stays', 'route', 'dayTrip', 'review']
-        : TRIP_EXAMPLES;
+    const keys: TripAgentExampleKey[] = city ? [...CITY_EXAMPLES, ...TRIP_EXAMPLES] : TRIP_EXAMPLES;
     return keys.map((key) => ({
         key,
         label: t(`examples.${key}.label`),

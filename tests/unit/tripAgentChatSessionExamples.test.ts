@@ -74,17 +74,17 @@ afterEach(() => {
 
 const field = () => screen.getByPlaceholderText('placeholder') as HTMLTextAreaElement;
 
-const insertPaceExample = async () => {
+const insertActivitiesExample = async () => {
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: 'examples.pace.label' }));
+    fireEvent.click(screen.getByRole('button', { name: 'examples.activities.label' }));
   });
 };
 
 describe('TripAgentChatSession examples', () => {
   it('writes an example into the prompt instead of sending it, and explains how to adapt it', async () => {
     renderSession();
-    await insertPaceExample();
-    expect(field().value).toBe('examples.pace.prompt|@Kyoto');
+    await insertActivitiesExample();
+    expect(field().value).toBe('examples.activities.prompt|@Kyoto');
     expect(sendMessageMock).not.toHaveBeenCalled();
     expect(screen.getByText('exampleHint')).toBeTruthy();
     expect(field().getAttribute('aria-describedby')).toBe('trip-agent-example-hint');
@@ -94,7 +94,7 @@ describe('TripAgentChatSession examples', () => {
 
   it('opens the swap list for the example stop straight away, and swaps it from the keyboard', async () => {
     renderSession();
-    await insertPaceExample();
+    await insertActivitiesExample();
     expect(field().getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByRole('listbox')).toBeTruthy();
     const options = screen.getAllByRole('option').map((option) => option.textContent);
@@ -111,14 +111,14 @@ describe('TripAgentChatSession examples', () => {
     await act(async () => {
       fireEvent.keyDown(field(), { key: 'Enter' });
     });
-    expect(field().value).toBe('examples.pace.prompt|@Osaka');
+    expect(field().value).toBe('examples.activities.prompt|@Osaka');
     expect(screen.queryByRole('listbox')).toBeNull();
     expect(sendMessageMock).not.toHaveBeenCalled();
   });
 
   it('reopens the swap list when a highlighted stop is clicked, or with Alt+ArrowDown on it', async () => {
     renderSession();
-    await insertPaceExample();
+    await insertActivitiesExample();
     await act(async () => {
       fireEvent.keyDown(field(), { key: 'Escape' });
     });
@@ -154,19 +154,37 @@ describe('TripAgentChatSession examples', () => {
         onQuotaMayHaveChanged: vi.fn(),
         onAdoptCommittedTripVersion: vi.fn(),
       })));
-    await insertPaceExample();
+    await insertActivitiesExample();
     await act(async () => {
       fireEvent.keyDown(field(), { key: 'Escape' });
     });
     expect(outerKeyDown).not.toHaveBeenCalled();
   });
 
-  it('shows what a pill will write in a tooltip', async () => {
+  it('selects a whole stop on the first Backspace after it, and removes it on the second', async () => {
     renderSession();
+    await insertActivitiesExample();
     await act(async () => {
-      fireEvent.focus(screen.getByRole('button', { name: 'examples.route.label' }));
+      fireEvent.keyDown(field(), { key: 'Escape' });
     });
-    expect((await screen.findAllByText('exampleTooltip')).length).toBeGreaterThan(0);
+    const text = field().value;
+    const end = text.indexOf('@Kyoto') + '@Kyoto'.length;
+    field().setSelectionRange(end, end);
+    await act(async () => {
+      fireEvent.keyDown(field(), { key: 'Backspace' });
+    });
+    expect([field().selectionStart, field().selectionEnd]).toEqual([end - '@Kyoto'.length, end]);
+    expect(field().value).toBe(text);
+    await act(async () => {
+      fireEvent.keyDown(field(), { key: 'Backspace' });
+    });
+    expect(field().value).toBe(text.replace('@Kyoto ', '').replace('@Kyoto', ''));
+    expect(field().value).not.toContain('  ');
+  });
+
+  it('describes what a pill will write through the app tooltip layer', () => {
+    renderSession();
+    expect(screen.getByRole('button', { name: 'examples.review.label' }).getAttribute('data-tooltip')).toBe('exampleTooltip');
   });
 
   it('introduces the agent only on a trip without chats', () => {

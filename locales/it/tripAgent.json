@@ -18,17 +18,17 @@
   "removeContext": "Rimuovi {label} da questo messaggio",
   "examplesLabel": "Esempi",
   "examples": {
-    "pace": {
-      "label": "Rallentare il ritmo",
-      "prompt": "Rendi più rilassanti i giorni a {city}: meno visite al giorno e più tempo libero."
+    "activities": {
+      "label": "Proporre attività",
+      "prompt": "Proponi attività divertenti a {city} in linea con i miei interessi e il mio tempo libero."
+    },
+    "food": {
+      "label": "Trovare buon cibo",
+      "prompt": "Consiglia posti dove mangiare a {city}, dallo street food a una cena speciale."
     },
     "stays": {
       "label": "Trovare alloggi",
       "prompt": "Suggerisci alloggi a {city} in tre fasce di prezzo, vicino a ciò che voglio vedere."
-    },
-    "route": {
-      "label": "Ridurre gli spostamenti",
-      "prompt": "Riordina le mie tappe per ridurre i tempi di viaggio e segnala i giorni troppo pieni."
     },
     "dayTrip": {
       "label": "Pianificare una gita",

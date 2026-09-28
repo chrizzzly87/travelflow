@@ -18,17 +18,17 @@
   "removeContext": "이 메시지에서 {label} 삭제",
   "examplesLabel": "예시",
   "examples": {
-    "pace": {
-      "label": "일정 여유 있게",
-      "prompt": "{city}에서의 일정을 더 여유 있게 해 줘. 하루에 볼거리는 줄이고 자유 시간은 늘려 줘."
+    "activities": {
+      "label": "즐길 거리 추천",
+      "prompt": "{city}에서 내 관심사와 자유 시간에 맞는 즐길 거리를 추천해 줘."
+    },
+    "food": {
+      "label": "맛집 찾기",
+      "prompt": "{city}에서 길거리 음식부터 특별한 저녁까지 현지 맛집을 추천해 줘."
     },
     "stays": {
       "label": "숙소 찾기",
       "prompt": "{city}에서 보고 싶은 곳과 가까운 숙소를 세 가지 가격대로 추천해 줘."
-    },
-    "route": {
-      "label": "이동 시간 줄이기",
-      "prompt": "이동 시간이 줄도록 경유지 순서를 바꾸고, 너무 빡빡한 날을 알려 줘."
     },
     "dayTrip": {
       "label": "당일치기 계획",

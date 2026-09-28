@@ -13,7 +13,7 @@ import {
     RotateCcw,
     Sparkles,
 } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ITrip } from '../../types';
 import {
@@ -43,7 +43,7 @@ import {
     PromptInputFooter,
     PromptInputSubmit,
 } from '../ai-elements/prompt-input';
-import { Suggestion, Suggestions } from '../ai-elements/suggestion';
+import { Suggestions } from '../ai-elements/suggestion';
 import { Source } from '../ai-elements/sources';
 import { TripAgentActivityGroup } from './TripAgentActivityGroup';
 import { TripAgentCapabilities } from './TripAgentCapabilities';
@@ -58,7 +58,7 @@ import { TripAgentPromptField } from './TripAgentPromptField';
 import {
     ambiguousMentionLabels,
     findTripAgentMentions,
-    insertMention,
+    insertMentionAt,
     mentionedContextRefs,
     type TripAgentMentionSpan,
 } from './tripAgentMentions';
@@ -73,7 +73,6 @@ import {
 import { formatTripAgentTimestamp } from './tripAgentTime';
 import { useMinuteTick } from './useMinuteTick';
 import { Button } from '../ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import type { TripAgentPanelProps } from './tripAgentPanelTypes';
 import { isDayTrip } from '../../shared/activityStay';
 import { buildTripAgentDayTripPresets } from './tripAgentDayTripPresets';
@@ -440,6 +439,18 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
     // is, a hint says how to change it.
     const [isExampleDraft, setIsExampleDraft] = useState(false);
     // The mention whose swap list is open; only meaningful while the list is.
+    // Where the caret was at the last edit, so a picked stop lands there.
+    const draftCaretRef = useRef<number | null>(null);
+    // A caret to place once a programmatic edit is in the field. Setting a
+    // controlled value moves the caret to the end, so it is restored in a
+    // layout effect, after the new value is committed and before paint.
+    const pendingCaretRef = useRef<number | null>(null);
+    useLayoutEffect(() => {
+        const caret = pendingCaretRef.current;
+        if (caret === null) return;
+        pendingCaretRef.current = null;
+        textareaRef.current?.setSelectionRange(caret, caret);
+    }, [draftText]);
     const [swapTarget, setSwapTarget] = useState<{ start: number; end: number; label: string } | null>(null);
     const isGenerating = status === 'submitted' || status === 'streaming';
     const lastMessage = messages.at(-1);
@@ -502,6 +513,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
 
     const applyExample = (example: TripAgentExample) => {
         setDraftText(example.prompt);
+        draftCaretRef.current = example.prompt.length;
         setIsExampleDraft(true);
         trackEvent('trip_agent__example--insert', { trip_id: trip.id, example: example.key });
         // The example's stop is the part most worth changing, so its list
@@ -510,21 +522,19 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
             .find((span) => span.contextRef);
         if (firstMention) openSwap(firstMention, 'example');
         else setCommandMenu(null);
-        requestAnimationFrame(() => {
-            const element = textareaRef.current;
-            if (!element) return;
-            element.focus();
-            const caret = firstMention ? firstMention.end : element.value.length;
-            element.setSelectionRange(caret, caret);
-        });
+        pendingCaretRef.current = firstMention ? firstMention.end : example.prompt.length;
+        textareaRef.current?.focus();
     };
 
-    const updateDraft = (value: string) => {
+    const updateDraft = (value: string, caret = value.length) => {
         setDraftText(value);
+        draftCaretRef.current = caret;
         // Any edit moves the text under a swap target, so the swap ends.
         setSwapTarget(null);
         if (!value.trim()) setIsExampleDraft(false);
-        const mention = /(?:^|\s)@([^\s]*)$/.exec(value);
+        // Only what is typed right before the caret opens the @ list, so it
+        // also works in the middle of a sentence.
+        const mention = /(?:^|\s)@([^\s]*)$/.exec(value.slice(0, caret));
         const command = /^\s*\/([^\s]*)$/.exec(value);
         if (mention) openMenu('context', mention[1]);
         else if (command) openMenu('commands', command[1]);
@@ -543,6 +553,8 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
             setCommandMenu(null);
             return;
         }
+        // The @ button adds at the caret the field had, not at the end.
+        draftCaretRef.current = textareaRef.current?.selectionStart ?? draftText.length;
         openMenu(mode);
         focusPrompt();
     };
@@ -553,11 +565,13 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
             // Swap the mention in place and leave the caret right after it.
             const replacement = `@${contextRef.label}`;
             setDraftText((current) => `${current.slice(0, target.start)}${replacement}${current.slice(target.end)}`);
-            const caret = target.start + replacement.length;
-            requestAnimationFrame(() => textareaRef.current?.setSelectionRange(caret, caret));
+            pendingCaretRef.current = target.start + replacement.length;
             trackEvent('trip_agent__mention--swap', { trip_id: trip.id, context_kind: contextRef.kind });
         } else {
-            setDraftText((current) => insertMention(current, contextRef.label));
+            const next = insertMentionAt(draftText, draftCaretRef.current ?? draftText.length, contextRef.label);
+            pendingCaretRef.current = next.caret;
+            setDraftText(next.value);
+            draftCaretRef.current = next.caret;
         }
         setSwapTarget(null);
         setCommandMenu(null);
@@ -768,26 +782,24 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                         {t('exampleHint')}
                     </p>
                 ) : messages.length === 0 && (
-                    <TooltipProvider delayDuration={400}>
-                        <Suggestions className="mb-2 gap-1.5" aria-label={t('examplesLabel')}>
-                            {examples.map((example) => (
-                                <Tooltip key={example.key}>
-                                    <TooltipTrigger asChild>
-                                        <Suggestion
-                                            suggestion={example.label}
-                                            onClick={() => applyExample(example)}
-                                            className="h-7 px-3 text-xs font-normal text-muted-foreground hover:text-foreground"
-                                            {...getAnalyticsDebugAttributes('trip_agent__example--insert', { trip_id: trip.id, example: example.key })}
-                                        />
-                                    </TooltipTrigger>
-                                    {/* Above the panel (1650), below app dialogs (1700). */}
-                                    <TooltipContent side="top" sideOffset={6} className="z-[1660] max-w-64 text-start">
-                                        {t('exampleTooltip', { prompt: example.prompt })}
-                                    </TooltipContent>
-                                </Tooltip>
-                            ))}
-                        </Suggestions>
-                    </TooltipProvider>
+                    <Suggestions className="mb-2 gap-1.5" aria-label={t('examplesLabel')}>
+                        {examples.map((example) => (
+                            // The app-wide tooltip layer reads data-tooltip. Radix
+                            // Tooltip never opens under preact/compat.
+                            <Button
+                                key={example.key}
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => applyExample(example)}
+                                data-tooltip={t('exampleTooltip', { prompt: example.prompt })}
+                                className="h-7 cursor-pointer rounded-full px-3 text-xs font-normal text-muted-foreground hover:text-foreground"
+                                {...getAnalyticsDebugAttributes('trip_agent__example--insert', { trip_id: trip.id, example: example.key })}
+                            >
+                                {example.label}
+                            </Button>
+                        ))}
+                    </Suggestions>
                 )}
                 {selectionOnlyRefs.length > 0 && (
                     <p className="mb-1.5 truncate px-1 text-[11px] text-muted-foreground">

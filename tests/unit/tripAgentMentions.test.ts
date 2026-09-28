@@ -4,6 +4,7 @@ import {
     ambiguousMentionLabels,
     findTripAgentMentions,
     insertMention,
+    insertMentionAt,
     mentionedContextRefs,
 } from '../../components/trip-agent/tripAgentMentions';
 import { groupTripAgentChanges, selectedOperationIdsForGroups } from '../../components/trip-agent/tripAgentChangeGroups';
@@ -118,5 +119,21 @@ describe('groupTripAgentChanges', () => {
 
         expect(groups).toHaveLength(1);
         expect(groups[0].subjectId).toBe('city-taipei');
+    });
+});
+
+describe('insertMentionAt', () => {
+    it('completes an @query typed in the middle of a sentence', () => {
+        const text = 'Stays in @Tai in three ranges';
+        const caret = text.indexOf(' in three');
+        expect(insertMentionAt(text, caret, 'Tainan')).toEqual({
+            value: 'Stays in @Tainan in three ranges',
+            caret: 'Stays in @Tainan '.length,
+        });
+    });
+
+    it('adds a mention at the caret with a single space around it', () => {
+        expect(insertMentionAt('Stays in  for me', 9, 'Taipei').value).toBe('Stays in @Taipei for me');
+        expect(insertMentionAt('', 0, 'Taipei')).toEqual({ value: '@Taipei ', caret: 8 });
     });
 });
