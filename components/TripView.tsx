@@ -180,12 +180,13 @@ const TripHistoryModal = lazyWithRecovery('TripHistoryModal', () =>
 );
 
 import { readTripAgentOpenState, writeTripAgentOpenState } from './trip-agent/tripAgentPanelState';
+// Eager on purpose: the panel frame is small and must open on the click. The
+// chat inside it is its own chunk, warmed by the launcher.
+import { TripAgentPanel } from './trip-agent/TripAgentPanel';
+import { loadTripAgentChatSessionModule, prefetchTripAgent } from './trip-agent/tripAgentPrefetch';
 
 const TRIP_AGENT_PANEL_INSET_PX = 444;
 
-const TripAgentPanel = lazyWithRecovery('TripAgentPanel', () =>
-    import('./trip-agent/TripAgentPanel').then((module) => ({ default: module.TripAgentPanel }))
-);
 
 let tripInfoModalModulePromise: Promise<{ default: React.ComponentType<any> }> | null = null;
 
@@ -3369,9 +3370,31 @@ const useTripViewRender = ({
             });
             return;
         }
+        prefetchTripAgent(trip.id, { ensureThread: true });
         setIsTripAgentOpen(true);
         writeTripAgentOpenState(true);
     }, [isTripAgentLocked, location.hash, location.pathname, location.search, openLoginModal, trip.id, tripAgentContextRefs.length]);
+    // Hover, focus and press all come before the click, so the chat chunk and
+    // the trip's chat are usually on their way by the time the panel opens.
+    const warmTripAgent = useCallback(() => {
+        if (isTripAgentLocked) return;
+        prefetchTripAgent(trip.id);
+    }, [isTripAgentLocked, trip.id]);
+    // Fetch the chat chunk while the page is idle. The chat itself is not
+    // loaded ahead of an intent: that request touches the database.
+    useEffect(() => {
+        if (!isTripAgentRolledOut || isTripAgentLocked || isTripAgentOpen) return;
+        if (typeof window === 'undefined') return;
+        const warm = () => {
+            void loadTripAgentChatSessionModule().catch(() => undefined);
+        };
+        if (typeof window.requestIdleCallback === 'function') {
+            const handle = window.requestIdleCallback(warm, { timeout: 5000 });
+            return () => window.cancelIdleCallback(handle);
+        }
+        const timer = window.setTimeout(warm, 2500);
+        return () => window.clearTimeout(timer);
+    }, [isTripAgentLocked, isTripAgentOpen, isTripAgentRolledOut]);
     const handleTripCalendarExport = useCallback((
         scope: TripCalendarExportScope,
         source: 'details_panel' | 'trip_info_modal' | 'print_view',
@@ -3732,6 +3755,9 @@ const useTripViewRender = ({
                         <button
                             type="button"
                             onClick={openTripAgent}
+                            onPointerEnter={warmTripAgent}
+                            onPointerDown={warmTripAgent}
+                            onFocus={warmTripAgent}
                             className={`fixed ${TRIP_AGENT_LAUNCHER_POSITION_CLASS} z-[1490] inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 text-sm font-semibold text-foreground shadow-lg transition hover:border-border hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:shadow-none`}
                             aria-label={t('tripAgent.title')}
                             {...getAnalyticsDebugAttributes('trip_agent__launcher--open', { trip_id: trip.id })}
@@ -3753,42 +3779,40 @@ const useTripViewRender = ({
                         </div>
                     )}
                     {isTripAgentRolledOut && isTripAgentOpen && onAdoptAgentTripVersion && (
-                        <Suspense fallback={null}>
-                            <TripAgentPanel
-                                trip={agentCanonicalTrip || trip}
-                                contextRefs={tripAgentContextRefs}
-                                isOpen={isTripAgentOpen}
-                                onClose={() => {
-                                    setIsTripAgentOpen(false);
-                                    writeTripAgentOpenState(false);
-                                }}
-                                onAdoptCommittedTripVersion={(input) => {
-                                    onAdoptAgentTripVersion?.(input);
-                                    onAgentTripChanged?.();
-                                }}
-                                onPreviewTrip={onAgentPreviewTrip}
-                                onRevertAgentChange={({ trip: previousTrip, redoTrip, label, redoLabel, changeSetId }) => {
-                                    // Not an undo: history also holds view changes, so
-                                    // stepping back would revert whatever happened last
-                                    // rather than this change set. The snapshot from
-                                    // before the apply is restored as a new version.
-                                    adoptAgentTrip(previousTrip, label, changeSetId);
-                                    showToast(t('tripAgent.revertToast'), {
-                                        tone: 'neutral',
-                                        title: t('tripAgent.revertToastTitle'),
-                                        iconVariant: 'undo',
-                                        disableDefaultUndo: true,
-                                        action: {
-                                            label: t('tripAgent.redo'),
-                                            onClick: () => adoptAgentTrip(redoTrip, redoLabel, changeSetId),
-                                        },
-                                    });
-                                }}
-                                onReapplyAgentChange={({ trip: nextTrip, label, changeSetId }) => {
-                                    adoptAgentTrip(nextTrip, label, changeSetId);
-                                }}
-                            />
-                        </Suspense>
+                        <TripAgentPanel
+                            trip={agentCanonicalTrip || trip}
+                            contextRefs={tripAgentContextRefs}
+                            isOpen={isTripAgentOpen}
+                            onClose={() => {
+                                setIsTripAgentOpen(false);
+                                writeTripAgentOpenState(false);
+                            }}
+                            onAdoptCommittedTripVersion={(input) => {
+                                onAdoptAgentTripVersion?.(input);
+                                onAgentTripChanged?.();
+                            }}
+                            onPreviewTrip={onAgentPreviewTrip}
+                            onRevertAgentChange={({ trip: previousTrip, redoTrip, label, redoLabel, changeSetId }) => {
+                                // Not an undo: history also holds view changes, so
+                                // stepping back would revert whatever happened last
+                                // rather than this change set. The snapshot from
+                                // before the apply is restored as a new version.
+                                adoptAgentTrip(previousTrip, label, changeSetId);
+                                showToast(t('tripAgent.revertToast'), {
+                                    tone: 'neutral',
+                                    title: t('tripAgent.revertToastTitle'),
+                                    iconVariant: 'undo',
+                                    disableDefaultUndo: true,
+                                    action: {
+                                        label: t('tripAgent.redo'),
+                                        onClick: () => adoptAgentTrip(redoTrip, redoLabel, changeSetId),
+                                    },
+                                });
+                            }}
+                            onReapplyAgentChange={({ trip: nextTrip, label, changeSetId }) => {
+                                adoptAgentTrip(nextTrip, label, changeSetId);
+                            }}
+                        />
                     )}
                     {isDiscoverOpen && (
                         <Suspense fallback={null}>

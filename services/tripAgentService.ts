@@ -100,9 +100,15 @@ export const readTripAgentError = (error: unknown): TripAgentErrorInfo => {
 
 export const tripAgentFetch = authenticatedFetch;
 
-export const loadTripAgentBootstrap = async (tripId: string, threadId?: string | null): Promise<TripAgentBootstrap> => {
+export const loadTripAgentBootstrap = async (
+    tripId: string,
+    threadId?: string | null,
+    options: { ensureThread?: boolean } = {},
+): Promise<TripAgentBootstrap> => {
     const params = new URLSearchParams({ tripId });
     if (threadId) params.set('threadId', threadId);
+    // Lets a trip without a chat get one in the same round trip.
+    if (options.ensureThread) params.set('ensureThread', '1');
     const response = await authenticatedFetch(`/api/trip-agent?${params.toString()}`);
     return response.json() as Promise<TripAgentBootstrap>;
 };

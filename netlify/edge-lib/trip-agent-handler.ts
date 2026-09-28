@@ -163,6 +163,27 @@ const readShareToken = (request: Request): string | null => {
   return param && param.length <= 200 ? param : null;
 };
 
+/**
+ * Picks the thread a bootstrap opens: the one asked for, else the newest
+ * active one. With `ensureThread`, a trip without an active chat gets one
+ * here, so opening the panel costs one round trip instead of three.
+ */
+export const resolveBootstrapThread = async <TThread extends { id: string; status: string }>(input: {
+  threads: TThread[];
+  requestedThreadId: string | null;
+  ensureThread: boolean;
+  createThread: () => Promise<TThread>;
+}): Promise<{ threads: TThread[]; currentThread: TThread | undefined }> => {
+  const { threads, requestedThreadId, ensureThread, createThread } = input;
+  if (requestedThreadId) {
+    return { threads, currentThread: threads.find((thread) => thread.id === requestedThreadId) };
+  }
+  const active = threads.find((thread) => thread.status === 'active');
+  if (active || !ensureThread) return { threads, currentThread: active };
+  const created = await createThread();
+  return { threads: [created, ...threads], currentThread: created };
+};
+
 export default async (request: Request) => {
   const startedAt = Date.now();
   const shareToken = readShareToken(request);
@@ -178,10 +199,13 @@ export default async (request: Request) => {
       const requestedThreadId = url.searchParams.get('threadId');
       logContext = { action: 'bootstrap', tripId, threadId: requestedThreadId || undefined };
       await loadEditableTrip(tripId, actor.userId, shareToken);
-      const threads = await listTripAgentThreads(tripId);
-      const currentThread = requestedThreadId
-        ? threads.find((thread) => thread.id === requestedThreadId)
-        : threads.find((thread) => thread.status === 'active');
+      const listedThreads = await listTripAgentThreads(tripId);
+      const { threads, currentThread } = await resolveBootstrapThread({
+        threads: listedThreads,
+        requestedThreadId,
+        ensureThread: url.searchParams.get('ensureThread') === '1',
+        createThread: () => createTripAgentThread(tripId, actor.userId),
+      });
       if (currentThread) {
         const aborted = await abortStaleTripAgentStreams(currentThread.id).catch(() => 0);
         if (aborted > 0) {
