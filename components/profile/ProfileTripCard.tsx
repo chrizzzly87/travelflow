@@ -25,6 +25,8 @@ import {
   getTripCityItems,
   getTripCityStops,
 } from './tripPreviewUtils';
+import { buildTripLaneDayTripMarks } from '../../shared/dayTripPreview';
+import { TripLaneDayTripMarks } from './TripLaneDayTripMarks';
 
 interface ProfileTripCardLabels {
   open: string;
@@ -168,14 +170,16 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
     [trip.id]
   );
 
-  const cityLanes = React.useMemo(() => (
-    cityItems.map((item, index) => ({
+  const cityLanes = React.useMemo(() => {
+    const dayTripMarks = buildTripLaneDayTripMarks(trip.items);
+    return cityItems.map((item, index) => ({
       id: item.id,
       title: item.title || item.location || 'City stop',
       color: item.color || DEFAULT_LANE_COLORS[index % DEFAULT_LANE_COLORS.length],
       nights: Math.max(1, Math.ceil(Number.isFinite(item.duration) ? item.duration : 1)),
-    }))
-  ), [cityItems]);
+      dayTrips: dayTripMarks.get(item.id) || [],
+    }));
+  }, [cityItems, trip.items]);
 
   const routeLanes = React.useMemo(() => (
     cityItems.reduce<Array<{ id: string; durationDays: number; color: string }>>((lanes, item, index) => {
@@ -357,6 +361,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
                         color: buildLaneOutlineColor(cityLane.color),
                       }}
                     />
+                    <TripLaneDayTripMarks marks={cityLane.dayTrips} color={cityLane.color} />
                   </span>
                   {routeLane && (
                     <span

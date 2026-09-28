@@ -789,7 +789,7 @@ export const exampleTripCards: ExampleTripCard[] = [
     id: 'japan-spring',
     title: 'Cherry Blossom Trail',
     countries: [{ name: 'Japan', flag: '🇯🇵' }],
-    durationDays: 14,
+    durationDays: 16,
     cityCount: 5,
     mapColor: 'bg-rose-100 dark:bg-rose-400/15',
     mapAccent: 'bg-rose-400',
