@@ -781,7 +781,6 @@
       "transportUndecided": "이동 수단 미정",
       "transportMode": "이동 수단: {mode}",
       "addActivity": "액티비티 추가",
-      "addActivityOn": "{date}에 액티비티 추가",
       "occupySpace": "빈 공간 채우기",
       "stretchToFill": "빈 곳까지 늘리기",
       "reverseSelectedCities": "선택한 도시 순서 뒤집기"

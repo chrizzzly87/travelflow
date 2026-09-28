@@ -781,7 +781,6 @@
       "transportUndecided": "Trasporto da decidere",
       "transportMode": "Trasporto: {mode}",
       "addActivity": "Aggiungi attività",
-      "addActivityOn": "Aggiungi attività il {date}",
       "occupySpace": "Occupa lo spazio disponibile",
       "stretchToFill": "Allunga per riempire",
       "reverseSelectedCities": "Inverti le città selezionate"

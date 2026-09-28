@@ -1,6 +1,6 @@
 ---
 id: rel-2026-09-27-activities-day-trips
-version: v0.194.0
+version: v0.197.0
 title: "Day trips, and activities that know their stay"
 date: 2026-09-27
 published_at: 2026-09-27T12:00:00Z

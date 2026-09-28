@@ -781,7 +781,6 @@
       "transportUndecided": "Транспорт не выбран",
       "transportMode": "Транспорт: {mode}",
       "addActivity": "Добавить занятие",
-      "addActivityOn": "Добавить занятие на {date}",
       "occupySpace": "Занять свободное место",
       "stretchToFill": "Растянуть до соседей",
       "reverseSelectedCities": "Поменять выбранные города местами"

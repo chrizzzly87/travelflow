@@ -779,7 +779,6 @@
       "transportUndecided": "سواری طے نہیں",
       "transportMode": "سواری: {mode}",
       "addActivity": "سرگرمی شامل کریں",
-      "addActivityOn": "{date} کے لیے سرگرمی شامل کریں",
       "occupySpace": "دستیاب جگہ بھریں",
       "stretchToFill": "خالی جگہ تک پھیلائیں",
       "reverseSelectedCities": "منتخب شہروں کی ترتیب الٹیں"

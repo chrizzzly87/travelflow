@@ -779,7 +779,6 @@
       "transportUndecided": "وسیله سفر مشخص نشده",
       "transportMode": "وسیله سفر: {mode}",
       "addActivity": "افزودن فعالیت",
-      "addActivityOn": "افزودن فعالیت برای {date}",
       "occupySpace": "پر کردن فضای خالی",
       "stretchToFill": "کشیدن تا پر شدن فاصله",
       "reverseSelectedCities": "معکوس کردن شهرهای انتخاب‌شده"
