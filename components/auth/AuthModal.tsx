@@ -27,7 +27,7 @@ import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { getAuthRequestTimeoutMs, getAuthRestoreTimeoutMs } from '../../services/networkStatus';
 import { normalizeAppLanguage } from '../../utils';
-import { SocialProviderIcon } from './SocialProviderIcon';
+import { getOAuthButtons, SocialLoginButton } from './SocialLoginButton';
 import { SegmentedControl } from '../ui/segmented-control';
 
 type AuthMode = 'login' | 'register';
@@ -41,38 +41,6 @@ interface AuthModalProps {
     reloadOnSuccess: boolean;
     onClose: (reason: CloseReason) => void;
 }
-
-interface OAuthButtonConfig {
-    provider: OAuthProviderId;
-    labelKey: string;
-    buttonClassName: string;
-}
-
-const BASE_OAUTH_BUTTONS: OAuthButtonConfig[] = [
-    {
-        provider: 'google',
-        labelKey: 'actions.oauthGoogle',
-        buttonClassName: 'hover:border-[#ea4335]/40 hover:bg-[#fff7f7] dark:hover:bg-[#ea4335]/12 dark:hover:border-[#ea4335]/50',
-    },
-    {
-        provider: 'facebook',
-        labelKey: 'actions.oauthFacebook',
-        buttonClassName: 'hover:border-[#1877f2]/40 hover:bg-[#f3f8ff] dark:hover:bg-[#1877f2]/14 dark:hover:border-[#1877f2]/50',
-    },
-];
-
-const KAKAO_OAUTH_BUTTON: OAuthButtonConfig = {
-    provider: 'kakao',
-    labelKey: 'actions.oauthKakao',
-    buttonClassName: 'hover:border-[#FFE812]/60 hover:bg-[#fffde6] dark:hover:bg-[#FFE812]/12 dark:hover:border-[#FFE812]/50',
-};
-
-const getOAuthButtons = (language: string): OAuthButtonConfig[] => {
-    if (normalizeAppLanguage(language) === 'ko') {
-        return [KAKAO_OAUTH_BUTTON, ...BASE_OAUTH_BUTTONS];
-    }
-    return BASE_OAUTH_BUTTONS;
-};
 
 const normalizeErrorCode = (error: unknown): string => {
     if (!error || typeof error !== 'object') return 'default';
@@ -791,25 +759,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 {oauthButtons.map((item) => {
                                     const isLastUsed = lastUsedProvider === item.provider;
                                     return (
-                                        <button
+                                        <SocialLoginButton
                                             key={item.provider}
-                                            type="button"
-                                            onClick={() => void handleOAuthLogin(item.provider)}
+                                            provider={item.provider}
+                                            label={t(item.labelKey)}
+                                            lastUsedLabel={t('copy.lastUsedTag')}
+                                            isLastUsed={isLastUsed}
                                             disabled={isSubmitting || isRestoreBlocked || !isOnline}
-                                            className={`relative inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                                                isLastUsed
-                                                    ? 'border-slate-400 bg-card dark:border-border dark:bg-card'
-                                                    : 'border-border bg-card dark:border-border dark:bg-card'
-                                            } ${item.buttonClassName}`}
-                                        >
-                                            <SocialProviderIcon provider={item.provider} size={18} />
-                                            <span>{t(item.labelKey)}</span>
-                                            {isLastUsed && (
-                                                <span className="pointer-events-none absolute -top-2 right-3 rounded-2xl border border-border bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground shadow-sm dark:border-border dark:bg-secondary dark:text-muted-foreground dark:shadow-none">
-                                                    {t('copy.lastUsedTag')}
-                                                </span>
-                                            )}
-                                        </button>
+                                            onClick={() => void handleOAuthLogin(item.provider)}
+                                        />
                                     );
                                 })}
                             </div>

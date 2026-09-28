@@ -272,6 +272,7 @@ was the light one, a disabled control turned bright grey, pressed toggles lost `
 | `soft` | Tinted accent action, quieter than `default` ("Ask AI", "Add activity"). |
 | `toggle` | Segmented controls. Pressed styling comes from `aria-pressed="true"`, so always pass it. |
 | `floating` | Controls sitting on the map: opaque card fill, `aria-pressed` fills with primary, `aria-expanded` tints. |
+| `social` | Social sign-in rows. Set `data-provider` (`google`, `facebook`, `kakao`) for the brand hover tint in both themes; use `components/auth/SocialLoginButton`, which the login page and the auth modal share. |
 | `link` / `destructive` | As named. |
 
 Sizes are `xs`, `sm`, `default`, `lg` and the square `icon-xs`, `icon-sm`, `icon`, `icon-lg`
