@@ -1933,6 +1933,22 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   100% { transform: rotateY(180deg); }
 }
 
+/* Sonner ships its own light/dark palette (white or pure-black surface, a
+ * hardcoded #3f3f3f description) and appends that stylesheet after ours, so
+ * Tailwind surface classes on the toast lose. Point its variables at the app
+ * tokens instead; the leading `html` outranks Sonner's two-attribute selectors. */
+html [data-sonner-toaster][data-sonner-theme] {
+  --normal-bg: var(--card);
+  --normal-bg-hover: var(--secondary);
+  --normal-border: var(--border);
+  --normal-border-hover: var(--input);
+  --normal-text: var(--card-foreground);
+}
+
+html [data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-description] {
+  color: var(--muted-foreground);
+}
+
 [data-sonner-toast][data-styled='true'] [data-icon] {
   inline-size: 2rem !important;
   block-size: 2rem !important;
