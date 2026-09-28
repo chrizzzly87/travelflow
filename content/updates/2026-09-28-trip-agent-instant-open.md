@@ -1,6 +1,6 @@
 ---
 id: rel-2026-09-28-trip-agent-instant-open
-version: v0.199.0
+version: v0.200.0
 title: "Plan with AI opens instantly"
 date: 2026-09-28
 published_at: 2026-09-28T12:00:00Z
