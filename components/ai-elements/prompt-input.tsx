@@ -34,11 +34,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { ChatStatus, FileUIPart, SourceDocumentUIPart } from "ai";
 import {
@@ -1112,16 +1107,32 @@ export const PromptInputTools = ({
   />
 );
 
+// Rendered by the app's GlobalTooltipLayer, which shows plain text and picks
+// its own side, so content is a string and there is no `side` option. Radix
+// Tooltip is not used: under preact/compat its trigger never opens.
 export type PromptInputButtonTooltip =
   | string
   | {
-      content: ReactNode;
+      content: string;
       shortcut?: string;
-      side?: ComponentProps<typeof TooltipContent>["side"];
     };
 
 export type PromptInputButtonProps = ComponentProps<typeof InputGroupButton> & {
   tooltip?: PromptInputButtonTooltip;
+};
+
+const getPromptInputButtonTooltipLabel = (
+  tooltip: PromptInputButtonTooltip | undefined
+): string | undefined => {
+  if (!tooltip) {
+    return undefined;
+  }
+  if (typeof tooltip === "string") {
+    return tooltip;
+  }
+  return tooltip.shortcut
+    ? `${tooltip.content} (${tooltip.shortcut})`
+    : tooltip.content;
 };
 
 export const PromptInputButton = ({
@@ -1134,35 +1145,15 @@ export const PromptInputButton = ({
   const newSize =
     size ?? (Children.count(props.children) > 1 ? "sm" : "icon-sm");
 
-  const button = (
+  return (
     <InputGroupButton
       className={cn(className)}
+      data-tooltip={getPromptInputButtonTooltipLabel(tooltip)}
       size={newSize}
       type="button"
       variant={variant}
       {...props}
     />
-  );
-
-  if (!tooltip) {
-    return button;
-  }
-
-  const tooltipContent =
-    typeof tooltip === "string" ? tooltip : tooltip.content;
-  const shortcut = typeof tooltip === "string" ? undefined : tooltip.shortcut;
-  const side = typeof tooltip === "string" ? "top" : (tooltip.side ?? "top");
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent side={side}>
-        {tooltipContent}
-        {shortcut && (
-          <span className="ml-2 text-muted-foreground">{shortcut}</span>
-        )}
-      </TooltipContent>
-    </Tooltip>
   );
 };
 

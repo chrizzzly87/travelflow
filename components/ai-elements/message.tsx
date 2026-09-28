@@ -5,12 +5,6 @@ import {
   ButtonGroup,
   ButtonGroupText,
 } from "@/components/ui/button-group";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { cjk } from "@streamdown/cjk";
 import type { UIMessage } from "ai";
@@ -79,6 +73,8 @@ export type MessageActionProps = ComponentProps<typeof Button> & {
   label?: string;
 };
 
+// The tooltip goes through the app's GlobalTooltipLayer (`data-tooltip`), not
+// Radix Tooltip: under preact/compat the Radix trigger never opens.
 export const MessageAction = ({
   tooltip,
   children,
@@ -86,29 +82,18 @@ export const MessageAction = ({
   variant = "ghost",
   size = "icon-sm",
   ...props
-}: MessageActionProps) => {
-  const button = (
-    <Button size={size} type="button" variant={variant} {...props}>
-      {children}
-      <span className="sr-only">{label || tooltip}</span>
-    </Button>
-  );
-
-  if (tooltip) {
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>{button}</TooltipTrigger>
-          <TooltipContent>
-            <p>{tooltip}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  }
-
-  return button;
-};
+}: MessageActionProps) => (
+  <Button
+    data-tooltip={tooltip}
+    size={size}
+    type="button"
+    variant={variant}
+    {...props}
+  >
+    {children}
+    <span className="sr-only">{label || tooltip}</span>
+  </Button>
+);
 
 interface MessageBranchContextType {
   currentBranch: number;
