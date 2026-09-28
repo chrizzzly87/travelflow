@@ -18,13 +18,15 @@ vi.mock('../../services/analyticsService', () => ({
 }));
 
 const sendMessageMock = vi.fn();
+const stopMock = vi.fn();
+let chatStatus: 'ready' | 'streaming' = 'ready';
 
 vi.mock('@ai-sdk/react', () => ({
   useChat: () => ({
     messages: [],
     sendMessage: sendMessageMock,
-    status: 'ready',
-    stop: vi.fn(),
+    status: chatStatus,
+    stop: stopMock,
     error: undefined,
     clearError: vi.fn(),
   }),
@@ -70,6 +72,8 @@ const renderSession = (props: Partial<React.ComponentProps<typeof TripAgentChatS
 
 afterEach(() => {
   sendMessageMock.mockReset();
+  stopMock.mockReset();
+  chatStatus = 'ready';
 });
 
 const field = () => screen.getByPlaceholderText('placeholder') as HTMLTextAreaElement;
@@ -180,6 +184,64 @@ describe('TripAgentChatSession examples', () => {
     });
     expect(field().value).toBe(text.replace('@Kyoto ', '').replace('@Kyoto', ''));
     expect(field().value).not.toContain('  ');
+  });
+
+  it('starts the swap list on the stop being swapped, and Space keeps it', async () => {
+    renderSession();
+    await insertActivitiesExample();
+    const options = screen.getAllByRole('option');
+    const kyoto = options.findIndex((option) => option.textContent?.includes('Kyoto'));
+    expect(options[kyoto].getAttribute('aria-selected')).toBe('true');
+    await act(async () => {
+      fireEvent.keyDown(field(), { key: ' ' });
+    });
+    expect(field().value).toBe('examples.activities.prompt|@Kyoto');
+    expect(screen.queryByRole('listbox')).toBeNull();
+  });
+
+  it('closes the list on a click outside it, but not on a click inside', async () => {
+    renderSession();
+    await insertActivitiesExample();
+    await act(async () => {
+      fireEvent.pointerDown(screen.getByRole('listbox'));
+    });
+    expect(screen.getByRole('listbox')).toBeTruthy();
+    await act(async () => {
+      fireEvent.pointerDown(document.body);
+    });
+    expect(screen.queryByRole('listbox')).toBeNull();
+  });
+
+  it('lets a running answer be stopped with the button even though the field is empty', async () => {
+    chatStatus = 'streaming';
+    renderSession();
+    const stopButton = screen.getByRole('button', { name: 'stop' }) as HTMLButtonElement;
+    expect(stopButton.disabled).toBe(false);
+    await act(async () => {
+      fireEvent.click(stopButton);
+    });
+    expect(stopMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops a running answer on Escape without closing the panel', async () => {
+    chatStatus = 'streaming';
+    const outerKeyDown = vi.fn();
+    render(React.createElement('div', { onKeyDown: () => outerKeyDown() },
+      React.createElement(TripAgentChatSession, {
+        trip: { id: 'trip-1', title: 'Japan', items: [] } as never,
+        thread: { id: 't1', tripId: 'trip-1', title: '', status: 'active', createdBy: '', createdAt: '', updatedAt: '' },
+        initialMessages: [],
+        contextRefs: [],
+        quota: { enabled: true, limit: 3, used: 0, remaining: 3, resetsAt: '2026-09-29T00:00:00Z' },
+        actorId: 'u1',
+        onQuotaMayHaveChanged: vi.fn(),
+        onAdoptCommittedTripVersion: vi.fn(),
+      })));
+    await act(async () => {
+      fireEvent.keyDown(field(), { key: 'Escape' });
+    });
+    expect(stopMock).toHaveBeenCalledTimes(1);
+    expect(outerKeyDown).not.toHaveBeenCalled();
   });
 
   it('describes what a pill will write through the app tooltip layer', () => {

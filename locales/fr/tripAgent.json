@@ -55,7 +55,6 @@
   "searchContext": "Rechercher dans ce voyage…",
   "searchCommand": "Rechercher des modèles de prompt…",
   "noContext": "Aucun élément du voyage ne correspond.",
-  "closeMenu": "Fermer le menu",
   "send": "Envoyer le message",
   "stop": "Arrêter la réponse",
   "contextKinds": {

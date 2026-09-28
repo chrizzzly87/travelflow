@@ -373,6 +373,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
             <li key={thread.id} className="group relative">
                 {isArchived ? (
                     <div className="flex items-center gap-2 rounded-lg py-2 ps-2.5 pe-28">
+                        <span aria-hidden="true" className="size-3.5 shrink-0" />
                         <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{threadTitle(thread)}</span>
                     </div>
                 ) : (
@@ -380,14 +381,18 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                         type="button"
                         onClick={() => openChat(thread.id)}
                         aria-current={isCurrent ? 'true' : undefined}
-                        className={`flex w-full items-center gap-2 rounded-lg py-2 ps-2.5 pe-20 text-start outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
+                        className={`flex w-full items-center gap-2 rounded-lg py-2 ps-2.5 pe-24 text-start outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
                             isCurrent
                                 ? 'bg-accent-50 dark:bg-accent-400/12'
                                 : 'hover:bg-secondary'
                         }`}
                     >
+                        {/* Leading slot on every row, so the mark never meets the
+                            timestamp at the end and titles stay aligned. */}
+                        <span aria-hidden="true" className="flex size-3.5 shrink-0 items-center justify-center">
+                            {isCurrent && <Check className="size-3.5 text-accent-600 dark:text-accent-300" />}
+                        </span>
                         <span className="min-w-0 flex-1 truncate text-sm text-foreground">{threadTitle(thread)}</span>
-                        {isCurrent && <Check aria-hidden="true" className="size-3.5 shrink-0 text-accent-600 dark:text-accent-300" />}
                     </button>
                 )}
                 {/* Actions sit inside the row. With a mouse they show on hover

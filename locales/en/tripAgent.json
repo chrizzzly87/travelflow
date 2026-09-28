@@ -55,7 +55,6 @@
   "searchContext": "Search this trip…",
   "searchCommand": "Search prompt presets…",
   "noContext": "No matching trip item.",
-  "closeMenu": "Close menu",
   "send": "Send message",
   "stop": "Stop response",
   "contextKinds": {

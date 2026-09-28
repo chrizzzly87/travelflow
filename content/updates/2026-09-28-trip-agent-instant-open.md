@@ -21,6 +21,9 @@ summary: "The Plan with AI panel opens the moment you click, new chats start ins
 - [x] [New feature] 🔁 Stops you mention are clearly highlighted and can be swapped: click one, or use the keyboard, to pick another stop from your trip. After picking an example, the list opens right away.
 - [x] [Improved] ⌫ A highlighted stop is deleted in two steps, like in other editors: the first Backspace selects it, the second removes it. Typing inside it still edits the letters.
 - [x] [Fixed] ✍️ Typing @ in the middle of a message now opens the stop list and adds the stop right there, not at the end.
+- [x] [Improved] 🎯 The stop list opens on the stop you are changing, so Enter or Space keeps it and the arrow keys move from there. Escape or a click anywhere else closes it.
+- [x] [Fixed] ⏹️ You can stop an answer while Trip Agent is still working, with the stop button or Escape.
+- [x] [Fixed] ✔️ In the chat list, the mark for the open chat no longer overlaps its time.
 - [x] [Improved] 👋 The overview of what Trip Agent can do now only appears in a trip's first chat.
 - [x] [Improved] 🏎️ Your chat loads faster: it starts preparing as soon as you point at the button, and reopening the panel shows your last conversation right away.
 - [x] [Fixed] 🧱 The panel is no longer covered by the trip header on smaller screens.

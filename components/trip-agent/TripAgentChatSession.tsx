@@ -367,6 +367,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
     const [chosenByLabel, setChosenByLabel] = useState<Record<string, TripAgentContextRef>>({});
     const [menuIndex, setMenuIndex] = useState(0);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const menuRef = useRef<HTMLDivElement | null>(null);
     const focusPrompt = useCallback(() => {
         const element = textareaRef.current
             || (typeof document === 'undefined'
@@ -507,7 +508,13 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
         setSwapTarget({ start: span.start, end: span.end, label: span.label });
         setCommandMenu('context');
         setMenuQuery('');
-        setMenuIndex(0);
+        // Start on the stop being swapped, so Enter or Space keeps it and
+        // the arrows move from there. Same order as the list itself.
+        const ordered = CONTEXT_KIND_ORDER.flatMap((kind) => selectableContextRefs.filter((contextRef) => contextRef.kind === kind));
+        const currentIndex = span.contextRef
+            ? ordered.findIndex((contextRef) => contextRefKey(contextRef) === contextRefKey(span.contextRef!))
+            : -1;
+        setMenuIndex(Math.max(0, currentIndex));
         if (source !== 'example') trackEvent('trip_agent__mention--swap_open', { trip_id: trip.id, source });
     };
 
@@ -643,7 +650,16 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
     };
 
     const handleMenuKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (!commandMenu) return;
+        if (!commandMenu) {
+            // Escape stops a running answer; the panel must not close too.
+            if (event.key === 'Escape' && isGenerating) {
+                event.preventDefault();
+                event.stopPropagation();
+                void stop();
+                trackEvent('trip_agent__run--stop', { trip_id: trip.id, source: 'escape' });
+            }
+            return;
+        }
         if (event.key === 'Escape') {
             // Close only the list; the panel must not take this Escape too.
             event.preventDefault();
@@ -659,12 +675,27 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
             setMenuIndex((current) => (current + delta + menuItems.length) % menuItems.length);
             return;
         }
-        if (event.key === 'Enter' || event.key === 'Tab') {
+        // Space confirms only while swapping; while typing an @query it is
+        // just the space that ends the word.
+        if (event.key === 'Enter' || event.key === 'Tab' || (event.key === ' ' && swapTarget)) {
             if (menuItems.length === 0) return;
             event.preventDefault();
             selectMenuItem(menuIndex);
         }
     };
+
+    // A click anywhere but the list closes it. A click on a mention reopens
+    // it for that mention, since the field's click follows this pointerdown.
+    useEffect(() => {
+        if (!commandMenu) return;
+        const handlePointerDown = (event: PointerEvent) => {
+            if (menuRef.current?.contains(event.target as Node)) return;
+            setCommandMenu(null);
+            setSwapTarget(null);
+        };
+        document.addEventListener('pointerdown', handlePointerDown);
+        return () => document.removeEventListener('pointerdown', handlePointerDown);
+    }, [commandMenu]);
 
     return (
         <>
@@ -846,13 +877,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                 <div className="relative">
                     {commandMenu && (
                         <>
-                            <button
-                                type="button"
-                                aria-label={t('closeMenu')}
-                                className="fixed inset-0 z-10 cursor-default"
-                                onClick={() => setCommandMenu(null)}
-                            />
-                            <div className="absolute inset-x-0 bottom-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-xl border border-border bg-card shadow-xl dark:shadow-none">
+                            <div ref={menuRef} className="absolute inset-x-0 bottom-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-xl border border-border bg-card shadow-xl dark:shadow-none">
                                 <TripAgentMentionMenu
                                     items={menuItems}
                                     activeIndex={menuIndex}
@@ -901,7 +926,9 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                             <PromptInputSubmit
                                 status={status}
                                 onStop={stop}
-                                disabled={isQuotaReached || !draftText.trim()}
+                                // While an answer runs this is the stop button, and it must
+                                // work with an empty field (the field clears on send).
+                                disabled={!isGenerating && (isQuotaReached || !draftText.trim())}
                                 aria-label={status === 'submitted' || status === 'streaming' ? t('stop') : t('send')}
                                 title={status === 'submitted' || status === 'streaming' ? t('stop') : t('send')}
                             />
