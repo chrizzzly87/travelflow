@@ -13,7 +13,7 @@ summary: "Day trips now show up on trip card maps, shared link previews and the 
 ## Changes
 - [x] [Improved] 🧭 Trip card maps now show your day trips: a dashed line from the stay out to the destination, with its own pin.
 - [x] [Improved] 🔗 Shared trip links preview your day trips too, with the destinations named next to the trip's length and distance.
-- [x] [New feature] 🪃 The stay bar under each trip card marks every day trip with a small hop on its stay; hover it to see where you went.
+- [x] [New feature] 📍 The stay bar under each trip card marks every day trip with a small dot on its stay; hover it to see where you went.
 - [x] [Improved] 🦌 The Japan example trip now stays five days in Osaka, with day trips to Nara and Kobe and tips for each.
 - [x] [Improved] 🗺️ The example trip maps on the homepage show their day trips, like Miyajima, the Golden Circle and Sintra.
 - [ ] [Internal] Added a `dayTrips` parameter to the card map preview URL and its CDN cache key; trips without day trips keep their existing cached images.

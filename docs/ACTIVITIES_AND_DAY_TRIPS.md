@@ -180,7 +180,7 @@ structural types so the edge functions can import it too.
   draw day trips too. Bump the `?v=` cache-buster in `ExampleTripCard` when the
   committed PNGs change.
 - **Card lane**: every stay segment under a trip card (homepage and profile)
-  shows a small dashed hop per day trip at the middle of its day
+  shows a small dot in the stay colour, ringed in the card colour, per day trip at the middle of its day
   (`components/profile/TripLaneDayTripMarks.tsx`), with a "Day trip ·
   Destination" tooltip.
 
