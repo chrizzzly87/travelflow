@@ -1,14 +1,20 @@
 import React from 'react';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
+import { useTheme } from '../../contexts/theme/useTheme';
 
 export const Toaster: React.FC<ToasterProps> = (props) => {
+  // Sonner defaults to its light theme regardless of the page, which left a
+  // white toast behind dark-mode title and icon colours.
+  const { resolvedTheme } = useTheme();
+
   return (
     <Sonner
+      theme={resolvedTheme}
       position="bottom-right"
       offset={14}
       closeButton={false}
       toastOptions={{
-        className: 'border border-border bg-card/95 text-foreground shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/90 dark:shadow-none',
+        className: 'border shadow-lg dark:shadow-none',
         classNames: {
           icon: '!h-8 !w-8 !me-2 !shrink-0',
         },
