@@ -3,8 +3,8 @@ id: rel-2026-09-28-trip-calendar-zoom-default
 version: v0.198.0
 title: "A more compact calendar zoom"
 date: 2026-09-28
-published_at: 2026-09-28T12:00:00Z
-status: draft
+published_at: 2026-09-28T07:10:58Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "The trip calendar now opens at a more compact zoom that fits more of your trip on screen."
