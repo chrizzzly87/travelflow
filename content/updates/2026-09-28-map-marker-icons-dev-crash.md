@@ -1,9 +1,9 @@
 ---
 id: rel-2026-09-28-map-marker-icons-dev-crash
-version: v0.200.0
+version: v0.201.0
 title: "Map marker icons without a nested render"
 date: 2026-09-28
-published_at: 2026-09-28T16:45:00Z
+published_at: 2026-09-28T16:19:13Z
 status: published
 notify_in_app: false
 in_app_hours: 24
