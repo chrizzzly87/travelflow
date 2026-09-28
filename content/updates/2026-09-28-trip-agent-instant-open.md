@@ -3,8 +3,8 @@ id: rel-2026-09-28-trip-agent-instant-open
 version: v0.200.0
 title: "Plan with AI opens instantly"
 date: 2026-09-28
-published_at: 2026-09-28T12:00:00Z
-status: draft
+published_at: 2026-09-28T16:18:57Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "The Plan with AI panel opens the moment you click, new chats start instantly and get meaningful names, and your chat history lives right inside the panel."
