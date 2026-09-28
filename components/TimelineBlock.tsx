@@ -34,6 +34,8 @@ interface TimelineBlockProps {
   onNavigatePreviousCity?: () => void;
   onNavigateNextCity?: () => void;
   onToggleDetailsPanel?: () => void;
+  /** Day trips: the colour of the stay they leave from, shown as a top edge. */
+  stayAccentColorHex?: string;
 }
 
 export const TimelineBlock: React.FC<TimelineBlockProps> = ({
@@ -62,6 +64,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   onNavigatePreviousCity,
   onNavigateNextCity,
   onToggleDetailsPanel,
+  stayAccentColorHex,
 }) => {
   const isTravel = item.type === 'travel';
   const isEmptyTravel = item.type === 'travel-empty';
@@ -374,7 +377,15 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       data-city-stack-index={isCity ? String(normalizedCityStackIndex) : undefined}
       data-city-id={isCity ? item.id : undefined}
       data-day-trip={isDayTripActivity ? 'true' : undefined}
+      data-activity-id={item.type === 'activity' ? item.id : undefined}
     >
+      {isDayTripActivity && stayAccentColorHex && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-[3px]"
+          style={{ backgroundColor: stayAccentColorHex }}
+        />
+      )}
       {/* Visual Buffers (Travel Only) */}
       {isTravel && (
         <>

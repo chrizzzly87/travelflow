@@ -977,7 +977,12 @@
     "revertToastTitle": "Изменение отменено",
     "redo": "Вернуть",
     "revertedHint": "Отменено — можно посмотреть снова или вернуть",
-    "reapplyUnavailable": "Этот набор нельзя применить здесь повторно."
+    "reapplyUnavailable": "Этот набор нельзя применить здесь повторно.",
+    "presetDayTrips": "Предложи однодневные поездки из моих остановок",
+    "presetDayTripFrom": "Предложи однодневную поездку из {city}",
+    "presetMakeDayTrip": "Сделай {activity} однодневной поездкой",
+    "presetChangeDayTrip": "Измени поездку {activity}",
+    "presetRemoveDayTrip": "Удали поездку {activity}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Память устройства заполнена",

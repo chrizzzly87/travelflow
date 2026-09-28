@@ -977,7 +977,12 @@
     "revertToastTitle": "Changement annulé",
     "redo": "Rétablir",
     "revertedHint": "Annulé — à revoir ou rétablir",
-    "reapplyUnavailable": "Cet ensemble ne peut pas être réappliqué ici."
+    "reapplyUnavailable": "Cet ensemble ne peut pas être réappliqué ici.",
+    "presetDayTrips": "Propose des excursions d’une journée depuis mes séjours",
+    "presetDayTripFrom": "Propose une excursion d’une journée depuis {city}",
+    "presetMakeDayTrip": "Transforme {activity} en excursion d’une journée",
+    "presetChangeDayTrip": "Modifie l’excursion {activity}",
+    "presetRemoveDayTrip": "Supprime l’excursion {activity}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Le stockage de l'appareil est plein",

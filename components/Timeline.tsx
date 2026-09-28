@@ -20,7 +20,8 @@ import { buildRenderedTimelineDaySlots, buildRenderedTimelineMonths } from './tr
 import { getTimelineVisualCenter, getTimelineVisualRange, getTimelineVisualSpan } from '../utils/timelineVisualLayout';
 import { findPreviousCity } from '../utils/timelineNeighbors';
 import { TodayBadge } from './ui/today-badge';
-import { resolveDefaultActivityDayOffset } from '../shared/activityStay';
+import { isDayTrip, resolveActivityStay, resolveDefaultActivityDayOffset } from '../shared/activityStay';
+import { buildDayTripCalendarConnectors, DayTripCalendarConnectors } from './tripview/DayTripCalendarConnectors';
 
 interface TimelineProps {
   trip: ITrip;
@@ -140,6 +141,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const cityCardsRowRef = useRef<HTMLDivElement>(null);
   const travelLaneRef = useRef<HTMLDivElement>(null);
+  const contentAreaRef = useRef<HTMLDivElement>(null);
   const ignoreClickRef = useRef<boolean>(false);
   const dragStartItemsRef = useRef<ITimelineItem[] | null>(null);
   const latestDragItemsRef = useRef<ITimelineItem[] | null>(null);
@@ -197,6 +199,14 @@ export const Timeline: React.FC<TimelineProps> = ({
   const travelItems = trip.items.filter(i => i.type === 'travel' || i.type === 'travel-empty').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const activities = trip.items.filter(i => i.type === 'activity');
   const defaultActivityDayOffset = resolveDefaultActivityDayOffset({ items: trip.items, selectedItemId, selectedCityIds });
+  const stayColorHex = (stay: ITimelineItem): string => getHexFromColorClass(stay.color || '');
+  const dayTripConnectors = buildDayTripCalendarConnectors({
+    items: trip.items,
+    selectedItemId,
+    selectedCityIds,
+    resolveColor: stayColorHex,
+  });
+  const dayTripLayoutKey = `${pixelsPerDay}:${visualStartOffset}:${trip.items.map((item) => `${item.id}@${item.startDateOffset}/${item.duration}`).join(',')}`;
   const cityStackLayout = React.useMemo(() => buildCityOverlapLayout(cities), [cities]);
   const maxCityStackCount = React.useMemo(() => {
       let maxCount = 1;
@@ -825,7 +835,12 @@ export const Timeline: React.FC<TimelineProps> = ({
             </div>
 
             {/* Content Area with PADDING */}
-            <div className="pt-3 pb-16 pl-8 pr-8 space-y-1 md:space-y-2 relative z-10">
+            <div ref={contentAreaRef} className="pt-3 pb-16 pl-8 pr-8 space-y-1 md:space-y-2 relative z-10">
+                <DayTripCalendarConnectors
+                    containerRef={contentAreaRef}
+                    connectors={dayTripConnectors}
+                    layoutKey={dayTripLayoutKey}
+                />
 
                 {/* Cities Lane */}
                 <div className="relative w-full group/cities z-20">
@@ -1089,6 +1104,10 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         pixelsPerDay={pixelsPerDay}
                                         timelineStartOffset={visualStartOffset}
                                         canEdit={canEdit}
+                                        stayAccentColorHex={isDayTrip(item) ? (() => {
+                                            const stay = resolveActivityStay(item, cities);
+                                            return stay ? stayColorHex(stay) : undefined;
+                                        })() : undefined}
                                     />
                                 ))}
                              </div>

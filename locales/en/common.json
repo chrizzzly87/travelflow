@@ -977,7 +977,12 @@
     "revertToastTitle": "Change reverted",
     "redo": "Redo",
     "revertedHint": "Reverted — you can review or redo it",
-    "reapplyUnavailable": "This set cannot be applied again here."
+    "reapplyUnavailable": "This set cannot be applied again here.",
+    "presetDayTrips": "Suggest day trips from my stays",
+    "presetDayTripFrom": "Suggest a day trip from {city}",
+    "presetMakeDayTrip": "Turn {activity} into a day trip",
+    "presetChangeDayTrip": "Change the day trip {activity}",
+    "presetRemoveDayTrip": "Remove the day trip {activity}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Device storage is full",

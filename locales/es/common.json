@@ -977,7 +977,12 @@
     "revertToastTitle": "Cambio deshecho",
     "redo": "Rehacer",
     "revertedHint": "Deshecho: puedes revisarlo o rehacerlo",
-    "reapplyUnavailable": "Este conjunto no puede aplicarse otra vez aquí."
+    "reapplyUnavailable": "Este conjunto no puede aplicarse otra vez aquí.",
+    "presetDayTrips": "Sugiere excursiones de un día desde mis estancias",
+    "presetDayTripFrom": "Sugiere una excursión de un día desde {city}",
+    "presetMakeDayTrip": "Convierte {activity} en una excursión de un día",
+    "presetChangeDayTrip": "Cambia la excursión {activity}",
+    "presetRemoveDayTrip": "Elimina la excursión {activity}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "El almacenamiento del dispositivo está lleno",

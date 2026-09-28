@@ -973,7 +973,12 @@
     "revertToastTitle": "تغییر بازگردانده شد",
     "redo": "انجام دوباره",
     "revertedHint": "بازگردانده شد — می‌توانید دوباره بررسی یا اجرا کنید",
-    "reapplyUnavailable": "این مجموعه اینجا دوباره اعمال نمی‌شود."
+    "reapplyUnavailable": "این مجموعه اینجا دوباره اعمال نمی‌شود.",
+    "presetDayTrips": "از محل‌های اقامتم سفرهای یک‌روزه پیشنهاد بده",
+    "presetDayTripFrom": "یک سفر یک‌روزه از {city} پیشنهاد بده",
+    "presetMakeDayTrip": "{activity} را به سفر یک‌روزه تبدیل کن",
+    "presetChangeDayTrip": "سفر یک‌روزه {activity} را تغییر بده",
+    "presetRemoveDayTrip": "سفر یک‌روزه {activity} را حذف کن"
   },
   "storageNotice": {
     "tripsPrunedTitle": "حافظهٔ دستگاه پر است",

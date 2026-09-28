@@ -977,7 +977,12 @@
     "revertToastTitle": "Modifica annullata",
     "redo": "Ripristina",
     "revertedHint": "Annullato — puoi rivederlo o ripristinarlo",
-    "reapplyUnavailable": "Questo gruppo non può essere applicato di nuovo qui."
+    "reapplyUnavailable": "Questo gruppo non può essere applicato di nuovo qui.",
+    "presetDayTrips": "Suggerisci gite in giornata dai miei soggiorni",
+    "presetDayTripFrom": "Suggerisci una gita in giornata da {city}",
+    "presetMakeDayTrip": "Trasforma {activity} in una gita in giornata",
+    "presetChangeDayTrip": "Modifica la gita {activity}",
+    "presetRemoveDayTrip": "Rimuovi la gita {activity}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "La memoria del dispositivo è piena",

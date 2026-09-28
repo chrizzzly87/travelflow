@@ -977,7 +977,12 @@
     "revertToastTitle": "Änderung rückgängig",
     "redo": "Wiederherstellen",
     "revertedHint": "Rückgängig – du kannst erneut prüfen oder wiederherstellen",
-    "reapplyUnavailable": "Dieser Satz kann hier nicht erneut übernommen werden."
+    "reapplyUnavailable": "Dieser Satz kann hier nicht erneut übernommen werden.",
+    "presetDayTrips": "Schlag Tagesausflüge von meinen Aufenthalten vor",
+    "presetDayTripFrom": "Schlag einen Tagesausflug ab {city} vor",
+    "presetMakeDayTrip": "Mach aus {activity} einen Tagesausflug",
+    "presetChangeDayTrip": "Ändere den Tagesausflug {activity}",
+    "presetRemoveDayTrip": "Entferne den Tagesausflug {activity}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Der Gerätespeicher ist voll",

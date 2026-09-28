@@ -977,7 +977,12 @@
     "revertToastTitle": "Zmiana cofnięta",
     "redo": "Ponów",
     "revertedHint": "Cofnięte — możesz przejrzeć lub ponowić",
-    "reapplyUnavailable": "Tego zestawu nie można tu zastosować ponownie."
+    "reapplyUnavailable": "Tego zestawu nie można tu zastosować ponownie.",
+    "presetDayTrips": "Zaproponuj jednodniowe wycieczki z moich pobytów",
+    "presetDayTripFrom": "Zaproponuj jednodniową wycieczkę z {city}",
+    "presetMakeDayTrip": "Zamień {activity} w wycieczkę jednodniową",
+    "presetChangeDayTrip": "Zmień wycieczkę {activity}",
+    "presetRemoveDayTrip": "Usuń wycieczkę {activity}"
   },
   "storageNotice": {
     "tripsPrunedTitle": "Pamięć urządzenia jest pełna",

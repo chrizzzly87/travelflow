@@ -977,7 +977,12 @@
     "revertToastTitle": "변경 되돌림",
     "redo": "다시 실행",
     "revertedHint": "되돌림 — 다시 검토하거나 되돌릴 수 있습니다",
-    "reapplyUnavailable": "이 묶음은 여기서 다시 적용할 수 없습니다."
+    "reapplyUnavailable": "이 묶음은 여기서 다시 적용할 수 없습니다.",
+    "presetDayTrips": "내 숙박지에서 갈 당일치기 여행 추천",
+    "presetDayTripFrom": "{city}에서 갈 당일치기 여행 추천",
+    "presetMakeDayTrip": "{activity}을(를) 당일치기 여행으로 바꾸기",
+    "presetChangeDayTrip": "당일치기 여행 {activity} 변경",
+    "presetRemoveDayTrip": "당일치기 여행 {activity} 삭제"
   },
   "storageNotice": {
     "tripsPrunedTitle": "기기 저장 공간이 가득 찼습니다",

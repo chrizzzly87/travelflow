@@ -14,7 +14,8 @@ summary: "Plan day trips that leave your stay and come back the same day, see th
 - [x] [New feature] 🧭 Plan day trips: mark an outing like Sintra from Lisbon as a day trip and it gets its own marker and a dashed route out and back on the map.
 - [x] [New feature] 🏨 Every activity now belongs to a stay, and you can move it to another stay and day right from its details.
 - [x] [New feature] ✨ New AI-planned trips suggest day trips from your bases instead of squeezing them in as extra stops.
-- [x] [New feature] 💬 The trip assistant can add, change and remove day trips for you.
+- [x] [New feature] 💬 The trip assistant can add, change and remove day trips for you, with ready-made day-trip prompts in its / menu that follow what you have selected.
+- [x] [Improved] 🔗 Select a day trip or its stay in the calendar and a dashed line shows where it leaves from; day trips also carry their stay's colour.
 - [x] [Improved] ➕ The calendar's activities row has a single add button, like stays and transfers, and starts on the stay you have selected.
 - [x] [Improved] 🔁 A day trip can end in a different stay when your plans need it, tucked away under more options.
 - [x] [Improved] 🗺️ Example trips now show their classic day trips on the map, and the Portugal road trip visits Sintra as a day trip from Lisbon.

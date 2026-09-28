@@ -48,8 +48,13 @@ for example Sintra from Lisbon, Miyajima from Hiroshima, or the Golden Circle
 from Reykjavik. It is not a city stop and needs no transfer.
 
 - **Calendar:** shown with a compass icon instead of the activity-type icon
-  (`TimelineBlock`), and as a "Day trip · Destination" badge in the list and
-  mobile day views (`DayTripBadge`).
+  and a top edge in the stay's colour (`TimelineBlock`), and as a "Day trip ·
+  Destination" badge in the list and mobile day views (`DayTripBadge`). When a
+  day trip or its stay (or the stay it ends in) is selected, the horizontal
+  calendar draws a dashed line from the stay bar down to the block
+  (`components/tripview/DayTripCalendarConnectors.tsx`). This happens only on
+  selection, because a permanent line per day trip would cross the transfer
+  lane everywhere.
 - **Map:** `components/maps/tripMapDayTripModel.ts` turns each day trip into a
   descriptor. `ItineraryMap` then draws:
   - a dashed line from the stay out to the destination and back, or on to
@@ -131,6 +136,14 @@ from Reykjavik. It is not a city stop and needs no transfer.
 - `read_trip_context` returns the trip through `withResolvedActivityStays`, so
   the model sees a real `stayCityId` on every activity, even on older trips.
   This is read-only. The system prompt explains stays and day trips.
+- The chat's "/" menu adds day-trip prompts for the current selection
+  (`components/trip-agent/tripAgentDayTripPresets.ts`):
+  - a selected day trip can be changed or removed
+  - a selected ordinary activity can be turned into a day trip
+  - a selected stay can ask for a day trip from there
+  - "Suggest day trips from my stays" is always there
+
+  The @ menu labels day trips as "Day trip".
 
 ## Example trips
 
@@ -161,3 +174,5 @@ from Reykjavik. It is not a city stop and needs no transfer.
   card.
 - `tests/browser/timelineReadOnlyAddButtons.browser.test.ts`: the single lane
   "+" and its default day.
+- `tests/unit/dayTripChatAndCalendar.test.ts`: the chat presets and the
+  selection rules for calendar connectors.
