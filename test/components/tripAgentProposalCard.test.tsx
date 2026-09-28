@@ -81,11 +81,11 @@ describe('TripAgentProposalCard', () => {
 
         render(<TripAgentProposalCard trip={trip} changeSet={changeSet} onApplied={vi.fn()} />);
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
+        await user.click(screen.getByRole('button', { name: 'preview' }));
         expect(applyTripAgentProposalMock).not.toHaveBeenCalled();
-        expect(screen.getByText('tripAgent.previewLive')).toBeTruthy();
+        expect(screen.getByText('previewLive')).toBeTruthy();
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
+        await user.click(screen.getByRole('button', { name: 'applyCount' }));
         await waitFor(() => expect(applyTripAgentProposalMock).toHaveBeenCalledWith(
             'trip-1',
             '4f1c9d5e-0000-4000-8000-000000000000',
@@ -106,12 +106,12 @@ describe('TripAgentProposalCard', () => {
 
         render(<TripAgentProposalCard trip={trip} changeSet={changeSet} onApplied={vi.fn()} onPreviewTrip={onPreviewTrip} />);
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
+        await user.click(screen.getByRole('button', { name: 'preview' }));
         await waitFor(() => expect(onPreviewTrip).toHaveBeenCalledWith(expect.objectContaining({ id: 'trip-1' })));
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
+        await user.click(screen.getByRole('button', { name: 'applyCount' }));
         await waitFor(() => expect(onPreviewTrip).toHaveBeenLastCalledWith(null));
-        expect(screen.getByText('tripAgent.appliedCount')).toBeTruthy();
+        expect(screen.getByText('appliedCount')).toBeTruthy();
     });
 
     it('publishes the preview once per selection, not once per render', async () => {
@@ -122,7 +122,7 @@ describe('TripAgentProposalCard', () => {
             <TripAgentProposalCard trip={trip} changeSet={changeSet} onApplied={vi.fn()} onPreviewTrip={onPreviewTrip} />,
         );
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
+        await user.click(screen.getByRole('button', { name: 'preview' }));
         await waitFor(() => expect(onPreviewTrip).toHaveBeenCalledWith(expect.objectContaining({ id: 'trip-1' })));
         const callsAfterPreview = onPreviewTrip.mock.calls.length;
 
@@ -157,12 +157,12 @@ describe('TripAgentProposalCard', () => {
 
         render(<TripAgentProposalCard trip={trip} changeSet={changeSet} onApplied={vi.fn()} />);
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
-        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
+        await user.click(screen.getByRole('button', { name: 'preview' }));
+        await user.click(screen.getByRole('button', { name: 'applyCount' }));
 
         await waitFor(() => expect(screen.getByRole('alert').textContent)
-            .toContain('tripAgent.errors.TRIP_AGENT_PROPOSAL_STALE'));
-        expect(screen.getByRole('button', { name: 'tripAgent.retryApply' })).toBeTruthy();
+            .toContain('errors.TRIP_AGENT_PROPOSAL_STALE'));
+        expect(screen.getByRole('button', { name: 'retryApply' })).toBeTruthy();
     });
 });
 
@@ -172,8 +172,8 @@ describe('TripAgentProposalCard superseding', () => {
             <TripAgentProposalCard trip={trip} changeSet={changeSet} onApplied={vi.fn()} isSuperseded />,
         );
 
-        expect(screen.getByText('tripAgent.superseded')).toBeTruthy();
-        expect(screen.queryByRole('button', { name: 'tripAgent.preview' })).toBeNull();
+        expect(screen.getByText('superseded')).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'preview' })).toBeNull();
     });
 });
 
@@ -205,12 +205,12 @@ describe('TripAgentProposalCard per-operation review', () => {
 
         render(<TripAgentProposalCard trip={trip} changeSet={twoOperationSet} onApplied={vi.fn()} />);
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.showOperations' }));
+        await user.click(screen.getByRole('button', { name: 'showOperations' }));
         const checkboxes = screen.getAllByRole('checkbox');
         await user.click(checkboxes[checkboxes.length - 1]);
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
-        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
+        await user.click(screen.getByRole('button', { name: 'preview' }));
+        await user.click(screen.getByRole('button', { name: 'applyCount' }));
 
         await waitFor(() => expect(applyTripAgentProposalMock).toHaveBeenCalledWith(
             'trip-1',
@@ -242,11 +242,11 @@ describe('TripAgentProposalCard revert', () => {
             />,
         );
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
-        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
-        await waitFor(() => expect(screen.getByText('tripAgent.appliedCount')).toBeTruthy());
+        await user.click(screen.getByRole('button', { name: 'preview' }));
+        await user.click(screen.getByRole('button', { name: 'applyCount' }));
+        await waitFor(() => expect(screen.getByText('appliedCount')).toBeTruthy());
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.revert' }));
+        await user.click(screen.getByRole('button', { name: 'revert' }));
 
         expect(onRevertAgentChange).toHaveBeenCalledTimes(1);
         const [{ trip: restored }] = onRevertAgentChange.mock.calls[0];
@@ -266,7 +266,7 @@ describe('TripAgentProposalCard revert', () => {
         );
 
         // Reloaded as applied: this session has no pre-apply snapshot to restore.
-        expect(screen.queryByRole('button', { name: 'tripAgent.revert' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'revert' })).toBeNull();
     });
 });
 
@@ -292,14 +292,14 @@ describe('TripAgentProposalCard reopen and reapply', () => {
             />,
         );
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
-        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
-        await waitFor(() => expect(screen.getByText('tripAgent.appliedCount')).toBeTruthy());
+        await user.click(screen.getByRole('button', { name: 'preview' }));
+        await user.click(screen.getByRole('button', { name: 'applyCount' }));
+        await waitFor(() => expect(screen.getByText('appliedCount')).toBeTruthy());
         expect(applyTripAgentProposalMock).toHaveBeenCalledTimes(1);
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.reviewAgain' }));
-        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
-        await user.click(screen.getByRole('button', { name: 'tripAgent.applyAgainCount' }));
+        await user.click(screen.getByRole('button', { name: 'reviewAgain' }));
+        await user.click(screen.getByRole('button', { name: 'preview' }));
+        await user.click(screen.getByRole('button', { name: 'applyAgainCount' }));
 
         // The change set is no longer pending on the server, so a reapply is a
         // local adoption of the recomputed trip.
@@ -331,10 +331,10 @@ describe('TripAgentProposalCard reopen and reapply', () => {
             />,
         );
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
-        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
-        await waitFor(() => expect(screen.getByText('tripAgent.appliedCount')).toBeTruthy());
-        await user.click(screen.getByRole('button', { name: 'tripAgent.revert' }));
+        await user.click(screen.getByRole('button', { name: 'preview' }));
+        await user.click(screen.getByRole('button', { name: 'applyCount' }));
+        await waitFor(() => expect(screen.getByText('appliedCount')).toBeTruthy());
+        await user.click(screen.getByRole('button', { name: 'revert' }));
 
         const [payload] = onRevertAgentChange.mock.calls[0];
         expect(payload.trip.title).toBe('Portugal');
@@ -344,9 +344,9 @@ describe('TripAgentProposalCard reopen and reapply', () => {
 
 describe('TripAgentProposalCard never traps the reviewer', () => {
     const applyOnce = async (user: ReturnType<typeof userEvent.setup>) => {
-        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
-        await user.click(screen.getByRole('button', { name: 'tripAgent.applyCount' }));
-        await waitFor(() => expect(screen.getByText('tripAgent.appliedCount')).toBeTruthy());
+        await user.click(screen.getByRole('button', { name: 'preview' }));
+        await user.click(screen.getByRole('button', { name: 'applyCount' }));
+        await waitFor(() => expect(screen.getByText('appliedCount')).toBeTruthy());
     };
 
     beforeEach(() => {
@@ -371,10 +371,10 @@ describe('TripAgentProposalCard never traps the reviewer', () => {
         );
 
         await applyOnce(user);
-        await user.click(screen.getByRole('button', { name: 'tripAgent.reviewAgain' }));
-        await user.click(screen.getByRole('button', { name: 'tripAgent.discard' }));
+        await user.click(screen.getByRole('button', { name: 'reviewAgain' }));
+        await user.click(screen.getByRole('button', { name: 'discard' }));
 
-        expect(screen.getByText('tripAgent.discarded')).toBeTruthy();
+        expect(screen.getByText('discarded')).toBeTruthy();
     });
 
     it('offers redo and review on a reverted card', async () => {
@@ -391,13 +391,13 @@ describe('TripAgentProposalCard never traps the reviewer', () => {
         );
 
         await applyOnce(user);
-        await user.click(screen.getByRole('button', { name: 'tripAgent.revert' }));
-        expect(screen.getByText('tripAgent.revertedHint')).toBeTruthy();
+        await user.click(screen.getByRole('button', { name: 'revert' }));
+        expect(screen.getByText('revertedHint')).toBeTruthy();
 
-        await user.click(screen.getByRole('button', { name: 'tripAgent.redo' }));
+        await user.click(screen.getByRole('button', { name: 'redo' }));
 
         expect(onReapplyAgentChange).toHaveBeenCalledTimes(1);
-        expect(screen.getByText('tripAgent.appliedCount')).toBeTruthy();
+        expect(screen.getByText('appliedCount')).toBeTruthy();
     });
 
     it('explains rather than silently failing when a reapply has nowhere to go', async () => {
@@ -405,13 +405,13 @@ describe('TripAgentProposalCard never traps the reviewer', () => {
         render(<TripAgentProposalCard trip={trip} changeSet={changeSet} onApplied={vi.fn()} />);
 
         await applyOnce(user);
-        await user.click(screen.getByRole('button', { name: 'tripAgent.reviewAgain' }));
-        await user.click(screen.getByRole('button', { name: 'tripAgent.preview' }));
-        await user.click(screen.getByRole('button', { name: 'tripAgent.applyAgainCount' }));
+        await user.click(screen.getByRole('button', { name: 'reviewAgain' }));
+        await user.click(screen.getByRole('button', { name: 'preview' }));
+        await user.click(screen.getByRole('button', { name: 'applyAgainCount' }));
 
-        expect(screen.getByRole('alert').textContent).toContain('tripAgent.reapplyUnavailable');
+        expect(screen.getByRole('alert').textContent).toContain('reapplyUnavailable');
         // and the card can still be closed
-        await user.click(screen.getByRole('button', { name: 'tripAgent.discard' }));
-        expect(screen.getByText('tripAgent.discarded')).toBeTruthy();
+        await user.click(screen.getByRole('button', { name: 'discard' }));
+        expect(screen.getByText('discarded')).toBeTruthy();
     });
 });

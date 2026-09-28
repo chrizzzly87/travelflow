@@ -25,6 +25,7 @@ import { readEnv } from './ai-provider-runtime.ts';
 import { errorName, redactDiagnostic } from './trip-agent-redaction.ts';
 import { resolveTripAgentModel } from './trip-agent-model.ts';
 import { runGroundedMapsSpecialist } from './trip-agent-maps-mcp.ts';
+import { generateTripAgentThreadTitle } from './trip-agent-title.ts';
 import {
   createTripAgentRun,
   finishTripAgentRun,
@@ -34,6 +35,7 @@ import {
   persistTripAgentMessage,
   persistTripAgentToolCall,
   refundTripAgentQuota,
+  retitleTripAgentThread,
   type TripAgentActor,
 } from './trip-agent-store.ts';
 
@@ -100,6 +102,9 @@ export const streamTripAgentResponse = async (input: {
   userMessage: TripAgentMessage;
   contextRefs: TripAgentContextRef[];
   abortSignal?: AbortSignal;
+  /** The placeholder title a first message just gave the chat. */
+  promptTitle?: string | null;
+  promptText?: string;
 }): Promise<Response> => {
   const startedAt = Date.now();
   const definition = await loadAgentDefinition('trip_orchestrator');
@@ -118,6 +123,39 @@ export const streamTripAgentResponse = async (input: {
     definition,
     model: resolvedModel.modelId,
   });
+
+  // A first message also names the chat. It runs beside the answer on the
+  // same approved model and privacy settings, and never fails the run.
+  const promptTitle = input.promptTitle;
+  const titlePromise = promptTitle && input.promptText
+    ? generateTripAgentThreadTitle({
+      model: resolvedModel.model,
+      prompt: input.promptText,
+      tripTitle: input.trip.title,
+      stops: input.trip.items.filter((item) => item.type === 'city').map((item) => item.title),
+      providerOptions: resolvedModel.usingGateway ? {
+        gateway: {
+          models: [definition.model, definition.fallbackModel],
+          zeroDataRetention: true,
+          disallowPromptTraining: true,
+          user: input.actor.userId,
+          tags: ['trip-agent', 'trip-agent-title'],
+        },
+      } : undefined,
+    })
+      .then(async (title) => {
+        if (title && title !== promptTitle) await retitleTripAgentThread(input.threadId, promptTitle, title);
+      })
+      .catch((error) => {
+        console.warn('[trip-agent] chat title failed', {
+          tripId: input.trip.id,
+          threadId: input.threadId,
+          requestId: input.requestId,
+          errorName: errorName(error),
+          errorMessage: redactDiagnostic(error),
+        });
+      })
+    : null;
 
   const hotelDefinitionPromise = loadAgentDefinition('hotel_scout');
   const routeDefinitionPromise = loadAgentDefinition('route_planner');
@@ -385,6 +423,9 @@ Rules:
       },
       onFinish: async ({ responseMessage, isAborted, outcome }) => {
         streamFinished = true;
+        // Settled long before a normal answer ends; waiting keeps the name in
+        // place for the panel's refresh that follows the stream.
+        if (titlePromise) await titlePromise;
         const status = isAborted ? 'cancelled' : outcome.status === 'completed' ? 'completed' : 'failed';
         await persistTripAgentMessage({
           message: withoutReasoningParts(responseMessage as TripAgentMessage),

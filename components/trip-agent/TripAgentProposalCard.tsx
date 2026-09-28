@@ -27,7 +27,7 @@ import { groupTripAgentChanges, type TripAgentChangeGroup } from './tripAgentCha
 
 type Operation = TripAgentChangeSetV1['operations'][number];
 
-const dayLabel = (t: TFunction, offset: number): string => t('tripAgent.dayValue', { day: Math.floor(offset) + 1 });
+const dayLabel = (t: TFunction, offset: number): string => t('dayValue', { day: Math.floor(offset) + 1 });
 
 const describeGroup = (trip: ITrip, group: TripAgentChangeGroup, t: TFunction): string => {
     const operation = group.primary;
@@ -35,34 +35,34 @@ const describeGroup = (trip: ITrip, group: TripAgentChangeGroup, t: TFunction): 
         ? trip.items.find((item) => item.id === group.subjectId)
         : undefined;
     if (operation.kind === 'remove_item' && subject && operation.itemId === subject.id && group.followUps.length > 0) {
-        return t('tripAgent.groupRemoveCity', { label: subject.title, count: group.followUps.length });
+        return t('groupRemoveCity', { label: subject.title, count: group.followUps.length });
     }
-    if (operation.kind === 'remove_item') return t('tripAgent.groupRemove', { label: operation.targetLabel });
+    if (operation.kind === 'remove_item') return t('groupRemove', { label: operation.targetLabel });
     if (operation.kind === 'add_item') {
-        return t('tripAgent.groupAdd', { label: operation.item.title, day: Math.floor(operation.item.startDateOffset) + 1 });
+        return t('groupAdd', { label: operation.item.title, day: Math.floor(operation.item.startDateOffset) + 1 });
     }
     if (operation.kind === 'move_item') {
-        return t('tripAgent.groupMove', { label: operation.targetLabel, day: Math.floor(operation.startDateOffset) + 1 });
+        return t('groupMove', { label: operation.targetLabel, day: Math.floor(operation.startDateOffset) + 1 });
     }
     if (operation.kind === 'update_item') {
         const item = trip.items.find((candidate) => candidate.id === operation.itemId);
         if (operation.changes.duration !== undefined && item) {
-            return t('tripAgent.groupDuration', {
+            return t('groupDuration', {
                 label: operation.targetLabel,
                 from: item.duration,
                 to: operation.changes.duration,
             });
         }
-        return t('tripAgent.groupEdit', { label: operation.targetLabel });
+        return t('groupEdit', { label: operation.targetLabel });
     }
-    if (operation.kind === 'add_stay') return t('tripAgent.groupAddStay', { label: operation.stay.name });
-    if (operation.kind === 'remove_stay') return t('tripAgent.groupRemoveStay', { label: operation.targetLabel });
-    if (operation.kind === 'update_stay') return t('tripAgent.groupEdit', { label: operation.targetLabel });
-    if (operation.kind === 'update_trip') return t('tripAgent.groupTrip');
+    if (operation.kind === 'add_stay') return t('groupAddStay', { label: operation.stay.name });
+    if (operation.kind === 'remove_stay') return t('groupRemoveStay', { label: operation.targetLabel });
+    if (operation.kind === 'update_stay') return t('groupEdit', { label: operation.targetLabel });
+    if (operation.kind === 'update_trip') return t('groupTrip');
     if (operation.kind === 'replace_itinerary') {
-        return t('tripAgent.groupReplace', { count: operation.items.length });
+        return t('groupReplace', { count: operation.items.length });
     }
-    return t('tripAgent.groupReplaceSegment', {
+    return t('groupReplaceSegment', {
         from: dayLabel(t, operation.startOffset),
         to: dayLabel(t, operation.endOffset - 1),
     });
@@ -102,19 +102,19 @@ const describeOperationComparison = (
     if (operation.kind === 'move_item') {
         const item = trip.items.find((candidate) => candidate.id === operation.itemId);
         return {
-            before: t('tripAgent.dayValue', { day: (item?.startDateOffset ?? 0) + 1 }),
-            after: t('tripAgent.dayValue', { day: operation.startDateOffset + 1 }),
+            before: t('dayValue', { day: (item?.startDateOffset ?? 0) + 1 }),
+            after: t('dayValue', { day: operation.startDateOffset + 1 }),
         };
     }
     if (operation.kind === 'remove_item' || operation.kind === 'remove_stay') {
-        return { before: operation.targetLabel, after: t('tripAgent.removed') };
+        return { before: operation.targetLabel, after: t('removed') };
     }
     if (operation.kind === 'add_item') return { before: '—', after: operation.item.title };
     if (operation.kind === 'add_stay') return { before: '—', after: operation.stay.name };
     if (operation.kind === 'replace_itinerary') {
         return {
-            before: t('tripAgent.itemCount', { count: trip.items.length }),
-            after: t('tripAgent.itemCount', { count: operation.items.length }),
+            before: t('itemCount', { count: trip.items.length }),
+            after: t('itemCount', { count: operation.items.length }),
         };
     }
     const currentCount = trip.items.filter((item) => (
@@ -122,8 +122,8 @@ const describeOperationComparison = (
         && item.startDateOffset + item.duration > operation.startOffset
     )).length;
     return {
-        before: t('tripAgent.itemCount', { count: currentCount }),
-        after: t('tripAgent.itemCount', { count: operation.items.length }),
+        before: t('itemCount', { count: currentCount }),
+        after: t('itemCount', { count: operation.items.length }),
     };
 };
 
@@ -220,7 +220,7 @@ export const TripAgentProposalCard: React.FC<{
     appliedVersionId,
     onAskAgain,
 }) => {
-    const { t } = useTranslation('common');
+    const { t } = useTranslation('tripAgent');
     const groups = useMemo(() => groupTripAgentChanges(trip, changeSet.operations), [changeSet.operations, trip]);
     const [selectedIds, setSelectedIds] = useState<string[]>(
         () => changeSet.operations.map((operation) => operation.id),
@@ -328,12 +328,12 @@ export const TripAgentProposalCard: React.FC<{
             || (appliedVersionId ? await loadAppliedTripVersion(changeSet.tripId, appliedVersionId) : null);
         if (!restored) {
             setState('error');
-            setError({ code: 'TRIP_AGENT_PROPOSAL_NOT_PENDING', message: t('tripAgent.reapplyUnavailable') });
+            setError({ code: 'TRIP_AGENT_PROPOSAL_NOT_PENDING', message: t('reapplyUnavailable') });
             return;
         }
         onReapplyAgentChange({
             trip: restored,
-            label: t('tripAgent.reapplyLabel', { summary: shortSummary(changeSet.summary) }),
+            label: t('reapplyLabel', { summary: shortSummary(changeSet.summary) }),
             changeSetId: changeSet.id,
         });
         setState('applied');
@@ -363,20 +363,20 @@ export const TripAgentProposalCard: React.FC<{
         if (hasBeenApplied) {
             if (!onReapplyAgentChange) {
                 setState('error');
-                setError({ code: 'TRIP_AGENT_PROPOSAL_NOT_PENDING', message: t('tripAgent.reapplyUnavailable') });
+                setError({ code: 'TRIP_AGENT_PROPOSAL_NOT_PENDING', message: t('reapplyUnavailable') });
                 return;
             }
             const recomputed = computePreview(trip, changeSet.operations, selectedOperationIds);
             if (!recomputed?.trip) {
                 setState('error');
-                setError({ code: 'TRIP_AGENT_NO_OP', message: t('tripAgent.previewFailed') });
+                setError({ code: 'TRIP_AGENT_NO_OP', message: t('previewFailed') });
                 return;
             }
             onPreviewTrip?.(null);
             setTripAfterApply(recomputed.trip);
             onReapplyAgentChange({
                 trip: recomputed.trip,
-                label: t('tripAgent.reapplyLabel', { summary: shortSummary(changeSet.summary) }),
+                label: t('reapplyLabel', { summary: shortSummary(changeSet.summary) }),
                 changeSetId: changeSet.id,
             });
             setApplied({ count: selectedOperationIds.length, requested: selectedOperationIds.length });
@@ -442,8 +442,8 @@ export const TripAgentProposalCard: React.FC<{
         onRevertAgentChange({
             trip: tripBeforeApply,
             redoTrip: tripAfterApply,
-            label: t('tripAgent.revertLabel', { summary: shortSummary(changeSet.summary) }),
-            redoLabel: t('tripAgent.reapplyLabel', { summary: shortSummary(changeSet.summary) }),
+            label: t('revertLabel', { summary: shortSummary(changeSet.summary) }),
+            redoLabel: t('reapplyLabel', { summary: shortSummary(changeSet.summary) }),
             changeSetId: changeSet.id,
         });
         setState('reverted');
@@ -453,7 +453,7 @@ export const TripAgentProposalCard: React.FC<{
     if (isSuperseded && state === 'pending') {
         return (
             <p className="rounded-xl border border-border bg-secondary px-3 py-2 text-xs text-muted-foreground">
-                {t('tripAgent.superseded')}
+                {t('superseded')}
             </p>
         );
     }
@@ -462,34 +462,34 @@ export const TripAgentProposalCard: React.FC<{
         return (
             <section
                 className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2"
-                aria-label={t('tripAgent.review')}
+                aria-label={t('review')}
             >
                 {state === 'applied' ? <Check className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" /> : null}
                 <span className="min-w-0 flex-1 text-xs text-foreground">
                     {state === 'applied'
                         ? (applied && applied.count < applied.requested
-                            ? t('tripAgent.appliedPartial', { count: applied.count, requested: applied.requested })
-                            : t('tripAgent.appliedCount', { count: applied?.count ?? selectedOperationIds.length }))
-                        : state === 'reverted' ? t('tripAgent.revertedHint') : t('tripAgent.discarded')}
+                            ? t('appliedPartial', { count: applied.count, requested: applied.requested })
+                            : t('appliedCount', { count: applied?.count ?? selectedOperationIds.length }))
+                        : state === 'reverted' ? t('revertedHint') : t('discarded')}
                 </span>
                 {(state === 'applied' || state === 'reverted') && (
                     <Button type="button" variant="ghost" size="sm" onClick={reviewAgain}>
-                        <PencilLine className="size-3.5" />{t('tripAgent.reviewAgain')}
+                        <PencilLine className="size-3.5" />{t('reviewAgain')}
                     </Button>
                 )}
                 {state === 'reverted' && onReapplyAgentChange && (tripAfterApply || appliedVersionId) && (
                     <Button type="button" variant="outline" size="sm" onClick={() => void redo()}>
-                        <RotateCw className="size-3.5" />{t('tripAgent.redo')}
+                        <RotateCw className="size-3.5" />{t('redo')}
                     </Button>
                 )}
                 {state === 'applied' && onRevertAgentChange && tripBeforeApply && tripAfterApply && (
                     <Button type="button" variant="ghost" size="sm" onClick={revert}>
-                        <RotateCcw className="size-3.5" />{t('tripAgent.revert')}
+                        <RotateCcw className="size-3.5" />{t('revert')}
                     </Button>
                 )}
                 {state === 'rejected' && onAskAgain && (
                     <Button type="button" variant="ghost" size="sm" onClick={onAskAgain}>
-                        {t('tripAgent.askAgain')}
+                        {t('askAgain')}
                     </Button>
                 )}
             </section>
@@ -499,15 +499,15 @@ export const TripAgentProposalCard: React.FC<{
     return (
         <section
             className={`overflow-hidden rounded-2xl border bg-card shadow-sm ${state === 'error' ? 'border-rose-200 dark:border-rose-400/30' : 'border-border'}`}
-            aria-label={t('tripAgent.review')}
+            aria-label={t('review')}
         >
             <header className="border-b border-border px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700 dark:text-accent-200">
-                    {stage === 'preview' ? t('tripAgent.eyebrowPreview') : t('tripAgent.eyebrowReview')}
+                    {stage === 'preview' ? t('eyebrowPreview') : t('eyebrowReview')}
                 </p>
                 <h3 className="mt-1 text-sm font-semibold leading-5 text-foreground">{shortSummary(changeSet.summary)}</h3>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                    {stage === 'preview' ? t('tripAgent.previewHint') : t('tripAgent.selectHint')}
+                    {stage === 'preview' ? t('previewHint') : t('selectHint')}
                 </p>
             </header>
 
@@ -515,7 +515,7 @@ export const TripAgentProposalCard: React.FC<{
                 <div className="px-4 py-3">
                     <Questionnaire>
                         <QuestionnaireItem>
-                            <QuestionnaireTitle className="sr-only">{t('tripAgent.review')}</QuestionnaireTitle>
+                            <QuestionnaireTitle className="sr-only">{t('review')}</QuestionnaireTitle>
                             <QuestionnaireChoices
                                 type="multiple"
                                 value={selectedGroupIds}
@@ -530,7 +530,7 @@ export const TripAgentProposalCard: React.FC<{
                                             </span>
                                             <QuestionnaireChoiceDescription className="mt-0 line-clamp-2 text-[11px] leading-4">
                                                 {group.followUps.length > 0
-                                                    ? `${group.primary.rationale} · ${t('tripAgent.groupShifts', { count: countTouchedItems(group.followUps) })}`
+                                                    ? `${group.primary.rationale} · ${t('groupShifts', { count: countTouchedItems(group.followUps) })}`
                                                     : group.primary.rationale}
                                             </QuestionnaireChoiceDescription>
                                         </QuestionnaireChoice>
@@ -547,8 +547,8 @@ export const TripAgentProposalCard: React.FC<{
                                                     className="h-auto px-0 text-[11px] font-normal text-muted-foreground"
                                                 >
                                                     {expandedGroupId === group.id
-                                                        ? t('tripAgent.hideOperations')
-                                                        : t('tripAgent.showOperations', { count: group.operationIds.length })}
+                                                        ? t('hideOperations')
+                                                        : t('showOperations', { count: group.operationIds.length })}
                                                 </Button>
                                                 {expandedGroupId === group.id && (
                                                     <ul className="mt-1 space-y-1">
@@ -593,19 +593,19 @@ export const TripAgentProposalCard: React.FC<{
                 <div className="space-y-2 px-4 py-3">
                     <p className="flex items-center gap-1.5 rounded-xl bg-accent-50 px-2.5 py-2 text-xs font-medium text-accent-900 dark:bg-accent-400/12 dark:text-accent-200">
                         <Eye className="size-3.5 shrink-0" />
-                        {t('tripAgent.previewLive')}
+                        {t('previewLive')}
                     </p>
                     <dl className="grid grid-cols-2 gap-2 text-xs">
                         <div className="rounded-xl bg-secondary p-2.5">
-                            <dt className="font-semibold text-foreground">{t('tripAgent.before')}</dt>
+                            <dt className="font-semibold text-foreground">{t('before')}</dt>
                             <dd className="mt-0.5 text-muted-foreground">
-                                {t('tripAgent.itemCount', { count: trip.items.length })} · {t('tripAgent.dayCount', { count: tripDayCount(trip) })}
+                                {t('itemCount', { count: trip.items.length })} · {t('dayCount', { count: tripDayCount(trip) })}
                             </dd>
                         </div>
                         <div className="rounded-xl bg-emerald-50 p-2.5 dark:bg-emerald-400/12">
-                            <dt className="font-semibold text-emerald-900 dark:text-emerald-200">{t('tripAgent.after')}</dt>
+                            <dt className="font-semibold text-emerald-900 dark:text-emerald-200">{t('after')}</dt>
                             <dd className="mt-0.5 text-emerald-800 dark:text-emerald-200">
-                                {t('tripAgent.itemCount', { count: preview?.trip?.items.length ?? trip.items.length })} · {t('tripAgent.dayCount', { count: preview?.trip ? tripDayCount(preview.trip) : tripDayCount(trip) })}
+                                {t('itemCount', { count: preview?.trip?.items.length ?? trip.items.length })} · {t('dayCount', { count: preview?.trip ? tripDayCount(preview.trip) : tripDayCount(trip) })}
                             </dd>
                         </div>
                     </dl>
@@ -619,17 +619,17 @@ export const TripAgentProposalCard: React.FC<{
                     </ul>
                     {preview?.error && (
                         <p className="rounded-xl bg-rose-50 p-2.5 text-xs text-rose-800 dark:bg-rose-400/12 dark:text-rose-200" role="alert">
-                            {t('tripAgent.previewFailed')}
+                            {t('previewFailed')}
                         </p>
                     )}
                     {!preview?.error && preview?.skippedCount ? (
                         <p className="rounded-xl bg-amber-50 p-2.5 text-xs text-amber-800 dark:bg-amber-400/12 dark:text-amber-200" role="status">
-                            {t('tripAgent.previewSkipped', { count: preview.skippedCount })}
+                            {t('previewSkipped', { count: preview.skippedCount })}
                         </p>
                     ) : null}
                     {!preview?.error && preview?.noOpCount ? (
                         <p className="rounded-xl bg-amber-50 p-2.5 text-xs text-amber-800 dark:bg-amber-400/12 dark:text-amber-200" role="status">
-                            {t('tripAgent.previewNoOp', { count: preview.noOpCount })}
+                            {t('previewNoOp', { count: preview.noOpCount })}
                         </p>
                     ) : null}
                 </div>
@@ -650,7 +650,7 @@ export const TripAgentProposalCard: React.FC<{
                 <div className="mx-4 mb-1 rounded-xl border border-rose-200 bg-rose-50 p-3 dark:bg-rose-400/12 dark:border-rose-400/30" role="alert">
                     <p className="flex items-center gap-1.5 text-sm font-semibold text-rose-900 dark:text-rose-200">
                         <AlertTriangle className="size-4" />
-                        {t([`tripAgent.errors.${error.code}`, 'tripAgent.errors.TRIP_AGENT_REQUEST_FAILED'])}
+                        {t([`errors.${error.code}`, 'errors.TRIP_AGENT_REQUEST_FAILED'])}
                     </p>
                     <p className="mt-1 break-words text-xs leading-5 text-rose-800 dark:text-rose-200">{error.message}</p>
                 </div>
@@ -660,7 +660,7 @@ export const TripAgentProposalCard: React.FC<{
                 {stage === 'select' ? (
                     <>
                         <Button type="button" variant="ghost" size="sm" onClick={reject} disabled={state === 'applying'}>
-                            {t('tripAgent.discard')}
+                            {t('discard')}
                         </Button>
                         <Button
                             type="button"
@@ -671,7 +671,7 @@ export const TripAgentProposalCard: React.FC<{
                             shortcut={shortcutEnabled ? previewShortcutLabel() : undefined}
                             aria-keyshortcuts={shortcutEnabled ? 'Meta+Shift+P Control+Shift+P' : undefined}
                         >
-                            <Eye className="size-3.5" />{t('tripAgent.preview')}
+                            <Eye className="size-3.5" />{t('preview')}
                         </Button>
                     </>
                 ) : (
@@ -679,10 +679,10 @@ export const TripAgentProposalCard: React.FC<{
                         {/* Discard is available here too: an errored preview used to
                             offer only Back and a failing Apply. */}
                         <Button type="button" variant="ghost" size="sm" onClick={reject} disabled={state === 'applying'}>
-                            {t('tripAgent.discard')}
+                            {t('discard')}
                         </Button>
                         <Button type="button" variant="ghost" size="sm" onClick={() => setStage('select')} disabled={state === 'applying'}>
-                            <ArrowLeft className="size-3.5" />{t('tripAgent.backToSelection')}
+                            <ArrowLeft className="size-3.5" />{t('backToSelection')}
                         </Button>
                         <Button
                             type="button"
@@ -692,10 +692,10 @@ export const TripAgentProposalCard: React.FC<{
                         >
                             {state === 'error' ? <RotateCcw className="size-3.5" /> : null}
                             {state === 'error'
-                                ? t('tripAgent.retryApply')
+                                ? t('retryApply')
                                 : hasBeenApplied
-                                    ? t('tripAgent.applyAgainCount', { count: selectedOperationIds.length })
-                                    : t('tripAgent.applyCount', { count: selectedOperationIds.length })}
+                                    ? t('applyAgainCount', { count: selectedOperationIds.length })
+                                    : t('applyCount', { count: selectedOperationIds.length })}
                         </Button>
                     </>
                 )}

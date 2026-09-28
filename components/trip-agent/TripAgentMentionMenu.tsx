@@ -25,10 +25,24 @@ export const TripAgentMentionMenu: React.FC<{
     onSelect: (index: number) => void;
     onHover: (index: number) => void;
 }> = ({ items, activeIndex, emptyLabel, listId, onSelect, onHover }) => {
+    const listRef = useRef<HTMLUListElement | null>(null);
     const activeRef = useRef<HTMLLIElement | null>(null);
 
+    // Keep the active option in view by scrolling the list alone.
+    // scrollIntoView also scrolls every scrollable ancestor (the chat, the
+    // panel), and on open it pushed the first group heading out of sight.
     useEffect(() => {
-        activeRef.current?.scrollIntoView({ block: 'nearest' });
+        const list = listRef.current;
+        const option = activeRef.current;
+        if (!list || !option) return;
+        if (activeIndex === 0) {
+            list.scrollTop = 0;
+            return;
+        }
+        const top = option.offsetTop;
+        const bottom = top + option.offsetHeight;
+        if (top < list.scrollTop) list.scrollTop = top;
+        else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight;
     }, [activeIndex]);
 
     if (items.length === 0) {
@@ -38,7 +52,7 @@ export const TripAgentMentionMenu: React.FC<{
     let lastGroup: string | null = null;
 
     return (
-        <ul id={listId} role="listbox" className="max-h-64 overflow-y-auto py-1">
+        <ul ref={listRef} id={listId} role="listbox" className="relative max-h-64 overflow-y-auto py-1">
             {items.map((item, index) => {
                 const showGroup = item.group !== lastGroup;
                 lastGroup = item.group;

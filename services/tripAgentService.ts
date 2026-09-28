@@ -116,10 +116,21 @@ const mutate = async <T>(body: Record<string, unknown>): Promise<T> => {
     return response.json() as Promise<T>;
 };
 
-export const createTripAgentThread = async (tripId: string): Promise<TripAgentThread> => {
-    const result = await mutate<{ thread: TripAgentThread }>({ action: 'createThread', tripId });
+/**
+ * Saves a chat. A draft passes the id it was given in the browser, so the
+ * chat it already shows is the one the server stores.
+ */
+export const createTripAgentThread = async (tripId: string, threadId?: string): Promise<TripAgentThread> => {
+    const result = await mutate<{ thread: TripAgentThread }>({
+        action: 'createThread',
+        tripId,
+        ...(threadId ? { threadId } : {}),
+    });
     return result.thread;
 };
+
+export const restoreTripAgentThread = (tripId: string, threadId: string): Promise<{ ok: true }> =>
+    mutate({ action: 'restoreThread', tripId, threadId });
 
 export const archiveTripAgentThread = (tripId: string, threadId: string): Promise<{ ok: true }> =>
     mutate({ action: 'archiveThread', tripId, threadId });

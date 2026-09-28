@@ -33,7 +33,7 @@ export const TripAgentQuestionCard: React.FC<{
     onAnswer: (prompt: string) => void;
     disabled?: boolean;
 }> = ({ question, options, allowCustom, onAnswer, disabled }) => {
-    const { t } = useTranslation('common');
+    const { t } = useTranslation('tripAgent');
     const [selected, setSelected] = useState<string[]>([]);
     const [custom, setCustom] = useState('');
     const [answered, setAnswered] = useState<string | null>(null);
@@ -92,12 +92,12 @@ export const TripAgentQuestionCard: React.FC<{
                     <Input
                         value={custom}
                         onChange={(event) => setCustom(event.currentTarget.value)}
-                        placeholder={t('tripAgent.questionCustom')}
+                        placeholder={t('questionCustom')}
                         disabled={disabled}
                         className="h-8 text-[13px]"
                     />
                     <Button type="submit" size="sm" variant="outline" disabled={disabled || !custom.trim()}>
-                        {t('tripAgent.questionSend')}
+                        {t('questionSend')}
                     </Button>
                 </form>
             )}

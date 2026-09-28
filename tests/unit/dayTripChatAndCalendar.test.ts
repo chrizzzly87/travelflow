@@ -31,19 +31,19 @@ const ref = (kind: TripAgentContextRef['kind'], id: string, label: string): Trip
 describe('day-trip presets for the chat "/" menu', () => {
     it('offers the general prompt with nothing selected', () => {
         expect(buildTripAgentDayTripPresets({ t, trip: { items }, contextRefs: [] }))
-            .toEqual(['tripAgent.presetDayTrips']);
+            .toEqual(['presetDayTrips']);
     });
 
     it('asks for a day trip from a selected stay', () => {
         expect(buildTripAgentDayTripPresets({ t, trip: { items }, contextRefs: [ref('city', 'porto', 'Porto')] }))
-            .toEqual(['tripAgent.presetDayTripFrom(Porto)', 'tripAgent.presetDayTrips']);
+            .toEqual(['presetDayTripFrom(Porto)', 'presetDayTrips']);
     });
 
     it('turns an ordinary activity into a day trip, and changes or removes an existing one', () => {
         expect(buildTripAgentDayTripPresets({ t, trip: { items }, contextRefs: [ref('activity', 'tram', 'Tram 28')] })[0])
-            .toBe('tripAgent.presetMakeDayTrip(Tram 28)');
+            .toBe('presetMakeDayTrip(Tram 28)');
         expect(buildTripAgentDayTripPresets({ t, trip: { items }, contextRefs: [ref('activity', 'sintra', 'Sintra')] }).slice(0, 2))
-            .toEqual(['tripAgent.presetChangeDayTrip(Sintra)', 'tripAgent.presetRemoveDayTrip(Sintra)']);
+            .toEqual(['presetChangeDayTrip(Sintra)', 'presetRemoveDayTrip(Sintra)']);
     });
 
     it('offers nothing for a trip without stays', () => {
