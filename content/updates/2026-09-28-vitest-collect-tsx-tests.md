@@ -1,10 +1,10 @@
 ---
 id: rel-2026-09-28-vitest-collect-tsx-tests
-version: v0.200.0
+version: v0.202.0
 title: "Run every component test"
 date: 2026-09-28
-published_at: 2026-09-28T16:00:00Z
-status: draft
+published_at: 2026-09-28T16:28:43Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Three component test files that were silently skipped now run in CI."
