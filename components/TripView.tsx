@@ -3370,7 +3370,7 @@ const useTripViewRender = ({
             });
             return;
         }
-        prefetchTripAgent(trip.id, { ensureThread: true });
+        prefetchTripAgent(trip.id);
         setIsTripAgentOpen(true);
         writeTripAgentOpenState(true);
     }, [isTripAgentLocked, location.hash, location.pathname, location.search, openLoginModal, trip.id, tripAgentContextRefs.length]);

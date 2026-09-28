@@ -15,6 +15,7 @@ import {
   getTripAgentActor,
   getTripAgentQuota,
   listTripAgentThreads,
+  restoreTripAgentThread,
   loadEditableTrip,
   loadTripAgentChangeSet,
   loadTripAgentChangeSetStatuses,
@@ -133,9 +134,10 @@ const userMessageSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 }).passthrough();
 
-const bodySchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('createThread'), tripId: tripIdSchema }).strict(),
+export const tripAgentBodySchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('createThread'), tripId: tripIdSchema, threadId: uuidSchema.optional() }).strict(),
   z.object({ action: z.literal('archiveThread'), tripId: tripIdSchema, threadId: uuidSchema }).strict(),
+  z.object({ action: z.literal('restoreThread'), tripId: tripIdSchema, threadId: uuidSchema }).strict(),
   z.object({
     action: z.literal('chat'),
     tripId: tripIdSchema,
@@ -163,27 +165,6 @@ const readShareToken = (request: Request): string | null => {
   return param && param.length <= 200 ? param : null;
 };
 
-/**
- * Picks the thread a bootstrap opens: the one asked for, else the newest
- * active one. With `ensureThread`, a trip without an active chat gets one
- * here, so opening the panel costs one round trip instead of three.
- */
-export const resolveBootstrapThread = async <TThread extends { id: string; status: string }>(input: {
-  threads: TThread[];
-  requestedThreadId: string | null;
-  ensureThread: boolean;
-  createThread: () => Promise<TThread>;
-}): Promise<{ threads: TThread[]; currentThread: TThread | undefined }> => {
-  const { threads, requestedThreadId, ensureThread, createThread } = input;
-  if (requestedThreadId) {
-    return { threads, currentThread: threads.find((thread) => thread.id === requestedThreadId) };
-  }
-  const active = threads.find((thread) => thread.status === 'active');
-  if (active || !ensureThread) return { threads, currentThread: active };
-  const created = await createThread();
-  return { threads: [created, ...threads], currentThread: created };
-};
-
 export default async (request: Request) => {
   const startedAt = Date.now();
   const shareToken = readShareToken(request);
@@ -199,13 +180,10 @@ export default async (request: Request) => {
       const requestedThreadId = url.searchParams.get('threadId');
       logContext = { action: 'bootstrap', tripId, threadId: requestedThreadId || undefined };
       await loadEditableTrip(tripId, actor.userId, shareToken);
-      const listedThreads = await listTripAgentThreads(tripId);
-      const { threads, currentThread } = await resolveBootstrapThread({
-        threads: listedThreads,
-        requestedThreadId,
-        ensureThread: url.searchParams.get('ensureThread') === '1',
-        createThread: () => createTripAgentThread(tripId, actor.userId),
-      });
+      const threads = await listTripAgentThreads(tripId);
+      const currentThread = requestedThreadId
+        ? threads.find((thread) => thread.id === requestedThreadId)
+        : threads.find((thread) => thread.status === 'active');
       if (currentThread) {
         const aborted = await abortStaleTripAgentStreams(currentThread.id).catch(() => 0);
         if (aborted > 0) {
@@ -228,7 +206,7 @@ export default async (request: Request) => {
     }
 
     if (request.method !== 'POST') return json(405, { error: 'Method not allowed.' });
-    const body = bodySchema.parse(await request.json());
+    const body = tripAgentBodySchema.parse(await request.json());
     logContext = {
       action: body.action,
       tripId: body.tripId,
@@ -238,7 +216,11 @@ export default async (request: Request) => {
     const canonical = await loadEditableTrip(body.tripId, actor.userId, shareToken);
 
     if (body.action === 'createThread') {
-      return json(201, { thread: await createTripAgentThread(body.tripId, actor.userId) });
+      return json(201, { thread: await createTripAgentThread(body.tripId, actor.userId, undefined, body.threadId) });
+    }
+    if (body.action === 'restoreThread') {
+      await restoreTripAgentThread(body.threadId, body.tripId);
+      return json(200, { ok: true });
     }
     if (body.action === 'archiveThread') {
       await assertThreadInTrip(body.threadId, body.tripId);

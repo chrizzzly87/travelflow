@@ -35,10 +35,11 @@ describe('tripAgentPrefetch', () => {
     loadTripAgentBootstrapMock.mockResolvedValue(bootstrap('t1'));
     prefetchTripAgentBootstrap('trip-1');
     prefetchTripAgentBootstrap('trip-1');
-    prefetchTripAgentBootstrap('trip-1', { ensureThread: true });
+    prefetchTripAgentBootstrap('trip-1');
     const result = await loadTripAgentBootstrapForPanel('trip-1', null);
     expect(result.currentThreadId).toBe('t1');
     expect(loadTripAgentBootstrapMock).toHaveBeenCalledTimes(1);
+    expect(loadTripAgentBootstrapMock).toHaveBeenCalledWith('trip-1', null);
   });
 
   it('hands a prefetch to the panel only once, so a later load asks the server again', async () => {
@@ -47,25 +48,24 @@ describe('tripAgentPrefetch', () => {
     await loadTripAgentBootstrapForPanel('trip-1', null);
     await loadTripAgentBootstrapForPanel('trip-1', null);
     expect(loadTripAgentBootstrapMock).toHaveBeenCalledTimes(2);
-    expect(loadTripAgentBootstrapMock).toHaveBeenLastCalledWith('trip-1', null, { ensureThread: true });
   });
 
-  it('asks again with ensureThread when a hover prefetch found no thread', async () => {
+  it('reuses the prefetch for a named thread when it is the one the prefetch loaded', async () => {
+    loadTripAgentBootstrapMock.mockResolvedValue(bootstrap('t1'));
+    prefetchTripAgentBootstrap('trip-1');
+    const result = await loadTripAgentBootstrapForPanel('trip-1', 't1');
+    expect(result.currentThreadId).toBe('t1');
+    expect(loadTripAgentBootstrapMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks for a named thread when the prefetch loaded a different one', async () => {
     loadTripAgentBootstrapMock
-      .mockResolvedValueOnce(bootstrap(null))
-      .mockResolvedValueOnce(bootstrap('created'));
+      .mockResolvedValueOnce(bootstrap('t1'))
+      .mockResolvedValueOnce(bootstrap('t2'));
     prefetchTripAgentBootstrap('trip-1');
-    const result = await loadTripAgentBootstrapForPanel('trip-1', null);
-    expect(result.currentThreadId).toBe('created');
-    expect(loadTripAgentBootstrapMock).toHaveBeenNthCalledWith(1, 'trip-1', null, { ensureThread: false });
-    expect(loadTripAgentBootstrapMock).toHaveBeenNthCalledWith(2, 'trip-1', null, { ensureThread: true });
-  });
-
-  it('never serves a named thread from the default-thread prefetch', async () => {
-    loadTripAgentBootstrapMock.mockResolvedValue(bootstrap('t2'));
-    prefetchTripAgentBootstrap('trip-1');
-    await loadTripAgentBootstrapForPanel('trip-1', 't2');
-    expect(loadTripAgentBootstrapMock).toHaveBeenLastCalledWith('trip-1', 't2', { ensureThread: true });
+    const result = await loadTripAgentBootstrapForPanel('trip-1', 't2');
+    expect(result.currentThreadId).toBe('t2');
+    expect(loadTripAgentBootstrapMock).toHaveBeenLastCalledWith('trip-1', 't2');
   });
 
   it('remembers the last bootstrap per trip for an instant reopen', async () => {

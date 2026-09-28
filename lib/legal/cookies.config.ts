@@ -227,6 +227,13 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'localStorage',
     },
     {
+      name: 'tf_trip_agent_session_v1:*',
+      purpose: 'Remembers which planner AI chat is open in this tab, so a new session starts with a fresh chat.',
+      duration: 'Session',
+      provider: 'TravelFlow',
+      storage: 'sessionStorage',
+    },
+    {
       name: 'tf_trip_copy_notice',
       purpose: 'Temporary cross-page “trip copied” toast payload.',
       duration: 'Session',

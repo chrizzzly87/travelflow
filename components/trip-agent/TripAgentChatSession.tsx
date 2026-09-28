@@ -2,11 +2,13 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import {
     AlertCircle,
+    ArrowRight,
     AtSign,
     BedDouble,
     Bot,
     CircleDot,
     MapPin,
+    MessageSquare,
     Route,
     RotateCcw,
     Sparkles,
@@ -20,7 +22,7 @@ import {
     type TripAgentMessage,
     type TripAgentQuotaState,
 } from '../../shared/tripAgent';
-import { trackEvent } from '../../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
     buildTripAgentChatRequest,
     readTripAgentError,
@@ -297,6 +299,15 @@ export interface TripAgentChatSessionProps {
     onReapplyAgentChange?: TripAgentPanelProps['onReapplyAgentChange'];
     /** Called once the prompt field exists, so the panel can move focus to it. */
     onReady?: () => void;
+    /**
+     * Resolves once the thread exists on the server. A draft chat is only
+     * saved when its first message goes out, so sending waits on this.
+     */
+    onBeforeSend?: (threadId: string) => Promise<void>;
+    /** Other chats to continue, offered while this one is still empty. */
+    recentChats?: TripAgentThread[];
+    onOpenChat?: (threadId: string) => void;
+    onShowAllChats?: () => void;
 }
 
 /**
@@ -318,6 +329,10 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
     onRevertAgentChange,
     onReapplyAgentChange,
     onReady,
+    onBeforeSend,
+    recentChats = [],
+    onOpenChat,
+    onShowAllChats,
 }) => {
     const { t, i18n } = useTranslation('common');
     const now = useMinuteTick();
@@ -374,9 +389,13 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
     );
     const ambiguousLabels = useMemo(() => ambiguousMentionLabels(selectableContextRefs), [selectableContextRefs]);
     const retryContextRef = useRef<TripAgentContextRef[] | null>(null);
+    const sendFetch = useCallback<typeof tripAgentFetch>(async (input, init) => {
+        if (onBeforeSend) await onBeforeSend(thread.id);
+        return tripAgentFetch(input, init);
+    }, [onBeforeSend, thread.id]);
     const transport = useMemo(() => new DefaultChatTransport<TripAgentMessage>({
         api: '/api/trip-agent',
-        fetch: tripAgentFetch,
+        fetch: sendFetch,
         prepareSendMessagesRequest: ({ messages }) => {
             // A retry repeats the message with the context it was sent with,
             // not with whatever the draft happens to mention now.
@@ -389,7 +408,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                 contextRefs,
             });
         },
-    }), [activeContextRefs, thread.id, trip.id]);
+    }), [activeContextRefs, sendFetch, thread.id, trip.id]);
     const { messages, sendMessage, status, stop, error, clearError } = useChat<TripAgentMessage>({
         id: thread.id,
         messages: initialMessages,
@@ -578,6 +597,41 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                                 title={t('tripAgent.noMessages')}
                                 description={t('tripAgent.subtitle')}
                             />
+                            {recentChats.length > 0 && onOpenChat && (
+                                <nav aria-labelledby="trip-agent-recent-chats" className="space-y-1">
+                                    <h3 id="trip-agent-recent-chats" className="px-1 text-[11px] font-medium text-muted-foreground">
+                                        {t('tripAgent.recentChats')}
+                                    </h3>
+                                    <ul className="space-y-0.5">
+                                        {recentChats.map((chat) => (
+                                            <li key={chat.id}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onOpenChat(chat.id)}
+                                                    className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-start text-sm outline-none transition-colors hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                    {...getAnalyticsDebugAttributes('trip_agent__recent_chat--open', { trip_id: trip.id })}
+                                                >
+                                                    <MessageSquare aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
+                                                    <span className="min-w-0 flex-1 truncate text-foreground">{chat.title}</span>
+                                                    <span className="shrink-0 text-[11px] text-muted-foreground">
+                                                        {formatTripAgentTimestamp(chat.updatedAt, i18n.language, now)}
+                                                    </span>
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    {onShowAllChats && (
+                                        <button
+                                            type="button"
+                                            onClick={onShowAllChats}
+                                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-start text-xs text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                        >
+                                            <span className="flex-1">{t('tripAgent.allChats')}</span>
+                                            <ArrowRight aria-hidden="true" className="size-3.5 rtl:rotate-180" />
+                                        </button>
+                                    )}
+                                </nav>
+                            )}
                             <TripAgentCapabilities />
                         </div>
                     ) : messages.map((message, index) => (
