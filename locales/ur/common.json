@@ -716,6 +716,73 @@
       "dayTripTitlePlaceholder": "مثلاً سنترا کے محلات",
       "submitDayTrip": "ایک دن کا سفر شامل کریں",
       "findingPlace": "جگہ تلاش کی جا رہی ہے…"
+    },
+    "timelineControls": {
+      "horizontalDirection": "افقی ٹائم لائن",
+      "verticalDirection": "عمودی ٹائم لائن",
+      "zoomOut": "ٹائم لائن چھوٹی کریں",
+      "zoomIn": "ٹائم لائن بڑی کریں",
+      "calendarView": "کیلنڈر ویو",
+      "listView": "فہرست ویو"
+    },
+    "panels": {
+      "resizeDetails": "تفصیلات پینل کا سائز بدلیں",
+      "resizeTimelineAndMap": "ٹائم لائن اور نقشے کا سائز بدلیں",
+      "resizeTimeline": "ٹائم لائن کا سائز بدلیں"
+    },
+    "mapControls": {
+      "minimizePreview": "نقشے کا پیش منظر چھوٹا کریں",
+      "maximizePreview": "نقشے کا پیش منظر بڑا کریں",
+      "layoutVertical": "عمودی لے آؤٹ",
+      "layoutHorizontal": "افقی لے آؤٹ",
+      "fitToItinerary": "نقشہ سفری منصوبے پر فٹ کریں",
+      "shrinkMap": "نقشہ چھوٹا کریں",
+      "expandMap": "نقشہ بڑا کریں",
+      "showLabels": "شہروں کے نام دکھائیں",
+      "hideLabels": "شہروں کے نام چھپائیں",
+      "showActivityMarkers": "سرگرمی پن دکھائیں",
+      "hideActivityMarkers": "سرگرمی پن چھپائیں"
+    },
+    "floatingMap": {
+      "move": "تیرتے نقشے کا پیش منظر ہٹائیں",
+      "useCompactSize": "نقشے کا چھوٹا سائز استعمال کریں",
+      "useExpandedSize": "نقشے کا بڑا سائز استعمال کریں",
+      "switchToLandscape": "نقشے کا پیش منظر افقی کریں",
+      "switchToPortrait": "نقشے کا پیش منظر عمودی کریں",
+      "settling": "نقشے کا پیش منظر اپنی جگہ لے رہا ہے"
+    },
+    "banners": {
+      "shareViewOnly": "شیئر کیا گیا سفر · صرف دیکھنے کے لیے",
+      "shareEditable": "شیئر کیا گیا سفر · ترمیم فعال",
+      "snapshotOlder": "آپ پرانا ورژن دیکھ رہے ہیں۔ اس سفر میں نئی تبدیلیاں ہیں۔",
+      "snapshotCurrent": "آپ اس شیئر کیے گئے سفر کا محفوظ ورژن دیکھ رہے ہیں۔",
+      "openLatest": "تازہ ترین کھولیں",
+      "copyTrip": "سفر کاپی کریں"
+    },
+    "exampleBanner": {
+      "eyebrow": "آزمانے کے لیے نمونہ سفر",
+      "title": "آزادی سے دیکھیں۔ رکھنا اور ترمیم کرنا ہو تو کاپی کریں۔",
+      "body": "یہ منصوبہ صرف مثال کے لیے ہے اور کوئی تبدیلی محفوظ نہیں کرتا۔",
+      "countryFocus": "ممالک: {countries}۔",
+      "dismiss": "نمونہ سفر کا نوٹس بند کریں"
+    },
+    "listView": {
+      "openTransfer": "منتقلی کی تفصیلات کھولیں ({mode})",
+      "taskCompleted": "مکمل کام",
+      "taskOpen": "باقی کام",
+      "days": "دن",
+      "daysRange": "دن {start} - {end}"
+    },
+    "timeline": {
+      "addCityToEnd": "آخر میں شہر شامل کریں",
+      "addTransfer": "منتقلی شامل کریں",
+      "transportUndecided": "سواری طے نہیں",
+      "transportMode": "سواری: {mode}",
+      "addActivity": "سرگرمی شامل کریں",
+      "addActivityOn": "{date} کے لیے سرگرمی شامل کریں",
+      "occupySpace": "دستیاب جگہ بھریں",
+      "stretchToFill": "خالی جگہ تک پھیلائیں",
+      "reverseSelectedCities": "منتخب شہروں کی ترتیب الٹیں"
     }
   },
   "tripRouteShell": {

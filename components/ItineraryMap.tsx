@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useState, useMemo, useR
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { buildDayTripMarkerHtml, buildTripMapDayTripDescriptors, collectDayTripMarkerIds, isDayTripRoundTrip } from './maps/tripMapDayTripModel';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { Button } from './ui/button';
 import type mapboxgl from 'mapbox-gl';
 import {
     ActivityType,
@@ -17,6 +18,7 @@ import {
 } from '../types';
 import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2, Route, Tag, TagsIcon } from 'lucide-react';
 import { MapPinArea } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName, pickPrimaryActivityType } from '../utils';
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
@@ -1491,7 +1493,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     onClearSelection,
     onOpenCustomize,
     isCustomizeOpen = false,
-    customizeLabel = 'Customize map',
+    customizeLabel: customizeLabelProp,
     showActivityMarkers,
     onShowActivityMarkersChange,
     basemapDetail,
@@ -1521,6 +1523,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     isPaywalled = false,
     viewTransitionName
 }) => {
+    const { t } = useTranslation('common');
+    const customizeLabel = customizeLabelProp ?? t('tripView.mapCustomize.open');
     const mapInstanceIdRef = useRef(`tf-itinerary-map-${Math.random().toString(36).slice(2, 10)}`);
     const mapInstanceId = mapInstanceIdRef.current;
     const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -3671,17 +3675,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
               */}
             {isCityFocusMode && onClearSelection && (
                 <div className="pointer-events-none absolute inset-x-0 bottom-4 z-[41] flex justify-center px-4">
-                    <button
+                    <Button
                         type="button"
+                        variant="floating"
+                        size="sm"
                         onClick={onClearSelection}
                         data-testid="map-clear-city-focus"
                         data-floating-map-control="true"
-                        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-border bg-card/95 ps-3 pe-4 py-2 text-xs font-semibold text-foreground shadow-lg backdrop-blur transition-colors hover:border-accent-300 hover:bg-card hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:hover:text-accent-200 dark:hover:border-accent-400/30 dark:shadow-none"
+                        className="pointer-events-auto rounded-full bg-card/95 ps-3 pe-4 text-xs font-semibold text-foreground shadow-lg backdrop-blur hover:border-accent-300 hover:bg-card hover:text-accent-700 dark:hover:border-accent-400/30 dark:hover:text-accent-200"
                         {...getAnalyticsDebugAttributes('trip_view__map_city_focus--clear', { surface: 'map_canvas' })}
                     >
                         <Route size={15} />
-                        Show whole journey
-                    </button>
+                        {t('tripView.mapCustomize.showWholeJourney')}
+                    </Button>
                 </div>
             )}
 
@@ -3689,54 +3695,72 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             <div data-floating-map-control="true" className="absolute top-4 end-4 z-[40] flex flex-col gap-2 pointer-events-none">
                 <div className="flex flex-col gap-2 pointer-events-auto">
                     {onMapDockModeToggle && (
-                        <button
+                        <Button
                             type="button"
+                            variant="floating"
+                            size="icon-lg"
                             onClick={onMapDockModeToggle}
                             data-testid="map-dock-toggle-button"
                             data-floating-map-control="true"
-                            className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300 dark:shadow-none"
-                            aria-label={mapDockMode === 'docked' ? 'Minimize map preview' : 'Maximize map preview'}
+                            className="rounded-lg"
+                            aria-label={mapDockMode === 'docked' ? t('tripView.mapControls.minimizePreview') : t('tripView.mapControls.maximizePreview')}
                             {...getAnalyticsDebugAttributes(
                                 mapDockMode === 'docked' ? 'trip_view__map_preview--minimize' : 'trip_view__map_preview--maximize',
                                 { surface: 'map_controls' },
                             )}
                         >
                             {mapDockMode === 'docked' ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-                            <span className="sr-only">{mapDockMode === 'docked' ? 'Minimize map preview' : 'Maximize map preview'}</span>
-                        </button>
+                            <span className="sr-only">{mapDockMode === 'docked' ? t('tripView.mapControls.minimizePreview') : t('tripView.mapControls.maximizePreview')}</span>
+                        </Button>
                     )}
                     {showLayoutControls && onLayoutChange && (
                         <>
-                            <button type="button"
+                            <Button
+                                type="button"
+                                variant="floating"
+                                size="icon-lg"
                                 onClick={() => onLayoutChange('vertical')}
-                                className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-card border-border text-muted-foreground hover:text-accent-600 hover:bg-secondary dark:hover:text-accent-300'}`} aria-label="Vertical layout"
+                                className="rounded-lg"
+                                aria-label={t('tripView.mapControls.layoutVertical')}
+                                aria-pressed={layoutMode === 'vertical'}
                                 {...getAnalyticsDebugAttributes('trip_view__layout_direction--vertical', { surface: 'map_controls' })}
-                            ><ArrowUpDown size={18} /></button>
-                            <button type="button"
+                            ><ArrowUpDown size={18} /></Button>
+                            <Button
+                                type="button"
+                                variant="floating"
+                                size="icon-lg"
                                 onClick={() => onLayoutChange('horizontal')}
-                                className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-card border-border text-muted-foreground hover:text-accent-600 hover:bg-secondary dark:hover:text-accent-300'}`} aria-label="Horizontal layout"
+                                className="rounded-lg"
+                                aria-label={t('tripView.mapControls.layoutHorizontal')}
+                                aria-pressed={layoutMode === 'horizontal'}
                                 {...getAnalyticsDebugAttributes('trip_view__layout_direction--horizontal', { surface: 'map_controls' })}
-                            ><ArrowLeftRight size={18} /></button>
+                            ><ArrowLeftRight size={18} /></Button>
                         </>
                     )}
 
                     {onToggleExpanded && (
-                        <button type="button"
+                        <Button
+                            type="button"
+                            variant="floating"
+                            size="icon-lg"
                             onClick={onToggleExpanded}
-                            className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300 dark:shadow-none"
-                            title={isExpanded ? 'Shrink map' : 'Expand map'}
-                            aria-label={isExpanded ? 'Shrink map' : 'Expand map'}
+                            className="rounded-lg"
+                            title={isExpanded ? t('tripView.mapControls.shrinkMap') : t('tripView.mapControls.expandMap')}
+                            aria-label={isExpanded ? t('tripView.mapControls.shrinkMap') : t('tripView.mapControls.expandMap')}
                         >
                             {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-                        </button>
+                        </Button>
                     )}
 
-                    <button type="button"
+                    <Button
+                        type="button"
+                        variant="floating"
+                        size="icon-lg"
                         onClick={handleFit}
                         disabled={mapActionsDisabled}
-                        className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-card disabled:hover:text-gray-300 dark:hover:text-accent-300 dark:shadow-none"
-                        aria-label="Fit to itinerary"
-                    ><Focus size={18} /></button>
+                        className="rounded-lg"
+                        aria-label={t('tripView.mapControls.fitToItinerary')}
+                    ><Focus size={18} /></Button>
                     
                     {/*
                       * One button, one sheet. The popover this replaces was a
@@ -3745,19 +3769,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                       * the settings the renderers already support.
                       */}
                     {onOpenCustomize && (
-                        <button
+                        <Button
                             type="button"
+                            variant="floating"
+                            size="icon-lg"
                             onClick={onOpenCustomize}
                             disabled={mapActionsDisabled}
                             data-testid="map-customize-button"
                             data-floating-map-control="true"
-                            className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
-                                mapActionsDisabled
-                                    ? 'bg-card border-border text-gray-300 cursor-not-allowed'
-                                    : isCustomizeOpen
-                                        ? 'bg-accent-50 border-accent-300 text-accent-600 dark:bg-accent-400/12 dark:border-accent-400/30 dark:text-accent-300'
-                                        : 'bg-card border-border text-muted-foreground hover:text-accent-600 hover:bg-secondary dark:hover:text-accent-300'
-                            }`}
+                            className="rounded-lg"
                             aria-label={customizeLabel}
                             aria-haspopup="dialog"
                             aria-expanded={isCustomizeOpen}
@@ -3766,54 +3786,47 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         >
                             <Layers size={18} />
                             <span className="sr-only">{customizeLabel}</span>
-                        </button>
+                        </Button>
                     )}
                     {!isPaywalled && onShowCityNamesChange && (
-                        <button
+                        <Button
                             type="button"
+                            variant="floating"
+                            size="icon-lg"
                             onClick={() => onShowCityNamesChange(!showCityNames)}
                             disabled={mapActionsDisabled}
-                            className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
-                                mapActionsDisabled
-                                    ? 'bg-card border-border text-gray-300 cursor-not-allowed'
-                                    : showCityNames
-                                        ? 'bg-accent-600 border-accent-700 text-white hover:bg-accent-700'
-                                        : 'bg-card border-border text-muted-foreground hover:text-accent-600 hover:bg-secondary dark:hover:text-accent-300'
-                            }`}
-                            aria-label={showCityNames ? 'Hide map labels' : 'Show map labels'}
+                            className="rounded-lg"
+                            aria-label={showCityNames ? t('tripView.mapControls.hideLabels') : t('tripView.mapControls.showLabels')}
                             aria-pressed={showCityNames}
-                            title={showCityNames ? 'Hide map labels' : 'Show map labels'}
+                            title={showCityNames ? t('tripView.mapControls.hideLabels') : t('tripView.mapControls.showLabels')}
                             {...getAnalyticsDebugAttributes('trip_view__map_labels--toggle', {
                                 surface: 'map_controls',
                                 active: showCityNames,
                             })}
                         >
                             {showCityNames ? <TagsIcon size={18} /> : <Tag size={18} />}
-                            <span className="sr-only">{showCityNames ? 'Hide map labels' : 'Show map labels'}</span>
-                        </button>
+                            <span className="sr-only">{showCityNames ? t('tripView.mapControls.hideLabels') : t('tripView.mapControls.showLabels')}</span>
+                        </Button>
                     )}
                     {!isPaywalled && (
-                        <button
+                        <Button
                             type="button"
+                            variant="floating"
+                            size="icon-lg"
                             onClick={toggleActivityMarkers}
                             disabled={mapActionsDisabled}
-                            className={`flex size-10 items-center justify-center rounded-lg border shadow-md transition-colors ${
-                                mapActionsDisabled
-                                    ? 'bg-card border-border text-gray-300 cursor-not-allowed'
-                                    : activityMarkersEnabled
-                                        ? 'bg-accent-600 border-accent-700 text-white hover:bg-accent-700'
-                                        : 'bg-card border-border text-muted-foreground hover:text-accent-600 hover:bg-secondary dark:hover:text-accent-300'
-                            }`}
-                            aria-label={activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}
-                            title={activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}
+                            className="rounded-lg"
+                            aria-pressed={activityMarkersEnabled}
+                            aria-label={activityMarkersEnabled ? t('tripView.mapControls.hideActivityMarkers') : t('tripView.mapControls.showActivityMarkers')}
+                            title={activityMarkersEnabled ? t('tripView.mapControls.hideActivityMarkers') : t('tripView.mapControls.showActivityMarkers')}
                             {...getAnalyticsDebugAttributes('trip_view__map_activity_markers--toggle', {
                                 surface: 'map_controls',
                                 active: activityMarkersEnabled,
                             })}
                         >
                             <MapPinArea size={18} weight="bold" />
-                            <span className="sr-only">{activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}</span>
-                        </button>
+                            <span className="sr-only">{activityMarkersEnabled ? t('tripView.mapControls.hideActivityMarkers') : t('tripView.mapControls.showActivityMarkers')}</span>
+                        </Button>
                     )}
                 </div>
             </div>

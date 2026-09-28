@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ITrip, ITimelineItem, IDragState } from '../types';
 import { buildApprovedCityRoute, buildCityOverlapLayout, computeVerticalTransferConnectorAnchors, findTravelBetweenCities, getHexFromColorClass, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
 import { TimelineBlock } from './TimelineBlock';
@@ -110,6 +111,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   onNavigateNextCity,
   onToggleDetailsPanel,
 }) => {
+  const { t } = useTranslation('common');
   const canEdit = !readOnly;
   const containerRef = useRef<HTMLDivElement>(null);
   const travelLaneRef = useRef<HTMLDivElement>(null);
@@ -773,7 +775,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                              const overlapAfter = nextStart !== null ? currentEnd > nextStart + 0.05 : false;
                              const shouldShowForceFill = hasGapOrOverlap || overlapBefore || overlapAfter || gapBefore || gapAfter;
                              const forceFillMode = shouldShowForceFill ? ((overlapBefore && overlapAfter) ? 'shrink' : 'stretch') : undefined;
-                             const forceFillLabel = shouldShowForceFill ? ((overlapBefore && overlapAfter) ? 'Occupy available space' : 'Stretch to fill space') : undefined;
+                             const forceFillLabel = shouldShowForceFill ? ((overlapBefore && overlapAfter) ? t('tripView.timeline.occupySpace') : t('tripView.timeline.stretchToFill')) : undefined;
 
                              return (
                                  <TimelineBlock
@@ -790,7 +792,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                      forceFillMode={forceFillMode}
                                      forceFillLabel={forceFillLabel}
                                      showSwapSelectedButton={selectedCityIds.length > 1 && selectedCityIds.includes(city.id)}
-                                     swapSelectedLabel="Reverse selected cities"
+                                     swapSelectedLabel={t('tripView.timeline.reverseSelectedCities')}
                                      pixelsPerDay={pixelsPerDay}
                                      timelineStartOffset={visualStartOffset}
                                      vertical={true}
@@ -817,8 +819,8 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                          <button type="button"
                              onClick={(e) => { e.stopPropagation(); handleAddTravel(); }}
                              className="opacity-0 group-hover/travel:opacity-100 transition-opacity ml-1 bg-secondary text-muted-foreground rounded-full p-0.5 hover:bg-secondary"
-                             aria-label="Add transfer"
-                             title="Add transfer"
+                             aria-label={t('tripView.timeline.addTransfer')}
+                             title={t('tripView.timeline.addTransfer')}
                          >
                               <Plus size={12} />
                           </button>
@@ -895,7 +897,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                              const trackX = Math.max(8, chipAttachX - CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX);
                              const fromPath = buildVerticalConnectorPath(cityConnectorStartX, cityAnchors.fromY, trackX, chipAttachX, fromAttachY);
                              const toPath = buildVerticalConnectorPath(cityConnectorStartX, cityAnchors.toY, trackX, chipAttachX, toAttachY);
-                             const connectorOpacity = isUnsetTransport ? 0.52 : 1;
+                             const connectorOpacity = isUnsetTransport ? 0.7 : 1;
                              const shouldDashConnector = isUnsetTransport;
 
                              return (
@@ -904,7 +906,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                          <path
                                              d={fromPath}
                                              fill="none"
-                                             stroke="var(--color-slate-400)"
+                                             stroke="var(--tf-transfer-line)"
                                              strokeWidth={1.7}
                                              strokeLinecap="round"
                                              strokeLinejoin="round"
@@ -914,7 +916,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                          <path
                                              d={toPath}
                                              fill="none"
-                                             stroke="var(--color-slate-400)"
+                                             stroke="var(--tf-transfer-line)"
                                              strokeWidth={1.7}
                                              strokeLinecap="round"
                                              strokeLinejoin="round"
@@ -925,11 +927,11 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                      <button type="button"
                                          onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                          className={`absolute z-10 left-1/2 -translate-x-1/2 px-4 rounded-xl border text-[11px] font-semibold flex items-center justify-between gap-2 shadow-sm transition-colors pointer-events-auto
-                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 ring-2 ring-blue-600 ring-offset-1 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30' : (isUnsetTransport ? 'bg-secondary/70 border-border border-dashed text-muted-foreground' : 'bg-card border-border text-muted-foreground')}
+                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 ring-2 ring-blue-600 ring-offset-1 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30' : (isUnsetTransport ? 'bg-secondary/70 border-transfer-line border-dashed text-muted-foreground' : 'bg-card border-transfer-line text-muted-foreground')}
                                              ${travel || canEdit ? 'hover:bg-secondary cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                          `}
                                          style={{ top: chipTop, height: chipHeight, width: chipWidth }}
-	                                         title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
+	                                         title={mode === 'na' ? t('tripView.timeline.transportUndecided') : t('tripView.timeline.transportMode', { mode })}
 	                                         disabled={!travel && !canEdit}
 	                                     >
                                          {!isUnsetTransport && <span className="text-muted-foreground shrink-0">{getTransportIcon(mode)}</span>}
@@ -952,7 +954,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                          <button type="button"
                              onClick={(e) => { e.stopPropagation(); onAddActivity(resolveDefaultActivityDayOffset({ items: trip.items, selectedItemId, selectedCityIds })); }}
                              className="opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 hover:bg-accent-100 dark:bg-accent-400/12 dark:text-accent-200 dark:hover:bg-accent-400/25"
-                             aria-label="Add activity"
+                             aria-label={t('tripView.timeline.addActivity')}
                          >
                              <Plus size={12} />
                          </button>

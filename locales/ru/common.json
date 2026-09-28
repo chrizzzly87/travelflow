@@ -718,6 +718,73 @@
       "dayTripTitlePlaceholder": "например, дворцы Синтры",
       "submitDayTrip": "Добавить поездку",
       "findingPlace": "Ищем место…"
+    },
+    "timelineControls": {
+      "horizontalDirection": "Горизонтальный таймлайн",
+      "verticalDirection": "Вертикальный таймлайн",
+      "zoomOut": "Уменьшить масштаб таймлайна",
+      "zoomIn": "Увеличить масштаб таймлайна",
+      "calendarView": "Календарь",
+      "listView": "Список"
+    },
+    "panels": {
+      "resizeDetails": "Изменить ширину панели деталей",
+      "resizeTimelineAndMap": "Изменить размер таймлайна и карты",
+      "resizeTimeline": "Изменить высоту таймлайна"
+    },
+    "mapControls": {
+      "minimizePreview": "Свернуть превью карты",
+      "maximizePreview": "Развернуть превью карты",
+      "layoutVertical": "Вертикальная раскладка",
+      "layoutHorizontal": "Горизонтальная раскладка",
+      "fitToItinerary": "Вписать маршрут в карту",
+      "shrinkMap": "Уменьшить карту",
+      "expandMap": "Увеличить карту",
+      "showLabels": "Показать названия городов",
+      "hideLabels": "Скрыть названия городов",
+      "showActivityMarkers": "Показать метки активностей",
+      "hideActivityMarkers": "Скрыть метки активностей"
+    },
+    "floatingMap": {
+      "move": "Переместить плавающее превью карты",
+      "useCompactSize": "Компактный размер карты",
+      "useExpandedSize": "Увеличенный размер карты",
+      "switchToLandscape": "Повернуть превью карты горизонтально",
+      "switchToPortrait": "Повернуть превью карты вертикально",
+      "settling": "Превью карты занимает место"
+    },
+    "banners": {
+      "shareViewOnly": "Общая поездка · Только просмотр",
+      "shareEditable": "Общая поездка · Редактирование включено",
+      "snapshotOlder": "Вы смотрите старую версию. У этой поездки есть более новые изменения.",
+      "snapshotCurrent": "Вы смотрите сохранённую версию этой общей поездки.",
+      "openLatest": "Открыть последнюю",
+      "copyTrip": "Скопировать поездку"
+    },
+    "exampleBanner": {
+      "eyebrow": "Пример поездки для знакомства",
+      "title": "Изучайте свободно. Скопируйте, чтобы сохранить и редактировать.",
+      "body": "Этот маршрут — только пример, изменения не сохраняются.",
+      "countryFocus": "Страны: {countries}.",
+      "dismiss": "Закрыть подсказку о примере поездки"
+    },
+    "listView": {
+      "openTransfer": "Открыть детали переезда ({mode})",
+      "taskCompleted": "Выполненная задача",
+      "taskOpen": "Открытая задача",
+      "days": "Дни",
+      "daysRange": "Дни {start} - {end}"
+    },
+    "timeline": {
+      "addCityToEnd": "Добавить город в конец",
+      "addTransfer": "Добавить переезд",
+      "transportUndecided": "Транспорт не выбран",
+      "transportMode": "Транспорт: {mode}",
+      "addActivity": "Добавить занятие",
+      "addActivityOn": "Добавить занятие на {date}",
+      "occupySpace": "Занять свободное место",
+      "stretchToFill": "Растянуть до соседей",
+      "reverseSelectedCities": "Поменять выбранные города местами"
     }
   },
   "tripRouteShell": {
@@ -765,6 +832,8 @@
     "searchCommand": "Поиск шаблонов запросов…",
     "noContext": "Подходящих элементов поездки нет.",
     "closeMenu": "Закрыть меню",
+    "send": "Отправить сообщение",
+    "stop": "Остановить ответ",
     "contextKinds": {
       "trip": "Поездка",
       "city": "Город",

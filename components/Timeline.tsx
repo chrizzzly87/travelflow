@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ITrip, ITimelineItem, IDragState, RouteStatus } from '../types';
 import {
   buildApprovedCityRoute,
@@ -134,6 +135,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   onNavigateNextCity,
   onToggleDetailsPanel,
 }) => {
+  const { t } = useTranslation('common');
   const canEdit = !readOnly;
   const containerRef = useRef<HTMLDivElement>(null);
   const cityCardsRowRef = useRef<HTMLDivElement>(null);
@@ -837,8 +839,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                              <button type="button"
                                 onClick={(e) => { e.stopPropagation(); onAddCity(); }}
                                 className={laneAddButtonClassName}
-                                aria-label="Add city to end"
-                                title="Add city to end"
+                                aria-label={t('tripView.timeline.addCityToEnd')}
+                                title={t('tripView.timeline.addCityToEnd')}
                             >
                                  <Plus size={14} />
                             </button>
@@ -882,7 +884,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                             const overlapAfter = nextStart !== null ? currentEnd > nextStart + 0.05 : false;
                             const shouldShowForceFill = hasGapOrOverlap || overlapBefore || overlapAfter || gapBefore || gapAfter;
                             const forceFillMode = shouldShowForceFill ? ((overlapBefore && overlapAfter) ? 'shrink' : 'stretch') : undefined;
-                            const forceFillLabel = shouldShowForceFill ? ((overlapBefore && overlapAfter) ? 'Occupy available space' : 'Stretch to fill space') : undefined;
+                            const forceFillLabel = shouldShowForceFill ? ((overlapBefore && overlapAfter) ? t('tripView.timeline.occupySpace') : t('tripView.timeline.stretchToFill')) : undefined;
 
                             return (
                                 <TimelineBlock
@@ -899,7 +901,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     forceFillMode={forceFillMode}
                                     forceFillLabel={forceFillLabel}
                                     showSwapSelectedButton={selectedCityIds.length > 1 && selectedCityIds.includes(city.id)}
-                                    swapSelectedLabel="Reverse selected cities"
+                                    swapSelectedLabel={t('tripView.timeline.reverseSelectedCities')}
                                     pixelsPerDay={pixelsPerDay}
                                     timelineStartOffset={visualStartOffset}
                                     canEdit={canEdit}
@@ -927,8 +929,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                              <button type="button"
                                 onClick={(e) => { e.stopPropagation(); handleAddTravel(); }}
                                 className={laneAddButtonClassName}
-                                aria-label="Add transfer"
-                                title="Add transfer"
+                                aria-label={t('tripView.timeline.addTransfer')}
+                                title={t('tripView.timeline.addTransfer')}
                             >
                                  <Plus size={14} />
                             </button>
@@ -976,7 +978,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                             const routeStatus = travel ? routeStatusById?.[travel.id] : undefined;
                             const isUndefinedTransfer = !travel || travel.type === 'travel-empty' || isUnsetTransport;
                             const shouldDashConnector = !travel || travel.type === 'travel-empty' || isUnsetTransport || routeStatus === 'failed';
-                            const connectorOpacity = isUndefinedTransfer ? 0.45 : 1;
+                            const connectorOpacity = isUndefinedTransfer ? 0.7 : 1;
                             const durationHours = travel ? Math.round(travel.duration * 24 * 10) / 10 : null;
                             const showTransportIcon = !isUnsetTransport && chipWidth >= 14;
                             const showTransportText = !showIconOnly || (isUnsetTransport && chipWidth >= 26);
@@ -1002,7 +1004,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         <path
                                             d={fromPath}
                                             fill="none"
-                                            stroke="var(--color-gray-300)"
+                                            stroke="var(--tf-transfer-line)"
                                             strokeWidth={1.7}
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
@@ -1012,7 +1014,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         <path
                                             d={toPath}
                                             fill="none"
-                                            stroke="var(--color-gray-300)"
+                                            stroke="var(--tf-transfer-line)"
                                             strokeWidth={1.7}
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
@@ -1023,12 +1025,12 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     <button type="button"
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                         className={`absolute z-10 flex min-h-10 -translate-y-1/2 items-center rounded-full border text-[11px] font-semibold transition-colors pointer-events-auto
-                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 shadow-sm opacity-100 ring-2 ring-blue-600 ring-offset-1 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30' : (isUndefinedTransfer ? 'bg-secondary border-border border-dashed text-muted-foreground opacity-65 shadow-none justify-center' : 'bg-card border-border text-muted-foreground shadow-sm dark:shadow-none')}
+                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 shadow-sm opacity-100 ring-2 ring-blue-600 ring-offset-1 dark:bg-accent-400/12 dark:text-accent-200 dark:border-accent-400/30' : (isUndefinedTransfer ? 'bg-secondary border-transfer-line border-dashed text-muted-foreground opacity-65 shadow-none justify-center' : 'bg-card border-transfer-line text-muted-foreground shadow-sm dark:shadow-none')}
                                             ${showIconOnly ? `justify-center gap-0 ${pillPaddingClass}` : `gap-1.5 ${pillPaddingClass}`}
                                             ${travel || canEdit ? 'hover:bg-secondary cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}
                                         style={{ left: chipLeft, width: chipWidth, top: chipCenterY, height: TRANSFER_CHIP_HEIGHT_PX }}
-                                        title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
+                                        title={mode === 'na' ? t('tripView.timeline.transportUndecided') : t('tripView.timeline.transportMode', { mode })}
                                         disabled={!travel && !canEdit}
                                     >
                                         {showTransportIcon && (
@@ -1060,8 +1062,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                             <button type="button"
                                 onClick={(e) => { e.stopPropagation(); onAddActivity(defaultActivityDayOffset); }}
                                 className={laneAddButtonClassName}
-                                aria-label="Add activity"
-                                title="Add activity"
+                                aria-label={t('tripView.timeline.addActivity')}
+                                title={t('tripView.timeline.addActivity')}
                             >
                                 <Plus size={14} />
                             </button>

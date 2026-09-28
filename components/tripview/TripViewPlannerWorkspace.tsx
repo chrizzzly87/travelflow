@@ -1,5 +1,7 @@
 import React, { Suspense, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Button } from '../ui/button';
 import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
 import { GoogleMapsApiGate } from '../GoogleMapsLoader';
 import { TripFloatingMapPreview } from './TripFloatingMapPreview';
@@ -94,9 +96,6 @@ interface TripViewPlannerWorkspaceProps {
 const TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED = true;
 const formatZoomLevelLabel = (value: number): string => `×${Number.isFinite(value) ? value.toFixed(1) : '1.0'}`;
 const CONTROL_GROUP_CLASS_NAME = 'inline-flex flex-col items-center gap-1 rounded-xl border border-border bg-card/90 p-1 shadow-sm backdrop-blur dark:shadow-none';
-const CONTROL_TOGGLE_BUTTON_CLASS_NAME = 'inline-flex size-10 items-center justify-center rounded-lg transition-colors';
-const CONTROL_TOGGLE_ACTIVE_CLASS_NAME = 'border-accent-700 bg-accent-600 text-white';
-const CONTROL_TOGGLE_INACTIVE_CLASS_NAME = 'text-muted-foreground hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300';
 
 export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> = ({
     isPaywallLocked,
@@ -174,6 +173,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     floatingOverlayRightInset = 0,
     floatingOverlayLeftInset = 0,
 }) => {
+    const { t } = useTranslation('common');
     const dockedMapAnchorRef = useRef<HTMLDivElement | null>(null);
     const isFloatingMapPreviewEnabled = !isMobile && TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED;
     const effectiveMapDockMode: 'docked' | 'floating' = isFloatingMapPreviewEnabled ? mapDockMode : 'docked';
@@ -197,45 +197,43 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
             {timelineMode === 'calendar' && (
                 <>
                     <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-card/90 p-1 shadow-sm backdrop-blur dark:shadow-none">
-                        <button
+                        <Button
                             type="button"
+                            variant="toggle"
+                            size="icon-lg"
                             onClick={() => onTimelineViewChange('horizontal')}
-                            className={`inline-flex size-10 items-center justify-center rounded-lg transition-colors ${
-                                timelineView === 'horizontal'
-                                    ? 'bg-accent-600 text-white'
-                                    : 'text-muted-foreground hover:bg-secondary'
-                            }`}
-                            aria-label="Horizontal timeline direction"
+                           className="rounded-lg"
+                            aria-label={t('tripView.timelineControls.horizontalDirection')}
                             aria-pressed={timelineView === 'horizontal'}
                             {...getAnalyticsDebugAttributes('trip_view__layout_direction--horizontal', { surface: 'timeline_controls' })}
                         >
                             <ArrowLeftRight size={16} />
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="button"
+                            variant="toggle"
+                            size="icon-lg"
                             onClick={() => onTimelineViewChange('vertical')}
-                            className={`inline-flex size-10 items-center justify-center rounded-lg transition-colors ${
-                                timelineView === 'vertical'
-                                    ? 'bg-accent-600 text-white'
-                                    : 'text-muted-foreground hover:bg-secondary'
-                            }`}
-                            aria-label="Vertical timeline direction"
+                           className="rounded-lg"
+                            aria-label={t('tripView.timelineControls.verticalDirection')}
                             aria-pressed={timelineView === 'vertical'}
                             {...getAnalyticsDebugAttributes('trip_view__layout_direction--vertical', { surface: 'timeline_controls' })}
                         >
                             <ArrowUpDown size={16} />
-                        </button>
+                        </Button>
                     </div>
                     <div className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-card/90 p-1 shadow-sm backdrop-blur dark:shadow-none">
-                        <button
+                        <Button
                             type="button"
+                            variant="toggle"
+                            size="icon-lg"
                             onClick={onZoomOut}
-                            className="inline-flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary"
-                            aria-label="Zoom out timeline"
+                           className="rounded-lg"
+                            aria-label={t('tripView.timelineControls.zoomOut')}
                             {...getAnalyticsDebugAttributes('trip_view__zoom', { direction: 'out' })}
                         >
                             <ZoomOut size={16} />
-                        </button>
+                        </Button>
                         {!isMobile && (
                             <span
                                 role="status"
@@ -245,49 +243,47 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                 {formatZoomLevelLabel(zoomLevel)}
                             </span>
                         )}
-                        <button
+                        <Button
                             type="button"
+                            variant="toggle"
+                            size="icon-lg"
                             onClick={onZoomIn}
-                            className="inline-flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary"
-                            aria-label="Zoom in timeline"
+                           className="rounded-lg"
+                            aria-label={t('tripView.timelineControls.zoomIn')}
                             {...getAnalyticsDebugAttributes('trip_view__zoom', { direction: 'in' })}
                         >
                             <ZoomIn size={16} />
-                        </button>
+                        </Button>
                     </div>
                 </>
             )}
             <div className="ms-auto inline-flex items-center gap-1 rounded-lg border border-border bg-card/90 p-1 shadow-sm backdrop-blur dark:shadow-none">
-                <button
+                <Button
                     type="button"
+                    variant="toggle"
+                    size="icon-lg"
                     onClick={() => onTimelineModeChange('calendar')}
-                    className={`inline-flex size-10 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
-                        timelineMode === 'calendar'
-                            ? 'bg-accent-600 text-white'
-                            : 'text-muted-foreground hover:bg-secondary'
-                    }`}
-                    aria-label="Calendar view"
+                   className="rounded-lg"
+                    aria-label={t('tripView.timelineControls.calendarView')}
                     aria-pressed={timelineMode === 'calendar'}
                     {...getAnalyticsDebugAttributes('trip_view__mode--calendar', { surface: 'timeline_controls' })}
                 >
                     <CalendarDays size={14} />
-                    <span className="sr-only">Calendar view</span>
-                </button>
-                <button
+                    <span className="sr-only">{t('tripView.timelineControls.calendarView')}</span>
+                </Button>
+                <Button
                     type="button"
+                    variant="toggle"
+                    size="icon-lg"
                     onClick={() => onTimelineModeChange('timeline')}
-                    className={`inline-flex size-10 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
-                        timelineMode === 'timeline'
-                            ? 'bg-accent-600 text-white'
-                            : 'text-muted-foreground hover:bg-secondary'
-                    }`}
-                    aria-label="Timeline list view"
+                   className="rounded-lg"
+                    aria-label={t('tripView.timelineControls.listView')}
                     aria-pressed={timelineMode === 'timeline'}
                     {...getAnalyticsDebugAttributes('trip_view__mode--timeline', { surface: 'timeline_controls' })}
                 >
                     <List size={14} />
-                    <span className="sr-only">Timeline list view</span>
-                </button>
+                    <span className="sr-only">{t('tripView.timelineControls.listView')}</span>
+                </Button>
             </div>
         </div>
     );
@@ -300,62 +296,72 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     <div data-floating-map-control="true" className="absolute top-4 end-4 z-[40] flex flex-col gap-2 pointer-events-none">
                         <div className="flex flex-col gap-2 pointer-events-auto">
                             {isFloatingMapPreviewEnabled && (
-                                <button
+                                <Button
                                     type="button"
+                                    variant="floating"
+                                    size="icon-lg"
                                     onClick={toggleMapDockMode}
                                     data-testid="map-dock-toggle-button"
                                     data-floating-map-control="true"
-                                    className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-md transition-colors hover:bg-secondary hover:text-accent-600 dark:hover:text-accent-300 dark:shadow-none"
-                                    aria-label={effectiveMapDockMode === 'docked' ? 'Minimize map preview' : 'Maximize map preview'}
+                                    className="rounded-lg"
+                                    aria-label={effectiveMapDockMode === 'docked' ? t('tripView.mapControls.minimizePreview') : t('tripView.mapControls.maximizePreview')}
                                     {...getAnalyticsDebugAttributes(
                                         effectiveMapDockMode === 'docked' ? 'trip_view__map_preview--minimize' : 'trip_view__map_preview--maximize',
                                         { surface: 'map_controls' },
                                     )}
                                 >
                                     {effectiveMapDockMode === 'docked' ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-                                    <span className="sr-only">{effectiveMapDockMode === 'docked' ? 'Minimize map preview' : 'Maximize map preview'}</span>
-                                </button>
+                                    <span className="sr-only">{effectiveMapDockMode === 'docked' ? t('tripView.mapControls.minimizePreview') : t('tripView.mapControls.maximizePreview')}</span>
+                                </Button>
                             )}
                             {showLayoutControls && (
                                 <div className={CONTROL_GROUP_CLASS_NAME}>
-                                    <button
+                                    <Button
                                         type="button"
+                                        variant="toggle"
+                                        size="icon-lg"
                                         onClick={() => onLayoutModeChange('vertical')}
-                                        className={`${CONTROL_TOGGLE_BUTTON_CLASS_NAME} ${layoutMode === 'vertical' ? CONTROL_TOGGLE_ACTIVE_CLASS_NAME : CONTROL_TOGGLE_INACTIVE_CLASS_NAME}`}
-                                        aria-label="Vertical layout"
+                                       className="rounded-lg"
+                                        aria-label={t('tripView.mapControls.layoutVertical')}
                                         aria-pressed={layoutMode === 'vertical'}
                                         {...getAnalyticsDebugAttributes('trip_view__layout_direction--vertical', { surface: 'map_controls' })}
                                     >
                                         <ArrowUpDown size={18} />
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         type="button"
+                                        variant="toggle"
+                                        size="icon-lg"
                                         onClick={() => onLayoutModeChange('horizontal')}
-                                        className={`${CONTROL_TOGGLE_BUTTON_CLASS_NAME} ${layoutMode === 'horizontal' ? CONTROL_TOGGLE_ACTIVE_CLASS_NAME : CONTROL_TOGGLE_INACTIVE_CLASS_NAME}`}
-                                        aria-label="Horizontal layout"
+                                       className="rounded-lg"
+                                        aria-label={t('tripView.mapControls.layoutHorizontal')}
                                         aria-pressed={layoutMode === 'horizontal'}
                                         {...getAnalyticsDebugAttributes('trip_view__layout_direction--horizontal', { surface: 'map_controls' })}
                                     >
                                         <ArrowLeftRight size={18} />
-                                    </button>
+                                    </Button>
                                 </div>
                             )}
-                            <button
+                            <Button
                                 type="button"
+                                variant="floating"
+                                size="icon-lg"
                                 disabled
-                                className="flex size-10 cursor-not-allowed items-center justify-center rounded-lg border border-border bg-card text-gray-300 shadow-md dark:shadow-none"
-                                aria-label="Fit to itinerary"
+                                className="rounded-lg"
+                                aria-label={t('tripView.mapControls.fitToItinerary')}
                             >
                                 <Focus size={18} />
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 type="button"
+                                variant="floating"
+                                size="icon-lg"
                                 disabled
-                                className="flex size-10 cursor-not-allowed items-center justify-center rounded-lg border border-border bg-card text-gray-300 shadow-md dark:shadow-none"
-                                aria-label="Map style"
+                                className="rounded-lg"
+                                aria-label={mapCustomizeLabel ?? t('tripView.mapCustomize.open')}
                             >
                                 <Layers size={18} />
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -484,7 +490,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                                 className="group relative z-[45] flex w-2 cursor-col-resize appearance-none items-center justify-center border-0 bg-secondary p-0 transition-colors after:absolute after:-inset-x-4 after:inset-y-0 hover:bg-accent-500"
                                                 onMouseDown={(event) => onStartResizing('details', event.clientX)}
                                                 onKeyDown={onDetailsResizeKeyDown}
-                                                aria-label="Resize details panel"
+                                                aria-label={t('tripView.panels.resizeDetails')}
                                             >
                                                 <div className="h-8 w-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                                             </button>
@@ -512,7 +518,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                         className="group relative z-30 flex w-2 cursor-col-resize appearance-none items-center justify-center border-0 bg-secondary p-0 transition-colors after:absolute after:-inset-x-4 after:inset-y-0 hover:bg-accent-500"
                                         onMouseDown={() => onStartResizing('sidebar')}
                                         onKeyDown={onSidebarResizeKeyDown}
-                                        aria-label="Resize timeline and map panels"
+                                        aria-label={t('tripView.panels.resizeTimelineAndMap')}
                                     >
                                         <div className="h-8 w-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </button>
@@ -525,10 +531,10 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                                 className="group absolute top-0 end-0 z-30 flex h-full w-2 cursor-col-resize appearance-none items-center justify-center border-0 bg-transparent p-0 transition-colors after:absolute after:-inset-x-4 after:inset-y-0 hover:bg-accent-50/60 dark:hover:bg-accent-400/12"
                                                 onMouseDown={(event) => onStartResizing('details', event.clientX)}
                                                 onKeyDown={onDetailsResizeKeyDown}
-                                                title="Resize details panel"
-                                                aria-label="Resize details panel"
+                                                title={t('tripView.panels.resizeDetails')}
+                                                aria-label={t('tripView.panels.resizeDetails')}
                                             >
-                                                <div className="h-10 w-0.5 rounded-full bg-gray-200 group-hover:bg-accent-400 transition-colors" />
+                                                <div className="h-10 w-0.5 rounded-full bg-input group-hover:bg-accent-400 transition-colors" />
                                             </button>
                                         </div>
                                     )}
@@ -542,7 +548,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                         className="group relative z-30 flex h-2 w-full cursor-row-resize appearance-none items-center justify-center border-0 bg-secondary p-0 transition-colors after:absolute after:inset-x-0 after:-inset-y-4 hover:bg-accent-500"
                                         onMouseDown={() => onStartResizing('timeline-h')}
                                         onKeyDown={onTimelineResizeKeyDown}
-                                        aria-label="Resize timeline panel"
+                                        aria-label={t('tripView.panels.resizeTimeline')}
                                     >
                                         <div className="w-12 h-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </button>
@@ -563,10 +569,10 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                                     className="group absolute top-0 end-0 z-30 flex h-full w-2 cursor-col-resize appearance-none items-center justify-center border-0 bg-transparent p-0 transition-colors after:absolute after:-inset-x-4 after:inset-y-0 hover:bg-accent-50/60 dark:hover:bg-accent-400/12"
                                                     onMouseDown={(event) => onStartResizing('details', event.clientX)}
                                                     onKeyDown={onDetailsResizeKeyDown}
-                                                    title="Resize details panel"
-                                                    aria-label="Resize details panel"
+                                                    title={t('tripView.panels.resizeDetails')}
+                                                    aria-label={t('tripView.panels.resizeDetails')}
                                                 >
-                                                    <div className="h-10 w-0.5 rounded-full bg-gray-200 group-hover:bg-accent-400 transition-colors" />
+                                                    <div className="h-10 w-0.5 rounded-full bg-input group-hover:bg-accent-400 transition-colors" />
                                                 </button>
                                             </div>
                                         )}

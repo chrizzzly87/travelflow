@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 
 import { TransportModeIcon } from '../TransportModeIcon';
+import { Button } from '../ui/button';
 import { TodayBadge } from '../ui/today-badge';
 import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
 import {
@@ -172,12 +173,14 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                             <div className="relative flex h-14 w-full items-center justify-center">
                                 <StripLink side="before" color={TRANSFER_LINK_COLOR} />
                                 <StripLink side="after" color={TRANSFER_LINK_COLOR} />
-                                <button
+                                <Button
                                     type="button"
+                                    variant="outline"
+                                    size="icon"
                                     data-testid="planner-mobile-transfer-node"
                                     onClick={() => onSelectTransfer(node.segmentIndex, transfer)}
                                     title={`${modeLabel} to ${transfer.toCityTitle}${scheduleLabel ? ` — ${scheduleLabel}` : ''}`}
-                                    className="relative z-10 inline-flex size-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:border-slate-400 hover:text-accent-600 dark:hover:text-accent-300 dark:shadow-none"
+                                    className="relative z-10 rounded-full bg-card text-muted-foreground shadow-sm hover:border-slate-400 hover:bg-card hover:text-accent-600 dark:bg-card dark:shadow-none dark:hover:border-accent-400/30 dark:hover:bg-card dark:hover:text-accent-300"
                                     {...getAnalyticsDebugAttributes('trip_view__mobile_transfer--select', {
                                         trip_id: tripId,
                                         mode: transfer.mode,
@@ -187,7 +190,7 @@ export const TripMobileDayStrip: React.FC<TripMobileDayStripProps> = ({
                                     <span className="sr-only">
                                         {`${modeLabel} to ${transfer.toCityTitle}${scheduleLabel ? `, ${scheduleLabel}` : ''}`}
                                     </span>
-                                </button>
+                                </Button>
                             </div>
                             <span
                                 data-testid="planner-mobile-transfer-duration"

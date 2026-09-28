@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 import { Timeline } from '../../components/Timeline';
 import { VerticalTimeline } from '../../components/VerticalTimeline';
 import { makeCityItem, makeTrip } from '../helpers/tripFixtures';
+import { loadEnglishCommonTranslations } from '../helpers/i18n';
 
 // A view-only trip used to render every "+" in the planner as a disabled,
 // half-faded button: it advertised an action the viewer could never take.
@@ -29,6 +30,8 @@ const baseProps = {
 };
 
 describe('timeline add buttons on view-only trips', () => {
+  beforeAll(loadEnglishCommonTranslations);
+
   beforeEach(() => {
     vi.stubGlobal('ResizeObserver', class {
       observe() {}

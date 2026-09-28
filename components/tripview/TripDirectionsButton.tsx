@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Navigation } from 'lucide-react';
 
+import { Button } from '../ui/button';
 import { Drawer, DrawerContent } from '../ui/drawer';
 import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
 import { useDirectionsChooser } from '../maps/useDirectionsChooser';
@@ -32,17 +33,19 @@ export const TripDirectionsButton: React.FC<TripDirectionsButtonProps> = ({
 
     return (
         <>
-            <button
+            <Button
                 type="button"
+                variant="outline"
+                size="icon"
                 onClick={openDirections}
                 data-testid="trip-directions-button"
-                className={className ?? 'inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-accent-300 hover:text-accent-600 dark:hover:border-accent-400/30 dark:hover:text-accent-300'}
+                className={className ?? 'rounded-full bg-card text-muted-foreground shadow-none hover:border-accent-300 hover:bg-card hover:text-accent-600 dark:bg-card dark:hover:border-accent-400/30 dark:hover:bg-card dark:hover:text-accent-300'}
                 aria-label={`Directions to ${target.label}`}
                 title={`Directions to ${target.label}`}
                 {...getAnalyticsDebugAttributes('trip_view__directions--open', { trip_id: tripId, item_id: itemId })}
             >
                 <Navigation size={15} />
-            </button>
+            </Button>
 
             <Drawer open={isChooserOpen} onOpenChange={setIsChooserOpen}>
                 <DrawerContent
@@ -56,27 +59,33 @@ export const TripDirectionsButton: React.FC<TripDirectionsButtonProps> = ({
                         </p>
                         <p className="mt-1 truncate text-base font-semibold text-foreground">{target.label}</p>
                         <div className="mt-4 flex flex-col gap-2">
-                            <button
+                            <Button
                                 type="button"
+                                variant="outline"
+                                size="lg"
                                 onClick={() => chooseApp('apple')}
-                                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+                                className="min-h-12 rounded-xl bg-card px-4 font-semibold text-foreground shadow-none hover:bg-secondary dark:bg-card dark:hover:bg-secondary"
                             >
                                 Apple Maps
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 type="button"
+                                variant="default"
+                                size="lg"
                                 onClick={() => chooseApp('google')}
-                                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
+                                className="min-h-12 rounded-xl px-4 font-semibold"
                             >
                                 Google Maps
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 type="button"
+                                variant="ghost"
+                                size="lg"
                                 onClick={() => setIsChooserOpen(false)}
-                                className="inline-flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold text-muted-foreground transition-colors hover:bg-secondary"
+                                className="min-h-11 rounded-xl px-4 font-semibold text-muted-foreground hover:bg-secondary dark:hover:bg-secondary"
                             >
                                 Cancel
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </DrawerContent>

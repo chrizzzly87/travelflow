@@ -716,6 +716,73 @@
       "dayTripTitlePlaceholder": "مثلاً کاخ‌های سینترا",
       "submitDayTrip": "افزودن سفر یک‌روزه",
       "findingPlace": "در حال یافتن مکان…"
+    },
+    "timelineControls": {
+      "horizontalDirection": "خط زمانی افقی",
+      "verticalDirection": "خط زمانی عمودی",
+      "zoomOut": "کوچک‌نمایی خط زمانی",
+      "zoomIn": "بزرگ‌نمایی خط زمانی",
+      "calendarView": "نمای تقویم",
+      "listView": "نمای فهرست"
+    },
+    "panels": {
+      "resizeDetails": "تغییر اندازه پنل جزئیات",
+      "resizeTimelineAndMap": "تغییر اندازه خط زمانی و نقشه",
+      "resizeTimeline": "تغییر اندازه خط زمانی"
+    },
+    "mapControls": {
+      "minimizePreview": "کوچک کردن پیش‌نمایش نقشه",
+      "maximizePreview": "بزرگ کردن پیش‌نمایش نقشه",
+      "layoutVertical": "چیدمان عمودی",
+      "layoutHorizontal": "چیدمان افقی",
+      "fitToItinerary": "تنظیم نقشه روی مسیر سفر",
+      "shrinkMap": "کوچک کردن نقشه",
+      "expandMap": "بزرگ کردن نقشه",
+      "showLabels": "نمایش نام شهرها",
+      "hideLabels": "پنهان کردن نام شهرها",
+      "showActivityMarkers": "نمایش پین‌های فعالیت",
+      "hideActivityMarkers": "پنهان کردن پین‌های فعالیت"
+    },
+    "floatingMap": {
+      "move": "جابه‌جایی پیش‌نمایش شناور نقشه",
+      "useCompactSize": "اندازه فشرده نقشه",
+      "useExpandedSize": "اندازه بزرگ نقشه",
+      "switchToLandscape": "چرخاندن پیش‌نمایش نقشه به حالت افقی",
+      "switchToPortrait": "چرخاندن پیش‌نمایش نقشه به حالت عمودی",
+      "settling": "در حال جای‌گیری پیش‌نمایش نقشه"
+    },
+    "banners": {
+      "shareViewOnly": "سفر هم‌رسانی‌شده · فقط مشاهده",
+      "shareEditable": "سفر هم‌رسانی‌شده · ویرایش فعال",
+      "snapshotOlder": "در حال دیدن نسخه‌ای قدیمی‌تر هستید. این سفر به‌روزرسانی‌های جدیدتری دارد.",
+      "snapshotCurrent": "در حال دیدن نسخه ذخیره‌شده این سفر هم‌رسانی‌شده هستید.",
+      "openLatest": "باز کردن جدیدترین",
+      "copyTrip": "کپی سفر"
+    },
+    "exampleBanner": {
+      "eyebrow": "سفر نمونه برای گشت‌وگذار",
+      "title": "آزادانه بگردید. هر وقت خواستید نگه دارید و ویرایش کنید، کپی کنید.",
+      "body": "این برنامه فقط نمونه است و هیچ تغییری را ذخیره نمی‌کند.",
+      "countryFocus": "کشورها: {countries}.",
+      "dismiss": "بستن اعلان سفر نمونه"
+    },
+    "listView": {
+      "openTransfer": "باز کردن جزئیات جابه‌جایی ({mode})",
+      "taskCompleted": "کار انجام‌شده",
+      "taskOpen": "کار باز",
+      "days": "روزها",
+      "daysRange": "روزهای {start} - {end}"
+    },
+    "timeline": {
+      "addCityToEnd": "افزودن شهر به انتها",
+      "addTransfer": "افزودن جابه‌جایی",
+      "transportUndecided": "وسیله سفر مشخص نشده",
+      "transportMode": "وسیله سفر: {mode}",
+      "addActivity": "افزودن فعالیت",
+      "addActivityOn": "افزودن فعالیت برای {date}",
+      "occupySpace": "پر کردن فضای خالی",
+      "stretchToFill": "کشیدن تا پر شدن فاصله",
+      "reverseSelectedCities": "معکوس کردن شهرهای انتخاب‌شده"
     }
   },
   "tripRouteShell": {
