@@ -569,7 +569,12 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
       role="presentation"
       onClick={() => handleBlockSelect(null)}
     >
-        <div className="relative flex min-h-full" style={{ height: `${renderedTimelineHeight + 32}px` }}>
+        <div
+            className="relative flex min-h-full"
+            style={{ height: `${renderedTimelineHeight + 32}px` }}
+            // The trip's own height, without the filler days below it; zoom auto-fit reads it.
+            data-auto-fit-extent={totalHeight + 32}
+        >
             {todaySlot && (
                 <>
                     {/* A flat tint. The gradient it replaces was built from

@@ -1,35 +1,95 @@
 {
   "_generated": "Emitted by scripts/generate-latest-in-app-release.mjs — do not edit by hand.",
   "release": {
-    "id": "rel-2026-09-21-features-globe-hydration",
-    "version": "v0.189.0",
-    "title": "The globe on the features page shows up again",
-    "date": "2026-09-21",
-    "summary": "Opening the features page directly now shows the spinning globe with its trip cards in place, instead of an empty circle and a stray Paris card parked under it.",
+    "id": "rel-2026-09-27-activities-day-trips",
+    "version": "v0.197.0",
+    "title": "Day trips, and activities that know their stay",
+    "date": "2026-09-28",
+    "summary": "Plan day trips that leave your stay and come back the same day, see them on the map with their own route, and add activities from one tidy button.",
     "status": "published",
-    "publishedAt": "2026-09-21T09:20:00Z",
+    "publishedAt": "2026-09-28T05:12:34Z",
     "notifyInApp": true,
     "inAppHours": 24,
     "items": [
       {
         "visibleOnWebsite": true,
-        "typeLabel": "Fixed",
-        "typeKey": "fixed",
-        "text": "🌍 The globe on the features page now appears when you open that page directly. It was staying invisible, with the Paris card stranded below it and the other trip cards nowhere to be seen — it only looked right if you came in from another page."
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "🧭 Plan day trips: mark an outing like Sintra from Lisbon as a day trip and it gets its own marker and a dashed route out and back on the map."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "🏨 Every activity now belongs to a stay, and you can move it to another stay and day right from its details."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "✨ New AI-planned trips suggest day trips from your bases instead of squeezing them in as extra stops."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "New feature",
+        "typeKey": "new",
+        "text": "💬 The trip assistant can add, change and remove day trips for you, with ready-made day-trip prompts in its / menu that follow what you have selected."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Improved",
+        "typeKey": "improved",
+        "text": "🔗 Select a day trip or its stay in the calendar and a dashed line shows where it leaves from; day trips also carry their stay's colour."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Improved",
+        "typeKey": "improved",
+        "text": "➕ The calendar's activities row has a single add button, like stays and transfers, and starts on the stay you have selected."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Improved",
+        "typeKey": "improved",
+        "text": "🔁 A day trip can end in a different stay when your plans need it, tucked away under more options."
+      },
+      {
+        "visibleOnWebsite": true,
+        "typeLabel": "Improved",
+        "typeKey": "improved",
+        "text": "🗺️ Example trips now show their classic day trips on the map, and the Portugal road trip visits Sintra as a day trip from Lisbon."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "💧 FeaturesGlobe renders nothing until it is mounted and stays empty through the prerender capture, so the captured HTML matches the client's first pass; preact/compat's hydrate() does not patch attributes on reused DOM, and the capture (headless, no WebGL) had baked in the fallback branch."
+        "text": "Added optional `stayCityId`, `activityKind` and `dayTripReturnCityId` item fields with one shared stay resolver, replacing three date-window copies."
       },
       {
         "visibleOnWebsite": false,
         "typeLabel": "Internal",
         "typeKey": "internal",
-        "text": "🧪 Added jsdom coverage proving the capture pass renders an empty container and a real client fills it after mount."
+        "text": "Added a top-level `dayTrips` list to the itinerary schemas and prompts, a forgiving preparation step, and one shared placement builder for the worker, client and benchmark parsers."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "The AI benchmark reports day-trip counts and downgraded day trips as non-blocking checks."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "Trip Agent schemas accept stay and day-trip fields plus the location resolver's provenance fields; unknown city references are rejected with a fixable hint."
+      },
+      {
+        "visibleOnWebsite": false,
+        "typeLabel": "Internal",
+        "typeKey": "internal",
+        "text": "Documented the model and every affected surface in `docs/ACTIVITIES_AND_DAY_TRIPS.md`."
       }
     ],
-    "sourcePath": "../content/updates/2026-09-21-features-globe-hydration.md"
+    "sourcePath": "../content/updates/2026-09-27-activities-day-trips.md"
   }
 }

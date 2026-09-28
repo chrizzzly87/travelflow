@@ -40,10 +40,13 @@ interface UseTripResizeControlsOptions {
 
 const MIN_AUTO_FIT_TIMELINE_WIDTH = 160;
 const MIN_AUTO_FIT_TIMELINE_HEIGHT = 220;
-// Auto-fit never zooms out past this level: below it day columns get too narrow
-// to read (the calendar switches to compact cards under ~60px per day), so a
-// long trip scrolls instead of being squeezed into the viewport.
-export const AUTO_FIT_MIN_ZOOM = 0.6;
+// Auto-fit never zooms out past this level (48px per day): below it days get too
+// small to read, so a long trip scrolls instead of being squeezed into the
+// viewport. 0.2x stays reachable through the manual zoom buttons.
+export const AUTO_FIT_MIN_ZOOM = 0.4;
+// The calendar pads itself with filler days to fill the viewport. It reports the
+// trip's own extent here so auto-fit does not measure that padding as content.
+export const AUTO_FIT_EXTENT_ATTRIBUTE = 'data-auto-fit-extent';
 
 const parseDimensionValue = (value?: string): number | null => {
     if (!value) return null;
@@ -61,6 +64,10 @@ const resolveTimelineContentExtent = (
     const contentElement = surface.firstElementChild instanceof HTMLElement
         ? surface.firstElementChild
         : null;
+    const reportedExtent = parseDimensionValue(contentElement?.getAttribute(AUTO_FIT_EXTENT_ATTRIBUTE) ?? undefined);
+    if (reportedExtent !== null && reportedExtent > 0) {
+        return reportedExtent;
+    }
     const explicitExtent = parseDimensionValue(
         axis === 'width' ? contentElement?.style.width : contentElement?.style.height,
     );
