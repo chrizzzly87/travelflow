@@ -5,6 +5,13 @@ import {
     serializeMapPreviewLegModes,
 } from '../../shared/mapPreviewLegModes';
 import { normalizeTransportMode } from '../../shared/transportModes';
+import {
+    buildMapPreviewDayTrips,
+    buildTripLaneDayTripMarks,
+    MAP_PREVIEW_DAY_TRIPS_PARAM,
+    serializeMapPreviewDayTrips,
+    type TripLaneDayTripMark,
+} from '../../shared/dayTripPreview';
 
 // Re-export validation
 export { validateTripSchema } from './_validation';
@@ -241,6 +248,8 @@ export interface ExampleTemplateMiniCalendarCityLane {
     title: string;
     nights: number;
     color: string;
+    /** Day trips from this stay, positioned along its lane segment. */
+    dayTrips?: TripLaneDayTripMark[];
 }
 
 export interface ExampleTemplateMiniCalendarRouteLane {
@@ -268,11 +277,13 @@ export const getExampleTemplateMiniCalendar = (templateId: string): ExampleTempl
 
     if (cityItems.length === 0) return null;
 
+    const dayTripMarks = buildTripLaneDayTripMarks(allItems as ITimelineItem[]);
     const cityLanes: ExampleTemplateMiniCalendarCityLane[] = cityItems.map((city, index) => ({
         id: city.id || `city-${index + 1}`,
         title: city.title || `City ${index + 1}`,
         nights: Math.max(0.5, Number.isFinite(city.duration) ? city.duration : 1),
         color: getHexFromColorClass(city.color || '#4f46e5'),
+        dayTrips: dayTripMarks.get(city.id) || [],
     }));
 
     const routeLanes: ExampleTemplateMiniCalendarRouteLane[] = cityItems
@@ -330,6 +341,14 @@ export const buildExampleTemplateMapPreviewUrl = (
         ));
     if (legModes.some((mode) => mode === 'plane')) {
         searchParams.set(MAP_PREVIEW_LEG_MODES_PARAM, serializeMapPreviewLegModes(legModes));
+    }
+    const dayTrips = buildMapPreviewDayTrips(
+        allItems as ITimelineItem[],
+        cityItems as ITimelineItem[],
+        (_stay, stayIndex) => cityColors[stayIndex] || firstCityColor,
+    );
+    if (dayTrips.length > 0) {
+        searchParams.set(MAP_PREVIEW_DAY_TRIPS_PARAM, serializeMapPreviewDayTrips(dayTrips));
     }
     const requestedWidth = options?.width ?? 560;
     const requestedHeight = options?.height ?? Math.round((requestedWidth * 288) / 680);

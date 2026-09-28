@@ -13,6 +13,14 @@ import {
   serializeMapPreviewLegModes,
 } from '../../shared/mapPreviewLegModes';
 import { normalizeTransportMode, type TransportMode } from '../../shared/transportModes';
+import {
+  buildGoogleDayTripParams,
+  buildMapboxDayTripOverlays,
+  buildMapPreviewDayTrips,
+  MAP_PREVIEW_DAY_TRIPS_PARAM,
+  parseMapPreviewDayTrips,
+  serializeMapPreviewDayTrips,
+} from '../../shared/dayTripPreview';
 import { getClientMapRuntimeResolution, getMapboxAccessToken } from '../../services/mapRuntimeService';
 import { resolveSettledTripMapPreviewUrl } from '../../services/tripMapPreviewSettleService';
 import { MAP_RUNTIME_CACHE_KEY_QUERY_PARAM } from '../../shared/mapRuntime';
@@ -338,6 +346,14 @@ export const buildDirectStaticMapPreviewUrlWithKey = (params: URLSearchParams, m
     directParams.append('markers', `size:tiny|color:0x${legWaypointColor}|${formatCoord(coord)}`);
   });
 
+  const dayTripParams = buildGoogleDayTripParams(
+    parseMapPreviewDayTrips(params.get(MAP_PREVIEW_DAY_TRIPS_PARAM), coords.length),
+    coords,
+    pathColor,
+  );
+  dayTripParams.paths.forEach((path) => directParams.append('path', path));
+  dayTripParams.markers.forEach((marker) => directParams.append('markers', marker));
+
   directParams.set('key', normalizedKey);
   return `https://maps.googleapis.com/maps/api/staticmap?${directParams.toString()}`;
 };
@@ -391,6 +407,15 @@ export const buildDirectMapboxStaticMapPreviewUrlWithToken = (
     const color = legColors[index] || waypointColor;
     overlays.push(`pin-s+${color}(${coord.lng.toFixed(6)},${coord.lat.toFixed(6)})`);
   });
+
+  const dayTripOverlays = buildMapboxDayTripOverlays(
+    parseMapPreviewDayTrips(params.get(MAP_PREVIEW_DAY_TRIPS_PARAM), coords.length),
+    coords,
+    pathColor,
+  );
+  const pathCount = coords.length - 1;
+  overlays.splice(Math.max(0, pathCount), 0, ...dayTripOverlays.paths);
+  overlays.push(...dayTripOverlays.pins);
 
   const descriptor = getMapboxStyleDescriptor(style === 'cleanDark' ? 'dark' : style);
   const overlaySegment = overlays.map((overlay) => encodeURIComponent(overlay)).join(',');
@@ -555,6 +580,18 @@ export const buildMiniMapUrl = (
 
   if (legModes.some((mode) => mode === 'plane')) {
     params.set(MAP_PREVIEW_LEG_MODES_PARAM, serializeMapPreviewLegModes(legModes));
+  }
+
+  // Day trips leave from a stay on this route and come back the same day; the
+  // renderer draws them as dashed spokes in the stay's colour.
+  const routeItems = routeCoordinates.map((entry) => entry.item);
+  const dayTrips = buildMapPreviewDayTrips(
+    trip.items,
+    routeItems,
+    (_stay, stayIndex) => routeCoordinates[stayIndex].colorHex || mapColors.route,
+  );
+  if (dayTrips.length > 0) {
+    params.set(MAP_PREVIEW_DAY_TRIPS_PARAM, serializeMapPreviewDayTrips(dayTrips));
   }
 
   const previewPath = `/api/trip-map-preview?${params.toString()}`;

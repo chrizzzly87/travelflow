@@ -9,6 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getHexFromColorClass } from '../../utils';
+import { buildGoogleDayTripParams, type MapPreviewDayTrip } from '../../shared/dayTripPreview';
 
 export const MAP_WIDTH = 680;
 export const MAP_HEIGHT = 288;
@@ -18,6 +19,8 @@ export type PreviewMapStyle = 'clean' | 'minimal' | 'standard' | 'dark' | 'satel
 export type PreviewRouteMode = 'simple' | 'realistic';
 
 const MAX_REALISTIC_DIRECTION_LEGS = 8;
+// Google Static Maps rejects longer URLs with a 400.
+const MAX_STATIC_MAP_URL_LENGTH = 16384;
 
 export const STYLE_TOKENS: Record<Exclude<PreviewMapStyle, 'standard' | 'satellite'>, string[]> = {
     clean: [
@@ -206,7 +209,8 @@ export async function buildMapUrl(
     coords: CityCoord[],
     apiKey: string,
     style: PreviewMapStyle,
-    routeMode: PreviewRouteMode
+    routeMode: PreviewRouteMode,
+    dayTrips: MapPreviewDayTrip[] = []
 ): Promise<string> {
     if (coords.length === 0) return '';
     const firstColor = getHexFromColorClass(coords[0].color || '#4f46e5').replace('#', '');
@@ -242,6 +246,8 @@ export async function buildMapUrl(
         if (simplePath) pathParams.push(simplePath);
     }
     pathParams.forEach((pathParam) => params.append('path', pathParam));
+    const dayTripParams = buildGoogleDayTripParams(dayTrips, coords, firstColor);
+    dayTripParams.paths.forEach((pathParam) => params.append('path', pathParam));
 
     params.append('markers', startMarker);
     params.append('markers', endMarker);
@@ -249,8 +255,16 @@ export async function buildMapUrl(
         const waypointColor = cityColors[Math.min(index + 1, cityColors.length - 1)] || firstColor;
         params.append('markers', `size:tiny|color:0x${waypointColor}|${formatCoord(coord)}`);
     });
+    dayTripParams.markers.forEach((marker) => params.append('markers', marker));
     params.set('key', apiKey);
 
+    const url = `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
+    if (url.length <= MAX_STATIC_MAP_URL_LENGTH || !canUseRealistic) return url;
+    // A long itinerary's routed geometry can outgrow the URL limit; straight
+    // legs keep the picture instead of failing the whole image.
+    params.delete('path');
+    simplePathParams.forEach((pathParam) => params.append('path', pathParam));
+    dayTripParams.paths.forEach((pathParam) => params.append('path', pathParam));
     return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
 }
 

@@ -1272,6 +1272,7 @@ h6,
 }
 
 .example-city-lane-hitbox {
+  position: relative;
   display: flex;
   align-items: center;
   height: 14px;

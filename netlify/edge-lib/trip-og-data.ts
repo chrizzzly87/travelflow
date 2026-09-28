@@ -1,5 +1,11 @@
 import { buildFlightPreviewCurvePath } from "../../shared/flightRouteCurve.ts";
 import { normalizeTransportMode } from "../../shared/transportModes.ts";
+import {
+  buildGoogleDayTripParams,
+  buildMapboxDayTripOverlays,
+  buildMapPreviewDayTrips,
+  resolvePreviewDayTrips,
+} from "../../shared/dayTripPreview.ts";
 import { APP_DEFAULT_DESCRIPTION } from "../../config/appGlobals.ts";
 import {
   MAP_RUNTIME_CACHE_KEY_QUERY_PARAM,
@@ -118,6 +124,9 @@ interface TimelineItem {
   coordinates?: Coordinates | null;
   transportMode?: string;
   routeDistanceKm?: number;
+  activityKind?: string;
+  stayCityId?: string;
+  dayTripReturnCityId?: string;
 }
 
 interface TripPayload {
@@ -176,6 +185,8 @@ export interface TripOgSummary {
   weeksLabel: string;
   monthsLabel: string;
   distanceLabel: string | null;
+  /** "2 day trips · Nara, Kobe", or null when the trip has none. */
+  dayTripsLabel: string | null;
   description: string;
   updatedAt: number | null;
   mapImageUrl: string | null;
@@ -450,6 +461,20 @@ const getTripDistanceKm = (trip: TripPayload): number | null => {
   }
 
   return hasAnyDistance ? total : null;
+};
+
+const MAX_DAY_TRIP_NAMES_IN_LABEL = 3;
+
+/** "1 day trip · Sintra", "3 day trips · Nara, Kobe, Himeji", "5 day trips · Nara, Kobe, Himeji +2". */
+export const formatDayTripsLabel = (trip: TripPayload): string | null => {
+  const dayTrips = resolvePreviewDayTrips(getTripItems(trip));
+  if (dayTrips.length === 0) return null;
+  const names = [...new Set(dayTrips.map((dayTrip) => dayTrip.destinationLabel).filter(Boolean))];
+  const shown = names.slice(0, MAX_DAY_TRIP_NAMES_IN_LABEL).join(", ");
+  const rest = names.length - MAX_DAY_TRIP_NAMES_IN_LABEL;
+  const count = `${dayTrips.length} ${dayTrips.length === 1 ? "day trip" : "day trips"}`;
+  if (!shown) return count;
+  return `${count} · ${shown}${rest > 0 ? ` +${rest}` : ""}`;
 };
 
 const formatDistance = (distanceKm: number | null): string | null => {
@@ -994,7 +1019,18 @@ const buildMapPreviewUrl = async (
     : typeof preferences?.showCityNames === "boolean"
     ? preferences.showCityNames
     : DEFAULT_OG_SHOW_CITIES;
-  const viewport = computeMapViewport(routeCoordinates);
+  const dayTrips = buildMapPreviewDayTrips(
+    getTripItems(trip),
+    routeCities,
+    (stay) => (mapColorMode === "trip" ? resolveColorHex(stay.color || null) || routeColor : BRAND_ROUTE_COLOR_HEX),
+  );
+  // Day-trip destinations widen the frame, as they do on the planner map.
+  const viewport = computeMapViewport([
+    ...routeCoordinates,
+    ...dayTrips.map((dayTrip) => dayTrip.destination),
+  ]);
+  const googleDayTrips = buildGoogleDayTripParams(dayTrips, routeCoordinates, routeColor);
+  const mapboxDayTrips = buildMapboxDayTripOverlays(dayTrips, routeCoordinates, routeColor);
 
   const start = routeCoordinates[0];
   const end = routeCoordinates[routeCoordinates.length - 1];
@@ -1019,6 +1055,9 @@ const buildMapPreviewUrl = async (
       );
     }
 
+    googleDayTrips.markers.forEach((marker) => {
+      markerParams.push(`markers=${encodeURIComponent(marker)}`);
+    });
   }
 
   let pathParams: string[] = [];
@@ -1038,6 +1077,10 @@ const buildMapPreviewUrl = async (
     const simpleOverlay = buildMapboxSimplePathOverlay(routeCoordinates, routeColor);
     if (simpleOverlay) mapboxPathOverlays = [simpleOverlay];
   }
+  googleDayTrips.paths.forEach((path) => {
+    pathParams.push(`path=${encodeURIComponent(path)}`);
+  });
+  mapboxPathOverlays = [...mapboxPathOverlays, ...mapboxDayTrips.paths];
 
   const mapUrl = staticMapImplementation === "mapbox"
     ? (() => {
@@ -1061,6 +1104,7 @@ const buildMapPreviewUrl = async (
             }),
           );
         }
+        markerOverlays.push(...mapboxDayTrips.pins);
       }
 
       const overlays = [...mapboxPathOverlays, ...markerOverlays];
@@ -1298,6 +1342,9 @@ export const buildTripOgSummary = async (
     ? `${weeksLabel} • ${monthsLabel} • ${distanceLabel}`
     : `${weeksLabel} • ${monthsLabel}`;
 
+  const dayTripsLabel = formatDayTripsLabel(trip);
+  const descriptionWithDayTrips = dayTripsLabel ? `${description} • ${dayTripsLabel}` : description;
+
   const updatedAt = isFiniteNumber(trip?.updatedAt) ? trip.updatedAt : null;
   const mapPreview = options?.includeMapImage === false
     ? { mapUrl: null, mapLabels: [] as TripOgMapLabel[] }
@@ -1322,7 +1369,8 @@ export const buildTripOgSummary = async (
     weeksLabel,
     monthsLabel,
     distanceLabel,
-    description,
+    dayTripsLabel,
+    description: descriptionWithDayTrips,
     updatedAt,
     mapImageUrl: mapPreview.mapUrl,
     mapLabels: mapPreview.mapLabels,
@@ -1439,6 +1487,7 @@ export const fallbackSummary = (): TripOgSummary => ({
   weeksLabel: "1 week",
   monthsLabel: "Any month",
   distanceLabel: null,
+  dayTripsLabel: null,
   description: DEFAULT_DESCRIPTION,
   updatedAt: null,
   mapImageUrl: null,

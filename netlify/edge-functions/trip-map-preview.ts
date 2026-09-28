@@ -15,6 +15,8 @@
  *   style      — "clean" (default) | "minimal" | "standard" | "dark" | "satellite"
  *   routeMode  — "simple" (default) | "realistic"
  *   legModes   — optional pipe-separated transport mode per leg (e.g. "plane|car")
+ *   dayTrips   — optional pipe-separated day trips, "stayIndex,lat,lng,color[,returnIndex]"
+ *                (see shared/dayTripPreview.ts); drawn as straight dashed spokes, never routed
  *   colorMode  — "brand" (default) | "trip"
  *   pathColor  — optional hex/rgb color (used when colorMode=trip)
  *   legColors  — optional pipe/comma-separated hex/rgb colors (used per route leg when colorMode=trip)
@@ -31,6 +33,13 @@ import { getMapboxAccessTokenFromEnv, getMapsApiKeyFromEnv } from "../edge-lib/t
 import { resolveEdgeMapRuntimeAsync } from "../edge-lib/map-runtime.ts";
 import { buildFlightPreviewCurvePath } from "../../shared/flightRouteCurve.ts";
 import { parseMapPreviewLegModes } from "../../shared/mapPreviewLegModes.ts";
+import {
+  buildGoogleDayTripParams,
+  buildMapboxDayTripOverlays,
+  MAP_PREVIEW_DAY_TRIPS_PARAM,
+  parseMapPreviewDayTrips,
+  type MapPreviewDayTrip,
+} from "../../shared/dayTripPreview.ts";
 import type { TransportMode } from "../../shared/transportModes.ts";
 import {
   buildPreviewNetlifyVaryValue,
@@ -48,6 +57,8 @@ const MAX_REALISTIC_DIRECTION_LEGS = 8;
 const STATIC_MAP_SATELLITE_FALLBACK: MapPreviewStyle = "clean";
 // Mapbox Static Images caps the whole request URL at 8192 characters.
 const MAPBOX_MAX_OVERLAY_SEGMENT_LENGTH = 7000;
+// Google Static Maps rejects URLs longer than this with a 400.
+const GOOGLE_MAX_STATIC_URL_LENGTH = 16384;
 
 const CLEAN_STYLE = [
   "element:geometry|color:0xf9f9f9",
@@ -505,6 +516,7 @@ const buildMapboxStaticPreviewUrl = async ({
   routeMode,
   legColors,
   legModes,
+  dayTrips,
   pathColor,
   startMarkerColor,
   endMarkerColor,
@@ -521,6 +533,7 @@ const buildMapboxStaticPreviewUrl = async ({
   routeMode: RoutePreviewMode;
   legColors: string[];
   legModes: TransportMode[];
+  dayTrips: MapPreviewDayTrip[];
   pathColor: string;
   startMarkerColor: string;
   endMarkerColor: string;
@@ -546,18 +559,26 @@ const buildMapboxStaticPreviewUrl = async ({
     endMarkerColor,
     waypointColor,
   );
+  const dayTripOverlays = buildMapboxDayTripOverlays(dayTrips, coords, pathColor);
   const encodeOverlays = (entries: string[]): string =>
     entries.map((overlay) => encodeURIComponent(overlay)).join(",");
+  // Day-trip spokes sit above the route; every pin sits above both.
+  const withMarkers = (paths: string[], dayTripPaths = dayTripOverlays.paths): string[] =>
+    [...paths, ...dayTripPaths, ...markerOverlays, ...dayTripOverlays.pins];
   // Mapbox rejects requests past its URL limit, and realistic geometry is what
   // pushes a long itinerary over it. Degrade that request to the straight-line
   // overlays rather than serving a broken image.
-  let overlaySegment = encodeOverlays([...pathOverlays, ...markerOverlays]);
+  let overlaySegment = encodeOverlays(withMarkers(pathOverlays));
   if (overlaySegment.length > MAPBOX_MAX_OVERLAY_SEGMENT_LENGTH) {
     // Drop routed geometry first, flight arcs only if the request is still too long.
-    overlaySegment = encodeOverlays([...simpleOverlays, ...markerOverlays]);
+    overlaySegment = encodeOverlays(withMarkers(simpleOverlays));
   }
   if (overlaySegment.length > MAPBOX_MAX_OVERLAY_SEGMENT_LENGTH) {
-    overlaySegment = encodeOverlays([...straightOverlays, ...markerOverlays]);
+    overlaySegment = encodeOverlays(withMarkers(straightOverlays));
+  }
+  if (overlaySegment.length > MAPBOX_MAX_OVERLAY_SEGMENT_LENGTH) {
+    // Day-trip destinations keep their pins; only the dashes go.
+    overlaySegment = encodeOverlays(withMarkers(straightOverlays, []));
   }
   const scaleSuffix = scale === 2 ? "@2x" : "";
   // WebP is ~35% smaller than the PNG Mapbox returns by default, at the same
@@ -647,6 +668,7 @@ export const resolvePreviewUpstreamUrl = async (
 
   const routeMode = parseRouteMode(url.searchParams.get("routeMode"));
   const legModes = parseMapPreviewLegModes(url.searchParams.get("legModes"));
+  const requestedDayTrips = parseMapPreviewDayTrips(url.searchParams.get(MAP_PREVIEW_DAY_TRIPS_PARAM), coords.length);
 
   const w = clampInt(Number.parseInt(url.searchParams.get("w") || "680", 10), 240, 1280);
   const h = clampInt(Number.parseInt(url.searchParams.get("h") || "288", 10), 160, 960);
@@ -676,6 +698,9 @@ export const resolvePreviewUpstreamUrl = async (
   const endMarkerColor = requestedEndMarkerColor || shiftColor(legColors[legColors.length - 1] || pathColor, 38);
   const waypointColor = requestedWaypointColor || pathColor;
   const mapLanguage = parseMapLanguage(url.searchParams.get("language"));
+  const dayTrips = colorMode === "trip"
+    ? requestedDayTrips
+    : requestedDayTrips.map((dayTrip) => ({ ...dayTrip, color: BRAND_ROUTE_COLOR }));
 
   if (mapRuntime.effectiveSelection.staticMaps === "mapbox" && mapboxToken) {
     const mapUrl = await buildMapboxStaticPreviewUrl({
@@ -684,6 +709,7 @@ export const resolvePreviewUpstreamUrl = async (
       routeMode,
       legColors,
       legModes,
+      dayTrips,
       pathColor,
       startMarkerColor,
       endMarkerColor,
@@ -735,6 +761,9 @@ export const resolvePreviewUpstreamUrl = async (
 
   pathParams.forEach((path) => params.append("path", path));
 
+  const dayTripParams = buildGoogleDayTripParams(dayTrips, coords, pathColor);
+  dayTripParams.paths.forEach((path) => params.append("path", path));
+
   const start = coords[0];
   const end = coords[coords.length - 1];
 
@@ -747,9 +776,21 @@ export const resolvePreviewUpstreamUrl = async (
     const legWaypointColor = legColors[Math.min(index + 1, legColors.length - 1)] || waypointColor;
     params.append("markers", `size:tiny|color:0x${legWaypointColor}|${formatCoord(coord)}`);
   });
+  dayTripParams.markers.forEach((marker) => params.append("markers", marker));
 
   params.set("key", googleApiKey);
 
+  const googleUrl = `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
+  if (googleUrl.length <= GOOGLE_MAX_STATIC_URL_LENGTH) return { ok: true, url: googleUrl };
+  // Routed geometry plus day-trip dashes can outgrow the limit on a long
+  // itinerary: fall back to the straight legs, then drop the dashes too.
+  params.delete("path");
+  simplePathParams.forEach((path) => params.append("path", path));
+  dayTripParams.paths.forEach((path) => params.append("path", path));
+  const straightUrl = `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
+  if (straightUrl.length <= GOOGLE_MAX_STATIC_URL_LENGTH) return { ok: true, url: straightUrl };
+  params.delete("path");
+  simplePathParams.forEach((path) => params.append("path", path));
   return { ok: true, url: `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}` };
 };
 
