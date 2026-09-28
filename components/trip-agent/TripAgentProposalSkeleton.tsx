@@ -8,19 +8,19 @@ import { ThinkingOrb } from 'thinking-orbs';
  * that window reads as a hang.
  */
 export const TripAgentProposalSkeleton: React.FC = () => {
-    const { t } = useTranslation('common');
+    const { t } = useTranslation('tripAgent');
 
     return (
         <section
             className="overflow-hidden rounded-2xl border border-border bg-card"
-            aria-label={t('tripAgent.preparingProposal')}
+            aria-label={t('preparingProposal')}
             aria-busy="true"
         >
             <div className="flex items-center gap-2.5 border-b border-border px-4 py-3">
-                <ThinkingOrb state="solving" size={20} aria-label={t('tripAgent.preparingProposal')} />
+                <ThinkingOrb state="solving" size={20} aria-label={t('preparingProposal')} />
                 <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">{t('tripAgent.preparingProposal')}</p>
-                    <p className="text-xs text-muted-foreground">{t('tripAgent.preparingProposalHint')}</p>
+                    <p className="text-sm font-medium text-foreground">{t('preparingProposal')}</p>
+                    <p className="text-xs text-muted-foreground">{t('preparingProposalHint')}</p>
                 </div>
             </div>
             <div className="space-y-2 p-4" aria-hidden="true">

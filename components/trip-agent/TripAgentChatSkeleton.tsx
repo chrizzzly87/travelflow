@@ -12,10 +12,10 @@ const Bar: React.FC<{ className: string }> = ({ className }) => (
  * visibly not ready yet.
  */
 export const TripAgentChatSkeleton: React.FC = () => {
-    const { t } = useTranslation('common');
+    const { t } = useTranslation('tripAgent');
     return (
         <div className="flex min-h-0 flex-1 flex-col" aria-busy="true" data-testid="trip-agent-chat-skeleton">
-            <p role="status" className="sr-only">{t('tripAgent.loading')}</p>
+            <p role="status" className="sr-only">{t('loading')}</p>
             <div aria-hidden="true" className="flex min-h-0 flex-1 flex-col gap-5 px-4 py-5">
                 <div className="flex flex-col items-center gap-3 pt-6">
                     <span className="size-10 rounded-full bg-secondary motion-safe:animate-pulse" />
@@ -30,7 +30,7 @@ export const TripAgentChatSkeleton: React.FC = () => {
             </div>
             <div aria-hidden="true" className="border-t border-border bg-card/95 p-3">
                 <div className="rounded-xl border border-border bg-background/60 p-3">
-                    <p className="min-h-10 text-sm text-muted-foreground/70">{t('tripAgent.placeholder')}</p>
+                    <p className="min-h-10 text-sm text-muted-foreground/70">{t('placeholder')}</p>
                     <div className="flex items-center justify-between">
                         <div className="flex gap-1">
                             <span className="size-7 rounded-md bg-secondary" />

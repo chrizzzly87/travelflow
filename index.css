@@ -289,6 +289,16 @@
   --tf-today-text: #e11d48;
   --tf-today-text-strong: #9f1239;
 
+  /* Trip Agent @mentions. They mark what a request is about and can be
+   * swapped, so they must stand out on the card in both themes: a solid fill
+   * with a ring, and a stronger pair while the swap list is open. Solid, since
+   * the highlight sits behind live text. */
+  --tf-mention-bg: #c9cfff;
+  --tf-mention-ring: #6e76ff;
+  --tf-mention-active-bg: #a9b1ff;
+  --tf-mention-active-ring: #4b3df0;
+  --tf-mention-unknown-bg: #e7e8ee;
+
   --tf-veil-light: #ffffff;
   --tf-veil-dark: #191817;
   --tf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -412,6 +422,11 @@ html[lang^="ur-"] {
   --color-accent-700: var(--tf-accent-700);
   --color-accent-800: var(--tf-accent-800);
   --color-accent-900: var(--tf-accent-900);
+  --color-mention: var(--tf-mention-bg);
+  --color-mention-ring: var(--tf-mention-ring);
+  --color-mention-active: var(--tf-mention-active-bg);
+  --color-mention-active-ring: var(--tf-mention-active-ring);
+  --color-mention-unknown: var(--tf-mention-unknown-bg);
   --color-accent-950: var(--tf-accent-950);
 
   --color-primary: var(--tf-primary);
@@ -1525,6 +1540,13 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   --tf-today-badge-text: #ffc9cf;
   --tf-today-text: #ff8f9c;
   --tf-today-text-strong: #ffb3bc;
+
+  /* Trip Agent @mentions, dark. Solid values, see :root for why. */
+  --tf-mention-bg: #3b43a8;
+  --tf-mention-ring: #8f98ff;
+  --tf-mention-active-bg: #4f58d6;
+  --tf-mention-active-ring: #c3caff;
+  --tf-mention-unknown-bg: #3a3d47;
 
   /* Activity-type palette, dark. Solid values, see :root for why. */
   --tf-activity-general-bg: #3a3c3f;

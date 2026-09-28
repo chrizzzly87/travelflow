@@ -40,6 +40,25 @@ const TripAgentChatSession = lazy(() => loadLazyComponentWithRecovery(
 
 const RECENT_CHAT_LIMIT = 3;
 
+const PANEL_FRAME_CLASS = 'trip-agent-panel-enter fixed inset-x-0 bottom-0 z-[1650] flex flex-col overflow-hidden rounded-t-[1.5rem] border border-border bg-card shadow-[0_-24px_80px_rgba(15,23,42,0.18)] transition-[height] duration-200 sm:inset-x-auto sm:bottom-4 sm:end-4 sm:h-[min(720px,calc(100dvh-2rem))] sm:w-[420px] sm:rounded-[1.5rem] sm:shadow-2xl';
+
+/**
+ * The panel's frame without any text, shown for the moment the chat's own
+ * translations are still loading, so the click still opens something at once.
+ */
+export const TripAgentPanelFallback: React.FC = () => (
+    <div
+        aria-busy="true"
+        className={`${PANEL_FRAME_CLASS} h-[min(82dvh,720px)]`}
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+        <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-3.5">
+            <span className="h-3.5 w-32 rounded-full bg-secondary motion-safe:animate-pulse" />
+        </div>
+        <div className="flex-1" />
+    </div>
+);
+
 /** Enough to tell whether a remembered chat is still the one on the server. */
 const bootstrapSignature = (bootstrap: TripAgentBootstrap): string => (
     `${bootstrap.currentThreadId || ''}:${bootstrap.messages.length}:${bootstrap.messages.at(-1)?.id || ''}`
@@ -86,7 +105,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
     onRevertAgentChange,
     onReapplyAgentChange,
 }) => {
-    const { t, i18n } = useTranslation('common');
+    const { t, i18n } = useTranslation('tripAgent');
     const now = useMinuteTick();
     // A new tab session starts with a fresh chat; within a session the panel
     // returns to the chat that was open.
@@ -172,6 +191,8 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
 
     const handlePanelKeyDown = useCallback((event: React.KeyboardEvent<HTMLElement>) => {
         if (event.key === 'Escape') {
+            // An open list inside the chat handles its own Escape first.
+            if (event.defaultPrevented) return;
             event.stopPropagation();
             // Escape steps back one level: out of history first, then the panel.
             if (isHistoryOpen) closeHistory();
@@ -343,7 +364,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
         () => groupTripAgentThreads(visibleThreads, now),
         [now, visibleThreads],
     );
-    const threadTitle = (thread: TripAgentThread): string => thread.title || t('tripAgent.newChat');
+    const threadTitle = (thread: TripAgentThread): string => thread.title || t('newChat');
 
     const renderThreadRow = (thread: TripAgentThread) => {
         const isArchived = thread.status === 'archived';
@@ -385,7 +406,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                             {...getAnalyticsDebugAttributes('trip_agent__thread--restore', { trip_id: trip.id })}
                         >
                             <RotateCcw aria-hidden="true" className="size-3" />
-                            {t('tripAgent.restoreChat')}
+                            {t('restoreChat')}
                         </Button>
                     ) : (
                         <Button
@@ -393,8 +414,8 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                             variant="ghost"
                             size="icon-xs"
                             onClick={() => void archiveThread(thread.id)}
-                            aria-label={t('tripAgent.archive')}
-                            title={t('tripAgent.archive')}
+                            aria-label={t('archive')}
+                            title={t('archive')}
                             className="pointer-events-auto opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
                             {...getAnalyticsDebugAttributes('trip_agent__thread--archive', { trip_id: trip.id })}
                         >
@@ -410,14 +431,14 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
             <Lock className="size-6 text-amber-600" />
             <p className="text-sm text-foreground">
-                {t([`tripAgent.errors.${code}`, 'tripAgent.errors.TRIP_AGENT_REQUEST_FAILED'])}
+                {t([`errors.${code}`, 'errors.TRIP_AGENT_REQUEST_FAILED'])}
             </p>
             <Button
                 size="sm"
                 variant="outline"
                 onClick={() => void refresh(savedThread || !currentThread ? currentThreadId || null : null, Boolean(savedThread || !currentThread))}
             >
-                {t('tripAgent.retry')}
+                {t('retry')}
             </Button>
         </div>
     );
@@ -431,8 +452,8 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                         value={historyQuery}
                         onChange={(event) => setHistoryQuery(event.currentTarget.value)}
                         onClear={() => setHistoryQuery('')}
-                        placeholder={t('tripAgent.searchChats')}
-                        aria-label={t('tripAgent.searchChats')}
+                        placeholder={t('searchChats')}
+                        aria-label={t('searchChats')}
                         containerClassName="h-9"
                         autoFocus
                     />
@@ -441,21 +462,21 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                     {visibleThreads.length === 0 && (
                         <p className="px-2 py-6 text-center text-xs text-muted-foreground">
                             {normalizedQuery
-                                ? t('tripAgent.noSearchResults', { query: historyQuery.trim() })
-                                : t('tripAgent.historyEmpty')}
+                                ? t('noSearchResults', { query: historyQuery.trim() })
+                                : t('historyEmpty')}
                         </p>
                     )}
                     {threadSections.map((section) => (
                         <section key={section.key} className="mb-2">
                             {historyView === 'chats' && (
                                 <h3 className="px-2.5 pb-1 pt-1.5 text-[11px] font-medium text-muted-foreground">
-                                    {t(`tripAgent.historySections.${section.key}`)}
+                                    {t(`historySections.${section.key}`)}
                                 </h3>
                             )}
                             <ul className="space-y-0.5">{section.threads.map(renderThreadRow)}</ul>
                             {section.hiddenCount > 0 && (
                                 <p className="px-2.5 pt-1 text-[11px] text-muted-foreground">
-                                    {t('tripAgent.historyHidden', { count: section.hiddenCount })}
+                                    {t('historyHidden', { count: section.hiddenCount })}
                                 </p>
                             )}
                         </section>
@@ -472,7 +493,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                             className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-start text-xs text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
                         >
                             <Archive aria-hidden="true" className="size-3.5" />
-                            <span className="flex-1">{t('tripAgent.archivedChats', { count: archivedThreads.length })}</span>
+                            <span className="flex-1">{t('archivedChats', { count: archivedThreads.length })}</span>
                             <ChevronRight aria-hidden="true" className="size-3.5 rtl:rotate-180" />
                         </button>
                     </div>
@@ -533,8 +554,8 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                 ref={panelRef}
                 role="dialog"
                 aria-modal="true"
-                aria-label={t('tripAgent.title')}
-                className={`trip-agent-panel-enter fixed inset-x-0 bottom-0 z-[1650] flex flex-col overflow-hidden rounded-t-[1.5rem] border border-border bg-card shadow-[0_-24px_80px_rgba(15,23,42,0.18)] transition-[height] duration-200 sm:inset-x-auto sm:bottom-4 sm:end-4 sm:h-[min(720px,calc(100dvh-2rem))] sm:w-[420px] sm:rounded-[1.5rem] sm:shadow-2xl ${
+                aria-label={t('title')}
+                className={`${PANEL_FRAME_CLASS} ${
                     isPreviewActive ? 'h-[min(42dvh,340px)]' : 'h-[min(82dvh,720px)]'
                 }`}
                 style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
@@ -548,15 +569,15 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                             variant="ghost"
                             size="icon-sm"
                             onClick={historyView === 'archived' ? () => setHistoryView('chats') : closeHistory}
-                            aria-label={historyView === 'archived' ? t('tripAgent.historyTitle') : t('tripAgent.backToChat')}
-                            title={historyView === 'archived' ? t('tripAgent.historyTitle') : t('tripAgent.backToChat')}
+                            aria-label={historyView === 'archived' ? t('historyTitle') : t('backToChat')}
+                            title={historyView === 'archived' ? t('historyTitle') : t('backToChat')}
                         >
                             <ArrowLeft aria-hidden="true" className="size-4 rtl:rotate-180" />
                         </Button>
                         <h2 className="min-w-0 flex-1 truncate px-1 text-sm font-semibold text-foreground">
                             {historyView === 'archived'
-                                ? t('tripAgent.archivedChats', { count: archivedThreads.length })
-                                : t('tripAgent.historyTitle')}
+                                ? t('archivedChats', { count: archivedThreads.length })
+                                : t('historyTitle')}
                         </h2>
                     </>
                 ) : (
@@ -569,12 +590,12 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                             onClick={() => setHistoryView('chats')}
                             aria-expanded={false}
                             aria-labelledby="trip-agent-switcher-title trip-agent-switcher-hint"
-                            title={t('tripAgent.history')}
+                            title={t('history')}
                             className="flex min-w-0 max-w-full items-center gap-1 rounded-lg px-2 py-1.5 text-start text-sm font-semibold text-foreground outline-none transition-colors hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/50"
                             {...getAnalyticsDebugAttributes('trip_agent__history--open', { trip_id: trip.id })}
                         >
-                            <span id="trip-agent-switcher-title" className="truncate">{currentThread ? threadTitle(currentThread) : t('tripAgent.title')}</span>
-                            <span id="trip-agent-switcher-hint" className="sr-only">{t('tripAgent.history')}</span>
+                            <span id="trip-agent-switcher-title" className="truncate">{currentThread ? threadTitle(currentThread) : t('title')}</span>
+                            <span id="trip-agent-switcher-hint" className="sr-only">{t('history')}</span>
                             <ChevronDown aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
                         </button>
                     </h2>
@@ -587,8 +608,8 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                     variant="ghost"
                     size="icon-sm"
                     onClick={handleNewChat}
-                    aria-label={t('tripAgent.newChat')}
-                    title={t('tripAgent.newChat')}
+                    aria-label={t('newChat')}
+                    title={t('newChat')}
                     {...getAnalyticsDebugAttributes('trip_agent__thread--new', { trip_id: trip.id })}
                 >
                     <MessageCirclePlus className="size-4" />
@@ -598,7 +619,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                     variant="ghost"
                     size="icon-sm"
                     onClick={onClose}
-                    aria-label={t('tripAgent.close')}
+                    aria-label={t('close')}
                     {...getAnalyticsDebugAttributes('trip_agent__panel--close', { trip_id: trip.id })}
                 >
                     <X className="size-4" />

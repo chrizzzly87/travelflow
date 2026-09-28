@@ -55,7 +55,13 @@ import { TripAgentQuestionCard } from './TripAgentQuestionCard';
 import { TripAgentHotelCards, TripAgentRouteCards } from './TripAgentSpecialistCards';
 import { TripAgentWorkingIndicator } from './TripAgentWorkingIndicator';
 import { TripAgentPromptField } from './TripAgentPromptField';
-import { ambiguousMentionLabels, insertMention, mentionedContextRefs } from './tripAgentMentions';
+import {
+    ambiguousMentionLabels,
+    findTripAgentMentions,
+    insertMention,
+    mentionedContextRefs,
+    type TripAgentMentionSpan,
+} from './tripAgentMentions';
 import {
     Questionnaire,
     QuestionnaireChoice,
@@ -67,6 +73,7 @@ import {
 import { formatTripAgentTimestamp } from './tripAgentTime';
 import { useMinuteTick } from './useMinuteTick';
 import { Button } from '../ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import type { TripAgentPanelProps } from './tripAgentPanelTypes';
 import { isDayTrip } from '../../shared/activityStay';
 import { buildTripAgentDayTripPresets } from './tripAgentDayTripPresets';
@@ -104,7 +111,7 @@ const MentionText: React.FC<{ text: string }> = ({ text }) => {
     while (match) {
         if (match.index > cursor) pieces.push(text.slice(cursor, match.index));
         pieces.push(
-            <mark key={`${match.index}-${match[0]}`} className="rounded-[5px] bg-accent-100 px-0.5 py-px text-accent-900 dark:bg-accent-400/12 dark:text-accent-200">
+            <mark key={`${match.index}-${match[0]}`} className="rounded-[5px] bg-mention px-0.5 py-px text-foreground ring-1 ring-mention-ring">
                 {match[0]}
             </mark>,
         );
@@ -155,7 +162,7 @@ const ChatMessage: React.FC<{
     onAskAgain,
     onAnswerQuestion,
 }) => {
-    const { t } = useTranslation('common');
+    const { t } = useTranslation('tripAgent');
     const blocks = useMemo(() => buildTripAgentMessageBlocks(message, isStreaming), [message, isStreaming]);
     const timestamp = formatTripAgentTimestamp(message.metadata?.createdAt as string | undefined, locale, now);
     const persistedStatus = message.metadata?.status as string | undefined;
@@ -163,7 +170,7 @@ const ChatMessage: React.FC<{
         && !isStreaming
         && (persistedStatus === 'streaming' || persistedStatus === 'cancelled' || persistedStatus === 'failed');
     const authorLabel = message.role === 'assistant'
-        ? t('tripAgent.agentName')
+        ? t('agentName')
         : isOwnMessage ? null : (message.metadata?.authorLabel as string | undefined) || null;
 
     return (
@@ -221,13 +228,13 @@ const ChatMessage: React.FC<{
                                 role="alert"
                                 className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 dark:bg-rose-400/12 dark:border-rose-400/30"
                             >
-                                <p className="text-xs font-semibold text-rose-900 dark:text-rose-200">{t('tripAgent.proposalFailed')}</p>
+                                <p className="text-xs font-semibold text-rose-900 dark:text-rose-200">{t('proposalFailed')}</p>
                                 {block.detail && (
                                     <p className="mt-1 break-words text-[11px] leading-4 text-rose-800 dark:text-rose-200">{block.detail}</p>
                                 )}
                                 {onRetry && (
                                     <Button type="button" variant="outline" size="sm" className="mt-2" onClick={onRetry}>
-                                        <RotateCcw className="size-3.5" />{t('tripAgent.retryMessage')}
+                                        <RotateCcw className="size-3.5" />{t('retryMessage')}
                                     </Button>
                                 )}
                             </div>
@@ -261,19 +268,19 @@ const ChatMessage: React.FC<{
                 })}
                 {wasInterrupted && (
                     <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-2 dark:bg-amber-400/12 dark:border-amber-400/30">
-                        <span className="text-[11px] font-medium text-amber-800 dark:text-amber-200">{t('tripAgent.runInterrupted')}</span>
+                        <span className="text-[11px] font-medium text-amber-800 dark:text-amber-200">{t('runInterrupted')}</span>
                         {onRetry && (
                             <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-                                <RotateCcw className="size-3.5" />{t('tripAgent.continueRun')}
+                                <RotateCcw className="size-3.5" />{t('continueRun')}
                             </Button>
                         )}
                     </div>
                 )}
                 {hasFailed && onRetry && (
                     <div className="flex items-center justify-end gap-2 pt-1">
-                        <span className="me-auto text-[11px] font-medium text-rose-700 dark:text-rose-200">{t('tripAgent.messageFailed')}</span>
+                        <span className="me-auto text-[11px] font-medium text-rose-700 dark:text-rose-200">{t('messageFailed')}</span>
                         <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-                            <RotateCcw className="size-3.5" />{t('tripAgent.retryMessage')}
+                            <RotateCcw className="size-3.5" />{t('retryMessage')}
                         </Button>
                     </div>
                 )}
@@ -340,7 +347,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
     onShowAllChats,
     showOnboarding = false,
 }) => {
-    const { t, i18n } = useTranslation('common');
+    const { t, i18n } = useTranslation('tripAgent');
     const now = useMinuteTick();
     useEffect(() => {
         onReady?.();
@@ -432,6 +439,8 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
     // An example is written into the field to be adapted, not sent; until it
     // is, a hint says how to change it.
     const [isExampleDraft, setIsExampleDraft] = useState(false);
+    // The mention whose swap list is open; only meaningful while the list is.
+    const [swapTarget, setSwapTarget] = useState<{ start: number; end: number; label: string } | null>(null);
     const isGenerating = status === 'submitted' || status === 'streaming';
     const lastMessage = messages.at(-1);
     const hasStreamingAssistantText = lastMessage?.role === 'assistant'
@@ -483,21 +492,37 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
         await sendMessage({ text: latestUserText, messageId: latestUserMessage.id });
     }, [activeContextRefs.length, clearError, isGenerating, isQuotaReached, latestUserMessage, latestUserText, sendMessage, thread.id, trip.id]);
 
+    const openSwap = (span: TripAgentMentionSpan, source: 'click' | 'keyboard' | 'example') => {
+        setSwapTarget({ start: span.start, end: span.end, label: span.label });
+        setCommandMenu('context');
+        setMenuQuery('');
+        setMenuIndex(0);
+        if (source !== 'example') trackEvent('trip_agent__mention--swap_open', { trip_id: trip.id, source });
+    };
+
     const applyExample = (example: TripAgentExample) => {
         setDraftText(example.prompt);
         setIsExampleDraft(true);
-        setCommandMenu(null);
         trackEvent('trip_agent__example--insert', { trip_id: trip.id, example: example.key });
+        // The example's stop is the part most worth changing, so its list
+        // opens straight away; Escape or typing puts it away.
+        const firstMention = findTripAgentMentions(example.prompt, selectableContextRefs)
+            .find((span) => span.contextRef);
+        if (firstMention) openSwap(firstMention, 'example');
+        else setCommandMenu(null);
         requestAnimationFrame(() => {
             const element = textareaRef.current;
             if (!element) return;
             element.focus();
-            element.setSelectionRange(element.value.length, element.value.length);
+            const caret = firstMention ? firstMention.end : element.value.length;
+            element.setSelectionRange(caret, caret);
         });
     };
 
     const updateDraft = (value: string) => {
         setDraftText(value);
+        // Any edit moves the text under a swap target, so the swap ends.
+        setSwapTarget(null);
         if (!value.trim()) setIsExampleDraft(false);
         const mention = /(?:^|\s)@([^\s]*)$/.exec(value);
         const command = /^\s*\/([^\s]*)$/.exec(value);
@@ -507,6 +532,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
     };
 
     const openMenu = (mode: 'context' | 'commands', query = '') => {
+        setSwapTarget(null);
         setCommandMenu(mode);
         setMenuQuery(query);
         setMenuIndex(0);
@@ -522,7 +548,18 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
     };
 
     const selectContext = (contextRef: TripAgentContextRef) => {
-        setDraftText((current) => insertMention(current, contextRef.label));
+        const target = commandMenu === 'context' ? swapTarget : null;
+        if (target) {
+            // Swap the mention in place and leave the caret right after it.
+            const replacement = `@${contextRef.label}`;
+            setDraftText((current) => `${current.slice(0, target.start)}${replacement}${current.slice(target.end)}`);
+            const caret = target.start + replacement.length;
+            requestAnimationFrame(() => textareaRef.current?.setSelectionRange(caret, caret));
+            trackEvent('trip_agent__mention--swap', { trip_id: trip.id, context_kind: contextRef.kind });
+        } else {
+            setDraftText((current) => insertMention(current, contextRef.label));
+        }
+        setSwapTarget(null);
         setCommandMenu(null);
         const label = contextRef.label.toLowerCase();
         if (ambiguousLabels.has(label) && !chosenByLabel[label]) {
@@ -540,10 +577,10 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
     const contextMeta = (contextRef: TripAgentContextRef): string => {
         const item = trip.items.find((candidate) => candidate.id === contextRef.id);
         const city = contextRef.cityId ? trip.items.find((candidate) => candidate.id === contextRef.cityId) : undefined;
-        const day = item ? t('tripAgent.dayValue', { day: Math.floor(item.startDateOffset) + 1 }) : null;
+        const day = item ? t('dayValue', { day: Math.floor(item.startDateOffset) + 1 }) : null;
         const kindLabel = item && isDayTrip(item)
-            ? t('tripView.activityPlan.kindDayTrip')
-            : t(`tripAgent.contextKinds.${contextRef.kind}`);
+            ? t('common:tripView.activityPlan.kindDayTrip')
+            : t(`contextKinds.${contextRef.kind}`);
         return [kindLabel, city?.title, day].filter(Boolean).join(' · ');
     };
 
@@ -554,7 +591,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                 .filter((suggestion) => !query || suggestion.toLowerCase().includes(query))
                 .map((suggestion) => ({
                     key: `preset:${suggestion}`,
-                    group: t('tripAgent.commandMenu'),
+                    group: t('commandMenu'),
                     label: suggestion,
                     icon: <SlashGlyph className="w-4 shrink-0 text-center text-muted-foreground" />,
                 }));
@@ -568,7 +605,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
             })
             .map((contextRef) => ({
                 key: contextRefKey(contextRef),
-                group: t(`tripAgent.contextGroups.${kind}`),
+                group: t(`contextGroups.${kind}`),
                 label: contextRef.label,
                 meta: contextMeta(contextRef),
                 isSelected: activeContextRefs.some((candidate) => contextRefKey(candidate) === contextRefKey(contextRef)),
@@ -594,8 +631,11 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
     const handleMenuKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (!commandMenu) return;
         if (event.key === 'Escape') {
+            // Close only the list; the panel must not take this Escape too.
             event.preventDefault();
+            event.stopPropagation();
             setCommandMenu(null);
+            setSwapTarget(null);
             return;
         }
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -620,13 +660,13 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                         <div className="space-y-3">
                             <ConversationEmptyState
                                 icon={<Bot className="size-6" />}
-                                title={t('tripAgent.noMessages')}
-                                description={t('tripAgent.subtitle')}
+                                title={t('noMessages')}
+                                description={t('subtitle')}
                             />
                             {recentChats.length > 0 && onOpenChat && (
                                 <nav aria-labelledby="trip-agent-recent-chats" className="space-y-1">
                                     <h3 id="trip-agent-recent-chats" className="px-1 text-[11px] font-medium text-muted-foreground">
-                                        {t('tripAgent.recentChats')}
+                                        {t('recentChats')}
                                     </h3>
                                     <ul className="space-y-0.5">
                                         {recentChats.map((chat) => (
@@ -652,7 +692,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                                             onClick={onShowAllChats}
                                             className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-start text-xs text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                         >
-                                            <span className="flex-1">{t('tripAgent.allChats')}</span>
+                                            <span className="flex-1">{t('allChats')}</span>
                                             <ArrowRight aria-hidden="true" className="size-3.5 rtl:rotate-180" />
                                         </button>
                                     )}
@@ -687,7 +727,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                         <div className="space-y-2">
                             {!hasStreamingAssistantText && (
                                 <div className="text-[11px] text-muted-foreground">
-                                    <span className="font-medium text-muted-foreground">{t('tripAgent.agentName')}</span>
+                                    <span className="font-medium text-muted-foreground">{t('agentName')}</span>
                                     <span aria-hidden="true"> · </span>
                                     <span>{formatTripAgentTimestamp(Date.now(), i18n.language, now)}</span>
                                 </div>
@@ -696,8 +736,8 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                                 ? <TripAgentProposalSkeleton />
                                 : (
                                     <TripAgentWorkingIndicator
-                                        label={t('tripAgent.activityWorking')}
-                                        hint={t('tripAgent.activityStillWorking')}
+                                        label={t('activityWorking')}
+                                        hint={t('activityStillWorking')}
                                     />
                                 )}
                         </div>
@@ -708,7 +748,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                                 <AlertCircle className="mt-0.5 size-4 shrink-0 text-rose-600" />
                                 <div className="min-w-0 flex-1">
                                     <h3 className="text-sm font-semibold leading-5">
-                                        {t([`tripAgent.errors.${errorInfo.code}`, 'tripAgent.errors.TRIP_AGENT_REQUEST_FAILED'])}
+                                        {t([`errors.${errorInfo.code}`, 'errors.TRIP_AGENT_REQUEST_FAILED'])}
                                     </h3>
                                     <p className="mt-1 break-words text-xs leading-5 text-rose-800 dark:text-rose-200">{errorInfo.detail || errorInfo.message}</p>
                                     <p className="mt-1.5 font-mono text-[10px] uppercase tracking-wide text-rose-600">
@@ -724,25 +764,34 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
 
             <div className="border-t border-border bg-card/95 p-3 backdrop-blur">
                 {isExampleDraft && draftText.trim() ? (
-                    <p className="mb-1.5 px-1 text-[11px] text-muted-foreground" role="status">
-                        {t('tripAgent.exampleHint')}
+                    <p id="trip-agent-example-hint" className="mb-1.5 px-1 text-[11px] text-muted-foreground" role="status">
+                        {t('exampleHint')}
                     </p>
                 ) : messages.length === 0 && (
-                    <Suggestions className="mb-2 gap-1.5" aria-label={t('tripAgent.examplesLabel')}>
-                        {examples.map((example) => (
-                            <Suggestion
-                                key={example.key}
-                                suggestion={example.label}
-                                onClick={() => applyExample(example)}
-                                className="h-7 px-3 text-xs font-normal text-muted-foreground hover:text-foreground"
-                                {...getAnalyticsDebugAttributes('trip_agent__example--insert', { trip_id: trip.id, example: example.key })}
-                            />
-                        ))}
-                    </Suggestions>
+                    <TooltipProvider delayDuration={400}>
+                        <Suggestions className="mb-2 gap-1.5" aria-label={t('examplesLabel')}>
+                            {examples.map((example) => (
+                                <Tooltip key={example.key}>
+                                    <TooltipTrigger asChild>
+                                        <Suggestion
+                                            suggestion={example.label}
+                                            onClick={() => applyExample(example)}
+                                            className="h-7 px-3 text-xs font-normal text-muted-foreground hover:text-foreground"
+                                            {...getAnalyticsDebugAttributes('trip_agent__example--insert', { trip_id: trip.id, example: example.key })}
+                                        />
+                                    </TooltipTrigger>
+                                    {/* Above the panel (1650), below app dialogs (1700). */}
+                                    <TooltipContent side="top" sideOffset={6} className="z-[1660] max-w-64 text-start">
+                                        {t('exampleTooltip', { prompt: example.prompt })}
+                                    </TooltipContent>
+                                </Tooltip>
+                            ))}
+                        </Suggestions>
+                    </TooltipProvider>
                 )}
                 {selectionOnlyRefs.length > 0 && (
                     <p className="mb-1.5 truncate px-1 text-[11px] text-muted-foreground">
-                        {t('tripAgent.alsoUsingSelection', {
+                        {t('alsoUsingSelection', {
                             labels: selectionOnlyRefs.map((contextRef) => contextRef.label).join(', '),
                         })}
                     </p>
@@ -752,7 +801,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                         <Questionnaire>
                             <QuestionnaireItem>
                                 <QuestionnaireTitle>
-                                    {t('tripAgent.whichOne', { label: pendingChoice.label })}
+                                    {t('whichOne', { label: pendingChoice.label })}
                                 </QuestionnaireTitle>
                                 <QuestionnaireChoices
                                     type="single"
@@ -787,7 +836,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                         <>
                             <button
                                 type="button"
-                                aria-label={t('tripAgent.closeMenu')}
+                                aria-label={t('closeMenu')}
                                 className="fixed inset-0 z-10 cursor-default"
                                 onClick={() => setCommandMenu(null)}
                             />
@@ -796,7 +845,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                                     items={menuItems}
                                     activeIndex={menuIndex}
                                     listId="trip-agent-mention-menu"
-                                    emptyLabel={commandMenu === 'context' ? t('tripAgent.noContext') : t('tripAgent.noCommand')}
+                                    emptyLabel={commandMenu === 'context' ? t('noContext') : t('noCommand')}
                                     onSelect={selectMenuItem}
                                     onHover={setMenuIndex}
                                 />
@@ -810,7 +859,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                                 onValueChange={updateDraft}
                                 onKeyDown={handleMenuKeyDown}
                                 contextRefs={selectableContextRefs}
-                                placeholder={t('tripAgent.placeholder')}
+                                placeholder={t('placeholder')}
                                 disabled={isQuotaReached}
                                 textareaRef={textareaRef}
                                 ariaExpanded={Boolean(commandMenu)}
@@ -818,19 +867,22 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                                 ariaActiveDescendant={commandMenu && menuItems.length > 0
                                     ? `trip-agent-mention-menu-option-${menuIndex}`
                                     : undefined}
+                                activeMention={commandMenu === 'context' ? swapTarget : null}
+                                onMentionActivate={(span) => openSwap(span, 'click')}
+                                ariaDescribedBy={isExampleDraft && draftText.trim() ? 'trip-agent-example-hint' : undefined}
                             />
                         </PromptInputBody>
                         <PromptInputFooter className="justify-between">
                             <div className="flex min-w-0 items-center gap-1">
-                                <Button type="button" variant="ghost" size="icon-sm" onClick={() => toggleMenu('context')} aria-label={t('tripAgent.contextMenu')}>
+                                <Button type="button" variant="ghost" size="icon-sm" onClick={() => toggleMenu('context')} aria-label={t('contextMenu')}>
                                     <AtSign className="size-4" />
                                 </Button>
-                                <Button type="button" variant="ghost" size="icon-sm" onClick={() => toggleMenu('commands')} aria-label={t('tripAgent.commandMenu')}>
+                                <Button type="button" variant="ghost" size="icon-sm" onClick={() => toggleMenu('commands')} aria-label={t('commandMenu')}>
                                     <SlashGlyph />
                                 </Button>
                                 {quota.remaining !== null && (
                                     <span className="truncate px-1 text-[11px] text-muted-foreground">
-                                        {t('tripAgent.quota', { remaining: quota.remaining })}
+                                        {t('quota', { remaining: quota.remaining })}
                                     </span>
                                 )}
                             </div>
@@ -838,13 +890,13 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                                 status={status}
                                 onStop={stop}
                                 disabled={isQuotaReached || !draftText.trim()}
-                                aria-label={status === 'submitted' || status === 'streaming' ? t('tripAgent.stop') : t('tripAgent.send')}
-                                title={status === 'submitted' || status === 'streaming' ? t('tripAgent.stop') : t('tripAgent.send')}
+                                aria-label={status === 'submitted' || status === 'streaming' ? t('stop') : t('send')}
+                                title={status === 'submitted' || status === 'streaming' ? t('stop') : t('send')}
                             />
                         </PromptInputFooter>
                     </PromptInput>
                 </div>
-                {isQuotaReached && <p className="mt-2 text-xs text-amber-700 dark:text-amber-200" role="status">{t('tripAgent.quotaReached', { resetTime })}</p>}
+                {isQuotaReached && <p className="mt-2 text-xs text-amber-700 dark:text-amber-200" role="status">{t('quotaReached', { resetTime })}</p>}
             </div>
         </>
     );

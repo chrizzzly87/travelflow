@@ -17,8 +17,8 @@ describe('buildTripAgentExamples', () => {
   it('names the first stop as an @mention when nothing is selected', () => {
     const examples = buildTripAgentExamples({ t, trip, contextRefs: [] });
     expect(examples.map((example) => example.key)).toEqual(['pace', 'stays', 'route', 'dayTrip', 'review']);
-    expect(examples[0].prompt).toBe('tripAgent.examples.pace.prompt|@Tokyo');
-    expect(examples[2].prompt).toBe('tripAgent.examples.route.prompt');
+    expect(examples[0].prompt).toBe('examples.pace.prompt|@Tokyo');
+    expect(examples[2].prompt).toBe('examples.route.prompt');
   });
 
   it('prefers the city selected in the planner', () => {
@@ -27,7 +27,7 @@ describe('buildTripAgentExamples', () => {
       trip,
       contextRefs: [{ kind: 'city', id: 'c2', label: 'Kyoto' }] as never,
     });
-    expect(examples.find((example) => example.key === 'dayTrip')?.prompt).toBe('tripAgent.examples.dayTrip.prompt|@Kyoto');
+    expect(examples.find((example) => example.key === 'dayTrip')?.prompt).toBe('examples.dayTrip.prompt|@Kyoto');
   });
 
   it('offers only trip-wide examples for a trip without stops', () => {

@@ -39,9 +39,9 @@ export const buildTripAgentExamples = ({
         : TRIP_EXAMPLES;
     return keys.map((key) => ({
         key,
-        label: t(`tripAgent.examples.${key}.label`),
+        label: t(`examples.${key}.label`),
         prompt: CITY_EXAMPLES.includes(key)
-            ? t(`tripAgent.examples.${key}.prompt`, { city: `@${city}` })
-            : t(`tripAgent.examples.${key}.prompt`),
+            ? t(`examples.${key}.prompt`, { city: `@${city}` })
+            : t(`examples.${key}.prompt`),
     }));
 };

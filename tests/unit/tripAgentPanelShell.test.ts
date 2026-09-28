@@ -124,10 +124,10 @@ describe('TripAgentPanel', () => {
   it('opens at once with a skeleton while the chat chunk is still loading', () => {
     loadBootstrapMock.mockReturnValue(new Promise(() => undefined));
     renderPanel();
-    expect(screen.getByRole('dialog', { name: 'tripAgent.title' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'title' })).toBeTruthy();
     expect(screen.getByTestId('trip-agent-chat-skeleton').getAttribute('aria-busy')).toBe('true');
     // New chat needs no server, so it is never disabled.
-    expect((screen.getByRole('button', { name: 'tripAgent.newChat' }) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole('button', { name: 'newChat' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('starts a new session with a fresh draft, without waiting for or switching to the last chat', async () => {
@@ -136,7 +136,7 @@ describe('TripAgentPanel', () => {
     renderPanel();
     const chat = await screen.findByTestId('chat');
     expect(chat.getAttribute('data-messages')).toBe('0');
-    expect(screen.getByRole('button', { name: 'tripAgent.newChat tripAgent.history', expanded: false })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'newChat history', expanded: false })).toBeTruthy();
     expect(loadBootstrapMock).toHaveBeenCalledWith('trip-1', null);
     expect(createThreadMock).not.toHaveBeenCalled();
   });
@@ -172,7 +172,7 @@ describe('TripAgentPanel', () => {
     renderPanel();
     await waitFor(() => expect(screen.getByTestId('chat').getAttribute('data-thread')).toBe('t1'));
     loadBootstrapMock.mockClear();
-    fireEvent.click(screen.getByRole('button', { name: 'tripAgent.newChat' }));
+    fireEvent.click(screen.getByRole('button', { name: 'newChat' }));
     const chat = screen.getByTestId('chat');
     expect(chat.getAttribute('data-thread')).not.toBe('t1');
     expect(chat.getAttribute('data-messages')).toBe('0');
@@ -196,7 +196,7 @@ describe('TripAgentPanel', () => {
     await loadChunk();
     renderPanel();
     const draftId = (await screen.findByTestId('chat')).getAttribute('data-thread');
-    fireEvent.click(screen.getByRole('button', { name: 'tripAgent.newChat' }));
+    fireEvent.click(screen.getByRole('button', { name: 'newChat' }));
     expect(screen.getByTestId('chat').getAttribute('data-thread')).toBe(draftId);
   });
 
@@ -205,14 +205,14 @@ describe('TripAgentPanel', () => {
     await loadChunk();
     renderPanel();
     await waitFor(() => expect(screen.getByTestId('chat').getAttribute('data-thread')).toBe('t1'));
-    fireEvent.click(screen.getByRole('button', { name: 'Relaxed route tripAgent.history' }));
-    expect(screen.getByRole('searchbox', { name: 'tripAgent.searchChats' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Relaxed route history' }));
+    expect(screen.getByRole('searchbox', { name: 'searchChats' })).toBeTruthy();
     const currentRow = screen.getByRole('button', { name: 'Relaxed route', current: true }).closest('li') as HTMLElement;
     // The archive action lives inside its row, not below it.
-    fireEvent.click(within(currentRow).getByRole('button', { name: 'tripAgent.archive' }));
+    fireEvent.click(within(currentRow).getByRole('button', { name: 'archive' }));
     expect(archiveThreadMock).toHaveBeenCalledWith('trip-1', 't1');
     expect(screen.queryByRole('button', { name: 'Relaxed route' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'tripAgent.backToChat' }));
+    fireEvent.click(screen.getByRole('button', { name: 'backToChat' }));
     expect(screen.getByTestId('chat').getAttribute('data-thread')).not.toBe('t1');
   });
 
@@ -221,13 +221,13 @@ describe('TripAgentPanel', () => {
     await loadChunk();
     renderPanel();
     await waitFor(() => expect(screen.getByTestId('chat').getAttribute('data-thread')).toBe('t1'));
-    fireEvent.click(screen.getByRole('button', { name: 'Relaxed route tripAgent.history' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Relaxed route history' }));
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'east' } });
     expect(screen.getByRole('button', { name: 'East coast' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Relaxed route' })).toBeNull();
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: '' } });
-    fireEvent.click(screen.getByRole('button', { name: 'tripAgent.archivedChats:1' }));
-    fireEvent.click(screen.getByRole('button', { name: /tripAgent.restoreChat/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'archivedChats:1' }));
+    fireEvent.click(screen.getByRole('button', { name: /restoreChat/ }));
     expect(restoreThreadMock).toHaveBeenCalledWith('trip-1', 't0');
     expect(screen.queryByText('Old idea')).toBeNull();
   });
@@ -237,7 +237,7 @@ describe('TripAgentPanel', () => {
     await loadChunk();
     renderPanel();
     await waitFor(() => expect(screen.getByTestId('chat').getAttribute('data-thread')).toBe('t1'));
-    fireEvent.click(screen.getByRole('button', { name: 'Relaxed route tripAgent.history' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Relaxed route history' }));
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByTestId('chat')).toBeTruthy();

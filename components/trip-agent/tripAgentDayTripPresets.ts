@@ -25,16 +25,16 @@ export const buildTripAgentDayTripPresets = ({
     const activity = activityRef ? trip.items.find((item) => item.id === activityRef.id) : undefined;
     if (activity) {
         if (isDayTrip(activity)) {
-            presets.push(t('tripAgent.presetChangeDayTrip', { activity: activity.title }));
-            presets.push(t('tripAgent.presetRemoveDayTrip', { activity: activity.title }));
+            presets.push(t('presetChangeDayTrip', { activity: activity.title }));
+            presets.push(t('presetRemoveDayTrip', { activity: activity.title }));
         } else {
-            presets.push(t('tripAgent.presetMakeDayTrip', { activity: activity.title }));
+            presets.push(t('presetMakeDayTrip', { activity: activity.title }));
         }
     }
 
     const cityRef = contextRefs.find((contextRef) => contextRef.kind === 'city');
-    if (cityRef) presets.push(t('tripAgent.presetDayTripFrom', { city: cityRef.label }));
+    if (cityRef) presets.push(t('presetDayTripFrom', { city: cityRef.label }));
 
-    if (trip.items.some((item) => item.type === 'city')) presets.push(t('tripAgent.presetDayTrips'));
+    if (trip.items.some((item) => item.type === 'city')) presets.push(t('presetDayTrips'));
     return presets;
 };

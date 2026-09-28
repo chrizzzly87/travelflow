@@ -66,7 +66,7 @@ export const TripAgentActivityGroup: React.FC<{
     isStreaming: boolean;
     durationSeconds?: number;
 }> = ({ reasoningText, steps, isStreaming, durationSeconds }) => {
-    const { t } = useTranslation('common');
+    const { t } = useTranslation('tripAgent');
     const [isOpen, setIsOpen] = useState(false);
     const [openStepKey, setOpenStepKey] = useState<string | null>(null);
     const hasFailure = steps.some((step) => isFailedState(step.state));
@@ -75,14 +75,14 @@ export const TripAgentActivityGroup: React.FC<{
 
     const label = isStreaming
         ? [
-            runningStep ? t('tripAgent.activityRunningStep', { step: runningStep.name }) : t('tripAgent.activityWorking'),
-            elapsedSeconds > 0 ? t('tripAgent.activityElapsed', { seconds: elapsedSeconds }) : null,
+            runningStep ? t('activityRunningStep', { step: runningStep.name }) : t('activityWorking'),
+            elapsedSeconds > 0 ? t('activityElapsed', { seconds: elapsedSeconds }) : null,
         ].filter(Boolean).join(' · ')
         : [
             durationSeconds !== undefined
-                ? t('tripAgent.activityDone', { seconds: durationSeconds })
-                : t('tripAgent.activityDoneUnknown'),
-            steps.length > 0 ? t('tripAgent.activitySteps', { count: steps.length }) : null,
+                ? t('activityDone', { seconds: durationSeconds })
+                : t('activityDoneUnknown'),
+            steps.length > 0 ? t('activitySteps', { count: steps.length }) : null,
         ].filter(Boolean).join(' · ');
 
     return (
@@ -103,7 +103,7 @@ export const TripAgentActivityGroup: React.FC<{
                 <ChevronDown className={`size-3.5 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </CollapsibleTrigger>
             {isStreaming && elapsedSeconds >= 20 && (
-                <p className="px-2.5 pb-2 text-[11px] text-muted-foreground" role="status">{t('tripAgent.activityStillWorking')}</p>
+                <p className="px-2.5 pb-2 text-[11px] text-muted-foreground" role="status">{t('activityStillWorking')}</p>
             )}
             <CollapsibleContent>
                 <div className="space-y-2 border-t border-border/70 px-2.5 py-2">

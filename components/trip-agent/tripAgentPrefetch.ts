@@ -1,3 +1,4 @@
+import i18n, { preloadLocaleNamespaces } from '../../i18n';
 import {
     loadTripAgentBootstrap,
     type TripAgentBootstrap,
@@ -56,9 +57,18 @@ export const prefetchTripAgentBootstrap = (tripId: string): void => {
     );
 };
 
-/** Warms both the chat chunk and the trip's chats. */
+/**
+ * The chat's copy lives in its own `tripAgent` namespace. Loading it ahead
+ * keeps the panel from waiting on it when it opens.
+ */
+export const preloadTripAgentTranslations = (): void => {
+    void preloadLocaleNamespaces(i18n.language, ['tripAgent']).catch(() => undefined);
+};
+
+/** Warms the chat chunk, its translations and the trip's chats. */
 export const prefetchTripAgent = (tripId: string): void => {
     void loadTripAgentChatSessionModule().catch(() => undefined);
+    preloadTripAgentTranslations();
     prefetchTripAgentBootstrap(tripId);
 };
 

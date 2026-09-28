@@ -182,8 +182,8 @@ const TripHistoryModal = lazyWithRecovery('TripHistoryModal', () =>
 import { readTripAgentOpenState, writeTripAgentOpenState } from './trip-agent/tripAgentPanelState';
 // Eager on purpose: the panel frame is small and must open on the click. The
 // chat inside it is its own chunk, warmed by the launcher.
-import { TripAgentPanel } from './trip-agent/TripAgentPanel';
-import { loadTripAgentChatSessionModule, prefetchTripAgent } from './trip-agent/tripAgentPrefetch';
+import { TripAgentPanel, TripAgentPanelFallback } from './trip-agent/TripAgentPanel';
+import { loadTripAgentChatSessionModule, preloadTripAgentTranslations, prefetchTripAgent } from './trip-agent/tripAgentPrefetch';
 
 const TRIP_AGENT_PANEL_INSET_PX = 444;
 
@@ -3387,6 +3387,7 @@ const useTripViewRender = ({
         if (typeof window === 'undefined') return;
         const warm = () => {
             void loadTripAgentChatSessionModule().catch(() => undefined);
+            preloadTripAgentTranslations();
         };
         if (typeof window.requestIdleCallback === 'function') {
             const handle = window.requestIdleCallback(warm, { timeout: 5000 });
@@ -3779,40 +3780,42 @@ const useTripViewRender = ({
                         </div>
                     )}
                     {isTripAgentRolledOut && isTripAgentOpen && onAdoptAgentTripVersion && (
-                        <TripAgentPanel
-                            trip={agentCanonicalTrip || trip}
-                            contextRefs={tripAgentContextRefs}
-                            isOpen={isTripAgentOpen}
-                            onClose={() => {
-                                setIsTripAgentOpen(false);
-                                writeTripAgentOpenState(false);
-                            }}
-                            onAdoptCommittedTripVersion={(input) => {
-                                onAdoptAgentTripVersion?.(input);
-                                onAgentTripChanged?.();
-                            }}
-                            onPreviewTrip={onAgentPreviewTrip}
-                            onRevertAgentChange={({ trip: previousTrip, redoTrip, label, redoLabel, changeSetId }) => {
-                                // Not an undo: history also holds view changes, so
-                                // stepping back would revert whatever happened last
-                                // rather than this change set. The snapshot from
-                                // before the apply is restored as a new version.
-                                adoptAgentTrip(previousTrip, label, changeSetId);
-                                showToast(t('tripAgent.revertToast'), {
-                                    tone: 'neutral',
-                                    title: t('tripAgent.revertToastTitle'),
-                                    iconVariant: 'undo',
-                                    disableDefaultUndo: true,
-                                    action: {
-                                        label: t('tripAgent.redo'),
-                                        onClick: () => adoptAgentTrip(redoTrip, redoLabel, changeSetId),
-                                    },
-                                });
-                            }}
-                            onReapplyAgentChange={({ trip: nextTrip, label, changeSetId }) => {
-                                adoptAgentTrip(nextTrip, label, changeSetId);
-                            }}
-                        />
+                        <Suspense fallback={<TripAgentPanelFallback />}>
+                            <TripAgentPanel
+                                trip={agentCanonicalTrip || trip}
+                                contextRefs={tripAgentContextRefs}
+                                isOpen={isTripAgentOpen}
+                                onClose={() => {
+                                    setIsTripAgentOpen(false);
+                                    writeTripAgentOpenState(false);
+                                }}
+                                onAdoptCommittedTripVersion={(input) => {
+                                    onAdoptAgentTripVersion?.(input);
+                                    onAgentTripChanged?.();
+                                }}
+                                onPreviewTrip={onAgentPreviewTrip}
+                                onRevertAgentChange={({ trip: previousTrip, redoTrip, label, redoLabel, changeSetId }) => {
+                                    // Not an undo: history also holds view changes, so
+                                    // stepping back would revert whatever happened last
+                                    // rather than this change set. The snapshot from
+                                    // before the apply is restored as a new version.
+                                    adoptAgentTrip(previousTrip, label, changeSetId);
+                                    showToast(t('tripAgent.revertToast'), {
+                                        tone: 'neutral',
+                                        title: t('tripAgent.revertToastTitle'),
+                                        iconVariant: 'undo',
+                                        disableDefaultUndo: true,
+                                        action: {
+                                            label: t('tripAgent.redo'),
+                                            onClick: () => adoptAgentTrip(redoTrip, redoLabel, changeSetId),
+                                        },
+                                    });
+                                }}
+                                onReapplyAgentChange={({ trip: nextTrip, label, changeSetId }) => {
+                                    adoptAgentTrip(nextTrip, label, changeSetId);
+                                }}
+                            />
+                        </Suspense>
                     )}
                     {isDiscoverOpen && (
                         <Suspense fallback={null}>
