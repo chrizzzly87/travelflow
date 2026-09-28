@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['tests/**/*.test.ts', 'test/**/*.test.{ts,tsx}'],
+    include: ['tests/**/*.test.{ts,tsx}', 'test/**/*.test.{ts,tsx}'],
     exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
     environment: 'node',
     environmentOptions: {
