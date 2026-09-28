@@ -184,13 +184,15 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
 
     return (
         <>
-            {/* Mobile renders as a sheet over the planner, so it is a dialog:
+            {/* Above the trip header (1600) so a tall panel is never cut off
+                by it, below app dialogs (1700) such as sign-in and sharing.
+                Mobile renders as a sheet over the planner, so it is a dialog:
                 it takes focus, keeps it, closes on Escape, and hands focus back.
                 While a preview is showing, the planner behind it must stay
                 visible and usable to look at. */}
             {!isPreviewActive && (
                 <div
-                    className="fixed inset-0 z-[1490] bg-slate-950/20 sm:hidden"
+                    className="fixed inset-0 z-[1640] bg-slate-950/20 sm:hidden"
                     onClick={onClose}
                     aria-hidden="true"
                 />
@@ -200,7 +202,7 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                 role="dialog"
                 aria-modal="true"
                 aria-label={t('tripAgent.title')}
-                className={`trip-agent-panel-enter fixed inset-x-0 bottom-0 z-[1500] flex flex-col overflow-hidden rounded-t-[1.5rem] border border-border bg-card shadow-[0_-24px_80px_rgba(15,23,42,0.18)] transition-[height] duration-200 sm:inset-x-auto sm:bottom-4 sm:end-4 sm:h-[min(720px,calc(100dvh-2rem))] sm:w-[420px] sm:rounded-[1.5rem] sm:shadow-2xl ${
+                className={`trip-agent-panel-enter fixed inset-x-0 bottom-0 z-[1650] flex flex-col overflow-hidden rounded-t-[1.5rem] border border-border bg-card shadow-[0_-24px_80px_rgba(15,23,42,0.18)] transition-[height] duration-200 sm:inset-x-auto sm:bottom-4 sm:end-4 sm:h-[min(720px,calc(100dvh-2rem))] sm:w-[420px] sm:rounded-[1.5rem] sm:shadow-2xl ${
                     isPreviewActive ? 'h-[min(42dvh,340px)]' : 'h-[min(82dvh,720px)]'
                 }`}
                 style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
