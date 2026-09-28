@@ -2,9 +2,9 @@
 id: rel-2026-09-27-activities-day-trips
 version: v0.197.0
 title: "Day trips, and activities that know their stay"
-date: 2026-09-27
-published_at: 2026-09-27T12:00:00Z
-status: draft
+date: 2026-09-28
+published_at: 2026-09-28T05:12:34Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Plan day trips that leave your stay and come back the same day, see them on the map with their own route, and add activities from one tidy button."
