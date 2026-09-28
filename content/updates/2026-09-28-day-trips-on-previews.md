@@ -3,8 +3,8 @@ id: rel-2026-09-28-day-trips-on-previews
 version: v0.199.0
 title: "Day trips on trip previews"
 date: 2026-09-28
-published_at: 2026-09-28T12:00:00Z
-status: draft
+published_at: 2026-09-28T13:09:09Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Day trips now show up on trip card maps, shared link previews and the stay bar under every trip card."
