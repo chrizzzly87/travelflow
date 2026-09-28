@@ -16,6 +16,7 @@ import { ProgressiveImage } from '../ProgressiveImage';
 import { buildBlurhashEndpointUrl, isImageCdnEnabled } from '../../utils/imageDelivery';
 import { FlagIcon } from '../flags/FlagIcon';
 import { trackEvent } from '../../services/analyticsService';
+import { TripLaneDayTripMarks } from '../profile/TripLaneDayTripMarks';
 
 interface ExampleTripCardProps {
     card: ExampleTripCardType;
@@ -77,7 +78,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
     const { i18n } = useTranslation();
     const currentLocale = i18n.resolvedLanguage || i18n.language;
     const staticFallbackSrc = card.mapImagePath
-        ? `${card.mapImagePath}?v=palette-20260210d`
+        ? `${card.mapImagePath}?v=day-trips-20260928`
         : null;
     const [failedMapImageSrc, setFailedMapImageSrc] = React.useState<string | null>(null);
     const [dynamicBlurhash, setDynamicBlurhash] = React.useState<{ url: string; hash: string } | null>(null);
@@ -240,6 +241,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                                                 ...(laneName ? ({ viewTransitionName: laneName } as React.CSSProperties) : {}),
                                             }}
                                         />
+                                        <TripLaneDayTripMarks marks={cityLane.dayTrips} color={cityLane.color} />
                                     </span>
                                     {routeLane && (
                                         <span

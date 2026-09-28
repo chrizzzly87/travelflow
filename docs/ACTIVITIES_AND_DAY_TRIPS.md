@@ -156,9 +156,33 @@ from Reykjavik. It is not a city stop and needs no transfer.
 - Portugal: Sintra is a day trip from Lisbon, not a stop. The card has 3 stops
   and localized city lists without Sintra. The labelled day trips in Japan,
   Southeast Asia, Iceland, Peru and Thailand are day trips.
-- The static card map PNGs (`pnpm maps:generate`) are city-only, and the static
-  and OG map previews do not draw day trips (see
-  `docs/TRIP_MAP_PREVIEW_CACHING.md`).
+- Japan: Osaka is a five-day base with Nara and Kobe as day trips; Miyajima
+  stays a day trip from Hiroshima. The card's `durationDays` is the last stay's
+  end offset (16).
+
+## Previews: card maps, OG images, homepage PNGs and the card lane
+
+`shared/dayTripPreview.ts` is the one place that turns day trips into preview
+geometry. It resolves stays through `shared/activityStay.ts`, which uses
+structural types so the edge functions can import it too.
+
+- **Card map previews** (`/api/trip-map-preview`) take a `dayTrips` parameter:
+  `stayIndex,lat,lng,color[,returnIndex]` per entry, pipe-separated, indexes
+  pointing into the preview's own `coords`. At most 12 are sent. The renderer
+  draws each one as a straight dashed spoke (static maps cannot dash, so each
+  dash is its own short path) plus a destination pin: `pin-s-attraction` on
+  Mapbox, a tiny darker pin on Google. Spokes never call a Directions API. A
+  trip without day trips sends no parameter, so its cached image stays valid.
+- **OG images** draw the same spokes and pins, widen the map frame to the
+  destinations, and add a "2 day trips · Nara, Kobe" metric row. The same
+  label is appended to the share description.
+- **Homepage PNGs** (`pnpm maps:generate`, `--only=<ids>` to regenerate some)
+  draw day trips too. Bump the `?v=` cache-buster in `ExampleTripCard` when the
+  committed PNGs change.
+- **Card lane**: every stay segment under a trip card (homepage and profile)
+  shows a small dot in the stay colour, ringed in the card colour, per day trip at the middle of its day
+  (`components/profile/TripLaneDayTripMarks.tsx`), with a "Day trip ·
+  Destination" tooltip.
 
 ## Tests
 
@@ -176,3 +200,5 @@ from Reykjavik. It is not a city stop and needs no transfer.
   "+" and its default day.
 - `tests/unit/dayTripChatAndCalendar.test.ts`: the chat presets and the
   selection rules for calendar connectors.
+- `tests/unit/dayTripPreview.test.ts`: the preview parameter, both renderers,
+  OG data, the card lane marks and the Japan example.
