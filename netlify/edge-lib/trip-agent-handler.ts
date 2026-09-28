@@ -323,7 +323,7 @@ export default async (request: Request) => {
       throw new Error(`TRIP_AGENT_PERSISTENCE_FAILED: ${boundedErrorMessage(error)}`);
     }
     const promptText = body.message.parts.find((part) => part.type === 'text')?.text || '';
-    await titleTripAgentThreadFromPrompt(body.threadId, promptText).catch(() => undefined);
+    const promptTitle = await titleTripAgentThreadFromPrompt(body.threadId, promptText).catch(() => null);
     console.info('[trip-agent] chat accepted', {
       ...logContext,
       contextCount: body.contextRefs.length,
@@ -338,6 +338,9 @@ export default async (request: Request) => {
       userMessage,
       contextRefs: body.contextRefs,
       abortSignal: request.signal,
+      // Set only for a chat's first message: the run then names the chat.
+      promptTitle,
+      promptText,
     });
   } catch (error) {
     const failure = classifyTripAgentFailure(error);

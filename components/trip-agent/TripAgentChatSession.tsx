@@ -70,6 +70,7 @@ import { Button } from '../ui/button';
 import type { TripAgentPanelProps } from './tripAgentPanelTypes';
 import { isDayTrip } from '../../shared/activityStay';
 import { buildTripAgentDayTripPresets } from './tripAgentDayTripPresets';
+import { buildTripAgentExamples, type TripAgentExample } from './tripAgentExamples';
 
 
 
@@ -310,6 +311,8 @@ export interface TripAgentChatSessionProps {
     recentChats?: TripAgentThread[];
     onOpenChat?: (threadId: string) => void;
     onShowAllChats?: () => void;
+    /** True before the trip has any chats: the empty chat introduces the agent. */
+    showOnboarding?: boolean;
 }
 
 /**
@@ -335,6 +338,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
     recentChats = [],
     onOpenChat,
     onShowAllChats,
+    showOnboarding = false,
 }) => {
     const { t, i18n } = useTranslation('common');
     const now = useMinuteTick();
@@ -419,18 +423,15 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
         onError: onQuotaMayHaveChanged,
         onFinish: onQuotaMayHaveChanged,
     });
-    const selectedCity = contextRefs.find((contextRef) => contextRef.kind === 'city');
-    const suggestions = useMemo(() => [
-        t('tripAgent.suggestRelaxed'),
-        t('tripAgent.suggestEastCoast'),
-        t('tripAgent.suggestStays'),
-        ...(selectedCity ? [t('tripAgent.suggestCity', { city: selectedCity.label })] : []),
-    ], [selectedCity, t]);
-    // The "/" menu offers the chips plus day-trip prompts for the current selection.
+    const examples = useMemo(() => buildTripAgentExamples({ t, trip, contextRefs }), [contextRefs, t, trip]);
+    // The "/" menu offers the examples plus day-trip prompts for the current selection.
     const commandPresets = useMemo(() => [
         ...buildTripAgentDayTripPresets({ t, trip, contextRefs }),
-        ...suggestions,
-    ], [contextRefs, suggestions, t, trip]);
+        ...examples.map((example) => example.prompt),
+    ], [contextRefs, examples, t, trip]);
+    // An example is written into the field to be adapted, not sent; until it
+    // is, a hint says how to change it.
+    const [isExampleDraft, setIsExampleDraft] = useState(false);
     const isGenerating = status === 'submitted' || status === 'streaming';
     const lastMessage = messages.at(-1);
     const hasStreamingAssistantText = lastMessage?.role === 'assistant'
@@ -465,6 +466,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
         });
         setDraftText('');
         setCommandMenu(null);
+        setIsExampleDraft(false);
         await sendMessage({ text: trimmed });
     }, [activeContextRefs.length, isGenerating, isQuotaReached, sendMessage, thread.id, trip.id]);
 
@@ -481,8 +483,22 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
         await sendMessage({ text: latestUserText, messageId: latestUserMessage.id });
     }, [activeContextRefs.length, clearError, isGenerating, isQuotaReached, latestUserMessage, latestUserText, sendMessage, thread.id, trip.id]);
 
+    const applyExample = (example: TripAgentExample) => {
+        setDraftText(example.prompt);
+        setIsExampleDraft(true);
+        setCommandMenu(null);
+        trackEvent('trip_agent__example--insert', { trip_id: trip.id, example: example.key });
+        requestAnimationFrame(() => {
+            const element = textareaRef.current;
+            if (!element) return;
+            element.focus();
+            element.setSelectionRange(element.value.length, element.value.length);
+        });
+    };
+
     const updateDraft = (value: string) => {
         setDraftText(value);
+        if (!value.trim()) setIsExampleDraft(false);
         const mention = /(?:^|\s)@([^\s]*)$/.exec(value);
         const command = /^\s*\/([^\s]*)$/.exec(value);
         if (mention) openMenu('context', mention[1]);
@@ -642,7 +658,7 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
                                     )}
                                 </nav>
                             )}
-                            <TripAgentCapabilities />
+                            {showOnboarding && <TripAgentCapabilities />}
                         </div>
                     ) : messages.map((message, index) => (
                         <ChatMessage
@@ -707,10 +723,20 @@ export const TripAgentChatSession: React.FC<TripAgentChatSessionProps> = ({
             </Conversation>
 
             <div className="border-t border-border bg-card/95 p-3 backdrop-blur">
-                {messages.length === 0 && (
-                    <Suggestions className="mb-2">
-                        {suggestions.map((suggestion) => (
-                            <Suggestion key={suggestion} suggestion={suggestion} onClick={(value) => void submitText(value)} />
+                {isExampleDraft && draftText.trim() ? (
+                    <p className="mb-1.5 px-1 text-[11px] text-muted-foreground" role="status">
+                        {t('tripAgent.exampleHint')}
+                    </p>
+                ) : messages.length === 0 && (
+                    <Suggestions className="mb-2 gap-1.5" aria-label={t('tripAgent.examplesLabel')}>
+                        {examples.map((example) => (
+                            <Suggestion
+                                key={example.key}
+                                suggestion={example.label}
+                                onClick={() => applyExample(example)}
+                                className="h-7 px-3 text-xs font-normal text-muted-foreground hover:text-foreground"
+                                {...getAnalyticsDebugAttributes('trip_agent__example--insert', { trip_id: trip.id, example: example.key })}
+                            />
                         ))}
                     </Suggestions>
                 )}

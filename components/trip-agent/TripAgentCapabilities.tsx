@@ -1,8 +1,6 @@
-import { BookOpen, ChevronDown, ListChecks, MapPinned, Route } from 'lucide-react';
-import React, { useState } from 'react';
+import { BookOpen, ListChecks, MapPinned, Route } from 'lucide-react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 
 const CAPABILITIES = [
     { key: 'read', Icon: BookOpen },
@@ -11,50 +9,27 @@ const CAPABILITIES = [
     { key: 'propose', Icon: ListChecks },
 ] as const;
 
-const CHANGE_KINDS = ['addItem', 'moveItem', 'removeItem', 'updateItem', 'stays', 'segment', 'trip'] as const;
-
 /**
- * Plain-language list of what the agent may call and which trip changes it can
- * propose, so the tool chips in a run are recognizable rather than opaque.
+ * A first-chat introduction: what the agent can look at and that nothing
+ * changes without approval. It only appears before a trip has any chats.
  */
 export const TripAgentCapabilities: React.FC = () => {
     const { t } = useTranslation('common');
-    const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <Collapsible open={isOpen} onOpenChange={setIsOpen} className="rounded-xl border border-border bg-card">
-            <CollapsibleTrigger className="flex w-full items-center gap-2 px-3 py-2 text-start text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
-                <span className="min-w-0 flex-1">{t('tripAgent.capabilitiesTitle')}</span>
-                <ChevronDown className={`size-3.5 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-                <div className="space-y-3 border-t border-border px-3 py-2.5">
-                    <ul className="space-y-1.5">
-                        {CAPABILITIES.map(({ key, Icon }) => (
-                            <li key={key} className="flex items-start gap-2 text-xs text-muted-foreground">
-                                <Icon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-                                <span>{t(`tripAgent.capabilities.${key}`)}</span>
-                            </li>
-                        ))}
-                    </ul>
-                    <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                            {t('tripAgent.changeKindsTitle')}
-                        </p>
-                        <ul className="mt-1 flex flex-wrap gap-1">
-                            {CHANGE_KINDS.map((kind) => (
-                                <li
-                                    key={kind}
-                                    className="rounded-md border border-border bg-secondary px-1.5 py-0.5 text-[11px] text-muted-foreground dark:text-foreground"
-                                >
-                                    {t(`tripAgent.changeKinds.${kind}`)}
-                                </li>
-                            ))}
-                        </ul>
-                        <p className="mt-1.5 text-[11px] text-muted-foreground">{t('tripAgent.changeKindsFooter')}</p>
-                    </div>
-                </div>
-            </CollapsibleContent>
-        </Collapsible>
+        <section aria-labelledby="trip-agent-capabilities" className="rounded-xl border border-border bg-card px-3 py-2.5">
+            <h3 id="trip-agent-capabilities" className="text-xs font-medium text-foreground">
+                {t('tripAgent.capabilitiesTitle')}
+            </h3>
+            <ul className="mt-2 space-y-1.5">
+                {CAPABILITIES.map(({ key, Icon }) => (
+                    <li key={key} className="flex items-start gap-2 text-xs text-muted-foreground">
+                        <Icon aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                        <span>{t(`tripAgent.capabilities.${key}`)}</span>
+                    </li>
+                ))}
+            </ul>
+            <p className="mt-2 text-[11px] text-muted-foreground">{t('tripAgent.changeKindsFooter')}</p>
+        </section>
     );
 };

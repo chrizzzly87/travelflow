@@ -812,10 +812,30 @@
     "keep": "Mantener como está",
     "selectedContext": "Contexto seleccionado",
     "removeContext": "Quitar {label} de este mensaje",
-    "suggestRelaxed": "Hacer esta ruta más relajada",
-    "suggestEastCoast": "Centrar este viaje en la costa este",
-    "suggestStays": "Buscar alojamientos en tres presupuestos",
-    "suggestCity": "Mejorar mi alojamiento en {city}",
+    "examplesLabel": "Ejemplos",
+    "examples": {
+      "pace": {
+        "label": "Bajar el ritmo",
+        "prompt": "Haz que los días en {city} sean más tranquilos: menos visitas por día y más tiempo libre."
+      },
+      "stays": {
+        "label": "Buscar alojamiento",
+        "prompt": "Sugiere alojamientos en {city} en tres rangos de precio, cerca de lo que quiero ver."
+      },
+      "route": {
+        "label": "Acortar trayectos",
+        "prompt": "Reordena mis paradas para reducir el tiempo de viaje y señala los días demasiado apretados."
+      },
+      "dayTrip": {
+        "label": "Planear una excursión",
+        "prompt": "Planea una excursión de un día desde {city} que encaje con el resto de mi itinerario."
+      },
+      "review": {
+        "label": "Revisar mi plan",
+        "prompt": "Revisa mi viaje y señala lo que sea poco realista, lo que falte o lo que merezca la pena añadir."
+      }
+    },
+    "exampleHint": "Ajústalo antes de enviar: escribe @ para elegir otra parada o / para más ideas.",
     "before": "Antes",
     "after": "Después",
     "applied": "Aplicado",
@@ -911,16 +931,6 @@
       "stays": "Buscar alojamientos de una ciudad con una fuente de lugares verificada.",
       "routes": "Comparar opciones de ruta entre paradas.",
       "propose": "Proponer cambios para que los revises. Nunca edita el viaje por su cuenta."
-    },
-    "changeKindsTitle": "Cambios que puede proponer",
-    "changeKinds": {
-      "addItem": "Añadir parada o actividad",
-      "moveItem": "Mover a otro día",
-      "removeItem": "Eliminar",
-      "updateItem": "Editar detalles",
-      "stays": "Añadir, editar o quitar alojamiento",
-      "segment": "Reemplazar varios días",
-      "trip": "Título, fecha de inicio, ida y vuelta"
     },
     "changeKindsFooter": "Cada cambio espera tu aprobación.",
     "noCommand": "Sin plantillas coincidentes.",

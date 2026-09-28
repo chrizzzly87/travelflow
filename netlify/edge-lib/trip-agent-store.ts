@@ -218,18 +218,35 @@ export const createTripAgentThread = async (
 };
 
 /**
- * Names a chat after its first prompt so the history list is readable. The
- * default-title filter keeps a renamed thread untouched.
+ * Names a chat after its first prompt so the history list is readable at once.
+ * The default-title filter keeps a renamed thread untouched. Returns the title
+ * it set, or null when the chat already had a name.
  */
-export const titleTripAgentThreadFromPrompt = async (threadId: string, prompt: string): Promise<void> => {
+export const titleTripAgentThreadFromPrompt = async (threadId: string, prompt: string): Promise<string | null> => {
   const title = prompt.replace(/\s+/g, ' ').trim().slice(0, 60);
-  if (!title) return;
+  if (!title) return null;
+  const rows = await rest<Array<{ id: string }>>(
+    `trip_agent_threads?id=eq.${encodeURIComponent(threadId)}&title=eq.${encodeURIComponent(DEFAULT_TRIP_AGENT_THREAD_TITLE)}&select=id`,
+    {
+      method: 'PATCH',
+      headers: serviceHeaders('return=representation'),
+      body: JSON.stringify({ title, updated_at: new Date().toISOString() }),
+    },
+  );
+  return rows?.length ? title : null;
+};
+
+/**
+ * Replaces the placeholder title from the first prompt with a generated one,
+ * only while the chat still carries that placeholder.
+ */
+export const retitleTripAgentThread = async (threadId: string, fromTitle: string, toTitle: string): Promise<void> => {
   await rest(
-    `trip_agent_threads?id=eq.${encodeURIComponent(threadId)}&title=eq.${encodeURIComponent(DEFAULT_TRIP_AGENT_THREAD_TITLE)}`,
+    `trip_agent_threads?id=eq.${encodeURIComponent(threadId)}&title=eq.${encodeURIComponent(fromTitle)}`,
     {
       method: 'PATCH',
       headers: serviceHeaders('return=minimal'),
-      body: JSON.stringify({ title, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ title: toTitle.slice(0, 160) }),
     },
   );
 };

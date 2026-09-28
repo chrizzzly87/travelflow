@@ -812,10 +812,30 @@
     "keep": "Pozostaw bez zmian",
     "selectedContext": "Wybrany kontekst",
     "removeContext": "Usuń {label} z tej wiadomości",
-    "suggestRelaxed": "Zaplanuj spokojniejszą trasę",
-    "suggestEastCoast": "Skup podróż na wschodnim wybrzeżu",
-    "suggestStays": "Znajdź noclegi w trzech budżetach",
-    "suggestCity": "Ulepsz mój pobyt w {city}",
+    "examplesLabel": "Przykłady",
+    "examples": {
+      "pace": {
+        "label": "Zwolnij tempo",
+        "prompt": "Spraw, by dni w {city} były spokojniejsze: mniej atrakcji dziennie i więcej wolnego czasu."
+      },
+      "stays": {
+        "label": "Znajdź noclegi",
+        "prompt": "Zaproponuj noclegi w {city} w trzech przedziałach cenowych, blisko tego, co chcę zobaczyć."
+      },
+      "route": {
+        "label": "Skróć przejazdy",
+        "prompt": "Uporządkuj moje przystanki tak, by skrócić czas podróży, i wskaż zbyt napięte dni."
+      },
+      "dayTrip": {
+        "label": "Zaplanuj wycieczkę",
+        "prompt": "Zaplanuj jednodniową wycieczkę z {city}, która pasuje do reszty planu."
+      },
+      "review": {
+        "label": "Sprawdź plan",
+        "prompt": "Sprawdź moją podróż i wskaż, co jest nierealne, czego brakuje lub co warto dodać."
+      }
+    },
+    "exampleHint": "Dostosuj przed wysłaniem: wpisz @, aby wybrać inny przystanek, lub / po więcej pomysłów.",
     "before": "Przed",
     "after": "Po",
     "applied": "Zastosowano",
@@ -911,16 +931,6 @@
       "stays": "Wyszukać noclegi w mieście na podstawie zweryfikowanego źródła miejsc.",
       "routes": "Porównać warianty trasy między przystankami.",
       "propose": "Zaproponować zmiany do akceptacji. Nigdy nie zmienia podróży sam."
-    },
-    "changeKindsTitle": "Zmiany, które może zaproponować",
-    "changeKinds": {
-      "addItem": "Dodać przystanek lub atrakcję",
-      "moveItem": "Przenieść na inny dzień",
-      "removeItem": "Usunąć",
-      "updateItem": "Zmienić szczegóły",
-      "stays": "Dodać, zmienić lub usunąć nocleg",
-      "segment": "Zastąpić kilka dni",
-      "trip": "Tytuł, data startu, podróż w obie strony"
     },
     "changeKindsFooter": "Każda zmiana czeka na Twoją zgodę.",
     "noCommand": "Brak pasujących podpowiedzi.",

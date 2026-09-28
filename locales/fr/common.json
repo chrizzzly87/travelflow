@@ -812,10 +812,30 @@
     "keep": "Conserver tel quel",
     "selectedContext": "Contexte sélectionné",
     "removeContext": "Retirer {label} de ce message",
-    "suggestRelaxed": "Rendre ce trajet plus détendu",
-    "suggestEastCoast": "Centrer ce voyage sur la côte est",
-    "suggestStays": "Trouver des séjours pour trois budgets",
-    "suggestCity": "Améliorer mon séjour à {city}",
+    "examplesLabel": "Exemples",
+    "examples": {
+      "pace": {
+        "label": "Ralentir le rythme",
+        "prompt": "Rends les journées à {city} plus détendues : moins de visites par jour et plus de temps libre."
+      },
+      "stays": {
+        "label": "Trouver un hébergement",
+        "prompt": "Propose des hébergements à {city} dans trois gammes de prix, près de ce que je veux voir."
+      },
+      "route": {
+        "label": "Réduire les trajets",
+        "prompt": "Réorganise mes étapes pour réduire les trajets et signale les journées trop chargées."
+      },
+      "dayTrip": {
+        "label": "Prévoir une excursion",
+        "prompt": "Prévois une excursion d’une journée depuis {city} qui s’accorde avec le reste de mon itinéraire."
+      },
+      "review": {
+        "label": "Vérifier mon plan",
+        "prompt": "Vérifie mon voyage et signale ce qui est irréaliste, ce qui manque ou ce qui vaut la peine d’être ajouté."
+      }
+    },
+    "exampleHint": "Adapte-le avant l’envoi : tape @ pour choisir une autre étape ou / pour d’autres idées.",
     "before": "Avant",
     "after": "Après",
     "applied": "Appliqué",
@@ -911,16 +931,6 @@
       "stays": "Rechercher des hébergements pour une ville via une source de lieux vérifiée.",
       "routes": "Comparer les options de trajet entre étapes.",
       "propose": "Proposer des changements à valider. Il ne modifie jamais le voyage lui-même."
-    },
-    "changeKindsTitle": "Changements qu’il peut proposer",
-    "changeKinds": {
-      "addItem": "Ajouter une étape ou activité",
-      "moveItem": "Déplacer vers un autre jour",
-      "removeItem": "Supprimer",
-      "updateItem": "Modifier les détails",
-      "stays": "Ajouter, modifier ou retirer un hébergement",
-      "segment": "Remplacer plusieurs jours",
-      "trip": "Titre, date de début, aller-retour"
     },
     "changeKindsFooter": "Chaque changement attend votre validation.",
     "noCommand": "Aucun modèle correspondant.",

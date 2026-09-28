@@ -812,10 +812,30 @@
     "keep": "그대로 유지",
     "selectedContext": "선택한 컨텍스트",
     "removeContext": "이 메시지에서 {label} 삭제",
-    "suggestRelaxed": "이 경로를 더 여유롭게 만들기",
-    "suggestEastCoast": "동해안 중심으로 여행 구성하기",
-    "suggestStays": "세 가지 예산대의 숙소 찾기",
-    "suggestCity": "{city} 숙소 개선하기",
+    "examplesLabel": "예시",
+    "examples": {
+      "pace": {
+        "label": "일정 여유 있게",
+        "prompt": "{city}에서의 일정을 더 여유 있게 해 줘. 하루에 볼거리는 줄이고 자유 시간은 늘려 줘."
+      },
+      "stays": {
+        "label": "숙소 찾기",
+        "prompt": "{city}에서 보고 싶은 곳과 가까운 숙소를 세 가지 가격대로 추천해 줘."
+      },
+      "route": {
+        "label": "이동 시간 줄이기",
+        "prompt": "이동 시간이 줄도록 경유지 순서를 바꾸고, 너무 빡빡한 날을 알려 줘."
+      },
+      "dayTrip": {
+        "label": "당일치기 계획",
+        "prompt": "{city}에서 출발해 나머지 일정과 잘 맞는 당일치기 여행을 계획해 줘."
+      },
+      "review": {
+        "label": "일정 점검",
+        "prompt": "내 여행을 검토하고 비현실적인 부분, 빠진 부분, 추가할 만한 것을 알려 줘."
+      }
+    },
+    "exampleHint": "보내기 전에 수정하세요: @를 입력해 다른 경유지를 고르거나 /로 더 많은 아이디어를 보세요.",
     "before": "변경 전",
     "after": "변경 후",
     "applied": "적용됨",
@@ -911,16 +931,6 @@
       "stays": "검증된 장소 소스로 도시의 숙소 조사.",
       "routes": "방문지 사이의 경로 옵션 비교.",
       "propose": "검토용 변경 제안. 여행을 직접 수정하지 않습니다."
-    },
-    "changeKindsTitle": "제안할 수 있는 변경",
-    "changeKinds": {
-      "addItem": "방문지·활동 추가",
-      "moveItem": "다른 날로 이동",
-      "removeItem": "삭제",
-      "updateItem": "세부 정보 수정",
-      "stays": "숙소 추가·수정·삭제",
-      "segment": "여러 날 교체",
-      "trip": "제목, 시작일, 왕복 여부"
     },
     "changeKindsFooter": "모든 변경은 승인 후에 적용됩니다.",
     "noCommand": "일치하는 프리셋이 없습니다.",

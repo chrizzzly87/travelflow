@@ -812,10 +812,30 @@
     "keep": "So lassen",
     "selectedContext": "Ausgewählter Kontext",
     "removeContext": "{label} aus dieser Nachricht entfernen",
-    "suggestRelaxed": "Diese Route entspannter machen",
-    "suggestEastCoast": "Diese Reise auf die Ostküste ausrichten",
-    "suggestStays": "Unterkünfte in drei Preisstufen finden",
-    "suggestCity": "Meine Unterkunft in {city} verbessern",
+    "examplesLabel": "Beispiele",
+    "examples": {
+      "pace": {
+        "label": "Tempo rausnehmen",
+        "prompt": "Gestalte die Tage in {city} entspannter: weniger Programm pro Tag und mehr freie Zeit."
+      },
+      "stays": {
+        "label": "Unterkünfte finden",
+        "prompt": "Schlag mir Unterkünfte in {city} in drei Preisklassen vor, nah an dem, was ich sehen möchte."
+      },
+      "route": {
+        "label": "Reisezeit verkürzen",
+        "prompt": "Ordne meine Stationen so, dass ich weniger Reisezeit habe, und markiere Tage, die zu voll sind."
+      },
+      "dayTrip": {
+        "label": "Tagesausflug planen",
+        "prompt": "Plane einen Tagesausflug ab {city}, der zum Rest meiner Reise passt."
+      },
+      "review": {
+        "label": "Plan prüfen",
+        "prompt": "Prüfe meine Reise und zeig mir, was unrealistisch ist, fehlt oder sich noch lohnt."
+      }
+    },
+    "exampleHint": "Pass es vor dem Senden an: Tippe @ für eine andere Station oder / für weitere Ideen.",
     "before": "Vorher",
     "after": "Nachher",
     "applied": "Übernommen",
@@ -911,16 +931,6 @@
       "stays": "Unterkünfte für eine Stadt über eine belegte Ortsquelle recherchieren.",
       "routes": "Routenoptionen zwischen Stopps vergleichen.",
       "propose": "Änderungen zur Prüfung vorschlagen. Die Reise ändert er nie selbst."
-    },
-    "changeKindsTitle": "Vorschläge, die er machen kann",
-    "changeKinds": {
-      "addItem": "Stopp oder Aktivität hinzufügen",
-      "moveItem": "Auf einen anderen Tag verschieben",
-      "removeItem": "Entfernen",
-      "updateItem": "Details ändern",
-      "stays": "Unterkunft hinzufügen, ändern, entfernen",
-      "segment": "Mehrere Tage ersetzen",
-      "trip": "Titel, Startdatum, Rundreise"
     },
     "changeKindsFooter": "Jede Änderung wartet auf deine Freigabe.",
     "noCommand": "Keine passende Vorlage.",

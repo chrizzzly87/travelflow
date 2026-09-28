@@ -812,10 +812,30 @@
     "keep": "Mantieni così",
     "selectedContext": "Contesto selezionato",
     "removeContext": "Rimuovi {label} da questo messaggio",
-    "suggestRelaxed": "Rendi questo percorso più rilassato",
-    "suggestEastCoast": "Concentra il viaggio sulla costa orientale",
-    "suggestStays": "Trova soggiorni per tre fasce di budget",
-    "suggestCity": "Migliora il mio soggiorno a {city}",
+    "examplesLabel": "Esempi",
+    "examples": {
+      "pace": {
+        "label": "Rallentare il ritmo",
+        "prompt": "Rendi più rilassanti i giorni a {city}: meno visite al giorno e più tempo libero."
+      },
+      "stays": {
+        "label": "Trovare alloggi",
+        "prompt": "Suggerisci alloggi a {city} in tre fasce di prezzo, vicino a ciò che voglio vedere."
+      },
+      "route": {
+        "label": "Ridurre gli spostamenti",
+        "prompt": "Riordina le mie tappe per ridurre i tempi di viaggio e segnala i giorni troppo pieni."
+      },
+      "dayTrip": {
+        "label": "Pianificare una gita",
+        "prompt": "Pianifica una gita di un giorno da {city} che si adatti al resto del mio itinerario."
+      },
+      "review": {
+        "label": "Controllare il piano",
+        "prompt": "Controlla il mio viaggio e segnala ciò che è irrealistico, ciò che manca o che vale la pena aggiungere."
+      }
+    },
+    "exampleHint": "Modificalo prima di inviarlo: digita @ per scegliere un’altra tappa o / per altre idee.",
     "before": "Prima",
     "after": "Dopo",
     "applied": "Applicato",
@@ -911,16 +931,6 @@
       "stays": "Cercare alloggi per una città con una fonte di luoghi verificata.",
       "routes": "Confrontare le opzioni di percorso tra le tappe.",
       "propose": "Proporre modifiche da rivedere. Non modifica mai il viaggio da solo."
-    },
-    "changeKindsTitle": "Modifiche che può proporre",
-    "changeKinds": {
-      "addItem": "Aggiungere tappa o attività",
-      "moveItem": "Spostare a un altro giorno",
-      "removeItem": "Rimuovere",
-      "updateItem": "Modificare i dettagli",
-      "stays": "Aggiungere, modificare o togliere un alloggio",
-      "segment": "Sostituire più giorni",
-      "trip": "Titolo, data di inizio, andata e ritorno"
     },
     "changeKindsFooter": "Ogni modifica attende la tua approvazione.",
     "noCommand": "Nessun modello corrispondente.",

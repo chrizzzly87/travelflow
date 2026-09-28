@@ -507,6 +507,8 @@ export const TripAgentPanel: React.FC<TripAgentPanelProps> = ({
                     recentChats={recentChats}
                     onOpenChat={openChat}
                     onShowAllChats={() => setHistoryView('chats')}
+                    // Only a trip's very first chat introduces the agent.
+                    showOnboarding={Boolean(bootstrap && bootstrap.threads.length === 0)}
                 />
             </Suspense>
         );
