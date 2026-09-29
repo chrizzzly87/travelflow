@@ -3,8 +3,8 @@ id: rel-2026-09-29-my-location-on-trip-map
 version: v0.204.0
 title: "See yourself on the trip map"
 date: 2026-09-29
-published_at: 2026-09-29T12:00:00Z
-status: draft
+published_at: 2026-09-29T09:10:17Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "While you're on your trip, the map can show where you are and bring you back to your position with one tap."
