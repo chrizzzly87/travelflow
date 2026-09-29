@@ -693,6 +693,11 @@
         "minimalistic": "کم سے کم",
         "mine": "میرا",
         "customNote": "آپ کی اپنی ترتیبات کا امتزاج۔"
+      },
+      "myLocation": {
+        "blocked": "براؤزر کی ترتیبات میں مقام تک رسائی بند ہے۔",
+        "description": "سفر کے دوران دکھاتا ہے کہ آپ کہاں ہیں۔ صرف اسی ڈیوائس پر محفوظ ہوتا ہے۔",
+        "label": "میرا مقام"
       }
     },
     "activityPlan": {
@@ -741,7 +746,11 @@
       "showLabels": "شہروں کے نام دکھائیں",
       "hideLabels": "شہروں کے نام چھپائیں",
       "showActivityMarkers": "سرگرمی پن دکھائیں",
-      "hideActivityMarkers": "سرگرمی پن چھپائیں"
+      "hideActivityMarkers": "سرگرمی پن چھپائیں",
+      "showMyLocation": "میرا مقام دکھائیں",
+      "centerOnMyLocation": "میرے مقام پر مرکوز کریں",
+      "myLocationLocating": "آپ کا مقام تلاش کیا جا رہا ہے…",
+      "myLocationBlocked": "مقام تک رسائی بند ہے۔ اسے براؤزر کی ترتیبات میں اجازت دیں۔"
     },
     "floatingMap": {
       "move": "تیرتے نقشے کا پیش منظر ہٹائیں",

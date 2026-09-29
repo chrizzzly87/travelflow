@@ -695,6 +695,11 @@
         "minimalistic": "Minimal",
         "mine": "Meins",
         "customNote": "Deine eigene Mischung aus Einstellungen."
+      },
+      "myLocation": {
+        "blocked": "Der Standortzugriff ist in deinen Browsereinstellungen blockiert.",
+        "description": "Zeigt, wo du gerade bist, während du reist. Wird nur auf diesem Gerät gespeichert.",
+        "label": "Mein Standort"
       }
     },
     "activityPlan": {
@@ -743,7 +748,11 @@
       "showLabels": "Städtenamen einblenden",
       "hideLabels": "Städtenamen ausblenden",
       "showActivityMarkers": "Aktivitäts-Pins einblenden",
-      "hideActivityMarkers": "Aktivitäts-Pins ausblenden"
+      "hideActivityMarkers": "Aktivitäts-Pins ausblenden",
+      "showMyLocation": "Meinen Standort anzeigen",
+      "centerOnMyLocation": "Auf meinen Standort zentrieren",
+      "myLocationLocating": "Standort wird ermittelt…",
+      "myLocationBlocked": "Standortzugriff ist blockiert. Erlaube ihn in deinen Browsereinstellungen."
     },
     "floatingMap": {
       "move": "Schwebende Kartenvorschau verschieben",

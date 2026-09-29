@@ -695,6 +695,11 @@
         "minimalistic": "Minimal",
         "mine": "Mine",
         "customNote": "Your own mix of settings."
+      },
+      "myLocation": {
+        "blocked": "Location access is blocked in your browser settings.",
+        "description": "Show where you are while you travel. Saved only on this device.",
+        "label": "My location"
       }
     },
     "activityPlan": {
@@ -743,7 +748,11 @@
       "showLabels": "Show map labels",
       "hideLabels": "Hide map labels",
       "showActivityMarkers": "Show activity markers",
-      "hideActivityMarkers": "Hide activity markers"
+      "hideActivityMarkers": "Hide activity markers",
+      "showMyLocation": "Show my location",
+      "centerOnMyLocation": "Center on my location",
+      "myLocationLocating": "Finding your location…",
+      "myLocationBlocked": "Location access is blocked. Allow it in your browser settings."
     },
     "floatingMap": {
       "move": "Move floating map preview",

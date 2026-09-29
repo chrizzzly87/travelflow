@@ -695,6 +695,11 @@
         "minimalistic": "Mínimo",
         "mine": "Mío",
         "customNote": "Tu propia combinación de ajustes."
+      },
+      "myLocation": {
+        "blocked": "El acceso a la ubicación está bloqueado en los ajustes del navegador.",
+        "description": "Muestra dónde estás mientras viajas. Solo se guarda en este dispositivo.",
+        "label": "Mi ubicación"
       }
     },
     "activityPlan": {
@@ -743,7 +748,11 @@
       "showLabels": "Mostrar nombres de ciudades",
       "hideLabels": "Ocultar nombres de ciudades",
       "showActivityMarkers": "Mostrar pines de actividades",
-      "hideActivityMarkers": "Ocultar pines de actividades"
+      "hideActivityMarkers": "Ocultar pines de actividades",
+      "showMyLocation": "Mostrar mi ubicación",
+      "centerOnMyLocation": "Centrar en mi ubicación",
+      "myLocationLocating": "Buscando tu ubicación…",
+      "myLocationBlocked": "El acceso a la ubicación está bloqueado. Permítelo en los ajustes del navegador."
     },
     "floatingMap": {
       "move": "Mover la vista previa flotante del mapa",

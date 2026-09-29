@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, Copy, RotateCcw, Star, X } from 'lucide-react';
 
@@ -9,6 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { SettingsPanel, SettingsRow, SettingsSection } from '../ui/settings-panel';
 import { MapSegmentedControl } from './MapSegmentedControl';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import {
+  disableUserLocation,
+  enableUserLocation,
+  getUserLocationSnapshot,
+  subscribeUserLocation,
+} from '../../services/userLocationService';
 import {
   MAP_PITCH_STEPS,
   MAP_PREFERENCE_PRESETS,
@@ -92,6 +98,16 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
   const { t } = useTranslation('common');
   const [activeTab, setActiveTab] = useState<TabKey>('look');
   const [didCopyPreset, setDidCopyPreset] = useState(false);
+  const userLocation = useSyncExternalStore(subscribeUserLocation, getUserLocationSnapshot, getUserLocationSnapshot);
+  const isUserLocationOn = userLocation.enabled === true && userLocation.status !== 'denied';
+  const handleUserLocationChange = useCallback((checked: boolean) => {
+    trackEvent('trip_view__map_customize--change', { trip_id: tripId, field: 'showMyLocation', value: checked });
+    if (checked) {
+      enableUserLocation();
+    } else {
+      disableUserLocation();
+    }
+  }, [tripId]);
   const [didSaveDefault, setDidSaveDefault] = useState(false);
 
   const isMapboxActive = activeRenderer === 'mapbox';
@@ -471,6 +487,21 @@ export const MapCustomizeModal: React.FC<MapCustomizeModalProps> = ({
                 aria-label={key('dimPast.label', 'Fade past days')}
               />
             </SettingsRow>
+            {userLocation.status !== 'unsupported' && (
+              <SettingsRow
+                label={key('myLocation.label', 'My location')}
+                description={userLocation.status === 'denied'
+                  ? key('myLocation.blocked', 'Location access is blocked in your browser settings.')
+                  : key('myLocation.description', 'Show where you are while you travel. Saved only on this device.')}
+              >
+                <Switch
+                  checked={isUserLocationOn}
+                  onCheckedChange={handleUserLocationChange}
+                  aria-label={key('myLocation.label', 'My location')}
+                  data-testid="map-customize-my-location"
+                />
+              </SettingsRow>
+            )}
           </SettingsSection>
 
           <SettingsSection title={key('group.routes', 'Route lines')}>

@@ -695,6 +695,11 @@
         "minimalistic": "미니멀",
         "mine": "내 설정",
         "customNote": "직접 조합한 설정입니다."
+      },
+      "myLocation": {
+        "blocked": "브라우저 설정에서 위치 접근이 차단되어 있습니다.",
+        "description": "여행 중 현재 위치를 표시합니다. 이 기기에만 저장됩니다.",
+        "label": "내 위치"
       }
     },
     "activityPlan": {
@@ -743,7 +748,11 @@
       "showLabels": "도시 이름 표시",
       "hideLabels": "도시 이름 숨기기",
       "showActivityMarkers": "액티비티 핀 표시",
-      "hideActivityMarkers": "액티비티 핀 숨기기"
+      "hideActivityMarkers": "액티비티 핀 숨기기",
+      "showMyLocation": "내 위치 표시",
+      "centerOnMyLocation": "내 위치로 이동",
+      "myLocationLocating": "위치를 찾는 중…",
+      "myLocationBlocked": "위치 접근이 차단되어 있습니다. 브라우저 설정에서 허용해 주세요."
     },
     "floatingMap": {
       "move": "떠 있는 지도 미리보기 이동",
