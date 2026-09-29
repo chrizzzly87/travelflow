@@ -3,7 +3,7 @@ id: rel-2026-09-29-google-my-maps
 version: v0.203.0
 title: "Your Google My Maps, and your ideas on the map"
 date: 2026-09-29
-published_at: 2026-09-29T08:00:00Z
+published_at: 2026-09-29T07:51:53Z
 status: published
 notify_in_app: true
 in_app_hours: 24
